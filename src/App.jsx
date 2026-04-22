@@ -502,13 +502,36 @@ const generatePlan = async (profile) => {
   return { weeks };
 };
 
-// ── APP ────────────────────────────────────────────────────────────────────
+// APP
 export default function App() {
-  const [screen, setScreen] = useState("onboarding"); // onboarding | loading | plan
+  const [screen, setScreen] = useState("onboarding");
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
+
+  // Chargement au demarrage
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem("aquaplan_profile");
+      const savedPlan = localStorage.getItem("aquaplan_plan");
+      if (savedProfile && savedPlan) {
+        setProfile(JSON.parse(savedProfile));
+        setPlan(JSON.parse(savedPlan));
+        setScreen("plan");
+      }
+    } catch (e) {}
+  }, []);
+
+  // Sauvegarde automatique a chaque changement du plan
+  useEffect(() => {
+    if (plan && profile.goal) {
+      try {
+        localStorage.setItem("aquaplan_profile", JSON.stringify(profile));
+        localStorage.setItem("aquaplan_plan", JSON.stringify(plan));
+      } catch (e) {}
+    }
+  }, [plan, profile]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
@@ -520,7 +543,7 @@ export default function App() {
       setPlan(p);
       setScreen("plan");
     } catch (e) {
-      setError("Impossible de générer le plan. Réessaie !");
+      setError("Impossible de generer le plan. Reessaie !");
       setScreen("onboarding");
       setStep(4);
     }
@@ -536,6 +559,8 @@ export default function App() {
   };
 
   const handleReset = () => {
+    localStorage.removeItem("aquaplan_profile");
+    localStorage.removeItem("aquaplan_plan");
     setScreen("onboarding");
     setStep(1);
     setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
@@ -555,10 +580,9 @@ export default function App() {
               <Loading />
             ) : (
               <div style={{ paddingTop: 56, paddingBottom: 40 }}>
-                {/* Logo */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 40 }}>
                   <div style={{ width: 36, height: 36, background: G.ink, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 18 }}>🏊</span>
+                    <span style={{ fontSize: 18 }}>&#x1F3CA;</span>
                   </div>
                   <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: G.ink }}>AquaPlan</span>
                 </div>
@@ -567,7 +591,7 @@ export default function App() {
 
                 {error && (
                   <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>
-                    ⚠️ {error}
+                    {error}
                   </div>
                 )}
 
