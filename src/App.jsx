@@ -361,10 +361,7 @@ const AuthScreen = ({ onAuth }) => {
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
           <OAuthBtn icon={<GoogleIcon />} label="Continuer avec Google" onClick={() => handleOAuth("google")} />
-          <div style={{ display: "flex", gap: 10 }}>
-            <OAuthBtn icon={<AppleIcon />}  label="Apple"  onClick={() => handleOAuth("apple")} />
-            <OAuthBtn icon={<StravaIcon />} label="Strava" onClick={() => handleOAuth("strava")} />
-          </div>
+          <OAuthBtn icon={<AppleIcon />}  label="Continuer avec Apple"  onClick={() => handleOAuth("apple")} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <div style={{ flex: 1, height: 1, background: G.greyLight }} />
@@ -597,7 +594,7 @@ const BadgeToast = ({ badgeId }) => {
 };
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
-const FREE_SESSION_LIMIT = 5;
+const FREE_WEEKS_LIMIT = 5;
 
 const PREMIUM_FEATURES = [
   { Icon: Calendar,   label: "Plans illimités",      desc: "Jusqu'à 52 semaines selon ton événement" },
@@ -607,7 +604,7 @@ const PREMIUM_FEATURES = [
   { Icon: Award,      label: "Tous les badges",       desc: "Collection complète débloquée" },
 ];
 
-const UpgradeModal = ({ onClose, weeksBlocked, sessionsDone }) => (
+const UpgradeModal = ({ onClose, weeksBlocked }) => (
   <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
     <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
       <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
@@ -616,8 +613,8 @@ const UpgradeModal = ({ onClose, weeksBlocked, sessionsDone }) => (
           <Zap size={28} color={G.gold} />
         </div>
         <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>AquaPlan Premium</h3>
-        {sessionsDone >= FREE_SESSION_LIMIT
-          ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as atteint la limite de <span style={{ color: G.water, fontWeight: 600 }}>{FREE_SESSION_LIMIT} séances gratuites</span>.<br />Passe premium pour continuer.</p>
+        {weeksBlocked
+          ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as accès aux <span style={{ color: G.water, fontWeight: 600 }}>{FREE_WEEKS_LIMIT} premières semaines gratuites</span>.<br />Passe premium pour débloquer la suite.</p>
           : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>
         }
       </div>
@@ -651,7 +648,7 @@ const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
 );
 
 // ── SESSION CARD ──────────────────────────────────────────────────────────
-const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, isLocked }) => {
+const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) => {
   const done = session.completed;
   const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
   return (
@@ -664,8 +661,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, is
           </div>
           <div style={{ fontSize: 16, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.2 }}>{session.title}</div>
         </div>
-        <button onClick={() => onComplete(weekIndex, sessionIndex)} style={{ width: 34, height: 34, borderRadius: "50%", border: `2px solid ${done ? G.mint : isLocked ? G.gold : G.greyLight}`, background: done ? G.mint : isLocked ? G.goldLight : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 10, transition: "all 0.2s" }}>
-          {done ? <Check size={14} color={G.white} /> : isLocked ? <Lock size={12} color={G.gold} /> : null}
+        <button onClick={() => onComplete(weekIndex, sessionIndex)} style={{ width: 34, height: 34, borderRadius: "50%", border: `2px solid ${done ? G.mint : G.greyLight}`, background: done ? G.mint : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 10, transition: "all 0.2s" }}>
+          {done && <Check size={14} color={G.white} />}
         </button>
       </div>
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
@@ -697,7 +694,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, is
 };
 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
-const WeekCard = ({ week, weekIndex, weekStartIndex, onComplete, onShare, isCurrentWeek, isPremium }) => {
+const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(s => s.completed).length;
   const total = week.sessions.length;
@@ -721,8 +718,7 @@ const WeekCard = ({ week, weekIndex, weekStartIndex, onComplete, onShare, isCurr
       {open && (
         <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           {week.sessions.map((s, i) => (
-            <SessionCard key={i} session={s} weekIndex={weekIndex} sessionIndex={i} onComplete={onComplete} onShare={onShare}
-              isLocked={!isPremium && (weekStartIndex + i) >= FREE_SESSION_LIMIT && !s.completed} />
+            <SessionCard key={i} session={s} weekIndex={weekIndex} sessionIndex={i} onComplete={onComplete} onShare={onShare} />
           ))}
           {week.tip && (
             <div style={{ background: G.goldLight, borderRadius: 10, padding: "10px 14px", display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -737,7 +733,7 @@ const WeekCard = ({ week, weekIndex, weekStartIndex, onComplete, onShare, isCurr
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, onComplete, onShare, onReset, onUpgrade, isPremium }) => {
+const PlanTab = ({ plan, profile, onComplete, onShare, onReset, onUpgrade }) => {
   const currentWeek = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
   const isLocked = !plan.isPremium && plan.totalRealWeeks > plan.weeks.length;
   return (
@@ -748,10 +744,9 @@ const PlanTab = ({ plan, profile, onComplete, onShare, onReset, onUpgrade, isPre
           {plan.weeks.length} semaines · {profile.sessionsPerWeek}×/semaine
           {isLocked && <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - plan.weeks.length} sem. bloquées</span>}
         </p>
-        {plan.weeks.map((week, i) => {
-          const startIndex = plan.weeks.slice(0, i).reduce((a, w) => a + w.sessions.length, 0);
-          return <WeekCard key={i} week={week} weekIndex={i} weekStartIndex={startIndex} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeek} isPremium={isPremium} />;
-        })}
+        {plan.weeks.map((week, i) => (
+          <WeekCard key={i} week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeek} />
+        ))}
         {isLocked && <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={plan.weeks.length} onUpgrade={onUpgrade} />}
         <button onClick={onReset} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <RotateCcw size={14} color={G.greyMid} /> Recommencer l'onboarding
@@ -1116,7 +1111,7 @@ const buildPlanPhases = (totalWeeks) => {
   return phases;
 };
 
-const FREE_MAX_WEEKS = 8;
+const FREE_MAX_WEEKS = FREE_WEEKS_LIMIT;
 
 const generatePlan = async (profile, isPremium = false) => {
   await new Promise(r => setTimeout(r, 1800));
@@ -1214,13 +1209,6 @@ export default function App() {
   };
 
   const handleComplete = (weekIndex, sessionIndex) => {
-    // Check free session limit
-    const totalDone = plan.weeks.flatMap(w => w.sessions).filter(s => s.completed).length;
-    const isCompleting = !plan.weeks[weekIndex].sessions[sessionIndex].completed;
-    if (!isPremium && isCompleting && totalDone >= FREE_SESSION_LIMIT) {
-      setShowUpgrade(true);
-      return;
-    }
     setPlan(prev => {
       const next = { ...prev, weeks: prev.weeks.map((w, wi) => wi !== weekIndex ? w : { ...w, sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, completed: !s.completed }) }) };
       const updatedWeek = next.weeks[weekIndex];
@@ -1297,7 +1285,7 @@ export default function App() {
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"   && <Dashboard plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
-        {activeTab === "plan"   && <PlanTab   plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} isPremium={isPremium} />}
+        {activeTab === "plan"   && <PlanTab   plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
         {activeTab === "stats"  && <StatsTab  plan={plan} />}
         {activeTab === "badges" && <BadgesTab plan={plan} />}
 
@@ -1306,7 +1294,7 @@ export default function App() {
         {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onRate={handleFeedback} onSkip={() => setFeedbackWeek(null)} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
-        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} weeksBlocked={plan?.totalRealWeeks > FREE_MAX_WEEKS ? plan.totalRealWeeks : null} sessionsDone={stats?.totalSessions ?? 0} />}
+        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} weeksBlocked={plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null} />}
       </div>
     </>
   );
