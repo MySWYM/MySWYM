@@ -987,21 +987,20 @@ const BASE_DISTANCES = {
   advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600 },
 };
 
-// Sessions inspirées Catteau / Total Immersion / Coach Malcolm / DuoSwim
 const SESSION_TEMPLATES = {
   endurance: (dist, pool) => {
     const warm  = Math.round(dist * 0.15 / 50) * 50 || 200;
     const drills = 4 * pool;
     const pull   = Math.round(dist * 0.12 / pool) * pool || pool * 2;
-    const main   = dist - warm - drills - pull - 200;
+    const main   = Math.max(dist - warm - drills - pull - 200, 200);
     return {
       type: "ENDURANCE", title: "Endurance fondamentale", intensity: "Faible — Z1/Z2",
       details: [
-        `Échauffement ${warm}m : crawl lent — concentre-toi sur le coulé ventral après chaque virage (Catteau : recherche de flottabilité horizontale)`,
-        `Éducatifs ${drills}m : 4×${pool}m "Skate Position" Total Immersion — bras avant en flèche dans l'axe, oreille dans l'eau, rotation axiale complète avant de dérouler le bras`,
-        `Série principale ${Math.max(main, 200)}m : nage continue, respiration bilatérale 3 temps — objectif DPS max, compter ses cycles/longueur et chercher à en perdre un`,
-        `Pull-buoy ${pull}m : isoler la traction, remonter le coude dès l'entrée main (EVF — Early Vertical Forearm), tirage jusqu'à la cuisse`,
-        `Retour calme 200m dos crawlé : déconnecter, scanner les épaules et le bassin`,
+        `Échauffement ${warm}m : crawl lent, respiration 3 temps, grand coulé après chaque virage`,
+        `Éducatifs ${drills}m : 4×${pool}m grand chien — bras tendu devant, rotation lente avant de tirer`,
+        `Série principale ${main}m : nage continue à allure conversation — compte tes bras par longueur`,
+        `Pull-buoy ${pull}m : bras seuls, coude haut, tirage jusqu'à la cuisse`,
+        `Retour calme 200m : dos crawlé très lent`,
       ],
     };
   },
@@ -1013,50 +1012,50 @@ const SESSION_TEMPLATES = {
     const reps   = Math.max(4, Math.round((dist * 0.55) / repDist));
     const sprints = 4 * pool;
     return {
-      type: "SEUIL", title: "Travail au seuil — CSS", intensity: "Modérée — Z3/Z4",
+      type: "SEUIL", title: "Travail au seuil", intensity: "Modérée — Z3/Z4",
       details: [
-        `Échauffement ${warm}m progressif : 50 m facile / 50 m moyen / 50 m soutenu — activation cardio-vasculaire complète`,
-        `Activation catch ${activ}m : 4×${pool}m avec palmes — coude haut immédiatement à l'entrée main (EVF), avant-bras quasi vertical avant de tirer (Malcolm — high elbow catch)`,
-        `Série CSS ${reps}×${repDist}m : allure CSS (−5 s/100 m vs ton 400 m TT), récup 15 s chrono strict — la régularité des temps de passage prime sur la vitesse`,
-        `Accélérations ${sprints}m : 4×${pool}m sprint + culbute obligatoire — travailler le retournement pour ne pas casser l'élan`,
-        `Retour calme 200m : crawl très lent + étirements passifs épaule dans l'eau (EVF passif)`,
+        `Échauffement ${warm}m : crawl progressif, 50m facile / 50m moyen / 50m soutenu`,
+        `Activation ${activ}m : 4×${pool}m avec palmes, coude haut à l'entrée de main`,
+        `Série principale ${reps}×${repDist}m : allure soutenue, récup 15s — régularité sur chaque répétition`,
+        `Accélérations ${sprints}m : 4×${pool}m sprint + culbute à chaque mur`,
+        `Retour calme 200m : crawl lent`,
       ],
     };
   },
 
   vitesse: (dist, pool) => {
     const warm   = Math.round(dist * 0.14 / 50) * 50 || 150;
-    const sprCnt = Math.round(dist * 0.45 / pool);
-    const powDist = Math.round(dist * 0.20 / pool) * pool;
+    const sprCnt = Math.max(4, Math.round(dist * 0.45 / pool));
+    const powDist = Math.round(dist * 0.20 / pool) * pool || pool * 2;
     const cool   = Math.round(dist * 0.14 / 100) * 100 || 150;
     return {
       type: "VITESSE", title: "Vitesse & puissance", intensity: "Élevée — Z5",
       details: [
-        `Échauffement ${warm}m varié (crawl / dos / brasse) + 4×${pool}m fréquence gestuelle haute avec palmes légères — réveiller le système neuromusculaire`,
-        `Activation départs : 4 poussées de mur → 15 m streamline strict en apnée — sentir la résistance hydrodynamique minimale (position fuseau)`,
-        `Sprints ${sprCnt}×${pool}m : départ toutes les 2 min — 100 % d'effort, fréquence gestuelle maximale, récupération complète indispensable pour maintenir la qualité`,
-        `Puissance ${powDist}m avec palmes + pull-buoy : amplifier le signal proprioceptif du catch, travailler la pression dans la paume (DuoSwim)`,
-        `Retour calme ${cool}m très lent + mobilisation actives des épaules : rotation bras de moulin, étirements grand dorsal`,
+        `Échauffement ${warm}m : crawl / dos / brasse, puis 4×${pool}m avec palmes rapide`,
+        `Activation départs : 4 poussées de mur → 15m flèche en apnée, corps gainé`,
+        `Sprints ${sprCnt}×${pool}m : 100% d'effort, départ toutes les 2 min — récup complète obligatoire`,
+        `Puissance ${powDist}m : palmes + pull-buoy, pression forte dans la paume dès l'entrée`,
+        `Retour calme ${cool}m : nage très lente, rotation épaules`,
       ],
     };
   },
 
   technique: (dist, pool) => {
-    const evalDist   = 4 * pool;
-    const tiDist     = 6 * pool;
-    const catDist    = 6 * pool;
-    const paddleDist = Math.round(dist * 0.30 / pool) * pool;
-    const integDist  = dist - evalDist - tiDist - catDist - paddleDist;
+    const drillA  = 4 * pool;
+    const drillB  = 6 * pool;
+    const drillC  = 6 * pool;
+    const paddleDist = Math.round(dist * 0.30 / pool) * pool || pool * 4;
+    const integDist  = Math.max(dist - drillA - drillB - drillC - paddleDist, pool * 2);
     const targetMin  = Math.max(12, Math.round(dist / pool / 2.0));
     const targetMax  = Math.max(14, Math.round(dist / pool / 1.6));
     return {
-      type: "TECHNIQUE", title: "Séance technique pure", intensity: "Faible — qualité > quantité",
+      type: "TECHNIQUE", title: "Séance technique", intensity: "Faible — qualité > quantité",
       details: [
-        `Bilan DPS ${evalDist}m : 4×${pool}m en comptant tes cycles/longueur — noter ton SPA (Strokes Per Arm) de référence, c'est ton point de départ`,
-        `Total Immersion ${tiDist}m : 6×${pool}m "Sweet Spot" — position latérale stable, oreille dans l'eau, corps dans l'axe, alterner les côtés toutes les 2 longueurs`,
-        `Catteau ${catDist}m : 6×${pool}m coulé ventral — après chaque poussée de mur, chercher la flottabilité horizontale avant de nager (portance = moins de résistance)`,
-        `Palmes + pull-buoy ${paddleDist}m : amplification sensorielle du catch — sentir la pression dès l'entrée main, avant-bras vertical, traction vers la hanche sans croiser l'axe`,
-        `Intégration ${Math.max(integDist, pool * 2)}m nage entière : viser ${targetMin}–${targetMax} cycles/longueur — chercher à "glisser plus loin avec moins d'effort"`,
+        `Référence ${drillA}m : 4×${pool}m en comptant tes bras par longueur — note ton chiffre`,
+        `Petit chien ${drillB}m : 6×${pool}m — bras devant, corps sur le côté, oreille dans l'eau, attends avant de tirer`,
+        `Coulé ventral ${drillC}m : 6×${pool}m — après le virage, glisse le plus loin possible avant le premier mouvement`,
+        `Palmes + pull-buoy ${paddleDist}m : sens la pression de l'eau dans la paume, coude haut`,
+        `Nage complète ${integDist}m : vise ${targetMin}–${targetMax} bras par longueur, glisse plus loin à chaque longueur`,
       ],
     };
   },
@@ -1067,17 +1066,17 @@ const SESSION_TEMPLATES = {
     return {
       type: "RÉCUPÉRATION", title: "Récupération active", intensity: "Très faible — Z1",
       details: [
-        `${a}m nage libre sans contrainte : dos, brasse, crawl selon envie — intensité minimale, récupération musculaire active`,
-        `4×${pool}m respiration côté non-dominant uniquement : travailler la symétrie de rotation, équilibrer le schéma moteur (DuoSwim — bilateral breathing)`,
-        `${b}m crawl très lent : maximiser le coulé après chaque virage, compter le temps de glisse avant le premier cycle (Catteau)`,
-        `4×${pool}m dos crawlé : déconnecter mentalement, scan corporel — épaules, nuque, bassin, chevilles`,
+        `${a}m nage libre au choix (dos, brasse, crawl) — allure très facile`,
+        `4×${pool}m respiration d'un seul côté : 2 longueurs côté droit, 2 longueurs côté gauche`,
+        `${b}m crawl très lent : grand coulé après chaque virage, compte ta glisse`,
+        `4×${pool}m dos crawlé : relâche les épaules, scan du corps`,
       ],
     };
   },
 };
 
 const TIPS = {
-  debut:       "Priorité à la régularité sur l'intensité. Concentre-toi sur la position du corps dans l'eau — un corps horizontal réduit la traînée de 30 % (Catteau).",
+  debut:       "Priorité à la régularité sur l'intensité. Concentre-toi sur la position du corps dans l'eau — plus tu es horizontal, moins tu freines.",
   aerobie:     "Travaille la respiration bilatérale (3 temps). Un appui symétrique des deux côtés améliore la rotation et l'efficacité de nage.",
   endurance:   "Si tu dois t'arrêter, c'est que tu vas trop vite. Ralentis jusqu'à trouver une allure où tu pourrais tenir une conversation courte.",
   seuil:       "Le seuil doit être inconfortable mais régulier. Utilise un chrono — la constance des temps de passage est le seul indicateur qui compte.",
