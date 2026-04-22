@@ -380,63 +380,126 @@ const PlanView = ({ plan, profile, onReset, onComplete }) => {
   );
 };
 
-// ── AI PLAN GENERATOR ──────────────────────────────────────────────────────
+// ── LOCAL PLAN GENERATOR ───────────────────────────────────────────────────
+const BASE_DISTANCES = {
+  beginner:     { endurance: 1200, seuil: 1000, vitesse: 800,  technique: 1000, récupération: 800  },
+  intermediate: { endurance: 2000, seuil: 1800, vitesse: 1500, technique: 1600, récupération: 1200 },
+  advanced:     { endurance: 3000, seuil: 2500, vitesse: 2000, technique: 2200, récupération: 1500 },
+};
+
+const SESSION_TEMPLATES = {
+  endurance: (dist, pool) => ({
+    type: "ENDURANCE", title: "Endurance fondamentale", intensity: "Faible",
+    details: [
+      `Échauffement: 200m crawl lent`,
+      `Série principale: ${Math.round(dist * 0.6 / 100) * 100}m en continu ou fractionné 4x${Math.round(dist * 0.15 / 50) * 50}m`,
+      `Éducatifs: 4x${pool}m (pull-buoy ou planche)`,
+      `Retour au calme: 200m dos lent`,
+    ]
+  }),
+  seuil: (dist, pool) => ({
+    type: "SEUIL", title: "Travail au seuil", intensity: "Modérée",
+    details: [
+      `Échauffement: 400m progressif`,
+      `Série seuil: 6x${Math.round(dist * 0.1 / 50) * 50}m récup 20sec`,
+      `Série complémentaire: 4x${pool}m sprint`,
+      `Retour au calme: 200m crawl lent`,
+    ]
+  }),
+  vitesse: (dist, pool) => ({
+    type: "VITESSE", title: "Vitesse & puissance", intensity: "Élevée",
+    details: [
+      `Échauffement: 300m varié (crawl/dos/brasse)`,
+      `Sprints: 8x${pool}m départ toutes les 2 min`,
+      `Série lactique: 4x${Math.round(dist * 0.08 / 50) * 50}m effort max`,
+      `Retour au calme: 300m très lent`,
+    ]
+  }),
+  technique: (dist, pool) => ({
+    type: "TECHNIQUE", title: "Technique & qualité", intensity: "Faible",
+    details: [
+      `Échauffement: 200m en se concentrant sur le coulé`,
+      `Éducatifs: 10x${pool}m (catch-up, fingertip drag, zipper)`,
+      `Nage complète: ${Math.round(dist * 0.5 / 100) * 100}m en comptant ses cycles`,
+      `Retour au calme: 200m dos`,
+    ]
+  }),
+  récupération: (dist, pool) => ({
+    type: "RÉCUPÉRATION", title: "Récupération active", intensity: "Très faible",
+    details: [
+      `Nage libre et détendue: ${dist}m`,
+      `Aucune contrainte de temps ou d'allure`,
+      `Mixer les nages selon ton envie`,
+      `Se concentrer sur la respiration et la détente`,
+    ]
+  }),
+};
+
+const WEEK_PATTERNS = {
+  1: ["endurance"],
+  2: ["endurance", "technique"],
+  3: ["endurance", "seuil", "technique"],
+  4: ["endurance", "seuil", "vitesse", "récupération"],
+};
+
+const PHASE_PLANS = [
+  { focus: "Mise en jambes", progression: 1.0, tipKey: "debut" },
+  { focus: "Construction aérobie", progression: 1.1, tipKey: "aerobie" },
+  { focus: "Développement endurance", progression: 1.2, tipKey: "endurance" },
+  { focus: "Travail au seuil", progression: 1.25, tipKey: "seuil" },
+  { focus: "Intensité & vitesse", progression: 1.3, tipKey: "vitesse" },
+  { focus: "Volume maximum", progression: 1.35, tipKey: "volume" },
+  { focus: "Affûtage", progression: 1.1, tipKey: "affutage" },
+  { focus: "Semaine de compétition", progression: 0.7, tipKey: "competition" },
+];
+
+const TIPS = {
+  debut: "Commence doucement, l'objectif est de reprendre tes marques dans l'eau. La régularité prime sur l'intensité.",
+  aerobie: "Concentre-toi sur ta technique de respiration. Un bon rythme respiratoire améliore ton endurance de 20%.",
+  endurance: "Essaie de nager sans t'arrêter pendant les séries longues. Si tu dois t'arrêter, c'est que tu vas trop vite.",
+  seuil: "Le travail au seuil doit être inconfortable mais supportable. Tu dois pouvoir dire quelques mots mais pas tenir une conversation.",
+  vitesse: "Pour les sprints, repose-toi complètement entre chaque répétition. La qualité prime sur la quantité.",
+  volume: "C'est ta semaine de charge maximale. Mange bien, dors bien, c'est là que tu progresses le plus.",
+  affutage: "Réduis le volume mais garde l'intensité. Ton corps se repose tout en restant en forme.",
+  competition: "Dernière ligne droite ! Nage léger, visualise ta course et fais confiance à ton entraînement.",
+};
+
 const generatePlan = async (profile) => {
-  const goal = GOALS.find(g => g.id === profile.goal);
-  const level = LEVELS.find(l => l.id === profile.level);
-  const weeks = weeksUntil(profile.eventDate);
+  await new Promise(r => setTimeout(r, 1800)); // simulation délai réaliste
 
-  const prompt = `Tu es un coach de natation expert. Génère un plan d'entraînement de natation en JSON.
+  const level = profile.level;
+  const freq = profile.sessionsPerWeek;
+  const pool = profile.pool;
+  const totalWeeks = Math.min(weeksUntil(profile.eventDate), 8);
+  const baseDist = BASE_DISTANCES[level];
+  const pattern = WEEK_PATTERNS[Math.min(freq, 4)];
 
-Profil nageur:
-- Objectif: ${goal?.label} (${goal?.dist})
-- Niveau: ${level?.label}
-- Semaines disponibles: ${weeks}
-- Séances par semaine: ${profile.sessionsPerWeek}
-- Bassin: ${profile.pool}m
+  const weeks = Array.from({ length: totalWeeks }, (_, wi) => {
+    const phaseIndex = Math.min(wi, PHASE_PLANS.length - 1);
+    const phase = PHASE_PLANS[phaseIndex];
+    const progression = phase.progression;
 
-Génère exactement ${Math.min(weeks, 8)} semaines de plan. Réponds UNIQUEMENT avec ce JSON, sans texte avant ou après:
+    const sessions = pattern.map((type, si) => {
+      const distBase = Math.round(baseDist[type] * progression / 50) * 50;
+      const template = SESSION_TEMPLATES[type](distBase, pool);
+      const duration = Math.round(distBase / 40); // ~40m/min
+      return {
+        ...template,
+        distance: `${distBase}m`,
+        duration: Math.max(30, Math.min(90, duration)),
+        completed: false,
+      };
+    });
 
-{
-  "weeks": [
-    {
-      "number": 1,
-      "focus": "Endurance de base",
-      "tip": "Conseil pratique pour cette semaine",
-      "sessions": [
-        {
-          "type": "ENDURANCE",
-          "title": "Titre court de la séance",
-          "distance": "1200m",
-          "duration": 45,
-          "intensity": "Faible",
-          "completed": false,
-          "details": ["Échauffement: 200m crawl lent", "Série principale: 4x200m", "Retour au calme: 200m dos"]
-        }
-      ]
-    }
-  ]
-}
-
-Types de séances possibles: ENDURANCE, VITESSE, TECHNIQUE, RÉCUPÉRATION, SEUIL
-Intensités: Faible, Modérée, Élevée
-Adapte les distances au niveau ${level?.label} et à l'objectif ${goal?.label}.
-Chaque semaine doit avoir exactement ${profile.sessionsPerWeek} séances.`;
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }]
-    })
+    return {
+      number: wi + 1,
+      focus: phase.focus,
+      tip: TIPS[phase.tipKey],
+      sessions,
+    };
   });
 
-  const data = await response.json();
-  const text = data.content?.[0]?.text || "";
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  return { weeks };
 };
 
 // ── APP ────────────────────────────────────────────────────────────────────
