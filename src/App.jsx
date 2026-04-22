@@ -284,33 +284,6 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 };
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
-const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 48 48">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-  </svg>
-);
-
-const AppleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 814 1000">
-    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 376.8 0 258 0 145.1c0-102.1 66.8-155.5 130.3-155.5 108.2 0 177.8 77.5 185.5 77.5 11.5 0 94.9-81.9 196-81.9 30.8 0 119.8 8 186.4 93.3z" fill="currentColor"/>
-  </svg>
-);
-
-const StravaIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 64 64">
-    <path d="M41.03 40.96l-6.04-11.9-6.03 11.9H20.6L35 12.8l14.4 28.16H41.03z" fill="#FC4C02"/>
-    <path d="M49.4 40.96l-8.37-16.46-3.11 6.13 5.28 10.33H49.4z" fill="#FC4C02" opacity=".6"/>
-  </svg>
-);
-
-const OAuthBtn = ({ icon, label, onClick }) => (
-  <button onClick={onClick} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", padding: "13px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: G.white, fontSize: 14, fontWeight: 600, color: G.ink, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.18s" }}>
-    {icon}{label}
-  </button>
-);
 
 const AuthScreen = ({ onAuth }) => {
   const [mode, setMode] = useState("login");
@@ -338,12 +311,6 @@ const AuthScreen = ({ onAuth }) => {
     finally { setLoading(false); }
   };
 
-  const handleOAuth = async (provider) => {
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
-    if (error) setError(error.message);
-  };
-
   const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none" };
 
   return (
@@ -359,15 +326,6 @@ const AuthScreen = ({ onAuth }) => {
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>
           {mode === "login" ? "Connecte-toi pour accéder à ton plan." : "Crée ton compte gratuitement."}
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-          <OAuthBtn icon={<GoogleIcon />} label="Continuer avec Google" onClick={() => handleOAuth("google")} />
-          <OAuthBtn icon={<AppleIcon />}  label="Continuer avec Apple"  onClick={() => handleOAuth("apple")} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-          <div style={{ flex: 1, height: 1, background: G.greyLight }} />
-          <span style={{ fontSize: 12, color: G.greyMid }}>ou avec ton email</span>
-          <div style={{ flex: 1, height: 1, background: G.greyLight }} />
-        </div>
         {error   && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
