@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "./supabase.js";
 
 // ── FONTS ──────────────────────────────────────────────────────────────────
 const FontLoader = () => {
@@ -502,36 +503,164 @@ const generatePlan = async (profile) => {
   return { weeks };
 };
 
+// ── AUTH SCREEN ───────────────────────────────────────────────────────────
+const AuthScreen = ({ onAuth }) => {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const handleSubmit = async () => {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        onAuth(data.user);
+      } else {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        if (data.user && !data.user.identities?.length) {
+          setError("Un compte existe déjà avec cet email.");
+        } else {
+          setSuccess("Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.");
+          setMode("login");
+        }
+      }
+    } catch (e) {
+      setError(e.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputStyle = {
+    width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`,
+    fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink,
+    outline: "none", transition: "border 0.2s",
+  };
+
+  return (
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 72, paddingBottom: 40 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 48 }}>
+        <div style={{ width: 36, height: 36, background: G.ink, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 18 }}>&#x1F3CA;</span>
+        </div>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: G.ink }}>AquaPlan</span>
+      </div>
+
+      <div className="fade-up">
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+          {mode === "login" ? "Bon retour !" : "Crée ton compte"}
+        </h2>
+        <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>
+          {mode === "login" ? "Connecte-toi pour accéder à ton plan." : "Rejoins AquaPlan gratuitement."}
+        </p>
+
+        {error && (
+          <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+        {success && (
+          <div style={{ background: "#E8F5E9", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#2E7D32", fontSize: 13 }}>
+            {success}
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+          <input
+            type="email" placeholder="Ton email" value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            style={inputStyle}
+          />
+          <input
+            type="password" placeholder="Mot de passe" value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            style={inputStyle}
+          />
+        </div>
+
+        <Btn onClick={handleSubmit} disabled={loading || !email || !password}>
+          {loading ? "..." : mode === "login" ? "Se connecter" : "Créer mon compte"}
+        </Btn>
+
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 14, color: G.grey }}>
+          {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
+          <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); setSuccess(null); }}
+            style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+            {mode === "login" ? "S'inscrire" : "Se connecter"}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // APP
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [screen, setScreen] = useState("onboarding");
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
 
-  // Chargement au demarrage
+  // Vérification de la session au démarrage
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) loadUserData(u.id);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (!u) {
+        setScreen("onboarding");
+        setStep(1);
+        setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
+        setPlan(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadUserData = async (userId) => {
     try {
-      const savedProfile = localStorage.getItem("aquaplan_profile");
-      const savedPlan = localStorage.getItem("aquaplan_plan");
+      const savedProfile = localStorage.getItem(`aquaplan_profile_${userId}`);
+      const savedPlan = localStorage.getItem(`aquaplan_plan_${userId}`);
       if (savedProfile && savedPlan) {
         setProfile(JSON.parse(savedProfile));
         setPlan(JSON.parse(savedPlan));
         setScreen("plan");
       }
     } catch (e) {}
-  }, []);
+  };
 
-  // Sauvegarde automatique a chaque changement du plan
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // Sauvegarde automatique à chaque changement du plan
   useEffect(() => {
-    if (plan && profile.goal) {
+    if (plan && profile.goal && user) {
       try {
-        localStorage.setItem("aquaplan_profile", JSON.stringify(profile));
-        localStorage.setItem("aquaplan_plan", JSON.stringify(plan));
+        localStorage.setItem(`aquaplan_profile_${user.id}`, JSON.stringify(profile));
+        localStorage.setItem(`aquaplan_plan_${user.id}`, JSON.stringify(plan));
       } catch (e) {}
     }
-  }, [plan, profile]);
+  }, [plan, profile, user]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
@@ -559,13 +688,39 @@ export default function App() {
   };
 
   const handleReset = () => {
-    localStorage.removeItem("aquaplan_profile");
-    localStorage.removeItem("aquaplan_plan");
+    if (user) {
+      localStorage.removeItem(`aquaplan_profile_${user.id}`);
+      localStorage.removeItem(`aquaplan_plan_${user.id}`);
+    }
     setScreen("onboarding");
     setStep(1);
     setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
     setPlan(null);
   };
+
+  if (authLoading) {
+    return (
+      <>
+        <style>{css}</style>
+        <FontLoader />
+        <div style={{ minHeight: "100vh", background: G.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 40 }}><span className="swimmer">🏊</span></span>
+        </div>
+      </>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <style>{css}</style>
+        <FontLoader />
+        <div style={{ minHeight: "100vh", background: G.bg }}>
+          <AuthScreen onAuth={setUser} />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -573,18 +728,30 @@ export default function App() {
       <FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {screen === "plan" ? (
-          <PlanView plan={plan} profile={profile} onReset={handleReset} onComplete={handleComplete} />
+          <div>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
+              <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 14px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
+                Déconnexion
+              </button>
+            </div>
+            <PlanView plan={plan} profile={profile} onReset={handleReset} onComplete={handleComplete} />
+          </div>
         ) : (
           <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
             {screen === "loading" ? (
               <Loading />
             ) : (
               <div style={{ paddingTop: 56, paddingBottom: 40 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 40 }}>
-                  <div style={{ width: 36, height: 36, background: G.ink, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 18 }}>&#x1F3CA;</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 36, height: 36, background: G.ink, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 18 }}>&#x1F3CA;</span>
+                    </div>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: G.ink }}>AquaPlan</span>
                   </div>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: G.ink }}>AquaPlan</span>
+                  <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 14px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
+                    Déconnexion
+                  </button>
                 </div>
 
                 <Progress step={step} total={4} />
