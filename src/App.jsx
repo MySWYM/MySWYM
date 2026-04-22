@@ -1151,23 +1151,23 @@ export default function App() {
   const prevBadgesRef = useRef([]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      setIsPremium(u?.user_metadata?.subscription === "premium");
-      if (u) loadUserData(u.id);
-      setAuthLoading(false);
-    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(u?.user_metadata?.subscription === "premium");
-      if (!u) { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null }); setPlan(null); }
+      if (u) { loadUserData(u.id).finally(() => setAuthLoading(false)); }
+      else { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null }); setPlan(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadUserData = (userId) => {
+  const loadUserData = async (userId) => {
+    try {
+      const { data, error } = await supabase.from("user_plans").select("profile, plan").eq("user_id", userId).single();
+      if (data && !error && data.profile && data.plan) {
+        setProfile(data.profile); setPlan(data.plan); setScreen("app"); return;
+      }
+    } catch {}
     try {
       const sp = localStorage.getItem(`aquaplan_profile_${userId}`);
       const spl = localStorage.getItem(`aquaplan_plan_${userId}`);
@@ -1181,6 +1181,7 @@ export default function App() {
         localStorage.setItem(`aquaplan_profile_${user.id}`, JSON.stringify(profile));
         localStorage.setItem(`aquaplan_plan_${user.id}`, JSON.stringify(plan));
       } catch {}
+      supabase.from("user_plans").upsert({ user_id: user.id, profile, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).then(() => {});
     }
   }, [plan, profile, user]);
 
@@ -1223,7 +1224,7 @@ export default function App() {
   };
 
   const handleReset = () => {
-    if (user) { localStorage.removeItem(`aquaplan_profile_${user.id}`); localStorage.removeItem(`aquaplan_plan_${user.id}`); }
+    if (user) { localStorage.removeItem(`aquaplan_profile_${user.id}`); localStorage.removeItem(`aquaplan_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
     setScreen("onboarding"); setStep(1);
     setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
     setPlan(null); prevBadgesRef.current = [];
