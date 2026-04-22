@@ -3,8 +3,8 @@ import { supabase } from "./supabase.js";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
-  ChevronDown, ChevronUp, LogOut, Globe, Activity,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight,
+  ChevronDown, ChevronUp, LogOut, Activity,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
