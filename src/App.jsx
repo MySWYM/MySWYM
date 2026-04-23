@@ -1097,80 +1097,83 @@ const BASE_DISTANCES = {
   advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600 },
 };
 
+// ── Departure interval calculator ─────────────────────────────────────────
+// pace100[lvl] = seconds per 100m at Z2/Z3/Z5 ; rest = mandatory rest after rep
+const calcDI = (meters, lvlIdx, zone = 'easy') => {
+  const pace100 = [[170, 130, 105], [152, 112,  90]][zone === 'threshold' ? 1 : 0][lvlIdx];
+  const rest    = zone === 'threshold' ? 12 : 30;
+  const total   = Math.ceil((meters * pace100 / 100 + rest) / 5) * 5;
+  return `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, '0')}`;
+};
+
+// Round distance to nearest pool-length multiple
+const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
+
 const SESSION_TEMPLATES = {
   endurance: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner";
-    const v = weekIdx % 3;
-    const warm = Math.round(dist * 0.15 / 50) * 50 || 200;
-    const cool = Math.round(dist * 0.10 / 50) * 50 || 150;
-    const main = Math.max(dist - warm - cool - 4 * pool, 200);
-
-    if (isBeg) {
-      const variants = [
-        {
-          title: "Nage continue",
-          intensity: "Facile — Z1/Z2",
-          details: [
-            `Échauffement ${warm}m : crawl ou brasse à ton rythme, sans forcer`,
-            `Kick planche ${4 * pool}m : 4×${pool}m avec planche, jambes régulières, talons qui effleurent la surface`,
-            `Nage libre ${main}m : alterne 2 longueurs crawl / 1 longueur brasse si besoin — si tu souffles, ralentis`,
-            `Retour calme ${cool}m : brasse très lente, inspire bien à chaque cycle`,
-          ],
-        },
-        {
-          title: "Pyramide douce",
-          intensity: "Facile — Z1/Z2",
-          details: [
-            `Échauffement ${warm}m : nage libre à ton aise`,
-            `Pyramide : ${pool}m facile → ${2 * pool}m moyen → ${2 * pool}m facile → ${pool}m moyen — récup 20s entre chaque`,
-            `Pull-buoy ${4 * pool}m : bras seuls, jambes immobiles — sens le travail des épaules`,
-            `Retour calme ${cool}m : dos crawlé lent ou brasse`,
-          ],
-        },
-        {
-          title: "Mixte endurance",
-          intensity: "Facile — Z1/Z2",
-          details: [
-            `Échauffement ${warm}m : mélange dos / brasse / crawl librement`,
-            `Blocs mixtes ${main}m : alterne 2 longueurs crawl + 1 longueur dos tout au long`,
-            `Kick sans planche ${4 * pool}m : bras tendus devant, jambes seules — reste à plat dans l'eau`,
-            `Retour calme ${cool}m : brasse lente`,
-          ],
-        },
-      ];
-      return { type: "ENDURANCE", ...variants[v] };
-    }
-
     const isAdv = level === "advanced";
+    const P = pool;
+    const lvl = isBeg ? 0 : isAdv ? 2 : 1;
+    const v = weekIdx % 3;
+
+    // Structural blocks
+    const WARM = 200;                 // easy 200m warm-up
+    const DRILL = 4 * P;              // drill block
+    const COOL = 200;                 // cool-down
+    const avail = dist - WARM - DRILL - COOL;
+
+    // Main rep size: snapped to pool length
+    const repM = snap(isBeg ? 2 * P : isAdv ? 4 * P : 3 * P, P);
+    const nM   = Math.max(4, Math.min(10, Math.round(avail * 0.65 / repM)));
+    const mTotal = nM * repM;
+
+    // Secondary rep size (pull-buoy): always 2×pool
+    const repS  = 2 * P;
+    const nS    = Math.max(2, Math.round((avail - mTotal) / repS));
+
+    const diM = calcDI(repM, lvl, 'easy');
+    const diS = calcDI(repS, lvl, 'easy');
+
     const variants = [
       {
-        title: "Fond continu",
+        title: isBeg ? "Séries fondamentales" : "Fond en séries",
         intensity: isAdv ? "Z2 — 70–75 % FCmax" : "Z1/Z2 — allure conversation",
         details: [
-          `Échauffement ${warm}m : crawl progressif — moitié facile, moitié moyen`,
-          `Catch-up drill ${4 * pool}m : bras tendu devant, attend que la main adverse arrive avant de tirer — cherche la glisse`,
-          `Nage continue ${main}m : allure constante, respiration tous les 3 temps — ne t'arrête pas`,
-          `Pull-buoy ${cool}m : bras seuls, coude haut, poussée jusqu'à la cuisse`,
+          `Échauffement ${WARM + DRILL}m : ${WARM}m crawl progressif + catch-up drill 4×${P}m`,
+          `${nM}×${repM}m départ toutes les ${diM} — rythme régulier, respiration tous les 3 temps`,
+          `Pull-buoy ${nS}×${repS}m départ toutes les ${diS} — bras seuls, coude haut, tirage jusqu'à la cuisse`,
+          `Retour calme ${COOL}m : dos crawlé lent`,
         ],
       },
       {
         title: "Pyramide aérobie",
-        intensity: "Z2 — régulier sur toute la pyramide",
-        details: [
-          `Échauffement ${warm}m : crawl + quelques longueurs de dos`,
-          `Pyramide : ${pool}m fort → ${2 * pool}m modéré → ${3 * pool}m facile → ${2 * pool}m modéré → ${pool}m fort — récup 15s`,
-          `Negative split ${4 * pool}m : 4×${pool}m — 1re moitié facile, accélère proprement sur la 2e`,
-          `Retour calme ${cool}m : dos crawlé très lent, scan corporel`,
-        ],
+        intensity: isAdv ? "Z2 — 70–75 % FCmax" : "Z1/Z2 — régulier de bout en bout",
+        details: (() => {
+          const step = repM;
+          const peak = snap(step * (isBeg ? 2 : isAdv ? 3 : 2), P);
+          const py = [];
+          for (let d = step; d <= peak; d += step) py.push(d);
+          for (let d = peak - step; d >= step; d -= step) py.push(d);
+          const pyTotal = py.reduce((a, b) => a + b, 0);
+          const nKick = Math.max(2, Math.round((avail - pyTotal) / P));
+          const diPy = calcDI(step, lvl, 'easy');
+          return [
+            `Échauffement ${WARM + DRILL}m : ${WARM}m crawl + finger drag 4×${P}m`,
+            `Pyramide ${py.join('-')}m — récup 20s entre chaque distance (départ toutes les ${diPy} par tranche de ${step}m)`,
+            `Kick planche ${nKick}×${P}m — récup 10s — corps horizontal, jambes actives`,
+            `Retour calme ${COOL}m : crawl lent`,
+          ];
+        })(),
       },
       {
-        title: "Finger drag — glisse et longueur",
-        intensity: "Z1/Z2 — technique + volume",
+        title: "Séries progressives",
+        intensity: "Z1→Z2 — vise 2–3s de mieux à chaque répétition",
         details: [
-          `Échauffement ${warm}m : crawl, focus sur la rotation des hanches`,
-          `Finger drag ${4 * pool}m : au retour de bras, doigts qui glissent sur la surface — contrôle la trajectoire du coude`,
-          `Nage continue ${main}m : compte tes bras toutes les 4 longueurs — vise la constance`,
-          `Retour calme ${cool}m : brasse lente ou dos`,
+          `Échauffement ${WARM + DRILL}m : ${WARM}m crawl + 4×${P}m éducatif`,
+          `${nM}×${repM}m départ toutes les ${diM} — chaque répétition légèrement plus rapide que la précédente`,
+          `${nS}×${repS}m pull-buoy départ toutes les ${diS} — coude haut, relâche les jambes`,
+          `Retour calme ${COOL}m : nage croisée (dos/brasse/crawl)`,
         ],
       },
     ];
@@ -1180,79 +1183,71 @@ const SESSION_TEMPLATES = {
   seuil: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner";
     const isAdv = level === "advanced";
+    const P = pool;
+    const lvl = isBeg ? 0 : isAdv ? 2 : 1;
     const v = weekIdx % 3;
-    const warm = Math.round(dist * 0.18 / 100) * 100 || 200;
-    const cool = Math.round(dist * 0.12 / 50) * 50 || 150;
-    const mainDist = dist - warm - cool;
-    const repDist = pool >= 50 ? 200 : 100;
-    const reps = Math.max(4, Math.round(mainDist * 0.6 / repDist));
 
-    if (isBeg) {
-      const variants = [
-        {
-          title: "Intervalles réguliers",
-          intensity: "Modérée — on force un peu",
-          details: [
-            `Échauffement ${warm}m : nage facile, termine par 4 longueurs avec palmes`,
-            `Série ${reps}×${pool}m : allure forte (pas sprint), récup 20s — essaie de tenir le même rythme sur chaque répétition`,
-            `Récup active ${4 * pool}m : dos ou brasse très lente`,
-            `Retour calme ${cool}m : crawl facile`,
-          ],
-        },
-        {
-          title: "Blocs d'effort",
-          intensity: "Modérée — régulier",
-          details: [
-            `Échauffement ${warm}m : crawl progressif + 4 longueurs palmes`,
-            `3 blocs de ${2 * pool}m à allure soutenue (7/10) — récup 30s entre chaque bloc`,
-            `Kick planche ${4 * pool}m : jambes à bonne allure, pieds actifs`,
-            `Retour calme ${cool}m : brasse lente`,
-          ],
-        },
-        {
-          title: "Pyramide d'efforts",
-          intensity: "Modérée",
-          details: [
-            `Échauffement ${warm}m : nage libre facile`,
-            `Pyramide : ${pool}m fort → ${2 * pool}m fort → ${pool}m fort — récup 20s. Répète 2 fois`,
-            `Palmes ${4 * pool}m : 4×${pool}m avec palmes — sens la différence de vitesse`,
-            `Retour calme ${cool}m : nage libre lente`,
-          ],
-        },
-      ];
-      return { type: "SEUIL", ...variants[v] };
-    }
+    const WARM  = 200 + 4 * P;   // warm-up + activation palmes
+    const COOL  = 200;
+    const avail = dist - WARM - COOL;
+
+    // CSS rep: 100m for beginner/25m pool, 150-200m for others
+    const cssRep = snap(isBeg ? 2 * P : isAdv ? 4 * P : 3 * P, P);
+    const nCSS   = Math.max(4, Math.min(10, Math.round(avail * 0.7 / cssRep)));
+    const cssTotal = nCSS * cssRep;
+
+    // Finisher block: short kick or descending rest
+    const nFin  = Math.max(2, Math.round((avail - cssTotal) / P));
+
+    const diCSS = calcDI(cssRep, lvl, 'threshold');
 
     const variants = [
       {
-        title: "CSS — allure critique",
-        intensity: isAdv ? "Z3/Z4 — allure 1 500 m" : "Z3 — rythme soutenu constant",
+        title: isBeg ? "Intervalles réguliers" : "CSS — rythme critique",
+        intensity: isAdv ? "Z3/Z4 — allure 1 500 m" : isBeg ? "Modérée — effort soutenu constant" : "Z3 — effort soutenu constant",
         details: [
-          `Échauffement ${warm}m : crawl progressif par ${pool}m + 4 longueurs palmes`,
-          `CSS ${reps}×${repDist}m : allure régulière = ton rythme sur 1 500 m — récup 10–15 s strictement. Régularité avant tout`,
-          `Descending rest 4×${pool}m : même allure, récup 20s / 15s / 10s / 5s — discipline sur le tempo`,
-          `Retour calme ${cool}m : dos très lent, relâche la nuque`,
+          `Échauffement ${WARM}m : 200m progressif + 4×${P}m palmes`,
+          `${nCSS}×${cssRep}m départ toutes les ${diCSS} — allure= ton rythme sur 1 500 m. Régularité absolue, chaque rep au même tempo`,
+          `Descending rest 4×${P}m : même allure, récup 20s / 15s / 10s / 5s — discipline`,
+          `Retour calme ${COOL}m : dos lent, relâche la nuque`,
         ],
       },
       {
-        title: "Pyramide intensive",
-        intensity: "Z3/Z4 — intensité croissante",
-        details: [
-          `Échauffement ${warm}m : mixte crawl / dos + 4 accélérations ${pool}m`,
-          `Pyramide : ${pool}m → ${2 * pool}m → ${3 * pool}m → ${2 * pool}m → ${pool}m à allure seuil — récup = moitié de la distance`,
-          `Negative split 2×${2 * pool}m : 1re moitié modérée, 2e moitié soutenue — vise 3–5 s d'écart`,
-          `Retour calme ${cool}m : nage croisée (dos / brasse / crawl)`,
-        ],
+        title: "Pyramide seuil",
+        intensity: "Z3/Z4 — intensité croissante puis décroissante",
+        details: (() => {
+          const step = snap(isBeg ? P : P >= 50 ? 100 : 75, P);
+          const peak = step * (isBeg ? 3 : isAdv ? 4 : 3);
+          const py = [];
+          for (let d = step; d <= peak; d += step) py.push(d);
+          for (let d = peak - step; d >= step; d -= step) py.push(d);
+          const pyTotal = py.reduce((a, b) => a + b, 0);
+          const nRecup = Math.max(2, Math.round((avail - pyTotal) / (2 * P)));
+          const diPy = calcDI(step, lvl, 'threshold');
+          return [
+            `Échauffement ${WARM}m : 200m crawl + 4×${P}m build-up`,
+            `Pyramide seuil ${py.join('-')}m — récup 20s entre chaque (base départ toutes les ${diPy} pour ${step}m)`,
+            `Récup active ${nRecup}×${2 * P}m — récup 15s — dos ou brasse lente`,
+            `Retour calme ${COOL}m : crawl lent`,
+          ];
+        })(),
       },
       {
         title: "Blocs T-pace",
-        intensity: "Z4 — inconfortable mais régulier",
-        details: [
-          `Échauffement ${warm}m : crawl + 4×${pool}m éducatif coude haut`,
-          `3×${Math.round(mainDist * 0.6 / 3 / 50) * 50}m T-pace : allure course de 400 m, récup 30 s entre blocs`,
-          `Accélérations 4×${pool}m : nage en accélérant progressivement sur la longueur — focus virage`,
-          `Retour calme ${cool}m : crawl lent`,
-        ],
+        intensity: "Z4 — inconfortable et régulier",
+        details: (() => {
+          const blockRep = snap(isBeg ? 2 * P : isAdv ? 6 * P : 4 * P, P);
+          const nBlocks  = Math.max(3, Math.round(avail * 0.65 / blockRep));
+          const blockTotal = nBlocks * blockRep;
+          const nSprint = Math.max(2, Math.round((avail - blockTotal) / P));
+          const diBlock = calcDI(blockRep, lvl, 'threshold');
+          return [
+            `Échauffement ${WARM}m : 200m crawl + 4×${P}m coude haut`,
+            `${nBlocks}×${blockRep}m T-pace départ toutes les ${diBlock} — allure course de 400 m, constance absolue`,
+            `Finisher ${nSprint}×${P}m — récup 20s — sprint à 90% sur chaque longueur`,
+            `Retour calme ${COOL}m : nage croisée`,
+          ];
+        })(),
       },
     ];
     return { type: "SEUIL", ...variants[v] };
@@ -1261,79 +1256,72 @@ const SESSION_TEMPLATES = {
   vitesse: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner";
     const isAdv = level === "advanced";
+    const P = pool;
+    const lvl = isBeg ? 0 : isAdv ? 2 : 1;
     const v = weekIdx % 3;
-    const warm = Math.round(dist * 0.20 / 50) * 50 || 200;
-    const cool = Math.round(dist * 0.15 / 50) * 50 || 150;
-    const sprCnt = Math.max(4, Math.round((dist - warm - cool) * 0.5 / pool));
 
-    if (isBeg) {
-      const variants = [
-        {
-          title: "Accélérations",
-          intensity: "Élevée sur les sprints — récup complète",
-          details: [
-            `Échauffement ${warm}m : nage tranquille + 4×${pool}m avec palmes`,
-            `Accélérations ${sprCnt}×${pool}m : nage à fond sur une longueur — reprends ton souffle (min 45s) avant la suivante`,
-            `Kick planche ${4 * pool}m : jambes à fond — maximal`,
-            `Retour calme ${cool}m : nage très lente`,
-          ],
-        },
-        {
-          title: "Départs & flèches",
-          intensity: "Explosive",
-          details: [
-            `Échauffement ${warm}m : nage libre + quelques poussées de mur`,
-            `Flèches : 6× poussée mur → corps gainé → flèche 10 m en apnée → crawl. Récup 1 min`,
-            `Sprints ${sprCnt}×${pool}m : départ du mur, sprint total — récup 45s minimum`,
-            `Retour calme ${cool}m : brasse très lente`,
-          ],
-        },
-        {
-          title: "Vitesse avec palmes",
-          intensity: "Élevée",
-          details: [
-            `Échauffement ${warm}m : facile`,
-            `Avec palmes ${sprCnt}×${pool}m : nage vite — sens la puissance des jambes et reste gainé·e`,
-            `Sans palmes ${4 * pool}m : reproduis la même sensation — garde le même corps`,
-            `Retour calme ${cool}m : dos lent`,
-          ],
-        },
-      ];
-      return { type: "VITESSE", ...variants[v] };
-    }
+    const WARM  = 200 + 4 * P;
+    const COOL  = 200;
+    const avail = dist - WARM - COOL;
+
+    // Sprint reps: always 1 pool length (max effort needs short reps)
+    const spRep = P;
+    const nSpr  = Math.max(6, Math.min(12, Math.round(avail * 0.5 / spRep)));
+
+    // Secondary: pull or kick
+    const nSec  = Math.max(2, Math.round((avail - nSpr * spRep) / (2 * P)));
+
+    // Full recovery times
+    const fullRecup = ['2:00', '1:30', '1:00'][lvl];
+    const diSec     = calcDI(2 * P, lvl, 'easy');
 
     const variants = [
       {
         title: "Sprints maximaux",
         intensity: isAdv ? "Z5/Z6 — 100 % effort" : "Z5 — sprint total",
         details: [
-          `Échauffement ${warm}m : crawl progressif + 4×${pool}m palmes + 2 départs de mur`,
-          `Flèches 6×15 m : poussée mur → corps gainé comme une torpille — sans bouger le plus loin possible`,
-          `Sprints ${sprCnt}×${pool}m : 100 % — départ toutes les 2–3 min. Récup COMPLÈTE. Qualité > quantité`,
-          `Retour calme ${cool}m : crawl très lent, rotation épaules consciente`,
+          `Échauffement ${WARM}m : 200m progressif + 4×${P}m palmes + 2 départs de mur`,
+          `Flèches 6×12m : poussée mur → corps gainé en torpille → coulée max en apnée`,
+          `${nSpr}×${spRep}m SPRINT MAX — départ toutes les ${fullRecup}. Récup COMPLÈTE obligatoire — qualité > quantité`,
+          `Décompression ${nSec}×${2 * P}m pull-buoy — récup 15s — allure facile, relâche`,
+          `Retour calme ${COOL}m : dos lent`,
         ],
       },
       {
         title: "Puissance palettes",
         intensity: "Z5 — puissance de bras",
-        details: [
-          `Échauffement ${warm}m : crawl + dos + 4×${pool}m accélérations construites`,
-          `Palettes + pull-buoy ${4 * pool}m : coude haut, pression max dans la paume dès l'entrée de main`,
-          `Sprints ${sprCnt}×${pool}m : sans matériel — reproduis la même 'prise' dans l'eau`,
-          `Descente ${4 * pool}m : 2×${pool}m palettes → 2×${pool}m mains nues — garde la même sensation de grip`,
-          `Retour calme ${cool}m : brasse lente`,
-        ],
+        details: (() => {
+          const palRep = 2 * P;
+          const nPal   = Math.max(4, Math.round(avail * 0.45 / palRep));
+          const nSp2   = Math.max(4, Math.round((avail - nPal * palRep) * 0.7 / P));
+          const nKick  = Math.max(2, Math.round((avail - nPal * palRep - nSp2 * P) / P));
+          const diPal  = calcDI(palRep, lvl, 'easy');
+          return [
+            `Échauffement ${WARM}m : 200m crawl + 4×${P}m accélérations construites`,
+            `Palettes + pull-buoy ${nPal}×${palRep}m départ toutes les ${diPal} — coude haut, pression max dès l'entrée de main`,
+            `${nSp2}×${P}m SPRINT sans matériel — récup ${fullRecup} — reproduis la même prise d'eau`,
+            `Kick explosif ${nKick}×${P}m — récup 15s — fouet des chevilles depuis les cuisses`,
+            `Retour calme ${COOL}m : crawl lent`,
+          ];
+        })(),
       },
       {
-        title: "25 m explosifs",
-        intensity: "Z5/Z6 — maximal sur courte distance",
-        details: [
-          `Échauffement ${warm}m : progressif + 4 accélérations sur la 2e moitié de longueur`,
-          `Séquence coulées : 4 flèches en apnée — 12 m sans brasse, corps aligné tête-pieds`,
-          `${sprCnt * 2}×${pool}m sprint maximal — départ toutes les 2 min, récup complète`,
-          `Kick décompression ${4 * pool}m : planche, jambes légères, décrispe les mains`,
-          `Retour calme ${cool}m : nage au choix, très lente`,
-        ],
+        title: "Accélérations construites",
+        intensity: "Z4→Z5 — montée en puissance sur chaque rep",
+        details: (() => {
+          const buildRep = 2 * P;
+          const nBuild   = Math.max(4, Math.round(avail * 0.55 / buildRep));
+          const nFlèche  = 4;
+          const nKick    = Math.max(2, Math.round((avail - nBuild * buildRep) / P));
+          const diB      = calcDI(buildRep, lvl, 'threshold');
+          return [
+            `Échauffement ${WARM}m : 200m progressif + 4×${P}m build-up`,
+            `Flèches ${nFlèche}×12m : poussée mur → coulée max — corps aligné tête-pieds`,
+            `${nBuild}×${buildRep}m départ toutes les ${diB} — 1re moitié à 70%, derniers ${P}m à 95% — accélère proprement`,
+            `Kick explosif ${nKick}×${P}m — récup 20s — jambes à fond`,
+            `Retour calme ${COOL}m : nage très lente`,
+          ];
+        })(),
       },
     ];
     return { type: "VITESSE", ...variants[v] };
@@ -1341,9 +1329,18 @@ const SESSION_TEMPLATES = {
 
   technique: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner";
+    const isAdv = level === "advanced";
+    const P = pool;
     const v = weekIdx % 4;
-    const block = 4 * pool;
-    const integ = Math.max(dist - 14 * pool, pool * 2);
+
+    // Technique sessions: structured as drill blocks of 4-6 × pool
+    const WARM  = 2 * P;
+    const COOL  = 2 * P;
+    const avail = dist - WARM - COOL;
+    const drillBlock = 6 * P;   // main drill block
+    const secBlock   = 4 * P;   // secondary drill block
+    const nDrillSets = 2;       // 2 drill types
+    const integ = Math.max(avail - nDrillSets * drillBlock - secBlock, 2 * P);
 
     if (isBeg) {
       const variants = [
@@ -1351,39 +1348,39 @@ const SESSION_TEMPLATES = {
           title: "Planche & pull-buoy",
           intensity: "Facile — qualité du mouvement",
           details: [
-            `Kick planche ${6 * pool}m : 6×${pool}m — jambes actives, corps horizontal, talons qui effleurent la surface`,
-            `Pull-buoy ${6 * pool}m : bras seuls, jambes immobiles — sens le travail des épaules`,
-            `Comparaison ${block}m : 2×${pool}m avec pull-buoy / 2×${pool}m nage complète — compare la sensation`,
+            `Kick planche ${drillBlock}m : 6×${P}m — jambes actives, corps horizontal, talons effleurant la surface`,
+            `Pull-buoy ${drillBlock}m : 6×${P}m bras seuls — sens le travail des épaules et des bras`,
+            `Comparaison ${secBlock}m : 2×${P}m pull-buoy → 2×${P}m nage complète — ressens la différence`,
             `Nage libre ${integ}m : intègre tout, reste relâché·e`,
           ],
         },
         {
-          title: "Fist drill — ressentir l'eau",
+          title: "Fist drill — sentir l'eau",
           intensity: "Facile — ressentir l'avant-bras",
           details: [
-            `Fist drill ${6 * pool}m : poings fermés — l'avant-bras devient ta surface de propulsion`,
-            `Mains ouvertes ${block}m : reprends la nage normale — sens la différence de 'grip' dans l'eau`,
-            `Kick planche ${4 * pool}m : jambes régulières, corps droit`,
-            `Nage complète ${integ}m : pense à 'accrocher' l'eau avec la paume et l'avant-bras`,
+            `Fist drill ${drillBlock}m : 6×${P}m poings fermés — l'avant-bras accroche l'eau à la place de la main`,
+            `Mains ouvertes ${drillBlock}m : 6×${P}m nage normale — ressens le 'grip' retrouvé`,
+            `Kick planche ${secBlock}m : 4×${P}m — jambes régulières, corps horizontal`,
+            `Nage libre ${integ}m : garde la sensation de prise d'eau profonde`,
           ],
         },
         {
           title: "Respiration bilatérale",
-          intensity: "Facile — coordination",
+          intensity: "Facile — coordination respiratoire",
           details: [
-            `Crawl 3 temps ${6 * pool}m : inspire à droite → 2 bras → inspire à gauche — régulier et fluide`,
-            `Côté dominant ${block}m : 2×${pool}m respirations côté droit uniquement, 2×${pool}m côté gauche`,
-            `Brasse lente ${4 * pool}m : expire complètement sous l'eau, glisse 2 secondes avant chaque bras`,
-            `Nage libre ${integ}m : pratique la respiration 3 temps en continu`,
+            `Crawl 3 temps ${drillBlock}m : 6×${P}m — inspire à droite → 2 bras → inspire à gauche`,
+            `Côté unique ${drillBlock}m : 3×${P}m côté droit, 3×${P}m côté gauche — respiration unilatérale`,
+            `Brasse lente ${secBlock}m : 4×${P}m — expire sous l'eau, glisse 2s avant chaque cycle`,
+            `Nage libre ${integ}m : applique la respiration 3 temps en continu`,
           ],
         },
         {
-          title: "Dos & coordination",
+          title: "Dos & position du corps",
           intensity: "Facile — position du corps",
           details: [
-            `Dos crawlé ${6 * pool}m : bras qui sortent tendus, regard au plafond — sens la rotation des épaules`,
-            `Kick dos ${block}m : bras le long du corps, jambes seules — garde les hanches en surface`,
-            `Crawl lent ${4 * pool}m : compte tes bras (vise 18–22 par longueur ${pool}m)`,
+            `Dos crawlé ${drillBlock}m : 6×${P}m — regard au plafond, épaule qui sort en premier`,
+            `Kick dos ${drillBlock}m : 6×${P}m bras le long du corps — garde les hanches en surface`,
+            `Crawl lent ${secBlock}m : 4×${P}m — compte tes bras (vise 18–22 cycles par longueur)`,
             `Nage libre ${integ}m : focus sur la glisse après chaque virage`,
           ],
         },
@@ -1391,47 +1388,46 @@ const SESSION_TEMPLATES = {
       return { type: "TECHNIQUE", ...variants[v] };
     }
 
-    const isAdv = level === "advanced";
-    const targetCycles = isAdv ? "15–18" : "18–22";
+    const cycleTarget = isAdv ? "15–18" : "18–22";
     const variants = [
       {
         title: "Catch-up drill & DPS",
         intensity: "Faible — distance par cycle (DPS)",
         details: [
-          `Catch-up drill ${6 * pool}m : bras tendu devant, attend que la main adverse 'touche' avant de tirer — cherche la glisse`,
-          `Comptage DPS ${block}m : 4×${pool}m — compte les cycles, vise ${targetCycles} par longueur — note tes chiffres`,
-          `Negative split DPS ${4 * pool}m : 4×${pool}m — 1re moitié avec moins de bras, accélère proprement sur la 2e`,
-          `Nage intégrée ${integ}m : réduis d'1 cycle de bras par longueur vs ta normale`,
+          `Catch-up drill ${drillBlock}m : 6×${P}m — bras tendu devant, attend que la main adverse arrive avant de tirer`,
+          `Comptage DPS ${secBlock}m : 4×${P}m — compte tes cycles, vise ${cycleTarget}/longueur, note les chiffres`,
+          `Negative split DPS ${drillBlock}m : 6×${P}m — 1re moitié avec 2 cycles de moins, accélère sur la 2e`,
+          `Nage intégrée ${integ}m : réduis d'1 cycle par longueur vs ta normale`,
         ],
       },
       {
         title: "Fist drill & prise d'eau",
         intensity: "Faible — qualité de la prise",
         details: [
-          `Fist drill ${6 * pool}m : poings fermés — force à utiliser l'avant-bras pour 'accrocher' l'eau`,
-          `Transition poing→mains ${block}m : alterne ${pool / 2}m poings / ${pool / 2}m ouvertes par longueur — sens le grip`,
-          `Finger drag ${4 * pool}m : au retour de bras, doigts qui glissent sur la surface — coude haut, trajectoire contrôlée`,
-          `Nage normale ${integ}m : reproduis la prise d'eau 'profonde' — coude haut, tirage sous l'axe du corps`,
+          `Fist drill ${drillBlock}m : 6×${P}m poings fermés — accroche l'eau avec l'avant-bras`,
+          `Poing→mains ${drillBlock}m : alterne 1 longueur poings / 1 longueur ouvertes — sens le grip`,
+          `Finger drag ${secBlock}m : 4×${P}m — doigts glissent sur la surface au retour, coude haut`,
+          `Nage normale ${integ}m : prise d'eau profonde, tirage sous l'axe du corps`,
         ],
       },
       {
         title: "6-kick drill & rotation",
         intensity: "Faible — alignement et rotation",
         details: [
-          `6-kick drill ${6 * pool}m : bras tendu devant, 6 battements sur le côté avant de tirer — rotation consciente des hanches`,
-          `Kick latéral ${block}m : corps à 90° sur le côté, bras du dessous tendu — 1 longueur côté droit / 1 côté gauche`,
-          `Rotation exagérée ${4 * pool}m : sur-exagère la rotation des hanches — cherche à 'couper' l'eau proprement`,
-          `Nage normale ${integ}m : intègre la rotation — vise ${targetCycles} cycles/longueur`,
+          `6-kick drill ${drillBlock}m : 6×${P}m — bras tendu devant, 6 battements sur le côté avant de tirer`,
+          `Kick latéral ${drillBlock}m : 3×${P}m côté droit / 3×${P}m côté gauche — corps à 90°`,
+          `Rotation exagérée ${secBlock}m : 4×${P}m — épaule entre en premier, sur-exagère la rotation`,
+          `Nage normale ${integ}m : intègre la rotation — vise ${cycleTarget} cycles/longueur`,
         ],
       },
       {
         title: "Virages & coulées",
         intensity: "Faible — travail des virages",
         details: [
-          `Coulées ${6 * pool}m : après chaque virage, flèche maximale en corps gainé avant le 1er bras — compte tes mètres`,
-          `Flip turns ${block}m : 4×${pool}m — focus uniquement sur la culbute, la poussée et la flèche`,
-          `Accélérations 4×${pool}m : 80 % — soigne chaque départ de longueur et chaque virage`,
-          `Nage continue ${integ}m : chaque virage = opportunité de regagner de l'élan`,
+          `Coulées ${drillBlock}m : 6×${P}m — après chaque virage, flèche max gainée avant le 1er bras`,
+          `Flip turns ${drillBlock}m : 6×${P}m focus uniquement sur culbute, poussée, flèche`,
+          `Accélérations ${secBlock}m : 4×${P}m à 80% — soigne chaque départ et chaque virage`,
+          `Nage continue ${integ}m : chaque virage = relance d'élan`,
         ],
       },
     ];
@@ -1440,9 +1436,14 @@ const SESSION_TEMPLATES = {
 
   récupération: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner";
+    const P = pool;
     const v = weekIdx % 2;
-    const a = Math.round(dist * 0.35 / 50) * 50 || 200;
-    const b = Math.round(dist * 0.35 / 50) * 50 || 200;
+
+    // All blocks snapped to 2×pool lengths
+    const repR = 2 * P;
+    const nA   = Math.max(2, Math.round(dist * 0.35 / repR));
+    const nB   = Math.max(2, Math.round(dist * 0.35 / repR));
+    const nC   = Math.max(2, Math.round((dist - nA * repR - nB * repR) / repR));
 
     if (isBeg) {
       const variants = [
@@ -1450,19 +1451,19 @@ const SESSION_TEMPLATES = {
           title: "Nage libre douce",
           intensity: "Très facile — récupère",
           details: [
-            `${a}m nage libre : brasse, dos ou crawl à ton choix — si tu souffles, c'est trop vite`,
-            `4×${pool}m dos crawlé : bras alternés, regard au plafond, relâche la nuque`,
-            `${b}m brasse très lente : inspire droit vers l'avant, glisse 2 s entre chaque bras`,
-            `Fin : reste 2 min dans l'eau, étire doucement bras et épaules`,
+            `${nA}×${repR}m nage libre — récup 10s — brasse, dos ou crawl : si tu souffles c'est trop vite`,
+            `${nC}×${repR}m dos crawlé — récup 10s — bras tendus, regard au plafond, relâche la nuque`,
+            `${nB}×${repR}m brasse très lente — récup 10s — expire sous l'eau, glisse 2s entre chaque cycle`,
+            `Fin : 2 min en étoile sur le dos — relâche tout`,
           ],
         },
         {
           title: "Dos & respiration",
           intensity: "Très facile",
           details: [
-            `${a}m dos crawlé : bras tendus qui sortent droit, pieds mous — pense à flotter`,
-            `4×${pool}m brasse : très lente, expire longuement sous l'eau avant d'inspirer`,
-            `${b}m crawl lent : 1 longueur respirations tous les 2 temps, 1 longueur tous les 3 temps`,
+            `${nA}×${repR}m dos crawlé — récup 10s — pieds mous, hanches en surface, pense à flotter`,
+            `${nC}×${repR}m brasse très lente — récup 10s — expire longuement sous l'eau avant d'inspirer`,
+            `${nB}×${repR}m crawl lent — récup 10s — alterne 1 longueur resp 2 temps / 1 longueur resp 3 temps`,
             `Fin : 2 min en étoile sur le dos — relâche tout`,
           ],
         },
@@ -1475,20 +1476,20 @@ const SESSION_TEMPLATES = {
         title: "Récupération active",
         intensity: "Z1 — très facile",
         details: [
-          `${a}m nage croisée : change de nage à chaque longueur (crawl / dos / brasse) — aucune pression`,
-          `Respiration alternée ${4 * pool}m : 2×${pool}m inspirations côté droit uniquement, 2×${pool}m côté gauche`,
-          `${b}m crawl très lent : après chaque virage, glisse le plus loin possible — cherche l'allongement`,
-          `4×${pool}m dos crawlé : bras qui sortent tendus, épaule sort en premier — scan corporel`,
+          `${nA}×${repR}m nage croisée — récup 10s — change de nage à chaque longueur (crawl/dos/brasse)`,
+          `${nC}×${repR}m dos crawlé — récup 10s — épaule sort en premier, scan corporel complet`,
+          `${nB}×${repR}m crawl très lent — récup 10s — coulée max après chaque virage, cherche l'allongement`,
+          `4×${P}m brasse — récup 10s — expire complètement sous l'eau, glisse 3s`,
         ],
       },
       {
-        title: "Sculling & glisse",
+        title: "Sculling & relâchement",
         intensity: "Z1 — ressentir l'eau",
         details: [
-          `Sculling ${4 * pool}m : mains en 'figure 8' devant soi, corps horizontal — sens la portance de l'eau`,
-          `${a}m dos lent : jambes molles, bras relâchés — récupère mentalement aussi`,
-          `${b}m crawl : pense uniquement à compter tes longueurs — méditation active`,
-          `4×${pool}m brasse ultra-lente : glisse 3 secondes entre chaque bras, expire complètement`,
+          `Sculling ${4 * P}m : 4×${P}m — mains en 'figure 8' devant soi, sens la portance — récup 10s`,
+          `${nA}×${repR}m dos lent — récup 10s — jambes molles, bras relâchés, récupère mentalement`,
+          `${nB}×${repR}m crawl lent — récup 10s — compte uniquement tes longueurs, méditation active`,
+          `${nC}×${repR}m brasse ultra-lente — récup 10s — glisse 3s entre chaque cycle`,
         ],
       },
     ];
