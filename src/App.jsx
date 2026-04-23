@@ -603,10 +603,20 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const handleCheckout = async () => {
     setLoading(true); setErr(null);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", { body: { origin: window.location.origin } });
-      if (error) throw error;
-      if (data?.url) { window.location.href = data.url; return; }
-      throw new Error("Lien de paiement introuvable");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Connecte-toi d'abord.");
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ origin: window.location.origin }),
+      });
+      const json = await res.json();
+      if (json.url) { window.location.href = json.url; return; }
+      throw new Error(json.error || "Lien de paiement introuvable");
     } catch (e) { setErr(e.message || "Erreur lors de la redirection."); setLoading(false); }
   };
   return (
