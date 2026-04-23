@@ -263,7 +263,7 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   </div>
 );
 
-const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
+const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade, onUserUpdate }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName,  setLastName]  = useState("");
   const [age,       setAge]       = useState("");
@@ -294,6 +294,8 @@ const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
       if (password) updates.password = password;
       const { error } = await supabase.auth.updateUser(updates);
       if (error) throw error;
+      const { data: { user: refreshed } } = await supabase.auth.getUser();
+      if (refreshed) onUserUpdate(refreshed);
       setMsg({ type: "ok", text: "Profil mis à jour ✓" });
       setPassword("");
     } catch (e) { setMsg({ type: "err", text: e.message }); }
@@ -1556,7 +1558,7 @@ export default function App() {
         {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
         {activeTab === "stats"   && <StatsTab   plan={plan} />}
         {activeTab === "badges"  && <BadgesTab  plan={plan} />}
-        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} />}
+        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onUserUpdate={setUser} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
