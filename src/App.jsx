@@ -201,7 +201,7 @@ const createShareCanvas = (session, goalLabel) => {
   ctx.save(); ctx.globalAlpha = 0.07; ctx.strokeStyle = "#0057FF"; ctx.lineWidth = 3;
   [130, 220, 310, 400].forEach(r => { ctx.beginPath(); ctx.arc(980, 160, r, 0, Math.PI * 2); ctx.stroke(); });
   ctx.restore();
-  ctx.fillStyle = "rgba(255,255,255,0.88)"; ctx.font = "bold 34px sans-serif"; ctx.fillText("AquaPlan", 80, 126);
+  ctx.fillStyle = "rgba(255,255,255,0.88)"; ctx.font = "bold 34px sans-serif"; ctx.fillText("MySWYM", 80, 126);
   ctx.fillStyle = "#00C48C"; crr(ctx, 80, 196, 300, 58, 29); ctx.fill();
   ctx.fillStyle = "#fff"; ctx.font = "bold 24px sans-serif"; ctx.fillText("Séance terminée", 108, 234);
   const tc = { ENDURANCE: "#4080FF", SEUIL: "#FF6D00", VITESSE: "#FF4757", TECHNIQUE: "#00B4D8", RÉCUPÉRATION: "#00C48C" };
@@ -221,7 +221,7 @@ const createShareCanvas = (session, goalLabel) => {
     ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 40px sans-serif"; ctx.fillText(s.value, x + 20, 734);
   });
   if (goalLabel) { ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.font = "400 26px sans-serif"; ctx.fillText(`Objectif : ${goalLabel}`, 80, 854); }
-  ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "400 22px sans-serif"; ctx.fillText("aquatrack-iota-lyart.vercel.app", 80, 1016);
+  ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "400 22px sans-serif"; ctx.fillText("myswym.vercel.app", 80, 1016);
   return canvas;
 };
 
@@ -416,7 +416,7 @@ const AuthScreen = ({ onAuth }) => {
         <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Waves size={20} color={G.white} />
         </div>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>AquaPlan</span>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
       </div>
       <div className="fade-up">
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Bienvenue</h2>
@@ -590,13 +590,13 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
   const handleDownload = () => {
     const canvas = createShareCanvas(session, goalLabel);
     const link = document.createElement("a");
-    link.download = "aquaplan-seance.png"; link.href = canvas.toDataURL("image/png"); link.click();
+    link.download = "myswym-seance.png"; link.href = canvas.toDataURL("image/png"); link.click();
   };
   const handleShare = async () => {
     if (!navigator.share) { handleDownload(); return; }
     const canvas = createShareCanvas(session, goalLabel);
     canvas.toBlob(async (blob) => {
-      try { await navigator.share({ files: [new File([blob], "aquaplan-seance.png", { type: "image/png" })], title: "Ma séance AquaPlan" }); }
+      try { await navigator.share({ files: [new File([blob], "myswym-seance.png", { type: "image/png" })], title: "Ma séance MySWYM" }); }
       catch { handleDownload(); }
     });
   };
@@ -733,7 +733,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
             <Zap size={28} color={G.gold} />
           </div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>AquaPlan Premium</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
             ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as accès aux <span style={{ color: G.water, fontWeight: 600 }}>{FREE_WEEKS_LIMIT} premières semaines gratuites</span>.<br />Passe premium pour débloquer la suite.</p>
             : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>}
@@ -1400,8 +1400,8 @@ export default function App() {
       }
     } catch {}
     try {
-      const sp = localStorage.getItem(`aquaplan_profile_${userId}`);
-      const spl = localStorage.getItem(`aquaplan_plan_${userId}`);
+      const sp = localStorage.getItem(`myswym_profile_${userId}`);
+      const spl = localStorage.getItem(`myswym_plan_${userId}`);
       if (sp && spl) { setProfile(JSON.parse(sp)); setPlan(JSON.parse(spl)); setScreen("app"); }
     } catch {}
   };
@@ -1409,8 +1409,8 @@ export default function App() {
   useEffect(() => {
     if (plan && profile.goal && user) {
       try {
-        localStorage.setItem(`aquaplan_profile_${user.id}`, JSON.stringify(profile));
-        localStorage.setItem(`aquaplan_plan_${user.id}`, JSON.stringify(plan));
+        localStorage.setItem(`myswym_profile_${user.id}`, JSON.stringify(profile));
+        localStorage.setItem(`myswym_plan_${user.id}`, JSON.stringify(plan));
       } catch {}
       supabase.from("user_plans").upsert({ user_id: user.id, profile, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).then(() => {});
     }
@@ -1456,7 +1456,7 @@ export default function App() {
   };
 
   const handleReset = () => {
-    if (user) { localStorage.removeItem(`aquaplan_profile_${user.id}`); localStorage.removeItem(`aquaplan_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
+    if (user) { localStorage.removeItem(`myswym_profile_${user.id}`); localStorage.removeItem(`myswym_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
     setScreen("onboarding"); setStep(1);
     setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
     setPlan(null); prevBadgesRef.current = [];
@@ -1509,7 +1509,7 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 38, height: 38, background: G.ink, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center" }}><Waves size={18} color={G.white} /></div>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>AquaPlan</span>
+                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {isPremium && (
