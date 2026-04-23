@@ -288,6 +288,7 @@ const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
   const save = async () => {
     setSaving(true); setMsg(null);
     try {
+      const meta = user?.user_metadata || {};
       const updates = { user_metadata: { ...meta, first_name: firstName, last_name: lastName, age, weight } };
       if (email !== user?.email) updates.email = email;
       if (password) updates.password = password;
