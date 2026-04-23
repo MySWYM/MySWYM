@@ -10,7 +10,6 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Non authentifié");
@@ -21,20 +20,17 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Utilisateur introuvable");
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) throw new Error("Utilisateur introuvable");
 
-    const { origin, priceId } = await req.json();
-    const price = priceId || Deno.env.get("STRIPE_PRICE_ID")!;
+    const customerId = user.user_metadata?.stripe_customer_id;
+    if (!customerId) throw new Error("Aucun abonnement actif trouvé");
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "subscription",
-      line_items: [{ price, quantity: 1 }],
-      success_url: `${origin}?payment=success`,
-      cancel_url: `${origin}?payment=cancel`,
-      client_reference_id: user.id,
-      customer_email: user.email,
+    const { origin } = await req.json();
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: origin,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data?.object;
     const userId = session?.client_reference_id;
+    const customerId = session?.customer;
 
     if (userId) {
       const supabaseAdmin = createClient(
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
       await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { subscription: "premium" },
+        user_metadata: { subscription: "premium", stripe_customer_id: customerId },
       });
     }
   }

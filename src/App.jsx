@@ -597,57 +597,82 @@ const PREMIUM_FEATURES = [
   { Icon: Award,      label: "Tous les badges",       desc: "Collection complète débloquée" },
 ];
 
+const PRICE_MONTHLY = "price_1TP5yOAVxucD4jHaRYk2cbHC";
+const PRICE_ANNUAL  = "price_1TPKQfAVxucD4jHaUDssY5cs";
+
 const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
+  const [period, setPeriod] = useState("annual");
+
+  const callFunction = async (fnName, body) => {
+    const { data: refreshData } = await supabase.auth.refreshSession();
+    const session = refreshData?.session;
+    if (!session) throw new Error("Connecte-toi d'abord.");
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fnName}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  };
+
   const handleCheckout = async () => {
     setLoading(true); setErr(null);
     try {
-      const { data: refreshData } = await supabase.auth.refreshSession();
-      const session = refreshData?.session;
-      if (!session) throw new Error("Connecte-toi d'abord.");
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-          "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ origin: window.location.origin }),
-      });
-      const json = await res.json();
+      const priceId = period === "annual" ? PRICE_ANNUAL : PRICE_MONTHLY;
+      const json = await callFunction("create-checkout", { origin: window.location.origin, priceId });
       if (json.url) { window.location.href = json.url; return; }
       throw new Error(json.error || "Lien de paiement introuvable");
-    } catch (e) { setErr(e.message || "Erreur lors de la redirection."); setLoading(false); }
+    } catch (e) { setErr(e.message || "Erreur."); setLoading(false); }
   };
+
+  const isAnnual = period === "annual";
+  const monthlyPrice = isAnnual ? "3,33 €" : "4,99 €";
+  const totalLabel = isAnnual ? "39,99 € / an" : "4,99 € / mois";
+  const saving = isAnnual ? "Économise 33%" : null;
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", borderRadius: 20, padding: "24px 20px", marginBottom: 24, textAlign: "center" }}>
+        <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", borderRadius: 20, padding: "24px 20px", marginBottom: 20, textAlign: "center" }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
             <Zap size={28} color={G.gold} />
           </div>
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>AquaPlan Premium</h3>
           {weeksBlocked
             ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as accès aux <span style={{ color: G.water, fontWeight: 600 }}>{FREE_WEEKS_LIMIT} premières semaines gratuites</span>.<br />Passe premium pour débloquer la suite.</p>
-            : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>
-          }
+            : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+
+        {/* Toggle mensuel / annuel */}
+        <div style={{ display: "flex", background: G.greyXLight, borderRadius: 12, padding: 4, marginBottom: 16, gap: 4 }}>
+          {["monthly", "annual"].map(p => (
+            <button key={p} onClick={() => setPeriod(p)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: period === p ? G.white : "transparent", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13, color: period === p ? G.ink : G.grey, cursor: "pointer", boxShadow: period === p ? "0 1px 4px rgba(0,0,0,0.1)" : "none", transition: "all 0.18s", position: "relative" }}>
+              {p === "monthly" ? "Mensuel" : "Annuel"}
+              {p === "annual" && <span style={{ position: "absolute", top: -8, right: 8, background: G.blue, color: G.white, fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20 }}>-33%</span>}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
           {PREMIUM_FEATURES.map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: G.greyXLight, borderRadius: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={18} color={G.blue} /></div>
-              <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>{f.label}</div><div style={{ fontSize: 12, color: G.grey }}>{f.desc}</div></div>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: G.greyXLight, borderRadius: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={16} color={G.blue} /></div>
+              <div><div style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>{f.label}</div><div style={{ fontSize: 11, color: G.grey }}>{f.desc}</div></div>
             </div>
           ))}
         </div>
+
         <div style={{ background: G.blueLight, borderRadius: 14, padding: "14px 16px", marginBottom: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.blue, marginBottom: 2 }}>4,99 € / mois</div>
-          <div style={{ fontSize: 12, color: G.blue }}>Annulable à tout moment</div>
+          <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.blue, marginBottom: 2 }}>{monthlyPrice} <span style={{ fontSize: 15, fontWeight: 500 }}>/ mois</span></div>
+          <div style={{ fontSize: 12, color: G.blue }}>{isAnnual ? `Facturé ${totalLabel} · Annulable à tout moment` : "Annulable à tout moment"}</div>
+          {saving && <div style={{ marginTop: 6, display: "inline-block", background: G.blue, color: G.white, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>{saving} vs mensuel</div>}
         </div>
+
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
-        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>{loading ? "Redirection…" : "Passer en premium — 4,99 €/mois"}</Btn>
+        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>{loading ? "Redirection…" : `Démarrer — ${totalLabel}`}</Btn>
         <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
       </div>
     </div>
@@ -1254,13 +1279,14 @@ export default function App() {
   // Régénère le plan quand le premium est débloqué et que le plan était limité
   useEffect(() => {
     if (isPremium && plan && profile.goal && plan.totalRealWeeks > plan.weeks.length) {
+      setScreen("loading");
       generatePlan(profile, true).then(newPlan => {
         setPlan(newPlan);
         setScreen("app");
         setActiveTab("home");
       });
     }
-  }, [isPremium]);
+  }, [isPremium, plan?.weeks?.length]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -1345,6 +1371,21 @@ export default function App() {
 
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
+  const handlePortal = async () => {
+    try {
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      const session = refreshData?.session;
+      if (!session) return;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({ origin: window.location.origin }),
+      });
+      const json = await res.json();
+      if (json.url) window.location.href = json.url;
+    } catch {}
+  };
+
   const goal = GOALS.find(g => g.id === profile.goal);
   const stats = plan ? computeStats(plan) : null;
 
@@ -1377,9 +1418,16 @@ export default function App() {
                 <div style={{ width: 38, height: 38, background: G.ink, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center" }}><Waves size={18} color={G.white} /></div>
                 <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>AquaPlan</span>
               </div>
-              <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                <LogOut size={12} color={G.grey} /> Déco.
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                {isPremium && (
+                  <button onClick={handlePortal} style={{ background: "none", border: `1px solid ${G.blue}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.blue, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Zap size={12} color={G.blue} /> Abonnement
+                  </button>
+                )}
+                <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <LogOut size={12} color={G.grey} /> Déco.
+                </button>
+              </div>
             </div>
             {(() => {
               const wellness = isWellnessGoal(profile.goal);
