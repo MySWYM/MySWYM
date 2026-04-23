@@ -3,8 +3,8 @@ import { supabase } from "./supabase.js";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
-  ChevronDown, ChevronUp, LogOut, Activity,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge,
+  ChevronDown, ChevronUp, LogOut, Activity, User,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -263,12 +263,94 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   </div>
 );
 
+const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
+  const meta = user?.user_metadata || {};
+  const [firstName, setFirstName] = useState(meta.first_name || "");
+  const [lastName,  setLastName]  = useState(meta.last_name  || "");
+  const [age,       setAge]       = useState(meta.age        || "");
+  const [weight,    setWeight]    = useState(meta.weight     || "");
+  const [email,     setEmail]     = useState(user?.email     || "");
+  const [password,  setPassword]  = useState("");
+  const [saving,    setSaving]    = useState(false);
+  const [msg,       setMsg]       = useState(null);
+
+  const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
+  const label = (txt) => <div style={{ fontSize: 11, fontWeight: 600, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>{txt}</div>;
+
+  const save = async () => {
+    setSaving(true); setMsg(null);
+    try {
+      const updates = { user_metadata: { ...meta, first_name: firstName, last_name: lastName, age, weight } };
+      if (email !== user?.email) updates.email = email;
+      if (password) updates.password = password;
+      const { error } = await supabase.auth.updateUser(updates);
+      if (error) throw error;
+      setMsg({ type: "ok", text: "Profil mis à jour ✓" });
+      setPassword("");
+    } catch (e) { setMsg({ type: "err", text: e.message }); }
+    finally { setSaving(false); }
+  };
+
+  const section = (title, children) => (
+    <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>{title}</div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
+      <div style={{ padding: "56px 20px 0" }}>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24 }}>Mon profil</h2>
+
+        {section("Identité",
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>{label("Prénom")}<input style={inp} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Prénom" /></div>
+              <div style={{ flex: 1 }}>{label("Nom")}<input style={inp} value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nom" /></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>{label("Âge")}<input style={inp} type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Ans" /></div>
+              <div style={{ flex: 1 }}>{label("Poids (kg)")}<input style={inp} type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" /></div>
+            </div>
+          </div>
+        )}
+
+        {section("Compte",
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {label("Email")}<input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            {label("Nouveau mot de passe")}<input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Laisser vide pour ne pas changer" />
+          </div>
+        )}
+
+        {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
+        <Btn onClick={save} disabled={saving} variant="blue">{saving ? "Enregistrement…" : "Enregistrer les modifications"}</Btn>
+
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          {isPremium
+            ? <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Zap size={16} color={G.blue} /> Gérer mon abonnement
+              </button>
+            : <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0D1117, #001966)", color: G.white, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Zap size={16} color={G.gold} /> Passer en premium
+              </button>
+          }
+          <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <LogOut size={16} color={G.grey} /> Se déconnecter
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BottomNav = ({ active, onChange, newBadge }) => {
   const tabs = [
-    { id: "home",   Icon: Home,      label: "Accueil" },
-    { id: "plan",   Icon: Calendar,  label: "Programme" },
-    { id: "stats",  Icon: BarChart2, label: "Stats" },
-    { id: "badges", Icon: Award,     label: "Badges" },
+    { id: "home",    Icon: Home,      label: "Accueil" },
+    { id: "plan",    Icon: Calendar,  label: "Programme" },
+    { id: "stats",   Icon: BarChart2, label: "Stats" },
+    { id: "badges",  Icon: Award,     label: "Badges" },
+    { id: "profile", Icon: User,      label: "Profil" },
   ];
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderTop: `1px solid ${G.greyLight}`, display: "flex", padding: "10px 0 max(10px, env(safe-area-inset-bottom))" }}>
@@ -1461,10 +1543,11 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
-        {activeTab === "home"   && <Dashboard plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
-        {activeTab === "plan"   && <PlanTab   plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
-        {activeTab === "stats"  && <StatsTab  plan={plan} />}
-        {activeTab === "badges" && <BadgesTab plan={plan} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
+        {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
+        {activeTab === "stats"   && <StatsTab   plan={plan} />}
+        {activeTab === "badges"  && <BadgesTab  plan={plan} />}
+        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
