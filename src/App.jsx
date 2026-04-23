@@ -1243,10 +1243,24 @@ export default function App() {
     if (params.get("payment") === "success") {
       window.history.replaceState({}, "", window.location.pathname);
       supabase.auth.refreshSession().then(({ data }) => {
-        if (data?.user?.user_metadata?.subscription === "premium") setIsPremium(true);
+        if (data?.user?.user_metadata?.subscription === "premium") {
+          setIsPremium(true);
+          setShowUpgrade(false);
+        }
       });
     }
   }, []);
+
+  // Régénère le plan quand le premium est débloqué et que le plan était limité
+  useEffect(() => {
+    if (isPremium && plan && profile.goal && plan.totalRealWeeks > plan.weeks.length) {
+      generatePlan(profile, true).then(newPlan => {
+        setPlan(newPlan);
+        setScreen("app");
+        setActiveTab("home");
+      });
+    }
+  }, [isPremium]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {

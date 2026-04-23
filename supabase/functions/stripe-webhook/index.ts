@@ -1,55 +1,41 @@
-import Stripe from "https://esm.sh/stripe@14?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
+async function verifyStripeSignature(body: string, sigHeader: string, secret: string): Promise<boolean> {
+  const timestamp = sigHeader.split(",").find(p => p.startsWith("t="))?.slice(2);
+  const signature = sigHeader.split(",").find(p => p.startsWith("v1="))?.slice(3);
+  if (!timestamp || !signature) return false;
+
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+  const computed = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return computed === signature;
+}
 
 Deno.serve(async (req) => {
-  const signature = req.headers.get("stripe-signature");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const sigHeader = req.headers.get("stripe-signature") ?? "";
+  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
 
-  if (!signature || !webhookSecret) {
-    return new Response("Missing signature or secret", { status: 400 });
-  }
+  const body = await req.text();
 
-  let event: Stripe.Event;
-  try {
-    const body = await req.text();
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err) {
-    return new Response(`Webhook error: ${err.message}`, { status: 400 });
-  }
+  const valid = await verifyStripeSignature(body, sigHeader, webhookSecret);
+  if (!valid) return new Response("Invalid signature", { status: 400 });
+
+  const event = JSON.parse(body);
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.client_reference_id;
+    const session = event.data?.object;
+    const userId = session?.client_reference_id;
 
     if (userId) {
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
-
       await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: { subscription: "premium" },
-      });
-    }
-  }
-
-  if (event.type === "customer.subscription.deleted") {
-    const sub = event.data.object as Stripe.Subscription;
-    const customerId = sub.customer as string;
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Find user by stripe customer id stored in metadata
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-    const user = users?.users?.find(u => u.user_metadata?.stripe_customer_id === customerId);
-    if (user) {
-      await supabaseAdmin.auth.admin.updateUserById(user.id, {
-        user_metadata: { subscription: "free" },
       });
     }
   }
