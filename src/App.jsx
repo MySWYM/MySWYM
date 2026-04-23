@@ -1391,6 +1391,23 @@ export default function App() {
     } catch {}
   };
 
+  // Vérifie le statut abonnement automatiquement (retour sur l'app + toutes les 5 min)
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        const premium = data.user?.user_metadata?.subscription === "premium";
+        setUser(data.user);
+        setIsPremium(premium);
+      }
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    const interval = setInterval(check, 5 * 60 * 1000);
+    return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
+  }, [user?.id]);
+
   useEffect(() => {
     if (plan && profile.goal && user) {
       try {
