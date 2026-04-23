@@ -603,7 +603,8 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const handleCheckout = async () => {
     setLoading(true); setErr(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      const session = refreshData?.session;
       if (!session) throw new Error("Connecte-toi d'abord.");
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
