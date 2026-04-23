@@ -263,79 +263,42 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   </div>
 );
 
-const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade, onUserUpdate }) => {
-  const [firstName, setFirstName] = useState("");
-  const [lastName,  setLastName]  = useState("");
-  const [age,       setAge]       = useState("");
-  const [weight,    setWeight]    = useState("");
-  const [email,     setEmail]     = useState("");
-  const [password,  setPassword]  = useState("");
-  const [saving,    setSaving]    = useState(false);
-  const [msg,       setMsg]       = useState(null);
-
-  useEffect(() => {
-    const meta = user?.user_metadata || {};
-    setFirstName(meta.first_name || "");
-    setLastName(meta.last_name   || "");
-    setAge(meta.age              || "");
-    setWeight(meta.weight        || "");
-    setEmail(user?.email         || "");
-  }, [user]);
+const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
+  const [password, setPassword] = useState("");
+  const [saving,   setSaving]   = useState(false);
+  const [msg,      setMsg]      = useState(null);
 
   const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
-  const label = (txt) => <div style={{ fontSize: 11, fontWeight: 600, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>{txt}</div>;
 
   const save = async () => {
+    if (!password) return;
     setSaving(true); setMsg(null);
     try {
-      const meta = user?.user_metadata || {};
-      const updates = { user_metadata: { ...meta, first_name: firstName, last_name: lastName, age, weight } };
-      if (email !== user?.email) updates.email = email;
-      if (password) updates.password = password;
-      const { error } = await supabase.auth.updateUser(updates);
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      const { data: { user: refreshed } } = await supabase.auth.getUser();
-      if (refreshed) onUserUpdate(refreshed);
-      setMsg({ type: "ok", text: "Profil mis à jour ✓" });
+      setMsg({ type: "ok", text: "Mot de passe mis à jour ✓" });
       setPassword("");
     } catch (e) { setMsg({ type: "err", text: e.message }); }
     finally { setSaving(false); }
   };
 
-  const section = (title, children) => (
-    <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>{title}</div>
-      {children}
-    </div>
-  );
-
   return (
     <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
       <div style={{ padding: "56px 20px 0" }}>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24 }}>Mon profil</h2>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24 }}>Mon compte</h2>
 
-        {section("Identité",
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ flex: 1 }}>{label("Prénom")}<input style={inp} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Prénom" /></div>
-              <div style={{ flex: 1 }}>{label("Nom")}<input style={inp} value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nom" /></div>
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ flex: 1 }}>{label("Âge")}<input style={inp} type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Ans" /></div>
-              <div style={{ flex: 1 }}>{label("Poids (kg)")}<input style={inp} type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" /></div>
-            </div>
-          </div>
-        )}
+        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>Email</div>
+          <div style={{ fontSize: 15, color: G.ink, padding: "13px 14px", background: G.greyXLight, borderRadius: 12 }}>{user?.email}</div>
+        </div>
 
-        {section("Compte",
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {label("Email")}<input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} />
-            {label("Nouveau mot de passe")}<input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Laisser vide pour ne pas changer" />
-          </div>
-        )}
+        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>Nouveau mot de passe</div>
+          <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nouveau mot de passe" onKeyDown={e => e.key === "Enter" && save()} />
+        </div>
 
         {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
-        <Btn onClick={save} disabled={saving} variant="blue">{saving ? "Enregistrement…" : "Enregistrer les modifications"}</Btn>
+        <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
 
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {isPremium
@@ -1558,7 +1521,7 @@ export default function App() {
         {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
         {activeTab === "stats"   && <StatsTab   plan={plan} />}
         {activeTab === "badges"  && <BadgesTab  plan={plan} />}
-        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onUserUpdate={setUser} />}
+        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
