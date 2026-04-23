@@ -832,21 +832,22 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, onComplete, onShare, onReset, onUpgrade }) => {
-  const currentWeek = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
-  const isLocked = !plan.isPremium && plan.totalRealWeeks > plan.weeks.length;
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade }) => {
+  const visibleWeeks = isPremium ? plan.weeks : plan.weeks.slice(0, FREE_WEEKS_LIMIT);
+  const currentWeek = visibleWeeks.findIndex(w => !w.sessions.every(s => s.completed));
+  const isLocked = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT;
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ padding: "20px 16px 0" }}>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
-          {plan.weeks.length} semaines · {profile.sessionsPerWeek}×/semaine
-          {isLocked && <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - plan.weeks.length} sem. bloquées</span>}
+          {visibleWeeks.length} semaines · {profile.sessionsPerWeek}×/semaine
+          {isLocked && <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. bloquées</span>}
         </p>
-        {plan.weeks.map((week, i) => (
+        {visibleWeeks.map((week, i) => (
           <WeekCard key={i} week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeek} />
         ))}
-        {isLocked && <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={plan.weeks.length} onUpgrade={onUpgrade} />}
+        {isLocked && <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />}
         <button onClick={onReset} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <RotateCcw size={14} color={G.greyMid} /> Recommencer l'onboarding
         </button>
@@ -1321,12 +1322,15 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
+    const payment = params.get("payment");
+    if (payment) {
       window.history.replaceState({}, "", window.location.pathname);
       supabase.auth.refreshSession().then(({ data }) => {
-        if (data?.user?.user_metadata?.subscription === "premium") {
-          setIsPremium(true);
-          setShowUpgrade(false);
+        if (data?.user) {
+          setUser(data.user);
+          const premium = data.user?.user_metadata?.subscription === "premium";
+          setIsPremium(premium);
+          if (premium) setShowUpgrade(false);
         }
       });
     }
@@ -1378,6 +1382,7 @@ export default function App() {
       supabase.from("user_plans").upsert({ user_id: user.id, profile, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).then(() => {});
     }
   }, [plan, profile, user]);
+
 
   useEffect(() => {
     if (!plan) return;
@@ -1518,7 +1523,7 @@ export default function App() {
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"    && <Dashboard   plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
-        {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
+        {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
         {activeTab === "stats"   && <StatsTab   plan={plan} />}
         {activeTab === "badges"  && <BadgesTab  plan={plan} />}
         {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} />}

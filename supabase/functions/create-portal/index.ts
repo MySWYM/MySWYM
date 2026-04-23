@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: origin,
+      return_url: `${origin}?payment=portal`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
