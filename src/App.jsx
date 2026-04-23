@@ -1142,7 +1142,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL progressif + 100m battements de jambes`,
             `${nM}×${repM}m NL — D${di(repM,lvl,'easy')} — rythme régulier, respiration tous les 3 temps`,
             `${nS}×${repS}m pull-buoy — R20" — bras seuls, coude haut`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
         {
@@ -1152,7 +1152,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL + 100m battements de jambes`,
             `Pyramide : ${pyAll.join('–')}m NL — R15" entre paliers — allure régulière`,
             `${pyFill}×${repS}m pull-buoy — R20"`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
         {
@@ -1162,7 +1162,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL + 100m battements de jambes`,
             `${nM}×${repM}m NL — D${di(repM,lvl,'easy')} — chaque rep légèrement plus rapide`,
             `${nS}×${repS}m battements de jambes planche — R20"`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
       ][v],
@@ -1201,7 +1201,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL progressif + 100m battements de jambes`,
             `${nCSS}×${cssRep}m NL — D${di(cssRep,lvl,'threshold')} — allure 1 500 m, régularité absolue`,
             `${nFin}×${2*P}m battements de jambes — R20"`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
         {
@@ -1211,7 +1211,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL + 100m battements de jambes`,
             `Pyramide seuil : ${pyAll.join('–')}m NL — R20" entre paliers — allure seuil`,
             `${pyFill}×${2*P}m NL — R15" — allure récup`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
         {
@@ -1221,7 +1221,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL + 100m battements de jambes`,
             `${nT}×${tRep}m NL — D${di(tRep,lvl,'threshold')} — allure course 400 m`,
             `${nSprint}×${2*P}m NL — R20" — sprint à 90 %, effort court`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
       ][v],
@@ -1231,13 +1231,15 @@ const SESSION_TEMPLATES = {
   // ── VITESSE ──────────────────────────────────────────────────────────────
   vitesse: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner", isAdv = level === "advanced";
-    const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1, v = weekIdx % 3;
+    const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1, v = weekIdx % 4;
 
     const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
 
     const nSpr   = Math.max(6, Math.min(10, Math.round(avail * 0.5 / P)));
     const nSec   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nSpr*P) / (2*P))));
     const recSpr = isBeg ? "R1'30\"" : isAdv ? "R45\"" : "R1'00\"";
+    const nDive  = Math.max(6, Math.min(10, Math.round(avail * 0.5 / P)));
+    const nRec   = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nDive*P) / (2*P))));
 
     const palRep = 2*P;
     const nPal   = Math.max(4, Math.min(10, Math.floor(avail * 0.5 / palRep)));
@@ -1259,7 +1261,7 @@ const SESSION_TEMPLATES = {
             `6×12m coulées — torpille gainée, flèche max en apnée`,
             `${nSpr}×${P}m SPRINT MAX — ${recSpr} — qualité absolue`,
             `${nSec}×${2*P}m pull-buoy — R20" — récup active`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
         {
@@ -1270,7 +1272,7 @@ const SESSION_TEMPLATES = {
             `${nPal}×${palRep}m palettes + pull-buoy — R20" — coude haut, pression max`,
             `${nSp2}×${P}m SPRINT mains nues — ${recSpr} — reproduis la prise d'eau`,
             `${nKick}×${2*P}m battements de jambes — R20" — fouet des chevilles`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
         {
@@ -1281,7 +1283,18 @@ const SESSION_TEMPLATES = {
             `4×12m coulées — corps aligné, flèche max après poussée`,
             `${nBuild}×${buildRep}m NL — D${di(buildRep,lvl,'threshold')} — 1re moitié Z2, finir à 95 %`,
             `${nKick2}×${2*P}m battements de jambes — R20" — fouet des chevilles`,
-            `Retour au calme :200m dos lent`,
+            `Retour au calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Départs plongée & explosivité",
+          intensity: "Z5/Z6 — explosivité maximale, récup complète",
+          details: [
+            `Échauffement : 200m NL progressif + 100m battements de jambes + 4×${P}m accélérations`,
+            `6×10m départ plongée — R2' — bloc → torpille gainée → 3 premières brasses à fond, stop`,
+            `${nDive}×${P}m SPRINT à bloc — R2' — départ plongée complet, effort total sur chaque longueur`,
+            `${nRec}×${2*P}m pull-buoy — R20" — récup active`,
+            `Retour au calme : 200m dos lent`,
           ],
         },
       ][v],
