@@ -263,7 +263,7 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   </div>
 );
 
-const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
+const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus }) => {
   const [password, setPassword] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
@@ -302,12 +302,22 @@ const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
 
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {isPremium
-            ? <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <Zap size={16} color={G.blue} /> Gérer mon abonnement
-              </button>
-            : <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0D1117, #001966)", color: G.white, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <Zap size={16} color={G.gold} /> Passer en premium
-              </button>
+            ? <>
+                <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <Zap size={16} color={G.blue} /> Gérer mon abonnement
+                </button>
+                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
+                  Actualiser le statut
+                </button>
+              </>
+            : <>
+                <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0D1117, #001966)", color: G.white, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <Zap size={16} color={G.gold} /> Passer en premium
+                </button>
+                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
+                  Actualiser le statut
+                </button>
+              </>
           }
           <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <LogOut size={16} color={G.grey} /> Se déconnecter
@@ -1323,17 +1333,25 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
-    if (payment) {
-      window.history.replaceState({}, "", window.location.pathname);
-      supabase.auth.refreshSession().then(({ data }) => {
-        if (data?.user) {
-          setUser(data.user);
-          const premium = data.user?.user_metadata?.subscription === "premium";
-          setIsPremium(premium);
-          if (premium) setShowUpgrade(false);
-        }
-      });
-    }
+    if (!payment) return;
+    window.history.replaceState({}, "", window.location.pathname);
+
+    const applyUser = (u) => {
+      if (!u) return;
+      setUser(u);
+      const premium = u?.user_metadata?.subscription === "premium";
+      setIsPremium(premium);
+      if (premium) setShowUpgrade(false);
+    };
+
+    // Refresh immédiat
+    supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
+
+    // Retry après 2s et 5s pour laisser le webhook Stripe arriver
+    const t1 = setTimeout(() => supabase.auth.getUser().then(({ data }) => applyUser(data?.user)), 2000);
+    const t2 = setTimeout(() => supabase.auth.getUser().then(({ data }) => applyUser(data?.user)), 5000);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   // Régénère le plan quand le premium est débloqué et que le plan était limité
@@ -1432,6 +1450,14 @@ export default function App() {
 
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
+  const handleRefreshStatus = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      setUser(data.user);
+      setIsPremium(data.user?.user_metadata?.subscription === "premium");
+    }
+  };
+
   const handlePortal = async () => {
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
@@ -1526,7 +1552,7 @@ export default function App() {
         {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
         {activeTab === "stats"   && <StatsTab   plan={plan} />}
         {activeTab === "badges"  && <BadgesTab  plan={plan} />}
-        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} />}
+        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
