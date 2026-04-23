@@ -76,13 +76,17 @@ const css = `
 
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "triathlon_sprint",  label: "Triathlon Sprint",    dist: "750 m",       icon: <Activity size={20} /> },
-  { id: "triathlon_olympic", label: "Triathlon Olympique", dist: "1 500 m",     icon: <Activity size={20} /> },
-  { id: "open_water_5k",     label: "Eau libre 5 km",      dist: "5 km",        icon: <Waves size={20} /> },
-  { id: "open_water_10k",    label: "Eau libre 10 km",     dist: "10 km",       icon: <Waves size={20} /> },
-  { id: "competition_50m",   label: "Compétition piscine", dist: "50–200 m",    icon: <Zap size={20} /> },
-  { id: "fitness",           label: "Forme & bien-être",   dist: "sans objectif", icon: <Droplets size={20} /> },
+  { id: "remise_en_forme",   label: "Remise en forme",       dist: "8 semaines · progressif",      icon: <Flame size={20} />,    wellness: true  },
+  { id: "perte_de_poids",    label: "Perte de poids",         dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
+  { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
+  { id: "triathlon_sprint",  label: "Triathlon Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_olympic", label: "Triathlon Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "open_water_5k",     label: "Eau libre 5 km",         dist: "5 km",                         icon: <Waves size={20} />,    wellness: false },
+  { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
+  { id: "competition_50m",   label: "Compétition piscine",    dist: "50–200 m",                     icon: <Zap size={20} />,      wellness: false },
 ];
+
+const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
 
 const LEVELS = [
   { id: "beginner",     label: "Débutant",      desc: "Je nage depuis moins d'1 an" },
@@ -368,6 +372,37 @@ const Step1_Goal = ({ value, onChange, onNext }) => (
   </div>
 );
 
+const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
+  const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
+  const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Syne', sans-serif", fontWeight: 700, color: G.ink, background: G.white, outline: "none", textAlign: "center" };
+  return (
+    <div className="fade-up">
+      <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
+      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
+        <div style={{ background: G.white, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
+          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Poids actuel (kg)</label>
+          <input type="number" inputMode="decimal" value={weightCurrent} onChange={e => onChangeCurrent(e.target.value)} placeholder="ex : 75" style={inp} />
+        </div>
+        <div style={{ background: G.white, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
+          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Objectif (kg)</label>
+          <input type="number" inputMode="decimal" value={weightGoal} onChange={e => onChangeGoal(e.target.value)} placeholder="ex : 72" style={inp} />
+        </div>
+      </div>
+      {weeks && (
+        <div style={{ background: G.blueLight, borderRadius: 12, padding: "12px 16px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+          <Target size={18} color={G.blue} />
+          <span style={{ fontSize: 14, color: G.blue, fontWeight: 500 }}>Plan de <strong>{weeks} semaines</strong> généré pour −{loss.toFixed(1)} kg</span>
+        </div>
+      )}
+      <Btn onClick={onNext} disabled={!weightCurrent || !weightGoal || parseFloat(weightCurrent) <= parseFloat(weightGoal)}>Continuer</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
+
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   const weeks = weeksUntil(value);
   return (
@@ -562,37 +597,51 @@ const PREMIUM_FEATURES = [
   { Icon: Award,      label: "Tous les badges",       desc: "Collection complète débloquée" },
 ];
 
-const UpgradeModal = ({ onClose, weeksBlocked }) => (
-  <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
-    <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
-      <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-      <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", borderRadius: 20, padding: "24px 20px", marginBottom: 24, textAlign: "center" }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-          <Zap size={28} color={G.gold} />
-        </div>
-        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>AquaPlan Premium</h3>
-        {weeksBlocked
-          ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as accès aux <span style={{ color: G.water, fontWeight: 600 }}>{FREE_WEEKS_LIMIT} premières semaines gratuites</span>.<br />Passe premium pour débloquer la suite.</p>
-          : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>
-        }
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-        {PREMIUM_FEATURES.map((f, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: G.greyXLight, borderRadius: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={18} color={G.blue} /></div>
-            <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>{f.label}</div><div style={{ fontSize: 12, color: G.grey }}>{f.desc}</div></div>
+const UpgradeModal = ({ onClose, weeksBlocked }) => {
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+  const handleCheckout = async () => {
+    setLoading(true); setErr(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", { body: { origin: window.location.origin } });
+      if (error) throw error;
+      if (data?.url) { window.location.href = data.url; return; }
+      throw new Error("Lien de paiement introuvable");
+    } catch (e) { setErr(e.message || "Erreur lors de la redirection."); setLoading(false); }
+  };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+        <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", borderRadius: 20, padding: "24px 20px", marginBottom: 24, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <Zap size={28} color={G.gold} />
           </div>
-        ))}
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>AquaPlan Premium</h3>
+          {weeksBlocked
+            ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as accès aux <span style={{ color: G.water, fontWeight: 600 }}>{FREE_WEEKS_LIMIT} premières semaines gratuites</span>.<br />Passe premium pour débloquer la suite.</p>
+            : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>
+          }
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+          {PREMIUM_FEATURES.map((f, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: G.greyXLight, borderRadius: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={18} color={G.blue} /></div>
+              <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>{f.label}</div><div style={{ fontSize: 12, color: G.grey }}>{f.desc}</div></div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: G.blueLight, borderRadius: 14, padding: "14px 16px", marginBottom: 16, textAlign: "center" }}>
+          <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.blue, marginBottom: 2 }}>4,99 € / mois</div>
+          <div style={{ fontSize: 12, color: G.blue }}>Annulable à tout moment</div>
+        </div>
+        {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
+        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>{loading ? "Redirection…" : "Passer en premium — 4,99 €/mois"}</Btn>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
       </div>
-      <div style={{ background: G.blueLight, borderRadius: 14, padding: "14px 16px", marginBottom: 16, textAlign: "center" }}>
-        <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.blue, marginBottom: 2 }}>4,99 € / mois</div>
-        <div style={{ fontSize: 12, color: G.blue }}>ou 39,99 € / an · Annulable à tout moment</div>
-      </div>
-      <Btn variant="blue" onClick={onClose}>Bientôt disponible — Être notifié</Btn>
-      <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
     </div>
-  </div>
-);
+  );
+};
 
 const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
   <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #001966 0%, #0057FF 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -946,15 +995,22 @@ const BASE_DISTANCES = {
 };
 
 const SESSION_TEMPLATES = {
-  endurance: (dist, pool) => {
+  endurance: (dist, pool, level = "intermediate") => {
     const warm  = Math.round(dist * 0.15 / 50) * 50 || 200;
     const drills = 4 * pool;
     const pull   = Math.round(dist * 0.12 / pool) * pool || pool * 2;
     const main   = Math.max(dist - warm - drills - pull - 200, 200);
+    const isBeg  = level === "beginner";
     return {
-      type: "ENDURANCE", title: "Endurance fondamentale", intensity: "Faible — Z1/Z2",
-      details: [
-        `Échauffement ${warm}m : crawl lent, respiration 3 temps, grand coulé après chaque virage`,
+      type: "ENDURANCE", title: isBeg ? "Nage en douceur" : "Endurance fondamentale", intensity: "Faible — Z1/Z2",
+      details: isBeg ? [
+        `Échauffement ${warm}m : nage de ton choix (crawl ou brasse) à ton rythme`,
+        `Planche (kick) ${drills}m : 4×${pool}m avec planche, jambes seulement — talons qui sortent de l'eau`,
+        `Nage libre ${main}m : crawl ou brasse, sans t'essouffler — si tu peines, ralentis`,
+        `Dos ${pull}m : dos crawlé tranquille, bras qui sortent de l'eau alternativement`,
+        `Retour calme 200m : brasse très lente`,
+      ] : [
+        `Échauffement ${warm}m : crawl lent, respiration 3 temps`,
         `Éducatifs ${drills}m : 4×${pool}m grand chien — bras tendu devant, rotation lente avant de tirer`,
         `Série principale ${main}m : nage continue à allure conversation — compte tes bras par longueur`,
         `Pull-buoy ${pull}m : bras seuls, coude haut, tirage jusqu'à la cuisse`,
@@ -963,32 +1019,46 @@ const SESSION_TEMPLATES = {
     };
   },
 
-  seuil: (dist, pool) => {
+  seuil: (dist, pool, level = "intermediate") => {
     const warm   = Math.round(dist * 0.18 / 100) * 100 || 200;
     const activ  = 4 * pool;
     const repDist = Math.round(dist * 0.10 / 50) * 50 || 100;
     const reps   = Math.max(4, Math.round((dist * 0.55) / repDist));
-    const sprints = 4 * pool;
+    const cool   = 4 * pool;
+    const isBeg  = level === "beginner";
     return {
-      type: "SEUIL", title: "Travail au seuil", intensity: "Modérée — Z3/Z4",
-      details: [
+      type: "SEUIL", title: isBeg ? "Effort continu" : "Travail au seuil", intensity: "Modérée — Z3/Z4",
+      details: isBeg ? [
+        `Échauffement ${warm}m : nage très facile pour chauffer les muscles`,
+        `Activation ${activ}m : 4×${pool}m avec palmes — sens la poussée dans l'eau`,
+        `Série ${reps}×${repDist}m : nage à bonne allure, récup 20s entre chaque — essaie de garder le même rythme`,
+        `Récup ${cool}m : dos ou brasse très lente`,
+        `Retour calme 200m : crawl lent`,
+      ] : [
         `Échauffement ${warm}m : crawl progressif, 50m facile / 50m moyen / 50m soutenu`,
         `Activation ${activ}m : 4×${pool}m avec palmes, coude haut à l'entrée de main`,
         `Série principale ${reps}×${repDist}m : allure soutenue, récup 15s — régularité sur chaque répétition`,
-        `Accélérations ${sprints}m : 4×${pool}m sprint + culbute à chaque mur`,
+        `Accélérations ${cool}m : 4×${pool}m sprint + virage rapide à chaque mur`,
         `Retour calme 200m : crawl lent`,
       ],
     };
   },
 
-  vitesse: (dist, pool) => {
+  vitesse: (dist, pool, level = "intermediate") => {
     const warm   = Math.round(dist * 0.14 / 50) * 50 || 150;
     const sprCnt = Math.max(4, Math.round(dist * 0.45 / pool));
     const powDist = Math.round(dist * 0.20 / pool) * pool || pool * 2;
     const cool   = Math.round(dist * 0.14 / 100) * 100 || 150;
+    const isBeg  = level === "beginner";
     return {
-      type: "VITESSE", title: "Vitesse & puissance", intensity: "Élevée — Z5",
-      details: [
+      type: "VITESSE", title: isBeg ? "Accélérations" : "Vitesse & puissance", intensity: "Élevée — Z5",
+      details: isBeg ? [
+        `Échauffement ${warm}m : nage tranquille`,
+        `Activation : 4×${pool}m avec palmes — sens la vitesse`,
+        `Accélérations ${sprCnt}×${pool}m : nage vite sur une longueur, reprends ton souffle avant la suivante`,
+        `Récup ${powDist}m : brasse ou dos très lent`,
+        `Retour calme ${cool}m : nage très lente`,
+      ] : [
         `Échauffement ${warm}m : crawl / dos / brasse, puis 4×${pool}m avec palmes rapide`,
         `Activation départs : 4 poussées de mur → 15m flèche en apnée, corps gainé`,
         `Sprints ${sprCnt}×${pool}m : 100% d'effort, départ toutes les 2 min — récup complète obligatoire`,
@@ -998,7 +1068,7 @@ const SESSION_TEMPLATES = {
     };
   },
 
-  technique: (dist, pool) => {
+  technique: (dist, pool, level = "intermediate") => {
     const drillA  = 4 * pool;
     const drillB  = 6 * pool;
     const drillC  = 6 * pool;
@@ -1006,27 +1076,40 @@ const SESSION_TEMPLATES = {
     const integDist  = Math.max(dist - drillA - drillB - drillC - paddleDist, pool * 2);
     const targetMin  = Math.max(12, Math.round(dist / pool / 2.0));
     const targetMax  = Math.max(14, Math.round(dist / pool / 1.6));
+    const isBeg  = level === "beginner";
     return {
-      type: "TECHNIQUE", title: "Séance technique", intensity: "Faible — qualité > quantité",
-      details: [
+      type: "TECHNIQUE", title: isBeg ? "Séance plaisir" : "Séance technique", intensity: "Faible — qualité > quantité",
+      details: isBeg ? [
+        `Planche (kick) ${drillA}m : 4×${pool}m avec planche — jambes actives, corps droit`,
+        `Bras seuls ${drillB}m : 6×${pool}m avec pull-buoy — concentre-toi sur la poussée`,
+        `Petit chien ${drillC}m : 6×${pool}m — bras tendu devant, corps sur le côté, avant de tirer`,
+        `Nage avec palmes ${paddleDist}m : palmes aux pieds, sens la vitesse et tiens-toi horizontal`,
+        `Nage complète ${integDist}m : mets tout ensemble, reste relâché·e`,
+      ] : [
         `Référence ${drillA}m : 4×${pool}m en comptant tes bras par longueur — note ton chiffre`,
         `Petit chien ${drillB}m : 6×${pool}m — bras devant, corps sur le côté, oreille dans l'eau, attends avant de tirer`,
-        `Coulé ventral ${drillC}m : 6×${pool}m — après le virage, glisse le plus loin possible avant le premier mouvement`,
+        `Glisse sous l'eau ${drillC}m : 6×${pool}m — après le virage, glisse le plus loin possible avant le premier mouvement`,
         `Palmes + pull-buoy ${paddleDist}m : sens la pression de l'eau dans la paume, coude haut`,
-        `Nage complète ${integDist}m : vise ${targetMin}–${targetMax} bras par longueur, glisse plus loin à chaque longueur`,
+        `Nage complète ${integDist}m : vise ${targetMin}–${targetMax} bras par longueur`,
       ],
     };
   },
 
-  récupération: (dist, pool) => {
+  récupération: (dist, pool, level = "intermediate") => {
     const a = Math.round(dist * 0.35 / 50) * 50 || 150;
     const b = Math.round(dist * 0.35 / 50) * 50 || 150;
+    const isBeg = level === "beginner";
     return {
       type: "RÉCUPÉRATION", title: "Récupération active", intensity: "Très faible — Z1",
-      details: [
+      details: isBeg ? [
+        `${a}m nage libre à ton rythme — brasse, dos ou crawl comme tu veux`,
+        `4×${pool}m sur le dos : bras qui sortent, jambes légères`,
+        `${b}m brasse très lente : inspire bien en sortant la tête, relâche tout`,
+        `Fin : reste dans l'eau 2 min, étire les bras et les épaules`,
+      ] : [
         `${a}m nage libre au choix (dos, brasse, crawl) — allure très facile`,
         `4×${pool}m respiration d'un seul côté : 2 longueurs côté droit, 2 longueurs côté gauche`,
-        `${b}m crawl très lent : grand coulé après chaque virage, compte ta glisse`,
+        `${b}m crawl très lent : glisse après chaque virage, compte ta glisse`,
         `4×${pool}m dos crawlé : relâche les épaules, scan du corps`,
       ],
     };
@@ -1052,6 +1135,26 @@ const PHASE_PATTERNS = {
   competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"] },
 };
 
+const WELLNESS_PATTERNS = {
+  base:        { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "endurance", "technique", "récupération"] },
+  development: { 1: ["endurance"], 2: ["endurance", "technique"],    3: ["endurance", "endurance", "technique"],    4: ["endurance", "endurance", "technique", "récupération"] },
+};
+
+const buildWellnessPhases = (totalWeeks) => {
+  const phases = [];
+  for (let i = 0; i < totalWeeks; i++) {
+    const t = totalWeeks > 1 ? i / (totalWeeks - 1) : 0;
+    const isBase = t < 0.5;
+    phases.push({
+      phase: isBase ? "base" : "development",
+      focus: t < 0.25 ? "Mise en mouvement" : t < 0.5 ? "Construction" : t < 0.75 ? "Progression" : "Consolidation",
+      progression: 1.0 + t * 0.35,
+      tipKey: t < 0.4 ? "debut" : "endurance",
+    });
+  }
+  return phases;
+};
+
 const buildPlanPhases = (totalWeeks) => {
   if (totalWeeks === 1) return [{ phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" }];
   if (totalWeeks === 2) return [{ phase: "base", focus: "Mise en jambes", progression: 1.00, tipKey: "debut" }, { phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" }];
@@ -1072,19 +1175,35 @@ const FREE_MAX_WEEKS = FREE_WEEKS_LIMIT;
 
 const generatePlan = async (profile, isPremium = false) => {
   await new Promise(r => setTimeout(r, 1800));
-  const { level, sessionsPerWeek: freq, pool } = profile;
-  const rawWeeks = Math.min(52, weeksUntil(profile.eventDate) || 8);
+  const { level, sessionsPerWeek: freq, pool, goal } = profile;
+  const wellness = isWellnessGoal(goal);
+
+  let rawWeeks;
+  if (wellness) {
+    if (goal === "perte_de_poids") {
+      const loss = Math.max(0, (parseFloat(profile.weightCurrent) || 0) - (parseFloat(profile.weightGoal) || 0));
+      rawWeeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : 8;
+    } else if (goal === "reprendre") {
+      rawWeeks = 6;
+    } else {
+      rawWeeks = 8;
+    }
+  } else {
+    rawWeeks = Math.min(52, weeksUntil(profile.eventDate) || 8);
+  }
+
   const totalWeeks = isPremium ? rawWeeks : Math.min(rawWeeks, FREE_MAX_WEEKS);
-  const baseDist = BASE_DISTANCES[level];
-  const phaseList = buildPlanPhases(totalWeeks);
+  const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.beginner;
+  const phaseList = wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
+  const patterns = wellness ? WELLNESS_PATTERNS : PHASE_PATTERNS;
   const f = Math.min(freq, 4);
   const weeks = phaseList.map((phase, wi) => {
-    const types = PHASE_PATTERNS[phase.phase]?.[f] || PHASE_PATTERNS.base[f] || ["endurance"];
+    const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
     return {
       number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null,
       sessions: types.map(type => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
-        return { ...SESSION_TEMPLATES[type](distBase, pool), distance: `${distBase}m`, duration: Math.max(30, Math.min(120, Math.round(distBase / 38))), completed: false };
+        return { ...SESSION_TEMPLATES[type](distBase, pool, level), distance: `${distBase}m`, duration: Math.max(30, Math.min(120, Math.round(distBase / 38))), completed: false };
       }),
     };
   });
@@ -1100,7 +1219,7 @@ export default function App() {
   const [screen, setScreen] = useState("onboarding");
   const [activeTab, setActiveTab] = useState("home");
   const [step, setStep] = useState(1);
-  const [profile, setProfile] = useState({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
+  const [profile, setProfile] = useState({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
@@ -1109,12 +1228,22 @@ export default function App() {
   const prevBadgesRef = useRef([]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      window.history.replaceState({}, "", window.location.pathname);
+      supabase.auth.refreshSession().then(({ data }) => {
+        if (data?.user?.user_metadata?.subscription === "premium") setIsPremium(true);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(u?.user_metadata?.subscription === "premium");
       if (u) { loadUserData(u.id).finally(() => setAuthLoading(false)); }
-      else { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null }); setPlan(null); setAuthLoading(false); }
+      else { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" }); setPlan(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -1160,9 +1289,10 @@ export default function App() {
     try {
       const p = await generatePlan(profile, isPremium);
       setPlan(p); setScreen("app"); setActiveTab("home");
+      if (!isPremium && p.totalRealWeeks > FREE_WEEKS_LIMIT) setTimeout(() => setShowUpgrade(true), 1200);
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
-      setScreen("onboarding"); setStep(4);
+      setScreen("onboarding"); setStep(isWellnessGoal(profile.goal) ? 3 : 4);
     }
   };
 
@@ -1184,7 +1314,7 @@ export default function App() {
   const handleReset = () => {
     if (user) { localStorage.removeItem(`aquaplan_profile_${user.id}`); localStorage.removeItem(`aquaplan_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
     setScreen("onboarding"); setStep(1);
-    setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null });
+    setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
     setPlan(null); prevBadgesRef.current = [];
   };
 
@@ -1226,12 +1356,28 @@ export default function App() {
                 <LogOut size={12} color={G.grey} /> Déco.
               </button>
             </div>
-            <Progress step={step} total={4} />
-            {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>{error}</div>}
-            {step === 1 && <Step1_Goal value={profile.goal} onChange={v => update("goal", v)} onNext={() => setStep(2)} />}
-            {step === 2 && <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-            {step === 3 && <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} onNext={() => setStep(4)} onBack={() => setStep(2)} />}
-            {step === 4 && <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} onNext={handleGenerate} onBack={() => setStep(3)} />}
+            {(() => {
+              const wellness = isWellnessGoal(profile.goal);
+              const hasWeight = profile.goal === "perte_de_poids";
+              const totalSteps = wellness ? (hasWeight ? 4 : 3) : 4;
+              const stepMap = wellness
+                ? hasWeight
+                  ? { 1: "goal", 2: "weight", 3: "level", 4: "freq" }
+                  : { 1: "goal", 2: "level", 3: "freq" }
+                : { 1: "goal", 2: "date", 3: "level", 4: "freq" };
+              const current = stepMap[step];
+              return (
+                <>
+                  <Progress step={step} total={totalSteps} />
+                  {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>{error}</div>}
+                  {current === "goal" && <Step1_Goal value={profile.goal} onChange={v => { update("goal", v); }} onNext={() => setStep(2)} />}
+                  {current === "weight" && <StepWeight weightCurrent={profile.weightCurrent} weightGoal={profile.weightGoal} onChangeCurrent={v => update("weightCurrent", v)} onChangeGoal={v => update("weightGoal", v)} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+                  {current === "date" && <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+                  {current === "level" && <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} onNext={() => setStep(step + 1)} onBack={() => setStep(step - 1)} />}
+                  {current === "freq" && <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} onNext={handleGenerate} onBack={() => setStep(step - 1)} />}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
