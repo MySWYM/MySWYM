@@ -264,15 +264,23 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
 );
 
 const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade }) => {
-  const meta = user?.user_metadata || {};
-  const [firstName, setFirstName] = useState(meta.first_name || "");
-  const [lastName,  setLastName]  = useState(meta.last_name  || "");
-  const [age,       setAge]       = useState(meta.age        || "");
-  const [weight,    setWeight]    = useState(meta.weight     || "");
-  const [email,     setEmail]     = useState(user?.email     || "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName,  setLastName]  = useState("");
+  const [age,       setAge]       = useState("");
+  const [weight,    setWeight]    = useState("");
+  const [email,     setEmail]     = useState("");
   const [password,  setPassword]  = useState("");
   const [saving,    setSaving]    = useState(false);
   const [msg,       setMsg]       = useState(null);
+
+  useEffect(() => {
+    const meta = user?.user_metadata || {};
+    setFirstName(meta.first_name || "");
+    setLastName(meta.last_name   || "");
+    setAge(meta.age              || "");
+    setWeight(meta.weight        || "");
+    setEmail(user?.email         || "");
+  }, [user]);
 
   const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
   const label = (txt) => <div style={{ fontSize: 11, fontWeight: 600, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>{txt}</div>;
