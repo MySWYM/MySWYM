@@ -1,4 +1,7 @@
+import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
 async function verifyStripeSignature(body: string, sigHeader: string, secret: string): Promise<boolean> {
   const timestamp = sigHeader.split(",").find(p => p.startsWith("t="))?.slice(2);
@@ -27,30 +30,78 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  const findUserByCustomerId = async (customerId: string) => {
+    const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    return data?.users?.find(u => u.user_metadata?.stripe_customer_id === customerId) ?? null;
+  };
+
+  // ── checkout.session.completed ─────────────────────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data?.object;
     const userId = session?.client_reference_id;
     const customerId = session?.customer;
+    const subscriptionId = session?.subscription;
+
     if (userId) {
       const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+      let subscriptionEnd: number | null = null;
+      if (subscriptionId) {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        subscriptionEnd = sub.current_period_end ?? null;
+      }
+
       await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { ...user?.user_metadata, subscription: "premium", stripe_customer_id: customerId },
+        user_metadata: {
+          ...user?.user_metadata,
+          subscription: "premium",
+          stripe_customer_id: customerId,
+          subscription_end: subscriptionEnd,
+        },
       });
     }
   }
 
-  if (event.type === "customer.subscription.deleted" || event.type === "customer.subscription.updated") {
+  // ── customer.subscription.created / updated ────────────────────────────
+  if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
     const sub = event.data?.object;
     const customerId = sub?.customer;
-    const status = sub?.status; // active, canceled, past_due, etc.
+    const status = sub?.status;
     const cancelAtPeriodEnd = sub?.cancel_at_period_end === true;
-    const isPremium = (status === "active" || status === "trialing") && !cancelAtPeriodEnd;
+    const subscriptionEnd: number | null = sub?.current_period_end ?? null;
 
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const user = data?.users?.find(u => u.user_metadata?.stripe_customer_id === customerId);
+    // Reste premium tant que le statut est actif (même si annulation prévue en fin de période)
+    // La perte d'accès se fait quand customer.subscription.deleted arrive
+    const isPremium = status === "active" || status === "trialing";
+
+    const user = await findUserByCustomerId(customerId);
     if (user) {
       await supabaseAdmin.auth.admin.updateUserById(user.id, {
-        user_metadata: { ...user.user_metadata, subscription: isPremium ? "premium" : "free" },
+        user_metadata: {
+          ...user.user_metadata,
+          subscription: isPremium ? "premium" : "free",
+          subscription_end: isPremium ? subscriptionEnd : null,
+          cancel_at_period_end: cancelAtPeriodEnd,
+        },
+      });
+    }
+  }
+
+  // ── customer.subscription.deleted ─────────────────────────────────────
+  // Déclenché : annulation immédiate (admin) OU fin de période après cancel
+  if (event.type === "customer.subscription.deleted") {
+    const sub = event.data?.object;
+    const customerId = sub?.customer;
+
+    const user = await findUserByCustomerId(customerId);
+    if (user) {
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...user.user_metadata,
+          subscription: "free",
+          subscription_end: null,
+          cancel_at_period_end: false,
+        },
       });
     }
   }

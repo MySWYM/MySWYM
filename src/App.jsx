@@ -120,6 +120,18 @@ const BADGE_DEFS = [
 ];
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
+
+// Vérifie si un user a un accès premium valide (subscription active + non expirée)
+const checkIsPremium = (user) => {
+  const meta = user?.user_metadata;
+  if (meta?.subscription !== "premium") return false;
+  // Si subscription_end existe, vérifier qu'elle n'est pas dépassée
+  if (meta?.subscription_end != null) {
+    return meta.subscription_end * 1000 > Date.now();
+  }
+  return true; // pas de date de fin = premium sans limite (legacy)
+};
+
 const weeksUntil = (dateStr) => {
   if (!dateStr) return null;
   return Math.max(1, Math.ceil((new Date(dateStr) - new Date()) / (7 * 86400000)));
@@ -1782,7 +1794,7 @@ export default function App() {
     const applyUser = (u) => {
       if (!u) return;
       setUser(u);
-      const premium = u?.user_metadata?.subscription === "premium";
+      const premium = checkIsPremium(u);
       setIsPremium(premium);
       if (premium) setShowUpgrade(false);
     };
@@ -1822,8 +1834,8 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      setIsPremium(u?.user_metadata?.subscription === "premium");
-      if (u) { loadUserData(u.id, u?.user_metadata?.subscription === "premium").finally(() => setAuthLoading(false)); }
+      setIsPremium(checkIsPremium(u));
+      if (u) { loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false)); }
       else { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" }); setPlan(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
@@ -1853,7 +1865,7 @@ export default function App() {
     const check = async () => {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
-        const premium = data.user?.user_metadata?.subscription === "premium";
+        const premium = checkIsPremium(data.user);
         setUser(data.user);
         setIsPremium(premium);
       }
@@ -1927,7 +1939,7 @@ export default function App() {
     const { data } = await supabase.auth.getUser();
     if (data?.user) {
       setUser(data.user);
-      setIsPremium(data.user?.user_metadata?.subscription === "premium");
+      setIsPremium(checkIsPremium(data.user));
     }
   };
 
