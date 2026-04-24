@@ -844,6 +844,19 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   );
 };
 
+const PremiumTeaser = ({ onUpgrade }) => (
+  <div style={{ margin: "6px 0 10px", borderRadius: 18, overflow: "hidden", border: `1.5px solid ${G.blue}20` }}>
+    <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", padding: "22px 20px", textAlign: "center" }}>
+      <Waves size={28} color="rgba(255,255,255,0.25)" style={{ marginBottom: 10 }} />
+      <div style={{ fontSize: 20, fontWeight: 800, color: G.white, fontFamily: "'Syne', sans-serif", marginBottom: 6 }}>Tu veux continuer ?</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 18, lineHeight: 1.5 }}>La suite de ton programme est prête.<br />Passe premium pour tout débloquer.</div>
+      <button onClick={onUpgrade} style={{ background: G.white, border: "none", borderRadius: 12, padding: "12px 28px", fontSize: 14, fontWeight: 700, color: G.blue, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <Zap size={15} color={G.blue} /> Passer premium
+      </button>
+    </div>
+  </div>
+);
+
 const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
   <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #001966 0%, #0057FF 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
@@ -954,7 +967,10 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
           {isLocked && <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. bloquées</span>}
         </p>
         {visibleWeeks.map((week, i) => (
-          <WeekCard key={i} week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeek} />
+          <div key={i}>
+            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeek} />
+            {!isPremium && i === 0 && plan.totalRealWeeks > 1 && <PremiumTeaser onUpgrade={onUpgrade} />}
+          </div>
         ))}
         {isLocked && <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />}
         <button onClick={onReset} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
