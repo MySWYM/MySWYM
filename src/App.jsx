@@ -570,20 +570,27 @@ const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, 
 
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   const weeks = weeksUntil(value);
+  const minDate = (() => { const d = new Date(); d.setDate(d.getDate() + 42); return d.toISOString().split("T")[0]; })();
   return (
     <div className="fade-up">
       <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
       <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Date de<br />l'événement ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>On adapte le plan à ton calendrier.</p>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Un bon plan demande au minimum 6 semaines.</p>
       <div style={{ background: G.white, borderRadius: 16, padding: 20, marginBottom: 14, border: `1px solid ${G.greyLight}` }}>
         <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Date</label>
-        <input type="date" value={value} onChange={e => onChange(e.target.value)} min={new Date().toISOString().split("T")[0]}
+        <input type="date" value={value} onChange={e => onChange(e.target.value)} min={minDate}
           style={{ width: "100%", border: "none", fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 700, color: G.ink, background: "transparent", outline: "none" }} />
       </div>
       {weeks && (
-        <div style={{ background: G.blueLight, borderRadius: 12, padding: "12px 16px", marginBottom: 28, display: "flex", alignItems: "center", gap: 10 }}>
-          <Calendar size={18} color={G.blue} />
-          <span style={{ fontSize: 14, color: G.blue, fontWeight: 500 }}>{weeks} semaines de préparation</span>
+        <div style={{ background: "linear-gradient(135deg, #001966 0%, #0057FF 100%)", borderRadius: 12, padding: "14px 16px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Calendar size={18} color={G.white} />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.white }}>{weeks} semaines de préparation</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Programme complet · Premium</div>
+            </div>
+          </div>
+          <Zap size={18} color={G.gold} />
         </div>
       )}
       <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
