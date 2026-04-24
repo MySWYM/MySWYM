@@ -1094,9 +1094,9 @@ const BadgesTab = ({ plan }) => {
 
 // ── PLAN GENERATOR ─────────────────────────────────────────────────────────
 const BASE_DISTANCES = {
-  beginner:     { endurance: 1200, seuil: 900,  vitesse: 700,  technique: 1000, récupération: 700  },
-  intermediate: { endurance: 2000, seuil: 1800, vitesse: 1400, technique: 1600, récupération: 1200 },
-  advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600 },
+  beginner:     { endurance: 1200, seuil: 900,  vitesse: 700,  technique: 1000, récupération: 700,  bnssa: 1000 },
+  intermediate: { endurance: 2000, seuil: 1800, vitesse: 1400, technique: 1600, récupération: 1200, bnssa: 1500 },
+  advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600, bnssa: 2000 },
 };
 
 // pace100[lvl][zone] = secondes aux 100m (beginner/intermediate/advanced × easy/threshold/sprint)
