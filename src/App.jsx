@@ -1525,7 +1525,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z5/Z6 — explosivité maximale, récup complète",
           details: [
             `Échauffement : 200m NL progressif + 100m battements de jambes + 4×${P}m accélérations`,
-            `6×10m départ plongée — R2' — bloc → torpille gainée → 3 premières brasses à fond, stop`,
+            `6×10m départ plongée — R2' — bloc → torpille gainée → 3 premiers cycles NL à fond, stop`,
             `${nDive}×${P}m SPRINT à bloc — R2' — départ plongée complet, effort total sur chaque longueur`,
             `${nRec}×${2*P}m pull-buoy — R20" — récup active`,
             `Retour au calme : 200m dos lent`,
@@ -1578,7 +1578,7 @@ const SESSION_TEMPLATES = {
             details: [
               `Échauffement : ${repR}m NL lent + ${repR}m battements planche`,
               `${nPerBlock}×${repR}m NL resp. 3 temps — R10" — inspire droite, puis gauche`,
-              `${nPerBlock}×${repR}m brasse lente — R10" — expire sous l'eau, glisse 2s`,
+              `${nPerBlock}×${repR}m dos crawlé lent — R10" — bras tendu, rotation douce, expire en surface`,
               `${nInteg}×${repR}m NL — R10" — respiration 3 temps en continu`,
               `Retour au calme :${repR}m dos lent`,
             ],
@@ -1717,9 +1717,9 @@ const SESSION_TEMPLATES = {
             title: "Nage libre douce",
             intensity: "Très facile — récupère",
             details: [
-              `${nA}×${repR}m NL libre — R10" — brasse, dos ou crawl : si tu souffles c'est trop vite`,
-              `${nB}×${repR}m dos crawlé — R10" — bras tendus, regard au plafond`,
-              `${nC}×${repR}m brasse très lente — R10" — expire sous l'eau, glisse 2s`,
+              `${nA}×${repR}m NL lent — R10" — si tu souffles c'est trop vite, réduis l'allure`,
+              `${nB}×${repR}m dos crawlé — R10" — bras tendus, regard au plafond, flotte`,
+              `${nC}×${repR}m alternance 25 crawl / 25 dos — R10" — change de nage à chaque longueur`,
               `Fin : flotte 2 min en étoile sur le dos`,
             ],
           },
@@ -1728,7 +1728,7 @@ const SESSION_TEMPLATES = {
             intensity: "Très facile",
             details: [
               `${nA}×${repR}m dos crawlé — R10" — jambes molles, pense à flotter`,
-              `${nB}×${repR}m brasse lente — R10" — expire longuement sous l'eau`,
+              `${nB}×${repR}m sculling avant — R10" — mains en figure 8, sens la portance de l'eau`,
               `${nC}×${repR}m NL lent — R10" — 1 long. resp 2 temps / 1 long. resp 3 temps`,
               `Fin : flotte 2 min en étoile sur le dos`,
             ],
@@ -1747,7 +1747,7 @@ const SESSION_TEMPLATES = {
             `${nA}×${repR}m nage croisée — R10" — change de nage à chaque longueur`,
             `${nB}×${repR}m dos crawlé — R10" — épaule sort en premier, scan corporel`,
             `${nC}×${repR}m NL lent — R10" — coulée max après chaque virage`,
-            `${nD}×${repR}m brasse — R10" — expire complètement, glisse 3s`,
+            `${nD}×${repR}m battements planche — R10" — jambes libres, expire dans l'eau`,
           ],
         },
         {
@@ -1757,7 +1757,7 @@ const SESSION_TEMPLATES = {
             `${nA}×${P}m sculling — R10" — mains en 'figure 8', sens la portance`,
             `${nB}×${repR}m dos lent — R10" — jambes molles, récupère mentalement`,
             `${nC}×${repR}m NL lent — R10" — méditation active, compte les longueurs`,
-            `${nD}×${repR}m brasse ultra-lente — R10" — glisse 3s entre cycles`,
+            `${nD}×${repR}m alternance 25 dos / 25 crawl — R10" — nage croisée, jambes souples`,
           ],
         },
       ][v],
