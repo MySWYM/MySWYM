@@ -76,16 +76,16 @@ const css = `
 
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "perte_de_poids",    label: "Perte de poids",         dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
-  { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
   { id: "triathlon_sprint",  label: "Triathlon Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_olympic", label: "Triathlon Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_ironman", label: "Triathlon Ironman",      dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "open_water_5k",     label: "Eau libre 5 km",         dist: "5 km",                         icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
-  { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
   { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
   { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\"",            icon: <Award size={20} />,    wellness: false },
+  { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
+  { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
+  { id: "perte_de_poids",    label: "Perte de poids",         dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
 ];
 
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
@@ -1419,6 +1419,54 @@ const SESSION_TEMPLATES = {
     };
   },
 
+  // ── BNSSA ────────────────────────────────────────────────────────────────
+  bnssa: (dist, pool, level = "intermediate", weekIdx = 0) => {
+    const P = pool, v = weekIdx % 3;
+    const nApnee  = Math.max(4, Math.min(10, Math.round(dist * 0.15 / 15)));
+    const nRem    = Math.max(3, Math.min(6,  Math.round(dist * 0.15 / P)));
+    const nPalmes = Math.max(4, Math.min(8,  Math.round(dist * 0.25 / (2*P))));
+    const nNL     = Math.max(3, Math.min(8,  Math.round(dist * 0.25 / (2*P))));
+
+    return {
+      type: "BNSSA",
+      ...[
+        {
+          title: "Simulation parcours 100m",
+          intensity: "Apnée & remorquage — qualité de parcours",
+          details: [
+            `Échauffement : 200m NL progressif + 100m battements de jambes`,
+            `Apnée dynamique : ${nApnee}×15m immersion complète — R2' — tracé fond, sans appui, sans pied`,
+            `Simulation 100m : 25m NL → 15m apnée → virage mur → 15m apnée → virage mur → 25m remorquage — R3' — reproduis le parcours`,
+            `Remorquage : ${nRem}×${P}m — R1'30" — position dorsale, visage hors de l'eau, bras sous les aisselles`,
+            `Retour au calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Prépa 250m palmes & plongée",
+          intensity: "Endurance équipée + apnée profonde",
+          details: [
+            `Échauffement : 200m NL + 100m battements de jambes`,
+            `${nPalmes}×${2*P}m palmes + masque + tuba — R20" — touche le mur à chaque virage`,
+            `Plongée canard : 6× plongée → fond 2–3m → saisie mannequin → remontée — R2' — contrôle la remontée, voies aériennes dégagées`,
+            `Remorquage : ${nRem}×${P}m position dorsale — R1'30" — visage mannequin au-dessus de l'eau`,
+            `Retour au calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Endurance & apnée sous fatigue",
+          intensity: "Tenir les apnées après l'effort",
+          details: [
+            `Échauffement : 200m NL progressif + 100m battements de jambes`,
+            `${nNL}×${2*P}m NL — R20" — endurance de base pour tenir le rythme du 100m et du 250m`,
+            `Apnée dynamique : ${nApnee}×15m — R2' — immersion complète sans appui, reproduis les sections du parcours`,
+            `${nRem}×${P}m remorquage — R1'30" — position dorsale, traction régulière`,
+            `Retour au calme : 200m dos lent`,
+          ],
+        },
+      ][v],
+    };
+  },
+
   // ── RÉCUPÉRATION ─────────────────────────────────────────────────────────
   récupération: (dist, pool, level = "intermediate", weekIdx = 0) => {
     const isBeg = level === "beginner";
@@ -1504,6 +1552,14 @@ const PHASE_PATTERNS = {
   competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"] },
 };
 
+const BNSSA_PATTERNS = {
+  base:        { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "endurance", "bnssa", "récupération"] },
+  development: { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"] },
+  peak:        { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"] },
+  taper:       { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "bnssa", "récupération", "récupération"] },
+  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"] },
+};
+
 const WELLNESS_PATTERNS = {
   base:        { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "endurance", "technique", "récupération"] },
   development: { 1: ["endurance"], 2: ["endurance", "technique"],    3: ["endurance", "endurance", "technique"],    4: ["endurance", "endurance", "technique", "récupération"] },
@@ -1564,7 +1620,7 @@ const generatePlan = async (profile, isPremium = false) => {
   const totalWeeks = isPremium ? rawWeeks : Math.min(rawWeeks, FREE_MAX_WEEKS);
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.beginner;
   const phaseList = wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
-  const patterns = wellness ? WELLNESS_PATTERNS : PHASE_PATTERNS;
+  const patterns = wellness ? WELLNESS_PATTERNS : goal === "bnssa" ? BNSSA_PATTERNS : PHASE_PATTERNS;
   const f = Math.min(freq, 4);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
