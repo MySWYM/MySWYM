@@ -641,31 +641,67 @@ const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, 
 
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   const weeks = weeksUntil(value);
-  const minDate = (() => { const d = new Date(); d.setDate(d.getDate() + 42); return d.toISOString().split("T")[0]; })();
+
+  // Affichage jj/mm/aaaa — stockage ISO yyyy-mm-dd
+  const toDisplay = (iso) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  };
+  const [display, setDisplay] = useState(toDisplay(value));
+  const [err, setErr] = useState("");
+
+  const handleChange = (raw) => {
+    // Garde uniquement les chiffres
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    // Auto-insère les "/"
+    let formatted = digits;
+    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
+    if (digits.length > 4) formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+    setDisplay(formatted);
+    setErr("");
+
+    if (digits.length === 8) {
+      const dd = digits.slice(0, 2), mm = digits.slice(2, 4), yyyy = digits.slice(4);
+      const iso = `${yyyy}-${mm}-${dd}`;
+      const date = new Date(iso);
+      const minDate = new Date(); minDate.setDate(minDate.getDate() + 42);
+      if (isNaN(date.getTime())) { setErr("Date invalide"); onChange(""); return; }
+      if (date < minDate) { setErr("Minimum 6 semaines à partir d'aujourd'hui"); onChange(""); return; }
+      onChange(iso);
+    } else {
+      onChange("");
+    }
+  };
+
   return (
     <div className="fade-up">
-      <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Date de<br />l'événement ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Un bon plan demande au minimum 6 semaines.</p>
-      <div style={{ background: G.white, borderRadius: 16, padding: 20, marginBottom: 14, border: `1px solid ${G.greyLight}` }}>
-        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Date</label>
-        <input type="date" value={value} onChange={e => onChange(e.target.value)} min={minDate}
-          style={{ width: "100%", border: "none", fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 700, color: G.ink, background: "transparent", outline: "none" }} />
+      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 5 sur 5</p>
+      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
+      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
+      <div style={{ background: G.white, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
+        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 10 }}>Date de l'événement</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="jj/mm/aaaa"
+          value={display}
+          onChange={e => handleChange(e.target.value)}
+          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, background: "transparent", outline: "none", letterSpacing: 2 }}
+        />
       </div>
-      {weeks && (
-        <div style={{ background: "linear-gradient(135deg, #001966 0%, #0057FF 100%)", borderRadius: 12, padding: "14px 16px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Calendar size={18} color={G.white} />
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: G.white }}>{weeks} semaines de préparation</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Programme complet · Premium</div>
-            </div>
+      {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
+      {weeks && !err && (
+        <div style={{ background: G.ink, borderRadius: 14, padding: "16px 20px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: G.white }}>{weeks} semaines</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>de préparation · Programme complet</div>
           </div>
-          <Zap size={18} color={G.gold} />
+          <Calendar size={20} color="rgba(255,255,255,0.3)" />
         </div>
       )}
-      <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <Btn onClick={onNext} disabled={!value}>Générer mon plan 🚀</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
     </div>
   );
 };
