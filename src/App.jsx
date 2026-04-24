@@ -71,7 +71,8 @@ const css = `
   .toast-in  { animation: toastIn 0.4s cubic-bezier(.175,.885,.32,1.275) both; }
   input[type=date]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
   ::-webkit-scrollbar { width: 0; }
-  button:active { transform: scale(0.97); }
+  button:active { transform: scale(0.97); transition: transform 0.1s; }
+  input, textarea { -webkit-appearance: none; }
 `;
 
 // ── DATA ──────────────────────────────────────────────────────────────────
@@ -92,10 +93,10 @@ const GOALS = [
 
 // Catégories onboarding (step 1)
 const CATEGORIES = [
-  { id: "triathlon", label: "Triathlon",       emoji: "🏊", desc: "Sprint · Olympique · Half · Ironman" },
-  { id: "eau_libre", label: "Eau libre",        emoji: "🌊", desc: "5 km · 10 km en eau vive" },
-  { id: "poids",     label: "Perte de poids",   emoji: "⚡", desc: "Plan adapté à ton objectif" },
-  { id: "diplome",   label: "Prépa diplôme",    emoji: "🎓", desc: "BNSSA · BPJEPS · Pompiers" },
+  { id: "triathlon", label: "Triathlon",      Icon: Activity, desc: "Sprint · Olympique · Half · Ironman" },
+  { id: "eau_libre", label: "Eau libre",      Icon: Waves,    desc: "5 km · 10 km en eau vive" },
+  { id: "poids",     label: "Perte de poids", Icon: Target,   desc: "Plan adapté à ton objectif" },
+  { id: "diplome",   label: "Prépa diplôme",  Icon: Award,    desc: "BNSSA · BPJEPS · Pompiers" },
 ];
 
 // Sous-objectifs par catégorie
@@ -560,19 +561,21 @@ const AuthScreen = ({ onAuth }) => {
 // ── STEP 1 : CATÉGORIE ────────────────────────────────────────────────────
 const Step1_Category = ({ onSelect }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 1 sur 5</p>
-    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Pourquoi<br />tu nages ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>Ton plan sera construit autour de ça.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 1 sur 5</p>
+    <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
+    <p style={{ color: G.grey, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>Ton plan sera entièrement construit autour de ton objectif.</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {CATEGORIES.map(cat => (
         <button key={cat.id} onClick={() => onSelect(cat.id)}
-          style={{ display: "flex", alignItems: "center", gap: 18, padding: "20px 20px", borderRadius: 18, border: `1.5px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>{cat.emoji}</span>
+          style={{ display: "flex", alignItems: "center", gap: 16, padding: "18px 20px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: G.greyXLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <cat.Icon size={20} color={G.ink} />
+          </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{cat.label}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{cat.label}</div>
             <div style={{ fontSize: 13, color: G.grey }}>{cat.desc}</div>
           </div>
-          <ArrowRight size={18} color={G.greyMid} />
+          <ArrowRight size={16} color={G.greyMid} />
         </button>
       ))}
     </div>
@@ -582,26 +585,25 @@ const Step1_Category = ({ onSelect }) => (
 // ── STEP 2 : SOUS-OBJECTIF ────────────────────────────────────────────────
 const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   const subs = SUB_GOALS[category] || [];
+  const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?" };
   return (
     <div className="fade-up">
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 2 sur 5</p>
-      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>
-        {category === "triathlon" ? "Quelle distance ?" : category === "eau_libre" ? "Ton objectif ?" : "Quel diplôme ?"}
-      </h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On calibre le volume de tes séances.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 2 sur 5</p>
+      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{titles[category] || "Précise ton objectif"}</h2>
+      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>On calibre le volume de tes séances.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
         {subs.map(s => (
           <button key={s.id} onClick={() => onSelect(s.id)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px", borderRadius: 18, border: `1.5px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{s.label}</div>
-              <div style={{ fontSize: 13, color: G.grey }}>{s.dist}</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: G.ink }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{s.dist}</div>
             </div>
-            <ArrowRight size={18} color={G.greyMid} />
+            <ChevronDown size={16} color={G.greyMid} style={{ transform: "rotate(-90deg)" }} />
           </button>
         ))}
       </div>
-      <button onClick={onBack} style={{ width: "100%", padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <button onClick={onBack} style={{ width: "100%", padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
     </div>
   );
 };
@@ -877,14 +879,14 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", borderRadius: 20, padding: "24px 20px", marginBottom: 20, textAlign: "center" }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-            <Zap size={28} color={G.gold} />
+        <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
+          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, marginBottom: 8 }}>MySWYM Premium</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
-            ? <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Tu as accès aux <span style={{ color: G.water, fontWeight: 600 }}>{FREE_WEEKS_LIMIT} premières semaines gratuites</span>.<br />Passe premium pour débloquer la suite.</p>
-            : <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Entraîne-toi sans limites</p>}
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité aux <strong style={{ color: G.ink }}>{FREE_WEEKS_LIMIT} premières semaines</strong>.<br />Débloque ton programme complet.</p>
+            : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
         </div>
 
         {/* Toggle mensuel / annuel */}
@@ -921,13 +923,17 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
 };
 
 const PremiumTeaser = ({ onUpgrade }) => (
-  <div style={{ margin: "6px 0 10px", borderRadius: 18, overflow: "hidden", border: `1.5px solid ${G.blue}20` }}>
-    <div style={{ background: "linear-gradient(135deg, #0D1117 0%, #001966 100%)", padding: "22px 20px", textAlign: "center" }}>
-      <Waves size={28} color="rgba(255,255,255,0.25)" style={{ marginBottom: 10 }} />
-      <div style={{ fontSize: 20, fontWeight: 800, color: G.white, fontFamily: "'Syne', sans-serif", marginBottom: 6 }}>Tu veux continuer ?</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 18, lineHeight: 1.5 }}>La suite de ton programme est prête.<br />Passe premium pour tout débloquer.</div>
-      <button onClick={onUpgrade} style={{ background: G.white, border: "none", borderRadius: 12, padding: "12px 28px", fontSize: 14, fontWeight: 700, color: G.blue, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
-        <Zap size={15} color={G.blue} /> Passer premium
+  <div style={{ margin: "8px 0 12px", borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
+    <div style={{ background: G.ink, padding: "24px 22px", display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Lock size={20} color="rgba(255,255,255,0.6)" />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>La suite t'attend</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Débloque ton programme complet</div>
+      </div>
+      <button onClick={onUpgrade} style={{ background: G.white, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
+        Voir
       </button>
     </div>
   </div>
@@ -1068,90 +1074,89 @@ const Dashboard = ({ plan, profile, onTabChange, onComplete, onShare, onSignOut 
   const weekDone = currentWeek?.sessions.filter(s => s.completed).length ?? 0;
   const weekTotal = currentWeek?.sessions.length ?? 0;
   const daysToEvent = profile.eventDate ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000)) : null;
+  const pct = stats.planTotal > 0 ? Math.round(stats.totalSessions / stats.planTotal * 100) : 0;
   const tm = nextSession ? (TYPE_META[nextSession.type] || TYPE_META.ENDURANCE) : null;
 
   return (
-    <div style={{ paddingBottom: 100 }}>
-      <div style={{ background: "linear-gradient(140deg, #0D1117 0%, #001966 100%)", padding: "52px 20px 28px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -60, right: -60, width: 240, height: 240, borderRadius: "50%", background: "rgba(0,87,255,0.10)" }} />
-        <div style={{ position: "absolute", top: 20, right: 60, width: 110, height: 110, borderRadius: "50%", background: "rgba(0,180,216,0.07)" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, position: "relative" }}>
+    <div style={{ paddingBottom: 100, background: G.bg, minHeight: "100vh" }}>
+      {/* Header */}
+      <div style={{ background: G.ink, padding: "56px 20px 32px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
           <div>
-            <div className="fade-up" style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", letterSpacing: 1, marginBottom: 4 }}>Programme en cours</div>
-            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.white, lineHeight: 1.1 }}>{goal?.label}</h1>
-            {daysToEvent !== null && <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 2 }}>J−{daysToEvent}</p>}
+            <div className="fade-up" style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Programme actif</div>
+            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.white, lineHeight: 1.1 }}>{goal?.label}</h1>
+            {daysToEvent !== null && (
+              <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 4 }}>J−{daysToEvent} · Semaine {(currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length)}/{plan.weeks.length}</p>
+            )}
           </div>
-          <button onClick={onSignOut} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 10, padding: "8px 12px", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <LogOut size={14} color="rgba(255,255,255,0.5)" />
+          <button onClick={onSignOut} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 10px", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+            <LogOut size={15} color="rgba(255,255,255,0.4)" />
           </button>
         </div>
-        <div className="fade-up-3" style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-          <Ring value={weekTotal > 0 ? weekDone / weekTotal : 1} size={72} stroke={7} color={G.water} label={`${weekDone}/${weekTotal}`} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>CETTE SEMAINE</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: G.white }}>{currentWeek?.focus ?? "Plan terminé"}</div>
+        {/* Progress bar */}
+        <div className="fade-up-3">
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", letterSpacing: 0.5 }}>{stats.totalSessions} séances · {(stats.totalMeters / 1000).toFixed(1)} km</span>
+            <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Syne', sans-serif", color: G.white }}>{pct}%</span>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, fontFamily: "'Syne', sans-serif", color: G.white }}>{(stats.totalMeters / 1000).toFixed(1)}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", letterSpacing: 0.5 }}>KM NAGÉS</div>
+          <div style={{ height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 2 }}>
+            <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: G.water, transition: "width 1s ease" }} />
           </div>
         </div>
       </div>
 
-      <div style={{ padding: "20px 16px 0" }}>
+      <div style={{ padding: "24px 16px 0" }}>
+        {/* Plan terminé */}
         {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && (
-          <div className="fade-up" style={{ background: `linear-gradient(135deg, ${G.gold} 0%, #FF8C00 100%)`, borderRadius: 20, padding: 24, textAlign: "center", marginBottom: 20 }}>
-            <Trophy size={48} color={G.white} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.white, marginBottom: 6 }}>Plan terminé !</h2>
-            <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>Programme complété à 100 %. Bravo !</p>
+          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
+            <Trophy size={40} color={G.gold} style={{ margin: "0 auto 12px" }} />
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
+            <p style={{ color: G.grey, fontSize: 14 }}>Programme complété à 100 %.</p>
           </div>
         )}
 
+        {/* Prochaine séance */}
         {nextSession && tm && (
-          <div className="fade-up">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 800, color: G.ink }}>Prochaine séance</h2>
+          <div className="fade-up" style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink }}>Prochaine séance</h2>
               <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 13, color: G.blue, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                Tout voir <ArrowRight size={12} color={G.blue} />
+                Voir tout <ArrowRight size={13} color={G.blue} />
               </button>
             </div>
-            <div style={{ background: G.white, borderRadius: 18, padding: 20, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 16px rgba(0,0,0,0.06)", marginBottom: 20 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: tm.bg, borderRadius: 20, padding: "4px 12px", marginBottom: 12 }}>
-                <tm.Icon size={10} color={tm.color} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: tm.color, letterSpacing: 1, textTransform: "uppercase" }}>{nextSession.type}</span>
+            <div style={{ background: G.white, borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
+              {/* Type badge strip */}
+              <div style={{ background: tm.bg, padding: "10px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+                <tm.Icon size={13} color={tm.color} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, textTransform: "uppercase" }}>{nextSession.type}</span>
               </div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 14 }}>{nextSession.title}</div>
-              <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                {[{ Icon: Ruler, val: nextSession.distance }, { Icon: Timer, val: formatDuration(nextSession.duration) }, { Icon: Gauge, val: nextSession.intensity }].map(({ Icon: I, val }, i) => (
-                  <div key={i} style={{ flex: 1, background: G.greyXLight, borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
-                    <I size={16} color={G.grey} style={{ margin: "0 auto 4px" }} />
-                    <div style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>{val}</div>
-                  </div>
-                ))}
+              <div style={{ padding: "18px 20px 20px" }}>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+                  {[{ Icon: Ruler, val: nextSession.distance, label: "Distance" }, { Icon: Timer, val: formatDuration(nextSession.duration), label: "Durée" }].map(({ Icon: I, val, label }, i) => (
+                    <div key={i} style={{ flex: 1, background: G.greyXLight, borderRadius: 12, padding: "12px 14px" }}>
+                      <div style={{ fontSize: 11, color: G.grey, marginBottom: 4, letterSpacing: 0.5 }}>{label}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+                <Btn variant="blue" onClick={() => onComplete(currentWeekIndex, nextSessionIndex)}>Séance terminée</Btn>
               </div>
-              <Btn variant="blue" onClick={() => onComplete(currentWeekIndex, nextSessionIndex)}>Marquer comme faite</Btn>
             </div>
           </div>
         )}
 
-        <div className="fade-up-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-          <StatPill icon={Flame} value={stats.streak} label="Série max" color={G.coral} bg={G.coralLight} />
-          <StatPill icon={Star}  value={stats.perfectWeeks} label="Semaines parfaites" color={G.gold} bg={G.goldLight} />
-        </div>
-
-        <div className="fade-up-2" style={{ background: G.white, borderRadius: 18, padding: 18, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Progression globale</span>
-            <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: G.blue }}>
-              {stats.planTotal > 0 ? Math.round(stats.totalSessions / stats.planTotal * 100) : 0}%
-            </span>
+        {/* Stats condensées */}
+        <div className="fade-up-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+          <div style={{ background: G.white, borderRadius: 16, padding: "16px", border: `1px solid ${G.greyLight}` }}>
+            <div style={{ fontSize: 11, color: G.grey, letterSpacing: 0.5, marginBottom: 6 }}>SEMAINE EN COURS</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink }}>{weekDone}<span style={{ fontSize: 14, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
+            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{currentWeek?.focus ?? "—"}</div>
           </div>
-          <div style={{ height: 8, background: G.greyLight, borderRadius: 4, overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 4, width: `${stats.planTotal > 0 ? stats.totalSessions / stats.planTotal * 100 : 0}%`, background: `linear-gradient(90deg, ${G.blue} 0%, ${G.water} 100%)`, transition: "width 0.8s ease" }} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: G.grey }}>{stats.totalSessions} séances faites</span>
-            <span style={{ fontSize: 12, color: G.grey }}>{stats.planTotal - stats.totalSessions} restantes</span>
+          <div style={{ background: G.white, borderRadius: 16, padding: "16px", border: `1px solid ${G.greyLight}` }}>
+            <div style={{ fontSize: 11, color: G.grey, letterSpacing: 0.5, marginBottom: 6 }}>SÉRIE ACTUELLE</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink }}>{stats.streak}</div>
+            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>séances consécutives</div>
           </div>
         </div>
       </div>
