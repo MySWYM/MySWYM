@@ -265,10 +265,14 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   </div>
 );
 
-const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus }) => {
+const ProfileTab = ({ plan, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus }) => {
   const [password, setPassword] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
+
+  const stats  = computeStats(plan);
+  const earned = checkBadges(stats);
+  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
 
   const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
 
@@ -286,9 +290,104 @@ const ProfileTab = ({ user, isPremium, onSignOut, onPortal, onUpgrade, onRefresh
 
   return (
     <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
-      <div style={{ padding: "56px 20px 0" }}>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24 }}>Mon compte</h2>
+      {/* Header */}
+      <div style={{ background: "linear-gradient(140deg, #0D1117 0%, #001966 100%)", padding: "52px 20px 28px" }}>
+        <div className="fade-up" style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", letterSpacing: 1, marginBottom: 4 }}>Ton espace</div>
+        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, marginBottom: 4 }}>Profil</h1>
+        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>{(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}</p>
+      </div>
 
+      <div style={{ padding: "20px 16px 0" }}>
+
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <StatPill icon={Waves}  value={`${(stats.totalMeters / 1000).toFixed(1)} km`} label="Total nagés"        color={G.blue}  bg={G.blueLight}  />
+          <StatPill icon={Flame}  value={stats.streak}                                   label="Meilleure série"    color={G.coral} bg={G.coralLight} />
+          <StatPill icon={Check}  value={stats.totalSessions}                            label="Séances faites"     color={G.mint}  bg={G.mintLight}  />
+          <StatPill icon={Star}   value={stats.perfectWeeks}                             label="Semaines parfaites" color={G.gold}  bg={G.goldLight}  />
+        </div>
+
+        {/* Weekly bar chart */}
+        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
+            {stats.weeklyData.map((w, i) => (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
+                <div style={{ flex: 1, width: "100%", position: "relative" }}>
+                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0 }} />
+                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : `linear-gradient(180deg, ${G.water} 0%, ${G.blue} 100%)`, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
+                </div>
+                <span style={{ fontSize: 10, color: G.grey }}>{w.label}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+            {[{ color: G.blue, label: "Réalisé" }, { color: G.greyLight, label: "Prévu" }].map((l, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
+                <span style={{ fontSize: 11, color: G.grey }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Session type breakdown */}
+        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
+          {Object.entries(TYPE_META).map(([type, tm]) => {
+            const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
+            const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
+            if (total === 0) return null;
+            return (
+              <div key={type} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <tm.Icon size={12} color={tm.color} />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: G.ink }}>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: G.grey }}>{count}/{total}</span>
+                </div>
+                <div style={{ height: 6, background: G.greyLight, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${total > 0 ? count / total * 100 : 0}%`, background: tm.color, borderRadius: 3, transition: "width 0.6s ease" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Badges */}
+        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Badges</h3>
+          <p style={{ fontSize: 12, color: G.grey, marginBottom: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
+          {earned.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: earned.length < BADGE_DEFS.length ? 16 : 0 }}>
+              {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
+                <div key={b.id} className="scale-in" style={{ background: G.white, borderRadius: 14, padding: 14, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${b.color}18`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}>
+                    <b.icon size={20} color={b.color} />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{b.label}</div>
+                  <div style={{ fontSize: 10, color: G.grey, lineHeight: 1.4 }}>{b.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
+                <div key={b.id} style={{ background: G.greyXLight, borderRadius: 14, padding: 14, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}>
+                    <Lock size={18} color={G.greyMid} />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: G.greyMid, marginBottom: 2 }}>{b.label}</div>
+                  <div style={{ fontSize: 10, color: G.greyMid, lineHeight: 1.4 }}>{b.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Compte */}
         <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>Email</div>
           <div style={{ fontSize: 15, color: G.ink, padding: "13px 14px", background: G.greyXLight, borderRadius: 12 }}>{user?.email}</div>
@@ -334,8 +433,6 @@ const BottomNav = ({ active, onChange, newBadge }) => {
   const tabs = [
     { id: "home",    Icon: Home,      label: "Accueil" },
     { id: "plan",    Icon: Calendar,  label: "Programme" },
-    { id: "stats",   Icon: BarChart2, label: "Stats" },
-    { id: "badges",  Icon: Award,     label: "Badges" },
     { id: "profile", Icon: User,      label: "Profil" },
   ];
   return (
@@ -346,7 +443,7 @@ const BottomNav = ({ active, onChange, newBadge }) => {
           <button key={t.id} onClick={() => onChange(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "2px 0", position: "relative" }}>
             <t.Icon size={22} color={isActive ? G.blue : G.greyMid} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
             <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 400, color: isActive ? G.blue : G.grey }}>{t.label}</span>
-            {t.id === "badges" && newBadge && <div style={{ position: "absolute", top: 0, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
+            {t.id === "profile" && newBadge && <div style={{ position: "absolute", top: 0, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
             {isActive && <div style={{ position: "absolute", bottom: -10, width: 24, height: 3, borderRadius: 2, background: G.blue }} />}
           </button>
         );
@@ -1889,9 +1986,7 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"    && <Dashboard   plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
         {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
-        {activeTab === "stats"   && <StatsTab   plan={plan} />}
-        {activeTab === "badges"  && <BadgesTab  plan={plan} />}
-        {activeTab === "profile" && <ProfileTab user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} />}
+        {activeTab === "profile" && <ProfileTab plan={plan} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
