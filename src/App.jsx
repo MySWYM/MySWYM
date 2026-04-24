@@ -1770,6 +1770,7 @@ export default function App() {
   const [feedbackWeek, setFeedbackWeek] = useState(null);
   const [shareSession, setShareSession] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
+  const [toast, setToast] = useState(null);
   const prevBadgesRef = useRef([]);
 
   useEffect(() => {
@@ -1789,11 +1790,20 @@ export default function App() {
     // Refresh immédiat
     supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
 
-    // Retry après 2s et 5s pour laisser le webhook Stripe arriver
-    const t1 = setTimeout(() => supabase.auth.getUser().then(({ data }) => applyUser(data?.user)), 2000);
-    const t2 = setTimeout(() => supabase.auth.getUser().then(({ data }) => applyUser(data?.user)), 5000);
+    if (payment === "success") {
+      setToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.");
+      setTimeout(() => setToast(null), 8000);
+    }
 
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // Retry jusqu'à 30s pour laisser le webhook Stripe arriver
+    const retry = (ms) => setTimeout(() => supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user)), ms);
+    const t1 = retry(2000);
+    const t2 = retry(5000);
+    const t3 = retry(10000);
+    const t4 = retry(20000);
+    const t5 = retry(30000);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, []);
 
   // Régénère le plan quand le premium est débloqué et que le plan était limité
@@ -2020,6 +2030,11 @@ export default function App() {
         {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onRate={handleFeedback} onSkip={() => setFeedbackWeek(null)} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
+        {toast && (
+          <div className="toast-in" style={{ position: "fixed", bottom: 90, left: 16, right: 16, zIndex: 300, background: G.ink, color: G.white, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}>
+            {toast}
+          </div>
+        )}
         {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} weeksBlocked={plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null} />}
       </div>
     </>
