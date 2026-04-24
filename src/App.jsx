@@ -4,7 +4,7 @@ import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -76,14 +76,16 @@ const css = `
 
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "remise_en_forme",   label: "Remise en forme",       dist: "8 semaines · progressif",      icon: <Flame size={20} />,    wellness: true  },
   { id: "perte_de_poids",    label: "Perte de poids",         dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
   { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
   { id: "triathlon_sprint",  label: "Triathlon Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_olympic", label: "Triathlon Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_ironman", label: "Triathlon Ironman",      dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "open_water_5k",     label: "Eau libre 5 km",         dist: "5 km",                         icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
-  { id: "competition_50m",   label: "Compétition piscine",    dist: "50–200 m",                     icon: <Zap size={20} />,      wellness: false },
+  { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
+  { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
+  { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\"",            icon: <Award size={20} />,    wellness: false },
 ];
 
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
