@@ -78,15 +78,44 @@ const css = `
 const GOALS = [
   { id: "triathlon_sprint",  label: "Triathlon Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_olympic", label: "Triathlon Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_half",    label: "Triathlon Half",         dist: "1 900 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_ironman", label: "Triathlon Ironman",      dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "open_water_5k",     label: "Eau libre 5 km",         dist: "5 km",                         icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
   { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
   { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\"",            icon: <Award size={20} />,    wellness: false },
+  { id: "tests_pompiers",    label: "Tests Pompiers",         dist: "400 m NL + 50 m sauvetage",    icon: <Shield size={20} />,   wellness: false },
   { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
   { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
   { id: "perte_de_poids",    label: "Perte de poids",         dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
 ];
+
+// Catégories onboarding (step 1)
+const CATEGORIES = [
+  { id: "triathlon", label: "Triathlon",       emoji: "🏊", desc: "Sprint · Olympique · Half · Ironman" },
+  { id: "eau_libre", label: "Eau libre",        emoji: "🌊", desc: "5 km · 10 km en eau vive" },
+  { id: "poids",     label: "Perte de poids",   emoji: "⚡", desc: "Plan adapté à ton objectif" },
+  { id: "diplome",   label: "Prépa diplôme",    emoji: "🎓", desc: "BNSSA · BPJEPS · Pompiers" },
+];
+
+// Sous-objectifs par catégorie
+const SUB_GOALS = {
+  triathlon: [
+    { id: "triathlon_sprint",  label: "Sprint",    dist: "750 m" },
+    { id: "triathlon_olympic", label: "Olympique", dist: "1 500 m" },
+    { id: "triathlon_half",    label: "Half",      dist: "1 900 m" },
+    { id: "triathlon_ironman", label: "Ironman",   dist: "3 800 m" },
+  ],
+  eau_libre: [
+    { id: "open_water_5k",  label: "5 km",  dist: "Eau vive" },
+    { id: "open_water_10k", label: "10 km", dist: "Eau vive" },
+  ],
+  diplome: [
+    { id: "bnssa",          label: "BNSSA",          dist: "100 m & 250 m sauvetage" },
+    { id: "bpjeps_aan",     label: "BPJEPS AAN",     dist: "400 m NL < 7'40\"" },
+    { id: "tests_pompiers", label: "Tests Pompiers", dist: "400 m + 50 m sauvetage" },
+  ],
+};
 
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
 
@@ -528,26 +557,54 @@ const AuthScreen = ({ onAuth }) => {
 };
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────
-const Step1_Goal = ({ value, onChange, onNext }) => (
+// ── STEP 1 : CATÉGORIE ────────────────────────────────────────────────────
+const Step1_Category = ({ onSelect }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 1 sur 4</p>
-    <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Quel est ton<br />objectif ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>On va construire ton plan autour de ça.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
-      {GOALS.map(g => (
-        <button key={g.id} onClick={() => onChange(g.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, border: `2px solid ${value === g.id ? G.ink : G.greyLight}`, background: value === g.id ? G.ink : G.white, cursor: "pointer", transition: "all 0.2s", textAlign: "left" }}>
-          <span style={{ color: value === g.id ? G.white : G.grey, flexShrink: 0 }}>{g.icon}</span>
+    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 1 sur 5</p>
+    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Pourquoi<br />tu nages ?</h2>
+    <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>Ton plan sera construit autour de ça.</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {CATEGORIES.map(cat => (
+        <button key={cat.id} onClick={() => onSelect(cat.id)}
+          style={{ display: "flex", alignItems: "center", gap: 18, padding: "20px 20px", borderRadius: 18, border: `1.5px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>{cat.emoji}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: value === g.id ? G.white : G.ink }}>{g.label}</div>
-            <div style={{ fontSize: 12, color: value === g.id ? "rgba(255,255,255,0.5)" : G.grey }}>{g.dist}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{cat.label}</div>
+            <div style={{ fontSize: 13, color: G.grey }}>{cat.desc}</div>
           </div>
-          {value === g.id && <Check size={16} color={G.white} />}
+          <ArrowRight size={18} color={G.greyMid} />
         </button>
       ))}
     </div>
-    <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
   </div>
 );
+
+// ── STEP 2 : SOUS-OBJECTIF ────────────────────────────────────────────────
+const Step2_SubGoal = ({ category, onSelect, onBack }) => {
+  const subs = SUB_GOALS[category] || [];
+  return (
+    <div className="fade-up">
+      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 2 sur 5</p>
+      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>
+        {category === "triathlon" ? "Quelle distance ?" : category === "eau_libre" ? "Ton objectif ?" : "Quel diplôme ?"}
+      </h2>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On calibre le volume de tes séances.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        {subs.map(s => (
+          <button key={s.id} onClick={() => onSelect(s.id)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px", borderRadius: 18, border: `1.5px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: G.grey }}>{s.dist}</div>
+            </div>
+            <ArrowRight size={18} color={G.greyMid} />
+          </button>
+        ))}
+      </div>
+      <button onClick={onBack} style={{ width: "100%", padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
 
 const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
   const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
@@ -613,25 +670,25 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
 
 const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 3 sur 4</p>
-    <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton niveau<br />de natation ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>Sois honnête — le plan sera meilleur.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur 5</p>
+    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton niveau<br />en natation ?</h2>
+    <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>Sois honnête — le plan sera meilleur.</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
       {LEVELS.map(l => (
-        <button key={l.id} onClick={() => onChange(l.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 14, border: `2px solid ${value === l.id ? G.ink : G.greyLight}`, background: value === l.id ? G.ink : G.white, cursor: "pointer", transition: "all 0.2s" }}>
+        <button key={l.id} onClick={() => onChange(l.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", borderRadius: 16, border: `2px solid ${value === l.id ? G.ink : G.greyLight}`, background: value === l.id ? G.ink : G.white, cursor: "pointer", transition: "all 0.2s", boxShadow: value === l.id ? "0 4px 16px rgba(0,0,0,0.14)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
           <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: value === l.id ? G.white : G.ink }}>{l.label}</div>
-            <div style={{ fontSize: 12, color: value === l.id ? "rgba(255,255,255,0.55)" : G.grey }}>{l.desc}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: value === l.id ? G.white : G.ink }}>{l.label}</div>
+            <div style={{ fontSize: 13, color: value === l.id ? "rgba(255,255,255,0.55)" : G.grey }}>{l.desc}</div>
           </div>
           {value === l.id && <Check size={16} color={G.white} />}
         </button>
       ))}
     </div>
-    <div style={{ marginBottom: 28 }}>
-      <p style={{ fontSize: 11, fontWeight: 600, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Ton bassin habituel</p>
-      <div style={{ display: "flex", gap: 10 }}>
+    <div style={{ marginBottom: 32 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Ton bassin habituel</p>
+      <div style={{ display: "flex", gap: 12 }}>
         {POOLS.map(p => (
-          <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.white, color: pool === p.id ? G.white : G.ink, fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{p.label}</button>
+          <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "16px", borderRadius: 14, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.white, color: pool === p.id ? G.white : G.ink, fontSize: 17, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{p.label}</button>
         ))}
       </div>
     </div>
@@ -640,23 +697,23 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack }) =>
   </div>
 );
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack }) => (
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 4 sur 4</p>
-    <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Séances<br />par semaine ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>On s'adapte à ta vie, pas l'inverse.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {isLast ? 4 : 5}</p>
+    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
+    <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
       {FREQUENCIES.map(f => (
-        <button key={f.id} onClick={() => onChange(f.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `2px solid ${value === f.id ? G.blue : G.greyLight}`, background: value === f.id ? G.blue : G.white, cursor: "pointer", transition: "all 0.2s" }}>
+        <button key={f.id} onClick={() => onChange(f.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", borderRadius: 16, border: `2px solid ${value === f.id ? G.blue : G.greyLight}`, background: value === f.id ? G.blue : G.white, cursor: "pointer", transition: "all 0.2s", boxShadow: value === f.id ? "0 4px 16px rgba(0,87,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
           <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: value === f.id ? G.white : G.ink }}>{f.label}</div>
-            <div style={{ fontSize: 12, color: value === f.id ? "rgba(255,255,255,0.65)" : G.grey }}>{f.desc}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: value === f.id ? G.white : G.ink }}>{f.label}</div>
+            <div style={{ fontSize: 13, color: value === f.id ? "rgba(255,255,255,0.65)" : G.grey }}>{f.desc}</div>
           </div>
           {value === f.id && <Check size={16} color={G.white} />}
         </button>
       ))}
     </div>
-    <Btn variant="blue" onClick={onNext} disabled={!value}>Générer mon plan</Btn>
+    <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan 🚀" : "Continuer"}</Btn>
     <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
   </div>
 );
@@ -1230,6 +1287,8 @@ const BASE_DISTANCES = {
   intermediate: { endurance: 2000, seuil: 1800, vitesse: 1400, technique: 1600, récupération: 1200, bnssa: 1500 },
   advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600, bnssa: 2000 },
 };
+// Alias bnssa pour tests_pompiers (même type de séance)
+Object.keys(BASE_DISTANCES).forEach(k => { BASE_DISTANCES[k].tests_pompiers = BASE_DISTANCES[k].bnssa; });
 
 // pace100[lvl][zone] = secondes aux 100m (beginner/intermediate/advanced × easy/threshold/sprint)
 const PACE = {
@@ -1752,7 +1811,7 @@ const generatePlan = async (profile, isPremium = false) => {
   const totalWeeks = isPremium ? rawWeeks : Math.min(rawWeeks, FREE_MAX_WEEKS);
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.beginner;
   const phaseList = wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
-  const patterns = wellness ? WELLNESS_PATTERNS : goal === "bnssa" ? BNSSA_PATTERNS : PHASE_PATTERNS;
+  const patterns = wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS;
   const f = Math.min(freq, 4);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
@@ -1776,7 +1835,7 @@ export default function App() {
   const [screen, setScreen] = useState("onboarding");
   const [activeTab, setActiveTab] = useState("home");
   const [step, setStep] = useState(1);
-  const [profile, setProfile] = useState({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
+  const [profile, setProfile] = useState({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
@@ -1836,7 +1895,7 @@ export default function App() {
       setUser(u);
       setIsPremium(checkIsPremium(u));
       if (u) { loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false)); }
-      else { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" }); setPlan(null); setAuthLoading(false); }
+      else { setScreen("onboarding"); setStep(1); setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" }); setPlan(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -1929,7 +1988,7 @@ export default function App() {
   const handleReset = () => {
     if (user) { localStorage.removeItem(`myswym_profile_${user.id}`); localStorage.removeItem(`myswym_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
     setScreen("onboarding"); setStep(1);
-    setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
+    setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
     setPlan(null); prevBadgesRef.current = [];
   };
 
@@ -2002,24 +2061,48 @@ export default function App() {
               </div>
             </div>
             {(() => {
-              const wellness = isWellnessGoal(profile.goal);
-              const hasWeight = profile.goal === "perte_de_poids";
-              const totalSteps = wellness ? (hasWeight ? 4 : 3) : 4;
-              const stepMap = wellness
-                ? hasWeight
-                  ? { 1: "goal", 2: "weight", 3: "level", 4: "freq" }
-                  : { 1: "goal", 2: "level", 3: "freq" }
-                : { 1: "goal", 2: "date", 3: "level", 4: "freq" };
-              const current = stepMap[step];
+              // Nouvelle logique : category → sub-goal → level → freq → date (sauf poids)
+              // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin, 4 = fréquence, 5 = date
+              const isPoids = profile.category === "poids";
+              const totalSteps = isPoids ? 4 : 5;
               return (
                 <>
-                  <Progress step={step} total={totalSteps} />
+                  {step > 1 && <Progress step={step - 1} total={totalSteps} />}
                   {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>{error}</div>}
-                  {current === "goal" && <Step1_Goal value={profile.goal} onChange={v => { update("goal", v); }} onNext={() => setStep(2)} />}
-                  {current === "weight" && <StepWeight weightCurrent={profile.weightCurrent} weightGoal={profile.weightGoal} onChangeCurrent={v => update("weightCurrent", v)} onChangeGoal={v => update("weightGoal", v)} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-                  {current === "date" && <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-                  {current === "level" && <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} onNext={() => setStep(step + 1)} onBack={() => setStep(step - 1)} />}
-                  {current === "freq" && <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} onNext={handleGenerate} onBack={() => setStep(step - 1)} />}
+
+                  {step === 1 && (
+                    <Step1_Category onSelect={cat => {
+                      const goal = cat === "poids" ? "perte_de_poids" : "";
+                      setProfile(p => ({ ...p, category: cat, goal }));
+                      setStep(2);
+                    }} />
+                  )}
+
+                  {step === 2 && profile.category === "poids" && (
+                    <StepWeight
+                      weightCurrent={profile.weightCurrent} weightGoal={profile.weightGoal}
+                      onChangeCurrent={v => update("weightCurrent", v)} onChangeGoal={v => update("weightGoal", v)}
+                      onNext={() => setStep(3)} onBack={() => setStep(1)} />
+                  )}
+
+                  {step === 2 && profile.category !== "poids" && (
+                    <Step2_SubGoal
+                      category={profile.category}
+                      onSelect={goalId => { update("goal", goalId); setStep(3); }}
+                      onBack={() => setStep(1)} />
+                  )}
+
+                  {step === 3 && (
+                    <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} onNext={() => setStep(4)} onBack={() => setStep(2)} />
+                  )}
+
+                  {step === 4 && (
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} onNext={isPoids ? handleGenerate : () => setStep(5)} onBack={() => setStep(3)} isLast={isPoids} />
+                  )}
+
+                  {step === 5 && !isPoids && (
+                    <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(4)} />
+                  )}
                 </>
               );
             })()}
