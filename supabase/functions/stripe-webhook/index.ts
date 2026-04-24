@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
     const sub = event.data?.object;
     const customerId = sub?.customer;
     const status = sub?.status; // active, canceled, past_due, etc.
-    const isPremium = status === "active" || status === "trialing";
+    const cancelAtPeriodEnd = sub?.cancel_at_period_end === true;
+    const isPremium = (status === "active" || status === "trialing") && !cancelAtPeriodEnd;
 
     const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     const user = data?.users?.find(u => u.user_metadata?.stripe_customer_id === customerId);
