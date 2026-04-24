@@ -1813,23 +1813,27 @@ export default function App() {
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(u?.user_metadata?.subscription === "premium");
-      if (u) { loadUserData(u.id).finally(() => setAuthLoading(false)); }
+      if (u) { loadUserData(u.id, u?.user_metadata?.subscription === "premium").finally(() => setAuthLoading(false)); }
       else { setScreen("onboarding"); setStep(1); setProfile({ goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" }); setPlan(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadUserData = async (userId) => {
+  const loadUserData = async (userId, userIsPremium = false) => {
+    const enforceFreeLimit = (p) => {
+      if (userIsPremium || !p?.weeks) return p;
+      return { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) };
+    };
     try {
       const { data, error } = await supabase.from("user_plans").select("profile, plan").eq("user_id", userId).single();
       if (data && !error && data.profile && data.plan) {
-        setProfile(data.profile); setPlan(data.plan); setScreen("app"); return;
+        setProfile(data.profile); setPlan(enforceFreeLimit(data.plan)); setScreen("app"); return;
       }
     } catch {}
     try {
       const sp = localStorage.getItem(`myswym_profile_${userId}`);
       const spl = localStorage.getItem(`myswym_plan_${userId}`);
-      if (sp && spl) { setProfile(JSON.parse(sp)); setPlan(JSON.parse(spl)); setScreen("app"); }
+      if (sp && spl) { setProfile(JSON.parse(sp)); setPlan(enforceFreeLimit(JSON.parse(spl))); setScreen("app"); }
     } catch {}
   };
 
