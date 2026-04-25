@@ -95,13 +95,15 @@ Avec MySWYM, tu renseignes ton meilleur 100m NL et l'app calcule automatiquement
     sections: [
       {
         h2: "Les épreuves natation du BNSSA",
-        content: `Le BNSSA comprend plusieurs épreuves aquatiques éliminatoires. Deux sont particulièrement techniques :
+        content: `Le BNSSA comprend trois épreuves aquatiques éliminatoires :
 
-**Le 100m de sauvetage** — Parcours : 25m NL → immersion (15m en apnée au fond) → virage mur → 15m apnée retour → 25m remorquage du mannequin en position dorsale. À réaliser sans équipement, en tenue réglementaire.
+**Épreuve 1 — 100m sauvetage (temps limite : 2'40")** — Parcours : 25m NL → immersion (15m en apnée au fond) → virage mur → 15m apnée retour → 25m remorquage du mannequin en position dorsale. À réaliser sans équipement, en tenue réglementaire. En cas d'examen de rattrapage, le temps limite est porté à 3'00".
 
-**Le 250m palmes/masque/tuba** — 250m nage équipée, en bassin, sans contrainte de temps (mais à réaliser en continu). L'objectif est de démontrer l'endurance et la maîtrise des équipements.
+**Épreuve 2 — 250m palmes/masque/tuba (temps limite : 4'20")** — 250m nage équipée en bassin, à réaliser en continu. L'objectif est de démontrer endurance et maîtrise des équipements dans le temps imparti.
 
-Ces deux épreuves s'accompagnent de plongeons, de techniques de sauvetage à la surface, et d'une épreuve de condition physique générale.`,
+**Épreuve 3 — Assistance à personne en difficulté (pas de temps limite)** — Le jury évalue la qualité de l'intervention, la sécurité du sauveteur et la prise en charge de la victime. Il n'y a pas de chrono imposé : c'est la prestation globale qui est notée.
+
+Ces trois épreuves sont éliminatoires et se déroulent le même jour.`,
       },
       {
         h2: "L'apnée dynamique : la clé du 100m sauvetage",
@@ -137,11 +139,11 @@ Dans un programme sérieux, prévois 3 à 6 longueurs de remorquage par séance 
         content: `Cette épreuve est souvent sous-estimée. Nager 250m équipé sans s'arrêter demande une endurance spécifique et une bonne maîtrise des équipements.
 
 **S'équiper correctement :**
-- Palmes courtes (type mono-palme ou palmes courtes de natation)
-- Masque bien ajusté, pas de fuites
-- Tuba fixe (pas de valve de purge)
+- Palmes courtes type Mares (évite les mono-palmes trop rigides)
+- Masque bien ajusté, sans fuite — vérifie l'étanchéité à sec avant
+- Tuba fixe, sans valve de purge (réglementaire BNSSA)
 
-**L'erreur principale :** Se focaliser sur la vitesse. L'épreuve est jugée en continu — la priorité, c'est de ne pas s'arrêter. Adopte une allure régulière dès le départ.
+**L'erreur principale :** Se focaliser sur la vitesse. L'épreuve est chronométrée (4'20" maxi) mais la priorité reste de finir en continu, sans s'arrêter. Adopte une allure régulière dès le départ — un départ trop rapide finit en crampe ou en panique à mi-parcours.
 
 **L'entraînement :** Intègre des séries de 4×50m équipé, puis 2×100m, puis 1×200m progressivement. La coordination palmes/tuba change ton équilibre dans l'eau et demande une adaptation.`,
       },
