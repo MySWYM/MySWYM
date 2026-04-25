@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
-  Waves, Activity, Award, Target, ChevronRight, Check,
-  ArrowRight, Play, Star, Zap, TrendingUp, Calendar, Users,
+  Waves, Activity, Award, Target, ChevronRight, Check, X, Minus,
+  ArrowRight, Play, Star, Zap, TrendingUp, Calendar, Users, Timer,
+  ChevronDown, Shield,
 } from "lucide-react";
 
 // ── Supabase ───────────────────────────────────────────────────────────────
@@ -667,6 +668,267 @@ function Footer() {
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
+// ── Comparison ────────────────────────────────────────────────────────────
+function Comparison() {
+  const rows = [
+    { label: "Plan structuré semaine par semaine", alone: false, generic: "partial", myswym: true },
+    { label: "Adapté à ton niveau exact",          alone: false, generic: false,     myswym: true },
+    { label: "Objectif sportif spécifique",        alone: false, generic: false,     myswym: true },
+    { label: "Allures cibles personnalisées",      alone: false, generic: false,     myswym: true },
+    { label: "Séances variées (5 formats/type)",   alone: false, generic: "partial", myswym: true },
+    { label: "Progression en phases (base→pic)",   alone: false, generic: "partial", myswym: true },
+    { label: "Éducatifs techniques intégrés",      alone: false, generic: false,     myswym: true },
+    { label: "Gratuit pour commencer",             alone: true,  generic: false,     myswym: true },
+  ];
+
+  const Cell = ({ val }) => {
+    if (val === true)      return <Check  size={18} color="#34C759" strokeWidth={2.5} />;
+    if (val === false)     return <X      size={18} color="#FF3B30" strokeWidth={2.5} />;
+    if (val === "partial") return <Minus  size={18} color="#FF9F0A" strokeWidth={2.5} />;
+  };
+
+  const cols = [
+    { label: "Seul",     sub: "sans plan",     dim: true  },
+    { label: "Générique",sub: "plan standard", dim: true  },
+    { label: "MySWYM",   sub: "coach perso",   dim: false },
+  ];
+
+  return (
+    <section style={{ background: C.ink, padding: "100px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>POURQUOI MYSWYM</div>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.white, margin: 0, letterSpacing: "-1px" }}>
+            La différence que tu<br />ressentiras dans l'eau
+          </h2>
+        </FadeIn>
+
+        <FadeIn>
+          <div style={{ background: C.inkLight, border: `1px solid ${C.border}`, borderRadius: 24, overflow: "hidden" }}>
+            {/* Header */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(3, 110px)", borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ padding: "18px 24px" }} />
+              {cols.map((c, i) => (
+                <div key={i} style={{
+                  padding: "18px 12px", textAlign: "center",
+                  background: !c.dim ? "rgba(10,132,255,0.08)" : "transparent",
+                  borderLeft: `1px solid ${C.border}`,
+                  borderBottom: !c.dim ? `2px solid ${C.blue}` : "none",
+                }}>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: c.dim ? C.grey : C.white }}>{c.label}</div>
+                  <div style={{ fontSize: 11, color: c.dim ? "rgba(138,155,176,0.5)" : C.blue, marginTop: 2 }}>{c.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {rows.map((r, i) => (
+              <div key={i} style={{
+                display: "grid", gridTemplateColumns: "1fr repeat(3, 110px)",
+                borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none",
+                background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+              }}>
+                <div style={{ padding: "14px 24px", fontSize: 14, color: C.greyLight, display: "flex", alignItems: "center" }}>{r.label}</div>
+                {[r.alone, r.generic, r.myswym].map((val, j) => (
+                  <div key={j} style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: j === 2 ? "rgba(10,132,255,0.04)" : "transparent",
+                    borderLeft: `1px solid ${C.border}`,
+                  }}>
+                    <Cell val={val} />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+// ── Pace zones feature ─────────────────────────────────────────────────────
+function PaceFeature() {
+  const [time, setTime] = useState("1:45");
+  const [secs, setSecs] = useState(105);
+
+  const zones = [
+    { label: "Facile",  zone: "Z1/Z2", mult: 1.35, color: "#34C759", desc: "Endurance & récupération" },
+    { label: "Seuil",   zone: "Z3/Z4", mult: 1.08, color: "#FF9F0A", desc: "Effort soutenu · CSS" },
+    { label: "Sprint",  zone: "Z5/Z6", mult: 0.95, color: "#FF3B30", desc: "Vitesse maximale" },
+  ];
+
+  const examples = ["0:55", "1:20", "1:45", "2:10", "2:45"];
+
+  const toSecs = (str) => {
+    const [m, s] = str.split(":").map(Number);
+    return m * 60 + (s || 0);
+  };
+  const fmtSecs = (s) => `${Math.floor(s/60)}'${Math.round(s%60).toString().padStart(2,"0")}"`;
+
+  return (
+    <section style={{ background: C.inkLight, padding: "100px 24px" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 64, alignItems: "center" }}>
+        {/* Left — texte */}
+        <FadeIn>
+          <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+            <Timer size={14} color={C.blue} /> ZONES PERSONNALISÉES
+          </div>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, color: C.white, margin: "0 0 18px", letterSpacing: "-1px" }}>
+            Tes allures cibles,<br />calculées à la seconde
+          </h2>
+          <p style={{ color: C.grey, fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
+            Tu entres ton meilleur 100m NL. On calcule automatiquement tes 3 zones d'intensité — chaque séance affiche l'allure exacte à viser dans l'eau.
+          </p>
+          <p style={{ color: C.grey, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
+            Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en Z2 ou au seuil.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {["Endurance", "Seuil lactique", "VO2max", "Sprint"].map((t, i) => (
+              <span key={i} style={{ background: "rgba(10,132,255,0.1)", border: `1px solid rgba(10,132,255,0.25)`, color: C.blue, fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 100 }}>{t}</span>
+            ))}
+          </div>
+        </FadeIn>
+
+        {/* Right — interactive card */}
+        <FadeIn delay={0.15}>
+          <div style={{ background: C.ink, border: `1px solid ${C.border}`, borderRadius: 24, padding: 28, boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
+            {/* Time picker */}
+            <p style={{ fontSize: 11, color: C.grey, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Mon meilleur 100m NL</p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+              {examples.map(ex => (
+                <button key={ex} onClick={() => { setTime(ex); setSecs(toSecs(ex)); }} style={{
+                  padding: "8px 14px", borderRadius: 10, border: `1px solid ${time === ex ? C.blue : C.border}`,
+                  background: time === ex ? "rgba(10,132,255,0.15)" : "transparent",
+                  color: time === ex ? C.blue : C.grey, fontFamily: "'Syne', sans-serif",
+                  fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                }}>
+                  {ex}
+                </button>
+              ))}
+            </div>
+
+            {/* Zones */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+              {zones.map((z, i) => {
+                const pace = secs * z.mult;
+                const pStr = fmtSecs(Math.round(pace));
+                const barW = [80, 60, 45][i];
+                return (
+                  <div key={i} style={{ background: C.inkLight, borderRadius: 14, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.white }}>{z.label}</span>
+                        <span style={{ fontSize: 11, color: C.grey, marginLeft: 6 }}>{z.zone}</span>
+                      </div>
+                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 800, color: z.color }}>{pStr}/100m</span>
+                    </div>
+                    <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
+                      <div style={{ width: `${barW}%`, height: "100%", background: z.color, borderRadius: 2, transition: "width 0.4s ease" }} />
+                    </div>
+                    <div style={{ fontSize: 11, color: C.grey, marginTop: 5 }}>{z.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Session detail preview */}
+            <div style={{ background: C.inkLight, borderRadius: 14, padding: "14px 16px", border: `1px solid rgba(10,132,255,0.2)` }}>
+              <div style={{ fontSize: 10, color: C.blue, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 6 }}>APERÇU DANS TES SÉANCES</div>
+              <div style={{ fontSize: 12, color: C.greyLight, lineHeight: 1.7, fontFamily: "monospace" }}>
+                {`8×200m NL — D${fmtSecs(Math.round(Math.ceil((200 * secs * 1.08 / 100 + 15) / 5) * 5))} ≈ ${fmtSecs(Math.round(secs * 1.08))}/100m`}
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+// ── FAQ ────────────────────────────────────────────────────────────────────
+function FAQ() {
+  const [open, setOpen] = useState(null);
+
+  const items = [
+    {
+      q: "Je suis débutant total, MySWYM est fait pour moi ?",
+      a: "Oui. Le niveau \"débutant\" est conçu pour les gens qui reprennent après des années d'arrêt — ou qui ne se souviennent plus de leur dernier crawl. Les premières séances travaillent la position dans l'eau avant tout. On progresse à ton rythme.",
+    },
+    {
+      q: "Je ne connais pas mon temps au 100m — est-ce un problème ?",
+      a: "Pas du tout. Le temps au 100m est optionnel. Si tu le passes, l'app calcule des allures précises. Sinon, elle utilise des allures adaptées à ton niveau déclaré (débutant, intermédiaire, avancé). Le plan reste 100% utilisable.",
+    },
+    {
+      q: "Qu'est-ce qui est inclus dans la version gratuite ?",
+      a: "Les 2 premières semaines de ton plan complet, avec le détail de chaque séance. C'est suffisant pour voir si l'approche te correspond avant de t'engager. Aucune carte bancaire requise pour commencer.",
+    },
+    {
+      q: "Puis-je changer d'objectif en cours de plan ?",
+      a: "Oui. Dans l'onglet Profil, un bouton \"Recommencer l'onboarding\" te permet de définir un nouvel objectif et de régénérer un plan complet. Ton historique de séances réalisées est conservé.",
+    },
+    {
+      q: "Les séances fonctionnent en bassin 25m et 50m ?",
+      a: "Oui. Lors de l'onboarding tu choisis la longueur de ton bassin. Toutes les distances, séries et temps de départ sont automatiquement calculés pour s'adapter à 25m ou 50m.",
+    },
+    {
+      q: "L'abonnement est sans engagement ?",
+      a: "Oui. Tu peux annuler à tout moment depuis ton espace client. Si tu annules, tu gardes l'accès Premium jusqu'à la fin de la période payée — pas de coupure immédiate.",
+    },
+  ];
+
+  return (
+    <section style={{ background: C.ink, padding: "100px 24px" }}>
+      <div style={{ maxWidth: 700, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>FAQ</div>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.white, margin: 0, letterSpacing: "-1px" }}>
+            Questions fréquentes
+          </h2>
+        </FadeIn>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {items.map((item, i) => {
+            const isOpen = open === i;
+            return (
+              <FadeIn key={i} delay={i * 0.05}>
+                <div style={{
+                  background: isOpen ? C.inkLight : "transparent",
+                  border: `1px solid ${isOpen ? C.borderMid : C.border}`,
+                  borderRadius: 16, overflow: "hidden",
+                  transition: "background 0.25s, border-color 0.25s",
+                  marginBottom: 4,
+                }}>
+                  <button onClick={() => setOpen(isOpen ? null : i)} style={{
+                    width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "18px 22px", background: "none", border: "none", cursor: "pointer", textAlign: "left", gap: 16,
+                  }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: isOpen ? C.white : C.greyLight, flex: 1, lineHeight: 1.4 }}>{item.q}</span>
+                    <div style={{
+                      flexShrink: 0, width: 28, height: 28, borderRadius: "50%",
+                      background: isOpen ? C.blue : "rgba(255,255,255,0.06)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.25s, background 0.25s",
+                    }}>
+                      <ChevronDown size={15} color={isOpen ? C.white : C.grey} />
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: "0 22px 20px", fontSize: 14, color: C.grey, lineHeight: 1.75 }}>
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              </FadeIn>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Landing() {
   useEffect(() => {
     document.title = "MySWYM — Ton coach natation personnalisé";
@@ -677,11 +939,14 @@ export default function Landing() {
       <Nav />
       <Hero />
       <Stats />
+      <Comparison />
       <HowItWorks />
       <Goals />
+      <PaceFeature />
       <ProgressTimeline />
       <Testimonials />
       <Pricing />
+      <FAQ />
       <FinalCTA />
       <Footer />
     </div>
