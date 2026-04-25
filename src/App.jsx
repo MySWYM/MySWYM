@@ -960,7 +960,7 @@ const BadgeToast = ({ badgeId }) => {
 };
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
-const FREE_WEEKS_LIMIT = 5;
+const FREE_WEEKS_LIMIT = 2;
 
 const PREMIUM_FEATURES = [
   { Icon: Calendar,   label: "Plans illimités",      desc: "Jusqu'à 52 semaines selon ton événement" },
