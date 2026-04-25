@@ -139,7 +139,7 @@ Dans un programme sérieux, prévois 3 à 6 longueurs de remorquage par séance 
         content: `Cette épreuve est souvent sous-estimée. Nager 250m équipé sans s'arrêter demande une endurance spécifique et une bonne maîtrise des équipements.
 
 **S'équiper correctement :**
-- Palmes courtes type Mares (évite les mono-palmes trop rigides)
+- Palmes courtes type nageur ou palmes de plongée/sauveteur de la marque Mares
 - Masque bien ajusté, sans fuite — vérifie l'étanchéité à sec avant
 - Tuba fixe, sans valve de purge (réglementaire BNSSA)
 
