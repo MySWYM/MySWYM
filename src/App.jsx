@@ -93,10 +93,11 @@ const GOALS = [
 
 // Catégories onboarding (step 1)
 const CATEGORIES = [
-  { id: "triathlon", label: "Triathlon",      Icon: Activity, desc: "Sprint · Olympique · Half · Ironman" },
-  { id: "eau_libre", label: "Eau libre",      Icon: Waves,    desc: "5 km · 10 km en eau vive" },
-  { id: "poids",     label: "Perte de poids", Icon: Target,   desc: "Plan adapté à ton objectif" },
-  { id: "diplome",   label: "Prépa diplôme",  Icon: Award,    desc: "BNSSA · BPJEPS · Pompiers" },
+  { id: "triathlon",   label: "Triathlon",          Icon: Activity,    desc: "Sprint · Olympique · Half · Ironman" },
+  { id: "eau_libre",   label: "Eau libre",           Icon: Waves,       desc: "5 km · 10 km en eau vive" },
+  { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Sans deadline · Progresser à ton rythme" },
+  { id: "poids",       label: "Perte de poids",      Icon: Target,      desc: "Plan adapté à ton objectif" },
+  { id: "diplome",     label: "Prépa diplôme",       Icon: Award,       desc: "BNSSA · BPJEPS · Pompiers" },
 ];
 
 // Sous-objectifs par catégorie
@@ -116,9 +117,15 @@ const SUB_GOALS = {
     { id: "bpjeps_aan",     label: "BPJEPS AAN",     dist: "400 m NL < 7'40\"" },
     { id: "tests_pompiers", label: "Tests Pompiers", dist: "400 m + 50 m sauvetage" },
   ],
+  progression: [
+    { id: "prog_endurance", label: "Nager plus loin",      dist: "Endurance & volume" },
+    { id: "prog_vitesse",   label: "Nager plus vite",      dist: "CSS & seuil" },
+    { id: "prog_technique", label: "Maîtriser ma technique", dist: "Drills & efficacité" },
+  ],
 };
 
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
+const isProgressionGoal = (goalId) => goalId?.startsWith("prog_");
 
 const LEVELS = [
   { id: "beginner",     label: "Débutant",      desc: "Je nage depuis moins d'1 an" },
@@ -307,7 +314,173 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   </div>
 );
 
-const ProfileTab = ({ plan, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus }) => {
+// ── PACE ZONES CARD ─────────────────────────────────────────────────────
+const ZONE_DEFS = [
+  {
+    zone: "Z1 / Z2",
+    label: "Facile — Endurance",
+    mult: 1.35,
+    color: "#34C759",
+    bg: "#34C75914",
+    desc: "Récupération active, construction aérobie. Tu peux tenir une conversation. C'est la majorité de ton volume.",
+    tip: "Base de tout bon nageur",
+  },
+  {
+    zone: "Z3 / Z4",
+    label: "Seuil — CSS",
+    mult: 1.08,
+    color: "#FF9F0A",
+    bg: "#FF9F0A14",
+    desc: "CSS = Vitesse Critique de Nage. L'allure que tu peux tenir en compétition sur 400–1500 m. Améliore ton VO2max et repousse le seuil lactique.",
+    tip: "Coeur du travail de qualité",
+  },
+  {
+    zone: "Z5 / Z6",
+    label: "Sprint — Anaérobie",
+    mult: 0.95,
+    color: "#FF3B30",
+    bg: "#FF3B3014",
+    desc: "Effort maximal, courtes répétitions. Développe la puissance et la vitesse de pointe. Séries de 25–50 m avec longues récupérations.",
+    tip: "Explosivité & vitesse pure",
+  },
+];
+
+function fmtPaceDisplay(secs) {
+  return `${Math.floor(secs / 60)}:${Math.round(secs % 60).toString().padStart(2, "0")}`;
+}
+
+const PaceZonesCard = ({ pace100, onSave }) => {
+  const [display, setDisplay] = useState(pace100 ? fmtPaceDisplay(pace100) : "");
+  const [val, setVal]         = useState(pace100 || null);
+  const [err, setErr]         = useState("");
+  const [saved, setSaved]     = useState(false);
+
+  const handleChange = (raw) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 3);
+    let fmt = digits;
+    if (digits.length >= 2) fmt = digits[0] + ":" + digits.slice(1);
+    setDisplay(fmt);
+    setErr(""); setSaved(false);
+    if (digits.length === 3) {
+      const mins = parseInt(digits[0]);
+      const secs = parseInt(digits.slice(1));
+      if (secs >= 60) { setErr("Les secondes doivent être entre 00 et 59"); setVal(null); return; }
+      const total = mins * 60 + secs;
+      if (total < 45)  { setErr("Trop rapide — minimum 45 secondes"); setVal(null); return; }
+      if (total > 300) { setErr("Maximum 5 minutes (300 s)"); setVal(null); return; }
+      setVal(total);
+    } else { setVal(null); }
+  };
+
+  const handleSave = () => {
+    if (!val) return;
+    onSave(val);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Gauge size={16} color={G.blue} />
+        </div>
+        <div>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, margin: 0 }}>Tes zones d'intensité</h3>
+          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton meilleur 100 m NL</p>
+        </div>
+      </div>
+
+      {/* Explication CSS */}
+      <div style={{ background: G.blueLight, borderRadius: 12, padding: "11px 14px", marginBottom: 16, marginTop: 10 }}>
+        <p style={{ fontSize: 13, color: G.blue, lineHeight: 1.55, margin: 0 }}>
+          <strong>C'est quoi la CSS ?</strong> La Vitesse Critique de Nage est l'allure seuil entre effort soutenable et effort difficile. Tous tes intervals de départ sont calculés à partir de ton 100 m personnel.
+        </p>
+      </div>
+
+      {/* Input 100m */}
+      <label style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+        Ton meilleur 100 m NL
+      </label>
+      <div style={{ display: "flex", gap: 8, marginBottom: err ? 8 : 16 }}>
+        <div style={{ position: "relative", flex: 1 }}>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="1:45"
+            value={display}
+            onChange={e => handleChange(e.target.value)}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "13px 14px 13px 48px",
+              fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 800,
+              letterSpacing: 1.5, textAlign: "center",
+              border: `2px solid ${err ? "#FF3B30" : val ? G.blue : G.greyLight}`,
+              borderRadius: 12, outline: "none", background: G.white, color: G.ink,
+            }}
+          />
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: G.grey, fontWeight: 600, pointerEvents: "none" }}>m:ss</span>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={!val}
+          style={{
+            padding: "13px 18px", borderRadius: 12, border: "none", cursor: val ? "pointer" : "not-allowed",
+            background: saved ? G.mint : val ? G.blue : G.greyLight,
+            color: G.white, fontWeight: 700, fontSize: 14, transition: "background 0.2s",
+            display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+          }}
+        >
+          {saved ? <><Check size={14} /> Sauvé</> : "Enregistrer"}
+        </button>
+      </div>
+      {err && <p style={{ color: "#FF3B30", fontSize: 13, marginBottom: 12 }}>{err}</p>}
+
+      {/* Zone cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {ZONE_DEFS.map((z, i) => {
+          const paceStr = val
+            ? (() => { const ps = Math.round(val * z.mult); return `${Math.floor(ps/60)}'${(ps%60).toString().padStart(2,"0")}"` + "/100m"; })()
+            : null;
+          return (
+            <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}30`, borderRadius: 14, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                <div>
+                  <span style={{ background: `${z.color}22`, color: z.color, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 100, letterSpacing: 1 }}>{z.zone}</span>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 14, color: G.ink, marginTop: 5 }}>{z.label}</div>
+                  <div style={{ fontSize: 11, color: G.grey, fontStyle: "italic", marginTop: 1 }}>{z.tip}</div>
+                </div>
+                {paceStr && (
+                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: z.color }}>{paceStr}</div>
+                  </div>
+                )}
+                {!paceStr && (
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: z.color, opacity: 0.5, marginLeft: 12 }}>— —</div>
+                )}
+              </div>
+              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.55, margin: 0 }}>{z.desc}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {val && val !== pace100 && (
+        <p style={{ fontSize: 12, color: G.grey, textAlign: "center", marginTop: 14 }}>
+          Enregistre ton temps — il sera utilisé à ta prochaine génération de plan.
+        </p>
+      )}
+      {pace100 && val === pace100 && (
+        <p style={{ fontSize: 12, color: G.mint, textAlign: "center", marginTop: 14, fontWeight: 600 }}>
+          ✓ Zones personnalisées actives dans ton plan
+        </p>
+      )}
+    </div>
+  );
+};
+
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate }) => {
   const [password, setPassword] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
@@ -348,6 +521,9 @@ const ProfileTab = ({ plan, user, isPremium, onSignOut, onPortal, onUpgrade, onR
           <StatPill icon={Check}  value={stats.totalSessions}                            label="Séances faites"     color={G.mint}  bg={G.mintLight}  />
           <StatPill icon={Star}   value={stats.perfectWeeks}                             label="Semaines parfaites" color={G.gold}  bg={G.goldLight}  />
         </div>
+
+        {/* Pace zones */}
+        <PaceZonesCard pace100={profile?.pace100} onSave={onPaceUpdate} />
 
         {/* Weekly bar chart */}
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
@@ -585,7 +761,7 @@ const Step1_Category = ({ onSelect }) => (
 // ── STEP 2 : SOUS-OBJECTIF ────────────────────────────────────────────────
 const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   const subs = SUB_GOALS[category] || [];
-  const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?" };
+  const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?", progression: "Ton axe principal ?" };
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 2 sur 5</p>
@@ -774,7 +950,22 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
       <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m NL ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>On calcule tes zones d'intensité exactes — tes allures cibles seront dans chaque séance.</p>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 16 }}>On calcule tes zones d'intensité — chaque séance affiche tes intervalles de départ personnalisés.</p>
+
+      {/* CSS mini explainer */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+        {[
+          { color: "#34C759", label: "Z1–Z2 Facile",   hint: "Récupération & endurance de base" },
+          { color: "#FF9F0A", label: "Z3–Z4 CSS/Seuil", hint: "Ta vitesse critique — effort contrôlé" },
+          { color: "#FF3B30", label: "Z5–Z6 Sprint",    hint: "Effort maximal, répétitions courtes" },
+        ].map((z, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: G.greyXLight, borderRadius: 10, padding: "9px 12px" }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{z.label}</span>
+            <span style={{ fontSize: 12, color: G.grey, marginLeft: "auto" }}>{z.hint}</span>
+          </div>
+        ))}
+      </div>
 
       <div style={{ position: "relative", marginBottom: err ? 8 : 20 }}>
         <input
@@ -1236,8 +1427,19 @@ const Dashboard = ({ plan, profile, onTabChange, onComplete, onShare, onSignOut 
       </div>
 
       <div style={{ padding: "24px 16px 0" }}>
-        {/* Plan terminé */}
-        {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && (
+        {/* Cycle terminé (progression) */}
+        {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && plan.isProgression && (
+          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
+            <TrendingUp size={40} color={G.blue} style={{ margin: "0 auto 12px" }} />
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2>
+            <p style={{ color: G.grey, fontSize: 14, marginBottom: 8 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en 12 semaines.</p>
+            <p style={{ color: G.grey, fontSize: 13, marginBottom: 20 }}>Prêt·e pour le prochain cycle ? Ton niveau a évolué — un nouveau plan s'adaptera à ta progression.</p>
+            <Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn>
+          </div>
+        )}
+
+        {/* Plan terminé (autres catégories) */}
+        {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && !plan.isProgression && (
           <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
             <Trophy size={40} color={G.gold} style={{ margin: "0 auto 12px" }} />
             <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
@@ -2051,6 +2253,22 @@ const WELLNESS_PATTERNS = {
   development: { 1: ["endurance"], 2: ["endurance", "technique"],    3: ["endurance", "endurance", "technique"],    4: ["endurance", "endurance", "technique", "récupération"] },
 };
 
+const PROGRESSION_PATTERNS = {
+  base:        { 1: ["endurance"],              2: ["endurance", "technique"],                       3: ["endurance", "technique", "récupération"],            4: ["endurance", "endurance", "technique", "récupération"] },
+  development: { 1: ["endurance"],              2: ["seuil", "endurance"],                           3: ["seuil", "endurance", "technique"],                    4: ["seuil", "endurance", "technique", "récupération"] },
+  peak:        { 1: ["vitesse"],                2: ["vitesse", "seuil"],                             3: ["vitesse", "seuil", "endurance"],                      4: ["vitesse", "seuil", "endurance", "récupération"] },
+  bilan:       { 1: ["récupération"],           2: ["récupération", "technique"],                    3: ["récupération", "technique", "endurance"],             4: ["récupération", "technique", "endurance", "technique"] },
+};
+
+const buildProgressionPhases = () => {
+  const phases = [];
+  for (let i = 0; i < 4; i++) { const t = i / 3; phases.push({ phase: "base",        focus: t < 0.5 ? "Mise en place" : "Construction du volume", progression: 1.0 + t * 0.20, tipKey: t < 0.5 ? "debut" : "aerobie",    isBilan: false }); }
+  for (let i = 0; i < 4; i++) { const t = i / 3; phases.push({ phase: "development", focus: t < 0.5 ? "Développement" : "Travail au seuil",       progression: 1.20 + t * 0.20, tipKey: "seuil",                            isBilan: false }); }
+  for (let i = 0; i < 3; i++) { const t = i / 2; phases.push({ phase: "peak",        focus: t < 0.5 ? "Intensité max" : "Volume maximum",          progression: 1.40 + t * 0.15, tipKey: "vitesse",                          isBilan: false }); }
+  phases.push({ phase: "bilan", focus: "Bilan & récupération", progression: 1.0, tipKey: "affutage", isBilan: true });
+  return phases;
+};
+
 const buildWellnessPhases = (totalWeeks) => {
   const phases = [];
   for (let i = 0; i < totalWeeks; i++) {
@@ -2091,9 +2309,12 @@ const generatePlan = async (profile, isPremium = false) => {
   // Active les paces personnalisées pour toute la génération du plan
   _pace100 = profile.pace100 && profile.pace100 > 0 ? profile.pace100 : null;
   const wellness = isWellnessGoal(goal);
+  const progression = isProgressionGoal(goal);
 
   let rawWeeks;
-  if (wellness) {
+  if (progression) {
+    rawWeeks = 12;
+  } else if (wellness) {
     if (goal === "perte_de_poids") {
       const loss = Math.max(0, (parseFloat(profile.weightCurrent) || 0) - (parseFloat(profile.weightGoal) || 0));
       rawWeeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : 8;
@@ -2108,20 +2329,21 @@ const generatePlan = async (profile, isPremium = false) => {
 
   const totalWeeks = isPremium ? rawWeeks : Math.min(rawWeeks, FREE_MAX_WEEKS);
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.beginner;
-  const phaseList = wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
-  const patterns = wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS;
+  const progressionPhaseList = progression ? buildProgressionPhases() : null;
+  const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
+  const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS;
   const f = Math.min(freq, 4);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
     return {
-      number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null,
+      number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false,
       sessions: types.map((type, si) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
         return { ...SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal), distance: `${distBase}m`, duration: Math.max(30, Math.min(120, Math.round(distBase / 38))), completed: false };
       }),
     };
   });
-  return { weeks, totalRealWeeks: rawWeeks, isPremium };
+  return { weeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression };
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
@@ -2283,6 +2505,14 @@ export default function App() {
     setFeedbackWeek(null);
   };
 
+  const handlePaceUpdate = (newPace100) => {
+    setProfile(p => {
+      const updated = { ...p, pace100: newPace100 };
+      if (user) localStorage.setItem(`myswym_profile_${user.id}`, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleReset = () => {
     if (user) { localStorage.removeItem(`myswym_profile_${user.id}`); localStorage.removeItem(`myswym_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
     setScreen("onboarding"); setStep(1);
@@ -2363,7 +2593,8 @@ export default function App() {
               // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin
               // step 4 = temps 100m, 5 = fréquence, 6 = date (sauf poids)
               const isPoids = profile.category === "poids";
-              const totalSteps = isPoids ? 5 : 6;
+              const noDate = isPoids || isProgressionGoal(profile.goal);
+              const totalSteps = noDate ? 5 : 6;
               return (
                 <>
                   {step > 1 && <Progress step={step - 1} total={totalSteps} />}
@@ -2406,10 +2637,10 @@ export default function App() {
                   )}
 
                   {step === 5 && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={isPoids ? handleGenerate : () => setStep(6)} onBack={() => setStep(4)} isLast={isPoids} />
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(4)} isLast={noDate} />
                   )}
 
-                  {step === 6 && !isPoids && (
+                  {step === 6 && !noDate && (
                     <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(5)} />
                   )}
                 </>
@@ -2427,7 +2658,7 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"    && <Dashboard   plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
         {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
-        {activeTab === "profile" && <ProfileTab plan={plan} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} />}
+        {activeTab === "profile" && <ProfileTab plan={plan} profile={profile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
