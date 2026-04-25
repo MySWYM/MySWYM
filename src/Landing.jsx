@@ -103,7 +103,7 @@ function Nav() {
 
         {/* Links */}
         <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="nav-links">
-          {[["Comment ça marche", "#how"], ["Objectifs", "#goals"], ["Tarifs", "#pricing"]].map(([l, h]) => (
+          {[["Comment ça marche", "#how"], ["Objectifs", "#goals"], ["Blog", "/blog"], ["Tarifs", "#pricing"]].map(([l, h]) => (
             <a key={h} href={h} style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
               onMouseEnter={e => e.target.style.color = C.white}
               onMouseLeave={e => e.target.style.color = C.grey}
