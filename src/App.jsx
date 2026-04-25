@@ -706,9 +706,9 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   );
 };
 
-const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack }) => (
+const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6 }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur 5</p>
+    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur {total}</p>
     <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton niveau<br />en natation ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>Sois honnête — le plan sera meilleur.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
@@ -735,9 +735,103 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack }) =>
   </div>
 );
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false }) => (
+// ── STEP 4 : TEMPS AU 100m ────────────────────────────────────────────────
+const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
+  const [display, setDisplay] = useState(value ? fmtPace100(value) : "");
+  const [err, setErr] = useState("");
+
+  // Formate secondes → "m:ss" pour l'affichage
+  function fmtPace100(secs) {
+    return `${Math.floor(secs/60)}:${Math.round(secs%60).toString().padStart(2,'0')}`;
+  }
+
+  const handleChange = (raw) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 3);
+    let formatted = digits;
+    if (digits.length >= 2) formatted = digits[0] + ":" + digits.slice(1);
+    setDisplay(formatted);
+    setErr("");
+    if (digits.length === 3) {
+      const mins = parseInt(digits[0]);
+      const secs = parseInt(digits.slice(1));
+      if (secs >= 60) { setErr("Les secondes doivent être entre 00 et 59"); onChange(null); return; }
+      const total = mins * 60 + secs;
+      if (total < 45)  { setErr("Même les champions mettent plus de 45 secondes !"); onChange(null); return; }
+      if (total > 300) { setErr("5 minutes max — si tu nages plus lentement, utilise l'option ci-dessous"); onChange(null); return; }
+      onChange(total);
+    } else {
+      onChange(null);
+    }
+  };
+
+  const zones = value ? [
+    { label: "Facile (Z1/Z2)",   mult: 1.35, color: "#34C759" },
+    { label: "Seuil (Z3/Z4)",    mult: 1.08, color: "#FF9F0A" },
+    { label: "Sprint (Z5/Z6)",   mult: 0.95, color: "#FF3B30" },
+  ] : null;
+
+  return (
+    <div className="fade-up">
+      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
+      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m NL ?</h2>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>On calcule tes zones d'intensité exactes — tes allures cibles seront dans chaque séance.</p>
+
+      <div style={{ position: "relative", marginBottom: err ? 8 : 20 }}>
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="1:45"
+          value={display}
+          onChange={e => handleChange(e.target.value)}
+          style={{
+            width: "100%", boxSizing: "border-box",
+            padding: "18px 20px 18px 56px",
+            fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800,
+            letterSpacing: 2, textAlign: "center",
+            border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
+            borderRadius: 16, outline: "none", background: G.white, color: G.ink,
+          }}
+        />
+        <span style={{ position: "absolute", left: 20, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: G.grey, fontWeight: 600, pointerEvents: "none" }}>m:ss</span>
+      </div>
+      {err && <p style={{ color: "#FF3B30", fontSize: 13, marginBottom: 16 }}>{err}</p>}
+
+      {/* Zones preview */}
+      {zones && (
+        <div style={{ background: G.greyXLight, borderRadius: 14, padding: 16, marginBottom: 20 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Tes zones calculées</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {zones.map((z, i) => {
+              const ps = Math.round(value * z.mult);
+              const pStr = `${Math.floor(ps/60)}'${(ps%60).toString().padStart(2,'0')}"`;
+              return (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.color }} />
+                    <span style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{z.label}</span>
+                  </div>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: z.color }}>
+                    {pStr}/100m
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <Btn variant="blue" onClick={onNext} disabled={!value}>Utiliser ce temps</Btn>
+      <button onClick={onSkip} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
+        Je ne connais pas mon temps →
+      </button>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 8, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
+
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6 }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {isLast ? 4 : 5}</p>
+    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
     <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
@@ -1337,11 +1431,33 @@ const PACE = {
   threshold: [155, 112,  90],
   sprint:    [140,  95,  75],
 };
+
+// ── Paces personnalisées ─────────────────────────────────────────────────
+// Set par generatePlan quand profile.pace100 est renseigné.
+// null = fallback sur le tableau PACE par niveau.
+let _pace100 = null;
+
+// Facteurs de zone basés sur le meilleur 100m personnel
+const ZONE_MULT = { easy: 1.35, threshold: 1.08, sprint: 0.95 };
+
+// Formate des secondes en m'ss"
+const fmtS = s => `${Math.floor(s/60)}'${Math.round(s%60).toString().padStart(2,'0')}"`;
+
 // Departure interval: swim time + rest, rounded up to 5s
+// Quand _pace100 est set, affiche aussi l'allure cible /100m
 const di = (meters, lvl, zone = 'easy') => {
-  const rest  = zone === 'sprint' ? 90 : zone === 'threshold' ? 15 : 20;
-  const secs  = Math.ceil((meters * PACE[zone][lvl] / 100 + rest) / 5) * 5;
-  return `${Math.floor(secs / 60)}'${(secs % 60).toString().padStart(2, '0')}`;
+  const rest = zone === 'sprint' ? 90 : zone === 'threshold' ? 15 : 20;
+  let secsPer100;
+  if (_pace100 !== null) {
+    secsPer100 = _pace100 * (ZONE_MULT[zone] ?? 1.35);
+  } else {
+    secsPer100 = PACE[zone][lvl];
+  }
+  const totalSecs = Math.ceil((meters * secsPer100 / 100 + rest) / 5) * 5;
+  if (_pace100 !== null) {
+    return `${fmtS(totalSecs)} ≈ ${fmtS(Math.round(secsPer100))}/100m`;
+  }
+  return fmtS(totalSecs);
 };
 // Round to nearest pool-length multiple, min 1 length
 const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
@@ -1971,6 +2087,9 @@ const FREE_MAX_WEEKS = FREE_WEEKS_LIMIT;
 const generatePlan = async (profile, isPremium = false) => {
   await new Promise(r => setTimeout(r, 1800));
   const { level, sessionsPerWeek: freq, pool, goal } = profile;
+
+  // Active les paces personnalisées pour toute la génération du plan
+  _pace100 = profile.pace100 && profile.pace100 > 0 ? profile.pace100 : null;
   const wellness = isWellnessGoal(goal);
 
   let rawWeeks;
@@ -2014,7 +2133,7 @@ export default function App() {
   const [screen, setScreen] = useState("onboarding");
   const [activeTab, setActiveTab] = useState("home");
   const [step, setStep] = useState(1);
-  const [profile, setProfile] = useState({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
+  const [profile, setProfile] = useState({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null });
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
@@ -2074,7 +2193,7 @@ export default function App() {
       setUser(u);
       setIsPremium(checkIsPremium(u));
       if (u) { loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false)); }
-      else { setScreen("onboarding"); setStep(1); setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" }); setPlan(null); setAuthLoading(false); }
+      else { setScreen("onboarding"); setStep(1); setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null }); setPlan(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -2145,7 +2264,7 @@ export default function App() {
       if (!isPremium && p.totalRealWeeks > FREE_WEEKS_LIMIT) setTimeout(() => setShowUpgrade(true), 1200);
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
-      setScreen("onboarding"); setStep(isWellnessGoal(profile.goal) ? 3 : 4);
+      setScreen("onboarding"); setStep(5);
     }
   };
 
@@ -2167,7 +2286,7 @@ export default function App() {
   const handleReset = () => {
     if (user) { localStorage.removeItem(`myswym_profile_${user.id}`); localStorage.removeItem(`myswym_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
     setScreen("onboarding"); setStep(1);
-    setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "" });
+    setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null });
     setPlan(null); prevBadgesRef.current = [];
   };
 
@@ -2241,9 +2360,10 @@ export default function App() {
             </div>
             {(() => {
               // Nouvelle logique : category → sub-goal → level → freq → date (sauf poids)
-              // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin, 4 = fréquence, 5 = date
+              // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin
+              // step 4 = temps 100m, 5 = fréquence, 6 = date (sauf poids)
               const isPoids = profile.category === "poids";
-              const totalSteps = isPoids ? 4 : 5;
+              const totalSteps = isPoids ? 5 : 6;
               return (
                 <>
                   {step > 1 && <Progress step={step - 1} total={totalSteps} />}
@@ -2272,15 +2392,25 @@ export default function App() {
                   )}
 
                   {step === 3 && (
-                    <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} onNext={() => setStep(4)} onBack={() => setStep(2)} />
+                    <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} total={totalSteps} onNext={() => setStep(4)} onBack={() => setStep(2)} />
                   )}
 
                   {step === 4 && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} onNext={isPoids ? handleGenerate : () => setStep(5)} onBack={() => setStep(3)} isLast={isPoids} />
+                    <Step_Pace
+                      value={profile.pace100}
+                      onChange={v => update("pace100", v)}
+                      total={totalSteps}
+                      onNext={() => setStep(5)}
+                      onSkip={() => { update("pace100", null); setStep(5); }}
+                      onBack={() => setStep(3)} />
                   )}
 
-                  {step === 5 && !isPoids && (
-                    <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(4)} />
+                  {step === 5 && (
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={isPoids ? handleGenerate : () => setStep(6)} onBack={() => setStep(4)} isLast={isPoids} />
+                  )}
+
+                  {step === 6 && !isPoids && (
+                    <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(5)} />
                   )}
                 </>
               );
