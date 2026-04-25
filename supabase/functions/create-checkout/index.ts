@@ -16,7 +16,7 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean);
 
 function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some(o => origin === o || origin.endsWith(".vercel.app"));
+  return ALLOWED_ORIGINS.some(o => origin === o || origin.endsWith(".vercel.app") || origin.endsWith(".myswym.app"));
 }
 
 function corsHeaders(reqOrigin: string | null) {
