@@ -243,13 +243,13 @@ Format type : 2×400m NL — R30" — tu t'arrêtes pour boire, pas pour souffle
         h2: "La technique en priorité : les éducatifs incontournables",
         content: `On progresse 2x plus vite avec 10 minutes de technique par séance qu'en nageant aveuglément.
 
-**Battements planche** — Corps horizontal, planche tendue devant, regard au fond. Sens tes jambes propulser, pas seulement se fatiguer. Si tu coulons, tes hanches sont trop basses.
+**Nage avec palmes** — Les palmes compensent les jambes et te libèrent l'esprit pour te concentrer sur le haut du corps. Tu ressens immédiatement mieux la rotation des épaules et la prise d'eau — et ton corps reste horizontal sans effort. Indispensable pour les débutants.
 
-**Pull-buoy** — Le pull-buoy entre les jambes te libère du battement et te force à travailler les bras seuls. Idéal pour sentir la prise d'eau et comprendre comment les épaules propulsent.
+**Tuba frontal** — Le tuba frontal élimine la contrainte de respiration. Tu peux nager en gardant la tête dans l'axe en permanence et sentir ton alignement tête-hanches-pieds sans jamais te tordre le cou. Parfait pour travailler la technique bras à bras sans interruption.
 
-**Fist drill** — Nage avec les poings fermés. Tu ne peux plus te servir de tes mains — seulement de tes avant-bras. Quand tu rouvres les mains, la prise d'eau semble soudainement immense.
+**Dos à 2 bras simultanés** — Nage sur le dos avec les deux bras qui tirent en même temps (comme un papillon mais sur le dos). Cet éducatif développe la conscience de la prise d'eau dorsale, le gainage du buste et la symétrie des appuis. Ce que tu corriges ici se transfère directement à ton crawl.
 
-**Dos crawlé** — Nager sur le dos t'apprend l'alignement latéral et la rotation des épaules. Ce que tu travailles sur le dos se transfère directement au crawl.`,
+**3 mouvements crawl / 3 mouvements dos** — Alterne 3 tractions crawl puis 3 tractions dos en continu, sans t'arrêter. La transition force ton corps à réajuster l'alignement à chaque changement et t'apprend à varier les prises d'appui. Excellent pour casser la monotonie et sentir les différences de propulsion entre les deux nages.`,
       },
       {
         h2: "Combien de séances par semaine pour progresser ?",
