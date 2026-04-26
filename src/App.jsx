@@ -1433,6 +1433,88 @@ const ResetConfirmButton = ({ onReset }) => {
   );
 };
 
+// ── COACH CARD ────────────────────────────────────────────────────────────
+const COACH = {
+  name: "Arthur N.",
+  photo: null, // URL à renseigner
+  initials: "AN",
+};
+
+const COACH_MESSAGES = {
+  base: [
+    "Ce mois est fondamental : on construit ta base aérobie. Travaille à basse intensité, respire, prends tes marques. La vitesse viendra plus tard.",
+    "La base, c'est le moteur. Chaque séance d'endurance que tu fais aujourd'hui, tu l'encaisseras comme un avantage dans 2 mois. Sois patient.",
+  ],
+  development: [
+    "On monte en charge. Les séances au seuil vont piquer — c'est normal. Reste dans les zones, ne cherche pas à tout donner d'un coup.",
+    "Ce mois développe ton endurance spécifique. Les efforts sont plus longs, l'intensité monte. Tu dois sortir fatigué mais pas détruit.",
+  ],
+  peak: [
+    "On est en phase de pointe. Les séances de vitesse sont courtes mais intenses. Récupère bien entre les efforts — c'est là que la progression s'installe.",
+    "Ce mois tu touches à ta meilleure forme. Chaque séance compte. Dors bien, mange bien, et fais confiance au travail déjà accompli.",
+  ],
+  taper: [
+    "On allège. C'est le moment où beaucoup veulent en faire plus — fais l'inverse. La fraîcheur au départ vaut plus que 3 séances de plus.",
+  ],
+  competition: [
+    "Semaine de compétition. Reste calme, fais confiance à ton travail. La préparation est terminée — il ne reste plus qu'à exécuter.",
+  ],
+  wellness: [
+    "On reprend doucement. L'objectif ce mois : créer l'habitude. Deux séances régulières valent mieux qu'une séance intense suivie d'une semaine sans.",
+    "Le corps s'adapte progressivement. Tu vas peut-être te sentir limité — c'est une bonne chose. On construit sur du solide.",
+  ],
+  default: [
+    "Entraîne-toi intelligemment. La régularité bat toujours l'intensité ponctuelle. Une séance de plus par semaine sur 3 mois, ça change tout.",
+  ],
+};
+
+const CoachCard = ({ plan, currentWeekIndex }) => {
+  const week = plan.weeks[Math.max(0, currentWeekIndex)];
+  const phase = week
+    ? (plan.isProgression ? (currentWeekIndex < 4 ? "base" : currentWeekIndex < 8 ? "development" : "peak")
+       : (week.isBilan ? "taper" : ["base","development","peak","taper","competition"].includes(
+           plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("compét") ? "competition"
+           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("affût") ? "taper"
+           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("vitesse") ? "peak"
+           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("seuil") ? "development"
+           : "base"
+         ) ? (
+           plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("compét") ? "competition"
+           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("affût") ? "taper"
+           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("vitesse") ? "peak"
+           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("seuil") ? "development"
+           : "base"
+         ) : "base"))
+    : "default";
+
+  const msgs = COACH_MESSAGES[phase] || COACH_MESSAGES.default;
+  // Change de message chaque mois civil pour que ça évolue même sans progresser
+  const msgIndex = new Date().getMonth() % msgs.length;
+  const message = msgs[msgIndex];
+
+  return (
+    <div style={{ background: G.white, borderRadius: 16, padding: "16px", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        {/* Avatar */}
+        {COACH.photo ? (
+          <img src={COACH.photo} alt={COACH.name} style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+        ) : (
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ color: G.white, fontSize: 15, fontWeight: 700, fontFamily: "'Syne', sans-serif", letterSpacing: "0.03em" }}>{COACH.initials}</span>
+          </div>
+        )}
+        <div>
+          <div style={{ background: G.ink, color: G.white, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 6, display: "inline-block", marginBottom: 4 }}>Ton coach</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, lineHeight: 1.1 }}>{COACH.name}</div>
+        </div>
+      </div>
+      <div style={{ borderLeft: `3px solid ${G.blue}`, paddingLeft: 12 }}>
+        <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.6 }}>{message}</p>
+      </div>
+    </div>
+  );
+};
+
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
   const startDate = plan.startDate ?? startDateProp ?? null;
@@ -1507,6 +1589,8 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
             </button>
           </div>
         )}
+
+        <CoachCard plan={plan} currentWeekIndex={currentWeekIndex} />
 
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
