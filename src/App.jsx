@@ -2409,6 +2409,17 @@ export default function App() {
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
 
+  // Back button → landing page
+  useEffect(() => {
+    const handlePop = () => {
+      if (!window.location.pathname.startsWith("/app")) {
+        window.location.replace("/");
+      }
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");

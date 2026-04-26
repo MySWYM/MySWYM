@@ -1060,14 +1060,12 @@ export default function Landing() {
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" }}>
       <Nav />
       <Hero />
-      <Stats />
       <HowItWorks />
       <WeekExample />
       <Goals />
       <PaceFeature />
       <ProgressTimeline />
       <Comparison />
-      <Testimonials />
       <Pricing />
       <FAQ />
       <FinalCTA />
