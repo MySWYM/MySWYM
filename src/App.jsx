@@ -1170,7 +1170,7 @@ const BadgeToast = ({ badgeId }) => {
 };
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
-const FREE_WEEKS_LIMIT = 2;
+const FREE_WEEKS_LIMIT = 4;
 
 const PREMIUM_FEATURES = [
   { Icon: Calendar,   label: "Plans illimités",      desc: "Jusqu'à 52 semaines selon ton événement" },
@@ -1225,7 +1225,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           </div>
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité aux <strong style={{ color: G.ink }}>{FREE_WEEKS_LIMIT} premières semaines</strong>.<br />Débloque ton programme complet.</p>
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité au <strong style={{ color: G.ink }}>premier mois</strong>.<br />Débloque ton programme complet.</p>
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
         </div>
 

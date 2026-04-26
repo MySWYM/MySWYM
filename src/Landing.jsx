@@ -938,7 +938,7 @@ function Pricing() {
   const PRICE_ANNUAL  = "price_1TPjyeAS4mfgF2TwmSjSiidD";
 
   const freeFeatures = [
-    "Plan des 2 premières semaines",
+    "Plan du premier mois (4 semaines)",
     "Tous les objectifs sportifs",
     "1 à 2 séances par semaine",
     "Séances détaillées avec cues",
@@ -1070,7 +1070,7 @@ function FAQ() {
   const items = [
     { q: "Je suis débutant total, MySWYM est fait pour moi ?", a: "Oui. Le niveau \"débutant\" est conçu pour les gens qui reprennent après des années d'arrêt. Les premières séances travaillent la position dans l'eau avant tout. On progresse à ton rythme." },
     { q: "Je ne connais pas mon temps au 100m — est-ce un problème ?", a: "Pas du tout. Le temps au 100m est optionnel. Si tu le passes, l'app calcule des allures précises. Sinon, elle utilise des allures adaptées à ton niveau déclaré. Le plan reste 100% utilisable." },
-    { q: "Qu'est-ce qui est inclus dans la version gratuite ?", a: "Les 2 premières semaines de ton plan complet, avec le détail de chaque séance. C'est suffisant pour voir si l'approche te correspond. Aucune carte bancaire requise." },
+    { q: "Qu'est-ce qui est inclus dans la version gratuite ?", a: "Le premier mois de ton plan complet (4 semaines), avec le détail de chaque séance. C'est suffisant pour voir si l'approche te correspond. Aucune carte bancaire requise." },
     { q: "Puis-je changer d'objectif en cours de plan ?", a: "Oui. Dans l'onglet Profil, tu peux redémarrer l'onboarding pour définir un nouvel objectif et régénérer un plan complet. Avec Premium, tu peux même avoir plusieurs plans actifs en parallèle." },
     { q: "Les séances fonctionnent en bassin 25m et 50m ?", a: "Oui. Lors de l'onboarding tu choisis la longueur de ton bassin. Toutes les distances, séries et temps de départ sont automatiquement calculés pour s'adapter." },
     { q: "L'abonnement est sans engagement ?", a: "Oui. Tu peux annuler à tout moment depuis ton espace client. Si tu annules, tu gardes l'accès Premium jusqu'à la fin de la période payée." },
