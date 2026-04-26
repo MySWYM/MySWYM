@@ -4,7 +4,7 @@ import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -1385,7 +1385,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-const Dashboard = ({ plan, profile, onTabChange, onComplete, onShare, onSignOut }) => {
+const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAddPlan, onTabChange, onComplete, onShare, onSignOut }) => {
   const goal = GOALS.find(g => g.id === profile.goal);
   const stats = computeStats(plan);
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
@@ -1424,6 +1424,40 @@ const Dashboard = ({ plan, profile, onTabChange, onComplete, onShare, onSignOut 
             <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: G.water, transition: "width 1s ease" }} />
           </div>
         </div>
+
+        {/* Plan switcher */}
+        {plans.length > 0 && (
+          <div style={{ marginTop: 16, display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
+            {plans.map(entry => {
+              const isActive = entry.id === activePlanId;
+              const lbl = GOALS.find(g => g.id === entry.profile.goal)?.label
+                       || CATEGORIES.find(c => c.id === entry.profile.category)?.label
+                       || "Plan";
+              const days = entry.profile.eventDate
+                ? Math.max(0, Math.ceil((new Date(entry.profile.eventDate) - new Date()) / 86400000))
+                : null;
+              return (
+                <button key={entry.id} onClick={() => onSwitchPlan(entry.id)} style={{
+                  flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
+                  border: `1.5px solid ${isActive ? "rgba(10,132,255,0.7)" : "rgba(255,255,255,0.12)"}`,
+                  background: isActive ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.05)",
+                  color: isActive ? "#5BB8FF" : "rgba(255,255,255,0.45)",
+                  fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
+                }}>
+                  {lbl}{days !== null ? ` · J−${days}` : " · 12 sem"}
+                </button>
+              );
+            })}
+            <button onClick={onAddPlan} style={{
+              flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
+              border: "1.5px dashed rgba(255,255,255,0.18)", background: "transparent",
+              color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+            }}>
+              <Plus size={11} /> Ajouter
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: "24px 16px 0" }}>
@@ -2347,6 +2381,8 @@ const generatePlan = async (profile, isPremium = false) => {
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
+const BLANK_PROFILE = { category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null };
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -2355,14 +2391,23 @@ export default function App() {
   const [screen, setScreen] = useState("onboarding");
   const [activeTab, setActiveTab] = useState("home");
   const [step, setStep] = useState(1);
-  const [profile, setProfile] = useState({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null });
-  const [plan, setPlan] = useState(null);
+  // Onboarding draft profile (reset à chaque nouveau plan)
+  const [profile, setProfile] = useState(BLANK_PROFILE);
+  // Multi-plan
+  const [plans, setPlans] = useState([]);
+  const [activePlanId, setActivePlanId] = useState(null);
+  const [addingPlan, setAddingPlan] = useState(false);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
   const [shareSession, setShareSession] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
   const [toast, setToast] = useState(null);
   const prevBadgesRef = useRef([]);
+
+  // Valeurs dérivées du plan actif
+  const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
+  const plan            = activePlanEntry?.plan    ?? null;
+  const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2397,17 +2442,18 @@ export default function App() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, []);
 
-  // Régénère le plan quand le premium est débloqué et que le plan était limité
+  // Régénère le plan actif quand le premium est débloqué et que le plan était tronqué
   useEffect(() => {
-    if (isPremium && plan && profile.goal && plan.totalRealWeeks > plan.weeks.length) {
+    if (!isPremium || !activePlanEntry) return;
+    const { plan: ap, profile: aprof } = activePlanEntry;
+    if (ap && aprof.goal && ap.totalRealWeeks > ap.weeks.length) {
       setScreen("loading");
-      generatePlan(profile, true).then(newPlan => {
-        setPlan(newPlan);
-        setScreen("app");
-        setActiveTab("home");
+      generatePlan(aprof, true).then(newPlan => {
+        setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: newPlan } : e));
+        setScreen("app"); setActiveTab("home");
       });
     }
-  }, [isPremium, plan?.weeks?.length]);
+  }, [isPremium]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -2415,26 +2461,48 @@ export default function App() {
       setUser(u);
       setIsPremium(checkIsPremium(u));
       if (u) { loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false)); }
-      else { setScreen("onboarding"); setStep(1); setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null }); setPlan(null); setAuthLoading(false); }
+      else { setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setAuthLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
 
   const loadUserData = async (userId, userIsPremium = false) => {
-    const enforceFreeLimit = (p) => {
-      if (userIsPremium || !p?.weeks) return p;
-      return { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) };
-    };
+    const enforce = (p) => (!userIsPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+
+    // 1. Nouveau format multi-plans (localStorage)
+    try {
+      const raw = localStorage.getItem(`myswym_plans_${userId}`);
+      const activeId = localStorage.getItem(`myswym_active_${userId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const enforced = parsed.map(e => ({ ...e, plan: enforce(e.plan) }));
+          setPlans(enforced);
+          setActivePlanId(activeId || enforced[0].id);
+          setScreen("app"); return;
+        }
+      }
+    } catch {}
+
+    // 2. Supabase (ancien format mono-plan)
     try {
       const { data, error } = await supabase.from("user_plans").select("profile, plan").eq("user_id", userId).single();
       if (data && !error && data.profile && data.plan) {
-        setProfile(data.profile); setPlan(enforceFreeLimit(data.plan)); setScreen("app"); return;
+        const id = `plan_${Date.now()}`;
+        const entry = { id, profile: data.profile, plan: enforce(data.plan) };
+        setPlans([entry]); setActivePlanId(id); setScreen("app"); return;
       }
     } catch {}
+
+    // 3. Ancien localStorage mono-plan (migration)
     try {
-      const sp = localStorage.getItem(`myswym_profile_${userId}`);
+      const sp  = localStorage.getItem(`myswym_profile_${userId}`);
       const spl = localStorage.getItem(`myswym_plan_${userId}`);
-      if (sp && spl) { setProfile(JSON.parse(sp)); setPlan(enforceFreeLimit(JSON.parse(spl))); setScreen("app"); }
+      if (sp && spl) {
+        const id = `plan_${Date.now()}`;
+        const entry = { id, profile: JSON.parse(sp), plan: enforce(JSON.parse(spl)) };
+        setPlans([entry]); setActivePlanId(id); setScreen("app");
+      }
     } catch {}
   };
 
@@ -2456,33 +2524,47 @@ export default function App() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (plan && profile.goal && user) {
-      try {
-        localStorage.setItem(`myswym_profile_${user.id}`, JSON.stringify(profile));
-        localStorage.setItem(`myswym_plan_${user.id}`, JSON.stringify(plan));
-      } catch {}
-      supabase.from("user_plans").upsert({ user_id: user.id, profile, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).then(() => {});
+    if (!user || plans.length === 0) return;
+    try {
+      localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(plans));
+      localStorage.setItem(`myswym_active_${user.id}`, activePlanId);
+    } catch {}
+    // Supabase: sauvegarde le plan actif (compat)
+    if (activePlanEntry) {
+      supabase.from("user_plans").upsert({
+        user_id: user.id, profile: activePlanEntry.profile, plan: activePlanEntry.plan,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" }).then(() => {});
     }
-  }, [plan, profile, user]);
+  }, [plans, activePlanId, user]);
 
 
   useEffect(() => {
     if (!plan) return;
-    const stats = computeStats(plan);
+    const stats   = computeStats(plan);
     const current = checkBadges(stats);
-    const prev = prevBadgesRef.current;
+    const prev    = prevBadgesRef.current;
     const newOnes = current.filter(b => !prev.includes(b));
     if (newOnes.length > 0 && prev.length > 0) { setNewBadgeId(newOnes[0]); setTimeout(() => setNewBadgeId(null), 3200); }
     prevBadgesRef.current = current;
-  }, [plan]);
+  }, [activePlanId, plan]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
   const handleGenerate = async () => {
     setScreen("loading"); setError(null);
     try {
-      const p = await generatePlan(profile, isPremium);
-      setPlan(p); setScreen("app"); setActiveTab("home");
+      const p  = await generatePlan(profile, isPremium);
+      const id = `plan_${Date.now()}`;
+      const entry = { id, profile: { ...profile }, plan: p };
+      if (addingPlan) {
+        setPlans(prev => [...prev, entry]);
+        setAddingPlan(false);
+      } else {
+        setPlans([entry]);
+      }
+      setActivePlanId(id);
+      setScreen("app"); setActiveTab("home");
       if (!isPremium && p.totalRealWeeks > FREE_WEEKS_LIMIT) setTimeout(() => setShowUpgrade(true), 1200);
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
@@ -2491,33 +2573,62 @@ export default function App() {
   };
 
   const handleComplete = (weekIndex, sessionIndex) => {
-    setPlan(prev => {
-      const next = { ...prev, weeks: prev.weeks.map((w, wi) => wi !== weekIndex ? w : { ...w, sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, completed: !s.completed }) }) };
-      const updatedWeek = next.weeks[weekIndex];
+    setPlans(prev => prev.map(entry => {
+      if (entry.id !== activePlanId) return entry;
+      const newPlan = {
+        ...entry.plan,
+        weeks: entry.plan.weeks.map((w, wi) => wi !== weekIndex ? w : {
+          ...w, sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, completed: !s.completed }),
+        }),
+      };
+      const updatedWeek = newPlan.weeks[weekIndex];
       if (updatedWeek.sessions.every(s => s.completed) && !updatedWeek.feedback) setTimeout(() => setFeedbackWeek(weekIndex), 700);
-      return next;
-    });
+      return { ...entry, plan: newPlan };
+    }));
   };
 
   const handleFeedback = (rating) => {
     if (feedbackWeek === null) return;
-    setPlan(prev => adjustPlan(prev, feedbackWeek, rating));
+    setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, plan: adjustPlan(e.plan, feedbackWeek, rating) }));
     setFeedbackWeek(null);
   };
 
   const handlePaceUpdate = (newPace100) => {
-    setProfile(p => {
-      const updated = { ...p, pace100: newPace100 };
-      if (user) localStorage.setItem(`myswym_profile_${user.id}`, JSON.stringify(updated));
-      return updated;
-    });
+    setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: { ...e.profile, pace100: newPace100 } }));
+  };
+
+  const handleAddPlan = () => {
+    if (!isPremium) { setShowUpgrade(true); return; }
+    setAddingPlan(true);
+    setProfile(BLANK_PROFILE);
+    setStep(1);
+    setScreen("onboarding");
+  };
+
+  const handleSwitchPlan = (id) => {
+    setActivePlanId(id);
+    setActiveTab("home");
   };
 
   const handleReset = () => {
-    if (user) { localStorage.removeItem(`myswym_profile_${user.id}`); localStorage.removeItem(`myswym_plan_${user.id}`); supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {}); }
-    setScreen("onboarding"); setStep(1);
-    setProfile({ category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null });
-    setPlan(null); prevBadgesRef.current = [];
+    if (plans.length > 1) {
+      // Supprime uniquement le plan actif, garde les autres
+      const remaining = plans.filter(e => e.id !== activePlanId);
+      setPlans(remaining);
+      setActivePlanId(remaining[0].id);
+    } else {
+      // Dernier plan — reset complet
+      if (user) {
+        localStorage.removeItem(`myswym_plans_${user.id}`);
+        localStorage.removeItem(`myswym_active_${user.id}`);
+        localStorage.removeItem(`myswym_profile_${user.id}`);
+        localStorage.removeItem(`myswym_plan_${user.id}`);
+        supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {});
+      }
+      setPlans([]); setActivePlanId(null);
+      setScreen("onboarding"); setStep(1);
+      setProfile(BLANK_PROFILE); prevBadgesRef.current = [];
+    }
   };
 
   const handleSignOut = async () => { await supabase.auth.signOut(); };
@@ -2545,7 +2656,7 @@ export default function App() {
     } catch {}
   };
 
-  const goal = GOALS.find(g => g.id === profile.goal);
+  const goal  = GOALS.find(g => g.id === activeProfile.goal);
   const stats = plan ? computeStats(plan) : null;
 
   if (authLoading) return (
@@ -2578,14 +2689,21 @@ export default function App() {
                 <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                {isPremium && (
+                {addingPlan && (
+                  <button onClick={() => { setAddingPlan(false); setProfile(BLANK_PROFILE); setScreen("app"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                    ← Mes plans
+                  </button>
+                )}
+                {!addingPlan && isPremium && (
                   <button onClick={handlePortal} style={{ background: "none", border: `1px solid ${G.blue}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.blue, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                     <Zap size={12} color={G.blue} /> Abonnement
                   </button>
                 )}
-                <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                  <LogOut size={12} color={G.grey} /> Déco.
-                </button>
+                {!addingPlan && (
+                  <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                    <LogOut size={12} color={G.grey} /> Déco.
+                  </button>
+                )}
               </div>
             </div>
             {(() => {
@@ -2656,9 +2774,9 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={profile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
-        {activeTab === "plan"    && <PlanTab    plan={plan} profile={profile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
-        {activeTab === "profile" && <ProfileTab plan={plan} profile={profile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
