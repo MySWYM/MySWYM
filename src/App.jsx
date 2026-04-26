@@ -950,7 +950,7 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
-      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m NL ?</h2>
+      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 16 }}>On calcule tes zones d'intensité — chaque séance affiche tes intervalles de départ personnalisés.</p>
 
       {/* CSS mini explainer */}
@@ -1376,10 +1376,21 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade }) => {
-  const visibleWeeks = isPremium ? plan.weeks : plan.weeks.slice(0, FREE_WEEKS_LIMIT);
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate }) => {
+  // Semaines débloquées par le calendrier : 1 semaine toutes les 7 jours depuis le début du plan
+  const calendarUnlocked = startDate
+    ? Math.min(plan.weeks.length, Math.floor((Date.now() - startDate) / (7 * 24 * 60 * 60 * 1000)) + 1)
+    : plan.weeks.length; // plans existants sans startDate → on ne punit pas
+
+  const maxVisible = isPremium
+    ? calendarUnlocked                           // Premium : calendrier uniquement
+    : Math.min(FREE_WEEKS_LIMIT, calendarUnlocked); // Free : calendrier + limite gratuit
+
+  const visibleWeeks = plan.weeks.slice(0, maxVisible);
   const currentWeek = visibleWeeks.findIndex(w => !w.sessions.every(s => s.completed));
-  const isLocked = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT;
+  const isFreeLocked = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT;
+  const isCalLocked  = maxVisible < plan.weeks.length;
+  const isLocked = isFreeLocked;
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ padding: "20px 16px 0" }}>
@@ -1395,6 +1406,17 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
           </div>
         ))}
         {isLocked && <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />}
+        {!isLocked && isCalLocked && (
+          <div style={{ background: G.greyXLight, border: `1px solid ${G.greyLight}`, borderRadius: 16, padding: "18px 20px", textAlign: "center", marginTop: 8 }}>
+            <Lock size={18} color={G.greyMid} style={{ marginBottom: 8 }} />
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55 }}>
+              La semaine {maxVisible + 1} se débloque dans{" "}
+              <strong style={{ color: G.ink }}>
+                {7 - Math.floor(((Date.now() - (startDate ?? Date.now())) / (24 * 60 * 60 * 1000)) % 7)} jours
+              </strong>
+            </p>
+          </div>
+        )}
         <button onClick={onReset} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <RotateCcw size={14} color={G.greyMid} /> Recommencer l'onboarding
         </button>
@@ -2604,7 +2626,7 @@ export default function App() {
     try {
       const p  = await generatePlan(profile, isPremium);
       const id = `plan_${Date.now()}`;
-      const entry = { id, profile: { ...profile }, plan: p };
+      const entry = { id, profile: { ...profile }, plan: p, startDate: Date.now() };
       if (addingPlan) {
         setPlans(prev => [...prev, entry]);
         setAddingPlan(false);
@@ -2830,7 +2852,7 @@ export default function App() {
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
