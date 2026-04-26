@@ -54,8 +54,9 @@ const TYPE_META = {
 
 const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${G.bg}; font-family: 'DM Sans', sans-serif; overscroll-behavior: none; letter-spacing: 0.015em; }
-  h1, h2, h3, h4 { letter-spacing: 0.01em; }
+  body { background: ${G.bg}; font-family: 'DM Sans', sans-serif; overscroll-behavior: none; letter-spacing: 0.015em; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { letter-spacing: 0.025em; }
+  .syne { font-family: 'Syne', sans-serif; letter-spacing: 0.025em; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
@@ -388,7 +389,7 @@ const PaceZonesCard = ({ pace100, onSave }) => {
           <Gauge size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, margin: 0 }}>Tes zones d'intensité</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Tes zones d'intensité</h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton meilleur 100 m NL</p>
         </div>
       </div>
@@ -528,7 +529,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* Weekly bar chart */}
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
             {stats.weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
@@ -552,7 +553,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* Session type breakdown */}
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
           {Object.entries(TYPE_META).map(([type, tm]) => {
             const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
             const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
@@ -576,7 +577,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* Badges */}
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Badges</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Badges</h3>
           <p style={{ fontSize: 12, color: G.grey, marginBottom: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
           {earned.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: earned.length < BADGE_DEFS.length ? 16 : 0 }}>
@@ -1638,7 +1639,7 @@ const StatsTab = ({ plan }) => {
           <StatPill icon={Star}        value={stats.perfectWeeks}                             label="Semaines parfaites"  color={G.gold}  bg={G.goldLight} />
         </div>
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
             {stats.weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
@@ -1660,7 +1661,7 @@ const StatsTab = ({ plan }) => {
           </div>
         </div>
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
           {Object.entries(TYPE_META).map(([type, tm]) => {
             const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
             const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
