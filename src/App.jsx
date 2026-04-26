@@ -2493,6 +2493,7 @@ export default function App() {
   const [shareSession, setShareSession] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
   const [toast, setToast] = useState(null);
+  const showToast = (msg, duration = 5000) => { setToast(msg); setTimeout(() => setToast(null), duration); };
   const prevBadgesRef = useRef([]);
 
   // Valeurs dérivées du plan actif
@@ -2529,8 +2530,7 @@ export default function App() {
     supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
 
     if (payment === "success") {
-      setToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.");
-      setTimeout(() => setToast(null), 8000);
+      showToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.", 8000);
     }
 
     // Retry jusqu'à 30s pour laisser le webhook Stripe arriver
@@ -2751,18 +2751,31 @@ export default function App() {
   };
 
   const handlePortal = async () => {
+    showToast("Redirection vers Stripe…");
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
       const session = refreshData?.session;
-      if (!session) return;
+      if (!session) { showToast("Reconnecte-toi pour gérer ton abonnement."); return; }
+
+      // Vérifie si stripe_customer_id est présent
+      const { data: userData } = await supabase.auth.getUser();
+      const customerId = userData?.user?.user_metadata?.stripe_customer_id;
+      if (!customerId) {
+        showToast("Abonnement introuvable. Contacte support@myswym.app");
+        return;
+      }
+
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
         body: JSON.stringify({ origin: window.location.origin }),
       });
       const json = await res.json();
-      if (json.url) window.location.href = json.url;
-    } catch {}
+      if (json.url) { window.location.href = json.url; return; }
+      showToast(json.error || "Impossible d'ouvrir le portail Stripe.");
+    } catch (e) {
+      showToast("Erreur réseau. Réessaie.");
+    }
   };
 
   const goal  = GOALS.find(g => g.id === activeProfile.goal);
