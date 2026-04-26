@@ -995,29 +995,60 @@ function Pricing() {
           <FadeIn delay={0.1}>
             <div style={{
               background: C.ink,
-              borderRadius: 24, padding: 32, position: "relative",
+              borderRadius: 24, padding: 28, position: "relative",
               boxShadow: "0 20px 60px rgba(10,22,40,0.18)",
             }}>
+              {/* Badge top */}
               <div style={{
                 position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)",
                 background: C.blue, color: C.white, fontSize: 11, fontWeight: 700,
-                padding: "4px 14px", borderRadius: 100, letterSpacing: "0.06em", whiteSpace: "nowrap",
-              }}>MEILLEURE VALEUR</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: C.white, marginBottom: 4 }}>Premium</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, margin: "14px 0 4px" }}>
-                <span style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white }}>3,33€</span>
-                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 8 }}>/mois</span>
+                padding: "4px 16px", borderRadius: 100, letterSpacing: "0.06em", whiteSpace: "nowrap",
+              }}>⚡ MEILLEURE OFFRE</div>
+
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: C.white }}>Premium Annuel</div>
+                <div style={{
+                  background: "#22C55E", color: C.white,
+                  fontSize: 12, fontWeight: 800, padding: "4px 10px", borderRadius: 8,
+                  letterSpacing: "0.04em",
+                }}>−33%</div>
               </div>
-              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, marginBottom: 6 }}>40€/an — soit 1 mois offert</div>
+
+              {/* Prix barré → prix remisé */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <span style={{
+                  fontSize: 18, color: "rgba(255,255,255,0.3)",
+                  textDecoration: "line-through", fontWeight: 600,
+                }}>4,99€</span>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>/mois</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginBottom: 6 }}>
+                <span style={{ fontSize: 44, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white, lineHeight: 1 }}>3,33€</span>
+                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6 }}>/mois</span>
+              </div>
+
+              {/* Facturé annuellement */}
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "rgba(255,255,255,0.07)", borderRadius: 8, padding: "6px 12px",
+                marginBottom: 20,
+              }}>
+                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Facturé</span>
+                <span style={{ color: C.white, fontSize: 13, fontWeight: 700 }}>40€/an</span>
+                <span style={{ color: "#22C55E", fontSize: 12, fontWeight: 700 }}>· 1 mois offert</span>
+              </div>
+
               <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{
                 display: "block", width: "100%", textAlign: "center",
-                background: C.blue, color: C.white, fontWeight: 700, fontSize: 15,
-                padding: "13px", borderRadius: 12, border: "none", cursor: "pointer",
-                marginBottom: 24, boxShadow: "0 6px 20px rgba(0,87,255,0.35)",
+                background: C.blue, color: C.white, fontWeight: 700, fontSize: 16,
+                padding: "15px", borderRadius: 12, border: "none", cursor: "pointer",
+                marginBottom: 20, boxShadow: "0 6px 20px rgba(0,87,255,0.40)",
+                letterSpacing: "0.02em",
               }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              >Choisir l'annuel</button>
+              >Démarrer — 40€/an</button>
               <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                 {premiumFeatures.map((f, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
