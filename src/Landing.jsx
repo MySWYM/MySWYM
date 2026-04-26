@@ -1008,7 +1008,7 @@ function Pricing() {
                 <span style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white }}>3,33€</span>
                 <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 8 }}>/mois</span>
               </div>
-              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, marginBottom: 6 }}>40€/an — soit 2 mois offerts</div>
+              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, marginBottom: 6 }}>40€/an — soit 1 mois offert</div>
               <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{
                 display: "block", width: "100%", textAlign: "center",
                 background: C.blue, color: C.white, fontWeight: 700, fontSize: 15,

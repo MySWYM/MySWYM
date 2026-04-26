@@ -1213,7 +1213,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const isAnnual = period === "annual";
   const monthlyPrice = isAnnual ? "3,33 €" : "4,99 €";
   const totalLabel = isAnnual ? "39,99 € / an" : "4,99 € / mois";
-  const saving = isAnnual ? "Économise 33%" : null;
+  const saving = isAnnual ? "1 mois offert" : null;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
