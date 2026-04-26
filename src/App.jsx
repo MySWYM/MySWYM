@@ -1436,15 +1436,25 @@ const ResetConfirmButton = ({ onReset }) => {
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp }) => {
   const startDate = plan.startDate ?? startDateProp ?? null;
-
-  // Semaines débloquées : calendrier si startDate connu, sinon basé sur progression réelle
   const completedWeeks = plan.weeks.filter(w => w.sessions.every(s => s.completed)).length;
-  const calendarUnlocked = startDate
-    ? Math.min(plan.weeks.length, Math.floor((Date.now() - startDate) / (7 * 24 * 60 * 60 * 1000)) + 1)
-    : Math.min(plan.weeks.length, completedWeeks + 1); // sans startDate : semaines complétées + 1
+  const daysElapsed = startDate ? Math.floor((Date.now() - startDate) / (24 * 60 * 60 * 1000)) : null;
+  const weeksElapsed = daysElapsed !== null ? Math.floor(daysElapsed / 7) : null;
 
-  // Pour les users free, limite dure à FREE_WEEKS_LIMIT
-  const freeLimit = Math.min(FREE_WEEKS_LIMIT, calendarUnlocked);
+  // Premium : +4 semaines par mois (tranche de 4)
+  // Free    : +1 semaine par semaine, limité à FREE_WEEKS_LIMIT
+  const unlocked = isPremium
+    ? (weeksElapsed !== null
+        ? Math.min(plan.weeks.length, (Math.floor(weeksElapsed / 4) + 1) * 4)
+        : Math.min(plan.weeks.length, (Math.floor(completedWeeks / 4) + 1) * 4))
+    : (weeksElapsed !== null
+        ? Math.min(FREE_WEEKS_LIMIT, weeksElapsed + 1)
+        : Math.min(FREE_WEEKS_LIMIT, completedWeeks + 1));
+
+  // Jours avant le prochain déblocage
+  const daysToNext = daysElapsed !== null
+    ? (isPremium ? 28 - (daysElapsed % 28) : 7 - (daysElapsed % 7))
+    : null;
+
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
 
   return (
@@ -1452,59 +1462,45 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
       <div style={{ padding: "20px 16px 0" }}>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
-          {plan.weeks.length} semaines · {profile.sessionsPerWeek}×/semaine
-          {!isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT && (
-            <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. bloquées</span>
-          )}
+          {unlocked} / {plan.weeks.length} semaines débloquées · {profile.sessionsPerWeek}×/sem
         </p>
 
-        {plan.weeks.map((week, i) => {
-          // Free user : hard paywall après FREE_WEEKS_LIMIT
-          if (!isPremium && i >= FREE_WEEKS_LIMIT) {
-            if (i === FREE_WEEKS_LIMIT) return (
-              <div key={i}>
-                <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
-              </div>
-            );
-            return null;
-          }
+        {/* Semaines débloquées */}
+        {plan.weeks.slice(0, unlocked).map((week, i) => (
+          <div key={i}>
+            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} />
+            {!isPremium && i === 0 && plan.totalRealWeeks > 1 && <PremiumTeaser onUpgrade={onUpgrade} />}
+          </div>
+        ))}
 
-          // Semaine débloquée → affichage normal
-          if (i < calendarUnlocked) return (
-            <div key={i}>
-              <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} />
-              {!isPremium && i === 0 && plan.totalRealWeeks > 1 && <PremiumTeaser onUpgrade={onUpgrade} />}
-            </div>
-          );
+        {/* Free : paywall après FREE_WEEKS_LIMIT */}
+        {!isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT && unlocked >= FREE_WEEKS_LIMIT && (
+          <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
+        )}
 
-          // Semaine future → carte floutée (screenshot inutile)
-          const daysUntilUnlock = startDate
-            ? Math.max(1, 7 - Math.floor(((Date.now() - startDate) / (24 * 60 * 60 * 1000)) % 7))
-            : null;
+        {/* Prochain lot flouté (aperçu) */}
+        {(isPremium || unlocked < FREE_WEEKS_LIMIT) && unlocked < plan.weeks.length && (() => {
+          const nextBatch = plan.weeks.slice(unlocked, isPremium ? unlocked + 4 : unlocked + 1);
           return (
-            <div key={i} style={{ position: "relative", marginBottom: 10, borderRadius: 16, overflow: "hidden" }}>
-              {/* Contenu flouté */}
-              <div style={{ filter: "blur(5px)", pointerEvents: "none", userSelect: "none", opacity: 0.6 }}>
-                <WeekCard week={week} weekIndex={i} onComplete={() => {}} onShare={() => {}} isCurrentWeek={false} />
+            <div style={{ position: "relative", marginBottom: 10, borderRadius: 16, overflow: "hidden" }}>
+              <div style={{ filter: "blur(6px)", pointerEvents: "none", userSelect: "none", opacity: 0.55 }}>
+                {nextBatch.map((week, j) => (
+                  <WeekCard key={j} week={week} weekIndex={unlocked + j} onComplete={() => {}} onShare={() => {}} isCurrentWeek={false} />
+                ))}
               </div>
-              {/* Overlay cadenas */}
-              <div style={{
-                position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center", gap: 6,
-                background: "rgba(240,244,248,0.55)", borderRadius: 16,
-              }}>
-                <div style={{ background: G.white, borderRadius: 12, padding: "10px 18px", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(240,244,248,0.5)", borderRadius: 16 }}>
+                <div style={{ background: G.white, borderRadius: 12, padding: "12px 20px", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 16px rgba(0,0,0,0.10)" }}>
                   <Lock size={14} color={G.blue} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>
-                    {daysUntilUnlock
-                      ? `Disponible dans ${daysUntilUnlock} jour${daysUntilUnlock > 1 ? "s" : ""}`
-                      : `Semaine ${i + 1} · Complète la semaine précédente`}
+                    {daysToNext
+                      ? `${isPremium ? "4 semaines" : "Semaine suivante"} dans ${daysToNext} jour${daysToNext > 1 ? "s" : ""}`
+                      : isPremium ? "Complète le mois en cours" : "Complète la semaine en cours"}
                   </span>
                 </div>
               </div>
             </div>
           );
-        })}
+        })()}
 
         <ResetConfirmButton onReset={onReset} />
       </div>
