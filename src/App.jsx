@@ -1020,21 +1020,39 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
   );
 };
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6 }) => (
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium = false, onUpgrade }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
     <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-      {FREQUENCIES.map(f => (
-        <button key={f.id} onClick={() => onChange(f.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", borderRadius: 16, border: `2px solid ${value === f.id ? G.blue : G.greyLight}`, background: value === f.id ? G.blue : G.white, cursor: "pointer", transition: "all 0.2s", boxShadow: value === f.id ? "0 4px 16px rgba(0,87,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: value === f.id ? G.white : G.ink }}>{f.label}</div>
-            <div style={{ fontSize: 13, color: value === f.id ? "rgba(255,255,255,0.65)" : G.grey }}>{f.desc}</div>
-          </div>
-          {value === f.id && <Check size={16} color={G.white} />}
-        </button>
-      ))}
+      {FREQUENCIES.map(f => {
+        const locked = !isPremium && f.id >= 3;
+        const isActive = value === f.id;
+        return (
+          <button key={f.id} onClick={() => locked ? onUpgrade?.() : onChange(f.id)} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "18px 20px", borderRadius: 16,
+            border: `2px solid ${isActive ? G.blue : locked ? G.greyLight : G.greyLight}`,
+            background: isActive ? G.blue : locked ? G.greyXLight : G.white,
+            cursor: "pointer", transition: "all 0.2s",
+            boxShadow: isActive ? "0 4px 16px rgba(0,87,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)",
+            opacity: locked ? 0.8 : 1,
+          }}>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{f.label}</div>
+              <div style={{ fontSize: 13, color: isActive ? "rgba(255,255,255,0.65)" : locked ? G.greyMid : G.grey }}>{f.desc}</div>
+            </div>
+            {isActive && !locked && <Check size={16} color={G.white} />}
+            {locked && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, background: G.gold + "22", borderRadius: 100, padding: "4px 10px" }}>
+                <Lock size={11} color={G.gold} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: G.gold }}>Premium</span>
+              </div>
+            )}
+          </button>
+        );
+      })}
     </div>
     <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan 🚀" : "Continuer"}</Btn>
     <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
@@ -2791,7 +2809,7 @@ export default function App() {
                   )}
 
                   {step === 5 && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(4)} isLast={noDate} />
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(4)} isLast={noDate} isPremium={isPremium} onUpgrade={() => setShowUpgrade(true)} />
                   )}
 
                   {step === 6 && !noDate && (
