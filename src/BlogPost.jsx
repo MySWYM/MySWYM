@@ -1,7 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { POSTS } from "./posts.js";
 import { Waves, ArrowLeft, Clock, ArrowRight, ChevronRight } from "lucide-react";
+
+function useIsMobile(bp = 640) {
+  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < bp);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, [bp]);
+  return mobile;
+}
 
 const C = {
   ink:      "#0C1117",
@@ -43,22 +53,23 @@ function RichText({ text }) {
 }
 
 function Nav({ post }) {
+  const isMobile = useIsMobile();
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: "rgba(12,17,23,0.92)", backdropFilter: "blur(16px)",
+      background: "rgba(12,17,23,0.95)", backdropFilter: "blur(16px)",
       borderBottom: `1px solid ${C.border}`,
     }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 58, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <div style={{ width: 30, height: 30, background: C.blue, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Waves size={16} color={C.white} />
           </div>
           <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: C.white }}>MySWYM</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <Link to="/blog" style={{ color: C.grey, fontSize: 13, textDecoration: "none', display: 'flex", alignItems: "center", gap: 5 }}>
-            <ArrowLeft size={13} /> Blog
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link to="/blog" style={{ color: C.grey, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}>
+            <ArrowLeft size={13} /> {!isMobile && "Blog"}
           </Link>
           <Link to="/app" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Commencer</Link>
         </div>
@@ -90,7 +101,7 @@ export default function BlogPost() {
       <Nav post={post} />
 
       {/* Header article */}
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "108px 24px 0" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "80px 18px 0" }}>
         {/* Breadcrumb */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 28, fontSize: 13, color: C.grey }}>
           <Link to="/" style={{ color: C.grey, textDecoration: "none" }}>Accueil</Link>
@@ -122,7 +133,7 @@ export default function BlogPost() {
       </div>
 
       {/* Article body */}
-      <article style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px 80px" }}>
+      <article style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px 80px" }}>
         {post.sections.map((section, i) => (
           <section key={i} style={{ marginBottom: 52 }}>
             <h2 style={{
@@ -162,7 +173,7 @@ export default function BlogPost() {
 
       {/* Articles similaires */}
       {others.length > 0 && (
-        <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px 80px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px 80px" }}>
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: C.white, marginBottom: 20 }}>À lire aussi</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
             {others.map(p => (

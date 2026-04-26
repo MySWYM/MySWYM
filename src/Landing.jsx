@@ -60,6 +60,17 @@ function AnimCounter({ to, suffix = "", duration = 1600 }) {
   return <span ref={ref}>{val.toLocaleString("fr-FR")}{suffix}</span>;
 }
 
+// ── Mobile detection ──────────────────────────────────────────────────────
+function useIsMobile(bp = 640) {
+  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < bp);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, [bp]);
+  return mobile;
+}
+
 // ── Fade-in wrapper ────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0, style = {} }) {
   const [ref, visible] = useInView();
@@ -78,6 +89,7 @@ function FadeIn({ children, delay = 0, style = {} }) {
 // ── Nav ────────────────────────────────────────────────────────────────────
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const isMobile = useIsMobile();
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn);
@@ -87,41 +99,41 @@ function Nav() {
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? "rgba(12,17,23,0.92)" : "transparent",
+      background: scrolled ? "rgba(12,17,23,0.95)" : "transparent",
       backdropFilter: scrolled ? "blur(16px)" : "none",
       borderBottom: scrolled ? `1px solid ${C.border}` : "none",
       transition: "background 0.3s, border-color 0.3s",
     }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 20px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <div style={{ width: 32, height: 32, background: C.blue, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Waves size={18} color={C.white} />
           </div>
           <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: C.white, letterSpacing: "-0.5px" }}>MySWYM</span>
-        </div>
+        </a>
 
-        {/* Links */}
-        <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="nav-links">
-          {[["Comment ça marche", "#how"], ["Objectifs", "#goals"], ["Blog", "/blog"], ["Tarifs", "#pricing"]].map(([l, h]) => (
-            <a key={h} href={h} style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
-              onMouseEnter={e => e.target.style.color = C.white}
-              onMouseLeave={e => e.target.style.color = C.grey}
-            >{l}</a>
-          ))}
-        </div>
+        {/* Links — desktop only */}
+        {!isMobile && (
+          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+            {[["Comment ça marche", "#how"], ["Objectifs", "#goals"], ["Blog", "/blog"], ["Tarifs", "#pricing"]].map(([l, h]) => (
+              <a key={h} href={h} style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
+                onMouseEnter={e => e.target.style.color = C.white}
+                onMouseLeave={e => e.target.style.color = C.grey}
+              >{l}</a>
+            ))}
+          </div>
+        )}
 
         {/* CTAs */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <a href="/app" style={{ color: C.greyLight, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 14px" }}>Connexion</a>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {!isMobile && (
+            <a href="/app" style={{ color: C.greyLight, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px" }}>Connexion</a>
+          )}
           <a href="/app" style={{
-            background: C.blue, color: C.white, fontSize: 14, fontWeight: 600,
-            padding: "9px 18px", borderRadius: 10, textDecoration: "none",
-            transition: "opacity 0.2s",
-          }}
-            onMouseEnter={e => e.target.style.opacity = "0.85"}
-            onMouseLeave={e => e.target.style.opacity = "1"}
-          >Commencer</a>
+            background: C.blue, color: C.white, fontSize: isMobile ? 13 : 14, fontWeight: 600,
+            padding: isMobile ? "9px 16px" : "9px 18px", borderRadius: 10, textDecoration: "none",
+          }}>Commencer</a>
         </div>
       </div>
     </nav>
@@ -130,10 +142,12 @@ function Nav() {
 
 // ── Hero ───────────────────────────────────────────────────────────────────
 function Hero() {
+  const isMobile = useIsMobile();
   return (
     <section style={{
       minHeight: "100vh", background: C.ink, display: "flex", alignItems: "center",
-      justifyContent: "center", textAlign: "center", padding: "120px 24px 80px",
+      justifyContent: "center", textAlign: "center",
+      padding: isMobile ? "100px 20px 60px" : "120px 24px 80px",
       position: "relative", overflow: "hidden",
     }}>
       {/* Background glow */}
@@ -271,7 +285,7 @@ function HowItWorks() {
     { n: "04", icon: TrendingUp, title: "Suis ta progression", desc: "Semaines complétées, distance totale, séances par type — visualise ton évolution et reste motivé jusqu'au bout." },
   ];
   return (
-    <section id="how" style={{ background: C.ink, padding: "100px 24px" }}>
+    <section id="how" style={{ background: C.ink, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>COMMENT ÇA MARCHE</div>
@@ -317,7 +331,7 @@ function Goals() {
     { icon: Target,   color: "#7CFC00", bg: "rgba(124,252,0,0.1)",  border: "rgba(124,252,0,0.2)",  title: "Bien-être",  sub: "Remise en forme · Perte de poids", desc: "Séances douces et progressives adaptées à ton rythme, sans pression de performance." },
   ];
   return (
-    <section id="goals" style={{ background: C.inkLight, padding: "100px 24px" }}>
+    <section id="goals" style={{ background: C.inkLight, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>TES OBJECTIFS</div>
@@ -354,6 +368,7 @@ function Goals() {
 
 // ── Progress timeline ──────────────────────────────────────────────────────
 function ProgressTimeline() {
+  const isMobile = useIsMobile();
   const milestones = [
     { week: "Semaine 1", title: "Tu établis ta base", desc: "Premières séances fondamentales. Tu trouves ton allure, ton rythme de respiration. La régularité prime sur l'intensité." },
     { week: "Semaine 4", title: "Tu vois la différence", desc: "Les longueurs coulent. Ton rythme s'améliore, les pauses raccourcissent. La confiance en bassin monte." },
@@ -361,7 +376,7 @@ function ProgressTimeline() {
     { week: "Semaine 12+", title: "Tu arrives prêt", desc: "Affûtage en cours. Que ce soit la compétition, l'examen ou l'objectif perso — tu as fait le travail." },
   ];
   return (
-    <section style={{ background: C.ink, padding: "100px 24px" }}>
+    <section style={{ background: C.ink, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 840, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>TA PROGRESSION</div>
@@ -372,13 +387,13 @@ function ProgressTimeline() {
 
         <div style={{ position: "relative" }}>
           {/* Line */}
-          <div style={{ position: "absolute", left: 24, top: 0, bottom: 0, width: 2, background: `linear-gradient(to bottom, ${C.blue}, transparent)` }} />
+          <div style={{ position: "absolute", left: isMobile ? 13 : 24, top: 0, bottom: 0, width: 2, background: `linear-gradient(to bottom, ${C.blue}, transparent)` }} />
 
           {milestones.map((m, i) => (
             <FadeIn key={i} delay={i * 0.15}>
-              <div style={{ display: "flex", gap: 32, marginBottom: i < milestones.length - 1 ? 48 : 0 }}>
+              <div style={{ display: "flex", gap: isMobile ? 16 : 32, marginBottom: i < milestones.length - 1 ? (isMobile ? 32 : 48) : 0 }}>
                 {/* Dot */}
-                <div style={{ flexShrink: 0, width: 50, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ flexShrink: 0, width: isMobile ? 28 : 50, display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{
                     width: 14, height: 14, borderRadius: "50%", background: C.blue,
                     border: `3px solid ${C.ink}`, boxShadow: `0 0 0 3px rgba(10,132,255,0.3)`,
@@ -411,7 +426,7 @@ function Testimonials() {
     { name: "Julie T.", tag: "Eau libre 10 km", stars: 5, text: "Les séances eau libre sont différentes des plans classiques. Les reps longues, les cues sur la respiration bilatérale — ça colle vraiment à la spécificité de l'eau vive." },
   ];
   return (
-    <section style={{ background: C.inkLight, padding: "100px 24px" }}>
+    <section style={{ background: C.inkLight, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>ILS NAGENT AVEC MYSWYM</div>
@@ -495,7 +510,7 @@ function Pricing() {
   ];
 
   return (
-    <section id="pricing" style={{ background: C.ink, padding: "100px 24px" }}>
+    <section id="pricing" style={{ background: C.ink, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>TARIFS</div>
@@ -612,7 +627,7 @@ function Pricing() {
 // ── Final CTA ──────────────────────────────────────────────────────────────
 function FinalCTA() {
   return (
-    <section style={{ background: C.inkLight, borderTop: `1px solid ${C.border}`, padding: "100px 24px", textAlign: "center" }}>
+    <section style={{ background: C.inkLight, borderTop: `1px solid ${C.border}`, padding: "clamp(60px,8vw,100px) 20px", textAlign: "center" }}>
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
         <FadeIn>
           <div style={{ width: 64, height: 64, background: "rgba(10,132,255,0.12)", border: `1px solid rgba(10,132,255,0.3)`, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 28px" }}>
@@ -670,53 +685,64 @@ function Footer() {
 // ── Page ───────────────────────────────────────────────────────────────────
 // ── Comparison ────────────────────────────────────────────────────────────
 function Comparison() {
+  const isMobile = useIsMobile();
+
   const rows = [
     { label: "Plan structuré semaine par semaine", alone: false, generic: "partial", myswym: true },
     { label: "Adapté à ton niveau exact",          alone: false, generic: false,     myswym: true },
     { label: "Objectif sportif spécifique",        alone: false, generic: false,     myswym: true },
     { label: "Allures cibles personnalisées",      alone: false, generic: false,     myswym: true },
     { label: "Séances variées (5 formats/type)",   alone: false, generic: "partial", myswym: true },
-    { label: "Progression en phases (base→pic)",   alone: false, generic: "partial", myswym: true },
+    { label: "Progression en phases",             alone: false, generic: "partial", myswym: true },
     { label: "Éducatifs techniques intégrés",      alone: false, generic: false,     myswym: true },
     { label: "Gratuit pour commencer",             alone: true,  generic: false,     myswym: true },
   ];
 
   const Cell = ({ val }) => {
-    if (val === true)      return <Check  size={18} color="#34C759" strokeWidth={2.5} />;
-    if (val === false)     return <X      size={18} color="#FF3B30" strokeWidth={2.5} />;
-    if (val === "partial") return <Minus  size={18} color="#FF9F0A" strokeWidth={2.5} />;
+    if (val === true)      return <Check  size={16} color="#34C759" strokeWidth={2.5} />;
+    if (val === false)     return <X      size={16} color="#FF3B30" strokeWidth={2.5} />;
+    if (val === "partial") return <Minus  size={16} color="#FF9F0A" strokeWidth={2.5} />;
   };
 
-  const cols = [
-    { label: "Seul",     sub: "sans plan",     dim: true  },
-    { label: "Générique",sub: "plan standard", dim: true  },
-    { label: "MySWYM",   sub: "coach perso",   dim: false },
-  ];
+  // Mobile : 2 colonnes seulement (Seul vs MySWYM)
+  const cols = isMobile
+    ? [
+        { label: "Seul",   sub: "sans plan",  dim: true,  key: "alone"  },
+        { label: "MySWYM", sub: "coach perso", dim: false, key: "myswym" },
+      ]
+    : [
+        { label: "Seul",      sub: "sans plan",     dim: true,  key: "alone"   },
+        { label: "Générique", sub: "plan standard", dim: true,  key: "generic" },
+        { label: "MySWYM",    sub: "coach perso",   dim: false, key: "myswym"  },
+      ];
+
+  const colWidth = isMobile ? 80 : 110;
+  const gridCols = `1fr repeat(${cols.length}, ${colWidth}px)`;
 
   return (
-    <section style={{ background: C.ink, padding: "100px 24px" }}>
+    <section style={{ background: C.ink, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 48 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>POURQUOI MYSWYM</div>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.white, margin: 0, letterSpacing: "-1px" }}>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 800, color: C.white, margin: 0, letterSpacing: "-1px" }}>
             La différence que tu<br />ressentiras dans l'eau
           </h2>
         </FadeIn>
 
         <FadeIn>
-          <div style={{ background: C.inkLight, border: `1px solid ${C.border}`, borderRadius: 24, overflow: "hidden" }}>
+          <div style={{ background: C.inkLight, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden" }}>
             {/* Header */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(3, 110px)", borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ padding: "18px 24px" }} />
+            <div style={{ display: "grid", gridTemplateColumns: gridCols, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ padding: isMobile ? "14px 14px" : "18px 24px" }} />
               {cols.map((c, i) => (
                 <div key={i} style={{
-                  padding: "18px 12px", textAlign: "center",
+                  padding: isMobile ? "14px 8px" : "18px 12px", textAlign: "center",
                   background: !c.dim ? "rgba(10,132,255,0.08)" : "transparent",
                   borderLeft: `1px solid ${C.border}`,
                   borderBottom: !c.dim ? `2px solid ${C.blue}` : "none",
                 }}>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: c.dim ? C.grey : C.white }}>{c.label}</div>
-                  <div style={{ fontSize: 11, color: c.dim ? "rgba(138,155,176,0.5)" : C.blue, marginTop: 2 }}>{c.sub}</div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? 12 : 14, fontWeight: 800, color: c.dim ? C.grey : C.white }}>{c.label}</div>
+                  <div style={{ fontSize: 10, color: c.dim ? "rgba(138,155,176,0.5)" : C.blue, marginTop: 2 }}>{c.sub}</div>
                 </div>
               ))}
             </div>
@@ -724,18 +750,18 @@ function Comparison() {
             {/* Rows */}
             {rows.map((r, i) => (
               <div key={i} style={{
-                display: "grid", gridTemplateColumns: "1fr repeat(3, 110px)",
+                display: "grid", gridTemplateColumns: gridCols,
                 borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none",
                 background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
               }}>
-                <div style={{ padding: "14px 24px", fontSize: 14, color: C.greyLight, display: "flex", alignItems: "center" }}>{r.label}</div>
-                {[r.alone, r.generic, r.myswym].map((val, j) => (
+                <div style={{ padding: isMobile ? "12px 14px" : "14px 24px", fontSize: isMobile ? 12 : 14, color: C.greyLight, display: "flex", alignItems: "center", lineHeight: 1.4 }}>{r.label}</div>
+                {cols.map((c, j) => (
                   <div key={j} style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: j === 2 ? "rgba(10,132,255,0.04)" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 0",
+                    background: !c.dim ? "rgba(10,132,255,0.04)" : "transparent",
                     borderLeft: `1px solid ${C.border}`,
                   }}>
-                    <Cell val={val} />
+                    <Cell val={r[c.key]} />
                   </div>
                 ))}
               </div>
@@ -767,8 +793,8 @@ function PaceFeature() {
   const fmtSecs = (s) => `${Math.floor(s/60)}'${Math.round(s%60).toString().padStart(2,"0")}"`;
 
   return (
-    <section style={{ background: C.inkLight, padding: "100px 24px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 64, alignItems: "center" }}>
+    <section style={{ background: C.inkLight, padding: "clamp(60px,8vw,100px) 20px" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, alignItems: "center" }}>
         {/* Left — texte */}
         <FadeIn>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
@@ -878,7 +904,7 @@ function FAQ() {
   ];
 
   return (
-    <section style={{ background: C.ink, padding: "100px 24px" }}>
+    <section style={{ background: C.ink, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>FAQ</div>
