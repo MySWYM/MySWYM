@@ -506,10 +506,10 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   return (
     <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
       {/* Header */}
-      <div style={{ background: "linear-gradient(140deg, #0D1117 0%, #001966 100%)", padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", letterSpacing: 1, marginBottom: 4 }}>Ton espace</div>
+      <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
+        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Ton espace</div>
         <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, marginBottom: 4 }}>Profil</h1>
-        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>{(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}</p>
+        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}</p>
       </div>
 
       <div style={{ padding: "20px 16px 0" }}>
@@ -1276,7 +1276,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
   const done = session.completed;
   const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
   return (
-    <div style={{ background: done ? G.greyXLight : G.white, borderRadius: 16, padding: "16px", border: `1px solid ${done ? G.greyLight : "#E8E8E8"}`, opacity: done ? 0.75 : 1, transition: "all 0.3s", boxShadow: done ? "none" : "0 2px 8px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: done ? G.greyXLight : G.white, borderRadius: 16, padding: "16px", border: `1px solid ${done ? G.greyLight : "#E8E8E8"}`, borderLeft: `3px solid ${done ? G.greyLight : tm.color}`, opacity: done ? 0.72 : 1, transition: "all 0.3s", boxShadow: done ? "none" : "0 2px 8px rgba(0,0,0,0.04)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: done ? G.greyLight : tm.bg, borderRadius: 20, padding: "3px 10px", marginBottom: 6 }}>
@@ -1401,27 +1401,27 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
   return (
     <div style={{ paddingBottom: 100, background: G.bg, minHeight: "100vh" }}>
       {/* Header */}
-      <div style={{ background: G.ink, padding: "56px 20px 32px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+      <div style={{ background: G.blue, padding: "56px 20px 28px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
           <div>
-            <div className="fade-up" style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Programme actif</div>
-            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.white, lineHeight: 1.1 }}>{goal?.label}</h1>
+            <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 5, fontWeight: 700 }}>Programme actif</div>
+            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, lineHeight: 1.05 }}>{goal?.label}</h1>
             {daysToEvent !== null && (
-              <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 4 }}>J−{daysToEvent} · Semaine {(currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length)}/{plan.weeks.length}</p>
+              <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 5 }}>J−{daysToEvent} · Semaine {(currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length)}/{plan.weeks.length}</p>
             )}
           </div>
-          <button onClick={onSignOut} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 10px", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
-            <LogOut size={15} color="rgba(255,255,255,0.4)" />
+          <button onClick={onSignOut} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 10, padding: "8px 10px", cursor: "pointer" }}>
+            <LogOut size={15} color="rgba(255,255,255,0.7)" />
           </button>
         </div>
         {/* Progress bar */}
         <div className="fade-up-3">
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", letterSpacing: 0.5 }}>{stats.totalSessions} séances · {(stats.totalMeters / 1000).toFixed(1)} km</span>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 0.3 }}>{stats.totalSessions} séances · {(stats.totalMeters / 1000).toFixed(1)} km</span>
             <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Syne', sans-serif", color: G.white }}>{pct}%</span>
           </div>
-          <div style={{ height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 2 }}>
-            <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: G.water, transition: "width 1s ease" }} />
+          <div style={{ height: 5, background: "rgba(255,255,255,0.18)", borderRadius: 3 }}>
+            <div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: G.white, transition: "width 1s ease" }} />
           </div>
         </div>
 
@@ -1439,9 +1439,9 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
               return (
                 <button key={entry.id} onClick={() => onSwitchPlan(entry.id)} style={{
                   flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
-                  border: `1.5px solid ${isActive ? "rgba(10,132,255,0.7)" : "rgba(255,255,255,0.12)"}`,
-                  background: isActive ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.05)",
-                  color: isActive ? "#5BB8FF" : "rgba(255,255,255,0.45)",
+                  border: `1.5px solid ${isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)"}`,
+                  background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
+                  color: isActive ? G.white : "rgba(255,255,255,0.6)",
                   fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
                 }}>
                   {lbl}{days !== null ? ` · J−${days}` : " · 12 sem"}
@@ -1450,8 +1450,8 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
             })}
             <button onClick={onAddPlan} style={{
               flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
-              border: "1.5px dashed rgba(255,255,255,0.18)", background: "transparent",
-              color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 600,
+              border: "1.5px dashed rgba(255,255,255,0.3)", background: "transparent",
+              color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600,
               display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
             }}>
               <Plus size={11} /> Ajouter
@@ -1490,11 +1490,11 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
                 Voir tout <ArrowRight size={13} color={G.blue} />
               </button>
             </div>
-            <div style={{ background: G.white, borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
+            <div style={{ background: G.white, borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
               {/* Type badge strip */}
-              <div style={{ background: tm.bg, padding: "10px 20px", display: "flex", alignItems: "center", gap: 8 }}>
-                <tm.Icon size={13} color={tm.color} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, textTransform: "uppercase" }}>{nextSession.type}</span>
+              <div style={{ background: tm.color, padding: "10px 20px", display: "flex", alignItems: "center", gap: 8 }}>
+                <tm.Icon size={13} color="rgba(255,255,255,0.9)" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: G.white, letterSpacing: 1.5, textTransform: "uppercase" }}>{nextSession.type}</span>
               </div>
               <div style={{ padding: "18px 20px 20px" }}>
                 <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
@@ -1514,15 +1514,15 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
 
         {/* Stats condensées */}
         <div className="fade-up-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-          <div style={{ background: G.white, borderRadius: 16, padding: "16px", border: `1px solid ${G.greyLight}` }}>
-            <div style={{ fontSize: 11, color: G.grey, letterSpacing: 0.5, marginBottom: 6 }}>SEMAINE EN COURS</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink }}>{weekDone}<span style={{ fontSize: 14, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{currentWeek?.focus ?? "—"}</div>
+          <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Cette semaine</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{weekDone}<span style={{ fontSize: 16, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
+            <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>{currentWeek?.focus ?? "—"}</div>
           </div>
-          <div style={{ background: G.white, borderRadius: 16, padding: "16px", border: `1px solid ${G.greyLight}` }}>
-            <div style={{ fontSize: 11, color: G.grey, letterSpacing: 0.5, marginBottom: 6 }}>SÉRIE ACTUELLE</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink }}>{stats.streak}</div>
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>séances consécutives</div>
+          <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Série</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
+            <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>séances consécutives</div>
           </div>
         </div>
       </div>
@@ -1536,8 +1536,8 @@ const StatsTab = ({ plan }) => {
   const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
   return (
     <div style={{ paddingBottom: 100 }}>
-      <div style={{ background: "linear-gradient(140deg, #0D1117 0%, #001966 100%)", padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", letterSpacing: 1, marginBottom: 4 }}>Tes performances</div>
+      <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
+        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes performances</div>
         <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white }}>Statistiques</h1>
       </div>
       <div style={{ padding: "20px 16px 0" }}>
@@ -1602,10 +1602,10 @@ const BadgesTab = ({ plan }) => {
   const earned = checkBadges(stats);
   return (
     <div style={{ paddingBottom: 100 }}>
-      <div style={{ background: "linear-gradient(140deg, #0D1117 0%, #001966 100%)", padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", letterSpacing: 1, marginBottom: 4 }}>Tes récompenses</div>
+      <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
+        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
         <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, marginBottom: 4 }}>Badges</h1>
-        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
+        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
             <div key={b.id} style={{ width: 32, height: 32, borderRadius: "50%", background: earned.includes(b.id) ? b.color : "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", filter: earned.includes(b.id) ? "none" : "opacity(0.35)" }}>
