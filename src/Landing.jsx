@@ -944,6 +944,7 @@ function Pricing() {
     "Séances détaillées avec cues",
   ];
   const premiumFeatures = [
+    "Plusieurs projets en parallèle (triathlon + eau libre…)",
     "Plan complet jusqu'à 52 semaines",
     "Jusqu'à 4 séances par semaine",
     "Toutes les variantes de séances",

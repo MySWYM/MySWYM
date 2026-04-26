@@ -1173,7 +1173,8 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 
 const PREMIUM_FEATURES = [
-  { Icon: Calendar,   label: "Plans illimités",      desc: "Jusqu'à 52 semaines selon ton événement" },
+  { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
+  { Icon: Calendar,   label: "Plans illimités",       desc: "Jusqu'à 52 semaines selon ton événement" },
   { Icon: TrendingUp, label: "Plan adaptatif",        desc: "Ajuste automatiquement selon tes retours" },
   { Icon: BarChart2,  label: "Stats avancées",        desc: "Graphiques détaillés et historique complet" },
   { Icon: Activity,   label: "Partage de séances",    desc: "Cartes visuelles pour Instagram & Strava" },
