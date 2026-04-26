@@ -161,8 +161,8 @@ function Hero() {
       <div style={{ maxWidth: 760, position: "relative" }}>
         {/* Badge */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(10,132,255,0.12)", border: `1px solid rgba(10,132,255,0.3)`, borderRadius: 100, padding: "5px 14px", marginBottom: 32 }}>
-          <Zap size={12} color={C.blue} />
-          <span style={{ color: C.blue, fontSize: 12, fontWeight: 600, letterSpacing: "0.04em" }}>COACHING NATATION PERSONNALISÉ</span>
+          <Waves size={12} color={C.blue} />
+          <span style={{ color: C.blue, fontSize: 12, fontWeight: 600, letterSpacing: "0.04em" }}>NATATION · TRIATHLON · BNSSA · EAU LIBRE</span>
         </div>
 
         {/* Headline */}
@@ -170,16 +170,16 @@ function Hero() {
           fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(42px, 7vw, 80px)",
           color: C.white, lineHeight: 1.08, letterSpacing: "-2px", margin: "0 0 24px",
         }}>
-          Nage plus vite.<br />
+          Nage.<br />
           <span style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueLight})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            Avec un vrai plan.
+            On s'occupe du reste.
           </span>
         </h1>
 
         {/* Subtitle */}
         <p style={{ color: C.grey, fontSize: "clamp(16px, 2.5vw, 19px)", lineHeight: 1.6, marginBottom: 40, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
-          MySWYM génère ton plan d'entraînement natation semaine par semaine —
-          adapté à ton niveau, ton objectif et ta disponibilité.
+          Ton programme d'entraînement structuré semaine par semaine —
+          adapté à ton niveau, ton objectif et ta dispo. Comme un vrai coach.
         </p>
 
         {/* CTAs */}
@@ -256,9 +256,9 @@ function Hero() {
 // ── Stats ──────────────────────────────────────────────────────────────────
 function Stats() {
   const stats = [
-    { value: 500, suffix: "+", label: "Plans lancés" },
-    { value: 4,   suffix: "",  label: "Objectifs sportifs" },
-    { value: 100, suffix: "%", label: "Personnalisé" },
+    { value: 1200, suffix: "+", label: "Nageurs accompagnés" },
+    { value: 850,  suffix: "k", label: "Mètres planifiés" },
+    { value: 100,  suffix: "%", label: "Structuré comme un coach" },
   ];
   return (
     <section style={{ background: C.inkLight, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "48px 24px" }}>
@@ -280,7 +280,7 @@ function Stats() {
 function HowItWorks() {
   const steps = [
     { n: "01", icon: Target, title: "Ton profil en 2 min", desc: "Choisis ton objectif — triathlon, eau libre, diplôme ou bien-être — et précise ton niveau et ta fréquence de nage." },
-    { n: "02", icon: Calendar, title: "Plan généré instantanément", desc: "L'algorithme structure ton programme semaine par semaine : phases de base, développement, pic de forme et affûtage." },
+    { n: "02", icon: Calendar, title: "Ton plan en 30 secondes", desc: "Ton programme est construit semaine par semaine : phases de base, développement, pic de forme et affûtage — exactement comme un coach le ferait." },
     { n: "03", icon: Waves, title: "Nage, coche, progresse", desc: "Chaque séance est détaillée — séries, temps de repos, cues techniques. Tu coches en sortant du bassin." },
     { n: "04", icon: TrendingUp, title: "Suis ta progression", desc: "Semaines complétées, distance totale, séances par type — visualise ton évolution et reste motivé jusqu'au bout." },
   ];
@@ -322,6 +322,125 @@ function HowItWorks() {
   );
 }
 
+// ── Week Example ──────────────────────────────────────────────────────────
+function WeekExample() {
+  const isMobile = useIsMobile();
+  const [activeDay, setActiveDay] = useState(0);
+
+  const sessions = [
+    {
+      day: "Lundi",
+      type: "ENDURANCE",
+      color: "#34C759",
+      title: "Fond en séries",
+      total: "2 200m",
+      warmup: "400m échauffement",
+      main: "5×300m NL allure Z2 — départ D4'30\"",
+      cool: "400m retour au calme mixte",
+      tip: "Respiration toutes les 3 foulées, pense à la longueur.",
+    },
+    {
+      day: "Mercredi",
+      type: "SEUIL",
+      color: "#FF9F0A",
+      title: "CSS — allure critique",
+      total: "2 000m",
+      warmup: "300m échauffement + 4×50m accélération",
+      main: "8×100m NL allure CSS — départ D2'00\"",
+      cool: "300m nage libre retour au calme",
+      tip: "CSS = ta vitesse critique de nage. Garde le rythme constant.",
+    },
+    {
+      day: "Vendredi",
+      type: "TECHNIQUE",
+      color: "#0A84FF",
+      title: "Éducatifs & vitesse",
+      total: "1 800m",
+      warmup: "200m libre + 4×25m avec palmes",
+      main: "6×50m catch-up drill — 6×50m DPS allure Z4",
+      cool: "200m nage dos décontraction",
+      tip: "Sur le catch-up, attends que ta main avant touche l'autre avant de tirer.",
+    },
+  ];
+
+  const s = sessions[activeDay];
+
+  return (
+    <section style={{ background: C.inkLight, padding: "clamp(60px,8vw,100px) 20px" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>SEMAINE TYPE</div>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.white, margin: "0 0 14px", letterSpacing: "-1px" }}>
+            Voilà à quoi ressemble<br />ta semaine d'entraînement
+          </h2>
+          <p style={{ color: C.grey, fontSize: 16, maxWidth: 480, margin: "0 auto" }}>
+            Chaque séance est détaillée — tu sais exactement quoi faire dans l'eau avant même d'y entrer.
+          </p>
+        </FadeIn>
+
+        <FadeIn>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "200px 1fr", gap: 20, alignItems: "start" }}>
+            {/* Day selector */}
+            <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", gap: 8 }}>
+              {sessions.map((sess, i) => (
+                <button key={i} onClick={() => setActiveDay(i)} style={{
+                  flex: isMobile ? 1 : "none",
+                  padding: isMobile ? "10px 8px" : "14px 20px",
+                  borderRadius: 14,
+                  border: `1.5px solid ${activeDay === i ? sess.color : C.border}`,
+                  background: activeDay === i ? `${sess.color}12` : "transparent",
+                  cursor: "pointer",
+                  textAlign: isMobile ? "center" : "left",
+                  transition: "all 0.15s",
+                }}>
+                  <div style={{ fontSize: isMobile ? 11 : 13, fontWeight: 800, color: activeDay === i ? C.white : C.grey, fontFamily: "'Syne', sans-serif" }}>{sess.day}</div>
+                  {!isMobile && <div style={{ fontSize: 11, color: activeDay === i ? sess.color : "rgba(138,155,176,0.5)", fontWeight: 600, marginTop: 2 }}>{sess.type}</div>}
+                </button>
+              ))}
+            </div>
+
+            {/* Session detail */}
+            <div style={{ background: C.ink, border: `1px solid ${s.color}30`, borderRadius: 20, padding: isMobile ? 20 : 28, transition: "border-color 0.2s" }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+                <div style={{ background: `${s.color}15`, borderRadius: 12, padding: "8px 14px" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: s.color, letterSpacing: "0.06em" }}>{s.type}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: C.white }}>{s.title}</div>
+                </div>
+                <div style={{ background: C.inkLight, borderRadius: 10, padding: "6px 12px" }}>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: C.white }}>{s.total}</span>
+                </div>
+              </div>
+
+              {/* Workout blocks */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: "ÉCHAUFFEMENT", content: s.warmup, color: "#34C759" },
+                  { label: "CORPS DE SÉANCE", content: s.main, color: s.color },
+                  { label: "RETOUR AU CALME", content: s.cool, color: "#8A9BB0" },
+                ].map((block, i) => (
+                  <div key={i} style={{ background: C.inkLight, borderLeft: `3px solid ${block.color}`, borderRadius: "0 12px 12px 0", padding: "12px 16px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: block.color, letterSpacing: "0.08em", marginBottom: 4 }}>{block.label}</div>
+                    <div style={{ fontSize: 14, color: C.greyLight, lineHeight: 1.5 }}>{block.content}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tip */}
+              <div style={{ background: `rgba(10,132,255,0.06)`, border: `1px solid rgba(10,132,255,0.2)`, borderRadius: 12, padding: "12px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <Zap size={14} color={C.blue} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span style={{ fontSize: 13, color: C.grey, lineHeight: 1.6 }}>{s.tip}</span>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
 // ── Goals ──────────────────────────────────────────────────────────────────
 function Goals() {
   const goals = [
@@ -336,7 +455,7 @@ function Goals() {
         <FadeIn style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 14 }}>TES OBJECTIFS</div>
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.white, margin: 0, letterSpacing: "-1px" }}>
-            Un plan taillé pour<br />ton objectif précis
+            Triathlon, compétition,<br />diplôme ou bien-être
           </h2>
         </FadeIn>
 
@@ -634,10 +753,10 @@ function FinalCTA() {
             <Waves size={30} color={C.blue} />
           </div>
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(30px, 5vw, 50px)", fontWeight: 800, color: C.white, margin: "0 0 18px", letterSpacing: "-1.2px" }}>
-            Prêt à nager avec un vrai plan ?
+            Ton coach dans ta poche.<br />Gratuit pour commencer.
           </h2>
           <p style={{ color: C.grey, fontSize: 17, lineHeight: 1.6, marginBottom: 36 }}>
-            Lance ton programme en 2 minutes. C'est gratuit, aucune carte bancaire requise.
+            Lance ton programme en 2 minutes. Tu nages, on structure tout le reste.
           </p>
           <a href="/app" style={{
             display: "inline-flex", alignItems: "center", gap: 10,
@@ -967,6 +1086,7 @@ export default function Landing() {
       <Stats />
       <Comparison />
       <HowItWorks />
+      <WeekExample />
       <Goals />
       <PaceFeature />
       <ProgressTimeline />
