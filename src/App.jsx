@@ -1435,49 +1435,77 @@ const ResetConfirmButton = ({ onReset }) => {
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp }) => {
-  // startDate est maintenant dans plan.startDate (sauvegardé en Supabase).
-  // startDateProp sert de fallback pour les plans déjà créés avant cette mise à jour.
   const startDate = plan.startDate ?? startDateProp ?? null;
-  // Semaines débloquées par le calendrier : 1 semaine toutes les 7 jours depuis le début du plan
+
+  // Semaines débloquées : calendrier si startDate connu, sinon basé sur progression réelle
+  const completedWeeks = plan.weeks.filter(w => w.sessions.every(s => s.completed)).length;
   const calendarUnlocked = startDate
     ? Math.min(plan.weeks.length, Math.floor((Date.now() - startDate) / (7 * 24 * 60 * 60 * 1000)) + 1)
-    : plan.weeks.length; // plans existants sans aucun startDate → on ne punit pas
+    : Math.min(plan.weeks.length, completedWeeks + 1); // sans startDate : semaines complétées + 1
 
-  const maxVisible = isPremium
-    ? calendarUnlocked                           // Premium : calendrier uniquement
-    : Math.min(FREE_WEEKS_LIMIT, calendarUnlocked); // Free : calendrier + limite gratuit
+  // Pour les users free, limite dure à FREE_WEEKS_LIMIT
+  const freeLimit = Math.min(FREE_WEEKS_LIMIT, calendarUnlocked);
+  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
 
-  const visibleWeeks = plan.weeks.slice(0, maxVisible);
-  const currentWeek = visibleWeeks.findIndex(w => !w.sessions.every(s => s.completed));
-  const isFreeLocked = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT;
-  const isCalLocked  = maxVisible < plan.weeks.length;
-  const isLocked = isFreeLocked;
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ padding: "20px 16px 0" }}>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
-          {visibleWeeks.length} semaines · {profile.sessionsPerWeek}×/semaine
-          {isLocked && <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. bloquées</span>}
+          {plan.weeks.length} semaines · {profile.sessionsPerWeek}×/semaine
+          {!isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT && (
+            <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. bloquées</span>
+          )}
         </p>
-        {visibleWeeks.map((week, i) => (
-          <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeek} />
-            {!isPremium && i === 0 && plan.totalRealWeeks > 1 && <PremiumTeaser onUpgrade={onUpgrade} />}
-          </div>
-        ))}
-        {isLocked && <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />}
-        {!isLocked && isCalLocked && (
-          <div style={{ background: G.greyXLight, border: `1px solid ${G.greyLight}`, borderRadius: 16, padding: "18px 20px", textAlign: "center", marginTop: 8 }}>
-            <Lock size={18} color={G.greyMid} style={{ marginBottom: 8 }} />
-            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55 }}>
-              La semaine {maxVisible + 1} se débloque dans{" "}
-              <strong style={{ color: G.ink }}>
-                {7 - Math.floor(((Date.now() - (startDate ?? Date.now())) / (24 * 60 * 60 * 1000)) % 7)} jours
-              </strong>
-            </p>
-          </div>
-        )}
+
+        {plan.weeks.map((week, i) => {
+          // Free user : hard paywall après FREE_WEEKS_LIMIT
+          if (!isPremium && i >= FREE_WEEKS_LIMIT) {
+            if (i === FREE_WEEKS_LIMIT) return (
+              <div key={i}>
+                <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
+              </div>
+            );
+            return null;
+          }
+
+          // Semaine débloquée → affichage normal
+          if (i < calendarUnlocked) return (
+            <div key={i}>
+              <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} />
+              {!isPremium && i === 0 && plan.totalRealWeeks > 1 && <PremiumTeaser onUpgrade={onUpgrade} />}
+            </div>
+          );
+
+          // Semaine future → carte floutée (screenshot inutile)
+          const daysUntilUnlock = startDate
+            ? Math.max(1, 7 - Math.floor(((Date.now() - startDate) / (24 * 60 * 60 * 1000)) % 7))
+            : null;
+          return (
+            <div key={i} style={{ position: "relative", marginBottom: 10, borderRadius: 16, overflow: "hidden" }}>
+              {/* Contenu flouté */}
+              <div style={{ filter: "blur(5px)", pointerEvents: "none", userSelect: "none", opacity: 0.6 }}>
+                <WeekCard week={week} weekIndex={i} onComplete={() => {}} onShare={() => {}} isCurrentWeek={false} />
+              </div>
+              {/* Overlay cadenas */}
+              <div style={{
+                position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 6,
+                background: "rgba(240,244,248,0.55)", borderRadius: 16,
+              }}>
+                <div style={{ background: G.white, borderRadius: 12, padding: "10px 18px", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
+                  <Lock size={14} color={G.blue} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>
+                    {daysUntilUnlock
+                      ? `Disponible dans ${daysUntilUnlock} jour${daysUntilUnlock > 1 ? "s" : ""}`
+                      : `Semaine ${i + 1} · Complète la semaine précédente`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
         <ResetConfirmButton onReset={onReset} />
       </div>
     </div>
