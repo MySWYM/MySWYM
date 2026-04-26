@@ -1436,7 +1436,7 @@ const ResetConfirmButton = ({ onReset }) => {
 // ── COACH CARD ────────────────────────────────────────────────────────────
 const COACH = {
   name: "Arthur N.",
-  photo: null, // URL à renseigner
+  photo: "/coach.JPG",
   initials: "AN",
 };
 
