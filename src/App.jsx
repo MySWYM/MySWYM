@@ -1407,12 +1407,41 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
   );
 };
 
+// ── RESET CONFIRM BUTTON ──────────────────────────────────────────────────
+const ResetConfirmButton = ({ onReset }) => {
+  const [confirm, setConfirm] = useState(false);
+  if (confirm) return (
+    <div style={{ marginTop: 8, background: G.coralLight, border: `1px solid ${G.coral}`, borderRadius: 12, padding: "16px 18px" }}>
+      <p style={{ fontSize: 13, color: G.coral, fontWeight: 600, marginBottom: 4 }}>⚠️ Effacer ce plan ?</p>
+      <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.5, marginBottom: 14 }}>
+        Toute ta progression sera perdue et tu devras recommencer le questionnaire depuis le début.
+      </p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={() => setConfirm(false)} style={{ flex: 1, padding: "10px", background: G.white, border: `1px solid ${G.greyLight}`, borderRadius: 8, fontSize: 13, color: G.grey, cursor: "pointer", fontWeight: 500 }}>
+          Annuler
+        </button>
+        <button onClick={onReset} style={{ flex: 1, padding: "10px", background: G.coral, border: "none", borderRadius: 8, fontSize: 13, color: G.white, cursor: "pointer", fontWeight: 600 }}>
+          Oui, effacer
+        </button>
+      </div>
+    </div>
+  );
+  return (
+    <button onClick={() => setConfirm(true)} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      <RotateCcw size={14} color={G.greyMid} /> Recommencer l'onboarding
+    </button>
+  );
+};
+
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate }) => {
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp }) => {
+  // startDate est maintenant dans plan.startDate (sauvegardé en Supabase).
+  // startDateProp sert de fallback pour les plans déjà créés avant cette mise à jour.
+  const startDate = plan.startDate ?? startDateProp ?? null;
   // Semaines débloquées par le calendrier : 1 semaine toutes les 7 jours depuis le début du plan
   const calendarUnlocked = startDate
     ? Math.min(plan.weeks.length, Math.floor((Date.now() - startDate) / (7 * 24 * 60 * 60 * 1000)) + 1)
-    : plan.weeks.length; // plans existants sans startDate → on ne punit pas
+    : plan.weeks.length; // plans existants sans aucun startDate → on ne punit pas
 
   const maxVisible = isPremium
     ? calendarUnlocked                           // Premium : calendrier uniquement
@@ -1449,9 +1478,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
             </p>
           </div>
         )}
-        <button onClick={onReset} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <RotateCcw size={14} color={G.greyMid} /> Recommencer l'onboarding
-        </button>
+        <ResetConfirmButton onReset={onReset} />
       </div>
     </div>
   );
@@ -2468,7 +2495,7 @@ const generatePlan = async (profile, isPremium = false) => {
       }),
     };
   });
-  return { weeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression };
+  return { weeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now() };
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
@@ -2551,7 +2578,10 @@ export default function App() {
     if (ap && aprof.goal && ap.totalRealWeeks > ap.weeks.length) {
       setScreen("loading");
       generatePlan(aprof, true).then(newPlan => {
-        setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: newPlan } : e));
+        // Préserve le startDate original pour que le calendrier parte de la vraie date de début
+        const originalStartDate = ap.startDate ?? activePlanEntry.startDate ?? null;
+        const planWithDate = originalStartDate ? { ...newPlan, startDate: originalStartDate } : newPlan;
+        setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
         setScreen("app"); setActiveTab("home");
       });
     }

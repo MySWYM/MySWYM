@@ -1,16 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "./supabase.js";
 import {
   Waves, Activity, Award, Target, ChevronRight, Check, X, Minus,
   ArrowRight, Star, Zap, TrendingUp, Calendar, Timer,
   ChevronDown, Shield, RotateCcw, Menu,
 } from "lucide-react";
-
-// ── Supabase ───────────────────────────────────────────────────────────────
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 // ── Design tokens — thème clair (Kiprun-inspired) ─────────────────────────
 const C = {

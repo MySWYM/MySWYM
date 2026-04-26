@@ -29,35 +29,57 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Non authentifié");
+    if (!authHeader) throw new Error("Non authentifié — pas de token JWT");
 
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) throw new Error("Utilisateur introuvable");
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError) throw new Error(`Auth error: ${userError.message}`);
+    if (!user) throw new Error("Utilisateur introuvable après getUser()");
 
     const customerId = user.user_metadata?.stripe_customer_id;
-    if (!customerId) throw new Error("Aucun abonnement actif trouvé");
+    console.log("[create-portal] user:", user.id, "customerId:", customerId ?? "MISSING");
+    if (!customerId) throw new Error(`stripe_customer_id manquant dans user_metadata (user: ${user.id})`);
 
     // Ignore client-provided origin — use the validated request origin instead
     const returnOrigin = reqOrigin && isAllowedOrigin(reqOrigin)
       ? reqOrigin
       : ALLOWED_ORIGINS[0] ?? "https://myswym.fr";
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${returnOrigin}?payment=portal`,
-    });
+    console.log("[create-portal] creating portal session for customer:", customerId);
+    let session;
+    try {
+      session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${returnOrigin}?payment=portal`,
+      });
+    } catch (stripeErr: any) {
+      if (stripeErr?.code === "resource_missing") {
+        // Customer ID périmé (test→live ou supprimé) : on le retire du metadata
+        const supabaseAdmin = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          user_metadata: { ...user.user_metadata, stripe_customer_id: null },
+        });
+        throw new Error("Lien Stripe périmé — ton compte a été réinitialisé. Contacte support@myswym.app si le problème persiste.");
+      }
+      throw stripeErr;
+    }
 
+    console.log("[create-portal] success, url:", session.url);
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Une erreur est survenue" }), {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[create-portal] ERROR:", message);
+    return new Response(JSON.stringify({ error: message }), {
       status: 400,
       headers: { ...cors, "Content-Type": "application/json" },
     });
