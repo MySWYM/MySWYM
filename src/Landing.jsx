@@ -234,10 +234,13 @@ function Nav() {
             position: "absolute", top: 0, left: 0, right: 0,
             background: C.white,
             borderBottom: `1px solid ${C.border}`,
-            boxShadow: "0 12px 40px rgba(0,0,0,0.14)",
+            boxShadow: menuOpen ? "0 12px 40px rgba(0,0,0,0.14)" : "none",
             padding: "8px 0 24px",
             transform: menuOpen ? "translateY(0)" : "translateY(-100%)",
-            transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+            visibility: menuOpen ? "visible" : "hidden",
+            transition: menuOpen
+              ? "transform 0.28s cubic-bezier(0.4,0,0.2,1), visibility 0s 0s"
+              : "transform 0.28s cubic-bezier(0.4,0,0.2,1), visibility 0s 0.28s",
           }}>
             {NAV_LINKS.map(([label, href]) => (
               <a
