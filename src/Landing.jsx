@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   Waves, Activity, Award, Target, ChevronRight, Check, X, Minus,
   ArrowRight, Star, Zap, TrendingUp, Calendar, Timer,
-  ChevronDown, Shield, RotateCcw,
+  ChevronDown, Shield, RotateCcw, Menu,
 } from "lucide-react";
 
 // ── Supabase ───────────────────────────────────────────────────────────────
@@ -107,55 +107,177 @@ function SectionLabel({ text }) {
 }
 
 // ── Nav ────────────────────────────────────────────────────────────────────
+const NAV_LINKS = [
+  ["Comment ça marche", "#how"],
+  ["Objectifs",         "#goals"],
+  ["Blog",              "/blog"],
+  ["Tarifs",            "#pricing"],
+];
+
 function Nav() {
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled,  setScrolled]  = useState(false);
+  const [menuOpen,  setMenuOpen]  = useState(false);
   const isMobile = useIsMobile();
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn);
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  // Close drawer when user starts scrolling
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    window.addEventListener("scroll", close, { passive: true });
+    return () => window.removeEventListener("scroll", close);
+  }, [menuOpen]);
+
+  // Lock body scroll when drawer is open on mobile
+  useEffect(() => {
+    document.body.style.overflow = (isMobile && menuOpen) ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobile, menuOpen]);
+
+  const navBg = (scrolled || menuOpen)
+    ? "rgba(255,255,255,0.97)"
+    : "rgba(255,255,255,0.0)";
+
   return (
-    <nav style={{
-      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.0)",
-      backdropFilter: scrolled ? "blur(16px)" : "none",
-      borderBottom: scrolled ? `1px solid ${C.border}` : "none",
-      boxShadow: scrolled ? "0 1px 16px rgba(0,0,0,0.06)" : "none",
-      transition: "all 0.3s",
-    }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 20px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <div style={{ width: 32, height: 32, background: C.blue, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={18} color={C.white} />
-          </div>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: C.ink, letterSpacing: "-0.5px" }}>MySWYM</span>
-        </a>
+    <>
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 200,
+        background: navBg,
+        backdropFilter: (scrolled || menuOpen) ? "blur(16px)" : "none",
+        borderBottom: (scrolled || menuOpen) ? `1px solid ${C.border}` : "none",
+        boxShadow: scrolled ? "0 1px 16px rgba(0,0,0,0.06)" : "none",
+        transition: "background 0.3s, box-shadow 0.3s",
+      }}>
+        <div style={{
+          maxWidth: 1120, margin: "0 auto",
+          padding: "0 20px", height: 60,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          {/* Logo */}
+          <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <div style={{ width: 32, height: 32, background: C.blue, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Waves size={18} color={C.white} />
+            </div>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: C.ink, letterSpacing: "-0.5px" }}>MySWYM</span>
+          </a>
 
-        {!isMobile && (
-          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-            {[["Comment ça marche", "#how"], ["Objectifs", "#goals"], ["Blog", "/blog"], ["Tarifs", "#pricing"]].map(([l, h]) => (
-              <a key={h} href={h} style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
-                onMouseEnter={e => e.target.style.color = C.ink}
-                onMouseLeave={e => e.target.style.color = C.grey}
-              >{l}</a>
-            ))}
-          </div>
-        )}
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Desktop links */}
           {!isMobile && (
-            <a href="/app" style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px" }}>Connexion</a>
+            <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+              {NAV_LINKS.map(([l, h]) => (
+                <a key={h} href={h}
+                  style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={e => e.target.style.color = C.ink}
+                  onMouseLeave={e => e.target.style.color = C.grey}
+                >{l}</a>
+              ))}
+            </div>
           )}
-          <a href="/app" style={{
-            background: C.blue, color: C.white, fontSize: isMobile ? 13 : 14, fontWeight: 600,
-            padding: isMobile ? "9px 16px" : "9px 20px", borderRadius: 10, textDecoration: "none",
-            boxShadow: "0 4px 14px rgba(0,87,255,0.3)",
-          }}>Commencer</a>
+
+          {/* Right-side actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {!isMobile && (
+              <a href="/app" style={{ color: C.grey, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px" }}>Connexion</a>
+            )}
+            <a href="/app" style={{
+              background: C.blue, color: C.white,
+              fontSize: isMobile ? 13 : 14, fontWeight: 600,
+              padding: isMobile ? "9px 16px" : "9px 20px",
+              borderRadius: 10, textDecoration: "none",
+              boxShadow: "0 4px 14px rgba(0,87,255,0.3)",
+            }}>Commencer</a>
+
+            {/* Hamburger — mobile only */}
+            {isMobile && (
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "8px 4px", marginLeft: 4,
+                  color: C.ink,
+                }}
+              >
+                {menuOpen ? <X size={22} color={C.ink} /> : <Menu size={22} color={C.ink} />}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* ── Mobile drawer ──────────────────────────────────────────────── */}
+      {isMobile && (
+        <div style={{
+          position: "fixed", top: 60, left: 0, right: 0, bottom: 0,
+          zIndex: 199,
+          pointerEvents: menuOpen ? "all" : "none",
+        }}>
+          {/* Backdrop */}
+          <div
+            onClick={() => setMenuOpen(false)}
+            style={{
+              position: "absolute", inset: 0,
+              background: "rgba(10,22,40,0.32)",
+              opacity: menuOpen ? 1 : 0,
+              transition: "opacity 0.25s",
+            }}
+          />
+
+          {/* Panel */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0,
+            background: C.white,
+            borderBottom: `1px solid ${C.border}`,
+            boxShadow: "0 12px 40px rgba(0,0,0,0.14)",
+            padding: "8px 0 24px",
+            transform: menuOpen ? "translateY(0)" : "translateY(-100%)",
+            transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+          }}>
+            {NAV_LINKS.map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "16px 24px",
+                  color: C.ink, fontSize: 16, fontWeight: 600,
+                  textDecoration: "none",
+                  borderBottom: `1px solid ${C.border}`,
+                }}
+              >
+                {label}
+                <ChevronRight size={16} color={C.greyMid} />
+              </a>
+            ))}
+            {/* Connexion + CTA */}
+            <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+              <a href="/app" onClick={() => setMenuOpen(false)} style={{
+                display: "block", textAlign: "center",
+                padding: "13px", borderRadius: 12,
+                border: `1.5px solid ${C.greyLight}`,
+                color: C.ink, fontSize: 15, fontWeight: 600,
+                textDecoration: "none", background: C.bgCard,
+              }}>Connexion</a>
+              <a href="/app" onClick={() => setMenuOpen(false)} style={{
+                display: "block", textAlign: "center",
+                padding: "13px", borderRadius: 12,
+                background: C.blue, color: C.white,
+                fontSize: 15, fontWeight: 700,
+                textDecoration: "none",
+                boxShadow: "0 6px 20px rgba(0,87,255,0.30)",
+              }}>Créer mon plan gratuitement</a>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -190,8 +312,10 @@ function Hero() {
 
           <h1 style={{
             fontFamily: "'Syne', sans-serif", fontWeight: 800,
-            fontSize: "clamp(40px, 6vw, 72px)",
-            color: C.ink, lineHeight: 1.06, letterSpacing: "-2px", margin: "0 0 20px",
+            fontSize: "clamp(38px, 6vw, 72px)",
+            color: C.ink, lineHeight: 1.08,
+            letterSpacing: isMobile ? "-0.5px" : "-2px",
+            margin: "0 0 20px",
           }}>
             Nage.<br />
             <span style={{ color: C.blue }}>On s'occupe<br />du reste.</span>
@@ -205,10 +329,13 @@ function Hero() {
           <div style={{ display: "flex", gap: 12, justifyContent: isMobile ? "center" : "flex-start", flexWrap: "wrap", marginBottom: 20 }}>
             <a href="/app" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              background: C.blue, color: C.white, fontWeight: 700, fontSize: 16,
-              padding: "14px 28px", borderRadius: 14, textDecoration: "none",
+              background: C.blue, color: C.white, fontWeight: 700,
+              fontSize: isMobile ? 15 : 16,
+              padding: isMobile ? "13px 22px" : "14px 28px",
+              borderRadius: 14, textDecoration: "none",
               boxShadow: "0 8px 24px rgba(0,87,255,0.30)",
               transition: "transform 0.2s, box-shadow 0.2s",
+              maxWidth: "100%", boxSizing: "border-box",
             }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,87,255,0.38)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,87,255,0.30)"; }}
@@ -222,7 +349,7 @@ function Hero() {
         {/* Right — App mockup (thème clair comme l'app réelle) */}
         <div style={{ display: "flex", justifyContent: "center", position: "relative" }}>
           <div style={{
-            width: "clamp(280px, 38vw, 320px)",
+            width: isMobile ? "min(300px, calc(100vw - 48px))" : "clamp(280px, 38vw, 320px)",
             background: "#F0F4F8", borderRadius: 44,
             border: "6px solid rgba(0,0,0,0.08)",
             padding: 12,
@@ -420,16 +547,23 @@ function WeekExample() {
               {sessions.map((sess, i) => (
                 <button key={i} onClick={() => setActiveDay(i)} style={{
                   flex: isMobile ? 1 : "none",
-                  padding: isMobile ? "10px 8px" : "14px 18px",
+                  padding: isMobile ? "10px 6px" : "14px 18px",
                   borderRadius: 14,
                   border: `1.5px solid ${activeDay === i ? sess.color : C.border}`,
                   background: activeDay === i ? `${sess.color}0D` : C.white,
                   cursor: "pointer",
-                  textAlign: isMobile ? "center" : "left",
+                  textAlign: "center",
                   transition: "all 0.15s",
                   boxShadow: activeDay === i ? `0 4px 14px ${sess.color}20` : C.shadow,
+                  overflow: "hidden",
+                  minWidth: 0,
                 }}>
-                  <div style={{ fontSize: isMobile ? 12 : 14, fontWeight: 800, color: activeDay === i ? C.ink : C.grey, fontFamily: "'Syne', sans-serif" }}>{sess.day}</div>
+                  <div style={{
+                    fontSize: isMobile ? 11 : 14, fontWeight: 800,
+                    color: activeDay === i ? C.ink : C.grey,
+                    fontFamily: "'Syne', sans-serif",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>{sess.day}</div>
                   {!isMobile && <div style={{ fontSize: 11, color: activeDay === i ? sess.color : C.greyMid, fontWeight: 600, marginTop: 2 }}>{sess.type}</div>}
                 </button>
               ))}
@@ -650,7 +784,8 @@ function Comparison() {
         </FadeIn>
 
         <FadeIn>
-          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", boxShadow: C.shadow }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", boxShadow: C.shadow, minWidth: isMobile ? 300 : "auto" }}>
             <div style={{ display: "grid", gridTemplateColumns: gridCols, borderBottom: `1px solid ${C.border}` }}>
               <div style={{ padding: isMobile ? "14px" : "18px 24px" }} />
               {cols.map((c, i) => (
@@ -684,6 +819,7 @@ function Comparison() {
               </div>
             ))}
           </div>
+          </div>{/* /overflowX wrapper */}
         </FadeIn>
       </div>
     </section>
@@ -765,7 +901,7 @@ function PaceFeature() {
             </div>
             <div style={{ background: C.blueLight, borderRadius: 14, padding: "13px 16px" }}>
               <div style={{ fontSize: 10, color: C.blue, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 5 }}>APERÇU DANS TES SÉANCES</div>
-              <div style={{ fontSize: 12, color: C.inkLight, lineHeight: 1.7, fontFamily: "monospace" }}>
+              <div style={{ fontSize: 12, color: C.inkLight, lineHeight: 1.7, fontFamily: "monospace", wordBreak: "break-all" }}>
                 {`8×200m NL — D${fmtSecs(Math.round(Math.ceil((200 * secs * 1.08 / 100 + 15) / 5) * 5))} ≈ ${fmtSecs(Math.round(secs * 1.08))}/100m`}
               </div>
             </div>
@@ -824,7 +960,7 @@ function Pricing() {
           <p style={{ color: C.grey, fontSize: 16 }}>Annule à tout moment.</p>
         </FadeIn>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, alignItems: "start", paddingTop: 16 }}>
           {/* Free */}
           <FadeIn delay={0}>
             <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 24, padding: 32, boxShadow: C.shadow }}>
@@ -1026,17 +1162,27 @@ function FinalCTA() {
 
 // ── Footer ─────────────────────────────────────────────────────────────────
 function Footer() {
+  const isMobile = useIsMobile();
   return (
-    <footer style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.07)", padding: "36px 24px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+    <footer style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.07)", padding: isMobile ? "32px 20px" : "36px 24px" }}>
+      <div style={{
+        maxWidth: 1080, margin: "0 auto",
+        display: "flex",
+        flexDirection: isMobile ? "column" : "row",
+        flexWrap: "wrap",
+        justifyContent: isMobile ? "center" : "space-between",
+        alignItems: "center",
+        gap: isMobile ? 20 : 16,
+        textAlign: isMobile ? "center" : "left",
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 28, height: 28, background: C.blue, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Waves size={15} color={C.white} />
           </div>
           <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 16, color: C.white }}>MySWYM</span>
         </div>
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          {[["L'application", "/app"], ["Tarifs", "#pricing"], ["Contact", "mailto:contact@myswym.app"]].map(([l, h]) => (
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
+          {[["L'application", "/app"], ["Blog", "/blog"], ["Tarifs", "#pricing"], ["Contact", "mailto:contact@myswym.app"]].map(([l, h]) => (
             <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s" }}
               onMouseEnter={e => e.target.style.color = C.white}
               onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
