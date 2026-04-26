@@ -1434,7 +1434,7 @@ const ResetConfirmButton = ({ onReset }) => {
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp }) => {
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
   const startDate = plan.startDate ?? startDateProp ?? null;
   const completedWeeks = plan.weeks.filter(w => w.sessions.every(s => s.completed)).length;
   const daysElapsed = startDate ? Math.floor((Date.now() - startDate) / (24 * 60 * 60 * 1000)) : null;
@@ -1460,6 +1460,54 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ padding: "20px 16px 0" }}>
+        {/* Plan switcher */}
+        {plans && plans.length > 0 && (
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 12, marginBottom: 4 }}>
+            {plans.map(entry => {
+              const isActive = entry.id === activePlanId;
+              const lbl = GOALS.find(g => g.id === entry.profile.goal)?.label
+                       || CATEGORIES.find(c => c.id === entry.profile.category)?.label
+                       || "Plan";
+              const days = entry.profile.eventDate
+                ? Math.max(0, Math.ceil((new Date(entry.profile.eventDate) - new Date()) / 86400000))
+                : null;
+              return (
+                <div key={entry.id} style={{
+                  flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 100,
+                  border: `1.5px solid ${isActive ? G.blue : G.greyLight}`,
+                  background: isActive ? G.blueLight : G.white,
+                  transition: "all 0.15s", overflow: "hidden",
+                }}>
+                  <button onClick={() => onSwitchPlan(entry.id)} style={{
+                    padding: "7px 10px 7px 13px", cursor: "pointer",
+                    background: "none", border: "none",
+                    color: isActive ? G.blue : G.grey,
+                    fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                  }}>
+                    {lbl}{days !== null ? ` · J−${days}` : ""}
+                  </button>
+                  {plans.length > 1 && (
+                    <button onClick={() => onDeletePlan(entry.id)} style={{
+                      padding: "7px 10px 7px 2px", cursor: "pointer",
+                      background: "none", border: "none",
+                      color: isActive ? G.blue : G.greyMid,
+                      fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center",
+                    }}>×</button>
+                  )}
+                </div>
+              );
+            })}
+            <button onClick={onAddPlan} style={{
+              flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
+              border: `1.5px dashed ${G.greyLight}`, background: "transparent",
+              color: G.greyMid, fontSize: 12, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+            }}>
+              <Plus size={11} /> Ajouter
+            </button>
+          </div>
+        )}
+
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
           {unlocked} / {plan.weeks.length} semaines débloquées · {profile.sessionsPerWeek}×/sem
@@ -1509,7 +1557,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onTabChange, onComplete, onShare, onSignOut }) => {
+const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTabChange, onComplete, onShare, onSignOut }) => {
   const goal = GOALS.find(g => g.id === profile.goal);
   const stats = computeStats(plan);
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
@@ -1549,57 +1597,6 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
           </div>
         </div>
 
-        {/* Plan switcher */}
-        {plans.length > 0 && (
-          <div style={{ marginTop: 16, display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
-            {plans.map(entry => {
-              const isActive = entry.id === activePlanId;
-              const lbl = GOALS.find(g => g.id === entry.profile.goal)?.label
-                       || CATEGORIES.find(c => c.id === entry.profile.category)?.label
-                       || "Plan";
-              const days = entry.profile.eventDate
-                ? Math.max(0, Math.ceil((new Date(entry.profile.eventDate) - new Date()) / 86400000))
-                : null;
-              return (
-                <div key={entry.id} style={{
-                  flexShrink: 0, display: "flex", alignItems: "center",
-                  borderRadius: 100,
-                  border: `1.5px solid ${isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)"}`,
-                  background: isActive ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
-                  transition: "all 0.15s", overflow: "hidden",
-                }}>
-                  <button onClick={() => onSwitchPlan(entry.id)} style={{
-                    padding: "7px 10px 7px 13px", cursor: "pointer",
-                    background: "none", border: "none",
-                    color: isActive ? G.white : "rgba(255,255,255,0.6)",
-                    fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
-                  }}>
-                    {lbl}{days !== null ? ` · J−${days}` : " · 12 sem"}
-                  </button>
-                  {plans.length > 1 && (
-                    <button
-                      onClick={() => onDeletePlan(entry.id)}
-                      style={{
-                        padding: "7px 10px 7px 2px", cursor: "pointer",
-                        background: "none", border: "none",
-                        color: isActive ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.35)",
-                        fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center",
-                      }}
-                    >×</button>
-                  )}
-                </div>
-              );
-            })}
-            <button onClick={onAddPlan} style={{
-              flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
-              border: "1.5px dashed rgba(255,255,255,0.3)", background: "transparent",
-              color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
-            }}>
-              <Plus size={11} /> Ajouter
-            </button>
-          </div>
-        )}
       </div>
 
       <div style={{ padding: "24px 16px 0" }}>
@@ -2950,8 +2947,8 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
