@@ -54,7 +54,8 @@ const TYPE_META = {
 
 const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${G.bg}; font-family: 'DM Sans', sans-serif; overscroll-behavior: none; }
+  body { background: ${G.bg}; font-family: 'DM Sans', sans-serif; overscroll-behavior: none; letter-spacing: 0.015em; }
+  h1, h2, h3, h4 { letter-spacing: 0.01em; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
