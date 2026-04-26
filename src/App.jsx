@@ -311,7 +311,7 @@ const Ring = ({ value, size = 64, stroke = 6, color = G.water, bg = "rgba(255,25
 const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
   <div style={{ flex: 1, background: bg || G.greyXLight, borderRadius: 16, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
     <IconComp size={20} color={color || G.ink} />
-    <span style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Syne', sans-serif", color: color || G.ink, lineHeight: 1 }}>{value}</span>
+    <span style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Syne', sans-serif", letterSpacing: "0.03em", color: color || G.ink, lineHeight: 1 }}>{value}</span>
     <span style={{ fontSize: 11, color: G.grey, letterSpacing: 0.5, textTransform: "uppercase" }}>{label}</span>
   </div>
 );
@@ -416,7 +416,7 @@ const PaceZonesCard = ({ pace100, onSave }) => {
             style={{
               width: "100%", boxSizing: "border-box",
               padding: "13px 14px 13px 48px",
-              fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 800,
+              fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em",
               letterSpacing: 1.5, textAlign: "center",
               border: `2px solid ${err ? "#FF3B30" : val ? G.blue : G.greyLight}`,
               borderRadius: 12, outline: "none", background: G.white, color: G.ink,
@@ -455,7 +455,7 @@ const PaceZonesCard = ({ pace100, onSave }) => {
                 </div>
                 {paceStr && (
                   <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: z.color }}>{paceStr}</div>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: "0.04em", color: z.color }}>{paceStr}</div>
                   </div>
                 )}
                 {!paceStr && (
@@ -510,7 +510,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
       {/* Header */}
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Ton espace</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, marginBottom: 4 }}>Profil</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Profil</h1>
         <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}</p>
       </div>
 
@@ -711,7 +711,7 @@ const AuthScreen = ({ onAuth }) => {
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
       </div>
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Bienvenue</h2>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Bienvenue</h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>
           {mode === "login" ? "Connecte-toi pour accéder à ton plan." : "Crée ton compte gratuitement."}
         </p>
@@ -740,7 +740,7 @@ const AuthScreen = ({ onAuth }) => {
 const Step1_Category = ({ onSelect }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 1 sur 5</p>
-    <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
+    <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
     <p style={{ color: G.grey, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>Ton plan sera entièrement construit autour de ton objectif.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {CATEGORIES.map(cat => (
@@ -767,7 +767,7 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 2 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{titles[category] || "Précise ton objectif"}</h2>
+      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{titles[category] || "Précise ton objectif"}</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>On calibre le volume de tes séances.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
         {subs.map(s => (
@@ -793,7 +793,7 @@ const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, 
   return (
     <div className="fade-up">
       <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
+      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
         <div style={{ background: G.white, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
@@ -855,7 +855,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 5 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
+      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
       <div style={{ background: G.white, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
         <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 10 }}>Date de l'événement</label>
@@ -865,7 +865,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
           placeholder="jj/mm/aaaa"
           value={display}
           onChange={e => handleChange(e.target.value)}
-          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, background: "transparent", outline: "none", letterSpacing: 2 }}
+          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, background: "transparent", outline: "none", letterSpacing: 2 }}
         />
       </div>
       {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
@@ -887,7 +887,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
 const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6 }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur {total}</p>
-    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton niveau<br />en natation ?</h2>
+    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton niveau<br />en natation ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>Sois honnête — le plan sera meilleur.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
       {LEVELS.map(l => (
@@ -951,7 +951,7 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
-      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m ?</h2>
+      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 16 }}>On calcule tes zones d'intensité — chaque séance affiche tes intervalles de départ personnalisés.</p>
 
       {/* CSS mini explainer */}
@@ -979,7 +979,7 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
           style={{
             width: "100%", boxSizing: "border-box",
             padding: "18px 20px 18px 56px",
-            fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800,
+            fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em",
             letterSpacing: 2, textAlign: "center",
             border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
             borderRadius: 16, outline: "none", background: G.white, color: G.ink,
@@ -1003,7 +1003,7 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.color }} />
                     <span style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{z.label}</span>
                   </div>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: z.color }}>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: "0.04em", color: z.color }}>
                     {pStr}/100m
                   </span>
                 </div>
@@ -1025,7 +1025,7 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
 const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium = false, onUpgrade }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
-    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
+    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
       {FREQUENCIES.map(f => {
@@ -1066,7 +1066,7 @@ const Loading = () => (
   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 24, background: G.bg }}>
     <div style={{ fontSize: 60 }}><span className="swimmer"><Waves size={52} color={G.blue} /></span></div>
     <div style={{ textAlign: "center" }}>
-      <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 8 }}>On prépare ton plan…</h3>
+      <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>On prépare ton plan…</h3>
       <p style={{ color: G.grey, fontSize: 14 }}>Calcul des phases d'entraînement<br />et génération des séances</p>
     </div>
     <div style={{ display: "flex", gap: 8 }}>
@@ -1095,14 +1095,14 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
+        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
         <div style={{ background: `linear-gradient(135deg, ${G.ink} 0%, #001966 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(0,87,255,0.12)" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
             <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.white, marginBottom: 16 }}>{session.title}</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 12 }}>
             {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
               <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px" }}>
@@ -1134,7 +1134,7 @@ const FeedbackModal = ({ weekNumber, onRate, onSkip }) => {
       <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>Semaine {weekNumber} terminée</p>
-        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 6, textAlign: "center" }}>Comment tu t'es senti·e ?</h3>
+        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, textAlign: "center" }}>Comment tu t'es senti·e ?</h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 24 }}>On adapte les prochaines semaines à ta réponse.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {opts.map(o => (
@@ -1225,7 +1225,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
             ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité au <strong style={{ color: G.ink }}>premier mois</strong>.<br />Débloque ton programme complet.</p>
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
@@ -1241,7 +1241,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             transition: "all 0.18s",
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
             <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
           </button>
 
@@ -1261,7 +1261,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
             {/* Prix barré */}
             <div style={{ fontSize: 12, color: period === "annual" ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€/mois</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: period === "annual" ? G.white : G.ink }}>3,33€</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "annual" ? G.white : G.ink }}>3,33€</div>
             <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 40€/an</div>
           </button>
         </div>
@@ -1426,7 +1426,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ padding: "20px 16px 0" }}>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Programme</h2>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
           {visibleWeeks.length} semaines · {profile.sessionsPerWeek}×/semaine
           {isLocked && <span style={{ color: G.coral, fontWeight: 600 }}> · {plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. bloquées</span>}
@@ -1478,7 +1478,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
           <div>
             <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 5, fontWeight: 700 }}>Programme actif</div>
-            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, lineHeight: 1.05 }}>{goal?.label}</h1>
+            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, lineHeight: 1.05 }}>{goal?.label}</h1>
             {daysToEvent !== null && (
               <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 5 }}>J−{daysToEvent} · Semaine {(currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length)}/{plan.weeks.length}</p>
             )}
@@ -1491,7 +1491,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
         <div className="fade-up-3">
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 0.3 }}>{stats.totalSessions} séances · {(stats.totalMeters / 1000).toFixed(1)} km</span>
-            <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Syne', sans-serif", color: G.white }}>{pct}%</span>
+            <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Syne', sans-serif", letterSpacing: "0.03em", color: G.white }}>{pct}%</span>
           </div>
           <div style={{ height: 5, background: "rgba(255,255,255,0.18)", borderRadius: 3 }}>
             <div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: G.white, transition: "width 1s ease" }} />
@@ -1556,7 +1556,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
         {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && plan.isProgression && (
           <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
             <TrendingUp size={40} color={G.blue} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2>
             <p style={{ color: G.grey, fontSize: 14, marginBottom: 8 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en 12 semaines.</p>
             <p style={{ color: G.grey, fontSize: 13, marginBottom: 20 }}>Prêt·e pour le prochain cycle ? Ton niveau a évolué — un nouveau plan s'adaptera à ta progression.</p>
             <Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn>
@@ -1567,7 +1567,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
         {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && !plan.isProgression && (
           <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
             <Trophy size={40} color={G.gold} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
             <p style={{ color: G.grey, fontSize: 14 }}>Programme complété à 100 %.</p>
           </div>
         )}
@@ -1576,7 +1576,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
         {nextSession && tm && (
           <div className="fade-up" style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink }}>Prochaine séance</h2>
+              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink }}>Prochaine séance</h2>
               <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 13, color: G.blue, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
                 Voir tout <ArrowRight size={13} color={G.blue} />
               </button>
@@ -1588,7 +1588,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
                 <span style={{ fontSize: 11, fontWeight: 700, color: G.white, letterSpacing: 1.5, textTransform: "uppercase" }}>{nextSession.type}</span>
               </div>
               <div style={{ padding: "18px 20px 20px" }}>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
                 <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
                   {[{ Icon: Ruler, val: nextSession.distance, label: "Distance" }, { Icon: Timer, val: formatDuration(nextSession.duration), label: "Durée" }].map(({ Icon: I, val, label }, i) => (
                     <div key={i} style={{ flex: 1, background: G.greyXLight, borderRadius: 12, padding: "12px 14px" }}>
@@ -1607,12 +1607,12 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onAd
         <div className="fade-up-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Cette semaine</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{weekDone}<span style={{ fontSize: 16, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{weekDone}<span style={{ fontSize: 16, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
             <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>{currentWeek?.focus ?? "—"}</div>
           </div>
           <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Série</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
             <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>séances consécutives</div>
           </div>
         </div>
@@ -1629,7 +1629,7 @@ const StatsTab = ({ plan }) => {
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes performances</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white }}>Statistiques</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white }}>Statistiques</h1>
       </div>
       <div style={{ padding: "20px 16px 0" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
@@ -1695,7 +1695,7 @@ const BadgesTab = ({ plan }) => {
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: G.white, marginBottom: 4 }}>Badges</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
         <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
@@ -1708,7 +1708,7 @@ const BadgesTab = ({ plan }) => {
       <div style={{ padding: "20px 16px 0" }}>
         {earned.length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Débloqués</h3>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
                 <div key={b.id} className="scale-in" style={{ background: G.white, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
@@ -1724,7 +1724,7 @@ const BadgesTab = ({ plan }) => {
         )}
         {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 12 }}>À débloquer</h3>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
                 <div key={b.id} style={{ background: G.greyXLight, borderRadius: 16, padding: 16, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
