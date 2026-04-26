@@ -1229,33 +1229,63 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
         </div>
 
-        {/* Toggle mensuel / annuel */}
-        <div style={{ display: "flex", background: G.greyXLight, borderRadius: 12, padding: 4, marginBottom: 16, gap: 4 }}>
-          {["monthly", "annual"].map(p => (
-            <button key={p} onClick={() => setPeriod(p)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: period === p ? G.white : "transparent", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13, color: period === p ? G.ink : G.grey, cursor: "pointer", boxShadow: period === p ? "0 1px 4px rgba(0,0,0,0.1)" : "none", transition: "all 0.18s", position: "relative" }}>
-              {p === "monthly" ? "Mensuel" : "Annuel"}
-              {p === "annual" && <span style={{ position: "absolute", top: -8, right: 8, background: G.blue, color: G.white, fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20 }}>-33%</span>}
-            </button>
-          ))}
+        {/* Cards mensuel / annuel */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+          {/* Mensuel */}
+          <button onClick={() => setPeriod("monthly")} style={{
+            flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
+            border: `2px solid ${period === "monthly" ? G.blue : G.greyLight}`,
+            background: period === "monthly" ? G.blueLight : G.white,
+            transition: "all 0.18s",
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
+          </button>
+
+          {/* Annuel — mis en avant */}
+          <button onClick={() => setPeriod("annual")} style={{
+            flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
+            border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
+            background: period === "annual" ? G.ink : G.white,
+            transition: "all 0.18s", position: "relative", overflow: "hidden",
+          }}>
+            {/* Badge -33% */}
+            <div style={{
+              position: "absolute", top: 8, right: 8,
+              background: "#22C55E", color: G.white,
+              fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
+            }}>−33%</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
+            {/* Prix barré */}
+            <div style={{ fontSize: 12, color: period === "annual" ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€/mois</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: period === "annual" ? G.white : G.ink }}>3,33€</div>
+            <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 40€/an</div>
+          </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+        {/* 1 mois offert pill — visible only on annual */}
+        {isAnnual && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 16 }}>🎁</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>1 mois offert par rapport au mensuel</span>
+          </div>
+        )}
+
+        {/* Features */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 20 }}>
           {PREMIUM_FEATURES.map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: G.greyXLight, borderRadius: 12 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={16} color={G.blue} /></div>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: G.greyXLight, borderRadius: 12 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={14} color={G.blue} /></div>
               <div><div style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>{f.label}</div><div style={{ fontSize: 11, color: G.grey }}>{f.desc}</div></div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: G.blueLight, borderRadius: 14, padding: "14px 16px", marginBottom: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.blue, marginBottom: 2 }}>{monthlyPrice} <span style={{ fontSize: 15, fontWeight: 500 }}>/ mois</span></div>
-          <div style={{ fontSize: 12, color: G.blue }}>{isAnnual ? `Facturé ${totalLabel} · Annulable à tout moment` : "Annulable à tout moment"}</div>
-          {saving && <div style={{ marginTop: 6, display: "inline-block", background: G.blue, color: G.white, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>{saving} vs mensuel</div>}
-        </div>
-
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
-        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>{loading ? "Redirection…" : `Démarrer — ${totalLabel}`}</Btn>
+        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
+          {loading ? "Redirection…" : isAnnual ? "Démarrer — 40€/an" : "Démarrer — 4,99€/mois"}
+        </Btn>
         <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
       </div>
     </div>
