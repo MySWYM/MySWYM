@@ -1955,7 +1955,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         </div>
 
         {/* Glossaire */}
-        <a href="/blog/glossaire-natation" className="fade-up-2" style={{ display: "flex", alignItems: "center", gap: 14, background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", textDecoration: "none", marginBottom: 4 }}>
+        <a href="/blog/glossaire-natation" target="_blank" rel="noopener noreferrer" className="fade-up-2" style={{ display: "flex", alignItems: "center", gap: 14, background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", textDecoration: "none", marginBottom: 4 }}>
           <div style={{ width: 40, height: 40, background: `${G.blue}12`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <BookOpen size={20} color={G.blue} />
           </div>
