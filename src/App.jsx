@@ -2143,7 +2143,7 @@ const ri = (zone = 'easy') => fmtS(REST_SECS[zone] ?? 20);
 
 // dep() = D départ (premium) ou R récup (gratuit)
 const dep = (meters, lvl, zone = 'easy') =>
-  _isPremium ? `${dep(meters, lvl, zone)}` : `R${ri(zone)}`;
+  _isPremium ? `D${di(meters, lvl, zone)}` : `R${ri(zone)}`;
 // Round to nearest pool-length multiple, min 1 length
 const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
 
