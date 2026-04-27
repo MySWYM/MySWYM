@@ -268,4 +268,95 @@ La régularité prime sur le volume. 2 séances bien construites de 45 minutes v
       button: "Créer mon plan débutant",
     },
   },
+
+  {
+    slug: "depart-interval-natation",
+    title: "D1'45\" : c'est quoi un départ à la montre en natation ?",
+    description: "Tu vois D1'45\" dans ton programme et tu ne sais pas quoi faire ? On t'explique comment lire l'horloge de bassin, pourquoi on n'utilise pas la montre pour les récups, et comment nager comme un vrai nageur.",
+    category: "Débutants",
+    date: "27 avril 2025",
+    readingTime: "5 min",
+    coverColor: "#0A84FF",
+    intro: "Tu regardes ton programme, tu lis \"8×100m NL — D1'45\" — et tu te demandes ce que ça veut dire. C'est quoi ce D ? Pourquoi pas juste dire \"récupère 15 secondes\" ? La réponse change ta façon de t'entraîner — et te rapproche de la façon dont s'entraînent vraiment les nageurs.",
+    sections: [
+      {
+        h2: "D1'45\" : départ toutes les 1 minute 45 secondes",
+        content: `**D1'45\"** signifie : tu pars (ou repars) toutes les 1 minute et 45 secondes. C'est ce qu'on appelle un **départ à la montre** — ou plus précisément, un départ à l'horloge de bassin.
+
+Concrètement, si tu nages 100m en 1'30\", tu as **15 secondes de récupération** avant de repartir. Si tu nages en 1'38\", tu n'as plus que 7 secondes. Si un jour tu nages en 1'50\", tu attends le départ suivant.
+
+**Pourquoi ce système plutôt qu'une récup fixe ?**
+
+Parce qu'il récompense la performance. Plus tu nages vite, plus tu récupères. Plus tu travailles, plus ton intervalle devient confortable. C'est un outil de progression intégré directement dans la séance — et c'est aussi ce qui te donne une référence objective sur ta forme du jour.`,
+      },
+      {
+        h2: "L'horloge de bassin : ton meilleur ami",
+        content: `Dans chaque bassin, il y a une grande horloge ronde avec une aiguille rouge (parfois verte) qui tourne. Elle fait un tour complet en **60 secondes**. C'est l'outil de référence de tout nageur sérieux.
+
+**Comment l'utiliser :**
+
+Tu n'as pas besoin de partir à un moment précis. Tu regardes où est l'aiguille au moment de ton départ, et tu repars quand elle revient exactement à la même position — ou après 1'45\" si le départ est à 1'45\".
+
+Par exemple : tu pars quand l'aiguille est sur le **12**. Tu reviens au mur. Tu repars quand elle est revenue sur le **12** (après 1 tour complet = 1 min), ou sur le **9** si tu attends 1'45\", ou sur le **6** pour 1'30\".
+
+**Le truc du nageur confirmé :** il ne regarde jamais sa montre pendant les séries. Il jette un œil à l'horloge en arrivant au mur, voit où est l'aiguille, et sait instinctivement s'il est dans les temps ou non.`,
+      },
+      {
+        h2: "La montre : utile, mais pas pour les récups",
+        content: `Beaucoup de débutants font la même erreur : ils utilisent la montre pour gérer leurs récupérations. Ils appuient sur "tour" à chaque arrivée au mur, regardent le temps, attendent 15 secondes, et repartent. Ça marche, mais **ça casse le rythme** et ça te déconnecte du bassin.
+
+**La bonne façon d'utiliser la montre :**
+
+Lance-la au premier départ de la série. Arrête-la après la dernière répétition. C'est tout.
+
+La montre te sert pour **3 choses utiles** :
+— **Strava** — garder un historique propre de tes kilomètres, voir ta progression dans le temps
+— **Connaître ta moyenne** — même si légèrement faussée par les pauses entre séries, c'est une bonne indication de ton rythme global
+— **Savoir où tu en es dans la distance** — "j'ai nagé 1 800m, il me reste 400m" — la montre gère ça pour toi
+
+Mais pendant les séries, **laisse l'horloge de bassin faire son travail**. C'est elle qui donne le tempo. La montre, c'est pour après.`,
+      },
+      {
+        h2: "Pourquoi les vrais nageurs se fient à l'aiguille",
+        content: `Dans un club, personne ne regarde sa montre pendant les séries. Tout le monde garde un œil sur l'horloge de bassin. Pourquoi ?
+
+**Parce que c'est plus précis, plus fluide, et plus formateur.** L'horloge ne ment pas — si tu arrives au mur et que l'aiguille est déjà passée, tu as des questions à te poser sur ton allure. Si tu as 20 secondes d'avance, tu sais que tu es allé trop vite sur cette rep.
+
+Avec le temps, tu développes une **conscience interne de l'allure**. Tu sais à 5 secondes près combien tu vas mettre sur un 100m. C'est ça, nager avec intelligence.
+
+**Le processus d'apprentissage :**
+
+1. Au début : regarder l'horloge à chaque arrivée et compter les secondes
+2. Après quelques séances : estimer le temps avant même d'arriver au mur
+3. À terme : sentir si tu es dans les temps dès le premier virage
+
+Ce n'est pas une compétence innée — c'est simplement le résultat de regarder l'horloge systématiquement pendant quelques mois.`,
+      },
+      {
+        h2: "Résumé pratique pour ta prochaine séance",
+        content: `**Avant de sauter dans l'eau :**
+Repère l'horloge de bassin. Note la position de l'aiguille rouge.
+
+**Au départ de ta première répétition :**
+Démarre ta montre. Pars quand tu es prêt.
+
+**À chaque arrivée au mur :**
+Regarde l'aiguille. Mémorise sa position. Repars quand elle revient au même point (ou au point correspondant à ton intervalle).
+
+**À la fin de la série :**
+Arrête ta montre. Note le temps total si tu veux. Récupère entre les séries à ta guise.
+
+**Ce qu'il faut retenir :**
+— D1'45\" = tu repars toutes les 1'45\" (ton temps de nage + ta récup)
+— L'horloge de bassin = ton chrono de référence pendant les séries
+— La montre = ton outil pour Strava, la distance et ta moyenne globale
+— Plus tu nages vite, plus tu récupères — c'est la beauté du départ à la montre`,
+      },
+    ],
+    cta: {
+      title: "Ton programme avec intervalles calculés pour toi",
+      text: "MySWYM calcule automatiquement tes intervalles de départ selon ton niveau et ton meilleur 100m. Tu n'as plus qu'à regarder l'horloge et nager.",
+      button: "Créer mon programme",
+    },
+  },
 ];

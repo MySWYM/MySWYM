@@ -1434,7 +1434,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
       {session.details && (
         <div style={{ background: G.bg, borderRadius: 10, padding: "10px 12px", marginTop: 12 }}>
           {session.details.map((d, i) => (
-            <div key={i} style={{ fontSize: 12, color: G.grey, lineHeight: 1.7 }}>· {d}</div>
+            <div key={i} style={{ fontSize: 12, color: G.grey, lineHeight: 1.9 }}>· <DetailLine text={d} /></div>
           ))}
         </div>
       )}
@@ -1483,6 +1483,51 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
         </div>
       )}
     </div>
+  );
+};
+
+// ── DETAIL LINE — rend les départs "D1'45"" en badges tappables ───────────
+// Regex : capture "D" suivi d'un temps comme 1'30", 2'00", 45"…
+const DEPART_RE = /D(\d+['′]\d+"|\d+")/g;
+
+const DetailLine = ({ text }) => {
+  const parts = [];
+  let last = 0;
+  let match;
+  DEPART_RE.lastIndex = 0;
+  while ((match = DEPART_RE.exec(text)) !== null) {
+    if (match.index > last) parts.push({ type: "text", val: text.slice(last, match.index) });
+    parts.push({ type: "depart", val: match[0] });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push({ type: "text", val: text.slice(last) });
+
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.type === "text" ? (
+          <span key={i}>{p.val}</span>
+        ) : (
+          <a
+            key={i}
+            href="/blog/depart-interval-natation"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 3,
+              background: G.blueLight, color: G.blue,
+              fontSize: 11, fontWeight: 700, padding: "1px 7px",
+              borderRadius: 6, textDecoration: "none",
+              borderBottom: `1.5px solid ${G.blue}22`,
+              verticalAlign: "middle", margin: "0 1px",
+            }}
+          >
+            <Clock size={10} color={G.blue} />
+            {p.val}
+          </a>
+        )
+      )}
+    </>
   );
 };
 
@@ -1993,9 +2038,9 @@ const di = (meters, lvl, zone = 'easy') => {
   }
   const totalSecs = Math.ceil((meters * secsPer100 / 100 + rest) / 5) * 5;
   if (_pace100 !== null) {
-    return `${fmtS(totalSecs)} ≈ ${fmtS(Math.round(secsPer100))}/100m`;
+    return `toutes les ${fmtS(totalSecs)} · allure cible ${fmtS(Math.round(secsPer100))}/100m`;
   }
-  return fmtS(totalSecs);
+  return `toutes les ${fmtS(totalSecs)}`;
 };
 // Round to nearest pool-length multiple, min 1 length
 const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
