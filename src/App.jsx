@@ -4,7 +4,7 @@ import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -1922,6 +1922,18 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
             <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>séances consécutives</div>
           </div>
         </div>
+
+        {/* Glossaire */}
+        <a href="/blog/glossaire-natation" className="fade-up-2" style={{ display: "flex", alignItems: "center", gap: 14, background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", textDecoration: "none", marginBottom: 4 }}>
+          <div style={{ width: 40, height: 40, background: `${G.blue}12`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <BookOpen size={20} color={G.blue} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Glossaire du nageur</div>
+            <div style={{ fontSize: 12, color: G.grey }}>CSS, NL, D1'45", Z1-Z5… tous les termes expliqués</div>
+          </div>
+          <ArrowRight size={16} color={G.blue} />
+        </a>
       </div>
     </div>
   );
