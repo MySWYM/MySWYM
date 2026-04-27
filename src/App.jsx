@@ -2147,6 +2147,26 @@ const dep = (meters, lvl, zone = 'easy') =>
 // Round to nearest pool-length multiple, min 1 length
 const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
 
+// Calcule la vraie distance totale d'une séance en lisant ses détails
+const calcSessionDistance = (details = []) => {
+  let total = 0;
+  for (const line of details) {
+    let rest = line;
+    // 1. N×Xm (ex : "8×50m", "4×25m")
+    rest = rest.replace(/(\d+)\s*[×x]\s*(\d+)\s*m/g, (_, n, x) => {
+      total += parseInt(n) * parseInt(x); return '';
+    });
+    // 2. Pyramide "25–50–75–100–75–50–25m"
+    rest = rest.replace(/(\d+(?:\s*[–\-]\s*\d+)+)\s*m/g, (_, seq) => {
+      seq.split(/[–\-]/).forEach(v => { const n = parseInt(v.trim()); if (!isNaN(n)) total += n; });
+      return '';
+    });
+    // 3. Xm simples restants (ex : "200m", "100m")
+    rest.replace(/\b(\d+)\s*m\b/g, (_, x) => { total += parseInt(x); });
+  }
+  return total;
+};
+
 const SESSION_TEMPLATES = {
 
   // ── ENDURANCE ────────────────────────────────────────────────────────────
@@ -2823,7 +2843,10 @@ const generatePlan = async (profile, isPremium = false) => {
       number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false,
       sessions: types.map((type, si) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
-        return { ...SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal), distance: `${distBase}m`, duration: Math.max(30, Math.min(120, Math.round(distBase / 38))), completed: false };
+        const sessionData = SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
+        const realDist = calcSessionDistance(sessionData.details);
+        const dist = realDist > 100 ? realDist : distBase;
+        return { ...sessionData, distance: `${dist}m`, duration: Math.max(30, Math.min(120, Math.round(dist / 38))), completed: false };
       }),
     };
   });
