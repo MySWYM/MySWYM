@@ -2100,9 +2100,9 @@ const di = (meters, lvl, zone = 'easy') => {
   }
   const totalSecs = Math.ceil((meters * secsPer100 / 100 + rest) / 5) * 5;
   if (_pace100 !== null) {
-    return `toutes les ${fmtS(totalSecs)} · allure cible ${fmtS(Math.round(secsPer100))}/100m`;
+    return `${fmtS(totalSecs)} · allure cible ${fmtS(Math.round(secsPer100))}/100m`;
   }
-  return `toutes les ${fmtS(totalSecs)}`;
+  return `${fmtS(totalSecs)}`;
 };
 // Round to nearest pool-length multiple, min 1 length
 const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
