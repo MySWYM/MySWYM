@@ -487,29 +487,36 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
   const [freq, setFreq] = useState(profile?.sessionsPerWeek ?? 2);
   const [changed, setChanged] = useState(false);
 
-  const handleFreq = (v) => {
-    if (!isPremium && v >= 3) { onUpgrade?.(); return; }
-    setFreq(v); setChanged(true);
-  };
+  if (!isPremium) {
+    return (
+      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <Lock size={14} color={G.greyMid} />
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
+        </div>
+        <p style={{ fontSize: 13, color: G.grey, marginBottom: 14 }}>Adapte le nombre de séances à ton emploi du temps — réservé aux membres Premium.</p>
+        <button onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Zap size={14} color={G.blue} /> Passer en Premium
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
-      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Change le nombre de séances — un nouveau plan est régénéré.</p>
+      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Change le nombre de séances — tes semaines déjà validées sont conservées.</p>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         {FREQUENCIES.map(f => {
-          const locked = !isPremium && f.id >= 3;
           const active = freq === f.id;
           return (
-            <button key={f.id} onClick={() => handleFreq(f.id)} style={{
+            <button key={f.id} onClick={() => { setFreq(f.id); setChanged(true); }} style={{
               padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 600,
-              border: `1.5px solid ${active ? G.blue : locked ? G.greyLight : G.greyLight}`,
-              background: active ? G.blueLight : locked ? G.greyXLight : G.greyXLight,
-              color: active ? G.blue : locked ? G.greyMid : G.inkLight,
-              display: "flex", alignItems: "center", gap: 5,
+              border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+              background: active ? G.blueLight : G.greyXLight,
+              color: active ? G.blue : G.inkLight,
             }}>
-              {locked && <Lock size={10} color={G.greyMid} />}
               {f.label}
             </button>
           );
@@ -3030,11 +3037,20 @@ export default function App() {
 
   const handleUpdateProgram = (newFreq) => {
     if (!activePlanEntry) return;
+    const oldWeeks = activePlanEntry.plan?.weeks ?? [];
     const newProfile = { ...activePlanEntry.profile, sessionsPerWeek: newFreq };
     setScreen("loading");
     generatePlan(newProfile, isPremium).then(newPlan => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
-      const planWithDate = originalStartDate ? { ...newPlan, startDate: originalStartDate } : newPlan;
+      // Réinjecte les semaines déjà entièrement validées dans le nouveau plan
+      const mergedWeeks = newPlan.weeks.map((week, i) => {
+        const oldWeek = oldWeeks[i];
+        if (!oldWeek) return week;
+        const allDone = oldWeek.sessions.every(s => s.completed);
+        if (!allDone) return week;
+        return { ...week, sessions: week.sessions.map(s => ({ ...s, completed: true })) };
+      });
+      const planWithDate = { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
       setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: newProfile, plan: planWithDate }));
       setScreen("app"); setActiveTab("plan");
     });
