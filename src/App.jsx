@@ -2845,8 +2845,23 @@ const generatePlan = async (profile, isPremium = false) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
         const sessionData = SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
         const realDist = calcSessionDistance(sessionData.details);
-        const dist = realDist > 100 ? realDist : distBase;
-        return { ...sessionData, distance: `${dist}m`, duration: Math.max(30, Math.min(120, Math.round(dist / 38))), completed: false };
+
+        // Si le contenu généré est trop loin de la cible, on ajoute un bloc de volume explicite
+        const deficit = distBase - realDist;
+        const fillRep = pool * 2; // 50m (25m pool) ou 100m (50m pool)
+        const nFill = deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
+        let details = sessionData.details;
+        if (nFill > 0) {
+          // Insère avant le dernier item (retour au calme)
+          const last = details[details.length - 1];
+          const hasCooldown = last && (last.toLowerCase().includes('calme') || last.toLowerCase().includes('retour'));
+          const fillLine = `${nFill}×${fillRep}m NL — R20" — maintiens l'allure de la séance, volume complémentaire`;
+          details = hasCooldown
+            ? [...details.slice(0, -1), fillLine, last]
+            : [...details, fillLine];
+        }
+        const dist = calcSessionDistance(details);
+        return { ...sessionData, details, distance: `${dist}m`, duration: Math.max(30, Math.min(120, Math.round(dist / 38))), completed: false };
       }),
     };
   });
