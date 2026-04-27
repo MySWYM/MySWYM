@@ -675,12 +675,14 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
 
 const AuthScreen = ({ onAuth }) => {
-  const [mode, setMode] = useState("login");
+  const [mode, setMode] = useState("login"); // "login" | "register" | "reset"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); };
 
   const handle = async () => {
     setError(null); setSuccess(null); setLoading(true);
@@ -689,12 +691,18 @@ const AuthScreen = ({ onAuth }) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         onAuth(data.user);
-      } else {
+      } else if (mode === "register") {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error("Un compte existe déjà avec cet email.");
         setSuccess("Compte créé ! Vérifie ton email, puis connecte-toi.");
-        setMode("login");
+        switchMode("login");
+      } else if (mode === "reset") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/app`,
+        });
+        if (error) throw error;
+        setSuccess("Email envoyé ! Vérifie ta boîte mail pour réinitialiser ton mot de passe.");
       }
     } catch (e) { setError(e.message || "Une erreur est survenue."); }
     finally { setLoading(false); }
@@ -711,24 +719,51 @@ const AuthScreen = ({ onAuth }) => {
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
       </div>
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Bienvenue</h2>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+          {mode === "reset" ? "Mot de passe oublié" : "Bienvenue"}
+        </h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>
-          {mode === "login" ? "Connecte-toi pour accéder à ton plan." : "Crée ton compte gratuitement."}
+          {mode === "login"    ? "Connecte-toi pour accéder à ton plan."
+         : mode === "register" ? "Crée ton compte gratuitement."
+         :                       "Entre ton email, on t'envoie un lien de réinitialisation."}
         </p>
+
         {error   && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-          <input type="email"    placeholder="Ton email"    value={email}    onChange={e => setEmail(e.target.value)}    onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
-          <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "login" ? 8 : 16 }}>
+          <input type="email" placeholder="Ton email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+          {mode !== "reset" && (
+            <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+          )}
         </div>
-        <Btn onClick={handle} disabled={loading || !email || !password} variant="blue">
-          {loading ? "…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
+
+        {/* Lien mot de passe oublié — visible uniquement en mode login */}
+        {mode === "login" && (
+          <div style={{ textAlign: "right", marginBottom: 16 }}>
+            <button onClick={() => switchMode("reset")} style={{ background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer", padding: 0 }}>
+              Mot de passe oublié ?
+            </button>
+          </div>
+        )}
+
+        <Btn onClick={handle} disabled={loading || !email || (mode !== "reset" && !password)} variant="blue">
+          {loading ? "…" : mode === "login" ? "Se connecter" : mode === "register" ? "Créer mon compte" : "Envoyer le lien"}
         </Btn>
+
         <p style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: G.grey }}>
-          {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
-          <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); setSuccess(null); }} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-            {mode === "login" ? "S'inscrire" : "Se connecter"}
-          </button>
+          {mode === "reset" ? (
+            <button onClick={() => switchMode("login")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+              ← Retour à la connexion
+            </button>
+          ) : (
+            <>
+              {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
+              <button onClick={() => switchMode(mode === "login" ? "register" : "login")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+                {mode === "login" ? "S'inscrire" : "Se connecter"}
+              </button>
+            </>
+          )}
         </p>
       </div>
     </div>
