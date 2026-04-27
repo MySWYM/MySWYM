@@ -139,7 +139,8 @@ const FREQUENCIES = [
   { id: 1, label: "1×/semaine",  desc: "Je suis occupé·e" },
   { id: 2, label: "2×/semaine",  desc: "Mon rythme idéal" },
   { id: 3, label: "3×/semaine",  desc: "Je suis motivé·e" },
-  { id: 4, label: "4× et plus",  desc: "Je suis sérieux·se" },
+  { id: 4, label: "4×/semaine",  desc: "Je suis sérieux·se" },
+  { id: 5, label: "5×/semaine",  desc: "Mode compétition" },
 ];
 
 const POOLS = [{ id: 25, label: "25 m" }, { id: 50, label: "50 m" }];
@@ -482,7 +483,53 @@ const PaceZonesCard = ({ pace100, onSave }) => {
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate }) => {
+const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
+  const [freq, setFreq] = useState(profile?.sessionsPerWeek ?? 2);
+  const [changed, setChanged] = useState(false);
+
+  const handleFreq = (v) => {
+    if (!isPremium && v >= 3) { onUpgrade?.(); return; }
+    setFreq(v); setChanged(true);
+  };
+
+  return (
+    <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
+      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Change le nombre de séances — un nouveau plan est régénéré.</p>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        {FREQUENCIES.map(f => {
+          const locked = !isPremium && f.id >= 3;
+          const active = freq === f.id;
+          return (
+            <button key={f.id} onClick={() => handleFreq(f.id)} style={{
+              padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 600,
+              border: `1.5px solid ${active ? G.blue : locked ? G.greyLight : G.greyLight}`,
+              background: active ? G.blueLight : locked ? G.greyXLight : G.greyXLight,
+              color: active ? G.blue : locked ? G.greyMid : G.inkLight,
+              display: "flex", alignItems: "center", gap: 5,
+            }}>
+              {locked && <Lock size={10} color={G.greyMid} />}
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {changed && (
+        <button onClick={() => { onSave(freq); setChanged(false); }} style={{
+          width: "100%", padding: "12px", borderRadius: 12, background: G.blue, border: "none",
+          color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        }}>
+          <RotateCcw size={14} color={G.white} /> Régénérer mon plan ({freq}×/sem)
+        </button>
+      )}
+    </div>
+  );
+};
+
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram }) => {
   const [password, setPassword] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
@@ -526,6 +573,9 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* Pace zones */}
         <PaceZonesCard pace100={profile?.pace100} onSave={onPaceUpdate} />
+
+        {/* Modifier le programme */}
+        <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
 
         {/* Weekly bar chart */}
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
@@ -2614,31 +2664,31 @@ const TIPS = {
 };
 
 const PHASE_PATTERNS = {
-  base:        { 1: ["endurance"], 2: ["endurance", "technique"], 3: ["endurance", "endurance", "technique"], 4: ["endurance", "endurance", "technique", "récupération"] },
-  development: { 1: ["seuil"],     2: ["endurance", "seuil"],     3: ["endurance", "seuil", "technique"],     4: ["endurance", "seuil", "vitesse", "technique"] },
-  peak:        { 1: ["seuil"],     2: ["seuil", "vitesse"],        3: ["endurance", "seuil", "vitesse"],       4: ["endurance", "seuil", "vitesse", "seuil"] },
-  taper:       { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "technique", "récupération", "récupération"] },
-  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"] },
+  base:        { 1: ["endurance"], 2: ["endurance", "technique"], 3: ["endurance", "endurance", "technique"], 4: ["endurance", "endurance", "technique", "récupération"], 5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
+  development: { 1: ["seuil"],     2: ["endurance", "seuil"],     3: ["endurance", "seuil", "technique"],     4: ["endurance", "seuil", "vitesse", "technique"],           5: ["endurance", "seuil", "vitesse", "technique", "endurance"] },
+  peak:        { 1: ["seuil"],     2: ["seuil", "vitesse"],        3: ["endurance", "seuil", "vitesse"],       4: ["endurance", "seuil", "vitesse", "seuil"],               5: ["endurance", "seuil", "vitesse", "seuil", "récupération"] },
+  taper:       { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "technique", "récupération", "récupération"], 5: ["endurance", "technique", "récupération", "récupération", "endurance"] },
+  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"], 5: ["endurance", "récupération", "récupération", "récupération", "récupération"] },
 };
 
 const BNSSA_PATTERNS = {
-  base:        { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "endurance", "bnssa", "récupération"] },
-  development: { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"] },
-  peak:        { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"] },
-  taper:       { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "bnssa", "récupération", "récupération"] },
-  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"] },
+  base:        { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "endurance", "bnssa", "récupération"],         5: ["endurance", "endurance", "bnssa", "récupération", "endurance"] },
+  development: { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"],                     5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
+  peak:        { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"],                     5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
+  taper:       { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "bnssa", "récupération", "récupération"],       5: ["endurance", "bnssa", "récupération", "récupération", "endurance"] },
+  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"], 5: ["endurance", "récupération", "récupération", "récupération", "récupération"] },
 };
 
 const WELLNESS_PATTERNS = {
-  base:        { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "endurance", "technique", "récupération"] },
-  development: { 1: ["endurance"], 2: ["endurance", "technique"],    3: ["endurance", "endurance", "technique"],    4: ["endurance", "endurance", "technique", "récupération"] },
+  base:        { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "endurance", "technique", "récupération"], 5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
+  development: { 1: ["endurance"], 2: ["endurance", "technique"],    3: ["endurance", "endurance", "technique"],    4: ["endurance", "endurance", "technique", "récupération"],  5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
 };
 
 const PROGRESSION_PATTERNS = {
-  base:        { 1: ["endurance"],              2: ["endurance", "technique"],                       3: ["endurance", "technique", "récupération"],            4: ["endurance", "endurance", "technique", "récupération"] },
-  development: { 1: ["endurance"],              2: ["seuil", "endurance"],                           3: ["seuil", "endurance", "technique"],                    4: ["seuil", "endurance", "technique", "récupération"] },
-  peak:        { 1: ["vitesse"],                2: ["vitesse", "seuil"],                             3: ["vitesse", "seuil", "endurance"],                      4: ["vitesse", "seuil", "endurance", "récupération"] },
-  bilan:       { 1: ["récupération"],           2: ["récupération", "technique"],                    3: ["récupération", "technique", "endurance"],             4: ["récupération", "technique", "endurance", "technique"] },
+  base:        { 1: ["endurance"],    2: ["endurance", "technique"],         3: ["endurance", "technique", "récupération"],           4: ["endurance", "endurance", "technique", "récupération"],          5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
+  development: { 1: ["endurance"],    2: ["seuil", "endurance"],             3: ["seuil", "endurance", "technique"],                  4: ["seuil", "endurance", "technique", "récupération"],              5: ["seuil", "endurance", "technique", "récupération", "endurance"] },
+  peak:        { 1: ["vitesse"],      2: ["vitesse", "seuil"],               3: ["vitesse", "seuil", "endurance"],                    4: ["vitesse", "seuil", "endurance", "récupération"],                5: ["vitesse", "seuil", "endurance", "récupération", "vitesse"] },
+  bilan:       { 1: ["récupération"], 2: ["récupération", "technique"],      3: ["récupération", "technique", "endurance"],           4: ["récupération", "technique", "endurance", "technique"],          5: ["récupération", "technique", "endurance", "technique", "endurance"] },
 };
 
 const buildProgressionPhases = () => {
@@ -2713,7 +2763,7 @@ const generatePlan = async (profile, isPremium = false) => {
   const progressionPhaseList = progression ? buildProgressionPhases() : null;
   const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
   const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS;
-  const f = Math.min(freq, 4);
+  const f = Math.min(freq, 5);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
     return {
@@ -2966,6 +3016,18 @@ export default function App() {
     setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: { ...e.profile, pace100: newPace100 } }));
   };
 
+  const handleUpdateProgram = (newFreq) => {
+    if (!activePlanEntry) return;
+    const newProfile = { ...activePlanEntry.profile, sessionsPerWeek: newFreq };
+    setScreen("loading");
+    generatePlan(newProfile, isPremium).then(newPlan => {
+      const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
+      const planWithDate = originalStartDate ? { ...newPlan, startDate: originalStartDate } : newPlan;
+      setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: newProfile, plan: planWithDate }));
+      setScreen("app"); setActiveTab("plan");
+    });
+  };
+
   const handleAddPlan = () => {
     if (!isPremium) { setShowUpgrade(true); return; }
     setAddingPlan(true);
@@ -3181,7 +3243,7 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
