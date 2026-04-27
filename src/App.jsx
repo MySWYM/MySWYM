@@ -3076,13 +3076,15 @@ export default function App() {
     setScreen("loading");
     generatePlan(newProfile, isPremium).then(newPlan => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
-      // Réinjecte les semaines déjà entièrement validées dans le nouveau plan
+      // Semaines entièrement validées → on garde l'ancienne semaine telle quelle
+      // (même nombre de séances, même contenu, même historique)
+      // Semaines non validées → on prend la nouvelle semaine générée avec la nouvelle fréquence
       const mergedWeeks = newPlan.weeks.map((week, i) => {
         const oldWeek = oldWeeks[i];
         if (!oldWeek) return week;
-        const allDone = oldWeek.sessions.every(s => s.completed);
+        const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(s => s.completed);
         if (!allDone) return week;
-        return { ...week, sessions: week.sessions.map(s => ({ ...s, completed: true })) };
+        return oldWeek; // Semaine validée : on ne touche à rien
       });
       const planWithDate = { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
       setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: newProfile, plan: planWithDate }));
