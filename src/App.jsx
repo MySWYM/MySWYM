@@ -2574,12 +2574,12 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: "Tempo & SPL — vitesse sans forcer",
+          title: "Tempo & cycles — vitesse sans forcer",
           intensity: "Faible/Modéré — plus vite sans plus de cycles",
           details: [
             `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m battements`,
-            `${nPerBlock}×${repR}m NL — R10" — compte tes cycles/longueur, note ton SPL de base`,
-            `${nPerBlock}×${repR}m NL — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même SPL`,
+            `${nPerBlock}×${repR}m NL — R10" — compte tes cycles par longueur, note ton chiffre de base`,
+            `${nPerBlock}×${repR}m NL — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même nombre de cycles par longueur`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — objectif : 2s plus rapide que ta normale avec le même nombre de cycles`,
             `Retour au calme :${repR}m dos lent`,
           ],
@@ -2848,14 +2848,14 @@ const generatePlan = async (profile, isPremium = false) => {
 
         // Si le contenu généré est trop loin de la cible, on ajoute un bloc de volume explicite
         const deficit = distBase - realDist;
-        const fillRep = pool * 2; // 50m (25m pool) ou 100m (50m pool)
+        // Taille des reps selon le déficit : petites distances → 100m, moyennes → 200m, grandes → 400m
+        const fillRep = deficit >= 2000 ? 400 : deficit >= 800 ? 200 : pool * 2;
         const nFill = deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
         let details = sessionData.details;
         if (nFill > 0) {
-          // Insère avant le dernier item (retour au calme)
           const last = details[details.length - 1];
           const hasCooldown = last && (last.toLowerCase().includes('calme') || last.toLowerCase().includes('retour'));
-          const fillLine = `${nFill}×${fillRep}m NL — R20" — maintiens l'allure de la séance, volume complémentaire`;
+          const fillLine = `${nFill}×${fillRep}m NL — R20" — allure régulière, respiration toutes les 3 tractions`;
           details = hasCooldown
             ? [...details.slice(0, -1), fillLine, last]
             : [...details, fillLine];
