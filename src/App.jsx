@@ -1332,6 +1332,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
+const PLAN_VERSION = 3; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
@@ -2865,7 +2866,7 @@ const generatePlan = async (profile, isPremium = false) => {
       }),
     };
   });
-  return { weeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now() };
+  return { weeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now(), version: PLAN_VERSION };
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
@@ -3048,6 +3049,33 @@ export default function App() {
     }
   }, [plans, activePlanId, user]);
 
+
+  // Migration silencieuse : régénère les plans dont la version est obsolète
+  useEffect(() => {
+    if (!user || plans.length === 0 || screen !== "app") return;
+    const outdated = plans.filter(e => (e.plan?.version ?? 0) < PLAN_VERSION);
+    if (outdated.length === 0) return;
+    Promise.all(
+      outdated.map(entry =>
+        generatePlan(entry.profile, isPremium).then(newPlan => {
+          const oldWeeks = entry.plan?.weeks ?? [];
+          const originalStartDate = entry.plan?.startDate ?? entry.startDate ?? null;
+          const mergedWeeks = newPlan.weeks.map((week, i) => {
+            const oldWeek = oldWeeks[i];
+            if (!oldWeek) return week;
+            const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(s => s.completed);
+            return allDone ? oldWeek : week;
+          });
+          return { id: entry.id, updated: { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) } };
+        })
+      )
+    ).then(results => {
+      setPlans(prev => prev.map(e => {
+        const r = results.find(x => x.id === e.id);
+        return r ? { ...e, plan: r.updated } : e;
+      }));
+    });
+  }, [user?.id, screen]);
 
   useEffect(() => {
     if (!plan) return;
