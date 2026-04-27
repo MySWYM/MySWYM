@@ -674,6 +674,50 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
 
+const ResetPasswordScreen = ({ onDone }) => {
+  const [password, setPassword] = useState("");
+  const [confirm,  setConfirm]  = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState(null);
+
+  const handle = async () => {
+    if (password.length < 6) { setError("Le mot de passe doit faire au moins 6 caractères."); return; }
+    if (password !== confirm)  { setError("Les deux mots de passe ne correspondent pas."); return; }
+    setError(null); setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      onDone();
+    } catch (e) { setError(e.message || "Une erreur est survenue."); }
+    finally { setLoading(false); }
+  };
+
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none" };
+
+  return (
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 44 }}>
+        <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Waves size={20} color={G.white} />
+        </div>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
+      </div>
+      <div className="fade-up">
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
+        <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
+        {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+          <input type="password" placeholder="Nouveau mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+          <input type="password" placeholder="Confirmer le mot de passe" value={confirm} onChange={e => setConfirm(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+        </div>
+        <Btn onClick={handle} disabled={loading || !password || !confirm} variant="blue">
+          {loading ? "…" : "Enregistrer le mot de passe"}
+        </Btn>
+      </div>
+    </div>
+  );
+};
+
 const AuthScreen = ({ onAuth }) => {
   const [mode, setMode] = useState("login"); // "login" | "register" | "reset"
   const [email, setEmail] = useState("");
@@ -2645,6 +2689,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [screen, setScreen] = useState("onboarding");
   const [activeTab, setActiveTab] = useState("home");
@@ -2728,7 +2773,14 @@ export default function App() {
   }, [isPremium]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        // Lien de réinitialisation cliqué → afficher l'écran de nouveau mot de passe
+        setUser(session?.user ?? null);
+        setIsRecovery(true);
+        setAuthLoading(false);
+        return;
+      }
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(checkIsPremium(u));
@@ -2956,6 +3008,22 @@ export default function App() {
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="swimmer"><Waves size={48} color={G.blue} /></div>
+      </div>
+    </>
+  );
+
+  if (isRecovery) return (
+    <>
+      <style>{css}</style><FontLoader />
+      <div style={{ minHeight: "100vh", background: G.bg }}>
+        <ResetPasswordScreen onDone={() => {
+          setIsRecovery(false);
+          // Recharge les données utilisateur après reset
+          supabase.auth.getUser().then(({ data }) => {
+            const u = data?.user;
+            if (u) { setUser(u); setIsPremium(checkIsPremium(u)); loadUserData(u.id, checkIsPremium(u)); }
+          });
+        }} />
       </div>
     </>
   );
