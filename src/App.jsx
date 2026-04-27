@@ -1536,9 +1536,9 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
   );
 };
 
-// ── DETAIL LINE — rend les départs "D1'45"" en badges tappables ───────────
-// Regex : capture "D" suivi d'un temps comme 1'30", 2'00", 45"…
-const DEPART_RE = /D(\d+['′]\d+"|\d+")/g;
+// ── DETAIL LINE — rend les départs en badges tappables ──────────────────────
+// Capture "D1'45"" (nouveau) ET "Dtoutes les 1'45"" (ancien format stocké)
+const DEPART_RE = /D(?:toutes les )?(\d+['′]\d+"|\d+")/g;
 
 const DetailLine = ({ text }) => {
   const parts = [];
@@ -1547,7 +1547,7 @@ const DetailLine = ({ text }) => {
   DEPART_RE.lastIndex = 0;
   while ((match = DEPART_RE.exec(text)) !== null) {
     if (match.index > last) parts.push({ type: "text", val: text.slice(last, match.index) });
-    parts.push({ type: "depart", val: match[0] });
+    parts.push({ type: "depart", val: `D${match[1]}` });
     last = match.index + match[0].length;
   }
   if (last < text.length) parts.push({ type: "text", val: text.slice(last) });
