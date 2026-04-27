@@ -1088,7 +1088,31 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
       <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 16 }}>On calcule tes zones d'intensité — chaque séance affiche tes intervalles de départ personnalisés.</p>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 16 }}>Ce temps transforme ton plan générique en programme <strong style={{ color: G.ink }}>taillé pour toi</strong>.</p>
+
+      {/* Bloc bénéfices */}
+      <div style={{ background: G.blueLight, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { icon: "🎯", text: "Tes départs sont calculés à la seconde près selon ton niveau réel — pas une estimation générique." },
+            { icon: "⚡", text: "Chaque zone (endurance, seuil, sprint) correspond à une allure que tu peux vraiment tenir." },
+            { icon: "📈", text: "Tu progresses plus vite car tu t'entraînes dans la bonne zone — ni trop facile, ni trop dur." },
+          ].map((b, i) => (
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{b.icon}</span>
+              <span style={{ fontSize: 13, color: G.blue, lineHeight: 1.5 }}>{b.text}</span>
+            </div>
+          ))}
+        </div>
+        <a
+          href="/blog/personnalisation-100m-natation"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 12, fontSize: 12, fontWeight: 700, color: G.blue, textDecoration: "none", borderBottom: `1px solid ${G.blue}44` }}
+        >
+          Voir comment ça marche →
+        </a>
+      </div>
 
       {/* CSS mini explainer */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>

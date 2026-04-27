@@ -1,6 +1,106 @@
 // ── Articles de blog ──────────────────────────────────────────────────────
 export const POSTS = [
   {
+    slug: "personnalisation-100m-natation",
+    title: "Pourquoi ton meilleur 100m change tout à ton entraînement",
+    description: "Un seul temps suffit pour que ton plan devienne vraiment le tien. Départs calculés à la seconde, zones d'intensité réelles, allures cibles : voici comment ton 100m personnalise chaque séance.",
+    category: "Entraînement",
+    date: "27 avril 2025",
+    readingTime: "7 min",
+    coverColor: "#0A84FF",
+    intro: "La plupart des applications de natation te donnent un programme. MySWYM t'en donne un qui te ressemble. La différence tient à un seul chiffre : ton meilleur 100m. Voici pourquoi ce temps change absolument tout à la qualité de ton entraînement.",
+    sections: [
+      {
+        h2: "Le problème des programmes génériques",
+        content: `Imagine deux nageurs : Marie, 100m en 1'20", et Thomas, 100m en 2'10". Si on leur donne le même programme — \"6×100m, récup 20 secondes\" — que se passe-t-il ?
+
+Marie finit chaque 100m en 1'20" et n'a que 20 secondes pour récupérer. Elle repart avant d'être prête. Sa séance vire à l'accumulation de fatigue, elle dégrade sa technique, et elle risque de finir à plat.
+
+Thomas, lui, finit en 2'10". Avec 20 secondes de récup, son départ toutes les 2'30" lui laisse largement le temps de souffler. Il récupère trop — la séance n'est pas assez stimulante pour progresser.
+
+**Le même programme, deux expériences opposées.** C'est pour ça que le 100m est la clef de voûte d'un plan intelligent.`,
+      },
+      {
+        h2: "Comment ton 100m est utilisé pour chaque séance",
+        content: `Ton meilleur 100m NL est ta vitesse de référence — ce qu'on appelle en natation ton **allure de base**. À partir de là, chaque zone d'intensité est calculée par un coefficient :
+
+**Zone facile (Z1/Z2) — coefficient ×1,35**
+Si tu nages le 100m en 1'30" (90 secondes), ton allure en Z1/Z2 est 90 × 1,35 = **2'01"/100m**. C'est l'allure à laquelle tu peux nager longtemps, tenir une conversation, construire ton endurance sans te cramer.
+
+**Zone seuil / CSS (Z3/Z4) — coefficient ×1,08**
+Même exemple : 90 × 1,08 = **1'37"/100m**. C'est ton seuil anaérobie — l'allure la plus rapide que tu peux tenir sur une longue distance. Travailler juste en dessous ou au niveau de cette zone, c'est là que la vraie progression se fait.
+
+**Zone sprint (Z5/Z6) — coefficient ×0,95**
+90 × 0,95 = **1'25"/100m**. Effort maximal sur des répétitions courtes (25m, 50m). Cette zone travaille ta puissance et ta vitesse de pointe.
+
+**Sans ton 100m**, ces chiffres sont calculés par niveau déclaré (débutant, intermédiaire, avancé) — ça marche, mais c'est une estimation. **Avec ton 100m**, c'est ta physiologie réelle qui pilote ton entraînement.`,
+      },
+      {
+        h2: "Les départs à la montre : un exemple concret",
+        content: `Prenons une séance seuil classique : **8×100m à allure CSS**.
+
+**Sans ton 100m renseigné (niveau \"intermédiaire\") :**
+Départ toutes les 1'55" — c'est la valeur moyenne pour ce niveau.
+
+**Avec ton 100m à 1'30" :**
+Allure CSS calculée = 1'37"/100m. Temps de nage estimé = 1'37". On ajoute 15" de récupération. Départ toutes les **1'55"** — ça coïncide ici.
+
+**Avec ton 100m à 1'15" :**
+Allure CSS = 1'21". Récup 15". Départ toutes les **1'40"** — soit 15 secondes de moins. Sur 8 répétitions, la différence est énorme en termes de densité de travail.
+
+**Avec ton 100m à 2'00" :**
+Allure CSS = 2'10". Récup 15". Départ toutes les **2'25"**. Si on t'avait laissé sur 1'55", tu aurais nagé trop vite ou pas eu le temps de récupérer.
+
+C'est ce grain de précision qui sépare un entraînement qui progresse d'un entraînement qui fatigue.`,
+      },
+      {
+        h2: "Comment mesurer ton meilleur 100m",
+        content: `Pas besoin de conditions parfaites. Voici le protocole simple :
+
+**1. Choisis le bon moment**
+En milieu de séance, après un bon échauffement (400m minimum). Jamais en début de séance les muscles froids, jamais en fin si tu es épuisé.
+
+**2. L'échauffement spécifique**
+200m facile + 4×25m progressifs (le dernier quasi à fond). Tu dois arriver prêt à partir fort dès le premier mètre.
+
+**3. Le 100m**
+Départ du bord (pas plongé, ça fausse le résultat). Nage à effort maximal mais **régulier** — beaucoup de nageurs partent trop vite sur les 25 premiers mètres et s'effondrent. L'objectif : que tes 4 longueurs soient les plus régulières possible.
+
+**4. Note le temps**
+Arrête le chrono au toucher du mur. C'est ton 100m de référence.
+
+**Astuce :** refais ce test toutes les 6 semaines. Si tu as progressé, mets à jour ton temps dans MySWYM — tes départs seront automatiquement recalculés et ton plan s'adaptera à ta nouvelle forme.`,
+      },
+      {
+        h2: "Pourquoi ça change aussi ton endurance (pas juste les sprints)",
+        content: `On imagine souvent que personnaliser les allures, ça ne sert que pour les séances intensives. C'est faux — c'est peut-être encore plus important pour l'endurance.
+
+**Trop d'entraînement se fait dans la \"zone grise\"** : ni assez lent pour être vraiment récupérateur, ni assez vite pour être vraiment stimulant. C'est la zone où beaucoup de nageurs passent 80% de leur temps, sans le savoir, et qui explique les plateaux de progression.
+
+Quand ton allure Z1/Z2 est correctement calculée à partir de ton 100m, tu évites ce piège. Tes séances d'endurance sont **vraiment faciles** — ce qui permet à ton corps de récupérer, de consolider les adaptations des séances intensives, et de revenir plus fort.
+
+C'est le principe de la **polarisation de l'entraînement** : 80% des séances très faciles, 20% très intenses. Mais pour que ça marche, il faut savoir où est \"très facile\" pour toi spécifiquement — pas pour un nageur hypothétique de ton niveau.`,
+      },
+      {
+        h2: "Et si je ne connais pas mon 100m ?",
+        content: `Pas de panique. MySWYM fonctionne aussi sans — les allures sont estimées par niveau (débutant, intermédiaire, avancé). Tu auras un bon programme.
+
+Mais si tu veux aller plus loin, voici comment faire ton premier test rapidement :
+
+**Option 1 — Test bassin** : La prochaine fois que tu vas nager, intègre 3×100m à fond dans ta séance avec 5 minutes de récup entre chaque. Prends la moyenne des 3. C'est une bonne estimation de ton meilleur 100m en conditions d'entraînement.
+
+**Option 2 — Estimation depuis un test récent** : Tu as nagé une compétition ou un chrono récemment ? Sur 50m, multiplie ton temps par 2,1 pour estimer ton 100m. Sur 200m, divise par 2,3.
+
+Renseigne ce temps dans ton profil MySWYM et tes séances s'ajustent immédiatement. Pas besoin de régénérer ton plan — le calcul est automatique.`,
+      },
+    ],
+    cta: {
+      title: "Personnalise ton plan maintenant",
+      text: "Renseigne ton meilleur 100m dans ton profil et vois tes zones d'intensité calculées en temps réel. Tes séances s'adaptent immédiatement.",
+      button: "Ouvrir mon profil",
+    },
+  },
+  {
     slug: "programme-natation-triathlon",
     title: "Programme natation pour triathlon : comment vraiment progresser",
     description: "Découvre comment structurer ton entraînement natation pour le triathlon — phases de préparation, séances CSS, travail au seuil et gestion de l'effort en open water.",
