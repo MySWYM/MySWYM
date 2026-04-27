@@ -2088,6 +2088,7 @@ const PACE = {
 // Set par generatePlan quand profile.pace100 est renseigné.
 // null = fallback sur le tableau PACE par niveau.
 let _pace100 = null;
+let _isPremium = false;
 
 // Facteurs de zone basés sur le meilleur 100m personnel
 const ZONE_MULT = { easy: 1.35, threshold: 1.08, sprint: 0.95 };
@@ -2111,6 +2112,14 @@ const di = (meters, lvl, zone = 'easy') => {
   }
   return `${fmtS(totalSecs)}`;
 };
+
+// Récupération simple pour les plans gratuits (pas de départ)
+const REST_SECS = { sprint: 90, threshold: 30, easy: 20 };
+const ri = (zone = 'easy') => fmtS(REST_SECS[zone] ?? 20);
+
+// dep() = D départ (premium) ou R récup (gratuit)
+const dep = (meters, lvl, zone = 'easy') =>
+  _isPremium ? `${dep(meters, lvl, zone)}` : `R${ri(zone)}`;
 // Round to nearest pool-length multiple, min 1 length
 const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
 
@@ -2167,7 +2176,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z1/Z2 — allure conversation",
           details: [
             `Échauffement : 200m NL progressif + 100m battements de jambes`,
-            `${nM}×${repM}m NL — D${di(repM,lvl,'easy')} — allure régulière, respiration toutes les 3 tractions${triathlonCue}${owCue}`,
+            `${nM}×${repM}m NL — ${dep(repM,lvl,'easy')} — allure régulière, respiration toutes les 3 tractions${triathlonCue}${owCue}`,
             `${nS}×${2*P}m pull-buoy — R20" — bras seuls, coude haut, tire sous l'axe du corps`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2187,7 +2196,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z1→Z2 — 2e moitié plus rapide que la 1re",
           details: [
             `Échauffement : 200m NL + 50m fist drill + 50m NL + 50m battements`,
-            `${nNS}×${repNS}m NL — D${di(repNS,lvl,'easy')} — 1re moitié en Z1 (retiens-toi), 2e moitié accélère en Z2 : arrive plus fort que tu n'as commencé`,
+            `${nNS}×${repNS}m NL — ${dep(repNS,lvl,'easy')} — 1re moitié en Z1 (retiens-toi), 2e moitié accélère en Z2 : arrive plus fort que tu n'as commencé`,
             `${nNSF}×${2*P}m battements planche — R20" — expire sous l'eau à chaque poussée de mur`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2209,7 +2218,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z1/Z2 — récupération active entre les blocs",
           details: [
             `Échauffement : 200m NL progressif + 100m battements de jambes`,
-            `${nA4}×${repA}m NL — D${di(repA,lvl,'easy')} — Z2 régulier, contrôle la respiration`,
+            `${nA4}×${repA}m NL — ${dep(repA,lvl,'easy')} — Z2 régulier, contrôle la respiration`,
             `${nB4}×${repA}m dos crawlé — R15" — nage active, épaule sort en premier, rotation du bassin`,
             nAF > 0 ? `${nAF}×${2*P}m battements planche — R20" — récup active, fouet des chevilles` : `100m NL très lent — récup libre`,
             `Retour au calme : 150m NL très lent`,
@@ -2270,7 +2279,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z3 — effort soutenu et constant",
           details: [
             `Échauffement : 200m NL progressif + 4×25m accélérations + 50m battements`,
-            `${nCSS}×${cssRep}m NL — D${di(cssRep,lvl,'threshold')} — ${cssLabel}`,
+            `${nCSS}×${cssRep}m NL — ${dep(cssRep,lvl,'threshold')} — ${cssLabel}`,
             `${nFin}×${2*P}m battements de jambes — R20" — fouet des chevilles, corps aligné`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2290,7 +2299,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z4 — inconfortable et régulier",
           details: [
             `Échauffement : 200m NL + 100m battements de jambes`,
-            `${nT}×${tRep}m NL — D${di(tRep,lvl,'threshold')} — allure course 400m, l'effort doit être inconfortable mais régulier`,
+            `${nT}×${tRep}m NL — ${dep(tRep,lvl,'threshold')} — allure course 400m, l'effort doit être inconfortable mais régulier`,
             `${nSprint}×${2*P}m NL — R20" — sprint à 90 % pour activer les fibres rapides`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2300,7 +2309,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z3→Z4 — patient au départ, explosif à l'arrivée",
           details: [
             `Échauffement : 200m NL progressif + 4×25m accélérations + 50m battements`,
-            `${nD}×${dRep}m NL — D${di(dRep,lvl,'threshold')} — vise −2s de mieux à chaque rep : rep 1 conservatrice, rep ${nD} à bloc`,
+            `${nD}×${dRep}m NL — ${dep(dRep,lvl,'threshold')} — vise −2s de mieux à chaque rep : rep 1 conservatrice, rep ${nD} à bloc`,
             `${nDF}×${2*P}m pull-buoy — R20" — bras seuls, récup active`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2311,8 +2320,8 @@ const SESSION_TEMPLATES = {
           details: [
             `Échauffement : 100m NL + 100m dos + 4×25m accélérations`,
             isBeg
-              ? `${nOver}×${overRep}m NL — D${di(overRep,lvl,'threshold')} — reps plus longues qu'à l'habitude, reste à l'aise de bout en bout`
-              : `${nOver}×${overRep}m NL — D${di(overRep,lvl,'threshold')} — distance supérieure à tes reps CSS habituelles, allure légèrement conservatrice : construis ta résistance`,
+              ? `${nOver}×${overRep}m NL — ${dep(overRep,lvl,'threshold')} — reps plus longues qu'à l'habitude, reste à l'aise de bout en bout`
+              : `${nOver}×${overRep}m NL — ${dep(overRep,lvl,'threshold')} — distance supérieure à tes reps CSS habituelles, allure légèrement conservatrice : construis ta résistance`,
             `${nOverF}×${2*P}m dos crawlé — R15" — récup en nage active, scan corporel`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2375,7 +2384,7 @@ const SESSION_TEMPLATES = {
           intensity: "Z4→Z5 — montée en puissance progressive",
           details: [
             `Échauffement : 200m NL progressif + 4×12m coulées gainées`,
-            `${nBuild}×${buildRep}m NL — D${di(buildRep,lvl,'threshold')} — 1re moitié Z2 économique, 2e moitié accélère à 95 % : arrive plus vite que tu n'es parti`,
+            `${nBuild}×${buildRep}m NL — ${dep(buildRep,lvl,'threshold')} — 1re moitié Z2 économique, 2e moitié accélère à 95 % : arrive plus vite que tu n'es parti`,
             `${nKick2}×${2*P}m battements planche — R20" — fouet des chevilles, corps à plat`,
             `Retour au calme : 200m dos lent`,
           ],
@@ -2483,7 +2492,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : ${repR}m NL + ${repR}m battements planche`,
             `${nPerBlock}×${repR}m catch-up drill — R10" — bras tendu devant, attend la main adverse avant de repartir`,
             `${nPerBlock}×${repR}m DPS comptage — R10" — vise ${cycleTarget} cycles/longueur`,
-            `${nInteg}×${repR}m NL — D${di(repR,lvl,'easy')} — réduis d'1 cycle/longueur vs ta normale, même vitesse`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — réduis d'1 cycle/longueur vs ta normale, même vitesse`,
             `Retour au calme :${repR}m dos lent`,
           ],
         },
@@ -2494,7 +2503,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : ${repR}m NL + ${repR}m battements planche`,
             `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, accroche avec l'avant-bras, coude haut`,
             `${nPerBlock}×${repR}m finger drag — R10" — doigts effleurent la surface au retour, coude haut`,
-            `${nInteg}×${repR}m NL — D${di(repR,lvl,'easy')} — prise précoce et profonde, tire sous l'axe du corps`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — prise précoce et profonde, tire sous l'axe du corps`,
             `Retour au calme :${repR}m dos lent`,
           ],
         },
@@ -2505,7 +2514,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : ${repR}m NL + ${repR}m battements planche`,
             `${nPerBlock}×${repR}m 6-kick drill — R10" — 6 battements sur le côté, nez au fond, rotation consciente`,
             `${nPerBlock}×${repR}m rotation exagérée — R10" — épaule passe au-dessus de l'eau, 2s de glisse`,
-            `${nInteg}×${repR}m NL — D${di(repR,lvl,'easy')} — vise ${cycleTarget} cycles/longueur, même temps`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — vise ${cycleTarget} cycles/longueur, même temps`,
             `Retour au calme :${repR}m dos lent`,
           ],
         },
@@ -2516,7 +2525,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : ${repR}m NL + ${repR}m battements planche`,
             `${nPerBlock}×${repR}m coulées — R10" — flèche max gainée, 5m en apnée avant le 1er bras`,
             `${nPerBlock}×${repR}m flip turns — R15" — culbute à 1m du mur, poussée + flèche`,
-            `${nInteg}×${repR}m NL — D${di(repR,lvl,'easy')} — chaque virage = relance d'élan, zéro perte de vitesse`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque virage = relance d'élan, zéro perte de vitesse`,
             `Retour au calme :${repR}m dos lent`,
           ],
         },
@@ -2526,8 +2535,8 @@ const SESSION_TEMPLATES = {
           details: [
             `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m battements`,
             `${nPerBlock}×${repR}m NL — R10" — compte tes cycles/longueur, note ton SPL de base`,
-            `${nPerBlock}×${repR}m NL — D${di(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même SPL`,
-            `${nInteg}×${repR}m NL — D${di(repR,lvl,'easy')} — objectif : 2s plus rapide que ta normale avec le même nombre de cycles`,
+            `${nPerBlock}×${repR}m NL — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même SPL`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — objectif : 2s plus rapide que ta normale avec le même nombre de cycles`,
             `Retour au calme :${repR}m dos lent`,
           ],
         },
@@ -2758,6 +2767,7 @@ const generatePlan = async (profile, isPremium = false) => {
 
   // Active les paces personnalisées pour toute la génération du plan
   _pace100 = profile.pace100 && profile.pace100 > 0 ? profile.pace100 : null;
+  _isPremium = !!isPremium;
   const wellness = isWellnessGoal(goal);
   const progression = isProgressionGoal(goal);
 
@@ -3202,12 +3212,14 @@ export default function App() {
               </div>
             </div>
             {(() => {
-              // Nouvelle logique : category → sub-goal → level → freq → date (sauf poids)
               // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin
-              // step 4 = temps 100m, 5 = fréquence, 6 = date (sauf poids)
+              // step 4 = temps 100m (premium uniquement), 5 = fréquence, 6 = date (sauf poids)
               const isPoids = profile.category === "poids";
               const noDate = isPoids || isProgressionGoal(profile.goal);
-              const totalSteps = noDate ? 5 : 6;
+              const hasPaceStep = isPremium;
+              const totalSteps = (noDate ? 4 : 5) + (hasPaceStep ? 1 : 0);
+              const stepAfter3 = hasPaceStep ? 4 : 5;
+              const stepBefore5 = hasPaceStep ? 4 : 3;
               return (
                 <>
                   {step > 1 && <Progress step={step - 1} total={totalSteps} />}
@@ -3236,10 +3248,10 @@ export default function App() {
                   )}
 
                   {step === 3 && (
-                    <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} total={totalSteps} onNext={() => setStep(4)} onBack={() => setStep(2)} />
+                    <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} total={totalSteps} onNext={() => setStep(stepAfter3)} onBack={() => setStep(2)} />
                   )}
 
-                  {step === 4 && (
+                  {step === 4 && hasPaceStep && (
                     <Step_Pace
                       value={profile.pace100}
                       onChange={v => update("pace100", v)}
@@ -3250,7 +3262,7 @@ export default function App() {
                   )}
 
                   {step === 5 && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(4)} isLast={noDate} isPremium={isPremium} onUpgrade={() => setShowUpgrade(true)} />
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(stepBefore5)} isLast={noDate} isPremium={isPremium} onUpgrade={() => setShowUpgrade(true)} />
                   )}
 
                   {step === 6 && !noDate && (
