@@ -1415,7 +1415,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 5; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 6; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
@@ -3005,15 +3005,39 @@ const BNSSA_PATTERNS = {
 };
 
 const WELLNESS_PATTERNS = {
-  base:        { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "endurance", "technique", "récupération"], 5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
-  development: { 1: ["endurance"], 2: ["endurance", "technique"],    3: ["endurance", "endurance", "technique"],    4: ["endurance", "endurance", "technique", "récupération"],  5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
+  beginner: {
+    base:        { 1: ["technique"], 2: ["technique","récupération"], 3: ["technique","technique","récupération"], 4: ["technique","technique","technique","récupération"], 5: ["technique","technique","technique","récupération","endurance"] },
+    development: { 1: ["technique"], 2: ["technique","endurance"],    3: ["technique","technique","endurance"],    4: ["technique","technique","endurance","récupération"],  5: ["technique","technique","endurance","récupération","technique"] },
+  },
+  intermediate: {
+    base:        { 1: ["technique"], 2: ["endurance","technique"],    3: ["technique","endurance","récupération"], 4: ["endurance","technique","technique","récupération"], 5: ["endurance","technique","technique","récupération","endurance"] },
+    development: { 1: ["endurance"], 2: ["technique","endurance"],    3: ["technique","endurance","endurance"],    4: ["technique","endurance","endurance","récupération"],  5: ["technique","endurance","endurance","récupération","endurance"] },
+  },
+  advanced: {
+    base:        { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","endurance","technique","récupération"], 5: ["endurance","endurance","technique","récupération","endurance"] },
+    development: { 1: ["endurance"], 2: ["endurance","technique"],    3: ["endurance","endurance","technique"],    4: ["endurance","endurance","technique","récupération"],  5: ["endurance","endurance","technique","récupération","endurance"] },
+  },
 };
 
 const PROGRESSION_PATTERNS = {
-  base:        { 1: ["endurance"],    2: ["endurance", "technique"],         3: ["endurance", "technique", "récupération"],           4: ["endurance", "endurance", "technique", "récupération"],          5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
-  development: { 1: ["endurance"],    2: ["seuil", "endurance"],             3: ["seuil", "endurance", "technique"],                  4: ["seuil", "endurance", "technique", "récupération"],              5: ["seuil", "endurance", "technique", "récupération", "endurance"] },
-  peak:        { 1: ["vitesse"],      2: ["vitesse", "seuil"],               3: ["vitesse", "seuil", "endurance"],                    4: ["vitesse", "seuil", "endurance", "récupération"],                5: ["vitesse", "seuil", "endurance", "récupération", "vitesse"] },
-  bilan:       { 1: ["récupération"], 2: ["récupération", "technique"],      3: ["récupération", "technique", "endurance"],           4: ["récupération", "technique", "endurance", "technique"],          5: ["récupération", "technique", "endurance", "technique", "endurance"] },
+  beginner: {
+    base:        { 1: ["technique"],    2: ["technique","endurance"],        3: ["technique","technique","récupération"],              4: ["technique","technique","endurance","récupération"],             5: ["technique","technique","endurance","récupération","technique"] },
+    development: { 1: ["technique"],    2: ["technique","endurance"],        3: ["technique","endurance","technique"],                 4: ["technique","endurance","technique","récupération"],             5: ["technique","technique","endurance","récupération","endurance"] },
+    peak:        { 1: ["technique"],    2: ["technique","seuil"],            3: ["technique","seuil","endurance"],                    4: ["technique","seuil","endurance","récupération"],                 5: ["technique","seuil","endurance","récupération","technique"] },
+    bilan:       { 1: ["récupération"], 2: ["récupération","technique"],     3: ["récupération","technique","endurance"],             4: ["récupération","technique","technique","endurance"],             5: ["récupération","technique","technique","endurance","endurance"] },
+  },
+  intermediate: {
+    base:        { 1: ["technique"],    2: ["technique","endurance"],        3: ["technique","endurance","récupération"],              4: ["endurance","technique","endurance","récupération"],             5: ["endurance","technique","endurance","récupération","endurance"] },
+    development: { 1: ["seuil"],        2: ["technique","seuil"],            3: ["technique","seuil","endurance"],                    4: ["technique","seuil","endurance","récupération"],                 5: ["technique","seuil","endurance","technique","récupération"] },
+    peak:        { 1: ["vitesse"],      2: ["technique","vitesse"],          3: ["vitesse","seuil","endurance"],                      4: ["technique","vitesse","seuil","récupération"],                   5: ["technique","vitesse","seuil","endurance","récupération"] },
+    bilan:       { 1: ["récupération"], 2: ["récupération","technique"],     3: ["récupération","technique","endurance"],             4: ["récupération","technique","endurance","technique"],             5: ["récupération","technique","endurance","technique","endurance"] },
+  },
+  advanced: {
+    base:        { 1: ["endurance"],    2: ["endurance","technique"],        3: ["endurance","technique","récupération"],              4: ["endurance","endurance","technique","récupération"],             5: ["endurance","endurance","technique","récupération","endurance"] },
+    development: { 1: ["endurance"],    2: ["seuil","endurance"],            3: ["seuil","endurance","technique"],                    4: ["seuil","endurance","technique","récupération"],                 5: ["seuil","endurance","technique","récupération","endurance"] },
+    peak:        { 1: ["vitesse"],      2: ["vitesse","seuil"],              3: ["vitesse","seuil","endurance"],                      4: ["vitesse","seuil","endurance","récupération"],                   5: ["vitesse","seuil","endurance","récupération","vitesse"] },
+    bilan:       { 1: ["récupération"], 2: ["récupération","technique"],     3: ["récupération","technique","endurance"],             4: ["récupération","technique","endurance","technique"],             5: ["récupération","technique","endurance","technique","endurance"] },
+  },
 };
 
 const buildProgressionPhases = () => {
@@ -3089,7 +3113,7 @@ const generatePlan = async (profile, isPremium = false) => {
   const progressionPhaseList = progression ? buildProgressionPhases() : null;
   const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
   const levelKey = level === "beginner" ? "beginner" : level === "advanced" ? "advanced" : "intermediate";
-  const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS[levelKey];
+  const patterns = (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : progression ? PROGRESSION_PATTERNS[levelKey] : wellness ? WELLNESS_PATTERNS[levelKey] : PHASE_PATTERNS[levelKey];
   const f = Math.min(freq, 5);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
