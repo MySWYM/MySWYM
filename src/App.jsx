@@ -1283,31 +1283,114 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
 };
 
 // ── FEEDBACK MODAL ────────────────────────────────────────────────────────
-const FeedbackModal = ({ weekNumber, onRate, onSkip }) => {
-  const opts = [
-    { id: "easy", label: "Trop facile", sub: "On augmente le volume",  color: G.mint,  bg: G.mintLight },
-    { id: "ok",   label: "Parfait",     sub: "On maintient l'allure",   color: G.blue,  bg: G.blueLight },
-    { id: "hard", label: "Trop dur",    sub: "On réduit un peu",         color: G.coral, bg: G.coralLight },
-  ];
+const STEPS = [
+  {
+    key: "rating",
+    label: "Charge d'entraînement",
+    question: "Comment tu t'es senti·e ?",
+    sub: "On adapte les prochaines semaines à ta réponse.",
+    opts: [
+      { id: "easy", label: "Trop facile",  sub: "On augmente le volume", color: G.mint,  bg: G.mintLight },
+      { id: "ok",   label: "Parfait",      sub: "On maintient l'allure", color: G.blue,  bg: G.blueLight },
+      { id: "hard", label: "Trop dur",     sub: "On réduit un peu",      color: G.coral, bg: G.coralLight },
+    ],
+  },
+  {
+    key: "motivation",
+    label: "Motivation",
+    question: "Tu as apprécié les séances ?",
+    sub: "Honnêteté totale — ça aide à calibrer.",
+    opts: [
+      { id: "loved",    label: "J'ai adoré",           sub: "Hâte d'être à la prochaine",       color: G.mint,  bg: G.mintLight },
+      { id: "ok",       label: "C'était bien",          sub: "Agréable, sans plus",              color: G.blue,  bg: G.blueLight },
+      { id: "dragged",  label: "J'ai traîné les pieds", sub: "Difficile de se motiver",          color: G.coral, bg: G.coralLight },
+    ],
+  },
+  {
+    key: "pain",
+    label: "Douleurs / gênes",
+    question: "As-tu ressenti des douleurs ?",
+    sub: "Toute gêne, même légère, est utile à noter.",
+    opts: [
+      { id: "none",   label: "Aucune",    sub: "Tout va bien",              color: G.mint,  bg: G.mintLight },
+      { id: "slight", label: "Légères",   sub: "Quelques tensions passagères", color: G.blue,  bg: G.blueLight },
+      { id: "real",   label: "Importantes", sub: "Douleur gênante ou persistante", color: G.coral, bg: G.coralLight },
+    ],
+  },
+];
+
+const FeedbackModal = ({ weekNumber, onSubmit, onSkip }) => {
+  const [step, setStep]       = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [comment, setComment] = useState("");
+
+  const current = STEPS[step];
+  const isLast  = step === STEPS.length - 1;
+  const total   = STEPS.length + 1; // +1 pour l'étape commentaire
+
+  const choose = (val) => {
+    const next = { ...answers, [current.key]: val };
+    setAnswers(next);
+    if (!isLast) { setStep(s => s + 1); return; }
+    // dernière étape opts → passe au commentaire
+    setStep(total - 1);
+  };
+
+  const finish = () => onSubmit({ ...answers, comment: comment.trim() || null });
+
+  const stepNum = step + 1;
+  const isCommentStep = step === total - 1;
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
       <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>Semaine {weekNumber} terminée</p>
-        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, textAlign: "center" }}>Comment tu t'es senti·e ?</h3>
-        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 24 }}>On adapte les prochaines semaines à ta réponse.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-          {opts.map(o => (
-            <button key={o.id} onClick={() => onRate(o.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, border: `1.5px solid ${o.bg}`, background: o.bg, cursor: "pointer", textAlign: "left" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{o.label}</div>
-                <div style={{ fontSize: 12, color: G.grey }}>{o.sub}</div>
-              </div>
-              <ArrowRight size={16} color={o.color} />
-            </button>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
+
+        {/* Progress */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 24, justifyContent: "center" }}>
+          {Array.from({ length: total }).map((_, i) => (
+            <div key={i} style={{ height: 3, flex: 1, maxWidth: 48, borderRadius: 2, background: i <= step ? G.blue : G.greyLight, transition: "background 0.2s" }} />
           ))}
         </div>
-        <button onClick={onSkip} style={{ width: "100%", padding: "12px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13 }}>Passer</button>
+
+        <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+          Semaine {weekNumber} terminée · {stepNum}/{total}
+        </p>
+
+        {!isCommentStep ? (
+          <>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, textAlign: "center" }}>{current.question}</h3>
+            <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 24 }}>{current.sub}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+              {current.opts.map(o => (
+                <button key={o.id} onClick={() => choose(o.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, border: `1.5px solid ${o.bg}`, background: o.bg, cursor: "pointer", textAlign: "left" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{o.label}</div>
+                    <div style={{ fontSize: 12, color: G.grey }}>{o.sub}</div>
+                  </div>
+                  <ArrowRight size={16} color={o.color} />
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, textAlign: "center" }}>Un mot sur la semaine ?</h3>
+            <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20 }}>Optionnel — tout commentaire aide à améliorer les plans.</p>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Ex : la séance du mercredi était trop longue..."
+              rows={3}
+              style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, fontSize: 14, color: G.ink, resize: "none", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
+            />
+            <button onClick={finish} style={{ width: "100%", padding: "15px", borderRadius: 16, background: G.blue, border: "none", color: G.white, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>
+              Terminer
+            </button>
+          </>
+        )}
+
+        <button onClick={onSkip} style={{ width: "100%", padding: "10px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13 }}>Passer</button>
       </div>
     </div>
   );
@@ -1332,7 +1415,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 3; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 4; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
@@ -2409,18 +2492,28 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL progressif + 4×25m accélérations progressives + 50m battements`,
             `6×12m coulées — torpille gainée, flèche maximale en apnée, stop dès que tu ralentis`,
             `${nSpr}×${P}m SPRINT MAX — ${recSpr} — qualité absolue, chaque longueur comme si c'était la seule`,
-            `${nSec}×${2*P}m pull-buoy — R20" — récup active, relâche tout`,
+            `${nSec}×${2*P}m ${isAdv ? "pull-buoy" : "palmes + tuba frontal"} — R20" — récup active, relâche tout`,
             `Retour au calme : 200m dos lent`,
           ],
         },
-        {
+        isAdv ? {
           title: "Puissance palettes",
           intensity: "Z5 — puissance de bras",
           details: [
             `Échauffement : 200m NL + 100m battements de jambes`,
             `${nPal}×${palRep}m palettes + pull-buoy — R20" — coude haut, pression max sur les paumes, sens la portance`,
             `${nSp2}×${P}m SPRINT mains nues — ${recSpr} — reproduis la prise d'eau des palettes, engage l'avant-bras`,
-            `${nKick}×${2*P}m battements planche — R20" — fouet des chevilles, engage les quadriceps`,
+            `${nKick}×${2*P}m battements palmes — R20" — fouet des chevilles, engage les quadriceps`,
+            `Retour au calme : 200m dos lent`,
+          ],
+        } : {
+          title: "Palmes & accélérations",
+          intensity: "Z4→Z5 — vitesse avec support matériel",
+          details: [
+            `Échauffement : 200m NL + 100m battements palmes + tuba frontal`,
+            `${nPal}×${palRep}m palmes + tuba frontal — R20" — allure soutenue, fouet des chevilles, profite de la propulsion`,
+            `${nSp2}×${P}m SPRINT palmes seules — ${recSpr} — effort max, jambes à fond, récup complète`,
+            `${nKick}×${2*P}m NL lent sans matériel — R20" — récup active, relâche tout`,
             `Retour au calme : 200m dos lent`,
           ],
         },
@@ -2441,7 +2534,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 200m NL progressif + 100m battements + 4×${P}m accélérations`,
             `6×10m départ plongée — R2' — bloc → torpille gainée → 3 premiers cycles NL à fond, stop`,
             `${nDive}×${P}m SPRINT à bloc — R2' — départ plongée complet, effort total, récup complète entre chaque`,
-            `${nRec}×${2*P}m pull-buoy — R20" — récup active`,
+            `${nRec}×${2*P}m ${isAdv ? "pull-buoy" : "palmes + tuba frontal"} — R20" — récup active`,
             `Retour au calme : 200m dos lent`,
           ],
         },
@@ -2467,14 +2560,14 @@ const SESSION_TEMPLATES = {
         type: "TECHNIQUE",
         ...[
           {
-            title: "Planche & pull-buoy",
-            intensity: "Facile — qualité du mouvement",
+            title: "Palmes & tuba frontal — jambes et position",
+            intensity: "Facile — battements, corps à plat",
             details: [
-              `Échauffement : ${repR}m NL lent + ${repR}m dos lent`,
-              `${nPerBlock}×${repR}m battements planche — R10" — corps horizontal, talons à la surface, expire sous l'eau`,
-              `${nPerBlock}×${repR}m pull-buoy — R10" — bras seuls, sens la pression des paumes sur l'eau`,
-              `${nInteg}×${repR}m NL complet — R10" — coordonne jambes et bras, vise la fluidité`,
-              `Retour au calme :${repR}m dos lent`,
+              `Échauffement : ${repR}m NL très lent + ${repR}m dos lent`,
+              `${nPerBlock}×${repR}m palmes + tuba frontal — R15" — talons à la surface, fouet des chevilles, expire sous l'eau à chaque virage`,
+              `${nPerBlock}×${repR}m palmes seules (sans tuba) — R15" — maintiens le rythme de jambes, coordonne avec les bras`,
+              `${nInteg}×${repR}m NL complet sans matériel — R10" — garde la sensation des jambes actives, vise la fluidité`,
+              `Retour au calme : ${repR}m dos très lent`,
             ],
           },
           {
@@ -2534,55 +2627,57 @@ const SESSION_TEMPLATES = {
           title: "Catch-up drill & DPS",
           intensity: "Faible — distance par cycle (DPS)",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m battements planche`,
+            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
             `${nPerBlock}×${repR}m catch-up drill — R10" — bras tendu devant, attend la main adverse avant de repartir`,
             `${nPerBlock}×${repR}m DPS comptage — R10" — vise ${cycleTarget} cycles/longueur`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — réduis d'1 cycle/longueur vs ta normale, même vitesse`,
-            `Retour au calme :${repR}m dos lent`,
+            `Retour au calme : ${repR}m dos lent`,
           ],
         },
         {
           title: "Fist drill & prise d'eau",
           intensity: "Faible — qualité de la prise",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m battements planche`,
+            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
             `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, accroche avec l'avant-bras, coude haut`,
-            `${nPerBlock}×${repR}m finger drag — R10" — doigts effleurent la surface au retour, coude haut`,
+            isAdv
+              ? `${nPerBlock}×${repR}m finger drag — R10" — doigts effleurent la surface au retour, coude haut`
+              : `${nPerBlock}×${repR}m palmes + tuba frontal — R15" — coude haut à la sortie de l'eau, sens la propulsion des jambes`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — prise précoce et profonde, tire sous l'axe du corps`,
-            `Retour au calme :${repR}m dos lent`,
+            `Retour au calme : ${repR}m dos lent`,
           ],
         },
         {
           title: "6-kick drill & rotation",
           intensity: "Faible — alignement et rotation",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m battements planche`,
+            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
             `${nPerBlock}×${repR}m 6-kick drill — R10" — 6 battements sur le côté, nez au fond, rotation consciente`,
             `${nPerBlock}×${repR}m rotation exagérée — R10" — épaule passe au-dessus de l'eau, 2s de glisse`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — vise ${cycleTarget} cycles/longueur, même temps`,
-            `Retour au calme :${repR}m dos lent`,
+            `Retour au calme : ${repR}m dos lent`,
           ],
         },
         {
           title: "Virages & coulées",
           intensity: "Faible — travail des virages",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m battements planche`,
+            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
             `${nPerBlock}×${repR}m coulées — R10" — flèche max gainée, 5m en apnée avant le 1er bras`,
             `${nPerBlock}×${repR}m flip turns — R15" — culbute à 1m du mur, poussée + flèche`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque virage = relance d'élan, zéro perte de vitesse`,
-            `Retour au calme :${repR}m dos lent`,
+            `Retour au calme : ${repR}m dos lent`,
           ],
         },
         {
           title: "Tempo & cycles — vitesse sans forcer",
           intensity: "Faible/Modéré — plus vite sans plus de cycles",
           details: [
-            `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m battements`,
+            `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
             `${nPerBlock}×${repR}m NL — R10" — compte tes cycles par longueur, note ton chiffre de base`,
             `${nPerBlock}×${repR}m NL — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même nombre de cycles par longueur`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — objectif : 2s plus rapide que ta normale avec le même nombre de cycles`,
-            `Retour au calme :${repR}m dos lent`,
+            `Retour au calme : ${repR}m dos lent`,
           ],
         },
       ][v],
@@ -2736,12 +2831,29 @@ const TIPS = {
   competition: "Dernière semaine : nage légère, visualise chaque virage et chaque poussée. Ton entraînement est fait — fais confiance au travail accompli.",
 };
 
+// Ratios éducatifs par niveau : débutant 90 %, intermédiaire 70 %, confirmé 50 %
 const PHASE_PATTERNS = {
-  base:        { 1: ["endurance"], 2: ["endurance", "technique"], 3: ["endurance", "endurance", "technique"], 4: ["endurance", "endurance", "technique", "récupération"], 5: ["endurance", "endurance", "technique", "récupération", "endurance"] },
-  development: { 1: ["seuil"],     2: ["endurance", "seuil"],     3: ["endurance", "seuil", "technique"],     4: ["endurance", "seuil", "vitesse", "technique"],           5: ["endurance", "seuil", "vitesse", "technique", "endurance"] },
-  peak:        { 1: ["seuil"],     2: ["seuil", "vitesse"],        3: ["endurance", "seuil", "vitesse"],       4: ["endurance", "seuil", "vitesse", "seuil"],               5: ["endurance", "seuil", "vitesse", "seuil", "récupération"] },
-  taper:       { 1: ["endurance"], 2: ["endurance", "récupération"], 3: ["endurance", "technique", "récupération"], 4: ["endurance", "technique", "récupération", "récupération"], 5: ["endurance", "technique", "récupération", "récupération", "endurance"] },
-  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"], 5: ["endurance", "récupération", "récupération", "récupération", "récupération"] },
+  beginner: {
+    base:        { 1: ["technique"], 2: ["technique","technique"], 3: ["technique","technique","endurance"], 4: ["technique","technique","technique","endurance"], 5: ["technique","technique","technique","endurance","récupération"] },
+    development: { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["technique","technique","endurance","récupération"], 5: ["technique","technique","technique","endurance","récupération"] },
+    peak:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","endurance","technique"], 4: ["technique","technique","endurance","récupération"], 5: ["technique","technique","endurance","technique","récupération"] },
+    taper:       { 1: ["technique"], 2: ["technique","récupération"], 3: ["technique","technique","récupération"], 4: ["technique","technique","récupération","récupération"], 5: ["technique","technique","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["technique","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+  },
+  intermediate: {
+    base:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["endurance","technique","technique","récupération"], 5: ["endurance","technique","technique","récupération","endurance"] },
+    development: { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","endurance"],     4: ["technique","seuil","endurance","technique"],        5: ["technique","seuil","endurance","technique","récupération"] },
+    peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
+    taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+  },
+  advanced: {
+    base:        { 1: ["endurance"], 2: ["endurance","technique"], 3: ["endurance","endurance","technique"], 4: ["endurance","endurance","technique","récupération"], 5: ["endurance","endurance","technique","récupération","endurance"] },
+    development: { 1: ["seuil"],     2: ["endurance","seuil"],     3: ["endurance","seuil","technique"],     4: ["endurance","seuil","vitesse","technique"],          5: ["endurance","seuil","vitesse","technique","endurance"] },
+    peak:        { 1: ["seuil"],     2: ["seuil","vitesse"],        3: ["endurance","seuil","vitesse"],       4: ["endurance","seuil","vitesse","seuil"],              5: ["endurance","seuil","vitesse","seuil","récupération"] },
+    taper:       { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+  },
 };
 
 const BNSSA_PATTERNS = {
@@ -2836,7 +2948,8 @@ const generatePlan = async (profile, isPremium = false) => {
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.beginner;
   const progressionPhaseList = progression ? buildProgressionPhases() : null;
   const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
-  const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS;
+  const levelKey = level === "beginner" ? "beginner" : level === "advanced" ? "advanced" : "intermediate";
+  const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : PHASE_PATTERNS[levelKey];
   const f = Math.min(freq, 5);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
@@ -3125,9 +3238,32 @@ export default function App() {
     }));
   };
 
-  const handleFeedback = (rating) => {
+  const handleFeedback = ({ rating, motivation, pain, comment }) => {
     if (feedbackWeek === null) return;
-    setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, plan: adjustPlan(e.plan, feedbackWeek, rating) }));
+    setPlans(prev => prev.map(e => {
+      if (e.id !== activePlanId) return e;
+      const adjusted = adjustPlan(e.plan, feedbackWeek, rating);
+      const withSatisfaction = {
+        ...adjusted,
+        weeks: adjusted.weeks.map((w, i) => i !== feedbackWeek ? w : {
+          ...w,
+          satisfaction: { motivation, pain, comment, at: new Date().toISOString() },
+        }),
+      };
+      return { ...e, plan: withSatisfaction };
+    }));
+    if (user) {
+      supabase.from("week_feedback").insert({
+        user_id: user.id,
+        plan_id: activePlanId,
+        week_number: plan?.weeks[feedbackWeek]?.number ?? feedbackWeek + 1,
+        rating,
+        motivation,
+        pain,
+        comment: comment || null,
+        created_at: new Date().toISOString(),
+      }).then(() => {});
+    }
     setFeedbackWeek(null);
   };
 
@@ -3379,7 +3515,7 @@ export default function App() {
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
-        {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onRate={handleFeedback} onSkip={() => setFeedbackWeek(null)} />}
+        {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
         {toast && (
