@@ -1415,7 +1415,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 4; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 5; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
@@ -2547,20 +2547,53 @@ const SESSION_TEMPLATES = {
   technique: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
     const isBeg = level === "beginner", isAdv = level === "advanced";
     const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1;
-    const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
-
     const repR = 2*P;
     const WARM = 2*repR, COOL = repR, avail = dist - WARM - COOL;
-
     const nPerBlock = Math.max(3, Math.min(8, Math.round(avail / (4*repR))));
     const nInteg    = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - 3*nPerBlock*repR) / repR)));
+    const rot = (n) => (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % n;
 
+    // ── DÉBUTANT (7 variants — ~90% éducatif) ────────────────────────────
     if (isBeg) {
+      const v = rot(7);
       return {
         type: "TECHNIQUE",
         ...[
           {
-            title: "Palmes & tuba frontal — jambes et position",
+            title: "Flèche statique — gainage et alignement",
+            intensity: "Facile — position du corps gainée",
+            details: [
+              `Échauffement : ${repR}m NL très lent + ${repR}m dos lent`,
+              `${nPerBlock}×${repR}m flèche statique — R15" — pousse du mur, bras serrés autour des oreilles, corps gainé, glisse 5m en apnée avant le 1er bras`,
+              `${nPerBlock}×${repR}m flèche + 1 bras — R15" — glisse, 1 traction complète jusqu'à la cuisse, reglisse, 1 traction, etc.`,
+              `${nInteg}×${repR}m NL complet — R10" — commence chaque longueur par une flèche parfaite depuis le mur`,
+              `Retour au calme : ${repR}m dos très lent`,
+            ],
+          },
+          {
+            title: "Flèche jambes — tuba frontal",
+            intensity: "Facile — battements en position flèche",
+            details: [
+              `Échauffement : ${repR}m NL très lent + ${repR}m dos lent`,
+              `${nPerBlock}×${repR}m tuba frontal + bras en flèche — R15" — jambes seules, corps à plat, talons à la surface, expire régulièrement dans le tuba`,
+              `${nPerBlock}×${repR}m tuba frontal + flèche + palmes — R15" — ajoute les palmes, ressens la propulsion des jambes`,
+              `${nInteg}×${repR}m NL complet — R10" — garde le rythme de jambes actif, corps à plat`,
+              `Retour au calme : ${repR}m dos très lent`,
+            ],
+          },
+          {
+            title: "Grand chien — tuba frontal",
+            intensity: "Facile — coordination des bras sans contrainte respiratoire",
+            details: [
+              `Échauffement : ${repR}m NL très lent + ${repR}m dos lent`,
+              `${nPerBlock}×${repR}m grand chien + tuba frontal — R15" — un bras tendu devant, l'autre tire lentement jusqu'à la cuisse, échange complet avant de repartir`,
+              `${nPerBlock}×${repR}m grand chien + tuba frontal — R15" — focus : sens l'eau sous la paume à la prise, tire sous l'axe du corps`,
+              `${nInteg}×${repR}m NL sans tuba — R10" — reproduis la lenteur et la précision du grand chien`,
+              `Retour au calme : ${repR}m dos très lent`,
+            ],
+          },
+          {
+            title: "Palmes & tuba frontal — battements et position",
             intensity: "Facile — battements, corps à plat",
             details: [
               `Échauffement : ${repR}m NL très lent + ${repR}m dos lent`,
@@ -2574,87 +2607,194 @@ const SESSION_TEMPLATES = {
             title: "Fist drill — sentir l'eau",
             intensity: "Facile — ressentir l'avant-bras",
             details: [
-              `Échauffement : ${repR}m NL lent + ${repR}m dos lent`,
+              `Échauffement : ${repR}m NL lent + ${repR}m tuba frontal + flèche`,
               `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, l'avant-bras accroche l'eau`,
               `${nPerBlock}×${repR}m mains ouvertes — R10" — ressens le grip retrouvé, note la différence`,
               `${nInteg}×${repR}m NL complet — R10" — garde la sensation de prise profonde et précoce`,
-              `Retour au calme :${repR}m dos lent`,
+              `Retour au calme : ${repR}m dos lent`,
             ],
           },
           {
             title: "Respiration bilatérale",
             intensity: "Facile — coordination respiratoire",
             details: [
-              `Échauffement : ${repR}m NL lent + ${repR}m battements planche`,
+              `Échauffement : ${repR}m NL lent + ${repR}m tuba frontal + flèche`,
               `${nPerBlock}×${repR}m NL resp. 3 temps — R10" — inspire à droite sur 3 longueurs, à gauche sur 3 longueurs`,
               `${nPerBlock}×${repR}m dos crawlé lent — R10" — bras tendu, rotation douce, expire en surface`,
               `${nInteg}×${repR}m NL — R10" — alterne 3 temps et 2 temps, sens la différence d'équilibre`,
-              `Retour au calme :${repR}m dos lent`,
-            ],
-          },
-          {
-            title: "Dos & position du corps",
-            intensity: "Facile — position du corps",
-            details: [
-              `Échauffement : ${repR}m NL lent + ${repR}m battements planche`,
-              `${nPerBlock}×${repR}m dos crawlé — R10" — regard au plafond, épaule sort en premier`,
-              `${nPerBlock}×${repR}m battements dos — R10" — bras le long du corps, hanches en surface`,
-              `${nInteg}×${repR}m NL — R10" — focus coulée longue après chaque virage`,
-              `Retour au calme :${repR}m dos lent`,
+              `Retour au calme : ${repR}m dos lent`,
             ],
           },
           {
             title: "6-kick switch — équilibre & rotation",
             intensity: "Facile — équilibre latéral",
             details: [
-              `Échauffement : ${repR}m NL lent + ${repR}m dos lent`,
+              `Échauffement : ${repR}m NL lent + ${repR}m tuba frontal + flèche`,
               `${nPerBlock}×${repR}m 6-kick drill — R15" — 6 battements sur le flanc, tête dans l'axe, équilibre sans forcer`,
               `${nPerBlock}×${repR}m switch drill — R15" — rotation complète à chaque coup de bras, 1 battement de cheville`,
               `${nInteg}×${repR}m NL — R10" — imagine que tu roules sur un axe, pas que tu te tords`,
-              `Retour au calme :${repR}m dos lent`,
+              `Retour au calme : ${repR}m dos lent`,
             ],
           },
         ][v],
       };
     }
 
-    const cycleTarget = isAdv ? "15–18" : "18–22";
+    // ── INTERMÉDIAIRE (7 variants — ~70% éducatif) ───────────────────────
+    if (!isAdv) {
+      const v = rot(7);
+      return {
+        type: "TECHNIQUE",
+        ...[
+          {
+            title: "Flèche jambes — tuba frontal",
+            intensity: "Faible — battements en position flèche",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m tuba frontal + bras en flèche — R15" — jambes seules, corps à plat, talons à la surface, 5m de glisse depuis le mur avant de battre`,
+              `${nPerBlock}×${repR}m tuba frontal + palmes + flèche — R15" — ajoute les palmes, maintiens corps gainé, ressens la propulsion`,
+              `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — garde le rythme de jambes actif hérité des longueurs en flèche`,
+              `Retour au calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Grand chien — tuba frontal",
+            intensity: "Faible — coordination et prise d'eau",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m grand chien + tuba frontal — R10" — un bras tendu devant, tire lentement jusqu'à la cuisse, échange complet`,
+              `${nPerBlock}×${repR}m grand chien + tuba — R10" — focus coude haut à la prise, sens l'eau sur la paume et l'avant-bras`,
+              `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — reproduis le rythme lent et précis du grand chien`,
+              `Retour au calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Hypoxie 3-5-7-9",
+            intensity: "Modéré — contrôle respiratoire progressif",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m hypoxie 3 — R15" — 1 respiration toutes les 3 tractions (confortable, pose les bases)`,
+              `${nPerBlock}×${repR}m hypoxie 5 — R20" — 1 respiration toutes les 5 tractions (modéré)`,
+              `${Math.max(2, nPerBlock - 1)}×${repR}m hypoxie 7 — R25" — 1 respiration toutes les 7 tractions (difficile — arrête si inconfort)`,
+              `Retour au calme : ${repR}m NL respiration normale + ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Catch-up drill & DPS",
+            intensity: "Faible — distance par cycle (DPS)",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m catch-up drill — R10" — bras tendu devant, attend la main adverse avant de repartir`,
+              `${nPerBlock}×${repR}m DPS comptage — R10" — vise 18–22 cycles/longueur`,
+              `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — réduis d'1 cycle/longueur vs ta normale, même vitesse`,
+              `Retour au calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Fist drill & prise d'eau",
+            intensity: "Faible — qualité de la prise",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, accroche avec l'avant-bras, coude haut`,
+              `${nPerBlock}×${repR}m palmes + tuba frontal — R15" — coude haut à la sortie de l'eau, sens la propulsion des jambes`,
+              `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — prise précoce et profonde, tire sous l'axe du corps`,
+              `Retour au calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "6-kick drill & rotation",
+            intensity: "Faible — alignement et rotation",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m 6-kick drill — R10" — 6 battements sur le côté, nez au fond, rotation consciente`,
+              `${nPerBlock}×${repR}m rotation exagérée — R10" — épaule passe au-dessus de l'eau, 2s de glisse`,
+              `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — vise 18–22 cycles/longueur, même temps`,
+              `Retour au calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Virages & coulées",
+            intensity: "Faible — travail des virages",
+            details: [
+              `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+              `${nPerBlock}×${repR}m coulées — R10" — flèche max gainée, 5m en apnée avant le 1er bras`,
+              `${nPerBlock}×${repR}m flip turns — R15" — culbute à 1m du mur, poussée + flèche`,
+              `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque virage = relance d'élan, zéro perte de vitesse`,
+              `Retour au calme : ${repR}m dos lent`,
+            ],
+          },
+        ][v],
+      };
+    }
 
+    // ── CONFIRMÉ (8 variants — ~50% éducatif) ────────────────────────────
+    const v = rot(8);
     return {
       type: "TECHNIQUE",
       ...[
         {
-          title: "Catch-up drill & DPS",
-          intensity: "Faible — distance par cycle (DPS)",
+          title: "Grand chien — tuba frontal",
+          intensity: "Faible — timing de prise et rotation",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
-            `${nPerBlock}×${repR}m catch-up drill — R10" — bras tendu devant, attend la main adverse avant de repartir`,
-            `${nPerBlock}×${repR}m DPS comptage — R10" — vise ${cycleTarget} cycles/longueur`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — réduis d'1 cycle/longueur vs ta normale, même vitesse`,
+            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+            `${nPerBlock}×${repR}m grand chien + tuba frontal — R10" — un bras tendu, tire jusqu'à la cuisse, échange complet, focus timing de prise`,
+            `${nPerBlock}×${repR}m grand chien + tuba — R10" — accélère légèrement, maintiens la précision de la prise`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — reproduis le timing et la profondeur de prise du grand chien`,
             `Retour au calme : ${repR}m dos lent`,
           ],
         },
         {
-          title: "Fist drill & prise d'eau",
-          intensity: "Faible — qualité de la prise",
+          title: "Hypoxie progressive",
+          intensity: "Modéré — capacité respiratoire",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
-            `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, accroche avec l'avant-bras, coude haut`,
-            isAdv
-              ? `${nPerBlock}×${repR}m finger drag — R10" — doigts effleurent la surface au retour, coude haut`
-              : `${nPerBlock}×${repR}m palmes + tuba frontal — R15" — coude haut à la sortie de l'eau, sens la propulsion des jambes`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — prise précoce et profonde, tire sous l'axe du corps`,
+            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+            `${nPerBlock}×${repR}m hypoxie 5 — R15" — 1 respiration toutes les 5 tractions`,
+            `${nPerBlock}×${repR}m hypoxie 7 — R20" — 1 respiration toutes les 7 tractions`,
+            `${Math.max(2, nPerBlock - 1)}×${repR}m hypoxie 9 — R25" — 1 respiration toutes les 9 tractions`,
+            `Retour au calme : ${repR}m NL respiration libre + ${repR}m dos lent`,
+          ],
+        },
+        {
+          title: "Position de tête — respiration",
+          intensity: "Faible — technique respiratoire",
+          details: [
+            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+            `${nPerBlock}×${repR}m tuba frontal — R10" — focus sur le maintien de la tête dans l'axe, ni trop haute ni trop basse`,
+            `${nPerBlock}×${repR}m respiration latérale — R10" — tête pivote juste assez pour la bouche, 1 oreille reste dans l'eau, inspire vite et reviens`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — respiration 3 temps, tête fluide, pas de roulement excessif des épaules`,
             `Retour au calme : ${repR}m dos lent`,
           ],
         },
         {
-          title: "6-kick drill & rotation",
-          intensity: "Faible — alignement et rotation",
+          title: "Coude haut — EVF",
+          intensity: "Faible — early vertical forearm",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
-            `${nPerBlock}×${repR}m 6-kick drill — R10" — 6 battements sur le côté, nez au fond, rotation consciente`,
-            `${nPerBlock}×${repR}m rotation exagérée — R10" — épaule passe au-dessus de l'eau, 2s de glisse`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — vise ${cycleTarget} cycles/longueur, même temps`,
+            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+            `${nPerBlock}×${repR}m tuba frontal bras lent — R10" — avant-bras vertical dès l'entrée dans l'eau, coude haut tout au long de la traction`,
+            `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, force l'utilisation de l'avant-bras, sens la portance sur l'avant-bras`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — coude haut à la prise, tire sous l'axe du corps`,
+            `Retour au calme : ${repR}m dos lent`,
+          ],
+        },
+        {
+          title: "Entrée dans l'eau",
+          intensity: "Faible — qualité de l'entrée de main",
+          details: [
+            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+            `${nPerBlock}×${repR}m finger tip lead + tuba — R10" — doigts en premier dans l'axe de l'épaule, prolonge l'extension avant la prise, sans claquer la surface`,
+            `${nPerBlock}×${repR}m catch-up drill — R10" — attends que la main tendue touche la main adverse avant de tirer`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — entrée propre à chaque bras, pas de claquement ni d'entrée croisée`,
+            `Retour au calme : ${repR}m dos lent`,
+          ],
+        },
+        {
+          title: "Finir le mouvement",
+          intensity: "Faible — amplitude de traction complète",
+          details: [
+            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
+            `${nPerBlock}×${repR}m tuba frontal bras lent — R10" — sens la paume pousser l'eau vers le bas jusqu'à la cuisse, pense à "pousser derrière toi"`,
+            `${nPerBlock}×${repR}m finger drag — R10" — doigts effleurent la surface au retour, preuve que le coude était haut et la traction complète`,
+            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque traction se termine à la cuisse, ressens la propulsion en fin de geste`,
             `Retour au calme : ${repR}m dos lent`,
           ],
         },
@@ -2662,7 +2802,7 @@ const SESSION_TEMPLATES = {
           title: "Virages & coulées",
           intensity: "Faible — travail des virages",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
+            `Échauffement : ${repR}m NL + ${repR}m battements planche`,
             `${nPerBlock}×${repR}m coulées — R10" — flèche max gainée, 5m en apnée avant le 1er bras`,
             `${nPerBlock}×${repR}m flip turns — R15" — culbute à 1m du mur, poussée + flèche`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque virage = relance d'élan, zéro perte de vitesse`,
@@ -2673,7 +2813,7 @@ const SESSION_TEMPLATES = {
           title: "Tempo & cycles — vitesse sans forcer",
           intensity: "Faible/Modéré — plus vite sans plus de cycles",
           details: [
-            `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m ${isAdv ? "battements planche" : "palmes + tuba frontal"}`,
+            `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m battements planche`,
             `${nPerBlock}×${repR}m NL — R10" — compte tes cycles par longueur, note ton chiffre de base`,
             `${nPerBlock}×${repR}m NL — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même nombre de cycles par longueur`,
             `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — objectif : 2s plus rapide que ta normale avec le même nombre de cycles`,
