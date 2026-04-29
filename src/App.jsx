@@ -642,9 +642,17 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
 
+  // Avatar + firstName — stockés en localStorage
+  const [avatarUrl, setAvatarUrl] = useState(() => { try { return localStorage.getItem("myswym_avatar") || null; } catch { return null; } });
+  const [firstName, setFirstName] = useState(() => {
+    try { return localStorage.getItem("myswym_firstname") || ""; } catch { return ""; }
+  });
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput,   setNameInput]   = useState(firstName);
+  const fileInputRef = useRef(null);
+
   const stats  = computeStats(plan);
   const earned = checkBadges(stats);
-  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
 
   const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
 
@@ -660,13 +668,34 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     finally { setSaving(false); }
   };
 
+  const saveName = () => {
+    const v = nameInput.trim();
+    if (v) {
+      localStorage.setItem("myswym_firstname", v);
+      setFirstName(v);
+    }
+    setEditingName(false);
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target.result;
+      try { localStorage.setItem("myswym_avatar", b64); } catch {}
+      setAvatarUrl(b64);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Personal records computed from real data
   const longestSession = plan?.weeks
     ? Math.max(0, ...plan.weeks.flatMap(w => w.sessions).filter(s => s.completed).map(s => parseInt(s.distance) || 0))
     : 0;
 
-  // Initials from email
-  const initials = (user?.email || "?").slice(0, 2).toUpperCase();
+  const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
+  const initials = displayName.slice(0, 2).toUpperCase();
   const levelLabel = LEVELS.find(l => l.id === profile?.level)?.label || profile?.level || "Nageur";
 
   // Badge gradient by index
@@ -684,34 +713,65 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
       {/* ── Profile Header ─────────────────────────────────────── */}
       <div style={{ padding: "56px 20px 24px", textAlign: "center" }}>
-        {/* Avatar */}
+        {/* Avatar — tappable pour changer la photo */}
         <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
-          <div style={{
-            width: 88, height: 88, borderRadius: "50%",
-            background: `linear-gradient(135deg, ${G.blueMid} 0%, ${G.blue} 100%)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 8px 32px rgba(142,179,255,0.35)",
-            border: "3px solid #fff",
-          }}>
-            <span style={{ fontSize: 28, fontWeight: 700, color: "#fff", letterSpacing: 1 }}>{initials}</span>
-          </div>
-          {/* Verified dot */}
-          <div style={{
-            position: "absolute", bottom: 2, right: 2,
-            width: 22, height: 22, borderRadius: "50%",
-            background: G.blue, border: "2.5px solid #fff",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Check size={11} color="#fff" strokeWidth={3} />
-          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "block" }}
+          >
+            <div style={{
+              width: 90, height: 90, borderRadius: "50%",
+              background: avatarUrl ? "transparent" : `linear-gradient(135deg, ${G.blueMid} 0%, ${G.blue} 100%)`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 8px 32px rgba(142,179,255,0.35)",
+              border: "3px solid #fff", overflow: "hidden",
+            }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>{initials}</span>
+              }
+            </div>
+            {/* Camera badge */}
+            <div style={{
+              position: "absolute", bottom: 2, right: 2,
+              width: 26, height: 26, borderRadius: "50%",
+              background: G.blue, border: "2.5px solid #fff",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <User size={12} color="#fff" />
+            </div>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
         </div>
-        {/* Name + level */}
-        <div style={{ fontSize: 22, fontWeight: 700, color: G.ink, marginBottom: 4, letterSpacing: "-0.02em" }}>
-          {user?.email?.split("@")[0] || "Nageur"}
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+
+        {/* Name — tappable pour éditer */}
+        {editingName ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 8 }}>
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && saveName()}
+              placeholder="Ton prénom"
+              style={{ fontSize: 20, fontWeight: 700, color: G.ink, border: "none", borderBottom: `2px solid ${G.blue}`, outline: "none", background: "transparent", textAlign: "center", width: 160 }}
+            />
+            <button onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "4px 10px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>OK</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setNameInput(displayName); setEditingName(true); }}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 0 }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
+            <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Settings size={11} color={G.blue} />
+            </div>
+          </button>
+        )}
+        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
           {levelLabel}
         </div>
+        <div style={{ fontSize: 11, color: G.greyMid }}>{user?.email}</div>
       </div>
 
       <div style={{ padding: "0 16px" }}>
@@ -2320,126 +2380,247 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTabChange, onComplete, onShare, onSignOut }) => {
-  const goal = GOALS.find(g => g.id === profile.goal);
+const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTabChange, onComplete, onShare, onSignOut, user }) => {
+  const goal = GOALS.find(g => g.id === profile.goal) || CATEGORIES.find(c => c.id === profile.category);
   const stats = computeStats(plan);
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
   const nextSession = currentWeek?.sessions.find(s => !s.completed);
   const nextSessionIndex = currentWeek?.sessions.findIndex(s => !s.completed);
-  const weekDone = currentWeek?.sessions.filter(s => s.completed).length ?? 0;
-  const weekTotal = currentWeek?.sessions.length ?? 0;
   const daysToEvent = profile.eventDate ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000)) : null;
-  const pct = stats.planTotal > 0 ? Math.round(stats.totalSessions / stats.planTotal * 100) : 0;
   const tm = nextSession ? (TYPE_META[nextSession.type] || TYPE_META.ENDURANCE) : null;
 
+  // Weekly progress
+  const weekPlanned = currentWeek?.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
+  const weekDone    = currentWeek?.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
+  const weekPct     = weekPlanned > 0 ? Math.min(100, Math.round(weekDone / weekPlanned * 100)) : 0;
+  const weekSessions = currentWeek?.sessions.filter(s => s.completed).length ?? 0;
+  const weekTotal   = currentWeek?.sessions.length ?? 0;
+
+  // Recent completed sessions (last 3)
+  const allSessions = plan.weeks.flatMap((w, wi) =>
+    w.sessions.map((s, si) => ({ ...s, weekIndex: wi, sessionIndex: si, weekNum: w.number }))
+  );
+  const recentDone = allSessions.filter(s => s.completed).slice(-3).reverse();
+
+  // Avatar from localStorage
+  const avatarUrl = (() => { try { return localStorage.getItem("myswym_avatar"); } catch { return null; } })();
+  const firstName = (() => { try { return localStorage.getItem("myswym_firstname"); } catch { return null; } })()
+    || user?.user_metadata?.full_name?.split(" ")[0]
+    || user?.email?.split("@")[0]
+    || "Nageur";
+  const initials = firstName.slice(0, 2).toUpperCase();
+
+  // Ring SVG helper
+  const size = 80, stroke = 8, r = (size - stroke) / 2, circ = 2 * Math.PI * r;
+  const offset = circ * (1 - weekPct / 100);
+
+  const planFinished = stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
+
   return (
-    <div style={{ paddingBottom: 100, background: G.bg, minHeight: "100vh" }}>
-      {/* Header */}
-      <div style={{ background: G.blue, padding: "56px 20px 28px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-          <div>
-            <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 5, fontWeight: 700 }}>Programme actif</div>
-            <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, lineHeight: 1.05 }}>{goal?.label}</h1>
-            {daysToEvent !== null && (
-              <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 5 }}>J−{daysToEvent} · Semaine {(currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length)}/{plan.weeks.length}</p>
-            )}
+    <div style={{ paddingBottom: 140, background: G.bg, minHeight: "100vh" }}>
+
+      {/* ── Top App Bar ── */}
+      <header style={{
+        position: "sticky", top: 0, zIndex: 40,
+        background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)",
+        borderBottom: `1px solid rgba(142,179,255,0.10)`,
+        boxShadow: "0 1px 20px rgba(142,179,255,0.08)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Avatar */}
+            <button onClick={() => onTabChange("profile")} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}` }}>
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span style={{ fontSize: 13, fontWeight: 800, color: G.blue }}>{initials}</span>
+                }
+              </div>
+            </button>
+            <span style={{ fontSize: 20, fontWeight: 900, color: G.blueMid, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
           </div>
-          <button onClick={onSignOut} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 10, padding: "8px 10px", cursor: "pointer" }}>
-            <LogOut size={15} color="rgba(255,255,255,0.7)" />
+          <button onClick={onSignOut} style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+            <Settings size={20} color={G.grey} />
           </button>
         </div>
-        {/* Progress bar */}
-        <div className="fade-up-3">
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 0.3 }}>{stats.totalSessions} séances · {(stats.totalMeters / 1000).toFixed(1)} km</span>
-            <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Lexend', sans-serif", letterSpacing: "0.03em", color: G.white }}>{pct}%</span>
-          </div>
-          <div style={{ height: 5, background: "rgba(255,255,255,0.18)", borderRadius: 3 }}>
-            <div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: G.white, transition: "width 1s ease" }} />
-          </div>
-        </div>
+      </header>
 
-      </div>
+      <div style={{ padding: "20px 16px 0" }}>
 
-      <div style={{ padding: "24px 16px 0" }}>
-        {/* Cycle terminé (progression) */}
-        {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && plan.isProgression && (
-          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
-            <TrendingUp size={40} color={G.blue} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2>
-            <p style={{ color: G.grey, fontSize: 14, marginBottom: 8 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en 12 semaines.</p>
-            <p style={{ color: G.grey, fontSize: 13, marginBottom: 20 }}>Prêt·e pour le prochain cycle ? Ton niveau a évolué — un nouveau plan s'adaptera à ta progression.</p>
-            <Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn>
+        {/* ── Plan finished banners ── */}
+        {planFinished && (
+          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 24, padding: 24, textAlign: "center", marginBottom: 20, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
+            {plan.isProgression
+              ? <><TrendingUp size={38} color={G.blue} style={{ margin: "0 auto 10px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 16 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
+              : <><Trophy size={38} color={G.gold} style={{ margin: "0 auto 10px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Plan terminé 🏆</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100&nbsp;%.</p></>
+            }
           </div>
         )}
 
-        {/* Plan terminé (autres catégories) */}
-        {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && !plan.isProgression && (
-          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
-            <Trophy size={40} color={G.gold} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
-            <p style={{ color: G.grey, fontSize: 14 }}>Programme complété à 100 %.</p>
-          </div>
-        )}
-
-        {/* Prochaine séance */}
-        {nextSession && tm && (
-          <div className="fade-up" style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink }}>Prochaine séance</h2>
-              <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 13, color: G.blue, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                Voir tout <ArrowRight size={13} color={G.blue} />
-              </button>
-            </div>
-            <div style={{ background: G.white, borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
-              {/* Type badge strip */}
-              <div style={{ background: tm.color, padding: "10px 20px", display: "flex", alignItems: "center", gap: 8 }}>
-                <tm.Icon size={13} color="rgba(255,255,255,0.9)" />
-                <span style={{ fontSize: 11, fontWeight: 700, color: G.white, letterSpacing: 1.5, textTransform: "uppercase" }}>{nextSession.type}</span>
+        {/* ── Hero — Activité hebdomadaire ── */}
+        <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Activité hebdomadaire</p>
+        <div style={{
+          background: G.white, borderRadius: 32, padding: "24px",
+          boxShadow: "0 10px 40px rgba(142,179,255,0.12)",
+          border: "1px solid rgba(142,179,255,0.08)",
+          marginBottom: 16, position: "relative", overflow: "hidden",
+        }}>
+          {/* decorative blob */}
+          <div style={{ position: "absolute", right: -40, top: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(142,179,255,0.07)", pointerEvents: "none" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
+            {/* Left: numbers */}
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
+                <span style={{ fontSize: 40, fontWeight: 800, color: G.blue, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                  {weekDone.toLocaleString("fr")}
+                </span>
+                <span style={{ fontSize: 22, fontWeight: 700, color: G.blueMid }}>m</span>
               </div>
-              <div style={{ padding: "18px 20px 20px" }}>
-                <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-                  {[{ Icon: Ruler, val: nextSession.distance, label: "Distance" }, { Icon: Timer, val: formatDuration(nextSession.duration), label: "Durée" }].map(({ Icon: I, val, label }, i) => (
-                    <div key={i} style={{ flex: 1, background: G.greyXLight, borderRadius: 12, padding: "12px 14px" }}>
-                      <div style={{ fontSize: 11, color: G.grey, marginBottom: 4, letterSpacing: 0.5 }}>{label}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{val}</div>
-                    </div>
-                  ))}
+              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, maxWidth: 180 }}>
+                {weekSessions}/{weekTotal} séances · {currentWeek?.focus ?? goal?.label ?? "En cours"}
+              </p>
+              {daysToEvent !== null && (
+                <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: G.blueLight, borderRadius: 100, padding: "4px 12px" }}>
+                  <Target size={11} color={G.blue} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>J−{daysToEvent} avant l'événement</span>
                 </div>
-                <Btn variant="blue" onClick={() => onComplete(currentWeekIndex, nextSessionIndex)}>Séance terminée</Btn>
+              )}
+            </div>
+            {/* Right: ring */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+              <div style={{ position: "relative", width: size, height: size }}>
+                <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+                  <circle cx={size/2} cy={size/2} r={r} fill="transparent" stroke={G.greyLight} strokeWidth={stroke} />
+                  <circle cx={size/2} cy={size/2} r={r} fill="transparent" stroke={G.blue}
+                    strokeWidth={stroke} strokeLinecap="round"
+                    strokeDasharray={circ} strokeDashoffset={offset}
+                    style={{ transition: "stroke-dashoffset 1s ease" }}
+                  />
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: G.blue }}>{weekPct}%</span>
+                </div>
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Objectif : {weekPlanned >= 1000 ? `${(weekPlanned/1000).toFixed(1)} km` : `${weekPlanned} m`}</p>
+                <p style={{ fontSize: 11, color: G.grey }}>{Math.max(0, weekPlanned - weekDone)}m restants</p>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Stats condensées */}
-        <div className="fade-up-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-          <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Cette semaine</div>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{weekDone}<span style={{ fontSize: 16, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>{currentWeek?.focus ?? "—"}</div>
+        {/* ── Info cards ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          {/* Prochaine séance / objectif */}
+          <div style={{ background: `${G.blue}12`, borderRadius: 24, padding: "16px", border: `1px solid ${G.blue}20`, display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 46, height: 46, background: G.blue, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {nextSession ? (tm && <tm.Icon size={20} color={G.white} />) : <Trophy size={20} color={G.white} />}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.blue, marginBottom: 2 }}>
+                {nextSession ? "Prochaine séance" : "Plan terminé"}
+              </div>
+              <div style={{ fontSize: 12, color: G.blueDeep, fontWeight: 500, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {nextSession ? nextSession.title : "Félicitations !"}
+              </div>
+            </div>
           </div>
-          <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Série</div>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>séances consécutives</div>
+          {/* Allure / streak */}
+          <div style={{ background: G.white, borderRadius: 24, padding: "16px", border: `1px solid rgba(142,179,255,0.14)`, boxShadow: "0 2px 12px rgba(142,179,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 46, height: 46, background: "#FFF3E0", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Flame size={20} color="#E65100" />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 2 }}>Série actuelle</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                {stats.streak}<span style={{ fontSize: 12, fontWeight: 500, color: G.grey }}> séances</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Glossaire */}
-        <a href="/blog/glossaire-natation" target="_blank" rel="noopener noreferrer" className="fade-up-2" style={{ display: "flex", alignItems: "center", gap: 14, background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", textDecoration: "none", marginBottom: 4 }}>
-          <div style={{ width: 40, height: 40, background: `${G.blue}12`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        {/* ── Dernières séances ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Dernières séances</h2>
+          <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 13, color: G.blue, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+            Tout voir <ArrowRight size={13} color={G.blue} />
+          </button>
+        </div>
+
+        {recentDone.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+            {recentDone.map((s, i) => {
+              const stm = TYPE_META[s.type] || TYPE_META.ENDURANCE;
+              return (
+                <div key={i} style={{
+                  background: G.white, borderRadius: 24, padding: "14px 16px",
+                  boxShadow: "0 4px 20px rgba(142,179,255,0.07)",
+                  border: "1px solid rgba(142,179,255,0.08)",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ width: 50, height: 50, borderRadius: "50%", background: stm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <stm.Icon size={22} color={stm.color} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 4 }}>{s.title}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: G.grey }}>Semaine {s.weekNum}</span>
+                        <div style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyLight }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>{s.distance}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Check size={18} color={G.mint} />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ background: G.white, borderRadius: 24, padding: "28px 20px", textAlign: "center", border: "1px solid rgba(142,179,255,0.10)", marginBottom: 20 }}>
+            <Waves size={32} color={G.blueMid} style={{ margin: "0 auto 10px" }} />
+            <p style={{ color: G.grey, fontSize: 13 }}>Aucune séance terminée — commence maintenant !</p>
+          </div>
+        )}
+
+        {/* ── Glossaire ── */}
+        <a href="/blog/glossaire-natation" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 14, background: G.white, borderRadius: 20, padding: "14px 16px", border: `1px solid rgba(142,179,255,0.10)`, boxShadow: "0 2px 10px rgba(142,179,255,0.06)", textDecoration: "none" }}>
+          <div style={{ width: 40, height: 40, background: G.blueLight, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <BookOpen size={20} color={G.blue} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Glossaire du nageur</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Glossaire du nageur</div>
             <div style={{ fontSize: 12, color: G.grey }}>CSS, NL, D1'45", Z1-Z5… tous les termes expliqués</div>
           </div>
-          <ArrowRight size={16} color={G.blue} />
+          <ArrowRight size={16} color={G.blueMid} />
         </a>
       </div>
+
+      {/* ── FAB — Commencer une séance ── */}
+      {nextSession && (
+        <div style={{ position: "fixed", bottom: 96, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none", zIndex: 40 }}>
+          <button
+            onClick={() => onTabChange("plan")}
+            style={{
+              pointerEvents: "auto",
+              background: G.blue, color: G.white,
+              border: "none", borderRadius: 100,
+              padding: "16px 28px",
+              fontSize: 15, fontWeight: 700,
+              display: "flex", alignItems: "center", gap: 8,
+              boxShadow: "0 10px 30px rgba(53,93,163,0.40)",
+              cursor: "pointer",
+              transition: "transform 0.15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >
+            <Waves size={18} color={G.white} />
+            Commencer une séance
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -4514,7 +4695,7 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} />}
 
