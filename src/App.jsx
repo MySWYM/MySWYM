@@ -12,7 +12,7 @@ const FontLoader = () => {
   useEffect(() => {
     const l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap";
+    l.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
     document.head.appendChild(l);
   }, []);
   return null;
@@ -20,13 +20,13 @@ const FontLoader = () => {
 
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────
 const G = {
-  bg: "#F0F4F8",
-  ink: "#0D1117",
-  inkLight: "#374151",
-  blue: "#0057FF",
-  blueLight: "#EEF3FF",
-  blueMid: "#4080FF",
-  blueDeep: "#003ACC",
+  bg: "#f8f9fc",
+  ink: "#191c1e",
+  inkLight: "#434751",
+  blue: "#355da3",
+  blueLight: "#d8e2ff",
+  blueMid: "#8eb3ff",
+  blueDeep: "#154388",
   water: "#00B4D8",
   waterLight: "#E0F7FA",
   coral: "#FF4757",
@@ -37,10 +37,10 @@ const G = {
   goldLight: "#FEF3C7",
   purple: "#7C3AED",
   purpleLight: "#EDE9FE",
-  grey: "#6B7280",
+  grey: "#737782",
   greyMid: "#9CA3AF",
-  greyLight: "#E5E7EB",
-  greyXLight: "#F9FAFB",
+  greyLight: "#e1e2e5",
+  greyXLight: "#f2f3f6",
   white: "#FFFFFF",
 };
 
@@ -54,9 +54,9 @@ const TYPE_META = {
 
 const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${G.bg}; font-family: 'DM Sans', sans-serif; overscroll-behavior: none; letter-spacing: 0.015em; -webkit-font-smoothing: antialiased; }
-  h1, h2, h3, h4 { letter-spacing: 0.025em; }
-  .syne { font-family: 'Syne', sans-serif; letter-spacing: 0.025em; }
+  body { background: ${G.bg}; font-family: 'Lexend', sans-serif; overscroll-behavior: none; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { letter-spacing: -0.01em; }
+  .syne { font-family: 'Lexend', sans-serif; letter-spacing: -0.01em; font-weight: 800; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }

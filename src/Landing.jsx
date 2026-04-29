@@ -628,52 +628,6 @@ function ProgressTimeline() {
   );
 }
 
-// ── Testimonials ───────────────────────────────────────────────────────────
-function Testimonials() {
-  const reviews = [
-    { name: "Thomas R.",  tag: "Triathlon Olympique",  stars: 5, text: "J'ai préparé mon premier triathlon olympique avec MySWYM. Les séances sont vraiment structurées — je n'aurais pas su construire ça seul. J'ai nagé bien mieux que prévu le jour J." },
-    { name: "Camille D.", tag: "BNSSA réussi",          stars: 5, text: "Les séances BNSSA sont exactement ce qu'il faut : apnée, remorquage, simulation du parcours. J'ai réussi du premier coup." },
-    { name: "Antoine M.", tag: "Niveau intermédiaire",  stars: 5, text: "Simple, efficace. J'ouvre l'app le matin, je sais exactement quoi faire dans l'eau. Plus besoin de réfléchir — juste nager." },
-    { name: "Sarah L.",   tag: "Triathlon Half",         stars: 5, text: "La progression est bien pensée. Les phases s'enchaînent logiquement. À 8 semaines de mon Half, je me sens vraiment prête sur la nage." },
-    { name: "Marc B.",    tag: "Bien-être",              stars: 5, text: "Je suis revenu à la natation après 5 ans d'arrêt. Le niveau débutant est parfait — progressif, pas décourageant." },
-    { name: "Julie T.",   tag: "Eau libre 10 km",        stars: 5, text: "Les séances eau libre sont différentes des plans classiques. Les reps longues, les cues sur la respiration bilatérale — ça colle vraiment à la spécificité de l'eau vive." },
-  ];
-  return (
-    <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="ILS NAGENT AVEC MYSWYM" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-0.02em" }}>
-            Ce qu'ils en disent
-          </h2>
-        </FadeIn>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-          {reviews.map((r, i) => (
-            <FadeIn key={i} delay={(i % 3) * 0.08}>
-              <div style={{
-                background: C.white, border: `1px solid ${C.border}`, borderRadius: 22, padding: 24,
-                boxShadow: C.shadow, transition: "box-shadow 0.25s",
-              }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow = C.shadowMd}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = C.shadow}
-              >
-                <div style={{ display: "flex", gap: 2, marginBottom: 14 }}>
-                  {Array(r.stars).fill(0).map((_, j) => <Star key={j} size={14} fill="#F59E0B" color="#F59E0B" />)}
-                </div>
-                <p style={{ color: C.inkLight, fontSize: 14, lineHeight: 1.7, margin: "0 0 18px", fontStyle: "italic", fontFamily: FONT }}>"{r.text}"</p>
-                <div>
-                  <div style={{ color: C.ink, fontWeight: 700, fontSize: 14, fontFamily: FONT }}>{r.name}</div>
-                  <div style={{ color: C.primary, fontSize: 12, fontWeight: 600, marginTop: 2, fontFamily: FONT }}>{r.tag}</div>
-                </div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // ── Comparison ─────────────────────────────────────────────────────────────
 function Comparison() {
@@ -1157,7 +1111,6 @@ export default function Landing() {
       <Goals />
       <PaceFeature />
       <ProgressTimeline />
-      <Testimonials />
       <Comparison />
       <Pricing />
       <FAQ />
