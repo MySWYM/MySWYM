@@ -351,10 +351,12 @@ const Ring = ({ value, size = 64, stroke = 6, color = G.water, bg = "rgba(255,25
 };
 
 const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
-  <div style={{ flex: 1, background: bg || G.greyXLight, borderRadius: 16, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-    <IconComp size={20} color={color || G.ink} />
-    <span style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Syne', sans-serif", letterSpacing: "0.03em", color: color || G.ink, lineHeight: 1 }}>{value}</span>
-    <span style={{ fontSize: 11, color: G.grey, letterSpacing: 0.5, textTransform: "uppercase" }}>{label}</span>
+  <div style={{ background: G.white, borderRadius: 22, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, boxShadow: "0 4px 20px rgba(142,179,255,0.10)", border: `1px solid rgba(142,179,255,0.10)` }}>
+    <div style={{ width: 40, height: 40, borderRadius: 12, background: bg || G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <IconComp size={20} color={color || G.blue} />
+    </div>
+    <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Lexend', sans-serif", letterSpacing: "-0.02em", color: color || G.blue, lineHeight: 1 }}>{value}</span>
+    <span style={{ fontSize: 10, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", textAlign: "center" }}>{label}</span>
   </div>
 );
 
@@ -647,11 +649,17 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
 
-  const stats  = computeStats(plan);
-  const earned = checkBadges(stats);
-  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
+  const stats      = computeStats(plan);
+  const earned     = checkBadges(stats);
+  const maxMeters  = Math.max(...stats.weeklyData.map(w => w.total), 1);
+  const longestSession = plan?.weeks
+    ? Math.max(...plan.weeks.flatMap(w => w.sessions).filter(s => s.completed).map(s => parseInt(s.distance) || 0), 0)
+    : 0;
 
-  const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
+  const initials = user?.email ? user.email[0].toUpperCase() : "?";
+  const levelLabel = { découverte: "Découverte", régulier: "Régulier", intermédiaire: "Intermédiaire", performance: "Performance", advanced: "Performance", grand_public: "Grand Public" }[profile?.level] ?? "Nageur";
+
+  const inp = { width: "100%", padding: "13px 14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
 
   const save = async () => {
     if (!password) return;
@@ -665,18 +673,46 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     finally { setSaving(false); }
   };
 
+  const cardStyle = { background: G.white, borderRadius: 22, padding: "18px 16px", marginBottom: 16, border: `1px solid rgba(142,179,255,0.12)`, boxShadow: "0 4px 20px rgba(142,179,255,0.08)" };
+  const sectionTitle = { fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 };
+
   return (
     <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
-      {/* Header */}
-      <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Ton espace</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Profil</h1>
-        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}</p>
+
+      {/* ── Header ── */}
+      <div style={{
+        background: `radial-gradient(ellipse at 0% 0%, rgba(142,179,255,0.18) 0%, transparent 60%), radial-gradient(ellipse at 100% 0%, rgba(142,179,255,0.12) 0%, transparent 60%), ${G.white}`,
+        padding: "56px 20px 28px", textAlign: "center",
+        borderBottom: `1px solid rgba(142,179,255,0.12)`,
+      }}>
+        {/* Avatar */}
+        <div className="fade-up" style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg, ${G.blueMid}, ${G.blue})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 28px rgba(142,179,255,0.35)", border: "3px solid white" }}>
+            <span style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 800, color: G.white }}>{initials}</span>
+          </div>
+          {earned.length > 0 && (
+            <div style={{ position: "absolute", bottom: 2, right: 2, width: 20, height: 20, borderRadius: "50%", background: G.blueMid, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Check size={10} color={G.blueDeep} strokeWidth={3} />
+            </div>
+          )}
+        </div>
+        {/* Name */}
+        <div className="fade-up-1">
+          <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4, letterSpacing: "-0.02em" }}>
+            {user?.user_metadata?.name || user?.email?.split("@")[0] || "Nageur"}
+          </p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: G.blue, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+            {levelLabel}
+          </p>
+          <p style={{ fontSize: 13, color: G.grey }}>
+            {(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}
+          </p>
+        </div>
       </div>
 
       <div style={{ padding: "20px 16px 0" }}>
 
-        {/* Stats */}
+        {/* ── Stats bento ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
           <StatPill icon={Waves}  value={`${(stats.totalMeters / 1000).toFixed(1)} km`} label="Total nagés"        color={G.blue}  bg={G.blueLight}  />
           <StatPill icon={Flame}  value={stats.streak}                                   label="Meilleure série"    color={G.coral} bg={G.coralLight} />
@@ -684,7 +720,53 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           <StatPill icon={Star}   value={stats.perfectWeeks}                             label="Semaines parfaites" color={G.gold}  bg={G.goldLight}  />
         </div>
 
-        {/* Pace zones + projection (Performance uniquement) */}
+        {/* ── Records personnels ── */}
+        {(longestSession > 0 || profile?.pace100) && (
+          <div style={cardStyle}>
+            <div style={sectionTitle}>
+              <Trophy size={16} color={G.gold} />
+              Records personnels
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {profile?.pace100 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: G.greyXLight, borderRadius: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, background: G.blueLight, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Timer size={18} color={G.blue} />
+                    </div>
+                    <div>
+                      <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 600, color: G.ink }}>Meilleur 100m</p>
+                      <p style={{ fontSize: 12, color: G.grey }}>Nage libre</p>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 17, fontWeight: 800, color: G.blue, letterSpacing: "-0.02em" }}>{profile.pace100}</p>
+                    <p style={{ fontSize: 10, color: G.grey, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>min/100m</p>
+                  </div>
+                </div>
+              )}
+              {longestSession > 0 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: G.greyXLight, borderRadius: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, background: G.waterLight, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Waves size={18} color={G.water} />
+                    </div>
+                    <div>
+                      <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 600, color: G.ink }}>Plus longue séance</p>
+                      <p style={{ fontSize: 12, color: G.grey }}>Endurance</p>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 17, fontWeight: 800, color: G.water, letterSpacing: "-0.02em" }}>{longestSession >= 1000 ? `${(longestSession / 1000).toFixed(1)}` : longestSession}</p>
+                    <p style={{ fontSize: 10, color: G.grey, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{longestSession >= 1000 ? "km" : "m"}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Pace zones + projection (Performance uniquement) ── */}
         {(profile?.level === "performance" || profile?.level === "advanced") && (
           <>
             <PaceZonesCard pace100={profile?.pace100} pace400={profile?.pace400} onSave={onPaceUpdate} />
@@ -692,20 +774,23 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </>
         )}
 
-        {/* Modifier le programme */}
+        {/* ── Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
 
-        {/* Weekly bar chart */}
-        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
+        {/* ── Volume par semaine ── */}
+        <div style={cardStyle}>
+          <div style={sectionTitle}>
+            <BarChart2 size={16} color={G.blue} />
+            Volume par semaine
+          </div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
             {stats.weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
                 <div style={{ flex: 1, width: "100%", position: "relative" }}>
-                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0 }} />
-                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : `linear-gradient(180deg, ${G.water} 0%, ${G.blue} 100%)`, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
+                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "6px 6px 0 0", position: "absolute", bottom: 0 }} />
+                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : `linear-gradient(180deg, ${G.blueMid} 0%, ${G.blue} 100%)`, borderRadius: "6px 6px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
                 </div>
-                <span style={{ fontSize: 10, color: G.grey }}>{w.label}</span>
+                <span style={{ fontSize: 10, color: G.grey, fontFamily: "'Lexend', sans-serif" }}>{w.label}</span>
               </div>
             ))}
           </div>
@@ -713,105 +798,117 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
             {[{ color: G.blue, label: "Réalisé" }, { color: G.greyLight, label: "Prévu" }].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
-                <span style={{ fontSize: 11, color: G.grey }}>{l.label}</span>
+                <span style={{ fontSize: 11, color: G.grey, fontFamily: "'Lexend', sans-serif" }}>{l.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Session type breakdown */}
-        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
+        {/* ── Répartition des types ── */}
+        <div style={cardStyle}>
+          <div style={sectionTitle}>
+            <Activity size={16} color={G.blue} />
+            Répartition des types
+          </div>
           {Object.entries(TYPE_META).map(([type, tm]) => {
             const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
             const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
             if (total === 0) return null;
             return (
               <div key={type} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <tm.Icon size={12} color={tm.color} />
-                    <span style={{ fontSize: 13, fontWeight: 500, color: G.ink }}>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: G.ink, fontFamily: "'Lexend', sans-serif" }}>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: G.grey }}>{count}/{total}</span>
+                  <span style={{ fontSize: 12, color: G.grey, fontFamily: "'Lexend', sans-serif" }}>{count}/{total}</span>
                 </div>
-                <div style={{ height: 6, background: G.greyLight, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${total > 0 ? count / total * 100 : 0}%`, background: tm.color, borderRadius: 3, transition: "width 0.6s ease" }} />
+                <div style={{ height: 7, background: G.greyLight, borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${total > 0 ? count / total * 100 : 0}%`, background: tm.color, borderRadius: 4, transition: "width 0.6s ease" }} />
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Badges */}
-        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Badges</h3>
-          <p style={{ fontSize: 12, color: G.grey, marginBottom: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
+        {/* ── Badges ── */}
+        <div style={{ ...cardStyle, paddingBottom: 0 }}>
+          <div style={{ ...sectionTitle, marginBottom: 4 }}>
+            <Award size={16} color={G.gold} />
+            Badges
+            <span style={{ marginLeft: "auto", fontSize: 12, color: G.grey, fontWeight: 500 }}>{earned.length}/{BADGE_DEFS.length} débloqués</span>
+          </div>
+
+          {/* Earned — horizontal scroll */}
           {earned.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: earned.length < BADGE_DEFS.length ? 16 : 0 }}>
+            <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 16, WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
-                <div key={b.id} className="scale-in" style={{ background: G.white, borderRadius: 14, padding: 14, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${b.color}18`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}>
-                    <b.icon size={20} color={b.color} />
+                <div key={b.id} className="scale-in" style={{ flexShrink: 0, width: 82, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${b.color}cc, ${b.color})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 6px 20px ${b.color}30` }}>
+                    <b.icon size={26} color="#fff" />
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{b.label}</div>
-                  <div style={{ fontSize: 10, color: G.grey, lineHeight: 1.4 }}>{b.desc}</div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: G.ink, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.3, fontFamily: "'Lexend', sans-serif" }}>{b.label}</span>
                 </div>
               ))}
             </div>
           )}
+
+          {/* Locked */}
           {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 16, WebkitOverflowScrolling: "touch", scrollbarWidth: "none", opacity: 0.45 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
-                <div key={b.id} style={{ background: G.greyXLight, borderRadius: 14, padding: 14, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}>
-                    <Lock size={18} color={G.greyMid} />
+                <div key={b.id} style={{ flexShrink: 0, width: 82, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Lock size={22} color={G.greyMid} />
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: G.greyMid, marginBottom: 2 }}>{b.label}</div>
-                  <div style={{ fontSize: 10, color: G.greyMid, lineHeight: 1.4 }}>{b.desc}</div>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: G.grey, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.3, fontFamily: "'Lexend', sans-serif" }}>{b.label}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Compte */}
-        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>Email</div>
-          <div style={{ fontSize: 15, color: G.ink, padding: "13px 14px", background: G.greyXLight, borderRadius: 12 }}>{user?.email}</div>
-        </div>
-
-        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>Nouveau mot de passe</div>
+        {/* ── Compte ── */}
+        <div style={cardStyle}>
+          <div style={sectionTitle}>
+            <Settings size={16} color={G.grey} />
+            Compte
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Email</div>
+          <div style={{ fontSize: 14, color: G.ink, padding: "12px 14px", background: G.greyXLight, borderRadius: 12, marginBottom: 16, fontFamily: "'Lexend', sans-serif" }}>{user?.email}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Nouveau mot de passe</div>
           <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nouveau mot de passe" onKeyDown={e => e.key === "Enter" && save()} />
+          {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginTop: 10, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13, fontFamily: "'Lexend', sans-serif" }}>{msg.text}</div>}
+          <div style={{ marginTop: 12 }}>
+            <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
+          </div>
         </div>
 
-        {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
-        <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
-
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* ── Abonnement & déconnexion ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {isPremium
             ? <>
-                <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 16, border: `1.5px solid ${G.blueMid}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Lexend', sans-serif" }}>
                   <Zap size={16} color={G.blue} /> Gérer mon abonnement
                 </button>
-                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
+                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer", fontFamily: "'Lexend', sans-serif" }}>
                   Actualiser le statut
                 </button>
               </>
             : <>
-                <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0D1117, #001966)", color: G.white, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 16, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Lexend', sans-serif", boxShadow: "0 8px 24px rgba(53,93,163,0.28)" }}>
                   <Zap size={16} color={G.gold} /> Passer en premium
                 </button>
-                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
+                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer", fontFamily: "'Lexend', sans-serif" }}>
                   Actualiser le statut
                 </button>
               </>
           }
-          <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 16, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Lexend', sans-serif" }}>
             <LogOut size={16} color={G.grey} /> Se déconnecter
           </button>
         </div>
+
       </div>
     </div>
   );
