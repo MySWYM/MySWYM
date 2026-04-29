@@ -45,11 +45,11 @@ const G = {
 };
 
 const TYPE_META = {
-  ENDURANCE:    { bg: G.blueLight,   color: G.blue,    Icon: Waves },
-  SEUIL:        { bg: "#FFF3E0",     color: "#E65100", Icon: Activity },
-  VITESSE:      { bg: G.coralLight,  color: G.coral,   Icon: Zap },
-  TECHNIQUE:    { bg: G.waterLight,  color: "#0097A7", Icon: Target },
-  RÉCUPÉRATION: { bg: G.mintLight,   color: "#00897B", Icon: Droplets },
+  ENDURANCE:    { bg: G.blueLight,   color: G.blue,    Icon: Waves,    tooltip: "Nage à allure confortable — tu pourrais parler. C'est la base de toute progression." },
+  SEUIL:        { bg: "#FFF3E0",     color: "#E65100", Icon: Activity, tooltip: "Effort soutenu mais contrôlé — tu travailles à la limite de ton confort. Améliore ton endurance." },
+  VITESSE:      { bg: G.coralLight,  color: G.coral,   Icon: Zap,      tooltip: "Sprints courts et intenses — récup complète entre chaque. Développe ta puissance." },
+  TECHNIQUE:    { bg: G.waterLight,  color: "#0097A7", Icon: Target,   tooltip: "On travaille la façon de nager — position, bras, jambes. Moins d'effort, plus d'efficacité." },
+  RÉCUPÉRATION: { bg: G.mintLight,   color: "#00897B", Icon: Droplets, tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer — c'est là que le corps progresse." },
 };
 
 const css = `
@@ -129,11 +129,52 @@ const SUB_GOALS = {
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
 const isProgressionGoal = (goalId) => goalId?.startsWith("prog_");
 
+// 4 niveaux mesurables — auto-évaluation physique + logique
 const LEVELS = [
-  { id: "beginner",     label: "Débutant",      desc: "Je nage depuis moins d'1 an" },
-  { id: "intermediate", label: "Intermédiaire", desc: "Je nage régulièrement depuis 1–3 ans" },
-  { id: "advanced",     label: "Confirmé",      desc: "Compétitions ou plus de 3 ans de pratique" },
+  {
+    id: "découverte",
+    label: "Découverte",
+    emoji: "🌊",
+    desc: "Je m'arrête après quelques longueurs",
+    detail: "Moins de 4 longueurs sans pause, ou je reprends après un arrêt",
+    color: "#00B4D8",
+    bg: "#E0F7FA",
+  },
+  {
+    id: "régulier",
+    label: "Régulier",
+    emoji: "🏊",
+    desc: "Je nage 20–30 min sans m'arrêter",
+    detail: "Je tiens mon rythme, mais je ne cherche pas encore la perf",
+    color: "#00C48C",
+    bg: "#E6FFF6",
+  },
+  {
+    id: "sportif",
+    label: "Sportif",
+    emoji: "⚡",
+    desc: "J'enchaîne les longueurs facilement",
+    detail: "Je nage régulièrement et je veux progresser de façon structurée",
+    color: "#0057FF",
+    bg: "#EEF3FF",
+  },
+  {
+    id: "performance",
+    label: "Performance",
+    emoji: "🏆",
+    desc: "Je veux des résultats mesurables",
+    detail: "Je connais (ou veux calculer) mon chrono sur 100m",
+    color: "#7C3AED",
+    bg: "#EDE9FE",
+  },
 ];
+
+// Rétro-compat anciens IDs → index 0-3
+const getLvlIndex = (level) => ({
+  découverte: 0, beginner: 1, régulier: 1,
+  intermediate: 2, sportif: 2,
+  advanced: 3, performance: 3,
+}[level] ?? 1);
 
 const FREQUENCIES = [
   { id: 1, label: "1×/semaine",  desc: "Je suis occupé·e" },
@@ -320,31 +361,31 @@ const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
 // ── PACE ZONES CARD ─────────────────────────────────────────────────────
 const ZONE_DEFS = [
   {
-    zone: "Z1 / Z2",
-    label: "Facile — Endurance",
+    zone: "Zone 1–2",
+    label: "Facile — Longue durée",
     mult: 1.35,
     color: "#34C759",
     bg: "#34C75914",
-    desc: "Récupération active, construction aérobie. Tu peux tenir une conversation. C'est la majorité de ton volume.",
-    tip: "Base de tout bon nageur",
+    desc: "Tu pourrais parler pendant que tu nages. C'est l'allure de base — confortable, régulière. C'est là que tu construis ton moteur.",
+    tip: "La majorité de tes séances",
   },
   {
-    zone: "Z3 / Z4",
-    label: "Seuil — CSS",
+    zone: "Zone 3–4",
+    label: "Allure seuil",
     mult: 1.08,
     color: "#FF9F0A",
     bg: "#FF9F0A14",
-    desc: "CSS = Vitesse Critique de Nage. L'allure que tu peux tenir en compétition sur 400–1500 m. Améliore ton VO2max et repousse le seuil lactique.",
-    tip: "Coeur du travail de qualité",
+    desc: "Effort soutenu — tu peux tenir cette allure sur 10–20 min mais pas indéfiniment. C'est ton allure de compétition sur 400–1500m.",
+    tip: "Améliore ton endurance rapidement",
   },
   {
-    zone: "Z5 / Z6",
-    label: "Sprint — Anaérobie",
+    zone: "Zone 5–6",
+    label: "Sprint",
     mult: 0.95,
     color: "#FF3B30",
     bg: "#FF3B3014",
-    desc: "Effort maximal, courtes répétitions. Développe la puissance et la vitesse de pointe. Séries de 25–50 m avec longues récupérations.",
-    tip: "Explosivité & vitesse pure",
+    desc: "Effort maximal sur de courtes distances (25–50m). Tu dois récupérer complètement entre chaque sprint. Développe ta puissance.",
+    tip: "Explosivité et vitesse",
   },
 ];
 
@@ -1023,20 +1064,39 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
 const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6 }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur {total}</p>
-    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton niveau<br />en natation ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>Sois honnête — le plan sera meilleur.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-      {LEVELS.map(l => (
-        <button key={l.id} onClick={() => onChange(l.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", borderRadius: 16, border: `2px solid ${value === l.id ? G.ink : G.greyLight}`, background: value === l.id ? G.ink : G.white, cursor: "pointer", transition: "all 0.2s", boxShadow: value === l.id ? "0 4px 16px rgba(0,0,0,0.14)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: value === l.id ? G.white : G.ink }}>{l.label}</div>
-            <div style={{ fontSize: 13, color: value === l.id ? "rgba(255,255,255,0.55)" : G.grey }}>{l.desc}</div>
-          </div>
-          {value === l.id && <Check size={16} color={G.white} />}
-        </button>
-      ))}
+    <h2 style={{ fontSize: 32, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Tu es<br />où dans l'eau ?</h2>
+    <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>Choisis ce qui te correspond le mieux — ton plan sera construit en conséquence.</p>
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+      {LEVELS.map(l => {
+        const isActive = value === l.id;
+        return (
+          <button key={l.id} onClick={() => onChange(l.id)} style={{
+            display: "flex", alignItems: "center", gap: 14,
+            padding: "16px 18px", borderRadius: 16,
+            border: `2px solid ${isActive ? l.color : G.greyLight}`,
+            background: isActive ? l.bg : G.white,
+            cursor: "pointer", transition: "all 0.2s",
+            boxShadow: isActive ? `0 4px 16px ${l.color}22` : "0 2px 8px rgba(0,0,0,0.04)",
+            textAlign: "left",
+          }}>
+            <div style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{l.emoji}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? l.color : G.ink, marginBottom: 2 }}>{l.label}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? l.color : G.inkLight }}>{l.desc}</div>
+              <div style={{ fontSize: 11, color: G.grey, marginTop: 2, lineHeight: 1.4 }}>{l.detail}</div>
+            </div>
+            {isActive && (
+              <div style={{ width: 22, height: 22, borderRadius: "50%", background: l.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Check size={13} color={G.white} />
+              </div>
+            )}
+          </button>
+        );
+      })}
     </div>
-    <div style={{ marginBottom: 32 }}>
+
+    <div style={{ marginBottom: 28 }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Ton bassin habituel</p>
       <div style={{ display: "flex", gap: 12 }}>
         {POOLS.map(p => (
@@ -1570,13 +1630,34 @@ const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
 const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) => {
   const done = session.completed;
   const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
     <div style={{ background: done ? G.greyXLight : G.white, borderRadius: 16, padding: "16px", border: `1px solid ${done ? G.greyLight : "#E8E8E8"}`, borderLeft: `3px solid ${done ? G.greyLight : tm.color}`, opacity: done ? 0.72 : 1, transition: "all 0.3s", boxShadow: done ? "none" : "0 2px 8px rgba(0,0,0,0.04)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: done ? G.greyLight : tm.bg, borderRadius: 20, padding: "3px 10px", marginBottom: 6 }}>
-            <tm.Icon size={10} color={done ? G.greyMid : tm.color} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: done ? G.grey : tm.color, letterSpacing: 1, textTransform: "uppercase" }}>{session.type}</span>
+          {/* Tag type — tappable pour afficher une explication */}
+          <div style={{ position: "relative", display: "inline-block", marginBottom: 6 }}>
+            <button
+              onClick={() => setShowTooltip(v => !v)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, background: done ? G.greyLight : tm.bg, borderRadius: 20, padding: "3px 10px", border: "none", cursor: "pointer" }}
+            >
+              <tm.Icon size={10} color={done ? G.greyMid : tm.color} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: done ? G.grey : tm.color, letterSpacing: 1, textTransform: "uppercase" }}>{session.type}</span>
+              <span style={{ fontSize: 9, color: done ? G.greyMid : tm.color, opacity: 0.7 }}>ⓘ</span>
+            </button>
+            {showTooltip && tm.tooltip && (
+              <div
+                onClick={() => setShowTooltip(false)}
+                style={{
+                  position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+                  background: G.ink, color: G.white, fontSize: 12, lineHeight: 1.5,
+                  padding: "10px 14px", borderRadius: 12, width: 220,
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.2)", cursor: "pointer",
+                }}
+              >
+                {tm.tooltip}
+              </div>
+            )}
           </div>
           <div style={{ fontSize: 16, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.2 }}>{session.title}</div>
         </div>
@@ -1730,6 +1811,21 @@ const COACH = {
 };
 
 const COACH_MESSAGES = {
+  // ── Découverte — messages simples, encourageants, zéro jargon ──
+  découverte_base: [
+    "L'important c'est d'y aller. Pas besoin de nager vite — nage régulièrement. Ton corps s'adapte plus vite que tu ne le crois.",
+    "Chaque longueur compte. Si tu as nagé aujourd'hui, tu as déjà réussi ta séance. Le reste viendra tout seul.",
+    "Commencer c'est la partie la plus difficile — tu l'as déjà faite. Continue à ton rythme, sans te comparer à personne.",
+  ],
+  découverte_development: [
+    "Tu progresses ! Tu tiens plus longtemps dans l'eau qu'au début — même si tu ne t'en rends pas compte. C'est ça, la progression.",
+    "Tes séances sont un peu plus longues maintenant. Pas de panique si tu dois t'arrêter : reprends, souffle, et continue.",
+  ],
+  découverte_peak: [
+    "Tu nages bien. Cette semaine on ajoute un peu d'intensité — juste pour voir jusqu'où tu peux aller. Pas d'obligation.",
+    "Tu es plus à l'aise dans l'eau qu'il y a quelques semaines. Profite de chaque séance, c'est là que tout se passe.",
+  ],
+  // ── Niveaux confirmés ──
   base: [
     "Ce mois est fondamental : on construit ta base aérobie. Travaille à basse intensité, respire, prends tes marques. La vitesse viendra plus tard.",
     "La base, c'est le moteur. Chaque séance d'endurance que tu fais aujourd'hui, tu l'encaisseras comme un avantage dans 2 mois. Sois patient.",
@@ -1757,8 +1853,10 @@ const COACH_MESSAGES = {
   ],
 };
 
-const CoachCard = ({ plan, currentWeekIndex }) => {
+const CoachCard = ({ plan, profile, currentWeekIndex }) => {
   const week = plan.weeks[Math.max(0, currentWeekIndex)];
+  const isDecouverte = profile?.level === "découverte";
+
   const phase = week
     ? (plan.isProgression ? (currentWeekIndex < 4 ? "base" : currentWeekIndex < 8 ? "development" : "peak")
        : (week.isBilan ? "taper" : ["base","development","peak","taper","competition"].includes(
@@ -1776,7 +1874,11 @@ const CoachCard = ({ plan, currentWeekIndex }) => {
          ) : "base"))
     : "default";
 
-  const msgs = COACH_MESSAGES[phase] || COACH_MESSAGES.default;
+  // Découverte level gets its own set of simple, jargon-free messages
+  const phaseKey = isDecouverte
+    ? (`découverte_${phase}` in COACH_MESSAGES ? `découverte_${phase}` : "découverte_base")
+    : phase;
+  const msgs = COACH_MESSAGES[phaseKey] || COACH_MESSAGES.default;
   // Change de message chaque mois civil pour que ça évolue même sans progresser
   const msgIndex = new Date().getMonth() % msgs.length;
   const message = msgs[msgIndex];
@@ -1879,7 +1981,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
           </div>
         )}
 
-        <CoachCard plan={plan} currentWeekIndex={currentWeekIndex} />
+        <CoachCard plan={plan} profile={profile} currentWeekIndex={currentWeekIndex} />
 
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Programme</h2>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 20 }}>
@@ -2178,18 +2280,26 @@ const BadgesTab = ({ plan }) => {
 
 // ── PLAN GENERATOR ─────────────────────────────────────────────────────────
 const BASE_DISTANCES = {
+  // Niveau 0 — Découverte : séances courtes, fun, sans pression
+  découverte:   { endurance: 700,  seuil: 550,  vitesse: 450,  technique: 600,  récupération: 500,  bnssa: 700  },
+  // Niveau 1 — Régulier (= ancien Débutant)
   beginner:     { endurance: 1200, seuil: 900,  vitesse: 700,  technique: 1000, récupération: 700,  bnssa: 1000 },
+  régulier:     { endurance: 1200, seuil: 900,  vitesse: 700,  technique: 1000, récupération: 700,  bnssa: 1000 },
+  // Niveau 2 — Sportif (= ancien Intermédiaire)
   intermediate: { endurance: 2000, seuil: 1800, vitesse: 1400, technique: 1600, récupération: 1200, bnssa: 1500 },
+  sportif:      { endurance: 2000, seuil: 1800, vitesse: 1400, technique: 1600, récupération: 1200, bnssa: 1500 },
+  // Niveau 3 — Performance (= ancien Confirmé)
   advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600, bnssa: 2000 },
+  performance:  { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600, bnssa: 2000 },
 };
 // Alias bnssa pour tests_pompiers (même type de séance)
 Object.keys(BASE_DISTANCES).forEach(k => { BASE_DISTANCES[k].tests_pompiers = BASE_DISTANCES[k].bnssa; });
 
-// pace100[lvl][zone] = secondes aux 100m (beginner/intermediate/advanced × easy/threshold/sprint)
+// pace100[lvl][zone] = secondes aux 100m (0=découverte 1=régulier 2=sportif 3=performance)
 const PACE = {
-  easy:      [170, 130, 105],
-  threshold: [155, 112,  90],
-  sprint:    [140,  95,  75],
+  easy:      [220, 170, 130, 105],
+  threshold: [200, 155, 112,  90],
+  sprint:    [180, 140,  95,  75],
 };
 
 // ── Paces personnalisées ─────────────────────────────────────────────────
@@ -2256,9 +2366,69 @@ const SESSION_TEMPLATES = {
   // ── ENDURANCE ────────────────────────────────────────────────────────────
   // 5 variants — rotation formula spreads across weeks without exact repeats
   endurance: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
-    const isBeg = level === "beginner", isAdv = level === "advanced";
-    const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1;
+    const isDecouverte = level === "découverte";
+    const isBeg = level === "beginner" || level === "régulier" || isDecouverte;
+    const isAdv = level === "advanced" || level === "performance";
+    const P = pool, lvl = getLvlIndex(level);
     const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+
+    // ── DÉCOUVERTE : séances courtes, simples, distributeur d'idées ──────
+    if (isDecouverte) {
+      const nLaps = Math.max(2, Math.round(dist / (2 * P)));
+      const vd = (Math.floor(weekIdx / 8) * 3 + (weekIdx % 8)) % 5;
+      return {
+        type: "ENDURANCE",
+        ...[
+          {
+            title: "Nage à ton rythme",
+            intensity: "Très facile — tu dois pouvoir parler",
+            details: [
+              `${Math.max(2, nLaps - 1)}× ${2*P}m crawl — repose ${P <= 25 ? "30\"" : "40\""} entre chaque — nage sans te presser, comme une promenade`,
+              `${Math.max(1, Math.round(nLaps * 0.3))}× ${2*P}m dos — repose 30" — regarde le plafond, flotte`,
+              `Fin : 1 longueur très lente, sens l'eau autour de toi`,
+            ],
+          },
+          {
+            title: "Crawl & dos en alternance",
+            intensity: "Très facile — change de nage pour varier",
+            details: [
+              `Répète ${Math.max(3, Math.round(dist / (4 * P)))} fois : ${2*P}m crawl + ${2*P}m dos — repose 30" après chaque paire`,
+              `Bonus si tu te sens bien : ${P}m crawl à allure plus vive — juste pour voir`,
+              `Fin : ${P}m dos très lent, bras tendus`,
+            ],
+          },
+          {
+            title: "Tiens 10 minutes",
+            intensity: "Modéré — essaie sans t'arrêter",
+            details: [
+              `Objectif : nager 10 minutes sans pause — choisis ton allure toi-même`,
+              `Si tu dois t'arrêter : repose 20" et repars — c'est normal au début`,
+              `${Math.max(1, Math.round(nLaps * 0.25))}× ${2*P}m dos — récupération douce à la fin`,
+            ],
+          },
+          {
+            title: "Longueurs progressives",
+            intensity: "Facile → modéré — tu accélères au fil des longueurs",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.5))}× ${2*P}m crawl lent — repose 30" — mise en jambes`,
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl un peu plus vite — repose 25"`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m crawl à ton meilleur rythme — repose 30"`,
+              `Fin : ${P}m dos tranquille`,
+            ],
+          },
+          {
+            title: "Nage libre & exploration",
+            intensity: "Facile — fais ce que tu veux, navigue",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.4))}× ${2*P}m crawl — repose 30" — concentre-toi sur ta respiration`,
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${P}m dos — repose 20" — ferme les yeux une longueur si tu oses`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m nage de ton choix (crawl, dos, brasse) — repose 30"`,
+              `Fin : flotte 1 minute sur le dos, bras en croix`,
+            ],
+          },
+        ][vd],
+      };
+    }
 
     const isTriathlon = goal.startsWith("triathlon");
     const isOpenWater = goal.startsWith("open_water") || goal.startsWith("eau_libre");
@@ -2359,9 +2529,50 @@ const SESSION_TEMPLATES = {
   // ── SEUIL ────────────────────────────────────────────────────────────────
   // 5 variants : CSS, pyramide, blocs T-pace, séries descendantes, over-distance
   seuil: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
-    const isBeg = level === "beginner", isAdv = level === "advanced";
-    const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1;
+    const isDecouverte = level === "découverte";
+    const isBeg = level === "beginner" || level === "régulier" || isDecouverte;
+    const isAdv = level === "advanced" || level === "performance";
+    const P = pool, lvl = getLvlIndex(level);
     const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+
+    // ── DÉCOUVERTE : pas de "seuil" au sens technique, juste "un peu plus vite" ──
+    if (isDecouverte) {
+      const nLaps = Math.max(2, Math.round(dist / (2 * P)));
+      const vd = (Math.floor(weekIdx / 8) * 3 + (weekIdx % 8)) % 3;
+      return {
+        type: "ENDURANCE",
+        ...[
+          {
+            title: "Un peu plus vite aujourd'hui",
+            intensity: "Facile/Modéré — légèrement plus vite que d'habitude",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.4))}× ${2*P}m crawl à ton rythme — repose 30"`,
+              `${Math.max(2, Math.round(nLaps * 0.4))}× ${2*P}m crawl un cran plus vite — repose 30" — tu dois sentir l'effort sans souffrir`,
+              `Fin : ${P}m dos lent pour récupérer`,
+            ],
+          },
+          {
+            title: "Accélération progressive",
+            intensity: "Facile → Modéré — monte en puissance",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl lent — repose 25"`,
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl rythme normal — repose 25"`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m crawl à fond (courtes) — repose 40"`,
+              `Fin : ${P}m dos`,
+            ],
+          },
+          {
+            title: "Intervalles simples",
+            intensity: "Modéré — effort, repos, effort",
+            details: [
+              `${Math.max(3, Math.round(nLaps * 0.5))}× ${2*P}m crawl — repose 40" — nage à une allure qui "pique" légèrement`,
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${P}m dos — repose 20" — récupération active`,
+              `Fin : ${P}m crawl lent`,
+            ],
+          },
+        ][vd],
+      };
+    }
 
     const isTriathlon = goal.startsWith("triathlon");
 
@@ -2461,9 +2672,49 @@ const SESSION_TEMPLATES = {
   // ── VITESSE ──────────────────────────────────────────────────────────────
   // 4 variants avec warm-ups variés et cues améliorés
   vitesse: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
-    const isBeg = level === "beginner", isAdv = level === "advanced";
-    const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1;
+    const isDecouverte = level === "découverte";
+    const isBeg = level === "beginner" || level === "régulier" || isDecouverte;
+    const isAdv = level === "advanced" || level === "performance";
+    const P = pool, lvl = getLvlIndex(level);
     const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 4;
+
+    // ── DÉCOUVERTE : "sprints ludiques", courtes longueurs fun ───────────
+    if (isDecouverte) {
+      const nLaps = Math.max(2, Math.round(dist / (2 * P)));
+      const vd = weekIdx % 3;
+      return {
+        type: "VITESSE",
+        ...[
+          {
+            title: "Course contre toi-même",
+            intensity: "Fun — sprint sur une longueur, récup complète",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl lent — repose 20" — mise en jambes`,
+              `${Math.max(4, Math.round(nLaps * 0.4))}× ${P}m sprint (une longueur à fond) — repose 45" — qualité, pas quantité`,
+              `Fin : ${2*P}m dos calme`,
+            ],
+          },
+          {
+            title: "Accélérations fun",
+            intensity: "Modéré → rapide — décollage sur chaque longueur",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl tranquille — repose 25"`,
+              `${Math.max(4, Math.round(nLaps * 0.5))}× ${2*P}m : 1re longueur normale + 2e longueur à fond — repose 40"`,
+              `Fin : ${P}m dos pour souffler`,
+            ],
+          },
+          {
+            title: "Départ aux murs",
+            intensity: "Fun — explosivité au départ de chaque longueur",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl pour te chauffer`,
+              `${Math.max(4, Math.round(nLaps * 0.45))}× ${P}m : pousse fort du mur + nage à fond — repose 40" — visualise que tu dépasses quelqu'un`,
+              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme — récupération`,
+            ],
+          },
+        ][vd],
+      };
+    }
 
     const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
 
@@ -2543,10 +2794,74 @@ const SESSION_TEMPLATES = {
   },
 
   // ── TECHNIQUE ────────────────────────────────────────────────────────────
-  // Beginner : 5 variants | Inter/Adv : 5 variants
+  // Découverte : 5 variants simples | Beginner : 5 variants | Inter/Adv : 5 variants
   technique: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
-    const isBeg = level === "beginner", isAdv = level === "advanced";
-    const P = pool, lvl = isBeg ? 0 : isAdv ? 2 : 1;
+    const isDecouverte = level === "découverte";
+    const isBeg = level === "beginner" || level === "régulier" || isDecouverte;
+    const isAdv = level === "advanced" || level === "performance";
+    const P = pool, lvl = getLvlIndex(level);
+
+    // ── DÉCOUVERTE : observations simples, pas de drill complexe ─────────
+    if (isDecouverte) {
+      const nLaps = Math.max(2, Math.round(dist / (2 * P)));
+      const vd = (Math.floor(weekIdx / 6) * 3 + (weekIdx % 6)) % 5;
+      return {
+        type: "TECHNIQUE",
+        ...[
+          {
+            title: "Compte tes bras",
+            intensity: "Très facile — observe ta nage",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.4))}× ${2*P}m crawl — repose 20" — compte le nombre de bras par longueur`,
+              `Note ton chiffre. Essaie maintenant de faire 2 bras de moins par longueur en allant aussi vite`,
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m en visant ce nouveau chiffre — repose 25"`,
+              `Fin : ${P}m dos lent`,
+            ],
+          },
+          {
+            title: "Jambes à fond",
+            intensity: "Facile — travail des jambes avec planche",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl pour te chauffer — repose 20"`,
+              `${Math.max(3, Math.round(nLaps * 0.45))}× ${2*P}m planche (jambes seules) — repose 25" — pieds pointés, talons à la surface`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m crawl complet — sens si tes jambes te poussent mieux`,
+              `Fin : ${P}m dos`,
+            ],
+          },
+          {
+            title: "La coulée magique",
+            intensity: "Facile — profite de chaque poussée de mur",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl — repose 20"`,
+              `${Math.max(3, Math.round(nLaps * 0.45))}× ${2*P}m : pousse fort du mur + glisse 3 secondes avant de nager — repose 25"`,
+              `Tu vas sentir que tu avances plus vite quand tu te laisses glisser`,
+              `Fin : ${P}m dos`,
+            ],
+          },
+          {
+            title: "Respire mieux",
+            intensity: "Facile — coordination bras/respiration",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl — essaie d'expirer sous l'eau (bulles), inspirer au virage`,
+              `Repose 25" entre chaque — c'est normal si c'est nouveau, ça demande de la pratique`,
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m dos — repose 20" — tu peux respirer librement, profites-en`,
+              `Fin : ${P}m de ton choix`,
+            ],
+          },
+          {
+            title: "Nage sur le dos",
+            intensity: "Très facile — exploration du dos crawlé",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl lent — repose 20"`,
+              `${Math.max(3, Math.round(nLaps * 0.45))}× ${2*P}m dos crawlé — repose 25" — regard au plafond, une épaule sort de l'eau à chaque bras`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos plat (bras le long du corps, jambes) — flottaison pure`,
+              `Fin : ${P}m crawl tranquille`,
+            ],
+          },
+        ][vd],
+      };
+    }
+
     const repR = 2*P;
     const WARM = 2*repR, COOL = repR, avail = dist - WARM - COOL;
     const nPerBlock = Math.max(3, Math.min(8, Math.round(avail / (4*repR))));
@@ -2875,7 +3190,7 @@ const SESSION_TEMPLATES = {
   // ── RÉCUPÉRATION ─────────────────────────────────────────────────────────
   // 3 variants per level — rotation via improved weekIdx formula
   récupération: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
-    const isBeg = level === "beginner";
+    const isBeg = level === "beginner" || level === "régulier" || level === "découverte";
     const P = pool;
     const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 3;
     const repR = 2*P;
@@ -2971,8 +3286,40 @@ const TIPS = {
   competition: "Dernière semaine : nage légère, visualise chaque virage et chaque poussée. Ton entraînement est fait — fais confiance au travail accompli.",
 };
 
-// Ratios éducatifs par niveau : débutant 90 %, intermédiaire 70 %, confirmé 50 %
+// Ratios par niveau — découverte : fun + endurance légère, pas de seuil/vitesse au début
 const PHASE_PATTERNS = {
+  // Découverte — endurance légère + technique simple + récupération douce
+  découverte: {
+    base:        { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","endurance","technique","récupération"], 5: ["endurance","endurance","technique","récupération","endurance"] },
+    development: { 1: ["endurance"], 2: ["endurance","technique"],    3: ["endurance","endurance","technique"],    4: ["endurance","seuil","technique","récupération"],   5: ["endurance","seuil","technique","récupération","endurance"] },
+    peak:        { 1: ["endurance"], 2: ["endurance","vitesse"],      3: ["endurance","vitesse","technique"],      4: ["endurance","vitesse","technique","récupération"],  5: ["endurance","vitesse","technique","récupération","endurance"] },
+    taper:       { 1: ["récupération"], 2: ["endurance","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+  },
+  // Régulier = alias de beginner
+  régulier: {
+    base:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["endurance","technique","technique","récupération"], 5: ["endurance","technique","technique","récupération","endurance"] },
+    development: { 1: ["seuil"],    2: ["technique","endurance"], 3: ["technique","seuil","endurance"],     4: ["technique","seuil","endurance","technique"],        5: ["technique","seuil","endurance","technique","récupération"] },
+    peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
+    taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+  },
+  // Sportif = alias de intermediate
+  sportif: {
+    base:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["endurance","technique","technique","récupération"], 5: ["endurance","technique","technique","récupération","endurance"] },
+    development: { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","endurance"],     4: ["technique","seuil","endurance","technique"],        5: ["technique","seuil","endurance","technique","récupération"] },
+    peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
+    taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+  },
+  // Performance = alias de advanced
+  performance: {
+    base:        { 1: ["endurance"], 2: ["endurance","technique"], 3: ["endurance","endurance","technique"], 4: ["endurance","endurance","technique","récupération"], 5: ["endurance","endurance","technique","récupération","endurance"] },
+    development: { 1: ["seuil"],     2: ["endurance","seuil"],     3: ["endurance","seuil","technique"],     4: ["endurance","seuil","vitesse","technique"],          5: ["endurance","seuil","vitesse","technique","endurance"] },
+    peak:        { 1: ["seuil"],     2: ["seuil","vitesse"],        3: ["endurance","seuil","vitesse"],       4: ["endurance","seuil","vitesse","seuil"],              5: ["endurance","seuil","vitesse","seuil","récupération"] },
+    taper:       { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
+    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+  },
   beginner: {
     base:        { 1: ["technique"], 2: ["technique","technique"], 3: ["technique","technique","endurance"], 4: ["technique","technique","technique","endurance"], 5: ["technique","technique","technique","endurance","récupération"] },
     development: { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["technique","technique","endurance","récupération"], 5: ["technique","technique","technique","endurance","récupération"] },
@@ -3109,11 +3456,12 @@ const generatePlan = async (profile, isPremium = false) => {
   }
 
   const totalWeeks = isPremium ? rawWeeks : Math.min(rawWeeks, FREE_MAX_WEEKS);
-  const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.beginner;
+  const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.régulier;
   const progressionPhaseList = progression ? buildProgressionPhases() : null;
   const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
-  const levelKey = level === "beginner" ? "beginner" : level === "advanced" ? "advanced" : "intermediate";
-  const patterns = (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : progression ? PROGRESSION_PATTERNS[levelKey] : wellness ? WELLNESS_PATTERNS[levelKey] : PHASE_PATTERNS[levelKey];
+  // Résolution du levelKey pour les patterns : priorité aux nouveaux niveaux, fallback anciens
+  const levelKey = (PHASE_PATTERNS[level] ? level : (level === "advanced" ? "performance" : level === "beginner" ? "régulier" : level === "intermediate" ? "sportif" : "régulier"));
+  const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
   const f = Math.min(freq, 5);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
@@ -3605,10 +3953,11 @@ export default function App() {
             </div>
             {(() => {
               // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin
-              // step 4 = temps 100m (premium uniquement), 5 = fréquence, 6 = date (sauf poids)
+              // step 4 = temps 100m (Performance seulement), 5 = fréquence, 6 = date (sauf poids)
               const isPoids = profile.category === "poids";
               const noDate = isPoids || isProgressionGoal(profile.goal);
-              const hasPaceStep = isPremium;
+              // Le temps au 100m est réservé au niveau Performance
+              const hasPaceStep = profile.level === "performance" || profile.level === "advanced";
               const totalSteps = (noDate ? 4 : 5) + (hasPaceStep ? 1 : 0);
               const stepAfter3 = hasPaceStep ? 4 : 5;
               const stepBefore5 = hasPaceStep ? 4 : 3;

@@ -369,9 +369,9 @@ function Hero() {
               {/* Session cards */}
               <div style={{ background: "#F0F4F8", padding: "14px 14px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { type: "ENDURANCE", title: "Fond en séries", dist: "2 000m", color: "#0057FF", done: true },
-                  { type: "SEUIL", title: "CSS — allure critique", dist: "1 800m", color: "#E65100", done: false },
-                  { type: "TECHNIQUE", title: "Catch-up drill & DPS", dist: "1 600m", color: "#0097A7", done: false },
+                  { type: "ENDURANCE", title: "Nage à ton rythme", dist: "1 200m", color: "#0057FF", done: true },
+                  { type: "VITESSE", title: "Accélérations fun", dist: "900m", color: "#E65100", done: false },
+                  { type: "TECHNIQUE", title: "Glisse & respiration", dist: "800m", color: "#0097A7", done: false },
                 ].map((s, i) => (
                   <div key={i} style={{
                     background: s.done ? "#EEF4FF" : C.white,
@@ -437,10 +437,10 @@ function Stats() {
 // ── How it works ───────────────────────────────────────────────────────────
 function HowItWorks() {
   const steps = [
-    { n: "01", icon: Target, title: "Ton profil en 2 min", desc: "Choisis ton objectif — triathlon, eau libre, diplôme ou bien-être — et précise ton niveau et ta fréquence de nage." },
-    { n: "02", icon: Calendar, title: "Ton plan en 30 secondes", desc: "Ton programme est construit semaine par semaine : phases de base, développement, pic de forme et affûtage — exactement comme un coach le ferait." },
-    { n: "03", icon: Waves, title: "Nage, coche, progresse", desc: "Chaque séance est détaillée — séries, temps de repos, cues techniques. Tu coches en sortant du bassin." },
-    { n: "04", icon: TrendingUp, title: "Suis ta progression", desc: "Semaines complétées, distance totale, séances par type — visualise ton évolution et reste motivé jusqu'au bout." },
+    { n: "01", icon: Target, title: "Ton niveau en 2 questions", desc: "\"Est-ce que tu peux nager 20 min sans pause ?\" — on identifie ton niveau en quelques secondes. Pas de jargon, pas de chrono obligatoire." },
+    { n: "02", icon: Calendar, title: "Ton plan prêt en 30 secondes", desc: "Ton programme est construit automatiquement, semaine par semaine. Adapté à ta fréquence (1×, 2×, 3× par semaine) et à ton objectif." },
+    { n: "03", icon: Waves, title: "Tu sais exactement quoi faire", desc: "Chaque séance est détaillée : quoi nager, combien de temps reprendre son souffle, et une idée sur quoi se concentrer." },
+    { n: "04", icon: TrendingUp, title: "Tu vois que tu progresses", desc: "Séances cochées, distance parcourue, régularité — tu visualises tes progrès et tu restes motivé même les semaines difficiles." },
   ];
   return (
     <section id="how" style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
@@ -448,7 +448,7 @@ function HowItWorks() {
         <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
           <SectionLabel text="COMMENT ÇA MARCHE" />
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-1px" }}>
-            De zéro à la compétition<br />en 4 étapes
+            Ton plan personnalisé<br />en 4 étapes
           </h2>
         </FadeIn>
 
@@ -488,37 +488,48 @@ function WeekExample() {
 
   const sessions = [
     {
+      day: "🌊 Débutant",
+      type: "ENDURANCE",
+      color: "#00B4D8",
+      title: "Nage à ton rythme",
+      total: "900m",
+      warmup: "200m tranquille — crawl ou dos, comme tu veux",
+      main: "5× (2 longueurs nage + 30 sec de repos) — sans te presser",
+      cool: "200m très calme pour récupérer",
+      tip: "L'objectif : finir sans être épuisé. Si tu dois allonger la pause, c'est normal.",
+    },
+    {
       day: "Lundi",
       type: "ENDURANCE",
       color: "#0057FF",
       title: "Fond en séries",
       total: "2 200m",
-      warmup: "400m échauffement libre",
-      main: "5×300m NL allure Z2 — départ D4'30\"",
+      warmup: "400m échauffement tranquille",
+      main: "5×300m crawl allure confortable — 30 sec de repos entre chaque",
       cool: "400m retour au calme mixte",
-      tip: "Respiration toutes les 3 foulées, pense à la longueur du coulé.",
+      tip: "Respiration toutes les 3 bras. Pense à bien glisser après chaque coulée.",
     },
     {
       day: "Mercredi",
       type: "SEUIL",
       color: "#E65100",
-      title: "CSS — allure critique",
+      title: "Un peu plus vite",
       total: "2 000m",
-      warmup: "300m échauffement + 4×50m accélération",
-      main: "8×100m NL allure CSS — départ D2'00\"",
-      cool: "300m nage libre retour au calme",
-      tip: "CSS = ta vitesse critique de nage. Garde le rythme constant sur toute la série.",
+      warmup: "300m échauffement + 4×50m accélérations progressives",
+      main: "8×100m crawl — effort soutenu mais régulier · 20 sec de repos",
+      cool: "300m nage libre tranquille",
+      tip: "Garde le même rythme du 1er au 8e. Si tu accélères au dernier, c'est que tu partais trop lentement.",
     },
     {
       day: "Vendredi",
       type: "TECHNIQUE",
       color: "#0097A7",
-      title: "Éducatifs & vitesse",
+      title: "Glisse & technique",
       total: "1 800m",
       warmup: "200m libre + 4×25m avec palmes",
-      main: "6×50m catch-up drill — 6×50m DPS allure Z4",
+      main: "6×50m en pensant aux bras — 6×50m en pensant à la glisse",
       cool: "200m nage dos décontraction",
-      tip: "Sur le catch-up, attends que ta main avant touche l'autre avant de tirer.",
+      tip: "Sur chaque longueur, choisis UN truc à améliorer. Pas tout à la fois.",
     },
   ];
 
@@ -528,12 +539,12 @@ function WeekExample() {
     <section style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="SEMAINE TYPE" />
+          <SectionLabel text="EXEMPLES DE SÉANCES" />
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.ink, margin: "0 0 14px", letterSpacing: "-1px" }}>
-            Voilà à quoi ressemble<br />ta semaine d'entraînement
+            Que tu démarres ou que tu<br />vises la performance
           </h2>
           <p style={{ color: C.grey, fontSize: 16, maxWidth: 480, margin: "0 auto" }}>
-            Chaque séance détaillée — tu sais exactement quoi faire avant même d'entrer dans l'eau.
+            Tu sais exactement quoi faire avant même d'entrer dans l'eau — du débutant au sportif confirmé.
           </p>
         </FadeIn>
 
@@ -608,19 +619,19 @@ function WeekExample() {
 // ── Goals ──────────────────────────────────────────────────────────────────
 function Goals() {
   const goals = [
-    { icon: Activity, color: "#FF5722", bg: "rgba(255,87,34,0.08)",   border: "rgba(255,87,34,0.15)",  title: "Triathlon",   sub: "Sprint · Olympique · Half · Ironman", desc: "Plans axés CSS, séries longues et gestion d'effort — exactement comme en compétition." },
-    { icon: Waves,    color: "#0097A7", bg: "rgba(0,151,167,0.08)",   border: "rgba(0,151,167,0.15)",  title: "Eau libre",   sub: "5 km · 10 km",                         desc: "Endurance continue, respiration bilatérale, pas de murs — nage comme en lac." },
+    { icon: Waves,    color: "#00B4D8", bg: "rgba(0,180,216,0.08)",   border: "rgba(0,180,216,0.15)",  title: "Je débute",   sub: "Reprendre · Apprendre · Progresser",  desc: "Tu t'arrêtes après quelques longueurs ou tu reprends après un arrêt ? C'est parfait — le plan commence là où tu en es." },
+    { icon: Activity, color: "#FF5722", bg: "rgba(255,87,34,0.08)",   border: "rgba(255,87,34,0.15)",  title: "Triathlon",   sub: "Sprint · Olympique · Half · Ironman", desc: "Plans structurés pour gérer l'effort en compétition — fond, intensité et gestion du rythme." },
     { icon: Award,    color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.15)", title: "Diplômes",    sub: "BNSSA · BPJEPS · Pompiers",             desc: "Apnée, remorquage, parcours spécifiques — prépare-toi exactement pour le jour J." },
-    { icon: RotateCcw,color: "#00C48C", bg: "rgba(0,196,140,0.08)",   border: "rgba(0,196,140,0.15)",  title: "Progression", sub: "Endurance · Vitesse · Technique",       desc: "Progresse à ton rythme sans deadline. Volume, CSS, ou maîtrise technique." },
-    { icon: Target,   color: "#7C3AED", bg: "rgba(124,58,237,0.08)",  border: "rgba(124,58,237,0.15)", title: "Bien-être",   sub: "Remise en forme · Perte de poids",      desc: "Séances douces et progressives adaptées à ton rythme, sans pression de performance." },
+    { icon: RotateCcw,color: "#00C48C", bg: "rgba(0,196,140,0.08)",   border: "rgba(0,196,140,0.15)",  title: "Progresser",  sub: "Nager plus · Plus vite · Mieux",        desc: "Tu nages régulièrement et tu veux franchir un cap ? Plan structuré sans deadline de compétition." },
+    { icon: Target,   color: "#7C3AED", bg: "rgba(124,58,237,0.08)",  border: "rgba(124,58,237,0.15)", title: "Bien-être",   sub: "Remise en forme · Perte de poids",      desc: "Séances douces et progressives, à ton rythme. Nager pour se sentir bien, sans pression de chrono." },
   ];
   return (
     <section id="goals" style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="TES OBJECTIFS" />
+          <SectionLabel text="POUR TOUT LE MONDE" />
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-1px" }}>
-            Triathlon, compétition,<br />diplôme ou bien-être
+            Reprendre la nage,<br />progresser ou compétir
           </h2>
         </FadeIn>
 
@@ -657,10 +668,10 @@ function Goals() {
 function ProgressTimeline() {
   const isMobile = useIsMobile();
   const milestones = [
-    { week: "Semaine 1", title: "Tu établis ta base", desc: "Premières séances fondamentales. Tu trouves ton allure, ton rythme de respiration. La régularité prime sur l'intensité." },
-    { week: "Semaine 4", title: "Tu vois la différence", desc: "Les longueurs coulent. Ton rythme s'améliore, les pauses raccourcissent. La confiance en bassin monte." },
-    { week: "Semaine 8", title: "Tu franchis un cap", desc: "L'intensité monte. Séances de seuil, travail de vitesse. Ton corps s'est adapté et réclame davantage." },
-    { week: "Semaine 12+", title: "Tu arrives prêt", desc: "Affûtage en cours. Que ce soit la compétition, l'examen ou l'objectif perso — tu as fait le travail." },
+    { week: "Semaine 1", title: "Tu reprends confiance", desc: "Les premières séances sont courtes, faites pour que tu sortes de l'eau avec envie de revenir. Pas de chrono, pas de pression." },
+    { week: "Semaine 4", title: "Tu vois la différence", desc: "Les longueurs coulent. Tu tiens plus longtemps, tu récupères plus vite. La confiance dans l'eau monte." },
+    { week: "Semaine 8", title: "Tu franchis un cap", desc: "Les séances deviennent plus intenses — naturellement. Ton corps s'est adapté et est prêt pour aller plus loin." },
+    { week: "Semaine 12+", title: "Tu arrives prêt", desc: "Que ce soit la compétition, le diplôme ou juste l'objectif perso — tu as fait le travail. Il ne reste qu'à profiter." },
   ];
   return (
     <section style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
@@ -668,7 +679,7 @@ function ProgressTimeline() {
         <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
           <SectionLabel text="TA PROGRESSION" />
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-1px" }}>
-            Semaine après semaine,<br />tu avances
+            De "je m'essouffle"<br />à "je me sens bien dans l'eau"
           </h2>
         </FadeIn>
 
@@ -829,7 +840,7 @@ function PaceFeature() {
   const [secs, setSecs] = useState(105);
   const zones = [
     { label: "Facile",  zone: "Z1/Z2", mult: 1.35, color: "#00C48C", desc: "Endurance & récupération" },
-    { label: "Seuil",   zone: "Z3/Z4", mult: 1.08, color: "#F59E0B", desc: "Effort soutenu · CSS" },
+    { label: "Seuil",   zone: "Z3/Z4", mult: 1.08, color: "#F59E0B", desc: "Effort soutenu · allure seuil" },
     { label: "Sprint",  zone: "Z5/Z6", mult: 0.95, color: "#FF3B30", desc: "Vitesse maximale" },
   ];
   const examples = ["0:55", "1:20", "1:45", "2:10", "2:45"];
@@ -840,18 +851,21 @@ function PaceFeature() {
     <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, alignItems: "center" }}>
         <FadeIn>
-          <SectionLabel text="ZONES PERSONNALISÉES" />
+          <SectionLabel text="NIVEAU PERFORMANCE" />
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, color: C.ink, margin: "0 0 18px", letterSpacing: "-1px" }}>
             Tes allures cibles,<br />calculées à la seconde
           </h2>
           <p style={{ color: C.grey, fontSize: 15, lineHeight: 1.7, marginBottom: 20 }}>
-            Tu entres ton meilleur 100m NL. On calcule automatiquement tes 3 zones d'intensité — chaque séance affiche l'allure exacte à viser.
+            Tu entres ton meilleur 100m crawl. On calcule automatiquement tes 3 zones d'intensité — chaque séance affiche l'allure exacte à viser.
           </p>
-          <p style={{ color: C.grey, fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
-            Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en Z2 ou au seuil.
+          <p style={{ color: C.grey, fontSize: 15, lineHeight: 1.7, marginBottom: 8 }}>
+            Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en endurance ou à ton seuil.
+          </p>
+          <p style={{ color: C.greyMid, fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>
+            🏆 Cette fonctionnalité est disponible pour le niveau <strong style={{ color: C.ink }}>Performance</strong>. Les autres niveaux ont des plans tout aussi structurés — sans avoir besoin de chrono.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {["Endurance", "Seuil lactique", "VO2max", "Sprint"].map((t, i) => (
+            {["Endurance", "Effort soutenu", "Vitesse", "Sprint"].map((t, i) => (
               <span key={i} style={{ background: C.blueLight, color: C.blue, fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 100 }}>{t}</span>
             ))}
           </div>
@@ -859,7 +873,7 @@ function PaceFeature() {
 
         <FadeIn delay={0.12}>
           <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 24, padding: 28, boxShadow: C.shadowMd }}>
-            <p style={{ fontSize: 11, color: C.grey, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Mon meilleur 100m NL</p>
+            <p style={{ fontSize: 11, color: C.grey, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Mon meilleur 100m crawl</p>
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
               {examples.map(ex => (
                 <button key={ex} onClick={() => { setTime(ex); setSecs(toSecs(ex)); }} style={{
@@ -899,7 +913,7 @@ function PaceFeature() {
             <div style={{ background: C.blueLight, borderRadius: 14, padding: "13px 16px" }}>
               <div style={{ fontSize: 10, color: C.blue, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 5 }}>APERÇU DANS TES SÉANCES</div>
               <div style={{ fontSize: 12, color: C.inkLight, lineHeight: 1.7, fontFamily: "monospace", wordBreak: "break-all" }}>
-                {`8×200m NL — D${fmtSecs(Math.round(Math.ceil((200 * secs * 1.08 / 100 + 15) / 5) * 5))} ≈ ${fmtSecs(Math.round(secs * 1.08))}/100m`}
+                {`8×200m crawl — repos ${fmtSecs(Math.round(Math.ceil((200 * secs * 1.08 / 100 + 15) / 5) * 5))} ≈ ${fmtSecs(Math.round(secs * 1.08))}/100m`}
               </div>
             </div>
           </div>
