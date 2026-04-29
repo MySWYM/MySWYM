@@ -651,8 +651,9 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const [nameInput,   setNameInput]   = useState(firstName);
   const fileInputRef = useRef(null);
 
-  const stats  = computeStats(plan);
-  const earned = checkBadges(stats);
+  const stats     = computeStats(plan);
+  const earned    = checkBadges(stats);
+  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
 
   const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
 
