@@ -1847,30 +1847,44 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
   const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
   const [showTooltip, setShowTooltip] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  // First detail line shown as inline description
+  const firstDetail = session.details?.[0] || null;
+  const hasMoreDetails = session.details?.length > 1;
+
   return (
     <div style={{
       background: done ? G.greyXLight : G.white,
-      borderRadius: 20,
-      border: `1px solid ${done ? G.greyLight : "rgba(142,179,255,0.15)"}`,
-      opacity: done ? 0.7 : 1,
+      borderRadius: 16,
+      border: `1px solid ${done ? G.greyLight : "rgba(142,179,255,0.13)"}`,
+      opacity: done ? 0.72 : 1,
       transition: "all 0.3s",
-      boxShadow: done ? "none" : "0 2px 14px rgba(142,179,255,0.09)",
+      boxShadow: done ? "none" : "0 2px 12px rgba(142,179,255,0.10)",
       overflow: "hidden",
+      position: "relative",
     }}>
+      {/* Left accent bar */}
+      {!done && (
+        <div style={{
+          position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
+          background: tm.color, borderRadius: "3px 0 0 3px",
+        }} />
+      )}
+
       {/* Main row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 14px 14px 18px" }}>
         {/* Icon circle */}
         <button
           onClick={() => setShowTooltip(v => !v)}
           style={{
-            width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+            width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
             background: done ? G.greyLight : tm.bg,
             border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative",
+            position: "relative", marginTop: 1,
           }}
         >
-          <tm.Icon size={22} color={done ? G.greyMid : tm.color} />
+          <tm.Icon size={20} color={done ? G.greyMid : tm.color} />
           {showTooltip && tm.tooltip && (
             <div
               onClick={e => { e.stopPropagation(); setShowTooltip(false); }}
@@ -1887,65 +1901,75 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
           )}
         </button>
 
-        {/* Title + meta */}
-        <div style={{ flex: 1, minWidth: 0 }} onClick={() => session.details?.length && setExpanded(v => !v)}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: done ? G.greyMid : tm.color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.3 }}>{session.title}</div>
-          <div style={{ display: "flex", gap: 10, marginTop: 5, flexWrap: "wrap" }}>
-            {[
-              { Icon: Ruler, val: session.distance },
-              { Icon: Timer, val: formatDuration(session.duration) },
-            ].map(({ Icon: I, val }, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                <I size={11} color={G.greyMid} />
-                <span style={{ fontSize: 11, color: G.grey }}>{val}</span>
-              </div>
-            ))}
+        {/* Title + meta + description */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: done ? G.greyMid : tm.color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.3 }}>{session.title}</div>
+            </div>
+            {/* Right: distance pill + checkbox */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={() => onComplete(weekIndex, sessionIndex)}
+                style={{
+                  width: 30, height: 30, borderRadius: "50%",
+                  border: `2px solid ${done ? G.mint : G.greyLight}`,
+                  background: done ? G.mint : "transparent",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.2s",
+                }}
+              >
+                {done && <Check size={12} color={G.white} />}
+              </button>
+              <span style={{
+                fontSize: 11, fontWeight: 700,
+                color: done ? G.greyMid : tm.color,
+                background: done ? G.greyLight : tm.bg,
+                padding: "3px 10px", borderRadius: 100,
+                whiteSpace: "nowrap",
+              }}>{session.distance}</span>
+            </div>
           </div>
-        </div>
 
-        {/* Right: checkbox + intensity */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-          <button
-            onClick={() => onComplete(weekIndex, sessionIndex)}
-            style={{
-              width: 32, height: 32, borderRadius: "50%",
-              border: `2px solid ${done ? G.mint : G.greyLight}`,
-              background: done ? G.mint : "transparent",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.2s",
-            }}
-          >
-            {done && <Check size={13} color={G.white} />}
-          </button>
-          <span style={{
-            fontSize: 10, fontWeight: 700,
-            color: done ? G.greyMid : tm.color,
-            background: done ? G.greyLight : tm.bg,
-            padding: "2px 8px", borderRadius: 100,
-          }}>{session.intensity}</span>
+          {/* Inline meta: time + intensity */}
+          <div style={{ display: "flex", gap: 10, marginTop: 6, alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <Timer size={11} color={G.greyMid} />
+              <span style={{ fontSize: 11, color: G.grey }}>{formatDuration(session.duration)}</span>
+            </div>
+            <span style={{ fontSize: 11, color: done ? G.greyMid : G.grey }}>·</span>
+            <span style={{ fontSize: 11, color: done ? G.greyMid : G.inkLight, fontWeight: 500 }}>{session.intensity}</span>
+          </div>
+
+          {/* First detail line shown inline */}
+          {firstDetail && (
+            <div style={{ marginTop: 8, fontSize: 12, color: G.grey, lineHeight: 1.55 }}>
+              <DetailLine text={firstDetail} />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Details accordion */}
-      {session.details && session.details.length > 0 && (
+      {/* More details accordion */}
+      {hasMoreDetails && (
         <>
           <button
             onClick={() => setExpanded(v => !v)}
             style={{
-              width: "100%", padding: "8px 16px",
+              width: "100%", padding: "7px 16px",
               background: expanded ? G.greyXLight : "transparent",
               border: "none", borderTop: `1px solid ${G.greyLight}`,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
-              color: G.grey, fontSize: 11, fontWeight: 600,
+              color: G.greyMid, fontSize: 11, fontWeight: 600,
             }}
           >
-            <span>Détails de la séance</span>
-            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            <span>{expanded ? "Réduire" : `Voir tous les exercices (${session.details.length})`}</span>
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
           {expanded && (
-            <div style={{ background: G.greyXLight, padding: "12px 16px" }}>
-              {session.details.map((d, i) => (
+            <div style={{ background: G.greyXLight, padding: "10px 16px 12px" }}>
+              {session.details.slice(1).map((d, i) => (
                 <div key={i} style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.9 }}>· <DetailLine text={d} /></div>
               ))}
               {done && onShare && (
@@ -1957,7 +1981,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
           )}
         </>
       )}
-      {!session.details?.length && done && onShare && (
+      {!hasMoreDetails && done && onShare && (
         <div style={{ padding: "0 16px 12px" }}>
           <button onClick={() => onShare(session)} style={{ padding: "7px 12px", borderRadius: 10, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 11, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             <Activity size={11} color={G.grey} /> Partager cette séance
@@ -1973,59 +1997,83 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(s => s.completed).length;
   const total = week.sessions.length;
-  const allDone = done === total;
+  const allDone = done === total && total > 0;
   const totalDist = week.sessions.reduce((acc, s) => acc + (parseInt(s.distance) || 0), 0);
+  const doneDist  = week.sessions.filter(s => s.completed).reduce((acc, s) => acc + (parseInt(s.distance) || 0), 0);
+  const distLabel = totalDist >= 1000 ? `${(totalDist/1000).toFixed(1)} km` : `${totalDist} m`;
+
   return (
     <div style={{
       background: G.white,
-      borderRadius: 22,
+      borderRadius: 20,
       overflow: "hidden",
       border: isCurrentWeek
-        ? `2px solid ${G.blueMid}`
-        : `1px solid rgba(142,179,255,0.14)`,
+        ? `2px solid ${G.blue}`
+        : allDone ? `1px solid ${G.mint}40` : `1px solid rgba(142,179,255,0.13)`,
       marginBottom: 12,
       boxShadow: isCurrentWeek
-        ? "0 4px 20px rgba(142,179,255,0.18)"
-        : "0 2px 10px rgba(142,179,255,0.07)",
+        ? "0 6px 24px rgba(53,93,163,0.16)"
+        : allDone ? "0 2px 10px rgba(0,196,140,0.08)" : "0 2px 10px rgba(142,179,255,0.07)",
     }}>
+      {/* Top gradient bar */}
       {isCurrentWeek && (
-        <div style={{ height: 3, background: `linear-gradient(90deg, ${G.blueMid}, ${G.blue})` }} />
+        <div style={{ height: 4, background: `linear-gradient(90deg, ${G.blue}, ${G.blueMid})` }} />
       )}
+      {allDone && !isCurrentWeek && (
+        <div style={{ height: 4, background: `linear-gradient(90deg, ${G.mint}, #34d399)` }} />
+      )}
+
+      {/* Header button */}
       <button
         onClick={() => setOpen(o => !o)}
-        style={{ width: "100%", padding: "16px 18px", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+        style={{ width: "100%", padding: "15px 16px", background: "none", border: "none", cursor: "pointer" }}
       >
-        <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            {isCurrentWeek && (
-              <span style={{ fontSize: 9, fontWeight: 800, color: G.white, background: G.blue, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>EN COURS</span>
-            )}
-            {allDone && !isCurrentWeek && (
-              <span style={{ fontSize: 9, fontWeight: 800, color: G.mint, background: G.mintLight, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>✓ TERMINÉE</span>
-            )}
-            <span style={{ fontSize: 16, fontWeight: 800, color: G.ink, letterSpacing: "-0.01em" }}>Semaine {week.number}</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* Left: title + badges */}
+          <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: G.ink, letterSpacing: "-0.01em" }}>Semaine {week.number}</span>
+              {isCurrentWeek && (
+                <span style={{ fontSize: 9, fontWeight: 800, color: G.white, background: G.blue, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>EN COURS</span>
+              )}
+              {allDone && !isCurrentWeek && (
+                <span style={{ fontSize: 9, fontWeight: 800, color: G.mint, background: G.mintLight, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>✓ TERMINÉE</span>
+              )}
+            </div>
+            {/* Metric chips row */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, color: G.grey, lineHeight: 1.3 }}>{week.focus}</span>
+              {totalDist > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: isCurrentWeek ? G.blue : G.greyMid, background: isCurrentWeek ? G.blueLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
+                  {distLabel}
+                </span>
+              )}
+              <span style={{ fontSize: 11, fontWeight: 600, color: G.greyMid }}>· {total} séance{total > 1 ? "s" : ""}</span>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <span style={{ fontSize: 12, color: G.grey }}>{week.focus}</span>
-            {totalDist > 0 && <span style={{ fontSize: 11, color: G.greyMid, display: "flex", alignItems: "center", gap: 3 }}><Ruler size={10} color={G.greyMid} />{totalDist}m</span>}
+
+          {/* Right: ring + counter + chevron */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: 12 }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: allDone ? G.mint : G.blue, letterSpacing: "-0.02em", lineHeight: 1 }}>{done}/{total}</div>
+              <div style={{ fontSize: 9, color: G.greyMid, letterSpacing: "0.04em", textTransform: "uppercase", marginTop: 2 }}>séances</div>
+            </div>
+            <Ring value={total > 0 ? done / total : 0} size={36} stroke={4} color={allDone ? G.mint : G.blue} bg={G.greyLight} label="" />
+            <div style={{ color: G.greyMid }}>
+              {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
           </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: allDone ? G.mint : G.blue, letterSpacing: "-0.02em" }}>{done}/{total}</div>
-            <div style={{ fontSize: 9, color: G.greyMid, letterSpacing: "0.04em", textTransform: "uppercase" }}>séances</div>
-          </div>
-          <Ring value={done / total} size={38} stroke={4} color={allDone ? G.mint : G.blue} bg={G.greyLight} label="" />
-          {open ? <ChevronUp size={16} color={G.greyMid} /> : <ChevronDown size={16} color={G.greyMid} />}
         </div>
       </button>
+
+      {/* Sessions list */}
       {open && (
-        <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ padding: "0 12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
           {week.sessions.map((s, i) => (
             <SessionCard key={i} session={s} weekIndex={weekIndex} sessionIndex={i} onComplete={onComplete} onShare={onShare} />
           ))}
           {week.tip && (
-            <div style={{ background: G.goldLight, borderRadius: 14, padding: "12px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div style={{ background: G.goldLight, borderRadius: 14, padding: "11px 14px", display: "flex", gap: 10, alignItems: "flex-start", marginTop: 2 }}>
               <Star size={14} color={G.gold} style={{ flexShrink: 0, marginTop: 2 }} />
               <span style={{ fontSize: 12, color: "#92400E", lineHeight: 1.55 }}>{week.tip}</span>
             </div>
@@ -2189,26 +2237,36 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
 
   return (
     <div style={{
-      background: G.white, borderRadius: 22, padding: "18px",
+      background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
+      borderRadius: 22,
+      padding: "20px",
       marginBottom: 20,
-      border: `1px solid rgba(142,179,255,0.15)`,
-      boxShadow: "0 4px 20px rgba(142,179,255,0.10)",
+      boxShadow: "0 8px 28px rgba(53,93,163,0.28)",
+      position: "relative",
+      overflow: "hidden",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+      {/* Decorative circle */}
+      <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: -30, right: 30, width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
         {COACH.photo ? (
-          <img src={COACH.photo} alt={COACH.name} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${G.blueLight}` }} />
+          <img src={COACH.photo} alt={COACH.name} style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2.5px solid rgba(255,255,255,0.4)` }} />
         ) : (
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <span style={{ color: G.white, fontSize: 16, fontWeight: 800 }}>{COACH.initials}</span>
           </div>
         )}
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: G.blue, background: G.blueLight, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 9px", borderRadius: 100, display: "inline-block", marginBottom: 5 }}>Ton coach</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: G.ink, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{COACH.name}</div>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Message de ton coach</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: G.white, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{COACH.name}</div>
         </div>
       </div>
-      <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 16px" }}>
-        <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.65 }}>{message}</p>
+
+      {/* Message bubble */}
+      <div style={{ background: "rgba(255,255,255,0.13)", borderRadius: 14, padding: "14px 16px", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+        <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.92)", lineHeight: 1.65, margin: 0 }}>{message}</p>
       </div>
     </div>
   );
@@ -2291,47 +2349,110 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 
         <CoachCard plan={plan} profile={profile} currentWeekIndex={currentWeekIndex} />
 
-        {/* Hero stats card */}
+        {/* Hero bento stats card */}
         {(() => {
           const totalDist = plan.weeks.reduce((acc, w) => acc + w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0), 0);
           const completedDist = plan.weeks.reduce((acc, w) => acc + w.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0), 0);
+          const totalMins = plan.weeks.reduce((acc, w) => acc + w.sessions.reduce((a, s) => a + (parseInt(s.duration) || 0), 0), 0);
           const daysToEvent = profile.eventDate
             ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000))
             : null;
-          const stats2x2 = [
-            { label: "Distance totale", value: totalDist >= 1000 ? `${(totalDist/1000).toFixed(1)} km` : `${totalDist} m`, Icon: Ruler, color: G.blue, bg: G.blueLight },
-            { label: "Semaines", value: `${plan.weeks.length}`, Icon: Calendar, color: G.purple, bg: G.purpleLight },
-            { label: "Séances/sem", value: `${profile.sessionsPerWeek}×`, Icon: Zap, color: G.coral, bg: G.coralLight },
-            daysToEvent !== null
-              ? { label: "Avant l'event", value: `J−${daysToEvent}`, Icon: Target, color: G.mint, bg: G.mintLight }
-              : { label: "Progression", value: `${Math.round(completedDist / (totalDist || 1) * 100)}%`, Icon: TrendingUp, color: G.mint, bg: G.mintLight },
-          ];
+          const progressPct = Math.round(completedDist / (totalDist || 1) * 100);
+          const distLabel = totalDist >= 1000 ? `${(totalDist/1000).toFixed(1)} km` : `${totalDist} m`;
+          const timeLabel = totalMins >= 60 ? `${Math.floor(totalMins/60)}h${totalMins%60 ? (totalMins%60)+'min' : ''}` : `${totalMins} min`;
+          // Mini weekly bar chart data
+          const bars = plan.weeks.map(w => ({
+            total: w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
+            done:  w.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
+          }));
+          const maxBar = Math.max(...bars.map(b => b.total), 1);
+
           return (
-            <div style={{
-              background: G.white, borderRadius: 22, padding: "18px",
-              border: `1px solid rgba(142,179,255,0.15)`,
-              boxShadow: "0 4px 20px rgba(142,179,255,0.09)",
-              marginBottom: 22,
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Programme</h2>
-                <span style={{ fontSize: 12, color: G.grey }}>{unlocked}/{plan.weeks.length} sem. débloquées</span>
+            <div style={{ marginBottom: 22 }}>
+              {/* Title row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Mon programme</h2>
+                <span style={{ fontSize: 12, color: G.grey }}>{unlocked}/{plan.weeks.length} sem.</span>
               </div>
+
+              {/* Bento grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {stats2x2.map(({ label, value, Icon: I, color, bg }, idx) => (
-                  <div key={idx} style={{
-                    background: G.greyXLight, borderRadius: 14, padding: "14px 12px",
-                    display: "flex", alignItems: "center", gap: 10,
-                  }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <I size={17} color={color} />
+                {/* Big distance card — col span 2 if no chart, else left half */}
+                <div style={{
+                  background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
+                  borderRadius: 18, padding: "18px 16px",
+                  boxShadow: "0 6px 20px rgba(53,93,163,0.22)",
+                  display: "flex", flexDirection: "column", justifyContent: "space-between",
+                }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Distance totale</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: G.white, letterSpacing: "-0.03em", lineHeight: 1 }}>{distLabel}</div>
+                  {/* Progress bar */}
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.2)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${progressPct}%`, background: G.blueMid, borderRadius: 2, transition: "width 0.8s ease" }} />
                     </div>
-                    <div>
-                      <div style={{ fontSize: 17, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</div>
-                      <div style={{ fontSize: 10, color: G.grey, marginTop: 3, letterSpacing: "0.02em" }}>{label}</div>
-                    </div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 5 }}>{progressPct}% accompli</div>
                   </div>
-                ))}
+                </div>
+
+                {/* Mini bar chart card */}
+                <div style={{
+                  background: G.white, borderRadius: 18, padding: "14px 12px",
+                  border: `1px solid rgba(142,179,255,0.13)`,
+                  boxShadow: "0 2px 12px rgba(142,179,255,0.09)",
+                  display: "flex", flexDirection: "column",
+                }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: G.greyMid, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Par semaine</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 3, flex: 1, minHeight: 44 }}>
+                    {bars.map((b, i) => (
+                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, height: "100%" }}>
+                        <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+                          <div style={{ width: "100%", borderRadius: "3px 3px 0 0", overflow: "hidden", background: G.greyXLight, height: `${Math.max(8, (b.total / maxBar) * 48)}px` }}>
+                            <div style={{ width: "100%", height: `${b.total > 0 ? (b.done / b.total) * 100 : 0}%`, background: G.blue, borderRadius: "3px 3px 0 0" }} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time card */}
+                <div style={{
+                  background: G.white, borderRadius: 18, padding: "16px 14px",
+                  border: `1px solid rgba(142,179,255,0.13)`,
+                  boxShadow: "0 2px 12px rgba(142,179,255,0.09)",
+                }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: G.purpleLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                    <Clock size={16} color={G.purple} />
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{timeLabel}</div>
+                  <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>Durée totale</div>
+                </div>
+
+                {/* Event countdown or sessions/week */}
+                <div style={{
+                  background: G.white, borderRadius: 18, padding: "16px 14px",
+                  border: `1px solid rgba(142,179,255,0.13)`,
+                  boxShadow: "0 2px 12px rgba(142,179,255,0.09)",
+                }}>
+                  {daysToEvent !== null ? (
+                    <>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: G.mintLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                        <Target size={16} color={G.mint} />
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>J−{daysToEvent}</div>
+                      <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>Avant l'event</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: G.coralLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                        <Zap size={16} color={G.coral} />
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{profile.sessionsPerWeek}×/sem</div>
+                      <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{plan.weeks.length} semaines</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           );
