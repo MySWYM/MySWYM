@@ -95,11 +95,10 @@ const GOALS = [
 
 // Catégories onboarding (step 1)
 const CATEGORIES = [
-  { id: "triathlon",   label: "Triathlon",          Icon: Activity,    desc: "Sprint · Olympique · Half · Ironman" },
-  { id: "eau_libre",   label: "Eau libre",           Icon: Waves,       desc: "5 km · 10 km en eau vive" },
-  { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Sans deadline · Progresser à ton rythme" },
-  { id: "poids",       label: "Activité physique",    Icon: Target,      desc: "Nager pour se sentir bien" },
-  { id: "diplome",     label: "Prépa diplôme",       Icon: Award,       desc: "BNSSA · BPJEPS · Pompiers" },
+  { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Tous niveaux · Progresser à ton rythme" },
+  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "Sprint · Olympique · Half · Ironman" },
+  { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "5 km · 10 km en eau vive" },
+  { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS" },
 ];
 
 // Sous-objectifs par catégorie
@@ -115,19 +114,13 @@ const SUB_GOALS = {
     { id: "open_water_10k", label: "10 km", dist: "Eau vive" },
   ],
   diplome: [
-    { id: "bnssa",          label: "BNSSA",          dist: "100 m & 250 m sauvetage" },
-    { id: "bpjeps_aan",     label: "BPJEPS AAN",     dist: "400 m NL < 7'40\"" },
-    { id: "tests_pompiers", label: "Tests Pompiers", dist: "400 m + 50 m sauvetage" },
-  ],
-  progression: [
-    { id: "prog_endurance", label: "Nager plus loin",      dist: "Endurance & volume" },
-    { id: "prog_vitesse",   label: "Nager plus vite",      dist: "CSS & seuil" },
-    { id: "prog_technique", label: "Maîtriser ma technique", dist: "Drills & efficacité" },
+    { id: "bnssa",      label: "BNSSA",      dist: "100 m & 250 m sauvetage" },
+    { id: "bpjeps_aan", label: "BPJEPS AAN", dist: "400 m NL < 7'40\"" },
   ],
 };
 
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
-const isProgressionGoal = (goalId) => goalId?.startsWith("prog_");
+const isProgressionGoal = (goalId) => goalId === "progression" || goalId?.startsWith("prog_");
 
 // 4 niveaux mesurables — auto-évaluation physique + logique
 const LEVELS = [
@@ -322,7 +315,7 @@ const createShareCanvas = (session, goalLabel) => {
 
 // ── PRIMITIVES ────────────────────────────────────────────────────────────
 const Btn = ({ children, onClick, variant = "primary", disabled, style: s }) => {
-  const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
+  const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "'Lexend', sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
   const styles = { primary: { background: G.ink, color: G.white }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0,87,255,0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
   return <button onClick={disabled ? undefined : onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
 };
@@ -450,7 +443,7 @@ const PaceProjectionCard = ({ pace100, pace400 }) => {
           <TrendingUp size={16} color="#7C3AED" />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
             Projection de performance
           </h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>
@@ -498,7 +491,7 @@ const PaceProjectionCard = ({ pace100, pace400 }) => {
           return (
             <div key={t.dist} style={{ background: `${t.color}0D`, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.color}22` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginBottom: 4, letterSpacing: "0.04em" }}>{t.label}</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
+              <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
                 {actual ? fmtTime(actual) : fmtTime(Math.round(raw))}
                 {actual && <span style={{ fontSize: 10, color: G.mint, marginLeft: 4, fontWeight: 600 }}>réel</span>}
               </div>
@@ -538,7 +531,7 @@ const PaceZonesCard = ({ pace100, pace400, onSave }) => {
           <Gauge size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur tes temps personnels</p>
         </div>
       </div>
@@ -570,10 +563,10 @@ const PaceZonesCard = ({ pace100, pace400, onSave }) => {
             return (
               <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
+                  <div style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
                   <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{z.desc}</div>
                 </div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
                   {fmtZone(ps)}
                 </div>
               </div>
@@ -600,7 +593,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
       <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
         </div>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 14 }}>Adapte le nombre de séances à ton emploi du temps — réservé aux membres Premium.</p>
         <button onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -612,7 +605,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
 
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-      <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
+      <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
       <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Change le nombre de séances — tes semaines déjà validées sont conservées.</p>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
@@ -649,17 +642,11 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
 
-  const stats      = computeStats(plan);
-  const earned     = checkBadges(stats);
-  const maxMeters  = Math.max(...stats.weeklyData.map(w => w.total), 1);
-  const longestSession = plan?.weeks
-    ? Math.max(...plan.weeks.flatMap(w => w.sessions).filter(s => s.completed).map(s => parseInt(s.distance) || 0), 0)
-    : 0;
+  const stats  = computeStats(plan);
+  const earned = checkBadges(stats);
+  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
 
-  const initials = user?.email ? user.email[0].toUpperCase() : "?";
-  const levelLabel = { découverte: "Découverte", régulier: "Régulier", intermédiaire: "Intermédiaire", performance: "Performance", advanced: "Performance", grand_public: "Grand Public" }[profile?.level] ?? "Nageur";
-
-  const inp = { width: "100%", padding: "13px 14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
+  const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
 
   const save = async () => {
     if (!password) return;
@@ -673,92 +660,133 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     finally { setSaving(false); }
   };
 
-  const cardStyle = { background: G.white, borderRadius: 22, padding: "18px 16px", marginBottom: 16, border: `1px solid rgba(142,179,255,0.12)`, boxShadow: "0 4px 20px rgba(142,179,255,0.08)" };
-  const sectionTitle = { fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 };
+  // Personal records computed from real data
+  const longestSession = plan?.weeks
+    ? Math.max(0, ...plan.weeks.flatMap(w => w.sessions).filter(s => s.completed).map(s => parseInt(s.distance) || 0))
+    : 0;
+
+  // Initials from email
+  const initials = (user?.email || "?").slice(0, 2).toUpperCase();
+  const levelLabel = LEVELS.find(l => l.id === profile?.level)?.label || profile?.level || "Nageur";
+
+  // Badge gradient by index
+  const badgeGradients = [
+    `linear-gradient(135deg,${G.blueMid},${G.blue})`,
+    "linear-gradient(135deg,#FBBF24,#F59E0B)",
+    "linear-gradient(135deg,#a78bfa,#7C3AED)",
+    "linear-gradient(135deg,#34d399,#00C48C)",
+    "linear-gradient(135deg,#fb923c,#FF4757)",
+    "linear-gradient(135deg,#60a5fa,#3b82f6)",
+  ];
 
   return (
     <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
 
-      {/* ── Header ── */}
-      <div style={{
-        background: `radial-gradient(ellipse at 0% 0%, rgba(142,179,255,0.18) 0%, transparent 60%), radial-gradient(ellipse at 100% 0%, rgba(142,179,255,0.12) 0%, transparent 60%), ${G.white}`,
-        padding: "56px 20px 28px", textAlign: "center",
-        borderBottom: `1px solid rgba(142,179,255,0.12)`,
-      }}>
+      {/* ── Profile Header ─────────────────────────────────────── */}
+      <div style={{ padding: "56px 20px 24px", textAlign: "center" }}>
         {/* Avatar */}
-        <div className="fade-up" style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg, ${G.blueMid}, ${G.blue})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 28px rgba(142,179,255,0.35)", border: "3px solid white" }}>
-            <span style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 800, color: G.white }}>{initials}</span>
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
+          <div style={{
+            width: 88, height: 88, borderRadius: "50%",
+            background: `linear-gradient(135deg, ${G.blueMid} 0%, ${G.blue} 100%)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 8px 32px rgba(142,179,255,0.35)",
+            border: "3px solid #fff",
+          }}>
+            <span style={{ fontSize: 28, fontWeight: 700, color: "#fff", letterSpacing: 1 }}>{initials}</span>
           </div>
-          {earned.length > 0 && (
-            <div style={{ position: "absolute", bottom: 2, right: 2, width: 20, height: 20, borderRadius: "50%", background: G.blueMid, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Check size={10} color={G.blueDeep} strokeWidth={3} />
-            </div>
-          )}
+          {/* Verified dot */}
+          <div style={{
+            position: "absolute", bottom: 2, right: 2,
+            width: 22, height: 22, borderRadius: "50%",
+            background: G.blue, border: "2.5px solid #fff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Check size={11} color="#fff" strokeWidth={3} />
+          </div>
         </div>
-        {/* Name */}
-        <div className="fade-up-1">
-          <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4, letterSpacing: "-0.02em" }}>
-            {user?.user_metadata?.name || user?.email?.split("@")[0] || "Nageur"}
-          </p>
-          <p style={{ fontSize: 12, fontWeight: 700, color: G.blue, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
-            {levelLabel}
-          </p>
-          <p style={{ fontSize: 13, color: G.grey }}>
-            {(stats.totalMeters / 1000).toFixed(1)} km nagés · {earned.length} badge{earned.length !== 1 ? "s" : ""}
-          </p>
+        {/* Name + level */}
+        <div style={{ fontSize: 22, fontWeight: 700, color: G.ink, marginBottom: 4, letterSpacing: "-0.02em" }}>
+          {user?.email?.split("@")[0] || "Nageur"}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {levelLabel}
         </div>
       </div>
 
-      <div style={{ padding: "20px 16px 0" }}>
+      <div style={{ padding: "0 16px" }}>
 
-        {/* ── Stats bento ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-          <StatPill icon={Waves}  value={`${(stats.totalMeters / 1000).toFixed(1)} km`} label="Total nagés"        color={G.blue}  bg={G.blueLight}  />
-          <StatPill icon={Flame}  value={stats.streak}                                   label="Meilleure série"    color={G.coral} bg={G.coralLight} />
-          <StatPill icon={Check}  value={stats.totalSessions}                            label="Séances faites"     color={G.mint}  bg={G.mintLight}  />
-          <StatPill icon={Star}   value={stats.perfectWeeks}                             label="Semaines parfaites" color={G.gold}  bg={G.goldLight}  />
+        {/* ── Bento Stats Grid ───────────────────────────────────── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          {[
+            { Icon: Waves,   value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Distance totale", color: G.blue,  bg: G.blueLight  },
+            { Icon: Check,   value: stats.totalSessions,                             label: "Séances",          color: G.mint,  bg: G.mintLight  },
+            { Icon: Flame,   value: stats.streak,                                    label: "Meilleure série",  color: G.coral, bg: G.coralLight },
+            { Icon: Star,    value: stats.perfectWeeks,                              label: "Semaines parfaites", color: G.gold, bg: G.goldLight },
+          ].map(({ Icon, value, label, color, bg }, i) => (
+            <div key={i} style={{ background: G.white, borderRadius: 20, padding: "18px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon size={18} color={color} />
+              </div>
+              <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>{label}</span>
+            </div>
+          ))}
         </div>
 
-        {/* ── Records personnels ── */}
-        {(longestSession > 0 || profile?.pace100) && (
-          <div style={cardStyle}>
-            <div style={sectionTitle}>
-              <Trophy size={16} color={G.gold} />
+        {/* ── Personal Records ────────────────────────────────────── */}
+        {(profile?.pace100 || longestSession > 0) && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, letterSpacing: "0.04em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <Trophy size={15} color={G.gold} />
               Records personnels
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {profile?.pace100 && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: G.greyXLight, borderRadius: 14 }}>
+                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, background: G.blueLight, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Timer size={18} color={G.blue} />
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Gauge size={18} color={G.blue} />
                     </div>
                     <div>
-                      <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 600, color: G.ink }}>Meilleur 100m</p>
-                      <p style={{ fontSize: 12, color: G.grey }}>Nage libre</p>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Temps sur 100m</div>
+                      <div style={{ fontSize: 12, color: G.grey }}>Nage libre</div>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 17, fontWeight: 800, color: G.blue, letterSpacing: "-0.02em" }}>{profile.pace100}</p>
-                    <p style={{ fontSize: 10, color: G.grey, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>min/100m</p>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: G.blue, letterSpacing: "-0.02em" }}>{secToDisplay(profile.pace100)}</div>
+                  </div>
+                </div>
+              )}
+              {profile?.pace400 && (
+                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Gauge size={18} color={G.blueDeep} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Temps sur 400m</div>
+                      <div style={{ fontSize: 12, color: G.grey }}>Nage libre</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: G.blueDeep, letterSpacing: "-0.02em" }}>{secToDisplay(profile.pace400)}</div>
                   </div>
                 </div>
               )}
               {longestSession > 0 && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: G.greyXLight, borderRadius: 14 }}>
+                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, background: G.waterLight, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.waterLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Waves size={18} color={G.water} />
                     </div>
                     <div>
-                      <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 600, color: G.ink }}>Plus longue séance</p>
-                      <p style={{ fontSize: 12, color: G.grey }}>Endurance</p>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Plus longue séance</div>
+                      <div style={{ fontSize: 12, color: G.grey }}>Endurance</div>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontFamily: "'Lexend', sans-serif", fontSize: 17, fontWeight: 800, color: G.water, letterSpacing: "-0.02em" }}>{longestSession >= 1000 ? `${(longestSession / 1000).toFixed(1)}` : longestSession}</p>
-                    <p style={{ fontSize: 10, color: G.grey, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{longestSession >= 1000 ? "km" : "m"}</p>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: G.water, letterSpacing: "-0.02em" }}>{longestSession >= 1000 ? `${(longestSession/1000).toFixed(1)} km` : `${longestSession} m`}</div>
                   </div>
                 </div>
               )}
@@ -766,7 +794,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </div>
         )}
 
-        {/* ── Pace zones + projection (Performance uniquement) ── */}
+        {/* ── Pace zones + projection (Performance uniquement) ───── */}
         {(profile?.level === "performance" || profile?.level === "advanced") && (
           <>
             <PaceZonesCard pace100={profile?.pace100} pace400={profile?.pace400} onSave={onPaceUpdate} />
@@ -774,23 +802,17 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </>
         )}
 
-        {/* ── Modifier le programme ── */}
-        <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
-
-        {/* ── Volume par semaine ── */}
-        <div style={cardStyle}>
-          <div style={sectionTitle}>
-            <BarChart2 size={16} color={G.blue} />
-            Volume par semaine
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
+        {/* ── Weekly bar chart ────────────────────────────────────── */}
+        <div style={{ background: G.white, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 16, letterSpacing: "-0.01em" }}>Volume par semaine</div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
             {stats.weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
                 <div style={{ flex: 1, width: "100%", position: "relative" }}>
-                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "6px 6px 0 0", position: "absolute", bottom: 0 }} />
-                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : `linear-gradient(180deg, ${G.blueMid} 0%, ${G.blue} 100%)`, borderRadius: "6px 6px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
+                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0 }} />
+                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : G.blue, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
                 </div>
-                <span style={{ fontSize: 10, color: G.grey, fontFamily: "'Lexend', sans-serif" }}>{w.label}</span>
+                <span style={{ fontSize: 9, color: G.greyMid, fontWeight: 600 }}>{w.label}</span>
               </div>
             ))}
           </div>
@@ -798,117 +820,82 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
             {[{ color: G.blue, label: "Réalisé" }, { color: G.greyLight, label: "Prévu" }].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
-                <span style={{ fontSize: 11, color: G.grey, fontFamily: "'Lexend', sans-serif" }}>{l.label}</span>
+                <span style={{ fontSize: 11, color: G.grey }}>{l.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Répartition des types ── */}
-        <div style={cardStyle}>
-          <div style={sectionTitle}>
-            <Activity size={16} color={G.blue} />
-            Répartition des types
+        {/* ── Badges horizontal scroll ─────────────────────────────── */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>Badges</div>
+            <div style={{ fontSize: 12, color: G.grey, fontWeight: 600 }}>{earned.length}/{BADGE_DEFS.length}</div>
           </div>
-          {Object.entries(TYPE_META).map(([type, tm]) => {
-            const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
-            const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
-            if (total === 0) return null;
-            return (
-              <div key={type} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <tm.Icon size={12} color={tm.color} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: G.ink, fontFamily: "'Lexend', sans-serif" }}>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8, marginLeft: -16, paddingLeft: 16, marginRight: -16, paddingRight: 16 }}>
+            {BADGE_DEFS.map((b, i) => {
+              const isEarned = earned.includes(b.id);
+              return (
+                <div key={b.id} style={{ flexShrink: 0, width: 80, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: isEarned ? 1 : 0.38 }}>
+                  <div style={{
+                    width: 64, height: 64, borderRadius: "50%",
+                    background: isEarned ? (badgeGradients[i % badgeGradients.length]) : G.greyLight,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: isEarned ? `0 6px 18px ${b.color}33` : "none",
+                    filter: isEarned ? "none" : "grayscale(1)",
+                  }}>
+                    {isEarned
+                      ? <b.icon size={26} color="#fff" />
+                      : <Lock size={20} color={G.greyMid} />
+                    }
                   </div>
-                  <span style={{ fontSize: 12, color: G.grey, fontFamily: "'Lexend', sans-serif" }}>{count}/{total}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: G.ink, textAlign: "center", lineHeight: 1.3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{b.label}</span>
                 </div>
-                <div style={{ height: 7, background: G.greyLight, borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${total > 0 ? count / total * 100 : 0}%`, background: tm.color, borderRadius: 4, transition: "width 0.6s ease" }} />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* ── Badges ── */}
-        <div style={{ ...cardStyle, paddingBottom: 0 }}>
-          <div style={{ ...sectionTitle, marginBottom: 4 }}>
-            <Award size={16} color={G.gold} />
-            Badges
-            <span style={{ marginLeft: "auto", fontSize: 12, color: G.grey, fontWeight: 500 }}>{earned.length}/{BADGE_DEFS.length} débloqués</span>
-          </div>
+        {/* ── Modifier le programme ───────────────────────────────── */}
+        <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
 
-          {/* Earned — horizontal scroll */}
-          {earned.length > 0 && (
-            <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 16, WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
-              {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
-                <div key={b.id} className="scale-in" style={{ flexShrink: 0, width: 82, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${b.color}cc, ${b.color})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 6px 20px ${b.color}30` }}>
-                    <b.icon size={26} color="#fff" />
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: G.ink, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.3, fontFamily: "'Lexend', sans-serif" }}>{b.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Locked */}
-          {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
-            <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 16, WebkitOverflowScrolling: "touch", scrollbarWidth: "none", opacity: 0.45 }}>
-              {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
-                <div key={b.id} style={{ flexShrink: 0, width: 82, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Lock size={22} color={G.greyMid} />
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: G.grey, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.3, fontFamily: "'Lexend', sans-serif" }}>{b.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* ── Compte ──────────────────────────────────────────────── */}
+        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12, border: `1px solid ${G.greyLight}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Email</div>
+          <div style={{ fontSize: 15, color: G.ink, padding: "13px 14px", background: G.greyXLight, borderRadius: 12 }}>{user?.email}</div>
         </div>
 
-        {/* ── Compte ── */}
-        <div style={cardStyle}>
-          <div style={sectionTitle}>
-            <Settings size={16} color={G.grey} />
-            Compte
-          </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Email</div>
-          <div style={{ fontSize: 14, color: G.ink, padding: "12px 14px", background: G.greyXLight, borderRadius: 12, marginBottom: 16, fontFamily: "'Lexend', sans-serif" }}>{user?.email}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Nouveau mot de passe</div>
+        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Nouveau mot de passe</div>
           <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nouveau mot de passe" onKeyDown={e => e.key === "Enter" && save()} />
-          {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginTop: 10, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13, fontFamily: "'Lexend', sans-serif" }}>{msg.text}</div>}
-          <div style={{ marginTop: 12 }}>
-            <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
-          </div>
         </div>
 
-        {/* ── Abonnement & déconnexion ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+        {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
+        <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
+
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {isPremium
             ? <>
-                <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 16, border: `1.5px solid ${G.blueMid}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Lexend', sans-serif" }}>
+                <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                   <Zap size={16} color={G.blue} /> Gérer mon abonnement
                 </button>
-                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer", fontFamily: "'Lexend', sans-serif" }}>
+                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
                   Actualiser le statut
                 </button>
               </>
             : <>
-                <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 16, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Lexend', sans-serif", boxShadow: "0 8px 24px rgba(53,93,163,0.28)" }}>
+                <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #355da3, #154388)", color: G.white, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                   <Zap size={16} color={G.gold} /> Passer en premium
                 </button>
-                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer", fontFamily: "'Lexend', sans-serif" }}>
+                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
                   Actualiser le statut
                 </button>
               </>
           }
-          <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 16, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Lexend', sans-serif" }}>
+          <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <LogOut size={16} color={G.grey} /> Se déconnecter
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -957,7 +944,7 @@ const ResetPasswordScreen = ({ onDone }) => {
     finally { setLoading(false); }
   };
 
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
 
   return (
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
@@ -965,10 +952,10 @@ const ResetPasswordScreen = ({ onDone }) => {
         <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Waves size={20} color={G.white} />
         </div>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
+        <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
       </div>
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
+        <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
         {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
@@ -1017,7 +1004,7 @@ const AuthScreen = ({ onAuth }) => {
     finally { setLoading(false); }
   };
 
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'DM Sans', sans-serif", background: G.white, color: G.ink, outline: "none" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
 
   return (
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
@@ -1025,10 +1012,10 @@ const AuthScreen = ({ onAuth }) => {
         <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Waves size={20} color={G.white} />
         </div>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
+        <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
       </div>
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+        <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
           {mode === "reset" ? "Mot de passe oublié" : "Bienvenue"}
         </h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>
@@ -1084,7 +1071,7 @@ const AuthScreen = ({ onAuth }) => {
 const Step1_Category = ({ onSelect }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 1 sur 5</p>
-    <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
+    <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
     <p style={{ color: G.grey, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>Ton plan sera entièrement construit autour de ton objectif.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {CATEGORIES.map(cat => (
@@ -1107,11 +1094,11 @@ const Step1_Category = ({ onSelect }) => (
 // ── STEP 2 : SOUS-OBJECTIF ────────────────────────────────────────────────
 const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   const subs = SUB_GOALS[category] || [];
-  const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?", progression: "Ton axe principal ?" };
+  const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?" };
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 2 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{titles[category] || "Précise ton objectif"}</h2>
+      <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{titles[category] || "Précise ton objectif"}</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>On calibre le volume de tes séances.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
         {subs.map(s => (
@@ -1133,11 +1120,11 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
   const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
   const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Syne', sans-serif", fontWeight: 700, color: G.ink, background: G.white, outline: "none", textAlign: "center" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Lexend', sans-serif", fontWeight: 700, color: G.ink, background: G.white, outline: "none", textAlign: "center" };
   return (
     <div className="fade-up">
       <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
+      <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
         <div style={{ background: G.white, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
@@ -1199,7 +1186,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 5 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
+      <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
       <div style={{ background: G.white, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
         <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 10 }}>Date de l'événement</label>
@@ -1209,7 +1196,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
           placeholder="jj/mm/aaaa"
           value={display}
           onChange={e => handleChange(e.target.value)}
-          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, background: "transparent", outline: "none", letterSpacing: 2 }}
+          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, background: "transparent", outline: "none", letterSpacing: 2 }}
         />
       </div>
       {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
@@ -1228,37 +1215,46 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   );
 };
 
-const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6 }) => (
+const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6, disabledLevels = [] }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur {total}</p>
-    <h2 style={{ fontSize: 32, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Tu es<br />où dans l'eau ?</h2>
+    <h2 style={{ fontSize: 32, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Tu es<br />où dans l'eau ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>Choisis ce qui te correspond le mieux — ton plan sera construit en conséquence.</p>
 
     <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
       {LEVELS.map(l => {
         const isActive = value === l.id;
+        const isDisabled = disabledLevels.includes(l.id);
         return (
-          <button key={l.id} onClick={() => onChange(l.id)} style={{
-            display: "flex", alignItems: "center", gap: 14,
-            padding: "16px 18px", borderRadius: 16,
-            border: `2px solid ${isActive ? l.color : G.greyLight}`,
-            background: isActive ? l.bg : G.white,
-            cursor: "pointer", transition: "all 0.2s",
-            boxShadow: isActive ? `0 4px 16px ${l.color}22` : "0 2px 8px rgba(0,0,0,0.04)",
-            textAlign: "left",
-          }}>
+          <button key={l.id}
+            onClick={() => !isDisabled && onChange(l.id)}
+            disabled={isDisabled}
+            style={{
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "16px 18px", borderRadius: 16,
+              border: `2px solid ${isDisabled ? G.greyLight : isActive ? l.color : G.greyLight}`,
+              background: isDisabled ? G.greyXLight : isActive ? l.bg : G.white,
+              cursor: isDisabled ? "default" : "pointer", transition: "all 0.2s",
+              boxShadow: isActive ? `0 4px 16px ${l.color}22` : "0 2px 8px rgba(0,0,0,0.04)",
+              textAlign: "left", opacity: isDisabled ? 0.55 : 1,
+            }}>
             {/* Level dots — Apple-style simple indicator */}
             <div style={{ display: "flex", gap: 3, flexShrink: 0, alignSelf: "center" }}>
               {[1,2,3,4].map(n => (
-                <div key={n} style={{ width: 7, height: 7, borderRadius: "50%", background: n <= l.dot ? l.color : G.greyLight, transition: "background 0.2s" }} />
+                <div key={n} style={{ width: 7, height: 7, borderRadius: "50%", background: n <= l.dot ? (isDisabled ? G.greyMid : l.color) : G.greyLight, transition: "background 0.2s" }} />
               ))}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? l.color : G.ink, marginBottom: 2 }}>{l.label}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? l.color : G.inkLight }}>{l.desc}</div>
-              <div style={{ fontSize: 11, color: G.grey, marginTop: 2, lineHeight: 1.4 }}>{l.detail}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: isDisabled ? G.grey : isActive ? l.color : G.ink, marginBottom: 2 }}>{l.label}</div>
+              {isDisabled
+                ? <div style={{ fontSize: 12, color: G.grey, fontStyle: "italic" }}>Passe d'abord par Nager &amp; progresser</div>
+                : <>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? l.color : G.inkLight }}>{l.desc}</div>
+                    <div style={{ fontSize: 11, color: G.grey, marginTop: 2, lineHeight: 1.4 }}>{l.detail}</div>
+                  </>
+              }
             </div>
-            {isActive && (
+            {isActive && !isDisabled && (
               <div style={{ width: 22, height: 22, borderRadius: "50%", background: l.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Check size={13} color={G.white} />
               </div>
@@ -1337,7 +1333,7 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
         style={{
           width: "100%", boxSizing: "border-box",
           padding: "16px 14px", fontSize: 24,
-          fontFamily: "'Syne', sans-serif", fontWeight: 700,
+          fontFamily: "'Lexend', sans-serif", fontWeight: 700,
           textAlign: "center", letterSpacing: "0.06em",
           border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
           borderRadius: 14, outline: "none", background: G.white, color: G.ink,
@@ -1361,7 +1357,7 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+      <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
         Tes références<br />personnelles
       </h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
@@ -1403,7 +1399,7 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: G.ink, flex: 1 }}>{z.label}</span>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: z.color }}>
+                <span style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 700, color: z.color }}>
                   {fmtZone(Math.round(value * z.mult))}
                 </span>
               </div>
@@ -1426,7 +1422,7 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
 const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium = false, onUpgrade }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
-    <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
+    <h2 style={{ fontSize: 34, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
       {FREQUENCIES.map(f => {
@@ -1467,7 +1463,7 @@ const Loading = () => (
   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 24, background: G.bg }}>
     <div style={{ fontSize: 60 }}><span className="swimmer"><Waves size={52} color={G.blue} /></span></div>
     <div style={{ textAlign: "center" }}>
-      <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>On prépare ton plan…</h3>
+      <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>On prépare ton plan…</h3>
       <p style={{ color: G.grey, fontSize: 14 }}>Calcul des phases d'entraînement<br />et génération des séances</p>
     </div>
     <div style={{ display: "flex", gap: 8 }}>
@@ -1496,14 +1492,14 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
-        <div style={{ background: `linear-gradient(135deg, ${G.ink} 0%, #001966 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(0,87,255,0.12)" }} />
+        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
+        <div style={{ background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(142,179,255,0.15)" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
             <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
+          <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 12 }}>
             {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
               <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px" }}>
@@ -1576,7 +1572,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip }) => {
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Semaine {weekNumber} terminée
         </p>
-        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment tu t'es senti·e ?
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 28, lineHeight: 1.5 }}>
@@ -1687,7 +1683,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 26, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
             ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité au <strong style={{ color: G.ink }}>premier mois</strong>.<br />Débloque ton programme complet.</p>
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
@@ -1703,7 +1699,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             transition: "all 0.18s",
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
             <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
           </button>
 
@@ -1723,7 +1719,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
             {/* Prix barré */}
             <div style={{ fontSize: 12, color: period === "annual" ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€/mois</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "annual" ? G.white : G.ink }}>3,33€</div>
+            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "annual" ? G.white : G.ink }}>3,33€</div>
             <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 40€/an</div>
           </button>
         </div>
@@ -1774,7 +1770,7 @@ const PremiumTeaser = ({ onUpgrade }) => (
 );
 
 const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
-  <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #001966 0%, #0057FF 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+  <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #355da3 0%, #8eb3ff 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>+{weeksTotal - weeksShown} semaines bloquées</div>
@@ -1847,7 +1843,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
           </div>
         </div>
 
-        {/* Right side: intensity chip + checkbox */}
+        {/* Right: checkbox + intensity */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
           <button
             onClick={() => onComplete(weekIndex, sessionIndex)}
@@ -1862,14 +1858,15 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
             {done && <Check size={13} color={G.white} />}
           </button>
           <span style={{
-            fontSize: 10, fontWeight: 700, color: done ? G.greyMid : tm.color,
+            fontSize: 10, fontWeight: 700,
+            color: done ? G.greyMid : tm.color,
             background: done ? G.greyLight : tm.bg,
             padding: "2px 8px", borderRadius: 100,
           }}>{session.intensity}</span>
         </div>
       </div>
 
-      {/* Details — expand on tap */}
+      {/* Details accordion */}
       {session.details && session.details.length > 0 && (
         <>
           <button
@@ -2343,7 +2340,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
           <div>
             <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 5, fontWeight: 700 }}>Programme actif</div>
-            <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, lineHeight: 1.05 }}>{goal?.label}</h1>
+            <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, lineHeight: 1.05 }}>{goal?.label}</h1>
             {daysToEvent !== null && (
               <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 5 }}>J−{daysToEvent} · Semaine {(currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length)}/{plan.weeks.length}</p>
             )}
@@ -2356,7 +2353,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         <div className="fade-up-3">
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 0.3 }}>{stats.totalSessions} séances · {(stats.totalMeters / 1000).toFixed(1)} km</span>
-            <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Syne', sans-serif", letterSpacing: "0.03em", color: G.white }}>{pct}%</span>
+            <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Lexend', sans-serif", letterSpacing: "0.03em", color: G.white }}>{pct}%</span>
           </div>
           <div style={{ height: 5, background: "rgba(255,255,255,0.18)", borderRadius: 3 }}>
             <div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: G.white, transition: "width 1s ease" }} />
@@ -2370,7 +2367,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && plan.isProgression && (
           <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
             <TrendingUp size={40} color={G.blue} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2>
+            <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2>
             <p style={{ color: G.grey, fontSize: 14, marginBottom: 8 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en 12 semaines.</p>
             <p style={{ color: G.grey, fontSize: 13, marginBottom: 20 }}>Prêt·e pour le prochain cycle ? Ton niveau a évolué — un nouveau plan s'adaptera à ta progression.</p>
             <Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn>
@@ -2381,7 +2378,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         {!nextSession && stats.totalSessions > 0 && stats.totalSessions >= stats.planTotal && !plan.isProgression && (
           <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 20, padding: 28, textAlign: "center", marginBottom: 20, border: `1px solid ${G.greyLight}` }}>
             <Trophy size={40} color={G.gold} style={{ margin: "0 auto 12px" }} />
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
+            <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6 }}>Plan terminé</h2>
             <p style={{ color: G.grey, fontSize: 14 }}>Programme complété à 100 %.</p>
           </div>
         )}
@@ -2390,7 +2387,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         {nextSession && tm && (
           <div className="fade-up" style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink }}>Prochaine séance</h2>
+              <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink }}>Prochaine séance</h2>
               <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 13, color: G.blue, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
                 Voir tout <ArrowRight size={13} color={G.blue} />
               </button>
@@ -2402,7 +2399,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
                 <span style={{ fontSize: 11, fontWeight: 700, color: G.white, letterSpacing: 1.5, textTransform: "uppercase" }}>{nextSession.type}</span>
               </div>
               <div style={{ padding: "18px 20px 20px" }}>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
+                <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 16, lineHeight: 1.2 }}>{nextSession.title}</div>
                 <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
                   {[{ Icon: Ruler, val: nextSession.distance, label: "Distance" }, { Icon: Timer, val: formatDuration(nextSession.duration), label: "Durée" }].map(({ Icon: I, val, label }, i) => (
                     <div key={i} style={{ flex: 1, background: G.greyXLight, borderRadius: 12, padding: "12px 14px" }}>
@@ -2421,12 +2418,12 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
         <div className="fade-up-1" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Cette semaine</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{weekDone}<span style={{ fontSize: 16, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
+            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{weekDone}<span style={{ fontSize: 16, fontWeight: 500, color: G.grey }}>/{weekTotal}</span></div>
             <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>{currentWeek?.focus ?? "—"}</div>
           </div>
           <div style={{ background: G.white, borderRadius: 16, padding: "16px 18px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize: 10, color: G.blue, letterSpacing: 1, marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>Série</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
+            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
             <div style={{ fontSize: 12, color: G.grey, marginTop: 5 }}>séances consécutives</div>
           </div>
         </div>
@@ -2437,7 +2434,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
             <BookOpen size={20} color={G.blue} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Glossaire du nageur</div>
+            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Glossaire du nageur</div>
             <div style={{ fontSize: 12, color: G.grey }}>CSS, NL, D1'45", Z1-Z5… tous les termes expliqués</div>
           </div>
           <ArrowRight size={16} color={G.blue} />
@@ -2455,7 +2452,7 @@ const StatsTab = ({ plan }) => {
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes performances</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white }}>Statistiques</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white }}>Statistiques</h1>
       </div>
       <div style={{ padding: "20px 16px 0" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
@@ -2465,7 +2462,7 @@ const StatsTab = ({ plan }) => {
           <StatPill icon={Star}        value={stats.perfectWeeks}                             label="Semaines parfaites"  color={G.gold}  bg={G.goldLight} />
         </div>
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
             {stats.weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
@@ -2487,7 +2484,7 @@ const StatsTab = ({ plan }) => {
           </div>
         </div>
         <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
           {Object.entries(TYPE_META).map(([type, tm]) => {
             const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
             const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
@@ -2521,7 +2518,7 @@ const BadgesTab = ({ plan }) => {
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
         <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
@@ -2534,7 +2531,7 @@ const BadgesTab = ({ plan }) => {
       <div style={{ padding: "20px 16px 0" }}>
         {earned.length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
                 <div key={b.id} className="scale-in" style={{ background: G.white, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
@@ -2550,7 +2547,7 @@ const BadgesTab = ({ plan }) => {
         )}
         {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
                 <div key={b.id} style={{ background: G.greyXLight, borderRadius: 16, padding: 16, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
@@ -4407,7 +4404,7 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 38, height: 38, background: G.ink, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center" }}><Waves size={18} color={G.white} /></div>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
+                <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {addingPlan && (
@@ -4428,15 +4425,23 @@ export default function App() {
               </div>
             </div>
             {(() => {
-              // step 1 = catégorie, 2 = sous-objectif/poids, 3 = niveau+bassin
-              // step 4 = temps 100m (Performance seulement), 5 = fréquence, 6 = date (sauf poids)
-              const isPoids = profile.category === "poids";
-              const noDate = isPoids || isProgressionGoal(profile.goal);
-              // Le temps au 100m est réservé au niveau Performance
-              const hasPaceStep = profile.level === "performance" || profile.level === "advanced";
-              const totalSteps = (noDate ? 4 : 5) + (hasPaceStep ? 1 : 0);
+              // Flux :
+              //   progression : 1 → 3 (niveau) → [4 pace?] → 5 (fréq) — pas de date
+              //   triathlon/eau_libre : 1 → 2 (sous-obj) → 3 (niveau, découverte grisé) → [4 pace?] → 5 (fréq) → 6 (date)
+              //   diplome : 1 → 2 (BNSSA/BPJEPS) → 5 (fréq) → 6 (date) — pas de niveau
+              const isProgression = profile.category === "progression";
+              const isDiplome = profile.category === "diplome";
+              const noDate = isProgression;
+              const hasPaceStep = !isDiplome && (profile.level === "performance" || profile.level === "advanced");
+              // Niveaux grisés pour triathlon et eau_libre
+              const disabledLevels = (profile.category === "triathlon" || profile.category === "eau_libre") ? ["découverte"] : [];
+              // Calcul total steps
+              const baseSteps = noDate ? 3 : isDiplome ? 4 : 4;
+              const totalSteps = baseSteps + (hasPaceStep ? 1 : 0);
+              // Après step 3 (niveau) → pace ou fréquence
               const stepAfter3 = hasPaceStep ? 4 : 5;
-              const stepBefore5 = hasPaceStep ? 4 : 3;
+              // Retour depuis fréquence → pace ou niveau ou sous-obj
+              const stepBefore5 = isDiplome ? 2 : hasPaceStep ? 4 : 3;
               return (
                 <>
                   {step > 1 && <Progress step={step - 1} total={totalSteps} />}
@@ -4444,28 +4449,37 @@ export default function App() {
 
                   {step === 1 && (
                     <Step1_Category onSelect={cat => {
-                      const goal = cat === "poids" ? "perte_de_poids" : "";
-                      setProfile(p => ({ ...p, category: cat, goal }));
-                      setStep(2);
+                      if (cat === "progression") {
+                        // Pas de sous-objectif — on va directement au niveau
+                        setProfile(p => ({ ...p, category: cat, goal: "progression" }));
+                        setStep(3);
+                      } else {
+                        setProfile(p => ({ ...p, category: cat, goal: "" }));
+                        setStep(2);
+                      }
                     }} />
                   )}
 
-                  {step === 2 && profile.category === "poids" && (
-                    <StepWeight
-                      weightCurrent={profile.weightCurrent} weightGoal={profile.weightGoal}
-                      onChangeCurrent={v => update("weightCurrent", v)} onChangeGoal={v => update("weightGoal", v)}
-                      onNext={() => setStep(3)} onBack={() => setStep(1)} />
-                  )}
-
-                  {step === 2 && profile.category !== "poids" && (
+                  {step === 2 && !isProgression && (
                     <Step2_SubGoal
                       category={profile.category}
-                      onSelect={goalId => { update("goal", goalId); setStep(3); }}
+                      onSelect={goalId => {
+                        update("goal", goalId);
+                        // Diplôme saute le step niveau — niveau par défaut = sportif
+                        if (isDiplome) { update("level", "sportif"); setStep(5); }
+                        else setStep(3);
+                      }}
                       onBack={() => setStep(1)} />
                   )}
 
-                  {step === 3 && (
-                    <Step3_Level value={profile.level} onChange={v => update("level", v)} pool={profile.pool} onPoolChange={v => update("pool", v)} total={totalSteps} onNext={() => setStep(stepAfter3)} onBack={() => setStep(2)} />
+                  {step === 3 && !isDiplome && (
+                    <Step3_Level
+                      value={profile.level} onChange={v => update("level", v)}
+                      pool={profile.pool} onPoolChange={v => update("pool", v)}
+                      total={totalSteps}
+                      disabledLevels={disabledLevels}
+                      onNext={() => setStep(stepAfter3)}
+                      onBack={() => isProgression ? setStep(1) : setStep(2)} />
                   )}
 
                   {step === 4 && hasPaceStep && (
