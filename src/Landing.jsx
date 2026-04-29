@@ -1105,7 +1105,7 @@ export default function Landing() {
       <FontLoader />
       <Nav />
       <Hero />
-      <Stats />
+
       <HowItWorks />
       <WeekExample />
       <Goals />

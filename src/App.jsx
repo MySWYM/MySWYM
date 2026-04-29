@@ -1890,7 +1890,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
         {/* Title + meta */}
         <div style={{ flex: 1, minWidth: 0 }} onClick={() => session.details?.length && setExpanded(v => !v)}>
           <div style={{ fontSize: 9, fontWeight: 700, color: done ? G.greyMid : tm.color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.title}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.3 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 10, marginTop: 5, flexWrap: "wrap" }}>
             {[
               { Icon: Ruler, val: session.distance },
