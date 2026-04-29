@@ -90,7 +90,7 @@ const GOALS = [
   { id: "tests_pompiers",    label: "Tests Pompiers",         dist: "400 m NL + 50 m sauvetage",    icon: <Shield size={20} />,   wellness: false },
   { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
   { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
-  { id: "perte_de_poids",    label: "Perte de poids",         dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
+  { id: "perte_de_poids",    label: "Activité physique",       dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
 ];
 
 // Catégories onboarding (step 1)
@@ -98,7 +98,7 @@ const CATEGORIES = [
   { id: "triathlon",   label: "Triathlon",          Icon: Activity,    desc: "Sprint · Olympique · Half · Ironman" },
   { id: "eau_libre",   label: "Eau libre",           Icon: Waves,       desc: "5 km · 10 km en eau vive" },
   { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Sans deadline · Progresser à ton rythme" },
-  { id: "poids",       label: "Perte de poids",      Icon: Target,      desc: "Plan adapté à ton objectif" },
+  { id: "poids",       label: "Activité physique",    Icon: Target,      desc: "Nager pour se sentir bien" },
   { id: "diplome",     label: "Prépa diplôme",       Icon: Award,       desc: "BNSSA · BPJEPS · Pompiers" },
 ];
 
@@ -134,38 +134,38 @@ const LEVELS = [
   {
     id: "découverte",
     label: "Découverte",
-    emoji: "🌊",
     desc: "Je m'arrête après quelques longueurs",
     detail: "Moins de 4 longueurs sans pause, ou je reprends après un arrêt",
     color: "#00B4D8",
     bg: "#E0F7FA",
+    dot: 1,
   },
   {
     id: "régulier",
     label: "Régulier",
-    emoji: "🏊",
     desc: "Je nage 20–30 min sans m'arrêter",
     detail: "Je tiens mon rythme, mais je ne cherche pas encore la perf",
     color: "#00C48C",
     bg: "#E6FFF6",
+    dot: 2,
   },
   {
     id: "sportif",
     label: "Sportif",
-    emoji: "⚡",
     desc: "J'enchaîne les longueurs facilement",
     detail: "Je nage régulièrement et je veux progresser de façon structurée",
     color: "#0057FF",
     bg: "#EEF3FF",
+    dot: 3,
   },
   {
     id: "performance",
     label: "Performance",
-    emoji: "🏆",
     desc: "Je veux des résultats mesurables",
-    detail: "Je connais (ou veux calculer) mon chrono sur 100m",
+    detail: "Je connais (ou veux calculer) mon chrono sur 100m et 400m",
     color: "#7C3AED",
     bg: "#EDE9FE",
+    dot: 4,
   },
 ];
 
@@ -393,131 +393,196 @@ function fmtPaceDisplay(secs) {
   return `${Math.floor(secs / 60)}:${Math.round(secs % 60).toString().padStart(2, "0")}`;
 }
 
-const PaceZonesCard = ({ pace100, onSave }) => {
-  const [display, setDisplay] = useState(pace100 ? fmtPaceDisplay(pace100) : "");
-  const [val, setVal]         = useState(pace100 || null);
-  const [err, setErr]         = useState("");
-  const [saved, setSaved]     = useState(false);
+// ── PROJECTION CURVE (Performance only) ──────────────────────────────────
+// Loi de puissance natation : T(d) = a * d^e
+// Si 100m ET 400m connus : e = ln(T400/T100) / ln(4) — sinon e = 1.06 (valeur typique)
+function calcProjection(pace100, pace400 = null) {
+  if (!pace100) return null;
+  const e = pace400
+    ? Math.log(pace400 / pace100) / Math.log(400 / 100)
+    : 1.065; // valeur standard pour nageurs entraînés
+  // Clamp exponent in realistic range
+  const exp = Math.min(Math.max(e, 1.02), 1.14);
+  const a   = pace100 / Math.pow(100, exp);
+  const predict = (d) => a * Math.pow(d, exp);
+  return { exp, predict };
+}
 
-  const handleChange = (raw) => {
-    const digits = raw.replace(/\D/g, "").slice(0, 3);
-    let fmt = digits;
-    if (digits.length >= 2) fmt = digits[0] + ":" + digits.slice(1);
-    setDisplay(fmt);
-    setErr(""); setSaved(false);
-    if (digits.length === 3) {
-      const mins = parseInt(digits[0]);
-      const secs = parseInt(digits.slice(1));
-      if (secs >= 60) { setErr("Les secondes doivent être entre 00 et 59"); setVal(null); return; }
-      const total = mins * 60 + secs;
-      if (total < 45)  { setErr("Trop rapide — minimum 45 secondes"); setVal(null); return; }
-      if (total > 300) { setErr("Maximum 5 minutes (300 s)"); setVal(null); return; }
-      setVal(total);
-    } else { setVal(null); }
-  };
+function fmtTime(totalSecs) {
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = Math.round(totalSecs % 60);
+  if (h > 0) return `${h}h${String(m).padStart(2,'0')}'${String(s).padStart(2,'0')}"`;
+  return `${m}'${String(s).padStart(2,'0')}"`;
+}
 
-  const handleSave = () => {
-    if (!val) return;
-    onSave(val);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
+const PaceProjectionCard = ({ pace100, pace400 }) => {
+  if (!pace100) return null;
+  const proj = calcProjection(pace100, pace400);
+  if (!proj) return null;
+
+  const TARGETS = [
+    { dist: 400,  label: "400 m",   color: "#0057FF" },
+    { dist: 1000, label: "1 000 m", color: "#7C3AED" },
+    { dist: 1500, label: "1 500 m", color: "#00C48C" },
+    { dist: 3000, label: "3 000 m", color: "#FF9F0A" },
+  ];
+
+  // Courbe SVG : de 100m à 3000m
+  const SVG_W = 280, SVG_H = 90;
+  const distMin = 100, distMax = 3200;
+  const allPredicted = [100, 400, 1000, 1500, 3000].map(d => proj.predict(d));
+  const tMin = Math.min(...allPredicted);
+  const tMax = Math.max(...allPredicted);
+  const xOf = (d) => ((d - distMin) / (distMax - distMin)) * SVG_W;
+  const yOf = (t) => SVG_H - ((t - tMin) / (tMax - tMin + 1)) * (SVG_H - 8) - 4;
+  const pts = Array.from({ length: 40 }, (_, i) => {
+    const d = distMin + (i / 39) * (distMax - distMin);
+    return `${xOf(d).toFixed(1)},${yOf(proj.predict(d)).toFixed(1)}`;
+  }).join(" ");
 
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Gauge size={16} color={G.blue} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <TrendingUp size={16} color="#7C3AED" />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Tes zones d'intensité</h3>
-          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton meilleur 100 m NL</p>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
+            Projection de performance
+          </h3>
+          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>
+            Estimation basée sur tes temps — loi de puissance
+          </p>
         </div>
       </div>
 
-      {/* Explication CSS */}
-      <div style={{ background: G.blueLight, borderRadius: 12, padding: "11px 14px", marginBottom: 16, marginTop: 10 }}>
-        <p style={{ fontSize: 13, color: G.blue, lineHeight: 1.55, margin: 0 }}>
-          <strong>C'est quoi la CSS ?</strong> La Vitesse Critique de Nage est l'allure seuil entre effort soutenable et effort difficile. Tous tes intervals de départ sont calculés à partir de ton 100 m personnel.
-        </p>
-      </div>
-
-      {/* Input 100m */}
-      <label style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-        Ton meilleur 100 m NL
-      </label>
-      <div style={{ display: "flex", gap: 8, marginBottom: err ? 8 : 16 }}>
-        <div style={{ position: "relative", flex: 1 }}>
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="1:45"
-            value={display}
-            onChange={e => handleChange(e.target.value)}
-            style={{
-              width: "100%", boxSizing: "border-box",
-              padding: "13px 14px 13px 48px",
-              fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em",
-              letterSpacing: 1.5, textAlign: "center",
-              border: `2px solid ${err ? "#FF3B30" : val ? G.blue : G.greyLight}`,
-              borderRadius: 12, outline: "none", background: G.white, color: G.ink,
-            }}
-          />
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: G.grey, fontWeight: 600, pointerEvents: "none" }}>m:ss</span>
+      {/* Mini courbe SVG */}
+      <div style={{ background: G.greyXLight, borderRadius: 12, padding: "12px 12px 8px", marginBottom: 16, overflow: "hidden" }}>
+        <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }}>
+          {/* Grid lines */}
+          {[0.25, 0.5, 0.75].map((f, i) => (
+            <line key={i} x1={SVG_W * f} y1={0} x2={SVG_W * f} y2={SVG_H} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
+          ))}
+          {/* Gradient fill */}
+          <defs>
+            <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.18"/>
+              <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <polygon points={`0,${SVG_H} ${pts} ${SVG_W},${SVG_H}`} fill="url(#projGrad)" />
+          <polyline points={pts} fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Dots at key distances */}
+          {TARGETS.map(t => (
+            <circle key={t.dist} cx={xOf(t.dist)} cy={yOf(proj.predict(t.dist))} r="4" fill={t.color} />
+          ))}
+        </svg>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          {["100m", "1 km", "2 km", "3 km"].map((l, i) => (
+            <span key={i} style={{ fontSize: 9, color: G.greyMid, fontWeight: 600 }}>{l}</span>
+          ))}
         </div>
-        <button
-          onClick={handleSave}
-          disabled={!val}
-          style={{
-            padding: "13px 18px", borderRadius: 12, border: "none", cursor: val ? "pointer" : "not-allowed",
-            background: saved ? G.mint : val ? G.blue : G.greyLight,
-            color: G.white, fontWeight: 700, fontSize: 14, transition: "background 0.2s",
-            display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
-          }}
-        >
-          {saved ? <><Check size={14} /> Sauvé</> : "Enregistrer"}
-        </button>
       </div>
-      {err && <p style={{ color: "#FF3B30", fontSize: 13, marginBottom: 12 }}>{err}</p>}
 
-      {/* Zone cards */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {ZONE_DEFS.map((z, i) => {
-          const paceStr = val
-            ? (() => { const ps = Math.round(val * z.mult); return `${Math.floor(ps/60)}'${(ps%60).toString().padStart(2,"0")}"` + "/100m"; })()
-            : null;
+      {/* Predicted times */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {TARGETS.map(t => {
+          const raw = proj.predict(t.dist);
+          const pace = raw / (t.dist / 100);
+          const paceStr = `${Math.floor(pace/60)}'${String(Math.round(pace%60)).padStart(2,'0')}"/100m`;
+          // If the user has the actual time for this distance, show it
+          const actual = t.dist === 100 ? pace100 : t.dist === 400 ? pace400 : null;
           return (
-            <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}30`, borderRadius: 14, padding: "14px 16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <div>
-                  <span style={{ background: `${z.color}22`, color: z.color, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 100, letterSpacing: 1 }}>{z.zone}</span>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 14, color: G.ink, marginTop: 5 }}>{z.label}</div>
-                  <div style={{ fontSize: 11, color: G.grey, fontStyle: "italic", marginTop: 1 }}>{z.tip}</div>
-                </div>
-                {paceStr && (
-                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: "0.04em", color: z.color }}>{paceStr}</div>
-                  </div>
-                )}
-                {!paceStr && (
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: z.color, opacity: 0.5, marginLeft: 12 }}>— —</div>
-                )}
+            <div key={t.dist} style={{ background: `${t.color}0D`, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.color}22` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginBottom: 4, letterSpacing: "0.04em" }}>{t.label}</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
+                {actual ? fmtTime(actual) : fmtTime(Math.round(raw))}
+                {actual && <span style={{ fontSize: 10, color: G.mint, marginLeft: 4, fontWeight: 600 }}>réel</span>}
               </div>
-              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.55, margin: 0 }}>{z.desc}</p>
+              <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{paceStr}</div>
             </div>
           );
         })}
       </div>
 
-      {val && val !== pace100 && (
-        <p style={{ fontSize: 12, color: G.grey, textAlign: "center", marginTop: 14 }}>
-          Enregistre ton temps — il sera utilisé à ta prochaine génération de plan.
-        </p>
+      <p style={{ fontSize: 11, color: G.greyMid, marginTop: 12, lineHeight: 1.5 }}>
+        Projection indicative — s'affine avec le temps quand tu ajoutes tes 400 m.
+      </p>
+    </div>
+  );
+};
+
+const PaceZonesCard = ({ pace100, pace400, onSave }) => {
+  const [val100, setVal100] = useState(pace100 || null);
+  const [val400, setVal400] = useState(pace400 || null);
+  const [saved,  setSaved]  = useState(false);
+
+  const handleSave = () => {
+    if (!val100) return;
+    onSave(val100, val400);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const fmtZone = (s) => `${Math.floor(s/60)}'${String(Math.round(s%60)).padStart(2,'0')}"/100m`;
+  const hasChange = val100 !== pace100 || val400 !== (pace400 || null);
+
+  return (
+    <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Gauge size={16} color={G.blue} />
+        </div>
+        <div>
+          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
+          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur tes temps personnels</p>
+        </div>
+      </div>
+
+      {/* Inputs */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+        <PaceInput label="100 m crawl" hint="ex : 1:45" placeholder="1:45"
+          value={val100} onChange={setVal100} maxLen={3} minSec={45} maxSec={5*60} />
+        <PaceInput label="400 m crawl" hint="optionnel" placeholder="8:00"
+          value={val400} onChange={setVal400} maxLen={4} minSec={3*60} maxSec={20*60} />
+      </div>
+
+      {/* Save button */}
+      <button onClick={handleSave} disabled={!val100 || !hasChange} style={{
+        width: "100%", padding: "13px", borderRadius: 12, border: "none",
+        cursor: (val100 && hasChange) ? "pointer" : "not-allowed",
+        background: saved ? G.mint : (val100 && hasChange) ? G.blue : G.greyLight,
+        color: G.white, fontWeight: 700, fontSize: 14, transition: "background 0.2s",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 16,
+      }}>
+        {saved ? <><Check size={14} /> Enregistré</> : "Enregistrer"}
+      </button>
+
+      {/* Zone cards */}
+      {val100 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {ZONE_DEFS.map((z, i) => {
+            const ps = Math.round(val100 * z.mult);
+            return (
+              <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
+                  <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{z.desc}</div>
+                </div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
+                  {fmtZone(ps)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
-      {pace100 && val === pace100 && (
-        <p style={{ fontSize: 12, color: G.mint, textAlign: "center", marginTop: 14, fontWeight: 600 }}>
-          ✓ Zones personnalisées actives dans ton plan
+
+      {pace100 && !hasChange && (
+        <p style={{ fontSize: 12, color: G.mint, textAlign: "center", marginTop: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+          <Check size={12} /> Zones actives dans ton plan
         </p>
       )}
     </div>
@@ -619,8 +684,13 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           <StatPill icon={Star}   value={stats.perfectWeeks}                             label="Semaines parfaites" color={G.gold}  bg={G.goldLight}  />
         </div>
 
-        {/* Pace zones */}
-        <PaceZonesCard pace100={profile?.pace100} onSave={onPaceUpdate} />
+        {/* Pace zones + projection (Performance uniquement) */}
+        {(profile?.level === "performance" || profile?.level === "advanced") && (
+          <>
+            <PaceZonesCard pace100={profile?.pace100} pace400={profile?.pace400} onSave={onPaceUpdate} />
+            <PaceProjectionCard pace100={profile?.pace100} pace400={profile?.pace400} />
+          </>
+        )}
 
         {/* Modifier le programme */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
@@ -1080,7 +1150,12 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
             boxShadow: isActive ? `0 4px 16px ${l.color}22` : "0 2px 8px rgba(0,0,0,0.04)",
             textAlign: "left",
           }}>
-            <div style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{l.emoji}</div>
+            {/* Level dots — Apple-style simple indicator */}
+            <div style={{ display: "flex", gap: 3, flexShrink: 0, alignSelf: "center" }}>
+              {[1,2,3,4].map(n => (
+                <div key={n} style={{ width: 7, height: 7, borderRadius: "50%", background: n <= l.dot ? l.color : G.greyLight, transition: "background 0.2s" }} />
+              ))}
+            </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? l.color : G.ink, marginBottom: 2 }}>{l.label}</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? l.color : G.inkLight }}>{l.desc}</div>
@@ -1109,135 +1184,144 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
   </div>
 );
 
-// ── STEP 4 : TEMPS AU 100m ────────────────────────────────────────────────
-const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
-  const [display, setDisplay] = useState(value ? fmtPace100(value) : "");
+// ── STEP 4 : TEMPS AU 100m ET 400m (Performance uniquement) ──────────────
+// Helper partagé : parse "m:ss" ou "mm:ss" en secondes
+function parsePaceInput(raw, maxSecs = 9 * 60) {
+  const digits = raw.replace(/\D/g, "").slice(0, 4);
+  if (digits.length < 3) return { val: null, err: "" };
+  // "155" → 1:55 ; "1045" → 10:45
+  let mins, secs;
+  if (digits.length <= 3) { mins = parseInt(digits[0]); secs = parseInt(digits.slice(1)); }
+  else { mins = parseInt(digits.slice(0, 2)); secs = parseInt(digits.slice(2)); }
+  if (secs >= 60) return { val: null, err: "Les secondes doivent être entre 00 et 59" };
+  const total = mins * 60 + secs;
+  if (total < 30) return { val: null, err: "Trop rapide — minimum 30 secondes" };
+  if (total > maxSecs) return { val: null, err: `Maximum ${Math.floor(maxSecs/60)} minutes` };
+  return { val: total, err: "" };
+}
+function fmtDigits(raw, maxLen = 3) {
+  const digits = raw.replace(/\D/g, "").slice(0, maxLen);
+  if (digits.length <= 2) return digits;
+  const split = maxLen === 4 ? 2 : 1;
+  return digits.slice(0, split) + ":" + digits.slice(split);
+}
+function secToDisplay(secs) {
+  if (!secs) return "";
+  return `${Math.floor(secs/60)}:${Math.round(secs%60).toString().padStart(2,'0')}`;
+}
+
+// Composant input pace réutilisable
+function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minSec = 30, maxSec = 9 * 60 }) {
+  const [raw, setRaw] = useState(value ? secToDisplay(value) : "");
   const [err, setErr] = useState("");
 
-  // Formate secondes → "m:ss" pour l'affichage
-  function fmtPace100(secs) {
-    return `${Math.floor(secs/60)}:${Math.round(secs%60).toString().padStart(2,'0')}`;
-  }
-
-  const handleChange = (raw) => {
-    const digits = raw.replace(/\D/g, "").slice(0, 3);
-    let formatted = digits;
-    if (digits.length >= 2) formatted = digits[0] + ":" + digits.slice(1);
-    setDisplay(formatted);
-    setErr("");
-    if (digits.length === 3) {
-      const mins = parseInt(digits[0]);
-      const secs = parseInt(digits.slice(1));
-      if (secs >= 60) { setErr("Les secondes doivent être entre 00 et 59"); onChange(null); return; }
-      const total = mins * 60 + secs;
-      if (total < 45)  { setErr("Même les champions mettent plus de 45 secondes !"); onChange(null); return; }
-      if (total > 300) { setErr("5 minutes max — si tu nages plus lentement, utilise l'option ci-dessous"); onChange(null); return; }
-      onChange(total);
-    } else {
-      onChange(null);
-    }
+  const handle = (input) => {
+    const digits = input.replace(/\D/g, "").slice(0, maxLen);
+    const formatted = fmtDigits(input, maxLen);
+    setRaw(formatted);
+    if (digits.length < (maxLen === 4 ? 3 : 3)) { onChange(null); setErr(""); return; }
+    const { val, err: e } = parsePaceInput(input, maxSec);
+    if (val && val < minSec) { setErr(`Minimum ${Math.floor(minSec/60)}:${String(minSec%60).padStart(2,'0')}`); onChange(null); return; }
+    setErr(e);
+    onChange(val);
   };
 
-  const zones = value ? [
-    { label: "Facile (Z1/Z2)",   mult: 1.35, color: "#34C759" },
-    { label: "Seuil (Z3/Z4)",    mult: 1.08, color: "#FF9F0A" },
-    { label: "Sprint (Z5/Z6)",   mult: 0.95, color: "#FF3B30" },
-  ] : null;
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{label}</span>
+        <span style={{ fontSize: 12, color: G.grey }}>{hint}</span>
+      </div>
+      <input
+        type="text" inputMode="numeric"
+        placeholder={placeholder}
+        value={raw}
+        onChange={e => handle(e.target.value)}
+        style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "16px 14px", fontSize: 24,
+          fontFamily: "'Syne', sans-serif", fontWeight: 700,
+          textAlign: "center", letterSpacing: "0.06em",
+          border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
+          borderRadius: 14, outline: "none", background: G.white, color: G.ink,
+          transition: "border-color 0.2s",
+        }}
+      />
+      {err && <p style={{ color: "#FF3B30", fontSize: 12, marginTop: 4 }}>{err}</p>}
+    </div>
+  );
+}
+
+const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onBack, total = 6 }) => {
+  const ZONES = [
+    { label: "Endurance",  mult: 1.35, color: "#34C759" },
+    { label: "Seuil",      mult: 1.08, color: "#FF9F0A" },
+    { label: "Sprint",     mult: 0.95, color: "#FF3B30" },
+  ];
+
+  const fmtZone = (secs) => `${Math.floor(secs/60)}'${String(Math.round(secs%60)).padStart(2,'0')}"/100m`;
 
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
-      <h2 style={{ fontSize: 34, fontFamily: "'Syne', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Ton meilleur<br />100m ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 16 }}>Ce temps transforme ton plan générique en programme <strong style={{ color: G.ink }}>taillé pour toi</strong>.</p>
+      <h2 style={{ fontSize: 30, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+        Tes références<br />personnelles
+      </h2>
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
+        Ces temps calibrent ton plan à la seconde. Renseigne au moins le 100 m.
+      </p>
 
-      {/* Bloc bénéfices */}
-      <div style={{ background: G.blueLight, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {[
-            { icon: "🎯", text: "Tes départs sont calculés à la seconde près selon ton niveau réel — pas une estimation générique." },
-            { icon: "⚡", text: "Chaque zone (endurance, seuil, sprint) correspond à une allure que tu peux vraiment tenir." },
-            { icon: "📈", text: "Tu progresses plus vite car tu t'entraînes dans la bonne zone — ni trop facile, ni trop dur." },
-          ].map((b, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{b.icon}</span>
-              <span style={{ fontSize: 13, color: G.blue, lineHeight: 1.5 }}>{b.text}</span>
-            </div>
-          ))}
-        </div>
-        <a
-          href="/blog/personnalisation-100m-natation"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 12, fontSize: 12, fontWeight: 700, color: G.blue, textDecoration: "none", borderBottom: `1px solid ${G.blue}44` }}
-        >
-          Voir comment ça marche →
-        </a>
-      </div>
-
-      {/* CSS mini explainer */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
-        {[
-          { color: "#34C759", label: "Z1–Z2 Facile",   hint: "Récupération & endurance de base" },
-          { color: "#FF9F0A", label: "Z3–Z4 CSS/Seuil", hint: "Ta vitesse critique — effort contrôlé" },
-          { color: "#FF3B30", label: "Z5–Z6 Sprint",    hint: "Effort maximal, répétitions courtes" },
-        ].map((z, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: G.greyXLight, borderRadius: 10, padding: "9px 12px" }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{z.label}</span>
-            <span style={{ fontSize: 12, color: G.grey, marginLeft: "auto" }}>{z.hint}</span>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ position: "relative", marginBottom: err ? 8 : 20 }}>
-        <input
-          type="text"
-          inputMode="numeric"
+      {/* Inputs */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        <PaceInput
+          label="100 m crawl"
+          hint="ex : 1:45"
           placeholder="1:45"
-          value={display}
-          onChange={e => handleChange(e.target.value)}
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "18px 20px 18px 56px",
-            fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: "0.03em",
-            letterSpacing: 2, textAlign: "center",
-            border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
-            borderRadius: 16, outline: "none", background: G.white, color: G.ink,
-          }}
+          value={value}
+          onChange={onChange}
+          maxLen={3}
+          minSec={45}
+          maxSec={5 * 60}
         />
-        <span style={{ position: "absolute", left: 20, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: G.grey, fontWeight: 600, pointerEvents: "none" }}>m:ss</span>
+        <PaceInput
+          label="400 m crawl"
+          hint="optionnel — ex : 8:00"
+          placeholder="8:00"
+          value={value400}
+          onChange={onChange400}
+          maxLen={4}
+          minSec={3 * 60}
+          maxSec={20 * 60}
+        />
       </div>
-      {err && <p style={{ color: "#FF3B30", fontSize: 13, marginBottom: 16 }}>{err}</p>}
 
-      {/* Zones preview */}
-      {zones && (
-        <div style={{ background: G.greyXLight, borderRadius: 14, padding: 16, marginBottom: 20 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Tes zones calculées</p>
+      {/* Zone preview */}
+      {value && (
+        <div style={{ background: G.greyXLight, borderRadius: 14, padding: "14px 16px", marginBottom: 20 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>
+            Tes zones d'intensité
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {zones.map((z, i) => {
-              const ps = Math.round(value * z.mult);
-              const pStr = `${Math.floor(ps/60)}'${(ps%60).toString().padStart(2,'0')}"`;
-              return (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.color }} />
-                    <span style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{z.label}</span>
-                  </div>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: "0.04em", color: z.color }}>
-                    {pStr}/100m
-                  </span>
-                </div>
-              );
-            })}
+            {ZONES.map((z, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: G.ink, flex: 1 }}>{z.label}</span>
+                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: z.color }}>
+                  {fmtZone(Math.round(value * z.mult))}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      <Btn variant="blue" onClick={onNext} disabled={!value}>Utiliser ce temps</Btn>
+      <Btn variant="blue" onClick={onNext} disabled={!value}>Utiliser ces temps</Btn>
       <button onClick={onSkip} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
-        Je ne connais pas mon temps →
+        Je ne connais pas mes temps
       </button>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 8, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 8, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>
+        Retour
+      </button>
     </div>
   );
 };
@@ -1342,115 +1426,92 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
   );
 };
 
-// ── FEEDBACK MODAL ────────────────────────────────────────────────────────
-const STEPS = [
-  {
-    key: "rating",
-    label: "Charge d'entraînement",
-    question: "Comment tu t'es senti·e ?",
-    sub: "On adapte les prochaines semaines à ta réponse.",
-    opts: [
-      { id: "easy", label: "Trop facile",  sub: "On augmente le volume", color: G.mint,  bg: G.mintLight },
-      { id: "ok",   label: "Parfait",      sub: "On maintient l'allure", color: G.blue,  bg: G.blueLight },
-      { id: "hard", label: "Trop dur",     sub: "On réduit un peu",      color: G.coral, bg: G.coralLight },
-    ],
-  },
-  {
-    key: "motivation",
-    label: "Motivation",
-    question: "Tu as apprécié les séances ?",
-    sub: "Honnêteté totale — ça aide à calibrer.",
-    opts: [
-      { id: "loved",    label: "J'ai adoré",           sub: "Hâte d'être à la prochaine",       color: G.mint,  bg: G.mintLight },
-      { id: "ok",       label: "C'était bien",          sub: "Agréable, sans plus",              color: G.blue,  bg: G.blueLight },
-      { id: "dragged",  label: "J'ai traîné les pieds", sub: "Difficile de se motiver",          color: G.coral, bg: G.coralLight },
-    ],
-  },
-  {
-    key: "pain",
-    label: "Douleurs / gênes",
-    question: "As-tu ressenti des douleurs ?",
-    sub: "Toute gêne, même légère, est utile à noter.",
-    opts: [
-      { id: "none",   label: "Aucune",    sub: "Tout va bien",              color: G.mint,  bg: G.mintLight },
-      { id: "slight", label: "Légères",   sub: "Quelques tensions passagères", color: G.blue,  bg: G.blueLight },
-      { id: "real",   label: "Importantes", sub: "Douleur gênante ou persistante", color: G.coral, bg: G.coralLight },
-    ],
-  },
+// ── FEEDBACK MODAL — smiley system ────────────────────────────────────────
+// SVG faces — Apple-style minimal, no emoji
+const FaceGood = ({ size = 56, color = "#00C48C" }) => (
+  <svg width={size} height={size} viewBox="0 0 56 56" fill="none">
+    <circle cx="28" cy="28" r="26" stroke={color} strokeWidth="2.5" fill="none"/>
+    <circle cx="20" cy="23" r="2.5" fill={color}/>
+    <circle cx="36" cy="23" r="2.5" fill={color}/>
+    <path d="M18 33 Q28 43 38 33" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+const FaceMid = ({ size = 56, color = "#FF9F0A" }) => (
+  <svg width={size} height={size} viewBox="0 0 56 56" fill="none">
+    <circle cx="28" cy="28" r="26" stroke={color} strokeWidth="2.5" fill="none"/>
+    <circle cx="20" cy="23" r="2.5" fill={color}/>
+    <circle cx="36" cy="23" r="2.5" fill={color}/>
+    <path d="M19 36 H37" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+);
+const FaceTired = ({ size = 56, color = "#FF3B30" }) => (
+  <svg width={size} height={size} viewBox="0 0 56 56" fill="none">
+    <circle cx="28" cy="28" r="26" stroke={color} strokeWidth="2.5" fill="none"/>
+    <circle cx="20" cy="23" r="2.5" fill={color}/>
+    <circle cx="36" cy="23" r="2.5" fill={color}/>
+    <path d="M18 39 Q28 29 38 39" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+
+const SMILEY_OPTS = [
+  { id: "easy", Face: FaceGood,  label: "En forme",         sub: "Séances faciles à tenir",     color: "#00C48C", bg: "#E6FFF6" },
+  { id: "ok",   Face: FaceMid,   label: "Correct",          sub: "Effort modéré — bon rythme",  color: "#FF9F0A", bg: "#FFF8EE" },
+  { id: "hard", Face: FaceTired, label: "Difficile",        sub: "Fatigue ou surcharge",        color: "#FF3B30", bg: "#FFF0EF" },
 ];
 
 const FeedbackModal = ({ weekNumber, onSubmit, onSkip }) => {
-  const [step, setStep]       = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [comment, setComment] = useState("");
+  const [selected, setSelected] = useState(null);
 
-  const current = STEPS[step];
-  const isLast  = step === STEPS.length - 1;
-  const total   = STEPS.length + 1; // +1 pour l'étape commentaire
-
-  const choose = (val) => {
-    const next = { ...answers, [current.key]: val };
-    setAnswers(next);
-    if (!isLast) { setStep(s => s + 1); return; }
-    // dernière étape opts → passe au commentaire
-    setStep(total - 1);
+  const confirm = (id) => {
+    setSelected(id);
+    // Légère vibration tactile si disponible
+    if (navigator.vibrate) navigator.vibrate(40);
+    // Soumettre après une courte animation
+    setTimeout(() => onSubmit({ rating: id, motivation: id, pain: "none", comment: null }), 320);
   };
 
-  const finish = () => onSubmit({ ...answers, comment: comment.trim() || null });
-
-  const stepNum = step + 1;
-  const isCommentStep = step === total - 1;
-
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-      <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
+      <div className="scale-in" style={{ background: G.white, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
 
-        {/* Progress */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 24, justifyContent: "center" }}>
-          {Array.from({ length: total }).map((_, i) => (
-            <div key={i} style={{ height: 3, flex: 1, maxWidth: 48, borderRadius: 2, background: i <= step ? G.blue : G.greyLight, transition: "background 0.2s" }} />
-          ))}
-        </div>
-
-        <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
-          Semaine {weekNumber} terminée · {stepNum}/{total}
+        <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+          Semaine {weekNumber} terminée
+        </p>
+        <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+          Comment tu t'es senti·e ?
+        </h3>
+        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 28, lineHeight: 1.5 }}>
+          Ta réponse ajuste les prochaines séances.
         </p>
 
-        {!isCommentStep ? (
-          <>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, textAlign: "center" }}>{current.question}</h3>
-            <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 24 }}>{current.sub}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-              {current.opts.map(o => (
-                <button key={o.id} onClick={() => choose(o.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, border: `1.5px solid ${o.bg}`, background: o.bg, cursor: "pointer", textAlign: "left" }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{o.label}</div>
-                    <div style={{ fontSize: 12, color: G.grey }}>{o.sub}</div>
-                  </div>
-                  <ArrowRight size={16} color={o.color} />
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, textAlign: "center" }}>Un mot sur la semaine ?</h3>
-            <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20 }}>Optionnel — tout commentaire aide à améliorer les plans.</p>
-            <textarea
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Ex : la séance du mercredi était trop longue..."
-              rows={3}
-              style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, fontSize: 14, color: G.ink, resize: "none", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
-            />
-            <button onClick={finish} style={{ width: "100%", padding: "15px", borderRadius: 16, background: G.blue, border: "none", color: G.white, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>
-              Terminer
-            </button>
-          </>
-        )}
+        {/* 3 smiley cards */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+          {SMILEY_OPTS.map(o => {
+            const isActive = selected === o.id;
+            return (
+              <button key={o.id} onClick={() => confirm(o.id)} style={{
+                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+                padding: "18px 8px", borderRadius: 20,
+                border: `2px solid ${isActive ? o.color : G.greyLight}`,
+                background: isActive ? o.bg : G.white,
+                cursor: "pointer", transition: "all 0.18s",
+                transform: isActive ? "scale(1.04)" : "scale(1)",
+              }}>
+                <o.Face size={52} color={o.color} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: isActive ? o.color : G.ink, marginBottom: 2 }}>{o.label}</div>
+                  <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.3 }}>{o.sub}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
-        <button onClick={onSkip} style={{ width: "100%", padding: "10px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13 }}>Passer</button>
+        <button onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+          Passer
+        </button>
       </div>
     </div>
   );
@@ -2430,35 +2491,96 @@ const SESSION_TEMPLATES = {
       };
     }
 
+    // ── RÉGULIER : 5 variants simples, clairs, sans jargon ───────────────
+    if (isBeg) {
+      const nLaps = Math.max(3, Math.round(dist / (2 * P)));
+      const rest  = P <= 25 ? "25\"" : "30\"";
+      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      return {
+        type: "ENDURANCE",
+        ...[
+          {
+            title: "Séries régulières",
+            intensity: "Allure confortable — tu pourrais parler",
+            details: [
+              `Échauffement : ${2*P}m crawl très lent + ${P}m dos`,
+              `${Math.max(3, Math.round(nLaps * 0.7))}× ${2*P}m crawl — repose ${rest} — allure constante, pas d'accélération`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m dos — repose ${rest} — récupération active`,
+              `Fin : ${P}m crawl très lent`,
+            ],
+          },
+          {
+            title: "Pyramide simple",
+            intensity: "Allure confortable — monte puis descends",
+            details: [
+              `Échauffement : ${2*P}m crawl tranquille`,
+              `${P}m · ${2*P}m · ${3*P}m · ${2*P}m · ${P}m crawl — ${rest} de repos entre chaque — garde la même sensation du début à la fin`,
+              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup douce`,
+              `Fin : ${P}m à ton rythme`,
+            ],
+          },
+          {
+            title: "Crawl & dos en mix",
+            intensity: "Très facile — change de nage pour varier",
+            details: [
+              `${Math.max(4, Math.round(nLaps * 0.45))}× ${2*P}m crawl — repose ${rest}`,
+              `${Math.max(3, Math.round(nLaps * 0.35))}× ${2*P}m dos — repose ${rest} — regarde le plafond, épaule qui sort`,
+              `Fin : ${P}m de ton choix — flottaison pure`,
+            ],
+          },
+          {
+            title: "Négatif splits",
+            intensity: "Facile → modéré — 2e moitié plus vite",
+            details: [
+              `Échauffement : ${2*P}m crawl lent + ${P}m dos`,
+              `${Math.max(3, Math.round(nLaps * 0.65))}× ${2*P}m crawl — repose ${rest} — 1re longueur calme, 2e longueur un cran plus vite`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos lent — récup`,
+              `Fin : ${P}m crawl très lent`,
+            ],
+          },
+          {
+            title: "Longues séquences",
+            intensity: "Modéré — tiens la distance",
+            details: [
+              `Échauffement : ${2*P}m crawl tranquille`,
+              `${Math.max(2, Math.round(nLaps * 0.5))}× ${4*P}m crawl — repose 40" — reps longues, gère ton rythme`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m dos — ${rest} — récup active`,
+              `Fin : ${P}m très lent`,
+            ],
+          },
+        ][vb],
+      };
+    }
+
     const isTriathlon = goal.startsWith("triathlon");
     const isOpenWater = goal.startsWith("open_water") || goal.startsWith("eau_libre");
 
     const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
 
-    // v0 — Fond en séries
-    const repM = isBeg ? 2*P : Math.min(isAdv ? 4*P : 3*P, 300);
+    // v0 — Fond en séries (sportif/performance only from here)
+    const repM = Math.min(isAdv ? 4*P : 3*P, 300);
     const nM   = Math.max(2, Math.min(12, Math.floor(avail * 0.70 / repM)));
     const nS   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nM*repM) / (2*P))));
 
     // v1 — Pyramide aérobie
-    const pyMax = isBeg ? 2*P : Math.min(isAdv ? 4*P : 3*P, 300);
+    const pyMax = Math.min(isAdv ? 4*P : 3*P, 300);
     const pyUp = [], pyDn = [];
     for (let d = P; d <= pyMax; d += P) { pyUp.push(d); if (d < pyMax) pyDn.unshift(d); }
     const pyAll  = [...pyUp, ...pyDn];
     const pyFill = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - pyAll.reduce((a,b)=>a+b,0)) / (2*P))));
 
     // v2 — Négatifs splits
-    const repNS = isBeg ? 2*P : Math.min(isAdv ? 4*P : 3*P, 400);
+    const repNS = Math.min(isAdv ? 4*P : 3*P, 400);
     const nNS   = Math.max(2, Math.min(10, Math.floor(avail * 0.70 / repNS)));
     const nNSF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nNS*repNS) / (2*P))));
 
     // v3 — Long fractionné (broken swim concept)
-    const repL = isBeg ? 4*P : Math.min(isAdv ? 8*P : 6*P, 600);
+    const repL = Math.min(isAdv ? 8*P : 6*P, 600);
     const nL   = Math.max(2, Math.min(6, Math.floor(avail * 0.70 / repL)));
     const nLF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nL*repL) / (2*P))));
 
     // v4 — Nage alternée crawl/dos
-    const repA = isBeg ? 2*P : Math.min(isAdv ? 3*P : 2*P, 200);
+    const repA = Math.min(isAdv ? 3*P : 2*P, 200);
     const nA4  = Math.max(2, Math.min(8, Math.floor(avail * 0.45 / repA)));
     const nB4  = Math.max(2, Math.min(8, Math.floor(avail * 0.35 / repA)));
     const nAF  = Math.min(4, Math.max(0, Math.round(Math.max(0, avail - (nA4+nB4)*repA) / (2*P))));
@@ -2470,12 +2592,12 @@ const SESSION_TEMPLATES = {
       type: "ENDURANCE",
       ...[
         {
-          title: isBeg ? "Séries fondamentales" : "Fond en séries",
-          intensity: "Z1/Z2 — allure conversation",
+          title: "Fond en séries",
+          intensity: "Endurance — allure conversation",
           details: [
-            `Échauffement : 200m NL progressif + 100m battements de jambes`,
-            `${nM}×${repM}m NL — ${dep(repM,lvl,'easy')} — allure régulière, respiration toutes les 3 tractions${triathlonCue}${owCue}`,
-            `${nS}×${2*P}m pull-buoy — R20" — bras seuls, coude haut, tire sous l'axe du corps`,
+            `Échauffement : 200m crawl progressif + 100m battements de jambes`,
+            `${nM}×${repM}m crawl — ${dep(repM,lvl,'easy')} — allure régulière, respiration toutes les 3 tractions${triathlonCue}${owCue}`,
+            `${nS}×${2*P}m pull-buoy — R20" — bras seuls, coude haut, tire sous l'axe`,
             `Retour au calme : 200m dos lent`,
           ],
         },
@@ -2574,35 +2696,96 @@ const SESSION_TEMPLATES = {
       };
     }
 
+    // ── RÉGULIER : seuil simplifié, 5 variants fun ────────────────────────
+    if (isBeg) {
+      const nLaps = Math.max(3, Math.round(dist / (2 * P)));
+      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      return {
+        type: "SEUIL",
+        ...[
+          {
+            title: "Un cran au-dessus",
+            intensity: "Modéré — effort perceptible mais tenable",
+            details: [
+              `Échauffement : ${2*P}m crawl lent + ${P}m dos`,
+              `${Math.max(3, Math.round(nLaps * 0.65))}× ${2*P}m crawl — repose 30" — nage à une allure qui "pousse" sans être à fond`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup douce`,
+              `Fin : ${P}m crawl très lent`,
+            ],
+          },
+          {
+            title: "Montée en puissance",
+            intensity: "Facile → soutenu — tu augmentes chaque bloc",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl lent — repose 20"`,
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl rythme normal — repose 25"`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl un peu plus soutenu — repose 35"`,
+              `Fin : ${P}m très lent`,
+            ],
+          },
+          {
+            title: "Blocs effort/récup",
+            intensity: "Modéré — alternance effort et récupération",
+            details: [
+              `Échauffement : ${2*P}m crawl`,
+              `Répète ${Math.max(3, Math.round(nLaps * 0.5))} fois : ${2*P}m crawl soutenu + ${P}m dos lent`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m crawl confort — récup finale`,
+              `Fin : ${P}m dos`,
+            ],
+          },
+          {
+            title: "Séries 50m rapides",
+            intensity: "Modéré/vif — courtes mais intenses",
+            details: [
+              `Échauffement : ${2*P}m crawl tranquille`,
+              `${Math.max(5, Math.round(nLaps * 0.7))}× ${P}m crawl — repose 30" — chaque longueur à ~80% de ton max`,
+              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup`,
+              `Fin : ${P}m lent`,
+            ],
+          },
+          {
+            title: "Tempo continu",
+            intensity: "Soutenu — tiens sur la durée",
+            details: [
+              `Échauffement : ${2*P}m crawl lent`,
+              `${Math.max(2, Math.round(nLaps * 0.55))}× ${3*P}m crawl à allure soutenue — repose 40" — idem du 1er au dernier`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup active`,
+              `Fin : ${P}m crawl très lent`,
+            ],
+          },
+        ][vb],
+      };
+    }
+
     const isTriathlon = goal.startsWith("triathlon");
 
     const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
 
-    // v0 — CSS
-    const cssRep = isBeg ? 2*P : Math.min(isAdv ? 4*P : 3*P, 200);
+    // v0 — CSS (sportif/performance uniquement)
+    const cssRep = Math.min(isAdv ? 4*P : 3*P, 200);
     const nCSS   = Math.max(4, Math.min(10, Math.floor(avail * 0.65 / cssRep)));
     const nFin   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nCSS*cssRep) / (2*P))));
 
     // v1 — Pyramide seuil
-    const pyStep = isBeg ? P : Math.min(2*P, 100);
-    const pyMax  = pyStep * (isBeg ? 3 : isAdv ? 5 : 4);
+    const pyStep = Math.min(2*P, 100);
+    const pyMax  = pyStep * (isAdv ? 5 : 4);
     const pyUp = [], pyDn = [];
     for (let d = pyStep; d <= pyMax; d += pyStep) { pyUp.push(d); if (d < pyMax) pyDn.unshift(d); }
     const pyAll  = [...pyUp, ...pyDn];
     const pyFill = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - pyAll.reduce((a,b)=>a+b,0)) / (2*P))));
 
     // v2 — Blocs T-pace
-    const tRep    = isBeg ? 2*P : Math.min(isAdv ? 4*P : 3*P, 200);
+    const tRep    = Math.min(isAdv ? 4*P : 3*P, 200);
     const nT      = Math.max(3, Math.min(8, Math.floor(avail * 0.60 / tRep)));
     const nSprint = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nT*tRep) / (2*P))));
 
     // v3 — Séries descendantes
-    const dRep = isBeg ? 2*P : Math.min(isAdv ? 3*P : 2*P, 200);
+    const dRep = Math.min(isAdv ? 3*P : 2*P, 200);
     const nD   = Math.max(4, Math.min(8, Math.floor(avail * 0.65 / dRep)));
     const nDF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nD*dRep) / (2*P))));
 
     // v4 — Over-distance / tempo prolongé
-    const overRep = isBeg ? 3*P : Math.min(isAdv ? 6*P : 4*P, 400);
+    const overRep = Math.min(isAdv ? 6*P : 4*P, 400);
     const nOver   = Math.max(2, Math.min(5, Math.floor(avail * 0.65 / overRep)));
     const nOverF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nOver*overRep) / (2*P))));
 
@@ -2614,22 +2797,22 @@ const SESSION_TEMPLATES = {
       type: "SEUIL",
       ...[
         {
-          title: isBeg ? "Intervalles réguliers" : "CSS — allure critique",
-          intensity: "Z3 — effort soutenu et constant",
+          title: "CSS — allure critique",
+          intensity: "Seuil — effort soutenu et constant",
           details: [
-            `Échauffement : 200m NL progressif + 4×25m accélérations + 50m battements`,
-            `${nCSS}×${cssRep}m NL — ${dep(cssRep,lvl,'threshold')} — ${cssLabel}`,
-            `${nFin}×${2*P}m battements de jambes — R20" — fouet des chevilles, corps aligné`,
+            `Échauffement : 200m crawl progressif + 4×25m accélérations + 50m jambes`,
+            `${nCSS}×${cssRep}m crawl — ${dep(cssRep,lvl,'threshold')} — ${cssLabel}`,
+            `${nFin}×${2*P}m jambes seules — R20" — fouet des chevilles, corps aligné`,
             `Retour au calme : 200m dos lent`,
           ],
         },
         {
           title: "Pyramide seuil",
-          intensity: "Z3/Z4 — intensité croissante puis décroissante",
+          intensity: "Seuil — intensité croissante puis décroissante",
           details: [
-            `Échauffement : 200m NL + 100m battements de jambes`,
-            `Pyramide : ${pyAll.join('–')}m NL — R20" entre paliers — allure seuil à chaque palier, pas de relâche en haut`,
-            `${pyFill}×${2*P}m NL — R15" — allure récup active`,
+            `Échauffement : 200m crawl + 100m jambes`,
+            `Pyramide : ${pyAll.join('–')}m crawl — R20" entre paliers — allure seuil à chaque palier`,
+            `${pyFill}×${2*P}m crawl — R15" — allure récup active`,
             `Retour au calme : 200m dos lent`,
           ],
         },
@@ -2713,6 +2896,63 @@ const SESSION_TEMPLATES = {
             ],
           },
         ][vd],
+      };
+    }
+
+    // ── RÉGULIER : sprints courts, fun, accessibles ──────────────────────
+    if (isBeg) {
+      const nLaps = Math.max(4, Math.round(dist / (2 * P)));
+      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      return {
+        type: "VITESSE",
+        ...[
+          {
+            title: "Accélérations fun",
+            intensity: "Modéré → rapide — un décollage par longueur",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille — mise en jambes`,
+              `${Math.max(4, Math.round(nLaps * 0.5))}× ${2*P}m : 1re longueur normale + 2e longueur à fond — repose 40" — sens la différence`,
+              `Fin : ${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme — récupère`,
+            ],
+          },
+          {
+            title: "Course contre toi-même",
+            intensity: "Fun — sprint sur une longueur, récup complète",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl lent — repose 20" — mise en jambes`,
+              `${Math.max(4, Math.round(nLaps * 0.45))}× ${P}m sprint (une longueur à fond) — repose 45" — qualité, pas quantité`,
+              `Fin : ${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme`,
+            ],
+          },
+          {
+            title: "Départ aux murs",
+            intensity: "Fun — explosivité au départ de chaque longueur",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl pour te chauffer`,
+              `${Math.max(4, Math.round(nLaps * 0.45))}× ${P}m : pousse fort du mur + nage à fond — repose 40" — visualise que tu dépasses quelqu'un`,
+              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme — récupération`,
+            ],
+          },
+          {
+            title: "Sprints dos & crawl",
+            intensity: "Varié — alterne les styles pour aller vite autrement",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille — repose 20"`,
+              `${Math.max(3, Math.round(nLaps * 0.35))}× ${P}m crawl sprint — repose 40" — pousse à fond`,
+              `${Math.max(3, Math.round(nLaps * 0.35))}× ${P}m dos sprint — repose 40" — bras larges, propulsion maximale`,
+              `Fin : ${P}m crawl lent`,
+            ],
+          },
+          {
+            title: "Jeu de rythme",
+            intensity: "Ludique — alterne lent et rapide dans la même longueur",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl doux — repose 20"`,
+              `${Math.max(4, Math.round(nLaps * 0.55))}× ${2*P}m : 1re moitié lente + 2e moitié sprint — repose 35" — sens l'accélération`,
+              `Fin : ${Math.max(2, Math.round(nLaps * 0.15))}× ${2*P}m dos calme`,
+            ],
+          },
+        ][vb],
       };
     }
 
@@ -3495,7 +3735,7 @@ const generatePlan = async (profile, isPremium = false) => {
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
-const BLANK_PROFILE = { category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null };
+const BLANK_PROFILE = { category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null, pace400: null };
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -3779,8 +4019,14 @@ export default function App() {
     setFeedbackWeek(null);
   };
 
-  const handlePaceUpdate = (newPace100) => {
-    setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: { ...e.profile, pace100: newPace100 } }));
+  const handlePaceUpdate = (newPace100, newPace400 = undefined) => {
+    setPlans(prev => prev.map(e => e.id !== activePlanId ? e : {
+      ...e, profile: {
+        ...e.profile,
+        pace100: newPace100,
+        ...(newPace400 !== undefined ? { pace400: newPace400 } : {}),
+      }
+    }));
   };
 
   const handleUpdateProgram = (newFreq) => {
@@ -3995,10 +4241,12 @@ export default function App() {
                   {step === 4 && hasPaceStep && (
                     <Step_Pace
                       value={profile.pace100}
+                      value400={profile.pace400}
                       onChange={v => update("pace100", v)}
+                      onChange400={v => update("pace400", v)}
                       total={totalSteps}
                       onNext={() => setStep(5)}
-                      onSkip={() => { update("pace100", null); setStep(5); }}
+                      onSkip={() => { update("pace100", null); update("pace400", null); setStep(5); }}
                       onBack={() => setStep(3)} />
                   )}
 
