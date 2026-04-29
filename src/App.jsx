@@ -2386,16 +2386,15 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
   const nextSession = currentWeek?.sessions.find(s => !s.completed);
-  const nextSessionIndex = currentWeek?.sessions.findIndex(s => !s.completed);
   const daysToEvent = profile.eventDate ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000)) : null;
   const tm = nextSession ? (TYPE_META[nextSession.type] || TYPE_META.ENDURANCE) : null;
 
   // Weekly progress
-  const weekPlanned = currentWeek?.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
-  const weekDone    = currentWeek?.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
-  const weekPct     = weekPlanned > 0 ? Math.min(100, Math.round(weekDone / weekPlanned * 100)) : 0;
+  const weekPlanned  = currentWeek?.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
+  const weekDone     = currentWeek?.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
+  const weekPct      = weekPlanned > 0 ? Math.min(100, Math.round(weekDone / weekPlanned * 100)) : 0;
   const weekSessions = currentWeek?.sessions.filter(s => s.completed).length ?? 0;
-  const weekTotal   = currentWeek?.sessions.length ?? 0;
+  const weekTotal    = currentWeek?.sessions.length ?? 0;
 
   // Recent completed sessions (last 3)
   const allSessions = plan.weeks.flatMap((w, wi) =>
@@ -2403,7 +2402,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
   );
   const recentDone = allSessions.filter(s => s.completed).slice(-3).reverse();
 
-  // Avatar from localStorage
+  // Avatar / name from localStorage
   const avatarUrl = (() => { try { return localStorage.getItem("myswym_avatar"); } catch { return null; } })();
   const firstName = (() => { try { return localStorage.getItem("myswym_firstname"); } catch { return null; } })()
     || user?.user_metadata?.full_name?.split(" ")[0]
@@ -2411,212 +2410,224 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
     || "Nageur";
   const initials = firstName.slice(0, 2).toUpperCase();
 
-  // Ring SVG helper
-  const size = 80, stroke = 8, r = (size - stroke) / 2, circ = 2 * Math.PI * r;
-  const offset = circ * (1 - weekPct / 100);
+  // Ring dimensions — compact for mobile
+  const RS = 72, RSK = 7, Rr = (RS - RSK) / 2, Rcirc = 2 * Math.PI * Rr;
+  const Roffset = Rcirc * (1 - weekPct / 100);
 
   const planFinished = stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
 
   return (
-    <div style={{ paddingBottom: 140, background: G.bg, minHeight: "100vh" }}>
+    <div style={{ paddingBottom: "max(140px, calc(100px + env(safe-area-inset-bottom)))", background: G.bg, minHeight: "100dvh" }}>
 
       {/* ── Top App Bar ── */}
       <header style={{
         position: "sticky", top: 0, zIndex: 40,
-        background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)",
+        background: "rgba(255,255,255,0.95)", backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         borderBottom: `1px solid rgba(142,179,255,0.10)`,
-        boxShadow: "0 1px 20px rgba(142,179,255,0.08)",
+        boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
+        paddingTop: "env(safe-area-inset-top)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", minHeight: 56 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Avatar */}
-            <button onClick={() => onTabChange("profile")} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}` }}>
+            <button onClick={() => onTabChange("profile")} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, WebkitTapHighlightColor: "transparent" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}`, flexShrink: 0 }}>
                 {avatarUrl
                   ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span style={{ fontSize: 13, fontWeight: 800, color: G.blue }}>{initials}</span>
+                  : <span style={{ fontSize: 12, fontWeight: 800, color: G.blue }}>{initials}</span>
                 }
               </div>
             </button>
-            <span style={{ fontSize: 20, fontWeight: 900, color: G.blueMid, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
+            <span style={{ fontSize: 18, fontWeight: 900, color: G.blueMid, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
           </div>
-          <button onClick={onSignOut} style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+          <button onClick={onSignOut} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
             <Settings size={20} color={G.grey} />
           </button>
         </div>
       </header>
 
-      <div style={{ padding: "20px 16px 0" }}>
+      <div style={{ padding: "16px 16px 0" }}>
 
         {/* ── Plan finished banners ── */}
         {planFinished && (
-          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 24, padding: 24, textAlign: "center", marginBottom: 20, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
+          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
             {plan.isProgression
-              ? <><TrendingUp size={38} color={G.blue} style={{ margin: "0 auto 10px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 16 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={38} color={G.gold} style={{ margin: "0 auto 10px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Plan terminé 🏆</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100&nbsp;%.</p></>
+              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
+              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Plan terminé 🏆</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100 %.</p></>
             }
           </div>
         )}
 
         {/* ── Hero — Activité hebdomadaire ── */}
-        <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Activité hebdomadaire</p>
+        <p style={{ fontSize: 10, fontWeight: 700, color: G.grey, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Activité hebdomadaire</p>
         <div style={{
-          background: G.white, borderRadius: 32, padding: "24px",
-          boxShadow: "0 10px 40px rgba(142,179,255,0.12)",
+          background: G.white, borderRadius: 28, padding: "20px 18px",
+          boxShadow: "0 8px 32px rgba(142,179,255,0.11)",
           border: "1px solid rgba(142,179,255,0.08)",
-          marginBottom: 16, position: "relative", overflow: "hidden",
+          marginBottom: 12, position: "relative", overflow: "hidden",
         }}>
-          {/* decorative blob */}
-          <div style={{ position: "absolute", right: -40, top: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(142,179,255,0.07)", pointerEvents: "none" }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
-            {/* Left: numbers */}
-            <div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 40, fontWeight: 800, color: G.blue, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                  {weekDone.toLocaleString("fr")}
+          <div style={{ position: "absolute", right: -30, top: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(142,179,255,0.06)", pointerEvents: "none" }} />
+
+          {/* Row: numbers (left) + ring (right) */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, position: "relative" }}>
+            {/* Left */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 4 }}>
+                <span style={{ fontSize: "clamp(32px,8vw,44px)", fontWeight: 800, color: G.blue, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                  {weekDone > 0 ? weekDone.toLocaleString("fr") : "0"}
                 </span>
-                <span style={{ fontSize: 22, fontWeight: 700, color: G.blueMid }}>m</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: G.blueMid }}>m</span>
               </div>
-              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, maxWidth: 180 }}>
-                {weekSessions}/{weekTotal} séances · {currentWeek?.focus ?? goal?.label ?? "En cours"}
+              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.4 }}>
+                {weekSessions}/{weekTotal} séances
+                {currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
               </p>
               {daysToEvent !== null && (
-                <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: G.blueLight, borderRadius: 100, padding: "4px 12px" }}>
-                  <Target size={11} color={G.blue} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>J−{daysToEvent} avant l'événement</span>
+                <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 5, background: G.blueLight, borderRadius: 100, padding: "4px 10px" }}>
+                  <Target size={10} color={G.blue} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: G.blue }}>J−{daysToEvent} avant l'event</span>
                 </div>
               )}
             </div>
-            {/* Right: ring */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-              <div style={{ position: "relative", width: size, height: size }}>
-                <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                  <circle cx={size/2} cy={size/2} r={r} fill="transparent" stroke={G.greyLight} strokeWidth={stroke} />
-                  <circle cx={size/2} cy={size/2} r={r} fill="transparent" stroke={G.blue}
-                    strokeWidth={stroke} strokeLinecap="round"
-                    strokeDasharray={circ} strokeDashoffset={offset}
-                    style={{ transition: "stroke-dashoffset 1s ease" }}
-                  />
-                </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: G.blue }}>{weekPct}%</span>
-                </div>
-              </div>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Objectif : {weekPlanned >= 1000 ? `${(weekPlanned/1000).toFixed(1)} km` : `${weekPlanned} m`}</p>
-                <p style={{ fontSize: 11, color: G.grey }}>{Math.max(0, weekPlanned - weekDone)}m restants</p>
+
+            {/* Right: ring only, no side text */}
+            <div style={{ position: "relative", width: RS, height: RS, flexShrink: 0 }}>
+              <svg width={RS} height={RS} style={{ transform: "rotate(-90deg)" }}>
+                <circle cx={RS/2} cy={RS/2} r={Rr} fill="transparent" stroke={G.greyLight} strokeWidth={RSK} />
+                <circle cx={RS/2} cy={RS/2} r={Rr} fill="transparent" stroke={G.blue}
+                  strokeWidth={RSK} strokeLinecap="round"
+                  strokeDasharray={Rcirc} strokeDashoffset={Roffset}
+                  style={{ transition: "stroke-dashoffset 1s ease" }}
+                />
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: G.blue, lineHeight: 1 }}>{weekPct}%</span>
               </div>
             </div>
+          </div>
+
+          {/* Objectif — below the row on its own line */}
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${G.greyLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: G.grey }}>
+              Objectif : {weekPlanned >= 1000 ? `${(weekPlanned/1000).toFixed(1)} km` : `${weekPlanned} m`}
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: G.blue }}>
+              {Math.max(0, weekPlanned - weekDone)} m restants
+            </span>
           </div>
         </div>
 
-        {/* ── Info cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-          {/* Prochaine séance / objectif */}
-          <div style={{ background: `${G.blue}12`, borderRadius: 24, padding: "16px", border: `1px solid ${G.blue}20`, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 46, height: 46, background: G.blue, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {nextSession ? (tm && <tm.Icon size={20} color={G.white} />) : <Trophy size={20} color={G.white} />}
+        {/* ── Info chips (2 cols) ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          {/* Next session */}
+          <div style={{ background: G.blueLight, borderRadius: 20, padding: "14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ width: 40, height: 40, background: G.blue, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {nextSession && tm ? <tm.Icon size={18} color={G.white} /> : <Trophy size={18} color={G.white} />}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.blue, marginBottom: 2 }}>
-                {nextSession ? "Prochaine séance" : "Plan terminé"}
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: G.blue, letterSpacing: "0.04em", marginBottom: 2 }}>
+                {nextSession ? "PROCHAINE" : "TERMINÉ"}
               </div>
-              <div style={{ fontSize: 12, color: G.blueDeep, fontWeight: 500, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {nextSession ? nextSession.title : "Félicitations !"}
+              <div style={{ fontSize: 13, fontWeight: 700, color: G.blueDeep, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {nextSession ? nextSession.title : "Plan complété !"}
               </div>
             </div>
           </div>
-          {/* Allure / streak */}
-          <div style={{ background: G.white, borderRadius: 24, padding: "16px", border: `1px solid rgba(142,179,255,0.14)`, boxShadow: "0 2px 12px rgba(142,179,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 46, height: 46, background: "#FFF3E0", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Flame size={20} color="#E65100" />
+          {/* Streak */}
+          <div style={{ background: G.white, borderRadius: 20, padding: "14px 12px", border: `1px solid rgba(142,179,255,0.12)`, boxShadow: "0 2px 10px rgba(142,179,255,0.07)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ width: 40, height: 40, background: "#FFF3E0", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Flame size={18} color="#E65100" />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 2 }}>Série actuelle</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                {stats.streak}<span style={{ fontSize: 12, fontWeight: 500, color: G.grey }}> séances</span>
+              <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, letterSpacing: "0.04em", marginBottom: 2 }}>SÉRIE</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                {stats.streak}
+                <span style={{ fontSize: 12, fontWeight: 500, color: G.grey }}> séances</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* ── Dernières séances ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Dernières séances</h2>
-          <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 13, color: G.blue, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-            Tout voir <ArrowRight size={13} color={G.blue} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Dernières séances</h2>
+          <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 12, color: G.blue, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 3, padding: "4px 0", WebkitTapHighlightColor: "transparent" }}>
+            Tout voir <ArrowRight size={12} color={G.blue} />
           </button>
         </div>
 
         {recentDone.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
             {recentDone.map((s, i) => {
               const stm = TYPE_META[s.type] || TYPE_META.ENDURANCE;
               return (
                 <div key={i} style={{
-                  background: G.white, borderRadius: 24, padding: "14px 16px",
-                  boxShadow: "0 4px 20px rgba(142,179,255,0.07)",
+                  background: G.white, borderRadius: 20, padding: "12px 14px",
+                  boxShadow: "0 2px 12px rgba(142,179,255,0.07)",
                   border: "1px solid rgba(142,179,255,0.08)",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  display: "flex", alignItems: "center", gap: 12,
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ width: 50, height: 50, borderRadius: "50%", background: stm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <stm.Icon size={22} color={stm.color} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 4 }}>{s.title}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 11, color: G.grey }}>Semaine {s.weekNum}</span>
-                        <div style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyLight }} />
-                        <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>{s.distance}</span>
-                      </div>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: stm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <stm.Icon size={20} color={stm.color} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 11, color: G.grey }}>Sem. {s.weekNum}</span>
+                      <div style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyLight }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>{s.distance}</span>
                     </div>
                   </div>
-                  <Check size={18} color={G.mint} />
+                  <Check size={16} color={G.mint} style={{ flexShrink: 0 }} />
                 </div>
               );
             })}
           </div>
         ) : (
-          <div style={{ background: G.white, borderRadius: 24, padding: "28px 20px", textAlign: "center", border: "1px solid rgba(142,179,255,0.10)", marginBottom: 20 }}>
-            <Waves size={32} color={G.blueMid} style={{ margin: "0 auto 10px" }} />
+          <div style={{ background: G.white, borderRadius: 20, padding: "24px 16px", textAlign: "center", border: "1px solid rgba(142,179,255,0.10)", marginBottom: 16 }}>
+            <Waves size={28} color={G.blueMid} style={{ margin: "0 auto 8px" }} />
             <p style={{ color: G.grey, fontSize: 13 }}>Aucune séance terminée — commence maintenant !</p>
           </div>
         )}
 
         {/* ── Glossaire ── */}
-        <a href="/blog/glossaire-natation" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 14, background: G.white, borderRadius: 20, padding: "14px 16px", border: `1px solid rgba(142,179,255,0.10)`, boxShadow: "0 2px 10px rgba(142,179,255,0.06)", textDecoration: "none" }}>
-          <div style={{ width: 40, height: 40, background: G.blueLight, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <BookOpen size={20} color={G.blue} />
+        <a href="/blog/glossaire-natation" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, background: G.white, borderRadius: 18, padding: "12px 14px", border: `1px solid rgba(142,179,255,0.10)`, boxShadow: "0 2px 8px rgba(142,179,255,0.06)", textDecoration: "none" }}>
+          <div style={{ width: 38, height: 38, background: G.blueLight, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <BookOpen size={18} color={G.blue} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Glossaire du nageur</div>
-            <div style={{ fontSize: 12, color: G.grey }}>CSS, NL, D1'45", Z1-Z5… tous les termes expliqués</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 1 }}>Glossaire du nageur</div>
+            <div style={{ fontSize: 11, color: G.grey, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>CSS, NL, D1'45", Z1-Z5… tous les termes</div>
           </div>
-          <ArrowRight size={16} color={G.blueMid} />
+          <ArrowRight size={14} color={G.blueMid} style={{ flexShrink: 0 }} />
         </a>
       </div>
 
       {/* ── FAB — Commencer une séance ── */}
       {nextSession && (
-        <div style={{ position: "fixed", bottom: 96, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none", zIndex: 40 }}>
+        <div style={{
+          position: "fixed",
+          bottom: "calc(64px + env(safe-area-inset-bottom) + 12px)",
+          left: 0, right: 0,
+          display: "flex", justifyContent: "center",
+          pointerEvents: "none", zIndex: 40,
+        }}>
           <button
             onClick={() => onTabChange("plan")}
             style={{
               pointerEvents: "auto",
               background: G.blue, color: G.white,
               border: "none", borderRadius: 100,
-              padding: "16px 28px",
-              fontSize: 15, fontWeight: 700,
+              padding: "14px 24px",
+              fontSize: 14, fontWeight: 700,
               display: "flex", alignItems: "center", gap: 8,
-              boxShadow: "0 10px 30px rgba(53,93,163,0.40)",
+              boxShadow: "0 8px 28px rgba(53,93,163,0.38)",
               cursor: "pointer",
-              transition: "transform 0.15s",
+              WebkitTapHighlightColor: "transparent",
+              minHeight: 50,
             }}
-            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
           >
-            <Waves size={18} color={G.white} />
+            <Waves size={17} color={G.white} />
             Commencer une séance
           </button>
         </div>
