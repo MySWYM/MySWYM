@@ -3531,7 +3531,7 @@ const SESSION_TEMPLATES = {
     const goalCue = isTriathlon
       ? " — régularité course, imagine la bouée"
       : isOpenWater
-        ? " — expire régulièrement, rythme constant sans les murs"
+        ? " — respiration bilatérale, compte tes cycles"
         : "";
 
     return {
@@ -3563,26 +3563,36 @@ const SESSION_TEMPLATES = {
           details: [
             `Échauffement : 200m crawl + 100m battements`,
             `${nR2}×${r2}m crawl — R20" — 1re moitié gérée, 2e moitié accélère : arrive plus fort que tu n'es parti${goalCue}`,
-            `${nFill}×${r1}m battements planche — R20" — fouet des chevilles`,
+            `${nFill}×${r1}m battements mains en flèche — R20" — fouet des chevilles`,
             `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: isOpenWater ? "Long continu — eau libre" : "Reps longues",
-          intensity: "Endurance — gestion mentale sur la distance",
-          details: [
+          title: isOpenWater ? "🌊 Séance eau libre — test combinaison" : "Reps longues",
+          intensity: isOpenWater ? "Découverte OW — flottaison, navigation, sighting" : "Endurance — gestion mentale sur la distance",
+          details: isOpenWater ? [
+            `📍 À faire en eau libre (lac, rivière calme, mer protégée)`,
+            `10' d'adaptation : nage lente avec la combi — ressens la flottaison, habitue-toi à l'eau libre`,
+            `3×5' de nage continue — récup 2' — sighting toutes les 6–8 bras pour te repérer`,
+            `Effort : allure conversation, ne force pas — objectif orientation`,
+            `Récup : retour au départ en brasse ou dos lent`,
+          ] : [
             `Échauffement : 200m crawl + 100m dos + 4×${P}m accélérations`,
-            isOpenWater
-              ? `${nLong}×${rLong}m NL — R15" — gère l'allure sans les murs, expire tout l'air sous l'eau`
-              : `${nLong}×${rLong}m crawl — R15" — allure maîtrisée sur la totalité${isTriathlon ? " — maintiens ton allure de compétition" : ""}`,
+            `${nLong}×${rLong}m crawl — R15" — allure maîtrisée sur la totalité${isTriathlon ? " — maintiens ton allure de compétition" : ""}`,
             `${nFill}×${r1}m dos — R15" — récup active`,
             `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: "Crawl & dos alternés",
-          intensity: "Endurance — polyvalence et récup active",
-          details: [
+          title: isOpenWater ? "🌊 Séance eau libre — endurance" : "Crawl & dos alternés",
+          intensity: isOpenWater ? "Endurance OW — tenir l'allure sans repères" : "Endurance — polyvalence et récup active",
+          details: isOpenWater ? [
+            `📍 À faire en eau libre`,
+            `Échauffement : 10' de nage lente, teste tes repères visuels`,
+            `20–30' de nage continue en boucle ou aller-retour — sighting toutes les 8 bras — gère ton allure de A à Z`,
+            `Si combi : teste les transitions rapides (enlever la combi en 2')`,
+            `Récup : 5' de brasse ou dos très lent`,
+          ] : [
             `Échauffement : 200m crawl + 100m jambes`,
             `${nR2}×${r2}m crawl — R20" — régulier${goalCue}`,
             `${Math.max(2, Math.round(nR2 * 0.7))}×${r2}m dos — R20" — épaule sort en premier, rotation du bassin`,
@@ -3870,7 +3880,7 @@ const SESSION_TEMPLATES = {
     const goalCueS = isTriathlon
       ? " — allure nage triathlon, régularité absolue"
       : isOpenWater
-        ? " — respiration régulière, rythme stable sans les repères du mur"
+        ? " — respiration bilatérale, même effort de bout en bout"
         : "";
 
     return {
@@ -3917,12 +3927,12 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: isOpenWater ? "Blocs eau libre — effort maintenu" : "Blocs longs — récup courte",
+          title: isOpenWater ? "Blocs longs — effort continu" : "Blocs longs — récup courte",
           intensity: "Endurance soutenue — récup courte",
           details: [
             `Échauffement : 200m crawl + 100m dos`,
             isOpenWater
-              ? `${nR3S}×${r3S}m NL — R15" — sans relâche, gère l'allure sans les repères du mur`
+              ? `${nR3S}×${r3S}m NL — R15" — effort soutenu de bout en bout, respiration bilatérale`
               : `${nR3S}×${r3S}m crawl — R15" — effort soutenu, récup courte : entraîne ton corps à enchaîner`,
             `${nFillS}×${2*P}m dos — R20"`,
             `Retour calme : 200m dos lent`,
@@ -4205,7 +4215,7 @@ const SESSION_TEMPLATES = {
     const goalCueV = isTriathlonV
       ? " — simule ton départ de compétition, bras à fond dès la 1re foulée"
       : isOpenWaterV
-        ? " — vitesse de sortie d'eau, enclenche tes bras sans appui de mur"
+        ? " — explosivité de départ, enclenche tes bras rapidement"
         : "";
 
     return {
@@ -4254,12 +4264,12 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: isOpenWaterV ? "Vitesse eau libre — sans mur" : "Départs & explosivité",
+          title: isOpenWaterV ? "Départs — explosivité eau libre" : "Départs & explosivité",
           intensity: "Explosivité maximale",
           details: [
             `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
             isOpenWaterV
-              ? `${nSprV}×${P}m sprint NL — R1'30" — sans t'appuyer sur le mur en fin de rep, simule l'eau libre`
+              ? `${nSprV}×${P}m sprint NL — R1'30" — pousse fort le mur, enchaîne les premiers bras sans hésitation, simule le départ de masse`
               : `${nSprV}×${P}m sprint crawl départ mur — R1' — pousse fort, torpille gainée, 1ers bras à fond`,
             `${nSecV}×${2*P}m dos — R20" — récup active`,
             `Retour calme : 200m dos lent`,
@@ -4296,10 +4306,10 @@ const SESSION_TEMPLATES = {
           },
           {
             title: "Jambes à fond",
-            intensity: "Facile — travail des jambes avec planche",
+            intensity: "Facile — travail des jambes mains en flèche",
             details: [
               `${Math.max(2, Math.round(nLaps * 0.35))}× ${2*P}m crawl pour te chauffer — repose 20"`,
-              `${Math.max(3, Math.round(nLaps * 0.45))}× ${2*P}m planche (jambes seules) — repose 25" — pieds pointés, talons à la surface`,
+              `${Math.max(3, Math.round(nLaps * 0.45))}× ${2*P}m jambes seules mains en flèche — repose 25" — bras tendus autour des oreilles, pieds pointés, fouet des chevilles`,
               `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m crawl complet — sens si tes jambes te poussent mieux`,
               `Fin : ${P}m dos`,
             ],
@@ -4351,13 +4361,13 @@ const SESSION_TEMPLATES = {
         type: "TECHNIQUE",
         ...[
           {
-            title: "Flèche statique — gainage et alignement",
-            intensity: "Facile — position du corps gainée",
+            title: "Un bras — allongement et prise d'eau",
+            intensity: "Facile — isolation d'un bras, allongement maximal",
             details: [
               `Échauffement : ${repR}m NL très lent + ${repR}m dos lent`,
-              `${nPerBlock}×${repR}m flèche statique — R15" — pousse du mur, bras serrés autour des oreilles, corps gainé, glisse 5m en apnée avant le 1er bras`,
-              `${nPerBlock}×${repR}m flèche + 1 bras — R15" — glisse, 1 traction complète jusqu'à la cuisse, reglisse, 1 traction, etc.`,
-              `${nInteg}×${repR}m NL complet — R10" — commence chaque longueur par une flèche parfaite depuis le mur`,
+              `${nPerBlock}×${repR}m un bras gauche — R15" — bras droit tendu devant, tire uniquement le gauche jusqu'à la cuisse puis reviens en avant, 6 battements entre chaque traction`,
+              `${nPerBlock}×${repR}m un bras droit — R15" — même exercice côté droit`,
+              `${nInteg}×${repR}m NL complet — R10" — retrouve l'allongement à chaque entrée de main, attends que le bras avant soit bien tendu`,
               `Retour au calme : ${repR}m dos très lent`,
             ],
           },
@@ -4741,7 +4751,7 @@ const SESSION_TEMPLATES = {
             `${nA}×${repR}m nage croisée — R10" — change de nage à chaque longueur`,
             `${nB}×${repR}m dos crawlé — R10" — épaule sort en premier, scan corporel`,
             `${nC}×${repR}m NL lent — R10" — coulée max après chaque virage`,
-            `${nD}×${repR}m battements planche — R10" — jambes libres, expire dans l'eau`,
+            `${nD}×${repR}m battements mains en flèche — R10" — jambes libres, expire dans l'eau`,
           ],
         },
         {
