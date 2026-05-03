@@ -971,10 +971,12 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
 
-  // Avatar + firstName — stockés en localStorage
-  const [avatarUrl, setAvatarUrl] = useState(() => { try { return localStorage.getItem("myswym_avatar") || null; } catch { return null; } });
+  // Avatar + firstName — Supabase user_metadata en priorité, localStorage en fallback
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    try { return user?.user_metadata?.avatar_url || localStorage.getItem("myswym_avatar") || null; } catch { return null; }
+  });
   const [firstName, setFirstName] = useState(() => {
-    try { return localStorage.getItem("myswym_firstname") || ""; } catch { return ""; }
+    try { return user?.user_metadata?.firstname || localStorage.getItem("myswym_firstname") || ""; } catch { return ""; }
   });
   const [editingName, setEditingName] = useState(false);
   const [nameInput,   setNameInput]   = useState(firstName);
@@ -1003,20 +1005,40 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     if (v) {
       localStorage.setItem("myswym_firstname", v);
       setFirstName(v);
+      // Sync cross-device via user_metadata
+      supabase.auth.updateUser({ data: { firstname: v } }).catch(() => {});
     }
     setEditingName(false);
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
+
+    // Aperçu immédiat local
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const b64 = ev.target.result;
-      try { localStorage.setItem("myswym_avatar", b64); } catch {}
-      setAvatarUrl(b64);
-    };
+    reader.onload = (ev) => setAvatarUrl(ev.target.result);
     reader.readAsDataURL(file);
+
+    // Upload vers Supabase Storage → URL publique persistante cross-device
+    try {
+      const ext  = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadErr) throw uploadErr;
+
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      // Cache-busting pour forcer le rechargement de l'image
+      const urlWithTs = `${publicUrl}?t=${Date.now()}`;
+      setAvatarUrl(urlWithTs);
+      try { localStorage.setItem("myswym_avatar", urlWithTs); } catch {}
+      // Sync cross-device via user_metadata
+      await supabase.auth.updateUser({ data: { avatar_url: urlWithTs } });
+    } catch {
+      // Fallback silencieux : l'aperçu local reste affiché
+    }
   };
 
   // Personal records computed from real data
@@ -5458,13 +5480,30 @@ export default function App() {
       }
     } catch {}
 
-    // 2. Supabase (ancien format mono-plan)
+    // 2. Supabase multi-plans (source de vérité cross-device)
     try {
-      const { data, error } = await supabase.from("user_plans").select("profile, plan").eq("user_id", userId).single();
-      if (data && !error && data.profile && data.plan) {
-        const id = `plan_${Date.now()}`;
-        const entry = { id, profile: data.profile, plan: enforce(data.plan) };
-        setPlans([entry]); setActivePlanId(id); setScreen("app"); return;
+      const { data, error } = await supabase.from("user_plans")
+        .select("profile, plan, plans_json, active_plan_id")
+        .eq("user_id", userId).single();
+      if (data && !error) {
+        // 2a. Nouveau format multi-plans
+        if (Array.isArray(data.plans_json) && data.plans_json.length > 0) {
+          const enforced = data.plans_json.map(e => ({ ...e, plan: enforce(e.plan) }));
+          // Hydrate aussi le localStorage pour accès hors-ligne
+          try {
+            localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(enforced));
+            localStorage.setItem(`myswym_active_${userId}`, data.active_plan_id || enforced[0].id);
+          } catch {}
+          setPlans(enforced);
+          setActivePlanId(data.active_plan_id || enforced[0].id);
+          setScreen("app"); return;
+        }
+        // 2b. Ancien format mono-plan (compat)
+        if (data.profile && data.plan) {
+          const id = `plan_${Date.now()}`;
+          const entry = { id, profile: data.profile, plan: enforce(data.plan) };
+          setPlans([entry]); setActivePlanId(id); setScreen("app"); return;
+        }
       }
     } catch {}
 
@@ -5503,13 +5542,16 @@ export default function App() {
       localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(plans));
       localStorage.setItem(`myswym_active_${user.id}`, activePlanId);
     } catch {}
-    // Supabase: sauvegarde le plan actif (compat)
-    if (activePlanEntry) {
-      supabase.from("user_plans").upsert({
-        user_id: user.id, profile: activePlanEntry.profile, plan: activePlanEntry.plan,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" }).then(() => {});
-    }
+    // Supabase : sauvegarde TOUS les plans pour sync cross-device
+    supabase.from("user_plans").upsert({
+      user_id:        user.id,
+      plans_json:     plans,
+      active_plan_id: activePlanId,
+      // Compat ancien format mono-plan
+      profile:        activePlanEntry?.profile ?? null,
+      plan:           activePlanEntry?.plan    ?? null,
+      updated_at:     new Date().toISOString(),
+    }, { onConflict: "user_id" }).then(() => {});
   }, [plans, activePlanId, user]);
 
 
