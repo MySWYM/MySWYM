@@ -664,7 +664,7 @@ const fmtPace = (sec) => {
   return `${m}:${String(s).padStart(2, "0")}/100m`;
 };
 
-const StravaSection = ({ user }) => {
+const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSession }) => {
   const [connected,     setConnected]     = useState(null); // null = chargement
   const [athlete,       setAthlete]       = useState(null);
   const [activities,    setActivities]    = useState([]);
@@ -780,6 +780,30 @@ const StravaSection = ({ user }) => {
     })
     .reduce((sum, a) => sum + (Number(a.distance) || 0), 0);
 
+  // ── Meilleur 100m depuis Strava ─────────────────────────────────────────
+  const swimPaces = activities.filter(a => ["Swim","OpenWaterSwim"].includes(a.activity_type) && a.pace > 0).map(a => a.pace);
+  const bestPace  = swimPaces.length > 0 ? Math.min(...swimPaces) : null;
+  // "meilleur" = plus rapide = valeur en secondes plus basse
+  const hasBetterPace = bestPace && (!currentPace100 || bestPace < currentPace100);
+
+  // ── Activité natation d'aujourd'hui ─────────────────────────────────────
+  const todayStr  = new Date().toISOString().slice(0, 10);
+  const todaySwim = connected ? activities.find(
+    a => ["Swim","OpenWaterSwim"].includes(a.activity_type) && a.activity_date === todayStr
+  ) : null;
+
+  // ── Première séance non validée du plan courant ──────────────────────────
+  const currentSessionRef = (() => {
+    if (!plan?.weeks) return null;
+    const wi = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
+    if (wi === -1) return null;
+    const si = plan.weeks[wi].sessions.findIndex(s => !s.completed);
+    if (si === -1) return null;
+    return { weekIndex: wi, sessionIndex: si, session: plan.weeks[wi].sessions[si] };
+  })();
+
+  const canValidate = todaySwim && currentSessionRef && !currentSessionRef.session.completed;
+
   // Pendant le chargement on affiche le bouton "Connecter" (état optimiste)
   // il sera remplacé par l'état réel dès que checkConnection() répond
 
@@ -843,6 +867,53 @@ const StravaSection = ({ user }) => {
             </div>
           )}
 
+          {/* ── Valider séance depuis Strava ─────────────────────── */}
+          {canValidate && (
+            <div style={{ background: "linear-gradient(135deg,#EEF3FF,#E0F7FA)", borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Waves size={18} color="#fff" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>Tu as nagé {fmtDist(todaySwim.distance)} aujourd'hui !</div>
+                <div style={{ fontSize: 11, color: G.grey }}>Valide ta séance du programme ?</div>
+              </div>
+              <button
+                onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: "Séance validée depuis Strava ✓" }); }}
+                style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: G.blue, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Valider ✓
+              </button>
+            </div>
+          )}
+
+          {/* ── Meilleur temps 100m depuis Strava ────────────────── */}
+          {bestPace && (
+            <div style={{ background: hasBetterPace ? G.goldLight : G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: hasBetterPace ? G.gold : G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Trophy size={18} color={hasBetterPace ? "#fff" : G.greyMid} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>
+                  Meilleur 100m Strava : {fmtPace(bestPace)}
+                  {hasBetterPace && " 🔥"}
+                </div>
+                <div style={{ fontSize: 11, color: G.grey }}>
+                  {hasBetterPace
+                    ? `Plus rapide que ta référence (${fmtPace(currentPace100)})`
+                    : `Identique à ta référence actuelle`}
+                </div>
+              </div>
+              {hasBetterPace && onPaceUpdate && (
+                <button
+                  onClick={() => { onPaceUpdate(bestPace); setMsg({ type: "ok", text: `Référence mise à jour : ${fmtPace(bestPace)} ✓` }); }}
+                  style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.gold, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Utiliser
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Liste des activités */}
           {activities.length === 0 ? (
             <div style={{ fontSize: 13, color: G.grey, textAlign: "center", padding: "16px 0" }}>
@@ -894,7 +965,7 @@ const StravaSection = ({ user }) => {
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram }) => {
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
   const [password, setPassword] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState(null);
@@ -1178,7 +1249,13 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
 
         {/* ── Strava ──────────────────────────────────────────────── */}
-        <StravaSection user={user} />
+        <StravaSection
+          user={user}
+          plan={plan}
+          currentPace100={profile?.pace100}
+          onPaceUpdate={onPaceUpdate}
+          onValidateSession={onValidateSession}
+        />
 
         {/* ── Compte ──────────────────────────────────────────────── */}
         <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12, border: `1px solid ${G.greyLight}` }}>
@@ -5597,7 +5674,7 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg }}>
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} />}
 
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
