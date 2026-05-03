@@ -145,8 +145,8 @@ const LEVELS = [
   {
     id: "sportif",
     label: "Sportif",
-    desc: "J'enchaîne les longueurs facilement",
-    detail: "Je nage régulièrement et je veux progresser de façon structurée",
+    desc: "Je nage régulièrement et je progresse",
+    detail: "J'enchaîne les longueurs, je veux une structure pour aller plus loin",
     color: "#0057FF",
     bg: "#EEF3FF",
     dot: 3,
@@ -154,8 +154,8 @@ const LEVELS = [
   {
     id: "performance",
     label: "Performance",
-    desc: "Je veux des résultats mesurables",
-    detail: "Je connais (ou veux calculer) mon chrono sur 100m et 400m",
+    desc: "J'ai déjà des courses à mon actif",
+    detail: "Je connais mes chronos, je veux un plan taillé pour la compétition",
     color: "#7C3AED",
     bg: "#EDE9FE",
     dot: 4,
