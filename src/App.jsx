@@ -708,7 +708,7 @@ const StravaSection = ({ user }) => {
   };
 
   const connect = () => {
-    const redirectUri = encodeURIComponent(window.location.origin);
+    const redirectUri = encodeURIComponent(window.location.origin + "/app");
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
       `&response_type=code&redirect_uri=${redirectUri}` +
