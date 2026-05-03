@@ -12,7 +12,7 @@ const FontLoader = () => {
   useEffect(() => {
     const l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
+    l.href = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
     document.head.appendChild(l);
   }, []);
   return null;
@@ -55,8 +55,9 @@ const TYPE_META = {
 const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${G.bg}; font-family: 'Lexend', sans-serif; overscroll-behavior: none; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
-  h1, h2, h3, h4 { letter-spacing: -0.01em; }
-  .syne { font-family: 'Lexend', sans-serif; letter-spacing: -0.01em; font-weight: 800; }
+  h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; text-transform: uppercase; font-weight: 800; }
+  h4 { letter-spacing: -0.01em; }
+  .syne { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; font-weight: 800; text-transform: uppercase; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
@@ -1439,10 +1440,10 @@ const AuthScreen = ({ onAuth }) => {
         <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Waves size={20} color={G.white} />
         </div>
-        <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
+        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
       </div>
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+        <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
           {mode === "reset" ? "Mot de passe oublié" : "Bienvenue"}
         </h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>
@@ -1498,7 +1499,7 @@ const AuthScreen = ({ onAuth }) => {
 const Step1_Category = ({ onSelect }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 1 sur 5</p>
-    <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
+    <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 48, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
     <p style={{ color: G.grey, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>Ton plan sera entièrement construit autour de ton objectif.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {CATEGORIES.map(cat => (
@@ -2110,7 +2111,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 26, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
+          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
             ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité au <strong style={{ color: G.ink }}>premier mois</strong>.<br />Débloque ton programme complet.</p>
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
@@ -2126,7 +2127,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             transition: "all 0.18s",
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
             <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
           </button>
 
@@ -2146,7 +2147,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
             {/* Prix barré */}
             <div style={{ fontSize: 12, color: period === "annual" ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€/mois</div>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: period === "annual" ? G.white : G.ink }}>3,33€</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.white : G.ink }}>3,33€</div>
             <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 40€/an</div>
           </button>
         </div>
@@ -2928,7 +2929,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
                 }
               </div>
             </button>
-            <span style={{ fontSize: 18, fontWeight: 900, color: G.blueMid, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 900, color: G.blueMid, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
           </div>
           <button onClick={onSignOut} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
             <Settings size={20} color={G.grey} />

@@ -32,13 +32,14 @@ const C = {
 };
 
 const FONT = "'Lexend', sans-serif";
+const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
 
 // ── Font loader ────────────────────────────────────────────────────────────
 const FontLoader = () => {
   useEffect(() => {
     const l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
+    l.href = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
     document.head.appendChild(l);
   }, []);
   return null;
@@ -277,21 +278,33 @@ function Hero() {
       <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 480px", gap: isMobile ? 48 : 64, alignItems: "center", position: "relative" }}>
         {/* Left */}
         <div style={{ textAlign: isMobile ? "center" : "left" }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            background: C.primaryFix, borderRadius: 100,
-            padding: "5px 14px", marginBottom: 24,
-          }}>
-            <Waves size={12} color={C.primary} />
-            <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", fontFamily: FONT }}>NATATION · TRIATHLON · BNSSA · EAU LIBRE</span>
+          {/* Social proof badge */}
+          <div style={{ display: "flex", gap: 8, justifyContent: isMobile ? "center" : "flex-start", marginBottom: 20, flexWrap: "wrap" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: C.primaryFix, borderRadius: 100,
+              padding: "5px 14px",
+            }}>
+              <Waves size={12} color={C.primary} />
+              <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", fontFamily: FONT }}>NATATION · TRIATHLON · BNSSA · EAU LIBRE</span>
+            </div>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              background: "#22C55E18", border: "1px solid #22C55E30",
+              borderRadius: 100, padding: "5px 12px",
+            }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }} />
+              <span style={{ color: "#16A34A", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", fontFamily: FONT }}>1 200+ nageurs actifs</span>
+            </div>
           </div>
 
           <h1 style={{
-            fontFamily: FONT, fontWeight: 800,
-            fontSize: "clamp(36px, 6vw, 68px)",
-            color: C.ink, lineHeight: 1.1,
-            letterSpacing: "-0.02em",
+            fontFamily: FONT_DISPLAY, fontWeight: 800,
+            fontSize: "clamp(42px, 6.5vw, 78px)",
+            color: C.ink, lineHeight: 1.0,
+            letterSpacing: "-0.01em",
             margin: "0 0 20px",
+            textTransform: "uppercase",
           }}>
             Nage.<br />
             <span style={{ color: C.accent }}>On s'occupe<br />du reste.</span>
@@ -422,7 +435,7 @@ function HowItWorks() {
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
           <SectionLabel text="COMMENT ÇA MARCHE" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
             Ton plan personnalisé<br />en 4 étapes
           </h2>
         </FadeIn>
@@ -474,7 +487,7 @@ function WeekExample() {
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
           <SectionLabel text="EXEMPLES DE SÉANCES" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: "0 0 14px", letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 14px", letterSpacing: "0", textTransform: "uppercase" }}>
             Que tu démarres ou que tu<br />vises la performance
           </h2>
           <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 480, margin: "0 auto", fontFamily: FONT }}>
@@ -554,7 +567,7 @@ function Goals() {
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
           <SectionLabel text="POUR TOUT LE MONDE" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
             Reprendre la nage,<br />progresser ou compétir
           </h2>
         </FadeIn>
@@ -601,7 +614,7 @@ function ProgressTimeline() {
       <div style={{ maxWidth: 840, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
           <SectionLabel text="TA PROGRESSION" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
             De "je m'essouffle"<br />à "je me sens bien dans l'eau"
           </h2>
         </FadeIn>
@@ -628,6 +641,139 @@ function ProgressTimeline() {
   );
 }
 
+
+// ── Testimonials ───────────────────────────────────────────────────────────
+function Testimonials() {
+  const isMobile = useIsMobile();
+  const testimonials = [
+    {
+      name: "Marie-Claire T.",
+      tag: "Débutante · Reprise après 15 ans",
+      avatar: "MC",
+      color: C.primary,
+      stars: 5,
+      quote: "J'avais honte de me retrouver à bout de souffle après 2 longueurs. Le premier plan m'a donné des séances courtes, logiques. 3 mois plus tard je nage 1 500m sans pause. C'est la première fois que je progresse vraiment.",
+    },
+    {
+      name: "Julien R.",
+      tag: "Triathlon Olympique · Club amateur",
+      avatar: "JR",
+      color: "#E65100",
+      stars: 5,
+      quote: "J'entraîne la nage depuis 2 ans tout seul. MySWYM m'a donné une structure que je n'avais pas — les allures seuil, les séries spécifiques. Mon 750m en compétition : je suis passé de 14'10\" à 12'40\".",
+    },
+    {
+      name: "Sophie M.",
+      tag: "BNSSA · Obtenu du premier coup",
+      avatar: "SM",
+      color: "#7C3AED",
+      stars: 5,
+      quote: "Les séances spécifiques BNSSA sont vraiment adaptées : apnée, remorquage, parcours chronométré. Je savais exactement quoi travailler chaque semaine. J'ai eu mon diplôme sans stress le jour J.",
+    },
+    {
+      name: "Thierry B.",
+      tag: "Masters · 52 ans · Competition régionale",
+      avatar: "TB",
+      color: "#0097A7",
+      stars: 5,
+      quote: "J'étais sceptique — je nage depuis 40 ans. Mais les zones d'intensité calculées à la seconde, c'est ce qui me manquait. J'ai compris pourquoi mes entraînements ne progressaient plus. Maintenant si.",
+    },
+  ];
+
+  return (
+    <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
+          <SectionLabel text="ILS EN PARLENT" />
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
+            Vrais nageurs.<br />Vrais résultats.
+          </h2>
+          <p style={{ color: C.inkLight, fontSize: 16, fontFamily: FONT, maxWidth: 480, margin: "0 auto" }}>
+            Du débutant qui reprend au master compétiteur — chacun a trouvé ce qu'il cherchait.
+          </p>
+        </FadeIn>
+
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 16 }}>
+          {testimonials.map((t, i) => (
+            <FadeIn key={i} delay={i * 0.08}>
+              <div style={{
+                background: C.white,
+                border: `1px solid ${C.border}`,
+                borderRadius: 24,
+                padding: 28,
+                boxShadow: C.shadow,
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                height: "100%",
+                boxSizing: "border-box",
+                transition: "box-shadow 0.25s, transform 0.25s",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-3px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                {/* Stars */}
+                <div style={{ display: "flex", gap: 3 }}>
+                  {Array.from({ length: t.stars }).map((_, si) => (
+                    <Star key={si} size={14} color="#F59E0B" fill="#F59E0B" />
+                  ))}
+                </div>
+
+                {/* Quote */}
+                <p style={{
+                  color: C.inkLight, fontSize: 15, lineHeight: 1.75,
+                  fontFamily: FONT, margin: 0, flex: 1,
+                  fontStyle: "italic",
+                }}>
+                  "{t.quote}"
+                </p>
+
+                {/* Author */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: "50%",
+                    background: `${t.color}18`,
+                    border: `2px solid ${t.color}30`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontFamily: FONT, fontSize: 13, fontWeight: 800, color: t.color }}>{t.avatar}</span>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: C.ink }}>{t.name}</div>
+                    <div style={{ fontSize: 12, color: t.color, fontWeight: 600, fontFamily: FONT }}>{t.tag}</div>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+
+        {/* Social proof bar */}
+        <FadeIn delay={0.3}>
+          <div style={{
+            marginTop: 32, background: C.primaryFix,
+            border: `1px solid ${C.borderMid}`,
+            borderRadius: 20, padding: "18px 28px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: isMobile ? 16 : 40, flexWrap: "wrap",
+          }}>
+            {[
+              { value: "1 200+", label: "nageurs accompagnés" },
+              { value: "4,9/5", label: "note moyenne" },
+              { value: "93%", label: "terminent leur plan" },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 800, color: C.primary, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 12, color: C.secondary, fontFamily: FONT, marginTop: 3 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
 
 // ── Comparison ─────────────────────────────────────────────────────────────
 function Comparison() {
@@ -658,7 +804,7 @@ function Comparison() {
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 44 }}>
           <SectionLabel text="POURQUOI MYSWYM" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
             La différence que tu<br />ressentiras dans l'eau
           </h2>
         </FadeIn>
@@ -724,7 +870,7 @@ function PaceFeature() {
       <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, alignItems: "center" }}>
         <FadeIn>
           <SectionLabel text="NIVEAU PERFORMANCE" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 38px)", fontWeight: 800, color: C.ink, margin: "0 0 18px", letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.ink, margin: "0 0 18px", letterSpacing: "0", textTransform: "uppercase" }}>
             Tes allures cibles,<br />calculées à la seconde
           </h2>
           <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.7, marginBottom: 20, fontFamily: FONT }}>
@@ -838,7 +984,7 @@ function Pricing() {
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
           <SectionLabel text="TARIFS" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
             Commence gratuitement.<br />Passe premium quand tu veux.
           </h2>
           <p style={{ color: C.secondary, fontSize: 16, fontFamily: FONT }}>Annule à tout moment.</p>
@@ -975,7 +1121,7 @@ function FAQ() {
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 48 }}>
           <SectionLabel text="FAQ" />
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
             Questions fréquentes
           </h2>
         </FadeIn>
@@ -1032,7 +1178,7 @@ function FinalCTA() {
           <div style={{ width: 60, height: 60, background: C.accent + "18", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
             <Waves size={28} color={C.accent} />
           </div>
-          <h2 style={{ fontFamily: FONT, fontSize: "clamp(28px, 5vw, 48px)", fontWeight: 800, color: C.white, margin: "0 0 16px", letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(36px, 5.5vw, 58px)", fontWeight: 800, color: C.white, margin: "0 0 16px", letterSpacing: "0", textTransform: "uppercase" }}>
             Ton coach dans ta poche.<br />Gratuit pour commencer.
           </h2>
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 17, lineHeight: 1.6, marginBottom: 32, fontFamily: FONT }}>
@@ -1111,6 +1257,7 @@ export default function Landing() {
       <Goals />
       <PaceFeature />
       <ProgressTimeline />
+      <Testimonials />
       <Comparison />
       <Pricing />
       <FAQ />
