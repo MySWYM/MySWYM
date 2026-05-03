@@ -982,6 +982,12 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const [nameInput,   setNameInput]   = useState(firstName);
   const fileInputRef = useRef(null);
 
+  // Resync depuis user_metadata quand l'objet user arrive ou change
+  useEffect(() => {
+    if (user?.user_metadata?.firstname) setFirstName(user.user_metadata.firstname);
+    if (user?.user_metadata?.avatar_url) setAvatarUrl(user.user_metadata.avatar_url);
+  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url]);
+
   const stats     = computeStats(plan);
   const earned    = checkBadges(stats);
   const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
@@ -2884,9 +2890,11 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
   );
   const recentDone = allSessions.filter(s => s.completed).slice(-3).reverse();
 
-  // Avatar / name from localStorage
-  const avatarUrl = (() => { try { return localStorage.getItem("myswym_avatar"); } catch { return null; } })();
-  const firstName = (() => { try { return localStorage.getItem("myswym_firstname"); } catch { return null; } })()
+  // Avatar / name — user_metadata en priorité (cross-device), localStorage en fallback
+  const avatarUrl = user?.user_metadata?.avatar_url
+    || (() => { try { return localStorage.getItem("myswym_avatar"); } catch { return null; } })();
+  const firstName = user?.user_metadata?.firstname
+    || (() => { try { return localStorage.getItem("myswym_firstname"); } catch { return null; } })()
     || user?.user_metadata?.full_name?.split(" ")[0]
     || user?.email?.split("@")[0]
     || "Nageur";
