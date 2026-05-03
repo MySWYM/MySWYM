@@ -637,6 +637,266 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
   );
 };
 
+// ── STRAVA ────────────────────────────────────────────────────────────────────
+
+const STRAVA_ACTIVITY_META = {
+  Swim:          { label: "Nage piscine", color: G.blue,   bg: G.blueLight,   Icon: Waves    },
+  OpenWaterSwim: { label: "Eau libre",    color: G.water,  bg: G.waterLight,  Icon: Waves    },
+  Triathlon:     { label: "Triathlon",    color: G.purple, bg: G.purpleLight, Icon: Activity },
+  Run:           { label: "Course",       color: G.coral,  bg: G.coralLight,  Icon: Activity },
+  Ride:          { label: "Vélo",         color: G.mint,   bg: G.mintLight,   Icon: Activity },
+};
+
+const fmtDist = (m) => {
+  if (!m) return "—";
+  return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+};
+const fmtDur = (s) => {
+  if (!s) return "—";
+  const h = Math.floor(s / 3600);
+  const mn = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h}h ${mn}min` : `${mn} min`;
+};
+const fmtPace = (sec) => {
+  if (!sec) return null;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}/100m`;
+};
+
+const StravaSection = ({ user }) => {
+  const [connected,     setConnected]     = useState(null); // null = chargement
+  const [athlete,       setAthlete]       = useState(null);
+  const [activities,    setActivities]    = useState([]);
+  const [syncing,       setSyncing]       = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [msg,           setMsg]           = useState(null);
+
+  const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
+
+  useEffect(() => {
+    if (!user) return;
+    checkConnection();
+  }, [user?.id]);
+
+  const checkConnection = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("strava_tokens")
+        .select("athlete_data")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      // erreur (table absente, RLS…) → afficher quand même le bouton "Connecter"
+      if (error) { setConnected(false); return; }
+      setConnected(!!data);
+      if (data?.athlete_data) setAthlete(data.athlete_data);
+      if (data) await loadActivities();
+    } catch {
+      setConnected(false);
+    }
+  };
+
+  const loadActivities = async () => {
+    const { data } = await supabase
+      .from("strava_activities")
+      .select("strava_activity_id, activity_type, title, distance, duration, pace, activity_date")
+      .eq("user_id", user.id)
+      .order("activity_date", { ascending: false })
+      .limit(10);
+    setActivities(data ?? []);
+  };
+
+  const connect = () => {
+    if (!clientId) {
+      setMsg({ type: "err", text: "Variable VITE_STRAVA_CLIENT_ID manquante dans le .env" });
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin);
+    window.location.href =
+      `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
+      `&response_type=code&redirect_uri=${redirectUri}` +
+      `&approval_prompt=auto&scope=activity%3Aread_all&state=strava_connect`;
+  };
+
+  const sync = async () => {
+    setSyncing(true); setMsg(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey":        import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ per_page: 50 }),
+        }
+      );
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setMsg({ type: "ok", text: `${json.synced} activité(s) synchronisée(s)` });
+      await loadActivities();
+    } catch (e) {
+      setMsg({ type: "err", text: e.message });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const disconnect = async () => {
+    if (!window.confirm("Déconnecter Strava et supprimer les activités synchronisées ?")) return;
+    setDisconnecting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-disconnect`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey":        import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+        }
+      );
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setConnected(false); setAthlete(null); setActivities([]); setMsg(null);
+    } catch (e) {
+      setMsg({ type: "err", text: e.message });
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  // km natation cette semaine (lundi → dimanche)
+  const weeklySwimM = activities
+    .filter(a => {
+      if (!["Swim", "OpenWaterSwim"].includes(a.activity_type)) return false;
+      const now    = new Date();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      monday.setHours(0, 0, 0, 0);
+      return new Date(a.activity_date + "T12:00:00") >= monday;
+    })
+    .reduce((sum, a) => sum + (Number(a.distance) || 0), 0);
+
+  // Pendant le chargement on affiche le bouton "Connecter" (état optimiste)
+  // il sera remplacé par l'état réel dès que checkConnection() répond
+
+  return (
+    <div style={{ background: G.white, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+
+      {/* ── En-tête ──────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: connected ? "#FC4C02" : G.greyLight,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Activity size={18} color={connected ? "#fff" : G.greyMid} />
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, lineHeight: 1.2 }}>Strava</div>
+            <div style={{ fontSize: 12, color: G.grey }}>
+              {connected && athlete?.firstname
+                ? `${athlete.firstname}${athlete.lastname ? " " + athlete.lastname : ""}`
+                : connected ? "Connecté" : "Non connecté"}
+            </div>
+          </div>
+        </div>
+        {connected && (
+          <button
+            onClick={sync}
+            disabled={syncing}
+            style={{ padding: "7px 14px", borderRadius: 10, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontSize: 13, fontWeight: 600, cursor: syncing ? "not-allowed" : "pointer", opacity: syncing ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {syncing ? "Sync…" : "Synchroniser"}
+          </button>
+        )}
+      </div>
+
+      {/* ── Message retour ───────────────────────────────────────── */}
+      {msg && (
+        <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "9px 13px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* ── Non connecté ─────────────────────────────────────────── */}
+      {!connected ? (
+        <button
+          onClick={connect}
+          style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: "#FC4C02", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'DM Sans', sans-serif" }}
+        >
+          <Activity size={16} color="#fff" /> Connecter Strava
+        </button>
+      ) : (
+        <>
+          {/* Volume hebdo natation */}
+          {weeklySwimM > 0 && (
+            <div style={{ background: G.blueLight, borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
+              <Waves size={16} color={G.blue} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}>
+                {(weeklySwimM / 1000).toFixed(1)} km nagés cette semaine
+              </span>
+            </div>
+          )}
+
+          {/* Liste des activités */}
+          {activities.length === 0 ? (
+            <div style={{ fontSize: 13, color: G.grey, textAlign: "center", padding: "16px 0" }}>
+              Aucune activité — clique sur "Synchroniser".
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
+              {activities.map((a, i) => {
+                const meta = STRAVA_ACTIVITY_META[a.activity_type] ?? { label: a.activity_type ?? "Activité", color: G.grey, bg: G.greyXLight, Icon: Activity };
+                const { Icon: AIcon, color, bg, label } = meta;
+                return (
+                  <div
+                    key={a.strava_activity_id}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < activities.length - 1 ? `1px solid ${G.greyLight}` : "none" }}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <AIcon size={16} color={color} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {a.title || label}
+                      </div>
+                      <div style={{ fontSize: 11, color: G.grey }}>
+                        {a.activity_date ? new Date(a.activity_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " · " : ""}{label}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{fmtDist(a.distance)}</div>
+                      <div style={{ fontSize: 11, color: G.grey }}>{fmtDur(a.duration)}</div>
+                      {a.pace && <div style={{ fontSize: 11, color }}>{fmtPace(a.pace)}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Déconnexion */}
+          <button
+            onClick={disconnect}
+            disabled={disconnecting}
+            style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontSize: 12, fontWeight: 500, cursor: disconnecting ? "not-allowed" : "pointer", opacity: disconnecting ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {disconnecting ? "Déconnexion…" : "Déconnecter Strava"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
 const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram }) => {
   const [password, setPassword] = useState("");
   const [saving,   setSaving]   = useState(false);
@@ -919,6 +1179,9 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* ── Modifier le programme ───────────────────────────────── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
+
+        {/* ── Strava ──────────────────────────────────────────────── */}
+        <StravaSection user={user} />
 
         {/* ── Compte ──────────────────────────────────────────────── */}
         <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12, border: `1px solid ${G.greyLight}` }}>
@@ -3093,6 +3356,77 @@ const SESSION_TEMPLATES = {
       };
     }
 
+    // ── PERFORMANCE / EXPERT : endurance + 4 nages ───────────────────────
+    if (isAdv) {
+      const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
+      const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
+      const repL  = Math.min(8*P, 400);
+      const repM2 = Math.min(6*P, 300);
+      const repS  = Math.min(4*P, 200);
+      const nL    = Math.max(3, Math.min(8,  Math.floor(avail * 0.72 / repL)));
+      const nM2   = Math.max(4, Math.min(10, Math.floor(avail * 0.72 / repM2)));
+      const nS2   = Math.max(6, Math.min(14, Math.floor(avail * 0.72 / repS)));
+      const nActif = Math.max(2, Math.min(6, Math.round(avail * 0.18 / (2*P))));
+      const imRep = 4*P;
+      const nIM   = Math.max(3, Math.min(6,  Math.floor(avail * 0.65 / imRep)));
+      return {
+        type: "ENDURANCE",
+        ...[
+          {
+            title: "Fond en séries",
+            intensity: "Allure confortable — tiens sur la durée",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nL}×${repL}m crawl — ${dep(repL, lvl, 'easy')} — allure régulière, respiration 3 temps`,
+              `${nActif}×${2*P}m dos + brasse alternance — 15" récup — récupération active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Pyramide aérobie",
+            intensity: "Régulier de bout en bout",
+            details: [
+              `Échauffement : ${echu}`,
+              `${2*P}–${4*P}–${6*P}–${4*P}–${2*P}m crawl — 15" récup entre paliers — même effort à la montée et à la descente`,
+              `${nActif}×${2*P}m pull buoy — 15" récup — bras seuls, relâche les jambes`,
+              `Retour calme : 200m dos`,
+            ],
+          },
+          {
+            title: "Négatifs splits",
+            intensity: "2e moitié plus vite que la 1re",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nM2}×${repM2}m crawl — ${dep(repM2, lvl, 'easy')} — 1re moitié retiens-toi, 2e moitié accélère`,
+              `${nActif}×${2*P}m dos — 15" récup — récupération active, rotation consciente`,
+              `Retour calme : 200m dos`,
+            ],
+          },
+          {
+            title: "Longue distance",
+            intensity: "Z2 — reps longues, gestion mentale",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nL}×${repL}m crawl — ${dep(repL, lvl, 'easy')} — allure maîtrisée sur la totalité, sans relâche en fin de rep`,
+              `${nActif}×${2*P}m 4 nages — 15" récup — dos puis brasse en alternance`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Alternée 4 nages",
+            intensity: "Polyvalence — endurance toutes nages",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nIM}×${imRep}m en rotation : dos · brasse · crawl — 15" récup — 1 nage par rep, 1 tour complet = 3 reps`,
+              `${nActif}×${imRep}m 4 nages (${P}m papillon + ${P}m dos + ${P}m brasse + ${P}m crawl) — 30" récup`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+        ][vp],
+      };
+    }
+
     const isTriathlon = goal.startsWith("triathlon");
     const isOpenWater = goal.startsWith("open_water") || goal.startsWith("eau_libre");
 
@@ -3298,6 +3632,76 @@ const SESSION_TEMPLATES = {
       };
     }
 
+    // ── PERFORMANCE / EXPERT : seuil + 4 nages ───────────────────────────
+    if (isAdv) {
+      const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
+      const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
+      const cssRep = Math.min(4*P, 200);
+      const nCSS   = Math.max(6, Math.min(14, Math.floor(avail * 0.65 / cssRep)));
+      const nFin   = Math.max(2, Math.min(6, Math.round(Math.max(0, avail - nCSS*cssRep) / (2*P))));
+      const nBloc  = Math.max(3, Math.min(5,  Math.floor(avail * 0.60 / (4*cssRep))));
+      const nSprSeuil = Math.max(4, Math.min(8, Math.round(avail * 0.30 / cssRep)));
+      const nRecupIM  = Math.max(2, Math.min(4, Math.round(avail * 0.20 / (2*P))));
+      const overRep   = Math.min(8*P, 400);
+      const nOver     = Math.max(3, Math.min(6, Math.floor(avail * 0.65 / overRep)));
+      return {
+        type: "SEUIL",
+        ...[
+          {
+            title: "CSS — allure critique",
+            intensity: "Seuil — effort soutenu et constant",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nCSS}×${cssRep}m crawl — ${dep(cssRep, lvl, 'threshold')} — allure 1500m, régularité absolue`,
+              `${nFin}×${2*P}m 4 nages — 15" récup — dos puis brasse en alternance`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Pyramide seuil",
+            intensity: "Intensité croissante puis décroissante",
+            details: [
+              `Échauffement : ${echu}`,
+              `${2*P}–${4*P}–${6*P}–${4*P}–${2*P}m crawl — 20" récup entre paliers — allure seuil à chaque palier`,
+              `${nRecupIM}×${4*P}m 4 nages (${P}m par nage) — 25" récup — récupération active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Blocs compétition",
+            intensity: "Z4 — allure race, séries courtes",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nBloc}×(4×${cssRep}m crawl — 10" intra) — 1' entre blocs — allure compétition, régularité absolue`,
+              `${nSprSeuil}×${P}m sprint — 45" récup — terminer par des sprints pour activer les fibres rapides`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Séries descendantes",
+            intensity: "Patient au départ, explosif à l'arrivée",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nCSS}×${cssRep}m crawl — ${dep(cssRep, lvl, 'threshold')} — vise −1 à 2s de mieux à chaque rep`,
+              `${nFin}×${2*P}m dos — 15" récup — récup active entre les blocs`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Over-distance seuil",
+            intensity: "Légèrement sous le seuil — travaille la résistance",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nOver}×${overRep}m crawl — ${dep(overRep, lvl, 'threshold')} — distance supérieure à tes reps CSS, allure légèrement conservatrice`,
+              `${nRecupIM}×${4*P}m 4 nages (${P}m par nage) — 25" récup — polyvalence active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+        ][vp],
+      };
+    }
+
     const isTriathlon = goal.startsWith("triathlon");
 
     const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
@@ -3494,6 +3898,74 @@ const SESSION_TEMPLATES = {
             ],
           },
         ][vb],
+      };
+    }
+
+    // ── PERFORMANCE / EXPERT : vitesse + 4 nages ─────────────────────────
+    if (isAdv) {
+      const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
+      const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
+      const nSpr   = Math.max(6, Math.min(12, Math.round(avail * 0.55 / P)));
+      const nIM4   = Math.max(4, Math.min(10, Math.floor(avail * 0.50 / (2*P))));
+      const nSpr4  = Math.max(4, Math.min(8,  Math.round(avail * 0.30 / P)));
+      const nPap   = Math.max(4, Math.min(8,  Math.round(avail * 0.25 / P)));
+      const nBuild = Math.max(4, Math.min(10, Math.floor(avail * 0.55 / (2*P))));
+      const nRecup = Math.max(2, Math.min(6,  Math.round(avail * 0.20 / (2*P))));
+      return {
+        type: "VITESSE",
+        ...[
+          {
+            title: "Sprints maximaux",
+            intensity: "Sprint total — récup complète",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nSpr}×${P}m sprint crawl — R1' — qualité absolue, chaque longueur comme si c'était la seule`,
+              `${nRecup}×${2*P}m dos + brasse alternance — 20" récup — récupération active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Vitesse 4 nages",
+            intensity: "Explosivité — toutes nages en rotation",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nIM4}×${2*P}m en rotation dos · brasse · crawl — 40" récup — 1 nage par rep, sprint à chaque`,
+              `${nPap}×${P}m papillon — R2' — ondulation hanches, récup complète, qualité absolue`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Puissance 4 nages",
+            intensity: "Puissance — palettes + sprint mains nues",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nIM4}×${2*P}m palettes + pull buoy — 20" récup — coude haut, pression max sur les paumes`,
+              `${nSpr4}×${P}m sprint mains nues — R1' — reproduis la prise d'eau des palettes, engage l'avant-bras`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Accélérations construites",
+            intensity: "Montée en puissance progressive",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nBuild}×${2*P}m crawl — ${dep(2*P, lvl, 'threshold')} — 1re moitié Z2, 2e moitié accélère à 95%`,
+              `${nSpr4}×${P}m sprint 4 nages rotation — R1' — 1 nage par sprint, rotation complète`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: "Départs & explosivité",
+            intensity: "Z5/Z6 — explosivité maximale",
+            details: [
+              `Échauffement : ${echu}`,
+              `${nPap}×${P}m papillon — R2' — ondulation pure, 3 coups de bras max, stop si la forme se dégrade`,
+              `${nSpr}×${P}m sprint crawl départ mur — R1' — pousse fort, torpille gainée, 3 premiers bras à fond`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+        ][vp],
       };
     }
 
@@ -3823,97 +4295,75 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── CONFIRMÉ (8 variants — ~50% éducatif) ────────────────────────────
-    const v = rot(8);
+    // ── EXPERT / PERFORMANCE : technique 4 nages (6 variants) ───────────
+    const v = rot(6);
     return {
       type: "TECHNIQUE",
       ...[
         {
-          title: "Grand chien — tuba frontal",
-          intensity: "Faible — timing de prise et rotation",
+          title: "Technique dos",
+          intensity: "Faible — sortie du bras, rotation épaule",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-            `${nPerBlock}×${repR}m grand chien + tuba frontal — R10" — un bras tendu, tire jusqu'à la cuisse, échange complet, focus timing de prise`,
-            `${nPerBlock}×${repR}m grand chien + tuba — R10" — accélère légèrement, maintiens la précision de la prise`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — reproduis le timing et la profondeur de prise du grand chien`,
-            `Retour au calme : ${repR}m dos lent`,
+            `Échauffement : ${repR}m crawl + ${repR}m brasse lente`,
+            `${nPerBlock}×${repR}m dos — R10" — épaule sort de l'eau à chaque bras, regard au plafond`,
+            `${nPerBlock}×${repR}m dos palmes — R10" — fouet des chevilles, corps gainé, rotation de bassin`,
+            `${nInteg}×${repR}m dos — ${dep(repR,lvl,'easy')} — amplitude complète, pas de coude qui rentre à l'entrée`,
+            `Retour calme : ${repR}m crawl lent`,
           ],
         },
         {
-          title: "Hypoxie progressive",
-          intensity: "Modéré — capacité respiratoire",
+          title: "Technique brasse",
+          intensity: "Faible — traction coude haut, coulée longue",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-            `${nPerBlock}×${repR}m hypoxie 5 — R15" — 1 respiration toutes les 5 tractions`,
-            `${nPerBlock}×${repR}m hypoxie 7 — R20" — 1 respiration toutes les 7 tractions`,
-            `${Math.max(2, nPerBlock - 1)}×${repR}m hypoxie 9 — R25" — 1 respiration toutes les 9 tractions`,
-            `Retour au calme : ${repR}m NL respiration libre + ${repR}m dos lent`,
+            `Échauffement : ${repR}m crawl + ${repR}m dos lent`,
+            `${nPerBlock}×${repR}m brasse — R15" — bras tirent, jambes poussent — jamais en même temps`,
+            `${nPerBlock}×${repR}m brasse coulée longue — R15" — prolonge la glisse 2 secondes avant le prochain cycle`,
+            `${nInteg}×${repR}m brasse — ${dep(repR,lvl,'easy')} — amplitude + coulée, économise l'énergie`,
+            `Retour calme : ${repR}m crawl lent`,
           ],
         },
         {
-          title: "Position de tête — respiration",
-          intensity: "Faible — technique respiratoire",
+          title: "Technique papillon",
+          intensity: "Faible — ondulation hanches, pas épaules",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-            `${nPerBlock}×${repR}m tuba frontal — R10" — focus sur le maintien de la tête dans l'axe, ni trop haute ni trop basse`,
-            `${nPerBlock}×${repR}m respiration latérale — R10" — tête pivote juste assez pour la bouche, 1 oreille reste dans l'eau, inspire vite et reviens`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — respiration 3 temps, tête fluide, pas de roulement excessif des épaules`,
-            `Retour au calme : ${repR}m dos lent`,
+            `Échauffement : ${repR}m crawl + ${repR}m dos + 4×${P}m ondulations jambes`,
+            `${nPerBlock}×${P}m papillon — R30" — ondulation vient des hanches, les épaules suivent`,
+            `${nPerBlock}×${P}m papillon — R30" — 2 battements de jambes par cycle, sens la propulsion`,
+            `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — intégration après le travail papillon`,
+            `Retour calme : ${repR}m dos lent`,
           ],
         },
         {
-          title: "Coude haut — EVF",
-          intensity: "Faible — early vertical forearm",
+          title: "Séance 4 nages par bloc",
+          intensity: "Modéré — un bloc par nage",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-            `${nPerBlock}×${repR}m tuba frontal bras lent — R10" — avant-bras vertical dès l'entrée dans l'eau, coude haut tout au long de la traction`,
-            `${nPerBlock}×${repR}m fist drill — R10" — poings fermés, force l'utilisation de l'avant-bras, sens la portance sur l'avant-bras`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — coude haut à la prise, tire sous l'axe du corps`,
-            `Retour au calme : ${repR}m dos lent`,
+            `Échauffement : ${repR}m crawl`,
+            `${nPerBlock}×${repR}m dos — R10" — rotation épaule, fouet chevilles`,
+            `${nPerBlock}×${repR}m brasse — R15" — bras + jambes séparés, coulée`,
+            `${nPerBlock}×${P}m papillon — R30" — ondulation hanches`,
+            `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — intégration finale`,
+            `Retour calme : ${repR}m dos lent`,
           ],
         },
         {
-          title: "Entrée dans l'eau",
-          intensity: "Faible — qualité de l'entrée de main",
+          title: "Enchaînement 4 nages complet",
+          intensity: "Modéré — fluidité entre les nages",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-            `${nPerBlock}×${repR}m finger tip lead + tuba — R10" — doigts en premier dans l'axe de l'épaule, prolonge l'extension avant la prise, sans claquer la surface`,
-            `${nPerBlock}×${repR}m catch-up drill — R10" — attends que la main tendue touche la main adverse avant de tirer`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — entrée propre à chaque bras, pas de claquement ni d'entrée croisée`,
-            `Retour au calme : ${repR}m dos lent`,
+            `Échauffement : ${repR}m crawl + ${repR}m dos`,
+            `${nPerBlock}×${4*P}m 4 nages (${P}m par nage) — R25" — papillon · dos · brasse · crawl, fluidité à chaque transition`,
+            `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — repose sur le crawl après les 4 nages`,
+            `Retour calme : ${repR}m dos lent`,
           ],
         },
         {
-          title: "Finir le mouvement",
-          intensity: "Faible — amplitude de traction complète",
+          title: "Tempo & cycles crawl",
+          intensity: "Modéré — plus vite sans plus de cycles",
           details: [
-            `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-            `${nPerBlock}×${repR}m tuba frontal bras lent — R10" — sens la paume pousser l'eau vers le bas jusqu'à la cuisse, pense à "pousser derrière toi"`,
-            `${nPerBlock}×${repR}m finger drag — R10" — doigts effleurent la surface au retour, preuve que le coude était haut et la traction complète`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque traction se termine à la cuisse, ressens la propulsion en fin de geste`,
-            `Retour au calme : ${repR}m dos lent`,
-          ],
-        },
-        {
-          title: "Virages & coulées",
-          intensity: "Faible — travail des virages",
-          details: [
-            `Échauffement : ${repR}m NL + ${repR}m battements planche`,
-            `${nPerBlock}×${repR}m coulées — R10" — flèche max gainée, 5m en apnée avant le 1er bras`,
-            `${nPerBlock}×${repR}m flip turns — R15" — culbute à 1m du mur, poussée + flèche`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — chaque virage = relance d'élan, zéro perte de vitesse`,
-            `Retour au calme : ${repR}m dos lent`,
-          ],
-        },
-        {
-          title: "Tempo & cycles — vitesse sans forcer",
-          intensity: "Faible/Modéré — plus vite sans plus de cycles",
-          details: [
-            `Échauffement : ${repR}m NL + 4×${P}m accélérations progressives + ${repR}m battements planche`,
-            `${nPerBlock}×${repR}m NL — R10" — compte tes cycles par longueur, note ton chiffre de base`,
-            `${nPerBlock}×${repR}m NL — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même nombre de cycles par longueur`,
-            `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — objectif : 2s plus rapide que ta normale avec le même nombre de cycles`,
-            `Retour au calme : ${repR}m dos lent`,
+            `Échauffement : ${repR}m crawl + ${repR}m 4 nages (${P}m par nage)`,
+            `${nPerBlock}×${repR}m crawl — R10" — compte tes cycles par longueur`,
+            `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — accélère le rythme de bras en gardant le même nombre de cycles`,
+            `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — objectif : 2s plus rapide, même nombre de cycles`,
+            `Retour calme : ${repR}m dos lent`,
           ],
         },
       ][v],
@@ -4015,6 +4465,46 @@ const SESSION_TEMPLATES = {
             ],
           },
         ][v],
+      };
+    }
+
+    // ── PERFORMANCE / EXPERT : récup active + 4 nages ─────────────────────
+    if (!isBeg && (level === "performance" || level === "advanced")) {
+      const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 3;
+      return {
+        type: "RÉCUPÉRATION",
+        ...[
+          {
+            title: "Récupération 4 nages",
+            intensity: "Très facile — maintien du mouvement",
+            details: [
+              `${nA}×${repR}m dos — 15" récup — jambes molles, rotation douce`,
+              `${nB}×${repR}m brasse — 15" récup — coulée longue, jamais de précipitation`,
+              `${nC}×${repR}m crawl très lent — 10" récup — expire sous l'eau, relâche les épaules`,
+              `Fin : 100m dos bras le long — flottaison pure`,
+            ],
+          },
+          {
+            title: "Nage croisée douce",
+            intensity: "Très facile — polyvalence en récup",
+            details: [
+              `${nA}×${repR}m en rotation dos · brasse · crawl — 15" récup — 1 nage par longueur, sans effort`,
+              `${nB}×${repR}m crawl lent — 10" récup — pense à la technique, pas à la vitesse`,
+              `${nC}×${repR}m dos — 10" récup — regard au plafond, décompresse`,
+              `Fin : flotte 2 min sur le dos, bras en croix`,
+            ],
+          },
+          {
+            title: "Descente douce",
+            intensity: "Très facile — sans montre",
+            details: [
+              `${nA}×${repR}m crawl — sans pression — allure intuitive, arrête si besoin`,
+              `${nB}×${repR}m dos — 10" récup — pense à autre chose, déconnecte`,
+              `${nC}×${repR}m brasse coulée — 15" récup — 1 cycle · coulée · 1 cycle, le plus lent possible`,
+              `Fin : étirements passifs 3 min au bord du bassin`,
+            ],
+          },
+        ][vp],
       };
     }
 
@@ -4347,6 +4837,50 @@ export default function App() {
     const t5 = retry(30000);
 
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+  }, []);
+
+  // ── Strava OAuth callback ────────────────────────────────────────────────
+  // Strava redirige vers {origin}?code=...&state=strava_connect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code   = params.get("code");
+    const state  = params.get("state");
+    if (state !== "strava_connect" || !code) return;
+
+    // Nettoie l'URL immédiatement
+    window.history.replaceState({}, "", window.location.pathname);
+
+    const handle = async () => {
+      // Attend que la session soit prête (l'utilisateur était déjà connecté avant le redirect)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast("Erreur Strava : session expirée, reconnecte-toi.", 8000); return; }
+
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-callback`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":  "application/json",
+              "Authorization": `Bearer ${session.access_token}`,
+              "apikey":        import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ code }),
+          }
+        );
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        showToast(`Strava connecté${json.athlete ? ` — Bonjour ${json.athlete} 👋` : ""} · Synchronisation en cours…`, 6000);
+        setActiveTab("profile");
+      } catch (e) {
+        showToast(`Erreur Strava : ${e.message}`, 8000);
+        setActiveTab("profile");
+      }
+    };
+
+    // Petit délai pour laisser onAuthStateChange s'initialiser si nécessaire
+    const t = setTimeout(handle, 400);
+    return () => clearTimeout(t);
   }, []);
 
   // Régénère le plan actif quand le premium est débloqué et que le plan était tronqué
