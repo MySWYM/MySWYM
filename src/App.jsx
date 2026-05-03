@@ -702,6 +702,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
       .from("strava_activities")
       .select("strava_activity_id, activity_type, title, distance, duration, pace, activity_date")
       .eq("user_id", user.id)
+      .in("activity_type", ["Swim", "OpenWaterSwim"])
       .order("activity_date", { ascending: false })
       .limit(10);
     setActivities(data ?? []);
