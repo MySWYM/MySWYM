@@ -3424,41 +3424,115 @@ const SESSION_TEMPLATES = {
       };
     }
 
+    const isDiplome   = goal === "bnssa" || goal === "bpjeps_aan";
+    const isBNSSA     = goal === "bnssa";
     const isTriathlon = goal.startsWith("triathlon");
     const isOpenWater = goal.startsWith("open_water") || goal.startsWith("eau_libre");
 
-    const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
+    const vp  = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+    const r3  = Math.min(12*P, 300);
+    const r2  = Math.min(8*P,  200);
+    const r1  = Math.min(4*P,  100);
+    const nR3   = Math.max(3, Math.min(7,  Math.round(dist * 0.55 / r3)));
+    const nR2   = Math.max(4, Math.min(10, Math.round(dist * 0.55 / r2)));
+    const nFill = Math.max(2, Math.min(8,  Math.round(dist * 0.18 / r1)));
+    const rLong = Math.min(16*P, 400);
+    const nLong = Math.max(2, Math.min(5,  Math.round(dist * 0.55 / rLong)));
 
-    // v0 — Fond en séries (sportif/performance only from here)
-    const repM = Math.min(isAdv ? 4*P : 3*P, 300);
-    const nM   = Math.max(2, Math.min(12, Math.floor(avail * 0.70 / repM)));
-    const nS   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nM*repM) / (2*P))));
+    // ── DIPLÔME — séances orientées examen ──────────────────────────────
+    if (isDiplome) {
+      const n400 = Math.max(2, Math.min(5, Math.round(dist * 0.55 / 400)));
+      const n100 = Math.max(4, Math.min(10, Math.round(dist * 0.50 / 100)));
+      const nFdDip = Math.max(2, Math.min(6, Math.round((dist - 300) * 0.20 / (2*P))));
+      return {
+        type: "ENDURANCE",
+        ...[
+          {
+            title: isBNSSA ? "Endurance + simulation sauvetage" : "Blocs 400m — gestion d'allure",
+            intensity: isBNSSA ? "Régulier + explosif court" : "Endurance — vise l'allure exam (≈1'55\"/100m)",
+            details: isBNSSA ? [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${n100}×100m crawl — R30" — allure régulière, respiration contrôlée`,
+              `Simulation : 25m vite → sortie eau → récup 1' — ×3`,
+              `Retour calme : 100m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 50m jambes`,
+              `${n400}×400m NL — R1'30" — vise le même temps à chaque rep, gère depuis le 1er mètre (objectif < 7'40")`,
+              `${nFdDip}×${2*P}m dos — R15" — récup active`,
+              `Retour calme : 100m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSA ? "100m répétés — objectif exam" : "Montée en distance vers 400m",
+            intensity: isBNSSA ? "Efforts soutenus sur 100m" : "Accumulation progressive",
+            details: isBNSSA ? [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${n100}×100m NL — R30" — allure stable, chaque rep identique`,
+              `1 simulation chrono : 100m NL à fond — objectif < 1'35"`,
+              `Retour calme : 100m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos`,
+              `200m NL R30" → 300m NL R40" → 400m NL R1'30" — même allure par 100m à chaque palier`,
+              `${nFdDip}×${2*P}m dos — R15"`,
+              `Retour calme : 100m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSA ? "Continuité + enchaînement sauvetage" : "3×400m NL — régularité",
+            intensity: isBNSSA ? "Endurance + simulation complète" : "Même allure ×3 — note tes temps",
+            details: isBNSSA ? [
+              `Échauffement : 200m crawl + 100m battements`,
+              `4×50m NL — R15" — allure régulière`,
+              `Enchaînement : 25m rapide → sortie → marche 10m → rentrée → 25m rapide — ×4 — R1'`,
+              `200m dos ou brasse continu — récup active`,
+              `Retour calme : 100m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos`,
+              `3×400m NL — R2' — note ton temps à chaque rep, vise la régularité`,
+              `${nFdDip}×${2*P}m dos — R15"`,
+              `Retour calme : 100m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSA ? "Volume & résistance" : "Long fractionné",
+            intensity: isBNSSA ? "Endurance continue" : "Distance longue — gestion mentale",
+            details: isBNSSA ? [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${n100}×100m NL — R25" — maintiens le rythme jusqu'à la dernière rep`,
+              `50m NL vite + 50m lent — ×${Math.max(2, Math.round(dist * 0.15 / 100))} — contraste d'allure`,
+              `Retour calme : 100m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${nLong}×${rLong}m NL — R1' — reps longues, gère ton allure sur la totalité`,
+              `${nFdDip}×${2*P}m dos — R15"`,
+              `Retour calme : 100m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSA ? "Négatifs + test vitesse" : "Négatifs splits 400m",
+            intensity: isBNSSA ? "Gestion d'effort + explosivité" : "2e moitié plus rapide",
+            details: isBNSSA ? [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${n100}×100m NL — R30" — 1re moitié gérée, 2e moitié accélère`,
+              `1×100m NL chrono — effort max — note le temps`,
+              `Retour calme : 100m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${n400}×400m NL — R1'30" — 1re moitié tranquille, 2e moitié accélère : arrive plus fort que tu n'es parti`,
+              `${nFdDip}×${2*P}m dos — R15"`,
+              `Retour calme : 100m dos lent`,
+            ],
+          },
+        ][vp],
+      };
+    }
 
-    // v1 — Pyramide aérobie
-    const pyMax = Math.min(isAdv ? 4*P : 3*P, 300);
-    const pyUp = [], pyDn = [];
-    for (let d = P; d <= pyMax; d += P) { pyUp.push(d); if (d < pyMax) pyDn.unshift(d); }
-    const pyAll  = [...pyUp, ...pyDn];
-    const pyFill = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - pyAll.reduce((a,b)=>a+b,0)) / (2*P))));
-
-    // v2 — Négatifs splits
-    const repNS = Math.min(isAdv ? 4*P : 3*P, 400);
-    const nNS   = Math.max(2, Math.min(10, Math.floor(avail * 0.70 / repNS)));
-    const nNSF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nNS*repNS) / (2*P))));
-
-    // v3 — Long fractionné (broken swim concept)
-    const repL = Math.min(isAdv ? 8*P : 6*P, 600);
-    const nL   = Math.max(2, Math.min(6, Math.floor(avail * 0.70 / repL)));
-    const nLF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nL*repL) / (2*P))));
-
-    // v4 — Nage alternée crawl/dos
-    const repA = Math.min(isAdv ? 3*P : 2*P, 200);
-    const nA4  = Math.max(2, Math.min(8, Math.floor(avail * 0.45 / repA)));
-    const nB4  = Math.max(2, Math.min(8, Math.floor(avail * 0.35 / repA)));
-    const nAF  = Math.min(4, Math.max(0, Math.round(Math.max(0, avail - (nA4+nB4)*repA) / (2*P))));
-
-    const triathlonCue = isTriathlon ? " — imagine la bouée, maintiens ton allure de compétition" : "";
-    const owCue = isOpenWater ? " — expire tous les 3 temps, pense à la régularité sans les murs" : "";
+    // ── NAGER & PROGRESSER / TRIATHLON / EAU LIBRE ──────────────────────
+    const goalCue = isTriathlon
+      ? " — régularité course, imagine la bouée"
+      : isOpenWater
+        ? " — expire régulièrement, rythme constant sans les murs"
+        : "";
 
     return {
       type: "ENDURANCE",
@@ -3468,55 +3542,54 @@ const SESSION_TEMPLATES = {
           intensity: "Endurance — allure conversation",
           details: [
             `Échauffement : 200m crawl progressif + 100m battements de jambes`,
-            `${nM}×${repM}m crawl — ${dep(repM,lvl,'easy')} — allure régulière, respiration toutes les 3 tractions${triathlonCue}${owCue}`,
-            `${nS}×${2*P}m pull-buoy — R20" — bras seuls, coude haut, tire sous l'axe`,
-            `Retour au calme : 200m dos lent`,
+            `${nR3}×${r3}m crawl — R20" — allure régulière${goalCue}`,
+            `${nFill}×${r1}m dos — R15" — récup active, relâche les épaules`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
           title: "Pyramide aérobie",
-          intensity: "Z1/Z2 — régulier de bout en bout",
+          intensity: "Endurance — régulier à la montée et à la descente",
           details: [
-            `Échauffement : 100m NL + 100m dos + 4×25m accélérations progressives`,
-            `Pyramide : ${pyAll.join('–')}m NL — R15" entre paliers — même effort à la montée et à la descente, pas de relâche`,
-            `${pyFill}×${2*P}m pull-buoy — R20" — récup active, relâche les épaules`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 100m crawl + 100m dos + 4×25m accélérations`,
+            `${r1}m – ${r2}m – ${r3}m – ${r2}m – ${r1}m crawl — R15" entre paliers — même effort à chaque palier`,
+            `${nFill}×${r1}m dos — R15" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
           title: "Négatifs splits",
-          intensity: "Z1→Z2 — 2e moitié plus rapide que la 1re",
+          intensity: "Endurance — 2e moitié plus rapide",
           details: [
-            `Échauffement : 200m NL + 50m fist drill + 50m NL + 50m battements`,
-            `${nNS}×${repNS}m NL — ${dep(repNS,lvl,'easy')} — 1re moitié en Z1 (retiens-toi), 2e moitié accélère en Z2 : arrive plus fort que tu n'as commencé`,
-            `${nNSF}×${2*P}m battements planche — R20" — expire sous l'eau à chaque poussée de mur`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m battements`,
+            `${nR2}×${r2}m crawl — R20" — 1re moitié gérée, 2e moitié accélère : arrive plus fort que tu n'es parti${goalCue}`,
+            `${nFill}×${r1}m battements planche — R20" — fouet des chevilles`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: isOpenWater ? "Long continu eau libre" : "Long fractionné",
-          intensity: "Z2 — reps longues, gestion mentale",
+          title: isOpenWater ? "Long continu — eau libre" : "Reps longues",
+          intensity: "Endurance — gestion mentale sur la distance",
           details: [
-            `Échauffement : 150m NL progressif + 100m dos + 4×${P}m accélérations`,
+            `Échauffement : 200m crawl + 100m dos + 4×${P}m accélérations`,
             isOpenWater
-              ? `${nL}×${repL}m NL — R10" — sans mur, imagine nager en lac : gère l'allure sur la totalité de la distance, régularité absolue`
-              : `${nL}×${repL}m NL — R10" — reps longues à allure maîtrisée : chaque coulée après le mur te fait gagner 0.5s`,
-            `${nLF}×${2*P}m pull-buoy — R20" — relâche les jambes, concentre-toi sur la traction`,
-            `Retour au calme : 200m dos lent`,
+              ? `${nLong}×${rLong}m NL — R15" — gère l'allure sans les murs, expire tout l'air sous l'eau`
+              : `${nLong}×${rLong}m crawl — R15" — allure maîtrisée sur la totalité${isTriathlon ? " — maintiens ton allure de compétition" : ""}`,
+            `${nFill}×${r1}m dos — R15" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: "Nage alternée — crawl & dos",
-          intensity: "Z1/Z2 — récupération active entre les blocs",
+          title: "Crawl & dos alternés",
+          intensity: "Endurance — polyvalence et récup active",
           details: [
-            `Échauffement : 200m NL progressif + 100m battements de jambes`,
-            `${nA4}×${repA}m NL — ${dep(repA,lvl,'easy')} — Z2 régulier, contrôle la respiration`,
-            `${nB4}×${repA}m dos crawlé — R15" — nage active, épaule sort en premier, rotation du bassin`,
-            nAF > 0 ? `${nAF}×${2*P}m battements planche — R20" — récup active, fouet des chevilles` : `100m NL très lent — récup libre`,
-            `Retour au calme : 150m NL très lent`,
+            `Échauffement : 200m crawl + 100m jambes`,
+            `${nR2}×${r2}m crawl — R20" — régulier${goalCue}`,
+            `${Math.max(2, Math.round(nR2 * 0.7))}×${r2}m dos — R20" — épaule sort en premier, rotation du bassin`,
+            `Retour calme : 150m crawl très lent`,
           ],
         },
-      ][v],
+      ][vp],
     };
   },
 
@@ -3699,109 +3772,174 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isTriathlon = goal.startsWith("triathlon");
+    const isDiplomeS   = goal === "bnssa" || goal === "bpjeps_aan";
+    const isBNSSAS     = goal === "bnssa";
+    const isTriathlon  = goal.startsWith("triathlon");
+    const isOpenWater  = goal.startsWith("open_water") || goal.startsWith("eau_libre");
 
-    const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
+    const vp  = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+    const r2S = Math.min(8*P,  200);
+    const r3S = Math.min(12*P, 300);
+    const nR2S   = Math.max(4, Math.min(10, Math.round(dist * 0.60 / r2S)));
+    const nR3S   = Math.max(3, Math.min(8,  Math.round(dist * 0.60 / r3S)));
+    const nFillS = Math.max(2, Math.min(8,  Math.round(dist * 0.15 / (2*P))));
 
-    // v0 — CSS (sportif/performance uniquement)
-    const cssRep = Math.min(isAdv ? 4*P : 3*P, 200);
-    const nCSS   = Math.max(4, Math.min(10, Math.floor(avail * 0.65 / cssRep)));
-    const nFin   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nCSS*cssRep) / (2*P))));
+    // ── DIPLÔME — séances orientées examen ──────────────────────────────
+    if (isDiplomeS) {
+      const n400S = Math.max(2, Math.min(5, Math.round(dist * 0.60 / 400)));
+      const n100S = Math.max(4, Math.min(10, Math.round(dist * 0.55 / 100)));
+      const n4N   = Math.max(3, Math.round(dist * 0.55 / (4*P)));
+      return {
+        type: "SEUIL",
+        ...[
+          {
+            title: isBNSSAS ? "Effort soutenu — allure 100m exam" : "Séries 400m — allure exam",
+            intensity: isBNSSAS ? "Soutenu — objectif < 1'35\" sur 100m" : "Soutenu — vise < 7'40\" sur 400m",
+            details: isBNSSAS ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${n100S}×100m NL — R30" — allure soutenue, objectif exam < 1'35" à chaque rep`,
+              `${nFillS}×${2*P}m dos — R15" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${n400S}×400m NL — R1'30" — allure cible exam : ≈ 1'55"/100m, régularité absolue`,
+              `${nFillS}×${2*P}m dos — R15" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAS ? "Pyramide 50→100→50m" : "Pyramide 100→200→300→200→100m",
+            intensity: "Effort soutenu à chaque palier",
+            details: isBNSSAS ? [
+              `Échauffement : 200m crawl + 100m dos`,
+              `50m NL R20" — 100m NL R30" — 50m NL R20" — ×${Math.max(2, Math.round((dist - 300) / 200))} — même effort par palier`,
+              `${nFillS}×${2*P}m dos — R15"`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos`,
+              `100m – 200m – 300m – 200m – 100m NL — R20" entre paliers — allure soutenue à chaque palier`,
+              `${nFillS}×${2*P}m dos — R15"`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAS ? "Blocs intenses — récup active" : "Blocs à allure soutenue",
+            intensity: "Effort net — inconfortable mais contrôlé",
+            details: isBNSSAS ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m sprints`,
+              `${n100S}×100m NL — R25" — effort soutenu, maintiens sur toutes les reps`,
+              `${nFillS}×${2*P}m dos — R20" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${nR2S}×${r2S}m NL — R20" — allure soutenue, effort maintenu sur toutes les reps`,
+              `${nFillS}×${2*P}m dos — R20" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAS ? "Séries descendantes — 100m" : "Séries descendantes",
+            intensity: "Patient au départ, plus fort à la fin",
+            details: isBNSSAS ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${n100S}×100m NL — R25" — vise 2" de mieux à chaque rep : 1re conservatrice, dernière à fond`,
+              `${nFillS}×${2*P}m dos — R15"`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${nR2S}×${r2S}m NL — R20" — vise 2" de mieux à chaque rep : 1re conservatrice, dernière à fond`,
+              `${nFillS}×${2*P}m dos — R15"`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAS ? "4 nages soutenu" : "Blocs 4 nages — seuil polyvalent",
+            intensity: "Effort soutenu toutes nages",
+            details: [
+              `Échauffement : 200m crawl + 100m dos`,
+              `${n4N}×${4*P}m 4 nages (${P}m par nage) — R30" — allure soutenue à chaque nage`,
+              `${nFillS}×${2*P}m dos — R15"`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+        ][vp],
+      };
+    }
 
-    // v1 — Pyramide seuil
-    const pyStep = Math.min(2*P, 100);
-    const pyMax  = pyStep * (isAdv ? 5 : 4);
-    const pyUp = [], pyDn = [];
-    for (let d = pyStep; d <= pyMax; d += pyStep) { pyUp.push(d); if (d < pyMax) pyDn.unshift(d); }
-    const pyAll  = [...pyUp, ...pyDn];
-    const pyFill = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - pyAll.reduce((a,b)=>a+b,0)) / (2*P))));
-
-    // v2 — Blocs T-pace
-    const tRep    = Math.min(isAdv ? 4*P : 3*P, 200);
-    const nT      = Math.max(3, Math.min(8, Math.floor(avail * 0.60 / tRep)));
-    const nSprint = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nT*tRep) / (2*P))));
-
-    // v3 — Séries descendantes
-    const dRep = Math.min(isAdv ? 3*P : 2*P, 200);
-    const nD   = Math.max(4, Math.min(8, Math.floor(avail * 0.65 / dRep)));
-    const nDF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nD*dRep) / (2*P))));
-
-    // v4 — Over-distance / tempo prolongé
-    const overRep = Math.min(isAdv ? 6*P : 4*P, 400);
-    const nOver   = Math.max(2, Math.min(5, Math.floor(avail * 0.65 / overRep)));
-    const nOverF  = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nOver*overRep) / (2*P))));
-
-    const cssLabel = isTriathlon
-      ? "allure nage triathlon cible — reproduis l'effort de la compétition, régularité absolue"
-      : "allure 1 500m — régularité absolue, mêmes temps de passage";
+    // ── NAGER & PROGRESSER / TRIATHLON / EAU LIBRE ──────────────────────
+    const goalCueS = isTriathlon
+      ? " — allure nage triathlon, régularité absolue"
+      : isOpenWater
+        ? " — respiration régulière, rythme stable sans les repères du mur"
+        : "";
 
     return {
       type: "SEUIL",
       ...[
         {
-          title: "CSS — allure critique",
-          intensity: "Seuil — effort soutenu et constant",
+          title: "Séries à allure soutenue",
+          intensity: "Effort soutenu — inconfortable mais contrôlé",
           details: [
-            `Échauffement : 200m crawl progressif + 4×25m accélérations + 50m jambes`,
-            `${nCSS}×${cssRep}m crawl — ${dep(cssRep,lvl,'threshold')} — ${cssLabel}`,
-            `${nFin}×${2*P}m jambes seules — R20" — fouet des chevilles, corps aligné`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `${nR2S}×${r2S}m crawl — R20" — allure soutenue, chaque rep identique${goalCueS}`,
+            `${nFillS}×${2*P}m dos — R15" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
           title: "Pyramide seuil",
-          intensity: "Seuil — intensité croissante puis décroissante",
+          intensity: "Effort croissant puis décroissant",
           details: [
-            `Échauffement : 200m crawl + 100m jambes`,
-            `Pyramide : ${pyAll.join('–')}m crawl — R20" entre paliers — allure seuil à chaque palier`,
-            `${pyFill}×${2*P}m crawl — R15" — allure récup active`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos`,
+            `${Math.min(r1, 100)}m – ${r2S}m – ${r3S}m – ${r2S}m – ${Math.min(r1, 100)}m crawl — R20" entre paliers — soutenu à chaque palier`,
+            `${nFillS}×${2*P}m dos — R15" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: "Blocs T-pace",
-          intensity: "Z4 — inconfortable et régulier",
+          title: "Effort constant sur longue distance",
+          intensity: "Endurance soutenue — tiens sur la distance",
           details: [
-            `Échauffement : 200m NL + 100m battements de jambes`,
-            `${nT}×${tRep}m NL — ${dep(tRep,lvl,'threshold')} — allure course 400m, l'effort doit être inconfortable mais régulier`,
-            `${nSprint}×${2*P}m NL — R20" — sprint à 90 % pour activer les fibres rapides`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `${nR3S}×${r3S}m crawl — R20" — allure soutenue de bout en bout${goalCueS}`,
+            `${nFillS}×${2*P}m dos — R20" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
           title: "Séries descendantes",
-          intensity: "Z3→Z4 — patient au départ, explosif à l'arrivée",
+          intensity: "Patient au départ, plus fort à la fin",
           details: [
-            `Échauffement : 200m NL progressif + 4×25m accélérations + 50m battements`,
-            `${nD}×${dRep}m NL — ${dep(dRep,lvl,'threshold')} — vise −2s de mieux à chaque rep : rep 1 conservatrice, rep ${nD} à bloc`,
-            `${nDF}×${2*P}m pull-buoy — R20" — bras seuls, récup active`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `${nR2S}×${r2S}m crawl — R20" — vise 2" de mieux à chaque rep : 1re conservatrice, dernière à fond`,
+            `${nFillS}×${2*P}m dos — R15" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: isBeg ? "Tempo prolongé" : "Over-distance — seuil sur la durée",
-          intensity: "Z3 — légèrement sous le seuil, travaille la marge",
+          title: isOpenWater ? "Blocs eau libre — effort maintenu" : "Blocs longs — récup courte",
+          intensity: "Endurance soutenue — récup courte",
           details: [
-            `Échauffement : 100m NL + 100m dos + 4×25m accélérations`,
-            isBeg
-              ? `${nOver}×${overRep}m NL — ${dep(overRep,lvl,'threshold')} — reps plus longues qu'à l'habitude, reste à l'aise de bout en bout`
-              : `${nOver}×${overRep}m NL — ${dep(overRep,lvl,'threshold')} — distance supérieure à tes reps CSS habituelles, allure légèrement conservatrice : construis ta résistance`,
-            `${nOverF}×${2*P}m dos crawlé — R15" — récup en nage active, scan corporel`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos`,
+            isOpenWater
+              ? `${nR3S}×${r3S}m NL — R15" — sans relâche, gère l'allure sans les repères du mur`
+              : `${nR3S}×${r3S}m crawl — R15" — effort soutenu, récup courte : entraîne ton corps à enchaîner`,
+            `${nFillS}×${2*P}m dos — R20"`,
+            `Retour calme : 200m dos lent`,
           ],
         },
-      ][v],
+      ][vp],
     };
   },
 
   // ── VITESSE ──────────────────────────────────────────────────────────────
-  // 4 variants avec warm-ups variés et cues améliorés
+  // 5 variants par niveau
   vitesse: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
     const isDecouverte = level === "découverte";
     const isBeg = level === "beginner" || level === "régulier" || isDecouverte;
     const isAdv = level === "advanced" || level === "performance";
     const P = pool, lvl = getLvlIndex(level);
-    const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 4;
+    const v = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
 
     // ── DÉCOUVERTE : "sprints ludiques", courtes longueurs fun ───────────
     if (isDecouverte) {
@@ -3966,77 +4104,165 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const WARM = 300, COOL = 200, avail = dist - WARM - COOL;
+    const isDiplomeV   = goal === "bnssa" || goal === "bpjeps_aan";
+    const isBNSSAV     = goal === "bnssa";
+    const isTriathlonV = goal.startsWith("triathlon");
+    const isOpenWaterV = goal.startsWith("open_water") || goal.startsWith("eau_libre");
 
-    const nSpr   = Math.max(6, Math.min(10, Math.round(avail * 0.5 / P)));
-    const nSec   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nSpr*P) / (2*P))));
-    const recSpr = isBeg ? "R1'30\"" : isAdv ? "R45\"" : "R1'00\"";
-    const nDive  = Math.max(6, Math.min(10, Math.round(avail * 0.5 / P)));
-    const nRec   = Math.min(6, Math.max(2, Math.round(Math.max(0, avail - nDive*P) / (2*P))));
+    const WARMV = 300, COOLV = 200, availV = dist - WARMV - COOLV;
+    const nSprV = Math.max(6, Math.min(10, Math.round(availV * 0.5 / P)));
+    const nSecV = Math.max(2, Math.min(8,  Math.round(Math.max(0, availV - nSprV*P) / (2*P))));
+    const nBldV = Math.max(4, Math.min(10, Math.floor(availV * 0.6 / (2*P))));
+    const nKckV = Math.max(2, Math.min(8,  Math.round(Math.max(0, availV - nBldV*(2*P)) / (2*P))));
+    const n4NV  = Math.max(4, Math.round(availV * 0.45 / (4*P)));
 
-    const palRep = 2*P;
-    const nPal   = Math.max(4, Math.min(10, Math.floor(avail * 0.5 / palRep)));
-    const nSp2   = Math.max(4, Math.min(8, Math.round((avail - nPal*palRep) * 0.6 / P)));
-    const nKick  = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nPal*palRep - nSp2*P) / (2*P))));
+    // ── DIPLÔME — séances orientées examen ──────────────────────────────
+    if (isDiplomeV) {
+      const n50V  = Math.max(6, Math.min(14, Math.round(availV * 0.5 / P)));
+      const n100V = Math.max(4, Math.min(10, Math.round(availV * 0.5 / (2*P))));
+      return {
+        type: "VITESSE",
+        ...[
+          {
+            title: isBNSSAV ? "Sprints 50m — construis ta vitesse" : "Accélérations — vitesse sur 100m",
+            intensity: isBNSSAV ? "Sprint — qualité sur chaque longueur" : "Allure rapide — vise < 1'55\"/100m",
+            details: isBNSSAV ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m sprints`,
+              `${n50V}×${P}m sprint crawl — R1' — effort max à chaque longueur, récup complète`,
+              `${nSecV}×${2*P}m dos — R20" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${n100V}×${2*P}m NL soutenu — R1' — effort fort sur chaque rep, récup complète`,
+              `${nSecV}×${2*P}m dos — R20" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAV ? "Accélérations progressives" : "Montée en vitesse",
+            intensity: "Arrive plus vite que tu n'es parti",
+            details: isBNSSAV ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${n50V}×${P}m crawl — R45" — 1re moitié modérée, 2e moitié à fond`,
+              `${nSecV}×${2*P}m dos — R20"`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${nBldV}×${2*P}m NL — R45" — 1re moitié soutenue, 2e moitié à fond`,
+              `${nKckV}×${2*P}m dos — R20" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAV ? "Départs eau + sprint" : "Vitesse 4 nages",
+            intensity: isBNSSAV ? "Explosivité départ" : "Sprint toutes nages",
+            details: isBNSSAV ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m sprints`,
+              `Départs eau : pousse le mur, torpille 3m, sprint ${P}m — R1'30" — ×${n50V} — qualité de départ`,
+              `${nSecV}×${2*P}m dos — R20"`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 50m jambes`,
+              `${n4NV}×${4*P}m 4 nages (${P}m par nage) — R30" — vite à chaque nage, récup complète`,
+              `${nSprV}×${P}m sprint crawl — R1' — qualité absolue`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAV ? "100m chrono — test exam" : "Blocs vitesse — effort total",
+            intensity: isBNSSAV ? "Effort maximal — chrono" : "Sprint répété — récup complète",
+            details: isBNSSAV ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${n100V}×100m NL — R1' — effort max, note chaque chrono, objectif < 1'35"`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${nSprV}×${P}m sprint — R1' — effort total à chaque longueur, récup complète`,
+              `${nSecV}×${2*P}m dos — R20" — récup active`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+          {
+            title: isBNSSAV ? "Sprints + 4 nages" : "Explosivité & relâche",
+            intensity: "Vitesse et polyvalence",
+            details: isBNSSAV ? [
+              `Échauffement : 200m crawl + 100m dos + 4×25m sprints`,
+              `${n50V}×${P}m sprint crawl — R1' — qualité, pas quantité`,
+              `${Math.max(2, Math.round(availV * 0.25 / (4*P)))}×${4*P}m 4 nages — R30" — transition rapide entre nages`,
+              `Retour calme : 200m dos lent`,
+            ] : [
+              `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+              `${nSprV}×${P}m sprint crawl — R1' — pousse fort le mur, 1ers bras à fond`,
+              `${nSecV}×${2*P}m NL lent — R20" — récup totale entre les sprints`,
+              `Retour calme : 200m dos lent`,
+            ],
+          },
+        ][v],
+      };
+    }
 
-    const buildRep = 2*P;
-    const nBuild   = Math.max(4, Math.min(10, Math.floor(avail * 0.6 / buildRep)));
-    const nKick2   = Math.min(8, Math.max(2, Math.round(Math.max(0, avail - nBuild*buildRep) / (2*P))));
+    // ── NAGER & PROGRESSER / TRIATHLON / EAU LIBRE ──────────────────────
+    const goalCueV = isTriathlonV
+      ? " — simule ton départ de compétition, bras à fond dès la 1re foulée"
+      : isOpenWaterV
+        ? " — vitesse de sortie d'eau, enclenche tes bras sans appui de mur"
+        : "";
 
     return {
       type: "VITESSE",
       ...[
         {
-          title: "Sprints maximaux",
-          intensity: "Z5 — sprint total, récup complète",
+          title: "Sprints — récup complète",
+          intensity: "Sprint — qualité absolue",
           details: [
-            `Échauffement : 200m NL progressif + 4×25m accélérations progressives + 50m battements`,
-            `6×12m coulées — torpille gainée, flèche maximale en apnée, stop dès que tu ralentis`,
-            `${nSpr}×${P}m SPRINT MAX — ${recSpr} — qualité absolue, chaque longueur comme si c'était la seule`,
-            `${nSec}×${2*P}m ${isAdv ? "pull-buoy" : "palmes + tuba frontal"} — R20" — récup active, relâche tout`,
-            `Retour au calme : 200m dos lent`,
-          ],
-        },
-        isAdv ? {
-          title: "Puissance palettes",
-          intensity: "Z5 — puissance de bras",
-          details: [
-            `Échauffement : 200m NL + 100m battements de jambes`,
-            `${nPal}×${palRep}m palettes + pull-buoy — R20" — coude haut, pression max sur les paumes, sens la portance`,
-            `${nSp2}×${P}m SPRINT mains nues — ${recSpr} — reproduis la prise d'eau des palettes, engage l'avant-bras`,
-            `${nKick}×${2*P}m battements palmes — R20" — fouet des chevilles, engage les quadriceps`,
-            `Retour au calme : 200m dos lent`,
-          ],
-        } : {
-          title: "Palmes & accélérations",
-          intensity: "Z4→Z5 — vitesse avec support matériel",
-          details: [
-            `Échauffement : 200m NL + 100m battements palmes + tuba frontal`,
-            `${nPal}×${palRep}m palmes + tuba frontal — R20" — allure soutenue, fouet des chevilles, profite de la propulsion`,
-            `${nSp2}×${P}m SPRINT palmes seules — ${recSpr} — effort max, jambes à fond, récup complète`,
-            `${nKick}×${2*P}m NL lent sans matériel — R20" — récup active, relâche tout`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `${nSprV}×${P}m sprint crawl — R1' — effort total à chaque longueur${goalCueV}`,
+            `${nSecV}×${2*P}m dos — R20" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: "Accélérations construites",
-          intensity: "Z4→Z5 — montée en puissance progressive",
+          title: "Accélérations progressives",
+          intensity: "Montée en puissance sur chaque rep",
           details: [
-            `Échauffement : 200m NL progressif + 4×12m coulées gainées`,
-            `${nBuild}×${buildRep}m NL — ${dep(buildRep,lvl,'threshold')} — 1re moitié Z2 économique, 2e moitié accélère à 95 % : arrive plus vite que tu n'es parti`,
-            `${nKick2}×${2*P}m battements planche — R20" — fouet des chevilles, corps à plat`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `${nBldV}×${2*P}m crawl — R45" — 1re moitié soutenue, 2e moitié à fond`,
+            `${nKckV}×${2*P}m dos — R20" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: "Départs plongée & explosivité",
-          intensity: "Z5/Z6 — explosivité maximale, récup complète",
+          title: isTriathlonV ? "Sprints sortie eau — transition" : "Vitesse + récup dos",
+          intensity: isTriathlonV ? "Explosivité transition" : "Sprint + récupération active",
           details: [
-            `Échauffement : 200m NL progressif + 100m battements + 4×${P}m accélérations`,
-            `6×10m départ plongée — R2' — bloc → torpille gainée → 3 premiers cycles NL à fond, stop`,
-            `${nDive}×${P}m SPRINT à bloc — R2' — départ plongée complet, effort total, récup complète entre chaque`,
-            `${nRec}×${2*P}m ${isAdv ? "pull-buoy" : "palmes + tuba frontal"} — R20" — récup active`,
-            `Retour au calme : 200m dos lent`,
+            `Échauffement : 200m crawl + 100m dos + 4×25m sprints`,
+            isTriathlonV
+              ? `${nSprV}×${P}m sprint crawl — R1' — simule ta sortie eau : bras à fond sans hésiter au départ`
+              : `${nSprV}×${P}m sprint crawl — R1' — qualité absolue`,
+            `${nSecV}×${2*P}m dos — R20" — récup active en nageant`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Vitesse 4 nages",
+          intensity: "Explosivité — toutes nages",
+          details: [
+            `Échauffement : 200m crawl + 100m dos + 50m jambes`,
+            `${n4NV}×${4*P}m 4 nages (${P}m par nage) — R30" — sprint à chaque nage`,
+            `${nSprV}×${P}m sprint crawl — R1' — qualité totale`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: isOpenWaterV ? "Vitesse eau libre — sans mur" : "Départs & explosivité",
+          intensity: "Explosivité maximale",
+          details: [
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            isOpenWaterV
+              ? `${nSprV}×${P}m sprint NL — R1'30" — sans t'appuyer sur le mur en fin de rep, simule l'eau libre`
+              : `${nSprV}×${P}m sprint crawl départ mur — R1' — pousse fort, torpille gainée, 1ers bras à fond`,
+            `${nSecV}×${2*P}m dos — R20" — récup active`,
+            `Retour calme : 200m dos lent`,
           ],
         },
       ][v],
