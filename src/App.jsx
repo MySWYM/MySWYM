@@ -2028,7 +2028,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 7; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 8; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
@@ -3370,61 +3370,95 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── RÉGULIER : 5 variants simples, clairs, sans jargon ───────────────
+    // ── RÉGULIER : 8 variants clairs, progressifs, sans jargon ─────────────
     if (isBeg) {
       const nLaps = Math.max(3, Math.round(dist / (2 * P)));
       const rest  = P <= 25 ? "25\"" : "30\"";
-      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      const nA = Math.max(3, Math.round(nLaps * 0.65));
+      const nB = Math.max(2, Math.round(nLaps * 0.25));
+      const nC = Math.max(2, Math.round(nLaps * 0.5));
+      const nD = Math.max(2, Math.round(nLaps * 0.5));
+      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 8;
       return {
         type: "ENDURANCE",
         ...[
           {
-            title: "Séries régulières",
+            title: "Bâtis ton fond",
             intensity: "Allure confortable — tu pourrais parler",
             details: [
               `Échauffement : ${2*P}m crawl très lent + ${P}m dos`,
-              `${Math.max(3, Math.round(nLaps * 0.7))}× ${2*P}m crawl — repose ${rest} — allure constante, pas d'accélération`,
-              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m dos — repose ${rest} — récupération active`,
+              `${nA}× ${2*P}m crawl — repose ${rest} — allure constante, ni trop lent ni essoufflé`,
+              `${nB}× ${2*P}m dos — repose ${rest} — récupération active`,
               `Fin : ${P}m crawl très lent`,
             ],
           },
           {
-            title: "Pyramide simple",
-            intensity: "Allure confortable — monte puis descends",
+            title: "La pyramide",
+            intensity: "Allure confortable — monte les distances puis redescends",
             details: [
               `Échauffement : ${2*P}m crawl tranquille`,
-              `${P}m · ${2*P}m · ${3*P}m · ${2*P}m · ${P}m crawl — ${rest} de repos entre chaque — garde la même sensation du début à la fin`,
-              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup douce`,
+              `${P}m · ${2*P}m · ${3*P}m · ${2*P}m · ${P}m crawl — ${rest} entre chaque — même sensation du début à la fin`,
+              `${nB}× ${2*P}m dos — récup douce`,
               `Fin : ${P}m à ton rythme`,
             ],
           },
           {
-            title: "Crawl & dos en mix",
-            intensity: "Très facile — change de nage pour varier",
+            title: "Crawl & dos en alternance",
+            intensity: "Facile — change de nage, récup naturelle",
             details: [
-              `${Math.max(4, Math.round(nLaps * 0.45))}× ${2*P}m crawl — repose ${rest}`,
-              `${Math.max(3, Math.round(nLaps * 0.35))}× ${2*P}m dos — repose ${rest} — regarde le plafond, épaule qui sort`,
-              `Fin : ${P}m de ton choix — flottaison pure`,
+              `Échauffement : ${2*P}m crawl lent`,
+              `Répète ${Math.max(4, Math.round(nLaps * 0.4))} fois : ${2*P}m crawl + ${2*P}m dos — repose ${rest} après chaque paire`,
+              `Fin : ${P}m de ton choix, très lent`,
             ],
           },
           {
-            title: "Négatif splits",
-            intensity: "Facile → modéré — 2e moitié plus vite",
+            title: "Arrive plus fort",
+            intensity: "Facile → modéré — la 2e longueur toujours plus vite",
             details: [
               `Échauffement : ${2*P}m crawl lent + ${P}m dos`,
-              `${Math.max(3, Math.round(nLaps * 0.65))}× ${2*P}m crawl — repose ${rest} — 1re longueur calme, 2e longueur un cran plus vite`,
-              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos lent — récup`,
+              `${nA}× ${2*P}m crawl — repose ${rest} — 1re longueur calme, 2e longueur un cran plus vite : arrive plus fort que tu n'es parti`,
+              `${Math.max(1, Math.round(nLaps * 0.15))}× ${2*P}m dos lent — récup`,
               `Fin : ${P}m crawl très lent`,
             ],
           },
           {
             title: "Longues séquences",
-            intensity: "Modéré — tiens la distance",
+            intensity: "Modéré — tiens la distance entière",
             details: [
               `Échauffement : ${2*P}m crawl tranquille`,
-              `${Math.max(2, Math.round(nLaps * 0.5))}× ${4*P}m crawl — repose 40" — reps longues, gère ton rythme`,
-              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m dos — ${rest} — récup active`,
+              `${Math.max(2, Math.round(nLaps * 0.5))}× ${4*P}m crawl — repose 40" — gère ton rythme, ne parte pas trop vite`,
+              `${nB}× ${2*P}m dos — ${rest} — récup active`,
               `Fin : ${P}m très lent`,
+            ],
+          },
+          {
+            title: "3 blocs qui montent",
+            intensity: "Progressif — chaque bloc est un cran au-dessus",
+            details: [
+              `Échauffement : ${2*P}m crawl lent`,
+              `Bloc 1 : ${Math.max(2, Math.round(nLaps * 0.22))}× ${2*P}m crawl tranquille — repose ${rest}`,
+              `Bloc 2 : ${Math.max(2, Math.round(nLaps * 0.22))}× ${2*P}m crawl allure normale — repose ${rest}`,
+              `Bloc 3 : ${Math.max(2, Math.round(nLaps * 0.22))}× ${2*P}m crawl vif sans être à fond — repose 35"`,
+              `Fin : ${P}m dos très lent`,
+            ],
+          },
+          {
+            title: "20 minutes non-stop",
+            intensity: "Modéré — objectif : tenir sans s'arrêter",
+            details: [
+              `Échauffement : ${2*P}m crawl + ${P}m dos`,
+              `Nage ${nC}× ${2*P}m sans pause — allure que tu peux tenir de bout en bout — si tu dois t'arrêter : 15" max et repars`,
+              `${Math.max(1, Math.round(nLaps * 0.15))}× ${2*P}m dos — récup douce`,
+              `Fin : ${P}m à fleur d'eau, très lent`,
+            ],
+          },
+          {
+            title: "3 nages en circuit",
+            intensity: "Facile — crawl, dos, brasse en rotation",
+            details: [
+              `Répète ${Math.max(3, Math.round(nLaps * 0.32))} fois : ${2*P}m crawl + ${2*P}m dos + ${2*P}m brasse — repose 30" après chaque trio`,
+              `${Math.max(1, Math.round(nLaps * 0.08))}× ${2*P}m crawl confort — récup finale`,
+              `Fin : ${P}m de ton choix`,
             ],
           },
         ][vb],
@@ -3611,6 +3645,9 @@ const SESSION_TEMPLATES = {
       : isOpenWater
         ? " — respiration bilatérale, compte tes cycles"
         : "";
+    const vpG = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 8;
+    const nR3b = Math.max(2, Math.min(6, Math.round(dist * 0.50 / r3)));
+    const nR2b = Math.max(3, Math.min(8, Math.round(dist * 0.50 / r2)));
 
     return {
       type: "ENDURANCE",
@@ -3621,7 +3658,7 @@ const SESSION_TEMPLATES = {
           details: [
             `Échauffement : 200m crawl progressif + 100m battements de jambes`,
             `${nR3}×${r3}m crawl — R20" — allure régulière${goalCue}`,
-            `${nFill}×${r1}m dos — R15" — récup active, relâche les épaules`,
+            `${nFill}×${r1}m dos — R15" — récup active`,
             `Retour calme : 200m dos lent`,
           ],
         },
@@ -3636,23 +3673,23 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: "Négatifs splits",
-          intensity: "Endurance — 2e moitié plus rapide",
+          title: "Arrive plus fort",
+          intensity: "Endurance — 2e moitié toujours plus rapide",
           details: [
             `Échauffement : 200m crawl + 100m battements`,
-            `${nR2}×${r2}m crawl — R20" — 1re moitié gérée, 2e moitié accélère : arrive plus fort que tu n'es parti${goalCue}`,
+            `${nR2}×${r2}m crawl — R20" — 1re moitié gérée, 2e moitié accélère${goalCue}`,
             `${nFill}×${r1}m battements mains en flèche — R20" — fouet des chevilles`,
             `Retour calme : 200m dos lent`,
           ],
         },
         {
           title: isOpenWater ? "🌊 Séance eau libre — test combinaison" : "Reps longues",
-          intensity: isOpenWater ? "Découverte OW — flottaison, navigation, sighting" : "Endurance — gestion mentale sur la distance",
+          intensity: isOpenWater ? "Découverte OW — flottaison, navigation, sighting" : "Endurance — gestion sur la distance",
           details: isOpenWater ? [
             `📍 À faire en eau libre (lac, rivière calme, mer protégée)`,
-            `10' d'adaptation : nage lente avec la combi — ressens la flottaison, habitue-toi à l'eau libre`,
-            `3×5' de nage continue — récup 2' — sighting toutes les 6–8 bras pour te repérer`,
-            `Effort : allure conversation, ne force pas — objectif orientation`,
+            `10' d'adaptation : nage lente avec la combi — ressens la flottaison`,
+            `3×5' de nage continue — récup 2' — sighting toutes les 6–8 bras`,
+            `Effort : allure conversation, objectif orientation`,
             `Récup : retour au départ en brasse ou dos lent`,
           ] : [
             `Échauffement : 200m crawl + 100m dos + 4×${P}m accélérations`,
@@ -3663,12 +3700,12 @@ const SESSION_TEMPLATES = {
         },
         {
           title: isOpenWater ? "🌊 Séance eau libre — endurance" : "Crawl & dos alternés",
-          intensity: isOpenWater ? "Endurance OW — tenir l'allure sans repères" : "Endurance — polyvalence et récup active",
+          intensity: isOpenWater ? "Endurance OW — tenir l'allure sans repères" : "Endurance — polyvalence, récup naturelle",
           details: isOpenWater ? [
             `📍 À faire en eau libre`,
             `Échauffement : 10' de nage lente, teste tes repères visuels`,
-            `20–30' de nage continue en boucle ou aller-retour — sighting toutes les 8 bras — gère ton allure de A à Z`,
-            `Si combi : teste les transitions rapides (enlever la combi en 2')`,
+            `20–30' de nage continue — sighting toutes les 8 bras, gère ton allure de A à Z`,
+            `Si combi : teste les transitions (enlever la combi en 2')`,
             `Récup : 5' de brasse ou dos très lent`,
           ] : [
             `Échauffement : 200m crawl + 100m jambes`,
@@ -3677,7 +3714,44 @@ const SESSION_TEMPLATES = {
             `Retour calme : 150m crawl très lent`,
           ],
         },
-      ][vp],
+        {
+          title: "3 blocs progressifs",
+          intensity: "Endurance — chaque bloc un cran au-dessus",
+          details: [
+            `Échauffement : 200m crawl + 100m dos`,
+            `Bloc 1 : ${nR3b}×${r3}m crawl — R25" — allure confortable${goalCue}`,
+            `Bloc 2 : ${nR2b}×${r2}m crawl — R20" — allure normale, un cran au-dessus`,
+            `Bloc 3 : ${Math.max(2, Math.round(nR2b * 0.7))}×${r2}m crawl — R15" — soutenu, tiens jusqu'au bout`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: isTriathlon ? "Simulation sortie de l'eau" : "Longue distance — gestion mentale",
+          intensity: isTriathlon ? "Race-sim — gère l'allure de A à Z" : "Endurance — mental, tiens la distance",
+          details: isTriathlon ? [
+            `Échauffement : 200m crawl progressif + 100m dos`,
+            `${nLong}×${rLong}m crawl — R20" — nage comme si c'était ta compétition : départ maîtrisé, milieu constant, fin plus forte`,
+            `${nFill}×${r1}m dos — R15" — récup`,
+            `Retour calme : 200m dos lent`,
+          ] : [
+            `Échauffement : 200m crawl + 100m dos`,
+            `${Math.max(2, Math.round(dist * 0.60 / Math.min(20*P, 500)))}×${Math.min(20*P, 500)}m crawl — R30" — reps très longues, gestion mentale sur la totalité`,
+            `${nFill}×${r1}m dos — R15" — récup active`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Endurance 3 nages",
+          intensity: "Endurance — polyvalence crawl, dos, brasse",
+          details: [
+            `Échauffement : 200m crawl + 100m dos`,
+            `${nR3b}×${r3}m crawl — R20" — allure régulière`,
+            `${Math.max(2, Math.round(nR2b * 0.6))}×${r2}m dos — R20" — nage active, épaule qui sort`,
+            `${Math.max(2, Math.round(nR2b * 0.5))}×${r2}m brasse — R20" — coulée longue après chaque traction`,
+            `Retour calme : 100m dos lent`,
+          ],
+        },
+      ][vpG],
     };
   },
 
@@ -3729,36 +3803,39 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── RÉGULIER : seuil simplifié, 5 variants fun ────────────────────────
+    // ── RÉGULIER : seuil simplifié, 8 variants progressifs ──────────────────
     if (isBeg) {
       const nLaps = Math.max(3, Math.round(dist / (2 * P)));
-      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      const nS  = Math.max(3, Math.round(nLaps * 0.65));
+      const nSp = Math.max(5, Math.round(nLaps * 0.70));
+      const nT  = Math.max(2, Math.round(nLaps * 0.55));
+      const vb  = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 8;
       return {
         type: "SEUIL",
         ...[
           {
             title: "Un cran au-dessus",
-            intensity: "Modéré — effort perceptible mais tenable",
+            intensity: "Modéré — effort qui pousse sans être à fond",
             details: [
               `Échauffement : ${2*P}m crawl lent + ${P}m dos`,
-              `${Math.max(3, Math.round(nLaps * 0.65))}× ${2*P}m crawl — repose 30" — nage à une allure qui "pousse" sans être à fond`,
+              `${nS}× ${2*P}m crawl — repose 30" — allure soutenue, tu dois sentir l'effort sans souffrir`,
               `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup douce`,
               `Fin : ${P}m crawl très lent`,
             ],
           },
           {
             title: "Montée en puissance",
-            intensity: "Facile → soutenu — tu augmentes chaque bloc",
+            intensity: "Progressif — chaque bloc plus fort que le précédent",
             details: [
-              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl lent — repose 20"`,
-              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl rythme normal — repose 25"`,
-              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl un peu plus soutenu — repose 35"`,
+              `${Math.max(2, Math.round(nLaps * 0.28))}× ${2*P}m crawl lent — repose 20"`,
+              `${Math.max(2, Math.round(nLaps * 0.28))}× ${2*P}m crawl rythme normal — repose 25"`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl soutenu — repose 35"`,
               `Fin : ${P}m très lent`,
             ],
           },
           {
-            title: "Blocs effort/récup",
-            intensity: "Modéré — alternance effort et récupération",
+            title: "Effort/récup alternés",
+            intensity: "Modéré — sandwichs effort + récup",
             details: [
               `Échauffement : ${2*P}m crawl`,
               `Répète ${Math.max(3, Math.round(nLaps * 0.5))} fois : ${2*P}m crawl soutenu + ${P}m dos lent`,
@@ -3767,23 +3844,53 @@ const SESSION_TEMPLATES = {
             ],
           },
           {
-            title: "Séries 50m rapides",
-            intensity: "Modéré/vif — courtes mais intenses",
+            title: "Longueurs rapides",
+            intensity: "Vif — chaque longueur à 80% de ton max",
             details: [
               `Échauffement : ${2*P}m crawl tranquille`,
-              `${Math.max(5, Math.round(nLaps * 0.7))}× ${P}m crawl — repose 30" — chaque longueur à ~80% de ton max`,
+              `${nSp}× ${P}m crawl — repose 30" — pousse à chaque longueur, récup complète entre`,
               `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup`,
               `Fin : ${P}m lent`,
             ],
           },
           {
             title: "Tempo continu",
-            intensity: "Soutenu — tiens sur la durée",
+            intensity: "Soutenu — même allure du début à la fin",
             details: [
               `Échauffement : ${2*P}m crawl lent`,
-              `${Math.max(2, Math.round(nLaps * 0.55))}× ${3*P}m crawl à allure soutenue — repose 40" — idem du 1er au dernier`,
+              `${nT}× ${3*P}m crawl à allure soutenue — repose 40" — garde le même rythme du 1er au dernier`,
               `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup active`,
               `Fin : ${P}m crawl très lent`,
+            ],
+          },
+          {
+            title: "Pyramide soutenue",
+            intensity: "Modéré — distances courtes à soutenu, longues à normal",
+            details: [
+              `Échauffement : ${2*P}m crawl`,
+              `${P}m soutenu R25" · ${2*P}m normal R30" · ${3*P}m normal R35" · ${2*P}m soutenu R30" · ${P}m à fond R45"`,
+              `${Math.max(1, Math.round(nLaps * 0.15))}× ${2*P}m dos — récup douce`,
+              `Fin : ${P}m lent`,
+            ],
+          },
+          {
+            title: "Séries qui descendent",
+            intensity: "Vif — chaque série un peu plus rapide",
+            details: [
+              `Échauffement : ${2*P}m crawl lent + ${P}m dos`,
+              `${nS}× ${2*P}m crawl — repose 30" — vise 2" de mieux à chaque rep : 1re conservatrice, dernière à fond`,
+              `${Math.max(1, Math.round(nLaps * 0.2))}× ${2*P}m dos — récup`,
+              `Fin : ${P}m crawl très lent`,
+            ],
+          },
+          {
+            title: "Séances 100m — objectif constant",
+            intensity: "Modéré/soutenu — même effort sur chaque 100m",
+            details: [
+              `Échauffement : ${2*P}m crawl + ${P}m dos`,
+              `${Math.max(5, Math.round(nLaps * 0.65))}× ${2*P}m crawl — repose 25" — allure soutenue identique à chaque rep, note si tu tiens`,
+              `${Math.max(1, Math.round(nLaps * 0.18))}× ${2*P}m dos — récup`,
+              `Fin : ${P}m crawl lent`,
             ],
           },
         ][vb],
@@ -3960,6 +4067,10 @@ const SESSION_TEMPLATES = {
       : isOpenWater
         ? " — respiration bilatérale, même effort de bout en bout"
         : "";
+    const vpGS = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 8;
+    const nR2Sb = Math.max(3, Math.min(8, Math.round(dist * 0.55 / r2S)));
+    const nR3Sb = Math.max(2, Math.min(6, Math.round(dist * 0.55 / r3S)));
+    const r1S   = Math.min(4*P, 100);
 
     return {
       type: "SEUIL",
@@ -3979,24 +4090,24 @@ const SESSION_TEMPLATES = {
           intensity: "Effort croissant puis décroissant",
           details: [
             `Échauffement : 200m crawl + 100m dos`,
-            `${Math.min(r1, 100)}m – ${r2S}m – ${r3S}m – ${r2S}m – ${Math.min(r1, 100)}m crawl — R20" entre paliers — soutenu à chaque palier`,
+            `${r1S}m – ${r2S}m – ${r3S}m – ${r2S}m – ${r1S}m crawl — R20" entre paliers — soutenu à chaque palier`,
             `${nFillS}×${2*P}m dos — R15" — récup active`,
             `Retour calme : 200m dos lent`,
           ],
         },
         {
-          title: "Effort constant sur longue distance",
-          intensity: "Endurance soutenue — tiens sur la distance",
+          title: "Tiens sur la distance",
+          intensity: "Endurance soutenue — même rythme de bout en bout",
           details: [
             `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
-            `${nR3S}×${r3S}m crawl — R20" — allure soutenue de bout en bout${goalCueS}`,
+            `${nR3S}×${r3S}m crawl — R20" — allure soutenue, identique du 1er au dernier${goalCueS}`,
             `${nFillS}×${2*P}m dos — R20" — récup active`,
             `Retour calme : 200m dos lent`,
           ],
         },
         {
           title: "Séries descendantes",
-          intensity: "Patient au départ, plus fort à la fin",
+          intensity: "Patient au départ — plus fort rep après rep",
           details: [
             `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
             `${nR2S}×${r2S}m crawl — R20" — vise 2" de mieux à chaque rep : 1re conservatrice, dernière à fond`,
@@ -4005,18 +4116,54 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: isOpenWater ? "Blocs longs — effort continu" : "Blocs longs — récup courte",
+          title: isOpenWater ? "Blocs eau libre — effort continu" : "Récup courte — corps qui enchaîne",
           intensity: "Endurance soutenue — récup courte",
           details: [
             `Échauffement : 200m crawl + 100m dos`,
             isOpenWater
-              ? `${nR3S}×${r3S}m NL — R15" — effort soutenu de bout en bout, respiration bilatérale`
-              : `${nR3S}×${r3S}m crawl — R15" — effort soutenu, récup courte : entraîne ton corps à enchaîner`,
+              ? `${nR3S}×${r3S}m NL — R15" — soutenu de bout en bout, respiration bilatérale régulière`
+              : `${nR3S}×${r3S}m crawl — R15" — effort soutenu, récup courte : ton corps s'adapte à enchaîner`,
             `${nFillS}×${2*P}m dos — R20"`,
             `Retour calme : 200m dos lent`,
           ],
         },
-      ][vp],
+        {
+          title: "3 blocs — chaque bloc plus fort",
+          intensity: "Progressif — soutenu qui monte",
+          details: [
+            `Échauffement : 200m crawl + 100m dos`,
+            `Bloc 1 : ${nR3Sb}×${r3S}m crawl — R25" — allure confortable soutenue`,
+            `Bloc 2 : ${nR2Sb}×${r2S}m crawl — R20" — monte d'un cran`,
+            `Bloc 3 : ${Math.max(2, Math.round(nR2Sb * 0.7))}×${r2S}m crawl — R15" — soutenu, tiens jusqu'au bout`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: isTriathlon ? "Simulation allure triathlon" : "Tempo 3×5 minutes",
+          intensity: isTriathlon ? "Race-sim — reproduis l'effort de compétition" : "Soutenu continu — 3 blocs de 5 min",
+          details: isTriathlon ? [
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `3×(${Math.max(2, Math.round(dist * 0.18 / r3S))}×${r3S}m crawl — R15") — 1'30" entre blocs — allure race, régularité absolue`,
+            `${nFillS}×${2*P}m dos — R15"`,
+            `Retour calme : 200m dos lent`,
+          ] : [
+            `Échauffement : 200m crawl + 100m dos`,
+            `3 blocs de 5' de nage continue à allure soutenue — récup 1'30" entre blocs — même allure sur les 3`,
+            `${nFillS}×${2*P}m dos — R20"`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Seuil 4 nages — polyvalence",
+          intensity: "Soutenu toutes nages — crawl, dos, brasse en rotation",
+          details: [
+            `Échauffement : 200m crawl + 100m dos`,
+            `${Math.max(3, Math.round(dist * 0.55 / (4*P)))}×${4*P}m IM (${P}m crawl + ${P}m dos + ${P}m brasse + ${P}m crawl) — R30" — soutenu à chaque nage`,
+            `${nFillS}×${2*P}m dos — R20"`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+      ][vpGS],
     };
   },
 
@@ -4067,57 +4214,87 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── RÉGULIER : sprints courts, fun, accessibles ──────────────────────
+    // ── RÉGULIER : 8 variants de vitesse, fun et accessibles ───────────────
     if (isBeg) {
       const nLaps = Math.max(4, Math.round(dist / (2 * P)));
-      const vb = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
+      const nSpr  = Math.max(4, Math.round(nLaps * 0.45));
+      const nAcc  = Math.max(4, Math.round(nLaps * 0.50));
+      const vb    = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 8;
       return {
         type: "VITESSE",
         ...[
           {
             title: "Accélérations fun",
-            intensity: "Modéré → rapide — un décollage par longueur",
+            intensity: "Modéré → rapide — décollage sur la 2e longueur",
             details: [
               `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille — mise en jambes`,
-              `${Math.max(4, Math.round(nLaps * 0.5))}× ${2*P}m : 1re longueur normale + 2e longueur à fond — repose 40" — sens la différence`,
-              `Fin : ${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme — récupère`,
+              `${nAcc}× ${2*P}m : 1re longueur normale + 2e longueur à fond — repose 40" — sens la différence`,
+              `Fin : ${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme`,
             ],
           },
           {
             title: "Course contre toi-même",
-            intensity: "Fun — sprint sur une longueur, récup complète",
+            intensity: "Fun — sprint une longueur, récup complète",
             details: [
-              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl lent — repose 20" — mise en jambes`,
-              `${Math.max(4, Math.round(nLaps * 0.45))}× ${P}m sprint (une longueur à fond) — repose 45" — qualité, pas quantité`,
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl lent — mise en jambes`,
+              `${nSpr}× ${P}m sprint à fond — repose 45" — qualité, pas quantité`,
               `Fin : ${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme`,
             ],
           },
           {
             title: "Départ aux murs",
-            intensity: "Fun — explosivité au départ de chaque longueur",
+            intensity: "Fun — explosivité sur chaque départ",
             details: [
-              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl pour te chauffer`,
-              `${Math.max(4, Math.round(nLaps * 0.45))}× ${P}m : pousse fort du mur + nage à fond — repose 40" — visualise que tu dépasses quelqu'un`,
-              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme — récupération`,
+              `${Math.max(2, Math.round(nLaps * 0.28))}× ${2*P}m crawl tranquille`,
+              `${nSpr}× ${P}m : pousse fort du mur + nage à fond — repose 40" — visualise que tu dépasses quelqu'un`,
+              `${Math.max(2, Math.round(nLaps * 0.2))}× ${2*P}m dos calme`,
             ],
           },
           {
-            title: "Sprints dos & crawl",
-            intensity: "Varié — alterne les styles pour aller vite autrement",
+            title: "Sprints crawl & dos",
+            intensity: "Varié — aller vite dans les deux nages",
             details: [
-              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille — repose 20"`,
-              `${Math.max(3, Math.round(nLaps * 0.35))}× ${P}m crawl sprint — repose 40" — pousse à fond`,
-              `${Math.max(3, Math.round(nLaps * 0.35))}× ${P}m dos sprint — repose 40" — bras larges, propulsion maximale`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille`,
+              `${Math.max(3, Math.round(nLaps * 0.32))}× ${P}m crawl sprint — repose 40"`,
+              `${Math.max(3, Math.round(nLaps * 0.32))}× ${P}m dos sprint — repose 40" — bras larges, propulsion max`,
               `Fin : ${P}m crawl lent`,
             ],
           },
           {
             title: "Jeu de rythme",
-            intensity: "Ludique — alterne lent et rapide dans la même longueur",
+            intensity: "Ludique — alterne lent et rapide",
             details: [
-              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl doux — repose 20"`,
-              `${Math.max(4, Math.round(nLaps * 0.55))}× ${2*P}m : 1re moitié lente + 2e moitié sprint — repose 35" — sens l'accélération`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl doux`,
+              `${Math.max(4, Math.round(nLaps * 0.52))}× ${2*P}m : 1re moitié lente + 2e moitié sprint — repose 35"`,
               `Fin : ${Math.max(2, Math.round(nLaps * 0.15))}× ${2*P}m dos calme`,
+            ],
+          },
+          {
+            title: "Pyramide de vitesse",
+            intensity: "Progressif — plus c'est court, plus c'est vite",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille`,
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl vif — repose 35"`,
+              `${Math.max(3, Math.round(nLaps * 0.30))}× ${P}m crawl sprint — repose 40"`,
+              `Fin : ${Math.max(2, Math.round(nLaps * 0.18))}× ${2*P}m dos calme`,
+            ],
+          },
+          {
+            title: "Ton chrono perso",
+            intensity: "Compétition avec toi-même — note et bats ton record",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.3))}× ${2*P}m crawl pour te chauffer`,
+              `${Math.max(3, Math.round(nLaps * 0.4))}× ${2*P}m crawl à fond — repose 1' — chronomètre chaque rep, essaie de faire mieux que la précédente`,
+              `Fin : ${Math.max(2, Math.round(nLaps * 0.15))}× ${2*P}m dos très lent`,
+            ],
+          },
+          {
+            title: "Sprint-récup-sprint",
+            intensity: "Explosif — effort max, récup dos, rebelote",
+            details: [
+              `${Math.max(2, Math.round(nLaps * 0.25))}× ${2*P}m crawl tranquille`,
+              `Répète ${Math.max(4, Math.round(nLaps * 0.4))} fois : ${P}m sprint à fond + ${P}m dos lent — repose 20" après chaque paire`,
+              `Fin : ${P}m crawl très lent`,
             ],
           },
         ][vb],
@@ -4333,7 +4510,7 @@ const SESSION_TEMPLATES = {
         },
         {
           title: "Vitesse 4 nages",
-          intensity: "Explosivité — toutes nages",
+          intensity: "Explosivité — toutes nages en rotation",
           details: [
             `Échauffement : 200m crawl + 100m dos + 50m jambes`,
             `${n4NV}×${4*P}m 4 nages (${P}m par nage) — R30" — sprint à chaque nage`,
@@ -4342,14 +4519,49 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: isOpenWaterV ? "Départs — explosivité eau libre" : "Départs & explosivité",
+          title: isOpenWaterV ? "Départs — eau libre" : "Départs & explosivité",
           intensity: "Explosivité maximale",
           details: [
             `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
             isOpenWaterV
-              ? `${nSprV}×${P}m sprint NL — R1'30" — pousse fort le mur, enchaîne les premiers bras sans hésitation, simule le départ de masse`
+              ? `${nSprV}×${P}m sprint NL — R1'30" — pousse fort le mur, enchaîne les premiers bras sans hésitation`
               : `${nSprV}×${P}m sprint crawl départ mur — R1' — pousse fort, torpille gainée, 1ers bras à fond`,
             `${nSecV}×${2*P}m dos — R20" — récup active`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Séries descendantes",
+          intensity: "Chaque rep plus rapide — progressif jusqu'au max",
+          details: [
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `${nSprV}×${P}m crawl — R1' — vise 1" de mieux à chaque rep : 1re à ~80%, dernière à fond`,
+            `${nSecV}×${2*P}m dos — R20" — récup active`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: isTriathlonV ? "Simulation départ triathlon" : "Sprint-dos-sprint",
+          intensity: isTriathlonV ? "Race-sim — explosivité de compétition" : "Explosif — récup dos entre sprints",
+          details: isTriathlonV ? [
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `3×(${Math.max(2, Math.round(availV * 0.15 / P))}×${P}m sprint — R1') — 2' entre blocs — simule tes 3 départs de compétition`,
+            `${nSecV}×${2*P}m dos — R20"`,
+            `Retour calme : 200m dos lent`,
+          ] : [
+            `Échauffement : 200m crawl + 100m dos + 4×25m accélérations`,
+            `Répète ${Math.max(4, Math.round(availV * 0.45 / (3*P)))} fois : ${P}m sprint crawl R45" + ${P}m dos lent + ${P}m sprint crawl R45"`,
+            `${nSecV}×${2*P}m dos — R20" — récup`,
+            `Retour calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Vitesse & puissance bras",
+          intensity: "Puissance — palettes puis mains nues",
+          details: [
+            `Échauffement : 200m crawl + 100m dos + 4×25m sprints`,
+            `${Math.max(3, Math.round(availV * 0.40 / (2*P)))}×${2*P}m palettes + pull buoy — R25" — coude haut, pression max, sens la portance`,
+            `${nSprV}×${P}m sprint mains nues — R1' — reproduis la prise des palettes, engage l'avant-bras`,
             `Retour calme : 200m dos lent`,
           ],
         },
