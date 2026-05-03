@@ -672,7 +672,8 @@ const StravaSection = ({ user }) => {
   const [disconnecting, setDisconnecting] = useState(false);
   const [msg,           setMsg]           = useState(null);
 
-  const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
+  // client_id est public (pas un secret) — fallback hardcodé si l'env n'est pas chargé
+  const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
 
   useEffect(() => {
     if (!user) return;
@@ -707,10 +708,6 @@ const StravaSection = ({ user }) => {
   };
 
   const connect = () => {
-    if (!clientId) {
-      setMsg({ type: "err", text: "Variable VITE_STRAVA_CLIENT_ID manquante dans le .env" });
-      return;
-    }
     const redirectUri = encodeURIComponent(window.location.origin);
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
