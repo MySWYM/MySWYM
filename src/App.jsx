@@ -4502,6 +4502,7 @@ const SESSION_TEMPLATES = {
       : isOpenWaterV
         ? " — explosivité de départ, enclenche tes bras rapidement"
         : "";
+    const vG = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 8;
 
     return {
       type: "VITESSE",
@@ -4595,7 +4596,7 @@ const SESSION_TEMPLATES = {
             `Retour calme : 200m dos lent`,
           ],
         },
-      ][v],
+      ][vG],
     };
   },
 
@@ -5285,7 +5286,12 @@ const generatePlan = async (profile, isPremium = false) => {
   const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
   // Résolution du levelKey pour les patterns : priorité aux nouveaux niveaux, fallback anciens
   const levelKey = (PHASE_PATTERNS[level] ? level : (level === "advanced" ? "performance" : level === "beginner" ? "régulier" : level === "intermediate" ? "sportif" : "régulier"));
-  const patterns = progression ? PROGRESSION_PATTERNS : wellness ? WELLNESS_PATTERNS : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
+  // PROGRESSION_PATTERNS et WELLNESS_PATTERNS sont indexés par "beginner"/"intermediate"/"advanced"
+  const progLvlKey = getLvlIndex(level) >= 3 ? "advanced" : getLvlIndex(level) >= 2 ? "intermediate" : "beginner";
+  const patterns = progression ? (PROGRESSION_PATTERNS[progLvlKey] || PROGRESSION_PATTERNS.intermediate)
+                 : wellness   ? (WELLNESS_PATTERNS[progLvlKey] || WELLNESS_PATTERNS.intermediate)
+                 : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS
+                 : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
   const f = Math.min(freq, 5);
   const weeks = phaseList.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
