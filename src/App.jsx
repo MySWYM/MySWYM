@@ -1950,7 +1950,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 6; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 7; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
