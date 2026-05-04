@@ -989,9 +989,8 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     if (user?.user_metadata?.avatar_url) setAvatarUrl(user.user_metadata.avatar_url);
   }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url]);
 
-  const stats     = computeStats(plan);
-  const earned    = checkBadges(stats);
-  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
+  const stats  = computeStats(plan);
+  const earned = checkBadges(stats);
 
   const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
 
@@ -1047,11 +1046,6 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
       // Fallback silencieux : l'aperçu local reste affiché
     }
   };
-
-  // Personal records computed from real data
-  const longestSession = plan?.weeks
-    ? Math.max(0, ...plan.weeks.flatMap(w => w.sessions).filter(s => s.completed).map(s => parseInt(s.distance) || 0))
-    : 0;
 
   const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
   const initials = displayName.slice(0, 2).toUpperCase();
@@ -1155,113 +1149,34 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           ))}
         </div>
 
-        {/* ── 2. Records perso ── */}
-        {(profile?.pace100 || longestSession > 0) && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-              <Trophy size={13} color={G.gold} /> Records
+        {/* ── 2. Badges (compact strip) ── */}
+        {earned.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
+              Badges — {earned.length}/{BADGE_DEFS.length} débloqués
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {profile?.pace100 && (
-                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}><Gauge size={18} color={G.blue} /></div>
-                    <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>100m crawl</div><div style={{ fontSize: 12, color: G.grey }}>Meilleur temps</div></div>
+            <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, marginLeft: -16, paddingLeft: 16, marginRight: -16, paddingRight: 16 }}>
+              {BADGE_DEFS.filter(b => earned.includes(b.id)).map((b, i) => (
+                <div key={b.id} style={{ flexShrink: 0, width: 56, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: badgeGradients[i % badgeGradients.length], display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 3px 10px ${b.color}33` }}>
+                    <b.icon size={20} color="#fff" />
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: G.blue }}>{secToDisplay(profile.pace100)}</div>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: G.ink, textAlign: "center", lineHeight: 1.2, textTransform: "uppercase" }}>{b.label}</span>
                 </div>
-              )}
-              {profile?.pace400 && (
-                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}><Gauge size={18} color={G.blueDeep} /></div>
-                    <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>400m crawl</div><div style={{ fontSize: 12, color: G.grey }}>Meilleur temps</div></div>
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: G.blueDeep }}>{secToDisplay(profile.pace400)}</div>
-                </div>
-              )}
-              {longestSession > 0 && (
-                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.waterLight, display: "flex", alignItems: "center", justifyContent: "center" }}><Waves size={18} color={G.water} /></div>
-                    <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Plus longue séance</div><div style={{ fontSize: 12, color: G.grey }}>Distance</div></div>
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: G.water }}>{longestSession >= 1000 ? `${(longestSession/1000).toFixed(1)} km` : `${longestSession} m`}</div>
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* ── 3. Zones d'allure (Performance) ── */}
-        {(profile?.level === "performance" || profile?.level === "advanced") && (
-          <>
-            <PaceZonesCard pace100={profile?.pace100} pace400={profile?.pace400} onSave={onPaceUpdate} />
-            <PaceProjectionCard pace100={profile?.pace100} pace400={profile?.pace400} />
-          </>
-        )}
-
-        {/* ── 4. Volume par semaine ── */}
-        <div style={{ background: G.white, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>Volume par semaine</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
-            {stats.weeklyData.map((w, i) => (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
-                <div style={{ flex: 1, width: "100%", position: "relative" }}>
-                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0 }} />
-                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : G.blue, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
-                </div>
-                <span style={{ fontSize: 9, color: G.greyMid, fontWeight: 600 }}>{w.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── 5. Badges ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase" }}>Badges</div>
-            <div style={{ fontSize: 12, color: G.grey, fontWeight: 600 }}>{earned.length}/{BADGE_DEFS.length} débloqués</div>
-          </div>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8, marginLeft: -16, paddingLeft: 16, marginRight: -16, paddingRight: 16 }}>
-            {BADGE_DEFS.map((b, i) => {
-              const isEarned = earned.includes(b.id);
-              return (
-                <div key={b.id} style={{ flexShrink: 0, width: 72, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: isEarned ? 1 : 0.35 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: isEarned ? (badgeGradients[i % badgeGradients.length]) : G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isEarned ? `0 4px 14px ${b.color}33` : "none" }}>
-                    {isEarned ? <b.icon size={24} color="#fff" /> : <Lock size={18} color={G.greyMid} />}
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: G.ink, textAlign: "center", lineHeight: 1.3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{b.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── 6. Modifier le programme ── */}
+        {/* ── 3. Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
 
-        {/* ── 7. Strava ── */}
-        <StravaSection user={user} plan={plan} currentPace100={profile?.pace100} onPaceUpdate={onPaceUpdate} onValidateSession={onValidateSession} />
-
-        {/* ── 8. Compte ── */}
+        {/* ── 4. Compte ── */}
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>Compte</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>Compte</div>
 
-          <div style={{ background: G.white, borderRadius: 16, overflow: "hidden", border: `1px solid ${G.greyLight}`, marginBottom: 12 }}>
-            <div style={{ padding: "14px 16px", borderBottom: `1px solid ${G.greyLight}` }}>
-              <div style={{ fontSize: 11, color: G.grey, marginBottom: 2 }}>Email</div>
-              <div style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{user?.email}</div>
-            </div>
-            <div style={{ padding: "14px 16px" }}>
-              <div style={{ fontSize: 11, color: G.grey, marginBottom: 8 }}>Nouveau mot de passe</div>
-              <input style={{ ...inp, marginBottom: 10 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && save()} />
-              {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 8, padding: "8px 12px", marginBottom: 10, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
-              <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+          {/* Premium / abonnement — premier car le plus important */}
+          <div style={{ marginBottom: 10 }}>
             {isPremium ? (
               <button onClick={onPortal} style={{ width: "100%", padding: "15px", borderRadius: 14, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54 }}>
                 <Zap size={17} color={G.blue} /> Gérer mon abonnement
@@ -1271,11 +1186,27 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
                 <Zap size={17} color={G.gold} /> Passer en Premium
               </button>
             )}
-            <button onClick={onRefreshStatus} style={{ width: "100%", padding: "12px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer", minHeight: 44 }}>
-              Actualiser le statut
-            </button>
-            <button onClick={onSignOut} style={{ width: "100%", padding: "15px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54 }}>
-              <LogOut size={17} color={G.grey} /> Se déconnecter
+          </div>
+
+          {/* Email + mdp groupés */}
+          <div style={{ background: G.white, borderRadius: 16, overflow: "hidden", border: `1px solid ${G.greyLight}`, marginBottom: 10 }}>
+            <div style={{ padding: "13px 16px", borderBottom: `1px solid ${G.greyXLight}` }}>
+              <div style={{ fontSize: 11, color: G.grey }}>Email</div>
+              <div style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{user?.email}</div>
+            </div>
+            <div style={{ padding: "13px 16px" }}>
+              <input style={{ ...inp, marginBottom: 8 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nouveau mot de passe" onKeyDown={e => e.key === "Enter" && save()} />
+              {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 8, padding: "7px 12px", marginBottom: 8, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 12 }}>{msg.text}</div>}
+              <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
+            </div>
+          </div>
+
+          {/* Strava inline */}
+          <StravaSection user={user} plan={plan} currentPace100={profile?.pace100} onPaceUpdate={onPaceUpdate} onValidateSession={onValidateSession} />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, marginTop: 10 }}>
+            <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 50 }}>
+              <LogOut size={16} color={G.grey} /> Se déconnecter
             </button>
           </div>
         </div>
@@ -2617,6 +2548,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
     : null;
 
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
+  const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
 
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
