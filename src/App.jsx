@@ -2920,7 +2920,7 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
             </button>
             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 900, color: G.blueMid, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
           </div>
-          <button onClick={onSignOut} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
+          <button onClick={() => onTabChange("profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
             <Settings size={20} color={G.grey} />
           </button>
         </div>
