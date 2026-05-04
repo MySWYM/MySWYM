@@ -585,15 +585,25 @@ const PaceZonesCard = ({ pace100, pace400, onSave }) => {
   );
 };
 
-const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
+const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPace }) => {
   const [freq,    setFreq]    = useState(profile?.sessionsPerWeek ?? 2);
   const [pace100, setPace100] = useState(profile?.pace100 ?? null);
   const [paceRaw, setPaceRaw] = useState(profile?.pace100 ? secToDisplay(profile.pace100) : "");
   const [changed, setChanged] = useState(false);
 
-  const freqChanged  = freq    !== (profile?.sessionsPerWeek ?? 2);
-  const paceChanged  = pace100 !== (profile?.pace100 ?? null);
-  const hasChange    = freqChanged || paceChanged || changed;
+  const freqChanged = freq    !== (profile?.sessionsPerWeek ?? 2);
+  const paceChanged = pace100 !== (profile?.pace100 ?? null);
+  const hasChange   = freqChanged || paceChanged || changed;
+
+  // Quand Strava remonte une meilleure allure, on l'affiche si aucune saisie manuelle
+  const stravaIsUsed = stravaBestPace && pace100 === stravaBestPace;
+  const stravaIsBetter = stravaBestPace && (!pace100 || stravaBestPace < pace100);
+
+  const applyStravaPace = () => {
+    setPace100(stravaBestPace);
+    setPaceRaw(secToDisplay(stravaBestPace));
+    setChanged(true);
+  };
 
   const handlePaceInput = (input) => {
     const digits = input.replace(/\D/g, "").slice(0, 3);
@@ -643,13 +653,32 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
       </div>
 
       {/* Allure 100m */}
-      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
-        Allure 100m crawl
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+          Allure 100m crawl
+        </div>
+        {stravaBestPace && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 16, height: 16, borderRadius: 4, background: "#FC4C02", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Activity size={10} color="#fff" />
+            </div>
+            <span style={{ fontSize: 11, color: G.grey }}>Strava : <strong style={{ color: G.ink }}>{secToDisplay(stravaBestPace)}</strong></span>
+            {stravaIsBetter && (
+              <button onClick={applyStravaPace} style={{
+                padding: "2px 8px", borderRadius: 6, border: "none",
+                background: "#FC4C02", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer",
+              }}>Utiliser</button>
+            )}
+            {stravaIsUsed && (
+              <span style={{ fontSize: 11, color: "#FC4C02", fontWeight: 600 }}>✓ utilisé</span>
+            )}
+          </div>
+        )}
       </div>
-      <div style={{ position: "relative", marginBottom: 18 }}>
+      <div style={{ position: "relative", marginBottom: 6 }}>
         <input
           type="text" inputMode="numeric"
-          placeholder="ex: 2:10"
+          placeholder={stravaBestPace ? secToDisplay(stravaBestPace) : "ex: 2:10"}
           value={paceRaw}
           onChange={e => handlePaceInput(e.target.value)}
           style={{
@@ -662,12 +691,11 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
         />
         <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: G.grey, pointerEvents: "none" }}>/100m</span>
       </div>
-      {pace100 && (
-        <div style={{ fontSize: 12, color: G.blue, marginTop: -14, marginBottom: 14, display: "flex", alignItems: "center", gap: 4 }}>
-          <Gauge size={12} color={G.blue} />
-          Les allures de tes séances seront recalculées sur cette base
-        </div>
-      )}
+      <div style={{ fontSize: 11, color: pace100 ? G.blue : G.greyMid, marginBottom: 16, display: "flex", alignItems: "center", gap: 4 }}>
+        {pace100
+          ? <><Gauge size={11} color={G.blue} /> Les allures de tes séances seront recalculées sur cette base</>
+          : "Optionnel — si renseigné, les allures s'adaptent à ton niveau réel"}
+      </div>
 
       {hasChange && (
         <button onClick={() => { onSave(freq, pace100); setChanged(false); }} style={{
@@ -709,7 +737,7 @@ const fmtPace = (sec) => {
   return `${m}:${String(s).padStart(2, "0")}/100m`;
 };
 
-const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSession }) => {
+const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSession, onBestPace }) => {
   const [connected,     setConnected]     = useState(null); // null = chargement
   const [athlete,       setAthlete]       = useState(null);
   const [activities,    setActivities]    = useState([]);
@@ -831,6 +859,9 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   const bestPace  = swimPaces.length > 0 ? Math.min(...swimPaces) : null;
   // "meilleur" = plus rapide = valeur en secondes plus basse
   const hasBetterPace = bestPace && (!currentPace100 || bestPace < currentPace100);
+
+  // Remonte bestPace vers le parent dès que les activités changent
+  useEffect(() => { onBestPace?.(bestPace); }, [bestPace]);
 
   // ── Activité natation d'aujourd'hui ─────────────────────────────────────
   const todayStr  = new Date().toISOString().slice(0, 10);
@@ -1012,9 +1043,10 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
 };
 
 const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
-  const [password, setPassword] = useState("");
-  const [saving,   setSaving]   = useState(false);
-  const [msg,      setMsg]      = useState(null);
+  const [password,      setPassword]      = useState("");
+  const [saving,        setSaving]        = useState(false);
+  const [msg,           setMsg]           = useState(null);
+  const [stravaBestPace, setStravaBestPace] = useState(null);
 
   // Avatar + firstName — Supabase user_metadata en priorité, localStorage en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => {
@@ -1213,7 +1245,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
         )}
 
         {/* ── 3. Modifier le programme ── */}
-        <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
+        <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} stravaBestPace={stravaBestPace} />
 
         {/* ── 4. Compte ── */}
         <div style={{ marginBottom: 8 }}>
@@ -1246,7 +1278,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </div>
 
           {/* Strava inline */}
-          <StravaSection user={user} plan={plan} currentPace100={profile?.pace100} onPaceUpdate={onPaceUpdate} onValidateSession={onValidateSession} />
+          <StravaSection user={user} plan={plan} currentPace100={profile?.pace100} onPaceUpdate={onPaceUpdate} onValidateSession={onValidateSession} onBestPace={setStravaBestPace} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, marginTop: 10 }}>
             <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 50 }}>
