@@ -586,8 +586,23 @@ const PaceZonesCard = ({ pace100, pace400, onSave }) => {
 };
 
 const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
-  const [freq, setFreq] = useState(profile?.sessionsPerWeek ?? 2);
+  const [freq,    setFreq]    = useState(profile?.sessionsPerWeek ?? 2);
+  const [pace100, setPace100] = useState(profile?.pace100 ?? null);
+  const [paceRaw, setPaceRaw] = useState(profile?.pace100 ? secToDisplay(profile.pace100) : "");
   const [changed, setChanged] = useState(false);
+
+  const freqChanged  = freq    !== (profile?.sessionsPerWeek ?? 2);
+  const paceChanged  = pace100 !== (profile?.pace100 ?? null);
+  const hasChange    = freqChanged || paceChanged || changed;
+
+  const handlePaceInput = (input) => {
+    const digits = input.replace(/\D/g, "").slice(0, 3);
+    setPaceRaw(fmtDigits(input, 3));
+    if (digits.length < 3) { setPace100(null); return; }
+    const { val } = parsePaceInput(input, 9 * 60);
+    if (val && val >= 30) { setPace100(val); setChanged(true); }
+    else setPace100(null);
+  };
 
   if (!isPremium) {
     return (
@@ -596,7 +611,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
           <Lock size={14} color={G.greyMid} />
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
         </div>
-        <p style={{ fontSize: 13, color: G.grey, marginBottom: 14 }}>Adapte le nombre de séances à ton emploi du temps — réservé aux membres Premium.</p>
+        <p style={{ fontSize: 13, color: G.grey, marginBottom: 14 }}>Adapte le nombre de séances et ton allure — réservé aux membres Premium.</p>
         <button onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <Zap size={14} color={G.blue} /> Passer en Premium
         </button>
@@ -607,9 +622,11 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
-      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Change le nombre de séances — tes semaines déjà validées sont conservées.</p>
+      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Tes semaines déjà validées sont conservées.</p>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+      {/* Fréquence */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Séances par semaine</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
         {FREQUENCIES.map(f => {
           const active = freq === f.id;
           return (
@@ -625,9 +642,36 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave }) => {
         })}
       </div>
 
-      {changed && (
-        <button onClick={() => { onSave(freq); setChanged(false); }} style={{
-          width: "100%", padding: "12px", borderRadius: 12, background: G.blue, border: "none",
+      {/* Allure 100m */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+        Allure 100m crawl
+      </div>
+      <div style={{ position: "relative", marginBottom: 18 }}>
+        <input
+          type="text" inputMode="numeric"
+          placeholder="ex: 2:10"
+          value={paceRaw}
+          onChange={e => handlePaceInput(e.target.value)}
+          style={{
+            width: "100%", padding: "12px 48px 12px 14px", borderRadius: 12,
+            border: `1.5px solid ${pace100 ? G.blue : G.greyLight}`,
+            fontSize: 16, fontWeight: 700, color: G.ink,
+            fontFamily: "'Lexend', sans-serif", background: G.white,
+            outline: "none", boxSizing: "border-box",
+          }}
+        />
+        <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: G.grey, pointerEvents: "none" }}>/100m</span>
+      </div>
+      {pace100 && (
+        <div style={{ fontSize: 12, color: G.blue, marginTop: -14, marginBottom: 14, display: "flex", alignItems: "center", gap: 4 }}>
+          <Gauge size={12} color={G.blue} />
+          Les allures de tes séances seront recalculées sur cette base
+        </div>
+      )}
+
+      {hasChange && (
+        <button onClick={() => { onSave(freq, pace100); setChanged(false); }} style={{
+          width: "100%", padding: "13px", borderRadius: 12, background: G.blue, border: "none",
           color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
         }}>
@@ -5568,10 +5612,14 @@ export default function App() {
     }));
   };
 
-  const handleUpdateProgram = (newFreq) => {
+  const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
     if (!activePlanEntry) return;
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
-    const newProfile = { ...activePlanEntry.profile, sessionsPerWeek: newFreq };
+    const newProfile = {
+      ...activePlanEntry.profile,
+      sessionsPerWeek: newFreq,
+      ...(newPace100 !== undefined ? { pace100: newPace100 } : {}),
+    };
     setScreen("loading");
     generatePlan(newProfile, isPremium).then(newPlan => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
