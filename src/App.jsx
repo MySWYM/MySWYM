@@ -1135,85 +1135,65 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
       <div style={{ padding: "0 16px" }}>
 
-        {/* ── Bento Stats Grid ───────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+        {/* ── 1. Stats ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
-            { Icon: Waves,   value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Distance totale", color: G.blue,  bg: G.blueLight  },
+            { Icon: Waves,   value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés",            color: G.blue,  bg: G.blueLight  },
             { Icon: Check,   value: stats.totalSessions,                             label: "Séances",          color: G.mint,  bg: G.mintLight  },
-            { Icon: Flame,   value: stats.streak,                                    label: "Meilleure série",  color: G.coral, bg: G.coralLight },
-            { Icon: Star,    value: stats.perfectWeeks,                              label: "Semaines parfaites", color: G.gold, bg: G.goldLight },
+            { Icon: Flame,   value: stats.streak,                                    label: "Série actuelle",   color: G.coral, bg: G.coralLight },
+            { Icon: Star,    value: stats.perfectWeeks,                              label: "Sem. parfaites",   color: G.gold,  bg: G.goldLight  },
           ].map(({ Icon, value, label, color, bg }, i) => (
-            <div key={i} style={{ background: G.white, borderRadius: 20, padding: "18px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon size={18} color={color} />
+            <div key={i} style={{ background: G.white, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon size={20} color={color} />
               </div>
-              <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>{label}</span>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{value}</div>
+                <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{label}</div>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* ── Personal Records ────────────────────────────────────── */}
+        {/* ── 2. Records perso ── */}
         {(profile?.pace100 || longestSession > 0) && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, letterSpacing: "0.04em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-              <Trophy size={15} color={G.gold} />
-              Records personnels
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <Trophy size={13} color={G.gold} /> Records
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {profile?.pace100 && (
-                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Gauge size={18} color={G.blue} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Temps sur 100m</div>
-                      <div style={{ fontSize: 12, color: G.grey }}>Nage libre</div>
-                    </div>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}><Gauge size={18} color={G.blue} /></div>
+                    <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>100m crawl</div><div style={{ fontSize: 12, color: G.grey }}>Meilleur temps</div></div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: G.blue, letterSpacing: "-0.02em" }}>{secToDisplay(profile.pace100)}</div>
-                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: G.blue }}>{secToDisplay(profile.pace100)}</div>
                 </div>
               )}
               {profile?.pace400 && (
-                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Gauge size={18} color={G.blueDeep} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Temps sur 400m</div>
-                      <div style={{ fontSize: 12, color: G.grey }}>Nage libre</div>
-                    </div>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}><Gauge size={18} color={G.blueDeep} /></div>
+                    <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>400m crawl</div><div style={{ fontSize: 12, color: G.grey }}>Meilleur temps</div></div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: G.blueDeep, letterSpacing: "-0.02em" }}>{secToDisplay(profile.pace400)}</div>
-                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: G.blueDeep }}>{secToDisplay(profile.pace400)}</div>
                 </div>
               )}
               {longestSession > 0 && (
-                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ background: G.white, borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.waterLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Waves size={18} color={G.water} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Plus longue séance</div>
-                      <div style={{ fontSize: 12, color: G.grey }}>Endurance</div>
-                    </div>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: G.waterLight, display: "flex", alignItems: "center", justifyContent: "center" }}><Waves size={18} color={G.water} /></div>
+                    <div><div style={{ fontSize: 14, fontWeight: 600, color: G.ink }}>Plus longue séance</div><div style={{ fontSize: 12, color: G.grey }}>Distance</div></div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: G.water, letterSpacing: "-0.02em" }}>{longestSession >= 1000 ? `${(longestSession/1000).toFixed(1)} km` : `${longestSession} m`}</div>
-                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: G.water }}>{longestSession >= 1000 ? `${(longestSession/1000).toFixed(1)} km` : `${longestSession} m`}</div>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ── Pace zones + projection (Performance uniquement) ───── */}
+        {/* ── 3. Zones d'allure (Performance) ── */}
         {(profile?.level === "performance" || profile?.level === "advanced") && (
           <>
             <PaceZonesCard pace100={profile?.pace100} pace400={profile?.pace400} onSave={onPaceUpdate} />
@@ -1221,9 +1201,9 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </>
         )}
 
-        {/* ── Weekly bar chart ────────────────────────────────────── */}
-        <div style={{ background: G.white, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 16, letterSpacing: "-0.01em" }}>Volume par semaine</div>
+        {/* ── 4. Volume par semaine ── */}
+        <div style={{ background: G.white, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>Volume par semaine</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
             {stats.weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
@@ -1235,38 +1215,21 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-            {[{ color: G.blue, label: "Réalisé" }, { color: G.greyLight, label: "Prévu" }].map((l, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
-                <span style={{ fontSize: 11, color: G.grey }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* ── Badges horizontal scroll ─────────────────────────────── */}
+        {/* ── 5. Badges ── */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>Badges</div>
-            <div style={{ fontSize: 12, color: G.grey, fontWeight: 600 }}>{earned.length}/{BADGE_DEFS.length}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase" }}>Badges</div>
+            <div style={{ fontSize: 12, color: G.grey, fontWeight: 600 }}>{earned.length}/{BADGE_DEFS.length} débloqués</div>
           </div>
           <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8, marginLeft: -16, paddingLeft: 16, marginRight: -16, paddingRight: 16 }}>
             {BADGE_DEFS.map((b, i) => {
               const isEarned = earned.includes(b.id);
               return (
-                <div key={b.id} style={{ flexShrink: 0, width: 80, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: isEarned ? 1 : 0.38 }}>
-                  <div style={{
-                    width: 64, height: 64, borderRadius: "50%",
-                    background: isEarned ? (badgeGradients[i % badgeGradients.length]) : G.greyLight,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: isEarned ? `0 6px 18px ${b.color}33` : "none",
-                    filter: isEarned ? "none" : "grayscale(1)",
-                  }}>
-                    {isEarned
-                      ? <b.icon size={26} color="#fff" />
-                      : <Lock size={20} color={G.greyMid} />
-                    }
+                <div key={b.id} style={{ flexShrink: 0, width: 72, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: isEarned ? 1 : 0.35 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: isEarned ? (badgeGradients[i % badgeGradients.length]) : G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isEarned ? `0 4px 14px ${b.color}33` : "none" }}>
+                    {isEarned ? <b.icon size={24} color="#fff" /> : <Lock size={18} color={G.greyMid} />}
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 600, color: G.ink, textAlign: "center", lineHeight: 1.3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{b.label}</span>
                 </div>
@@ -1275,54 +1238,46 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </div>
         </div>
 
-        {/* ── Modifier le programme ───────────────────────────────── */}
+        {/* ── 6. Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} />
 
-        {/* ── Strava ──────────────────────────────────────────────── */}
-        <StravaSection
-          user={user}
-          plan={plan}
-          currentPace100={profile?.pace100}
-          onPaceUpdate={onPaceUpdate}
-          onValidateSession={onValidateSession}
-        />
+        {/* ── 7. Strava ── */}
+        <StravaSection user={user} plan={plan} currentPace100={profile?.pace100} onPaceUpdate={onPaceUpdate} onValidateSession={onValidateSession} />
 
-        {/* ── Compte ──────────────────────────────────────────────── */}
-        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 12, border: `1px solid ${G.greyLight}` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Email</div>
-          <div style={{ fontSize: 15, color: G.ink, padding: "13px 14px", background: G.greyXLight, borderRadius: 12 }}>{user?.email}</div>
-        </div>
+        {/* ── 8. Compte ── */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>Compte</div>
 
-        <div style={{ background: G.white, borderRadius: 16, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Nouveau mot de passe</div>
-          <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nouveau mot de passe" onKeyDown={e => e.key === "Enter" && save()} />
-        </div>
+          <div style={{ background: G.white, borderRadius: 16, overflow: "hidden", border: `1px solid ${G.greyLight}`, marginBottom: 12 }}>
+            <div style={{ padding: "14px 16px", borderBottom: `1px solid ${G.greyLight}` }}>
+              <div style={{ fontSize: 11, color: G.grey, marginBottom: 2 }}>Email</div>
+              <div style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{user?.email}</div>
+            </div>
+            <div style={{ padding: "14px 16px" }}>
+              <div style={{ fontSize: 11, color: G.grey, marginBottom: 8 }}>Nouveau mot de passe</div>
+              <input style={{ ...inp, marginBottom: 10 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && save()} />
+              {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 8, padding: "8px 12px", marginBottom: 10, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
+              <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
+            </div>
+          </div>
 
-        {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>{msg.text}</div>}
-        <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
-
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          {isPremium
-            ? <>
-                <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <Zap size={16} color={G.blue} /> Gérer mon abonnement
-                </button>
-                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
-                  Actualiser le statut
-                </button>
-              </>
-            : <>
-                <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #355da3, #154388)", color: G.white, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <Zap size={16} color={G.gold} /> Passer en premium
-                </button>
-                <button onClick={onRefreshStatus} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>
-                  Actualiser le statut
-                </button>
-              </>
-          }
-          <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <LogOut size={16} color={G.grey} /> Se déconnecter
-          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+            {isPremium ? (
+              <button onClick={onPortal} style={{ width: "100%", padding: "15px", borderRadius: 14, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54 }}>
+                <Zap size={17} color={G.blue} /> Gérer mon abonnement
+              </button>
+            ) : (
+              <button onClick={onUpgrade} style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54, boxShadow: "0 6px 20px rgba(53,93,163,0.30)" }}>
+                <Zap size={17} color={G.gold} /> Passer en Premium
+              </button>
+            )}
+            <button onClick={onRefreshStatus} style={{ width: "100%", padding: "12px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 500, fontSize: 13, cursor: "pointer", minHeight: 44 }}>
+              Actualiser le statut
+            </button>
+            <button onClick={onSignOut} style={{ width: "100%", padding: "15px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54 }}>
+              <LogOut size={17} color={G.grey} /> Se déconnecter
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2663,12 +2618,35 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
 
+  const planLabel = GOALS.find(g => g.id === profile.goal)?.label
+                 || CATEGORIES.find(c => c.id === profile.category)?.label
+                 || "Mon plan";
+
   return (
     <div style={{ paddingBottom: 100 }}>
-      <div style={{ padding: "20px 16px 0" }}>
+      {/* ── Header sticky ── */}
+      <div style={{
+        position: "sticky", top: 0, zIndex: 30,
+        background: "rgba(248,249,252,0.96)", backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderBottom: `1px solid rgba(142,179,255,0.10)`,
+        paddingTop: "env(safe-area-inset-top)",
+      }}>
+        <div style={{ padding: "14px 16px 12px" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 2, lineHeight: 1 }}>{planLabel}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: G.grey }}>Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length} / {plan.weeks.length}</span>
+            {currentWeekIndex >= 0 && currentWeek?.focus && (
+              <>
+                <span style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyMid, display: "inline-block" }} />
+                <span style={{ fontSize: 12, color: G.blue, fontWeight: 600 }}>{currentWeek.focus}</span>
+              </>
+            )}
+          </div>
+        </div>
         {/* Plan switcher */}
         {plans && plans.length > 0 && (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 12, marginBottom: 4 }}>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 12, paddingLeft: 16, paddingRight: 16 }}>
             {plans.map(entry => {
               const isActive = entry.id === activePlanId;
               const lbl = GOALS.find(g => g.id === entry.profile.goal)?.label
@@ -2685,35 +2663,38 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
                   transition: "all 0.15s", overflow: "hidden",
                 }}>
                   <button onClick={() => onSwitchPlan(entry.id)} style={{
-                    padding: "7px 10px 7px 13px", cursor: "pointer",
+                    padding: "8px 12px 8px 14px", cursor: "pointer",
                     background: "none", border: "none",
                     color: isActive ? G.blue : G.grey,
-                    fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                    fontSize: 13, fontWeight: 700, whiteSpace: "nowrap",
+                    minHeight: 44,
                   }}>
                     {lbl}{days !== null ? ` · J−${days}` : ""}
                   </button>
                   {plans.length > 1 && (
                     <button onClick={() => onDeletePlan(entry.id)} style={{
-                      padding: "7px 10px 7px 2px", cursor: "pointer",
+                      padding: "8px 12px 8px 4px", cursor: "pointer",
                       background: "none", border: "none",
                       color: isActive ? G.blue : G.greyMid,
-                      fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center",
+                      fontSize: 16, lineHeight: 1, display: "flex", alignItems: "center", minHeight: 44,
                     }}>×</button>
                   )}
                 </div>
               );
             })}
             <button onClick={onAddPlan} style={{
-              flexShrink: 0, padding: "7px 13px", borderRadius: 100, cursor: "pointer",
+              flexShrink: 0, padding: "8px 14px", borderRadius: 100, cursor: "pointer",
               border: `1.5px dashed ${G.greyLight}`, background: "transparent",
-              color: G.greyMid, fontSize: 12, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+              color: G.greyMid, fontSize: 13, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", minHeight: 44,
             }}>
-              <Plus size={11} /> Ajouter
+              <Plus size={13} /> Ajouter
             </button>
           </div>
         )}
+      </div>
 
+      <div style={{ padding: "16px 16px 0" }}>
         <CoachCard plan={plan} profile={profile} currentWeekIndex={currentWeekIndex} />
 
         {/* Hero bento stats card */}
@@ -2738,8 +2719,8 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
             <div style={{ marginBottom: 22 }}>
               {/* Title row */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Mon programme</h2>
-                <span style={{ fontSize: 12, color: G.grey }}>{unlocked}/{plan.weeks.length} sem.</span>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink }}>Vue d'ensemble</h2>
+                <span style={{ fontSize: 12, color: G.grey, fontWeight: 600 }}>{unlocked}/{plan.weeks.length} sem. débloquées</span>
               </div>
 
               {/* Bento grid */}
@@ -2939,49 +2920,84 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
 
       <div style={{ padding: "16px 16px 0" }}>
 
-        {/* ── Plan finished banners ── */}
+        {/* ── Greeting ── */}
+        {(() => {
+          const h = new Date().getHours();
+          const greeting = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+          return (
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: G.grey, marginBottom: 2 }}>{greeting},</p>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: G.ink, lineHeight: 1.1 }}>{firstName}</h1>
+            </div>
+          );
+        })()}
+
+        {/* ── Plan finished banner ── */}
         {planFinished && (
           <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
             {plan.isProgression
-              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé 🎉</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Plan terminé 🏆</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100 %.</p></>
+              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
+              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Plan terminé</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100 %.</p></>
             }
           </div>
         )}
 
-        {/* ── Hero — Activité hebdomadaire ── */}
-        <p style={{ fontSize: 10, fontWeight: 700, color: G.grey, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Activité hebdomadaire</p>
-        <div style={{
-          background: G.white, borderRadius: 28, padding: "20px 18px",
-          boxShadow: "0 8px 32px rgba(142,179,255,0.11)",
-          border: "1px solid rgba(142,179,255,0.08)",
-          marginBottom: 12, position: "relative", overflow: "hidden",
-        }}>
-          <div style={{ position: "absolute", right: -30, top: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(142,179,255,0.06)", pointerEvents: "none" }} />
-
-          {/* Row: numbers (left) + ring (right) */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, position: "relative" }}>
-            {/* Left */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 4 }}>
-                <span style={{ fontSize: "clamp(32px,8vw,44px)", fontWeight: 800, color: G.blue, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                  {weekDone > 0 ? weekDone.toLocaleString("fr") : "0"}
-                </span>
-                <span style={{ fontSize: 18, fontWeight: 700, color: G.blueMid }}>m</span>
-              </div>
-              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.4 }}>
-                {weekSessions}/{weekTotal} séances
-                {currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
-              </p>
-              {daysToEvent !== null && (
-                <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 5, background: G.blueLight, borderRadius: 100, padding: "4px 10px" }}>
-                  <Target size={10} color={G.blue} />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: G.blue }}>J−{daysToEvent} avant l'event</span>
-                </div>
-              )}
+        {/* ── Prochaine séance — card principale ── */}
+        {nextSession && tm ? (
+          <button onClick={() => onTabChange("plan")} style={{
+            width: "100%", textAlign: "left", cursor: "pointer",
+            background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
+            borderRadius: 24, padding: "20px 18px", marginBottom: 12,
+            border: "none", boxShadow: "0 10px 32px rgba(53,93,163,0.32)",
+            WebkitTapHighlightColor: "transparent", display: "block",
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+              Sem. {currentWeekIndex + 1} · {currentWeek?.focus || "À faire"}
             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(255,255,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <tm.Icon size={22} color={G.white} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: G.white, lineHeight: 1.2, marginBottom: 3 }}>{nextSession.title}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{nextSession.type}</span>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>·</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: G.blueMid }}>{nextSession.distance}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: 100, padding: "10px 18px", display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Waves size={14} color={G.white} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: G.white }}>C'est ma séance du jour</span>
+              <ArrowRight size={14} color="rgba(255,255,255,0.6)" />
+            </div>
+          </button>
+        ) : !planFinished && (
+          <div style={{ background: G.white, borderRadius: 24, padding: "20px 18px", marginBottom: 12, textAlign: "center", border: "1px solid rgba(142,179,255,0.10)" }}>
+            <Trophy size={28} color={G.gold} style={{ margin: "0 auto 8px" }} />
+            <p style={{ color: G.grey, fontSize: 14, fontWeight: 600 }}>Toutes les séances sont terminées !</p>
+          </div>
+        )}
 
-            {/* Right: ring only, no side text */}
+        {/* ── Semaine en cours ── */}
+        <div style={{
+          background: G.white, borderRadius: 24, padding: "18px",
+          boxShadow: "0 4px 20px rgba(142,179,255,0.08)",
+          border: "1px solid rgba(142,179,255,0.08)",
+          marginBottom: 12,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cette semaine</span>
+            {daysToEvent !== null && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: G.blueLight, borderRadius: 100, padding: "3px 10px" }}>
+                <Target size={10} color={G.blue} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: G.blue }}>J−{daysToEvent}</span>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {/* Ring */}
             <div style={{ position: "relative", width: RS, height: RS, flexShrink: 0 }}>
               <svg width={RS} height={RS} style={{ transform: "rotate(-90deg)" }}>
                 <circle cx={RS/2} cy={RS/2} r={Rr} fill="transparent" stroke={G.greyLight} strokeWidth={RSK} />
@@ -2995,54 +3011,32 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
                 <span style={{ fontSize: 15, fontWeight: 800, color: G.blue, lineHeight: 1 }}>{weekPct}%</span>
               </div>
             </div>
-          </div>
-
-          {/* Objectif — below the row on its own line */}
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${G.greyLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: G.grey }}>
-              Objectif : {weekPlanned >= 1000 ? `${(weekPlanned/1000).toFixed(1)} km` : `${weekPlanned} m`}
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: G.blue }}>
-              {Math.max(0, weekPlanned - weekDone)} m restants
-            </span>
-          </div>
-        </div>
-
-        {/* ── Info chips (2 cols) ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-          {/* Next session */}
-          <div style={{ background: G.blueLight, borderRadius: 20, padding: "14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ width: 40, height: 40, background: G.blue, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {nextSession && tm ? <tm.Icon size={18} color={G.white} /> : <Trophy size={18} color={G.white} />}
-            </div>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: G.blue, letterSpacing: "0.04em", marginBottom: 2 }}>
-                {nextSession ? "PROCHAINE" : "TERMINÉ"}
+            {/* Numbers */}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                <span style={{ fontSize: 32, fontWeight: 800, color: G.blue, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                  {weekDone > 0 ? weekDone.toLocaleString("fr") : "0"}
+                </span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: G.blueMid }}>m</span>
+                <span style={{ fontSize: 12, color: G.greyMid, marginLeft: 4 }}>/ {weekPlanned >= 1000 ? `${(weekPlanned/1000).toFixed(1)} km` : `${weekPlanned} m`}</span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: G.blueDeep, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                {nextSession ? nextSession.title : "Plan complété !"}
-              </div>
+              <p style={{ fontSize: 13, color: G.grey }}>{weekSessions} / {weekTotal} séances{currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}</p>
             </div>
-          </div>
-          {/* Streak */}
-          <div style={{ background: G.white, borderRadius: 20, padding: "14px 12px", border: `1px solid rgba(142,179,255,0.12)`, boxShadow: "0 2px 10px rgba(142,179,255,0.07)", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ width: 40, height: 40, background: "#FFF3E0", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Flame size={18} color="#E65100" />
-            </div>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, letterSpacing: "0.04em", marginBottom: 2 }}>SÉRIE</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                {stats.streak}
-                <span style={{ fontSize: 12, fontWeight: 500, color: G.grey }}> séances</span>
+            {/* Streak */}
+            <div style={{ textAlign: "center", flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, background: "#FFF3E0", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px" }}>
+                <Flame size={20} color="#E65100" />
               </div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
+              <div style={{ fontSize: 10, color: G.grey }}>série</div>
             </div>
           </div>
         </div>
 
         {/* ── Dernières séances ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Dernières séances</h2>
-          <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 12, color: G.blue, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 3, padding: "4px 0", WebkitTapHighlightColor: "transparent" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Dernières séances</h2>
+          <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 12, color: G.blue, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 3, padding: "8px 0", WebkitTapHighlightColor: "transparent", minHeight: 44 }}>
             Tout voir <ArrowRight size={12} color={G.blue} />
           </button>
         </div>
@@ -3053,76 +3047,34 @@ const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTa
               const stm = TYPE_META[s.type] || TYPE_META.ENDURANCE;
               return (
                 <div key={i} style={{
-                  background: G.white, borderRadius: 20, padding: "12px 14px",
-                  boxShadow: "0 2px 12px rgba(142,179,255,0.07)",
+                  background: G.white, borderRadius: 18, padding: "14px 16px",
+                  boxShadow: "0 2px 10px rgba(142,179,255,0.07)",
                   border: "1px solid rgba(142,179,255,0.08)",
-                  display: "flex", alignItems: "center", gap: 12,
+                  display: "flex", alignItems: "center", gap: 14,
                 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: stm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 13, background: stm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <stm.Icon size={20} color={stm.color} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontSize: 11, color: G.grey }}>Sem. {s.weekNum}</span>
                       <div style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyLight }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>{s.distance}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: stm.color }}>{s.distance}</span>
                     </div>
                   </div>
-                  <Check size={16} color={G.mint} style={{ flexShrink: 0 }} />
+                  <Check size={18} color={G.mint} style={{ flexShrink: 0 }} />
                 </div>
               );
             })}
           </div>
         ) : (
-          <div style={{ background: G.white, borderRadius: 20, padding: "24px 16px", textAlign: "center", border: "1px solid rgba(142,179,255,0.10)", marginBottom: 16 }}>
-            <Waves size={28} color={G.blueMid} style={{ margin: "0 auto 8px" }} />
-            <p style={{ color: G.grey, fontSize: 13 }}>Aucune séance terminée — commence maintenant !</p>
+          <div style={{ background: G.white, borderRadius: 18, padding: "28px 16px", textAlign: "center", border: "1px solid rgba(142,179,255,0.10)", marginBottom: 16 }}>
+            <Waves size={28} color={G.blueMid} style={{ margin: "0 auto 10px" }} />
+            <p style={{ color: G.grey, fontSize: 14 }}>Aucune séance terminée — commence maintenant !</p>
           </div>
         )}
-
-        {/* ── Glossaire ── */}
-        <a href="/blog/glossaire-natation" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, background: G.white, borderRadius: 18, padding: "12px 14px", border: `1px solid rgba(142,179,255,0.10)`, boxShadow: "0 2px 8px rgba(142,179,255,0.06)", textDecoration: "none" }}>
-          <div style={{ width: 38, height: 38, background: G.blueLight, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <BookOpen size={18} color={G.blue} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 1 }}>Glossaire du nageur</div>
-            <div style={{ fontSize: 11, color: G.grey, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>CSS, NL, D1'45", Z1-Z5… tous les termes</div>
-          </div>
-          <ArrowRight size={14} color={G.blueMid} style={{ flexShrink: 0 }} />
-        </a>
       </div>
-
-      {/* ── FAB — Commencer une séance ── */}
-      {nextSession && (
-        <div style={{
-          position: "fixed",
-          bottom: "calc(64px + env(safe-area-inset-bottom) + 12px)",
-          left: 0, right: 0,
-          display: "flex", justifyContent: "center",
-          pointerEvents: "none", zIndex: 40,
-        }}>
-          <button
-            onClick={() => onTabChange("plan")}
-            style={{
-              pointerEvents: "auto",
-              background: G.blue, color: G.white,
-              border: "none", borderRadius: 100,
-              padding: "14px 24px",
-              fontSize: 14, fontWeight: 700,
-              display: "flex", alignItems: "center", gap: 8,
-              boxShadow: "0 8px 28px rgba(53,93,163,0.38)",
-              cursor: "pointer",
-              WebkitTapHighlightColor: "transparent",
-              minHeight: 50,
-            }}
-          >
-            <Waves size={17} color={G.white} />
-            Commencer une séance
-          </button>
-        </div>
-      )}
     </div>
   );
 };
