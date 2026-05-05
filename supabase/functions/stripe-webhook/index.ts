@@ -32,7 +32,26 @@ Deno.serve(async (req) => {
 
   const findUserByCustomerId = async (customerId: string) => {
     const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    return data?.users?.find(u => u.user_metadata?.stripe_customer_id === customerId) ?? null;
+    const users = data?.users ?? [];
+
+    // 1️⃣ Lookup by stripe_customer_id (normal flow via checkout)
+    const byId = users.find(u => u.user_metadata?.stripe_customer_id === customerId);
+    if (byId) return byId;
+
+    // 2️⃣ Fallback: lookup by email from Stripe (subscription créée manuellement)
+    const customer = await stripe.customers.retrieve(customerId);
+    if ((customer as any).deleted || !("email" in customer) || !customer.email) return null;
+
+    const byEmail = users.find(u => u.email === customer.email);
+    if (byEmail) {
+      // Sauvegarde le lien pour les prochains events
+      await supabaseAdmin.auth.admin.updateUserById(byEmail.id, {
+        user_metadata: { ...byEmail.user_metadata, stripe_customer_id: customerId },
+      });
+      return byEmail;
+    }
+
+    return null;
   };
 
   // ── checkout.session.completed ─────────────────────────────────────────

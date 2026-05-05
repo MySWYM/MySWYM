@@ -1360,29 +1360,50 @@ const ResetPasswordScreen = ({ onDone }) => {
   );
 };
 
-const AuthScreen = ({ onAuth }) => {
-  const [mode, setMode] = useState("login"); // "login" | "register" | "reset"
+const AuthScreen = ({ onAuth, onBack }) => {
+  // mode :
+  //   "magic"    — défaut, magic link sans mot de passe (signup + login fusionnés)
+  //   "password" — login classique avec mot de passe
+  //   "register" — création de compte avec mot de passe (pour les utilisateurs qui préfèrent)
+  //   "reset"    — réinitialisation du mot de passe
+  const [mode, setMode] = useState("magic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [linkSent, setLinkSent] = useState(false); // après envoi du magic link
+  const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
 
-  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); };
+  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setLinkSent(false); };
 
   const handle = async () => {
     setError(null); setSuccess(null); setLoading(true);
     try {
-      if (mode === "login") {
+      if (mode === "magic") {
+        // Magic link : signInWithOtp gère à la fois la création de compte ET le login
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: `${window.location.origin}/app`,
+          },
+        });
+        if (error) throw error;
+        setLinkSent(true);
+      } else if (mode === "password") {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         onAuth(data.user);
       } else if (mode === "register") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/app` },
+        });
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error("Un compte existe déjà avec cet email.");
-        setSuccess("Compte créé ! Vérifie ton email, puis connecte-toi.");
-        switchMode("login");
+        setSuccess("Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.");
+        switchMode("password");
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/app`,
@@ -1396,36 +1417,98 @@ const AuthScreen = ({ onAuth }) => {
 
   const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
 
+  // Écran de confirmation après envoi du magic link
+  if (linkSent) {
+    return (
+      <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Waves size={20} color={G.white} />
+            </div>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
+          </div>
+          {onBack && (
+            <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
+              ← Retour
+            </button>
+          )}
+        </div>
+        <div className="fade-up" style={{ textAlign: "center", paddingTop: 20 }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>📬</div>
+          <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 36, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>
+            Lien envoyé !
+          </h2>
+          <p style={{ color: G.grey, fontSize: 15, marginBottom: 6, lineHeight: 1.5 }}>
+            On a envoyé un lien magique à
+          </p>
+          <p style={{ color: G.ink, fontSize: 16, fontWeight: 700, marginBottom: 28 }}>{email}</p>
+          <p style={{ color: G.grey, fontSize: 14, marginBottom: 32, lineHeight: 1.5 }}>
+            Clique sur le lien dans ton email pour te connecter.<br />
+            Pense à vérifier tes spams.
+          </p>
+          <button onClick={() => { setLinkSent(false); setEmail(""); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, padding: "12px 20px", fontSize: 14, color: G.grey, cursor: "pointer", fontFamily: "'Lexend', sans-serif" }}>
+            Utiliser un autre email
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const titleMap = {
+    magic:    "Bienvenue",
+    password: "Connexion",
+    register: "Créer un compte",
+    reset:    "Mot de passe oublié",
+  };
+  const subtitleMap = {
+    magic:    "Entre ton email, on t'envoie un lien magique pour te connecter en un clic.",
+    password: "Connecte-toi avec ton mot de passe.",
+    register: "Choisis un mot de passe pour ton compte.",
+    reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
+  };
+  const ctaMap = {
+    magic:    "Recevoir mon lien magique",
+    password: "Se connecter",
+    register: "Créer mon compte",
+    reset:    "Envoyer le lien",
+  };
+
   return (
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 44 }}>
-        <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Waves size={20} color={G.white} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Waves size={20} color={G.white} />
+          </div>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
         </div>
-        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
+        {onBack && (
+          <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
+            ← Retour
+          </button>
+        )}
       </div>
       <div className="fade-up">
         <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
-          {mode === "reset" ? "Mot de passe oublié" : "Bienvenue"}
+          {titleMap[mode]}
         </h2>
-        <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>
-          {mode === "login"    ? "Connecte-toi pour accéder à ton plan."
-         : mode === "register" ? "Crée ton compte gratuitement."
-         :                       "Entre ton email, on t'envoie un lien de réinitialisation."}
+        <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
+          {subtitleMap[mode]}
         </p>
 
         {error   && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "login" ? 8 : 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
           <input type="email" placeholder="Ton email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
-          {mode !== "reset" && (
+          {(mode === "password" || mode === "register") && (
             <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
           )}
         </div>
 
-        {/* Lien mot de passe oublié — visible uniquement en mode login */}
-        {mode === "login" && (
+        {/* Lien mot de passe oublié — visible uniquement en mode password */}
+        {mode === "password" && (
           <div style={{ textAlign: "right", marginBottom: 16 }}>
             <button onClick={() => switchMode("reset")} style={{ background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer", padding: 0 }}>
               Mot de passe oublié ?
@@ -1433,24 +1516,39 @@ const AuthScreen = ({ onAuth }) => {
           </div>
         )}
 
-        <Btn onClick={handle} disabled={loading || !email || (mode !== "reset" && !password)} variant="blue">
-          {loading ? "…" : mode === "login" ? "Se connecter" : mode === "register" ? "Créer mon compte" : "Envoyer le lien"}
+        <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password)} variant="blue">
+          {loading ? "…" : ctaMap[mode]}
         </Btn>
 
-        <p style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: G.grey }}>
-          {mode === "reset" ? (
-            <button onClick={() => switchMode("login")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-              ← Retour à la connexion
+        {/* Toggles secondaires */}
+        <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
+          {mode === "magic" && (
+            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+              Utiliser un mot de passe
             </button>
-          ) : (
+          )}
+          {mode === "password" && (
             <>
-              {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
-              <button onClick={() => switchMode(mode === "login" ? "register" : "login")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-                {mode === "login" ? "S'inscrire" : "Se connecter"}
+              <button onClick={() => switchMode("magic")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14, marginRight: 14 }}>
+                Lien magique
+              </button>
+              ·
+              <button onClick={() => switchMode("register")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14, marginLeft: 14 }}>
+                Créer un compte
               </button>
             </>
           )}
-        </p>
+          {mode === "register" && (
+            <button onClick={() => switchMode("magic")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+              ← J'ai déjà un compte
+            </button>
+          )}
+          {mode === "reset" && (
+            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+              ← Retour à la connexion
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1816,7 +1914,9 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
     <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
       {FREQUENCIES.map(f => {
-        const locked = !isPremium && f.id >= 3;
+        // Onboarding accessible à tous : on ne verrouille plus les fréquences ≥3 séances.
+        // Le paywall existant après FREE_WEEKS_LIMIT semaines reste actif après que l'utilisateur ait vu son plan.
+        const locked = false;
         const isActive = value === f.id;
         return (
           <button key={f.id} onClick={() => locked ? onUpgrade?.() : onChange(f.id)} style={{
@@ -5294,14 +5394,45 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [screen, setScreen] = useState("onboarding");
+  // Hydratation initiale : si un plan anonyme existe en local, on saute l'onboarding et on l'affiche directement.
+  const [screen, setScreen] = useState(() => {
+    try {
+      const raw = localStorage.getItem("myswym_anon_plans");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return "app";
+      }
+    } catch {}
+    return "onboarding";
+  });
   const [activeTab, setActiveTab] = useState("home");
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
   const [profile, setProfile] = useState(BLANK_PROFILE);
-  // Multi-plan
-  const [plans, setPlans] = useState([]);
-  const [activePlanId, setActivePlanId] = useState(null);
+  // Multi-plan — hydratés depuis localStorage anonyme si présent (utilisateur pas encore connecté)
+  const [plans, setPlans] = useState(() => {
+    try {
+      const raw = localStorage.getItem("myswym_anon_plans");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [activePlanId, setActivePlanId] = useState(() => {
+    try {
+      const raw = localStorage.getItem("myswym_anon_plans");
+      const active = localStorage.getItem("myswym_anon_active");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return active || parsed[0].id;
+        }
+      }
+    } catch {}
+    return null;
+  });
   const [addingPlan, setAddingPlan] = useState(false);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
@@ -5440,6 +5571,44 @@ export default function App() {
   const loadUserData = async (userId, userIsPremium = false) => {
     const enforce = (p) => (!userIsPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
 
+    // Lit le plan anonyme à migrer (créé par l'utilisateur avant qu'il ne se connecte)
+    let anonPlans = [];
+    let anonActive = null;
+    try {
+      const anonRaw = localStorage.getItem("myswym_anon_plans");
+      if (anonRaw) {
+        const parsed = JSON.parse(anonRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) anonPlans = parsed;
+      }
+      anonActive = localStorage.getItem("myswym_anon_active");
+    } catch {}
+
+    // Merge le plan anon avec les plans existants (en évitant les doublons par id)
+    // puis nettoie la clé anonyme une fois la migration faite.
+    const finalize = (existing, existingActive) => {
+      let merged = existing || [];
+      let active = existingActive || null;
+      if (anonPlans.length > 0) {
+        const ids = new Set(merged.map(e => e.id));
+        const toAdd = anonPlans.filter(e => !ids.has(e.id));
+        merged = [...merged, ...toAdd];
+        // Si l'utilisateur n'avait pas de plan actif jusque-là, on bascule sur le plan anon migré
+        if (!active && anonActive) active = anonActive;
+        if (!active && merged.length > 0) active = merged[0].id;
+        try {
+          localStorage.removeItem("myswym_anon_plans");
+          localStorage.removeItem("myswym_anon_active");
+        } catch {}
+      }
+      if (merged.length > 0) {
+        setPlans(merged);
+        setActivePlanId(active || merged[0].id);
+        setScreen("app");
+        return true;
+      }
+      return false;
+    };
+
     // 1. Nouveau format multi-plans (localStorage)
     try {
       const raw = localStorage.getItem(`myswym_plans_${userId}`);
@@ -5448,9 +5617,7 @@ export default function App() {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const enforced = parsed.map(e => ({ ...e, plan: enforce(e.plan) }));
-          setPlans(enforced);
-          setActivePlanId(activeId || enforced[0].id);
-          setScreen("app"); return;
+          if (finalize(enforced, activeId)) return;
         }
       }
     } catch {}
@@ -5469,15 +5636,13 @@ export default function App() {
             localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(enforced));
             localStorage.setItem(`myswym_active_${userId}`, data.active_plan_id || enforced[0].id);
           } catch {}
-          setPlans(enforced);
-          setActivePlanId(data.active_plan_id || enforced[0].id);
-          setScreen("app"); return;
+          if (finalize(enforced, data.active_plan_id)) return;
         }
         // 2b. Ancien format mono-plan (compat)
         if (data.profile && data.plan) {
           const id = `plan_${Date.now()}`;
           const entry = { id, profile: data.profile, plan: enforce(data.plan) };
-          setPlans([entry]); setActivePlanId(id); setScreen("app"); return;
+          if (finalize([entry], id)) return;
         }
       }
     } catch {}
@@ -5489,9 +5654,16 @@ export default function App() {
       if (sp && spl) {
         const id = `plan_${Date.now()}`;
         const entry = { id, profile: JSON.parse(sp), plan: enforce(JSON.parse(spl)) };
-        setPlans([entry]); setActivePlanId(id); setScreen("app");
+        if (finalize([entry], id)) return;
       }
     } catch {}
+
+    // 4. Aucun plan existant — si on a un plan anonyme, on le promeut comme plan principal
+    // Sinon, on bascule sur l'onboarding pour qu'il puisse créer son premier plan.
+    if (!finalize([], null)) {
+      setScreen("onboarding");
+      setStep(1);
+    }
   };
 
   // Vérifie le statut abonnement automatiquement (retour sur l'app + toutes les 5 min)
@@ -5510,6 +5682,21 @@ export default function App() {
     const interval = setInterval(check, 5 * 60 * 1000);
     return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
   }, [user?.id]);
+
+  // Persistance anonyme : tant qu'il n'y a pas d'utilisateur, on sauvegarde les plans localement
+  // pour qu'ils survivent au refresh. Au login, ils sont migrés vers la clé user (cf. loadUserData).
+  useEffect(() => {
+    if (user) return;
+    try {
+      if (plans.length > 0) {
+        localStorage.setItem("myswym_anon_plans", JSON.stringify(plans));
+        if (activePlanId) localStorage.setItem("myswym_anon_active", activePlanId);
+      } else {
+        localStorage.removeItem("myswym_anon_plans");
+        localStorage.removeItem("myswym_anon_active");
+      }
+    } catch {}
+  }, [plans, activePlanId, user]);
 
   useEffect(() => {
     if (!user || plans.length === 0) return;
@@ -5778,10 +5965,18 @@ export default function App() {
     </>
   );
 
-  if (!user) return (
+  // L'AuthScreen ne s'affiche plus que si l'utilisateur le demande explicitement
+  // (clic sur "Se connecter" / "Sauvegarde ton plan"). L'onboarding et la dashboard sont
+  // accessibles sans compte ; le plan est persisté localement via la clé "myswym_anon_*".
+  if (screen === "auth") return (
     <>
       <style>{css}</style><FontLoader />
-      <div style={{ minHeight: "100vh", background: G.bg }}><AuthScreen onAuth={setUser} /></div>
+      <div style={{ minHeight: "100vh", background: G.bg }}>
+        <AuthScreen
+          onAuth={setUser}
+          onBack={() => setScreen(plans.length > 0 ? "app" : "onboarding")}
+        />
+      </div>
     </>
   );
 
@@ -5804,14 +5999,19 @@ export default function App() {
                     ← Mes plans
                   </button>
                 )}
-                {!addingPlan && isPremium && (
+                {!addingPlan && user && isPremium && (
                   <button onClick={handlePortal} style={{ background: "none", border: `1px solid ${G.blue}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.blue, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                     <Zap size={12} color={G.blue} /> Abonnement
                   </button>
                 )}
-                {!addingPlan && (
+                {!addingPlan && user && (
                   <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                     <LogOut size={12} color={G.grey} /> Déco.
+                  </button>
+                )}
+                {!addingPlan && !user && (
+                  <button onClick={() => setScreen("auth")} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer" }}>
+                    Se connecter
                   </button>
                 )}
               </div>
@@ -5906,6 +6106,18 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div style={{ minHeight: "100vh", background: G.bg }}>
+        {/* Bandeau persistant pour les utilisateurs anonymes : nudge vers la création de compte
+            sans bloquer l'usage de l'app. Le plan est déjà sauvegardé localement. */}
+        {!user && plans.length > 0 && (
+          <div style={{ position: "sticky", top: 0, zIndex: 50, background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 2px 12px rgba(0,87,255,0.25)" }}>
+            <span style={{ flex: 1, lineHeight: 1.3 }}>
+              💾 Sauvegarde ton plan pour le retrouver sur tous tes appareils
+            </span>
+            <button onClick={() => setScreen("auth")} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              Créer mon compte
+            </button>
+          </div>
+        )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} />}
