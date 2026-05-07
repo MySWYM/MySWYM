@@ -74,12 +74,12 @@ export default function PublicNav() {
                 Se connecter
               </a>
             )}
-            <a href="/?auth=register" style={{
+            <a href="/" style={{
               background: C.accent, color: C.accentText, fontSize: isMobile ? 13 : 14, fontWeight: 700,
               padding: isMobile ? "9px 16px" : "10px 22px", borderRadius: 100, textDecoration: "none",
               fontFamily: "'Lexend', sans-serif", boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
             }}>
-              Creer mon compte
+              {isMobile ? "Commencer" : "Creer mon compte"}
             </a>
             {isMobile && (
               <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink }}>
