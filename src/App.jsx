@@ -297,7 +297,7 @@ const createShareCanvas = (session, goalLabel) => {
   ctx.fillStyle = tc[session.type] || "#4080FF"; ctx.font = "500 28px sans-serif"; ctx.fillText(session.type, 80, 340);
   ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 68px sans-serif";
   const words = session.title.split(" "); let line = "", y = 430;
-  words.forEach((word, i) => {
+  words.forEach((word) => {
     const test = line + word + " ";
     if (ctx.measureText(test).width > 920 && line) { ctx.fillText(line.trim(), 80, y); line = word + " "; y += 84; }
     else { line = test; }
@@ -344,10 +344,10 @@ const Ring = ({ value, size = 64, stroke = 6, color = G.water, bg = "rgba(255,25
   );
 };
 
-const StatPill = ({ icon: IconComp, value, label, color, bg }) => (
+const StatPill = ({ icon: Icon, value, label, color, bg }) => (
   <div style={{ background: G.white, borderRadius: 22, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, boxShadow: "0 4px 20px rgba(142,179,255,0.10)", border: `1px solid rgba(142,179,255,0.10)` }}>
     <div style={{ width: 40, height: 40, borderRadius: 12, background: bg || G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <IconComp size={20} color={color || G.blue} />
+      <Icon size={20} color={color || G.blue} />
     </div>
     <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Lexend', sans-serif", letterSpacing: "-0.02em", color: color || G.blue, lineHeight: 1 }}>{value}</span>
     <span style={{ fontSize: 10, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", textAlign: "center" }}>{label}</span>
@@ -384,10 +384,6 @@ const ZONE_DEFS = [
     tip: "Explosivité et vitesse",
   },
 ];
-
-function fmtPaceDisplay(secs) {
-  return `${Math.floor(secs / 60)}:${Math.round(secs % 60).toString().padStart(2, "0")}`;
-}
 
 // ── PROJECTION CURVE (Performance only) ──────────────────────────────────
 // Loi de puissance natation : T(d) = a * d^e
@@ -753,7 +749,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
     checkConnection();
   }, [user?.id]);
 
-  const checkConnection = async () => {
+  async function checkConnection() {
     try {
       const { data, error } = await supabase
         .from("strava_tokens")
@@ -768,7 +764,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
     } catch {
       setConnected(false);
     }
-  };
+  }
 
   const loadActivities = async () => {
     const { data } = await supabase
@@ -861,7 +857,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   const hasBetterPace = bestPace && (!currentPace100 || bestPace < currentPace100);
 
   // Remonte bestPace vers le parent dès que les activités changent
-  useEffect(() => { onBestPace?.(bestPace); }, [bestPace]);
+  useEffect(() => { onBestPace?.(bestPace); }, [bestPace, onBestPace]);
 
   // ── Activité natation d'aujourd'hui ─────────────────────────────────────
   const todayStr  = new Date().toISOString().slice(0, 10);
@@ -1042,7 +1038,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
   const [password,      setPassword]      = useState("");
   const [saving,        setSaving]        = useState(false);
   const [msg,           setMsg]           = useState(null);
@@ -1360,37 +1356,24 @@ const ResetPasswordScreen = ({ onDone }) => {
   );
 };
 
-const AuthScreen = ({ onAuth, onBack }) => {
+const AuthScreen = ({ onAuth, onBack, initialMode = "password" }) => {
   // mode :
-  //   "magic"    — défaut, magic link sans mot de passe (signup + login fusionnés)
   //   "password" — login classique avec mot de passe
-  //   "register" — création de compte avec mot de passe (pour les utilisateurs qui préfèrent)
+  //   "register" — création de compte avec mot de passe
   //   "reset"    — réinitialisation du mot de passe
-  const [mode, setMode] = useState("magic");
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [linkSent, setLinkSent] = useState(false); // après envoi du magic link
   const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
 
-  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setLinkSent(false); };
+  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); };
 
   const handle = async () => {
     setError(null); setSuccess(null); setLoading(true);
     try {
-      if (mode === "magic") {
-        // Magic link : signInWithOtp gère à la fois la création de compte ET le login
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: true,
-            emailRedirectTo: `${window.location.origin}/app`,
-          },
-        });
-        if (error) throw error;
-        setLinkSent(true);
-      } else if (mode === "password") {
+      if (mode === "password") {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         onAuth(data.user);
@@ -1417,58 +1400,17 @@ const AuthScreen = ({ onAuth, onBack }) => {
 
   const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
 
-  // Écran de confirmation après envoi du magic link
-  if (linkSent) {
-    return (
-      <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Waves size={20} color={G.white} />
-            </div>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
-          </div>
-          {onBack && (
-            <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
-              ← Retour
-            </button>
-          )}
-        </div>
-        <div className="fade-up" style={{ textAlign: "center", paddingTop: 20 }}>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>📬</div>
-          <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 36, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>
-            Lien envoyé !
-          </h2>
-          <p style={{ color: G.grey, fontSize: 15, marginBottom: 6, lineHeight: 1.5 }}>
-            On a envoyé un lien magique à
-          </p>
-          <p style={{ color: G.ink, fontSize: 16, fontWeight: 700, marginBottom: 28 }}>{email}</p>
-          <p style={{ color: G.grey, fontSize: 14, marginBottom: 32, lineHeight: 1.5 }}>
-            Clique sur le lien dans ton email pour te connecter.<br />
-            Pense à vérifier tes spams.
-          </p>
-          <button onClick={() => { setLinkSent(false); setEmail(""); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, padding: "12px 20px", fontSize: 14, color: G.grey, cursor: "pointer", fontFamily: "'Lexend', sans-serif" }}>
-            Utiliser un autre email
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const titleMap = {
-    magic:    "Bienvenue",
     password: "Connexion",
     register: "Créer un compte",
     reset:    "Mot de passe oublié",
   };
   const subtitleMap = {
-    magic:    "Entre ton email, on t'envoie un lien magique pour te connecter en un clic.",
     password: "Connecte-toi avec ton mot de passe.",
     register: "Choisis un mot de passe pour ton compte.",
     reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
   };
   const ctaMap = {
-    magic:    "Recevoir mon lien magique",
     password: "Se connecter",
     register: "Créer mon compte",
     reset:    "Envoyer le lien",
@@ -1522,24 +1464,15 @@ const AuthScreen = ({ onAuth, onBack }) => {
 
         {/* Toggles secondaires */}
         <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
-          {mode === "magic" && (
-            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-              Utiliser un mot de passe
-            </button>
-          )}
           {mode === "password" && (
             <>
-              <button onClick={() => switchMode("magic")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14, marginRight: 14 }}>
-                Lien magique
-              </button>
-              ·
-              <button onClick={() => switchMode("register")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14, marginLeft: 14 }}>
+              <button onClick={() => switchMode("register")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
                 Créer un compte
               </button>
             </>
           )}
           {mode === "register" && (
-            <button onClick={() => switchMode("magic")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
               ← J'ai déjà un compte
             </button>
           )}
@@ -1684,7 +1617,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
           placeholder="jj/mm/aaaa"
           value={display}
           onChange={e => handleChange(e.target.value)}
-          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, background: "transparent", outline: "none", letterSpacing: 2 }}
+          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, background: "transparent", outline: "none" }}
         />
       </div>
       {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
@@ -1907,7 +1840,7 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
   );
 };
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium = false, onUpgrade }) => (
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, onUpgrade }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
     <h2 style={{ fontSize: 34, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
@@ -2958,8 +2891,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-const Dashboard = ({ plan, profile, plans = [], activePlanId, onSwitchPlan, onTabChange, onComplete, onShare, onSignOut, user }) => {
-  const goal = GOALS.find(g => g.id === profile.goal) || CATEGORIES.find(c => c.id === profile.category);
+const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
   const stats = computeStats(plan);
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
@@ -5394,6 +5326,8 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState("password");
+  const forceAuthRef = useRef(false);
   // Hydratation initiale : si un plan anonyme existe en local, on saute l'onboarding et on l'affiche directement.
   const [screen, setScreen] = useState(() => {
     try {
@@ -5456,6 +5390,25 @@ export default function App() {
     };
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
+  }, []);
+
+  // Deep link auth flow: /app?auth=login ouvre directement la connexion.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get("auth");
+    if (!auth) return;
+    if (auth === "login") {
+      forceAuthRef.current = true;
+      setAuthInitialMode("password");
+      setScreen("auth");
+    } else if (auth === "register") {
+      forceAuthRef.current = true;
+      setAuthInitialMode("register");
+      setScreen("auth");
+    }
+    params.delete("auth");
+    const next = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${next ? `?${next}` : ""}`);
   }, []);
 
   useEffect(() => {
@@ -5562,13 +5515,20 @@ export default function App() {
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(checkIsPremium(u));
-      if (u) { loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false)); }
-      else { setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setAuthLoading(false); }
+      if (u) {
+        forceAuthRef.current = false;
+        loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
+      } else if (forceAuthRef.current) {
+        setScreen("auth");
+        setAuthLoading(false);
+      } else {
+        setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setAuthLoading(false);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadUserData = async (userId, userIsPremium = false) => {
+  async function loadUserData(userId, userIsPremium = false) {
     const enforce = (p) => (!userIsPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
 
     // Lit le plan anonyme à migrer (créé par l'utilisateur avant qu'il ne se connecte)
@@ -5664,7 +5624,7 @@ export default function App() {
       setScreen("onboarding");
       setStep(1);
     }
-  };
+  }
 
   // Vérifie le statut abonnement automatiquement (retour sur l'app + toutes les 5 min)
   useEffect(() => {
@@ -5974,7 +5934,11 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg }}>
         <AuthScreen
           onAuth={setUser}
-          onBack={() => setScreen(plans.length > 0 ? "app" : "onboarding")}
+          initialMode={authInitialMode}
+          onBack={() => {
+            forceAuthRef.current = false;
+            setScreen(plans.length > 0 ? "app" : "onboarding");
+          }}
         />
       </div>
     </>
@@ -6010,7 +5974,7 @@ export default function App() {
                   </button>
                 )}
                 {!addingPlan && !user && (
-                  <button onClick={() => setScreen("auth")} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer" }}>
+                  <button onClick={() => { forceAuthRef.current = true; setAuthInitialMode("password"); setScreen("auth"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer" }}>
                     Se connecter
                   </button>
                 )}
@@ -6113,7 +6077,7 @@ export default function App() {
             <span style={{ flex: 1, lineHeight: 1.3 }}>
               💾 Sauvegarde ton plan pour le retrouver sur tous tes appareils
             </span>
-            <button onClick={() => setScreen("auth")} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+            <button onClick={() => { forceAuthRef.current = true; setAuthInitialMode("register"); setScreen("auth"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
               Créer mon compte
             </button>
           </div>

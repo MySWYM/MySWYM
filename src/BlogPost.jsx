@@ -52,7 +52,7 @@ function RichText({ text }) {
   );
 }
 
-function Nav({ post }) {
+function Nav() {
   const isMobile = useIsMobile();
   return (
     <nav style={{
@@ -61,7 +61,7 @@ function Nav({ post }) {
       borderBottom: `1px solid ${C.border}`,
     }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 58, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+        <Link to="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <div style={{ width: 30, height: 30, background: C.blue, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Waves size={16} color={C.white} />
           </div>
@@ -104,7 +104,7 @@ export default function BlogPost() {
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "80px 18px 0" }}>
         {/* Breadcrumb */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 28, fontSize: 13, color: C.grey }}>
-          <Link to="/" style={{ color: C.grey, textDecoration: "none" }}>Accueil</Link>
+          <Link to="/accueil" style={{ color: C.grey, textDecoration: "none" }}>Accueil</Link>
           <ChevronRight size={12} />
           <Link to="/blog" style={{ color: C.grey, textDecoration: "none" }}>Blog</Link>
           <ChevronRight size={12} />

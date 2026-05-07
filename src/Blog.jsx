@@ -62,7 +62,7 @@ function Nav() {
       transition: "background 0.3s, box-shadow 0.3s",
     }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+        <Link to="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <div style={{ width: 34, height: 34, background: C.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Waves size={18} color={C.accentText} />
           </div>

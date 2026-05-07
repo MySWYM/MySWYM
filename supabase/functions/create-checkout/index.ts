@@ -58,12 +58,14 @@ Deno.serve(async (req) => {
       ? reqOrigin
       : ALLOWED_ORIGINS[0] ?? "https://myswym.fr";
 
+    const appPath = `${origin}/app`;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [{ price, quantity: 1 }],
-      success_url: `${origin}?payment=success`,
-      cancel_url: `${origin}?payment=cancel`,
+      success_url: `${appPath}?payment=success`,
+      cancel_url: `${appPath}?payment=cancel`,
       client_reference_id: user.id,
       customer_email: user.email,
     });

@@ -168,7 +168,7 @@ function Nav() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           {/* Logo */}
-          <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+          <a href="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
             <div style={{ width: 34, height: 34, background: C.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Waves size={18} color={C.primaryDeep} />
             </div>
@@ -191,7 +191,7 @@ function Nav() {
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isMobile && (
-              <a href="/app" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: FONT }}>Connexion</a>
+              <a href="/app?auth=login" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: FONT }}>Connexion</a>
             )}
             <a href="/app" style={{
               background: C.accent, color: C.accentText,
@@ -241,7 +241,7 @@ function Nav() {
               </a>
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href="/app" onClick={() => setMenuOpen(false)} style={{
+              <a href="/app?auth=login" onClick={() => setMenuOpen(false)} style={{
                 display: "block", textAlign: "center", padding: "13px", borderRadius: 16,
                 border: `1.5px solid ${C.outlineVar}`, color: C.ink, fontSize: 15, fontWeight: 600,
                 textDecoration: "none", background: C.bgCard, fontFamily: FONT,
@@ -287,14 +287,6 @@ function Hero() {
             }}>
               <Waves size={12} color={C.primary} />
               <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", fontFamily: FONT }}>NATATION · TRIATHLON · BNSSA · EAU LIBRE</span>
-            </div>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 5,
-              background: "#22C55E18", border: "1px solid #22C55E30",
-              borderRadius: 100, padding: "5px 12px",
-            }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }} />
-              <span style={{ color: "#16A34A", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", fontFamily: FONT }}>1 200+ nageurs actifs</span>
             </div>
           </div>
 
@@ -402,13 +394,12 @@ function Hero() {
 // ── Stats ──────────────────────────────────────────────────────────────────
 function Stats() {
   const stats = [
-    { value: 1200, suffix: "+", label: "Nageurs accompagnés" },
     { value: 4,    suffix: "",  label: "Disciplines couvertes" },
     { value: 100,  suffix: "%", label: "Structuré comme un coach" },
   ];
   return (
     <section style={{ background: C.accent, padding: "52px 24px" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+      <div style={{ maxWidth: 800, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 24 }}>
         {stats.map((s, i) => (
           <FadeIn key={i} delay={i * 0.1} style={{ textAlign: "center" }}>
             <div style={{ fontFamily: FONT, fontSize: "clamp(30px, 5vw, 48px)", fontWeight: 800, color: C.primaryDeep, letterSpacing: "-1px" }}>
@@ -644,135 +635,7 @@ function ProgressTimeline() {
 
 // ── Testimonials ───────────────────────────────────────────────────────────
 function Testimonials() {
-  const isMobile = useIsMobile();
-  const testimonials = [
-    {
-      name: "Marie-Claire T.",
-      tag: "Débutante · Reprise après 15 ans",
-      avatar: "MC",
-      color: C.primary,
-      stars: 5,
-      quote: "J'avais honte de me retrouver à bout de souffle après 2 longueurs. Le premier plan m'a donné des séances courtes, logiques. 3 mois plus tard je nage 1 500m sans pause. C'est la première fois que je progresse vraiment.",
-    },
-    {
-      name: "Julien R.",
-      tag: "Triathlon Olympique · Club amateur",
-      avatar: "JR",
-      color: "#E65100",
-      stars: 5,
-      quote: "J'entraîne la nage depuis 2 ans tout seul. MySWYM m'a donné une structure que je n'avais pas — les allures seuil, les séries spécifiques. Mon 750m en compétition : je suis passé de 14'10\" à 12'40\".",
-    },
-    {
-      name: "Sophie M.",
-      tag: "BNSSA · Obtenu du premier coup",
-      avatar: "SM",
-      color: "#7C3AED",
-      stars: 5,
-      quote: "Les séances spécifiques BNSSA sont vraiment adaptées : apnée, remorquage, parcours chronométré. Je savais exactement quoi travailler chaque semaine. J'ai eu mon diplôme sans stress le jour J.",
-    },
-    {
-      name: "Thierry B.",
-      tag: "Masters · 52 ans · Competition régionale",
-      avatar: "TB",
-      color: "#0097A7",
-      stars: 5,
-      quote: "J'étais sceptique — je nage depuis 40 ans. Mais les zones d'intensité calculées à la seconde, c'est ce qui me manquait. J'ai compris pourquoi mes entraînements ne progressaient plus. Maintenant si.",
-    },
-  ];
-
-  return (
-    <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="ILS EN PARLENT" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
-            Vrais nageurs.<br />Vrais résultats.
-          </h2>
-          <p style={{ color: C.inkLight, fontSize: 16, fontFamily: FONT, maxWidth: 480, margin: "0 auto" }}>
-            Du débutant qui reprend au master compétiteur — chacun a trouvé ce qu'il cherchait.
-          </p>
-        </FadeIn>
-
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 16 }}>
-          {testimonials.map((t, i) => (
-            <FadeIn key={i} delay={i * 0.08}>
-              <div style={{
-                background: C.white,
-                border: `1px solid ${C.border}`,
-                borderRadius: 24,
-                padding: 28,
-                boxShadow: C.shadow,
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-                height: "100%",
-                boxSizing: "border-box",
-                transition: "box-shadow 0.25s, transform 0.25s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-3px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                {/* Stars */}
-                <div style={{ display: "flex", gap: 3 }}>
-                  {Array.from({ length: t.stars }).map((_, si) => (
-                    <Star key={si} size={14} color="#F59E0B" fill="#F59E0B" />
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p style={{
-                  color: C.inkLight, fontSize: 15, lineHeight: 1.75,
-                  fontFamily: FONT, margin: 0, flex: 1,
-                  fontStyle: "italic",
-                }}>
-                  "{t.quote}"
-                </p>
-
-                {/* Author */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
-                  <div style={{
-                    width: 42, height: 42, borderRadius: "50%",
-                    background: `${t.color}18`,
-                    border: `2px solid ${t.color}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                    <span style={{ fontFamily: FONT, fontSize: 13, fontWeight: 800, color: t.color }}>{t.avatar}</span>
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: C.ink }}>{t.name}</div>
-                    <div style={{ fontSize: 12, color: t.color, fontWeight: 600, fontFamily: FONT }}>{t.tag}</div>
-                  </div>
-                </div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-
-        {/* Social proof bar */}
-        <FadeIn delay={0.3}>
-          <div style={{
-            marginTop: 32, background: C.primaryFix,
-            border: `1px solid ${C.borderMid}`,
-            borderRadius: 20, padding: "18px 28px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: isMobile ? 16 : 40, flexWrap: "wrap",
-          }}>
-            {[
-              { value: "1 200+", label: "nageurs accompagnés" },
-              { value: "4,9/5", label: "note moyenne" },
-              { value: "93%", label: "terminent leur plan" },
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 800, color: C.primary, lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: 12, color: C.secondary, fontFamily: FONT, marginTop: 3 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </FadeIn>
-      </div>
-    </section>
-  );
+  return null;
 }
 
 // ── Comparison ─────────────────────────────────────────────────────────────
