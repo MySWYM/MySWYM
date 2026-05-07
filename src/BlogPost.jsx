@@ -230,7 +230,7 @@ export default function BlogPost() {
             ["Confidentialite", "/politique-confidentialite"],
             ["CGU", "/cgu"],
             ["CGV", "/cgv"],
-            ["Contact", "mailto:contact@myswym.app"],
+            ["Contact", "/contact"],
           ].map(([label, href]) => (
             <a key={label} href={href} style={{ color: C.grey, fontSize: 12, textDecoration: "none" }}>
               {label}

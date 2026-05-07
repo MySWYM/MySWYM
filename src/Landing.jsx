@@ -1088,7 +1088,7 @@ function Footer() {
             <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
               Explorer
             </span>
-            {[["Comment ca marche", "/comment-ca-marche"], ["Conformite", "/conformite"], ["Tarifs", "/tarifs"], ["Blog", "/blog"], ["Contact", "mailto:contact@myswym.app"]].map(([l, h]) => (
+            {[["Comment ca marche", "/comment-ca-marche"], ["Objectifs", "/objectifs"], ["Tarifs", "/tarifs"], ["Blog", "/blog"], ["Contact", "/contact"]].map(([l, h]) => (
               <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
                 onMouseEnter={e => e.target.style.color = C.white}
                 onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
@@ -1099,7 +1099,7 @@ function Footer() {
             <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
               Legal
             </span>
-            {[["Mentions legales", "/mentions-legales"], ["Politique de confidentialite", "/politique-confidentialite"], ["CGU", "/cgu"], ["CGV", "/cgv"]].map(([l, h]) => (
+            {[["Mentions legales", "/mentions-legales"], ["Politique de confidentialite", "/politique-confidentialite"], ["Politique de cookies", "/politique-cookies"], ["CGU", "/cgu"], ["CGV", "/cgv"]].map(([l, h]) => (
               <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
                 onMouseEnter={e => e.target.style.color = C.white}
                 onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
@@ -1127,9 +1127,7 @@ export default function Landing() {
         ? "goals"
       : path === "/conformite"
         ? "conformite"
-        : path === "/contact"
-          ? "contact"
-          : null;
+        : null;
     if (sectionId) {
       requestAnimationFrame(() => {
         const el = document.getElementById(sectionId);

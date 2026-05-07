@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { supabase } from "./supabase.js";
@@ -31,7 +31,19 @@ function FontLoader() {
   return null;
 }
 
+function useIsMobile(bp = 760) {
+  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < bp);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, [bp]);
+  return mobile;
+}
+
 export default function TarifsPage() {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
     document.title = "Tarifs MySWYM";
     window.scrollTo(0, 0);
@@ -81,74 +93,74 @@ export default function TarifsPage() {
       <FontLoader />
       <PublicNav />
 
-      <section style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
-        <div style={{ maxWidth: 880, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 52 }}>
+      <section style={{ background: C.bgSoft, padding: isMobile ? "92px 16px 44px" : "clamp(60px,8vw,100px) 20px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: isMobile ? 28 : 52 }}>
             <p style={{ color: C.secondary, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", margin: 0 }}>TARIFS</p>
-            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "8px 0 12px", textTransform: "uppercase", letterSpacing: "0" }}>
+            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", lineHeight: 0.95, fontWeight: 800, color: C.ink, margin: "8px 0 12px", textTransform: "uppercase", letterSpacing: "0" }}>
               Commence gratuitement.<br />Passe premium quand tu veux.
             </h1>
-            <p style={{ color: C.secondary, fontSize: 16 }}>Annule a tout moment.</p>
+            <p style={{ color: C.secondary, fontSize: isMobile ? 20 : 16, fontFamily: FONT }}>Annule a tout moment.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, alignItems: "start", paddingTop: 16 }}>
-            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 28, padding: 32, boxShadow: C.shadow }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Gratuit</div>
-              <div style={{ fontSize: 38, fontWeight: 800, color: C.ink, margin: "14px 0 4px" }}>0€</div>
-              <div style={{ color: C.secondary, fontSize: 13, marginBottom: 24 }}>Pour toujours</div>
-              <Link to="/?auth=register" style={{ display: "block", textAlign: "center", border: `1.5px solid ${C.outlineVar}`, color: C.ink, background: C.bgCard, fontWeight: 600, fontSize: 15, padding: "13px", borderRadius: 16, textDecoration: "none", marginBottom: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: isMobile ? 14 : 16, alignItems: "start", paddingTop: isMobile ? 4 : 16 }}>
+            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: isMobile ? 24 : 28, padding: isMobile ? 22 : 32, boxShadow: C.shadow }}>
+              <div style={{ fontSize: isMobile ? 34 : 22, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Gratuit</div>
+              <div style={{ fontSize: isMobile ? 52 : 38, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, margin: "14px 0 4px", lineHeight: 1 }}>0€</div>
+              <div style={{ color: C.secondary, fontSize: isMobile ? 15 : 13, fontFamily: FONT, marginBottom: isMobile ? 16 : 24 }}>Pour toujours</div>
+              <Link to="/?auth=register" style={{ display: "block", textAlign: "center", border: `1.5px solid ${C.outlineVar}`, color: C.ink, background: C.bgCard, fontWeight: 700, fontSize: isMobile ? 16 : 15, fontFamily: FONT, padding: isMobile ? "12px" : "13px", borderRadius: 16, textDecoration: "none", marginBottom: isMobile ? 18 : 24 }}>
                 Creer mon compte
               </Link>
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
                 {freeFeatures.map((f) => (
                   <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <Check size={15} color={C.secondary} style={{ marginTop: 2, flexShrink: 0 }} />
-                    <span style={{ color: C.secondary, fontSize: 14 }}>{f}</span>
+                    <Check size={isMobile ? 18 : 15} color={C.secondary} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <span style={{ color: C.secondary, fontSize: isMobile ? 16 : 14, fontFamily: FONT, lineHeight: 1.45 }}>{f}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ background: C.ink, borderRadius: 28, padding: 28, position: "relative", boxShadow: "0 20px 60px rgba(25,28,30,0.18)" }}>
-              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: C.accent, color: C.accentText, fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 100, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+            <div style={{ background: C.ink, borderRadius: isMobile ? 24 : 28, padding: isMobile ? "26px 22px 22px" : 28, position: "relative", boxShadow: "0 20px 60px rgba(25,28,30,0.18)" }}>
+              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: C.accent, color: C.accentText, fontSize: isMobile ? 22 : 11, fontFamily: isMobile ? FONT_DISPLAY : FONT, fontWeight: 700, padding: isMobile ? "5px 16px" : "4px 16px", borderRadius: 100, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                 MEILLEURE OFFRE
               </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>Premium Annuel</div>
-                <div style={{ background: "#22C55E", color: C.white, fontSize: 12, fontWeight: 800, padding: "4px 10px", borderRadius: 8 }}>-33%</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 12 : 16 }}>
+                <div style={{ fontSize: isMobile ? 34 : 20, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.white, lineHeight: 1.0 }}>Premium Annuel</div>
+                <div style={{ background: "#22C55E", color: C.white, fontSize: isMobile ? 14 : 12, fontFamily: FONT, fontWeight: 800, padding: isMobile ? "5px 10px" : "4px 10px", borderRadius: 8 }}>-33%</div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginBottom: 20 }}>
-                <span style={{ fontSize: 44, fontWeight: 800, color: C.white, lineHeight: 1 }}>3,33€</span>
-                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6 }}>/mois</span>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginBottom: isMobile ? 14 : 20 }}>
+                <span style={{ fontSize: isMobile ? 58 : 44, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.white, lineHeight: 1 }}>3,33€</span>
+                <span style={{ color: "rgba(255,255,255,0.75)", fontSize: isMobile ? 16 : 14, fontFamily: FONT, marginBottom: isMobile ? 8 : 6 }}>/mois</span>
               </div>
-              <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{ display: "block", width: "100%", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 16, padding: "15px", borderRadius: 16, border: "none", cursor: "pointer", marginBottom: 20 }}>
+              <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{ display: "block", width: "100%", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: isMobile ? 18 : 16, fontFamily: FONT, padding: isMobile ? "12px" : "15px", borderRadius: 16, border: "none", cursor: "pointer", marginBottom: isMobile ? 16 : 20 }}>
                 Demarrer - 40€/an
               </button>
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
                 {premiumFeatures.map((f) => (
                   <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <Check size={15} color={C.accent} style={{ marginTop: 2, flexShrink: 0 }} />
-                    <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>{f}</span>
+                    <Check size={isMobile ? 18 : 15} color={C.accent} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <span style={{ color: "rgba(255,255,255,0.9)", fontSize: isMobile ? 16 : 14, fontFamily: FONT, lineHeight: 1.45 }}>{f}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 28, padding: 32, boxShadow: C.shadow }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Premium</div>
+            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: isMobile ? 24 : 28, padding: isMobile ? 22 : 32, boxShadow: C.shadow }}>
+              <div style={{ fontSize: isMobile ? 34 : 22, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Premium</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, margin: "14px 0 4px" }}>
-                <span style={{ fontSize: 38, fontWeight: 800, color: C.ink }}>4,99€</span>
-                <span style={{ color: C.secondary, fontSize: 14, marginBottom: 8 }}>/mois</span>
+                <span style={{ fontSize: isMobile ? 52 : 38, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, lineHeight: 1 }}>4,99€</span>
+                <span style={{ color: C.secondary, fontSize: isMobile ? 16 : 14, fontFamily: FONT, marginBottom: isMobile ? 8 : 8 }}>/mois</span>
               </div>
-              <div style={{ color: C.secondary, fontSize: 13, marginBottom: 24 }}>Sans engagement</div>
-              <button onClick={() => handlePremium(PRICE_MONTHLY)} style={{ display: "block", width: "100%", background: C.bgCard, border: `1.5px solid ${C.outlineVar}`, color: C.ink, fontWeight: 600, fontSize: 15, padding: "13px", borderRadius: 16, cursor: "pointer", marginBottom: 24 }}>
+              <div style={{ color: C.secondary, fontSize: isMobile ? 15 : 13, fontFamily: FONT, marginBottom: isMobile ? 16 : 24 }}>Sans engagement</div>
+              <button onClick={() => handlePremium(PRICE_MONTHLY)} style={{ display: "block", width: "100%", background: C.bgCard, border: `1.5px solid ${C.outlineVar}`, color: C.ink, fontWeight: 700, fontSize: isMobile ? 16 : 15, fontFamily: FONT, padding: isMobile ? "12px" : "13px", borderRadius: 16, cursor: "pointer", marginBottom: isMobile ? 18 : 24 }}>
                 Choisir le mensuel
               </button>
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
                 {premiumFeatures.map((f) => (
                   <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <Check size={15} color={C.secondary} style={{ marginTop: 2, flexShrink: 0 }} />
-                    <span style={{ color: C.secondary, fontSize: 14 }}>{f}</span>
+                    <Check size={isMobile ? 18 : 15} color={C.secondary} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <span style={{ color: C.secondary, fontSize: isMobile ? 16 : 14, fontFamily: FONT, lineHeight: 1.45 }}>{f}</span>
                   </div>
                 ))}
               </div>

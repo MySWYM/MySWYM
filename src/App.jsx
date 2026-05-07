@@ -5989,36 +5989,9 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {!addingPlan && (
-                  <a href="/accueil" style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-                    Accueil
-                  </a>
-                )}
-                {addingPlan && (
-                  <button onClick={() => { setAddingPlan(false); setProfile(BLANK_PROFILE); setScreen("app"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    ← Mes plans
-                  </button>
-                )}
-                {!addingPlan && user && isPremium && (
-                  <button onClick={handlePortal} style={{ background: "none", border: `1px solid ${G.blue}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.blue, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <Zap size={12} color={G.blue} /> Abonnement
-                  </button>
-                )}
-                {!addingPlan && user && (
-                  <button onClick={handleSignOut} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <LogOut size={12} color={G.grey} /> Déco.
-                  </button>
-                )}
-                {!addingPlan && !user && (
-                  <button onClick={() => { authOpenedFromUrlRef.current = false; forceAuthRef.current = true; setAuthInitialMode("password"); setScreen("auth"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer" }}>
-                    Se connecter
-                  </button>
-                )}
               </div>
             </div>
             {(() => {

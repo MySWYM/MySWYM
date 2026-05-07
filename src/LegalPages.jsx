@@ -76,3 +76,16 @@ export function CgvPage() {
     </LegalLayout>
   );
 }
+
+export function PolitiqueCookiesPage() {
+  return (
+    <LegalLayout title="Politique de cookies" subtitle="Information sur l'utilisation des cookies sur MySWYM">
+      <p><strong>Cookies necessaires :</strong> indispensables au fonctionnement technique de l'application (session, securite, preferences de base).</p>
+      <p><strong>Cookies de mesure d'audience :</strong> utilises uniquement si vous donnez votre consentement via la banniere cookies.</p>
+      <p><strong>Finalite :</strong> comprendre l'usage du site pour ameliorer l'experience utilisateur.</p>
+      <p><strong>Duree de conservation :</strong> les choix de consentement sont conserves pour limiter la repetition de la banniere.</p>
+      <p><strong>Gestion du consentement :</strong> vous pouvez accepter ou refuser depuis la banniere affichee a votre premiere visite.</p>
+      <p><strong>Contact :</strong> pour toute question, ecrivez a contact@myswym.app.</p>
+    </LegalLayout>
+  );
+}
