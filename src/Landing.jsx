@@ -5,6 +5,7 @@ import {
   ArrowRight, Star, Zap, TrendingUp, Calendar, Timer,
   ChevronDown, RotateCcw, Menu,
 } from "lucide-react";
+import PublicNav from "./PublicNav.jsx";
 
 // ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
 const C = {
@@ -119,10 +120,11 @@ function SectionLabel({ text }) {
 
 // ── Nav ────────────────────────────────────────────────────────────────────
 const NAV_LINKS = [
-  ["Comment ça marche", "#how"],
-  ["Objectifs",         "#goals"],
+  ["Comment ca marche", "/comment-ca-marche"],
+  ["Conformite",        "/conformite"],
+  ["Tarifs",            "/tarifs"],
   ["Blog",              "/blog"],
-  ["Tarifs",            "#pricing"],
+  ["Contact",           "/contact"],
 ];
 
 function Nav() {
@@ -169,9 +171,6 @@ function Nav() {
         }}>
           {/* Logo */}
           <a href="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{ width: 34, height: 34, background: C.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Waves size={18} color={C.primaryDeep} />
-            </div>
             <span style={{ fontFamily: FONT, fontWeight: 900, fontSize: 18, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
           </a>
 
@@ -191,16 +190,16 @@ function Nav() {
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isMobile && (
-              <a href="/app?auth=login" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: FONT }}>Connexion</a>
+              <a href="/?auth=login" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: FONT }}>Se connecter</a>
             )}
-            <a href="/app" style={{
+            <a href="/" style={{
               background: C.accent, color: C.accentText,
               fontSize: isMobile ? 13 : 14, fontWeight: 700,
               padding: isMobile ? "9px 16px" : "10px 22px",
               borderRadius: 100, textDecoration: "none",
               fontFamily: FONT,
               boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
-            }}>Commencer</a>
+            }}>Creer mon compte</a>
 
             {isMobile && (
               <button
@@ -241,16 +240,16 @@ function Nav() {
               </a>
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href="/app?auth=login" onClick={() => setMenuOpen(false)} style={{
+              <a href="/?auth=login" onClick={() => setMenuOpen(false)} style={{
                 display: "block", textAlign: "center", padding: "13px", borderRadius: 16,
                 border: `1.5px solid ${C.outlineVar}`, color: C.ink, fontSize: 15, fontWeight: 600,
                 textDecoration: "none", background: C.bgCard, fontFamily: FONT,
-              }}>Connexion</a>
-              <a href="/app" onClick={() => setMenuOpen(false)} style={{
+              }}>Se connecter</a>
+              <a href="/" onClick={() => setMenuOpen(false)} style={{
                 display: "block", textAlign: "center", padding: "13px", borderRadius: 16,
                 background: C.accent, color: C.accentText, fontSize: 15, fontWeight: 700,
                 textDecoration: "none", boxShadow: "0 6px 20px rgba(142,179,255,0.35)", fontFamily: FONT,
-              }}>Créer mon plan gratuitement</a>
+              }}>Creer mon compte</a>
             </div>
           </div>
         </div>
@@ -308,7 +307,7 @@ function Hero() {
           </p>
 
           <div style={{ display: "flex", gap: 12, justifyContent: isMobile ? "center" : "flex-start", flexWrap: "wrap", marginBottom: 20 }}>
-            <a href="/app" style={{
+            <a href="/" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               background: C.accent, color: C.accentText, fontWeight: 700,
               fontSize: isMobile ? 15 : 16, fontFamily: FONT,
@@ -465,7 +464,7 @@ function WeekExample() {
   const [activeDay, setActiveDay] = useState(0);
 
   const sessions = [
-    { day: "🌊 Débutant", type: "ENDURANCE", color: "#8eb3ff", title: "Nage à ton rythme",    total: "900m",   warmup: "200m tranquille — crawl ou dos, comme tu veux", main: "5× (2 longueurs nage + 30 sec de repos) — sans te presser", cool: "200m très calme pour récupérer", tip: "L'objectif : finir sans être épuisé. Si tu dois allonger la pause, c'est normal." },
+    { day: "Debutant", type: "ENDURANCE", color: "#8eb3ff", title: "Nage a ton rythme",    total: "900m",   warmup: "200m tranquille — crawl ou dos, comme tu veux", main: "5× (2 longueurs nage + 30 sec de repos) — sans te presser", cool: "200m tres calme pour recuperer", tip: "L'objectif : finir sans etre epuise. Si tu dois allonger la pause, c'est normal." },
     { day: "Lundi",       type: "ENDURANCE", color: C.primary,  title: "Fond en séries",        total: "2 200m", warmup: "400m échauffement tranquille", main: "5×300m crawl allure confortable — 30 sec de repos entre chaque", cool: "400m retour au calme mixte", tip: "Respiration toutes les 3 bras. Pense à bien glisser après chaque coulée." },
     { day: "Mercredi",    type: "SEUIL",     color: "#E65100",  title: "Un peu plus vite",      total: "2 000m", warmup: "300m échauffement + 4×50m accélérations progressives", main: "8×100m crawl — effort soutenu mais régulier · 20 sec de repos", cool: "300m nage libre tranquille", tip: "Garde le même rythme du 1er au 8e. Si tu accélères au dernier, c'est que tu partais trop lentement." },
     { day: "Vendredi",    type: "TECHNIQUE", color: "#0097A7",  title: "Glisse & technique",    total: "1 800m", warmup: "200m libre + 4×25m avec palmes", main: "6×50m en pensant aux bras — 6×50m en pensant à la glisse", cool: "200m nage dos décontraction", tip: "Sur chaque longueur, choisis UN truc à améliorer. Pas tout à la fois." },
@@ -474,7 +473,7 @@ function WeekExample() {
   const s = sessions[activeDay];
 
   return (
-    <section style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
+    <section id="conformite" style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
           <SectionLabel text="EXEMPLES DE SÉANCES" />
@@ -566,7 +565,7 @@ function Goals() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
           {goals.map((g, i) => (
             <FadeIn key={i} delay={i * 0.08}>
-              <a href="/app" style={{ textDecoration: "none", display: "block", height: "100%" }}>
+              <a href="/" style={{ textDecoration: "none", display: "block", height: "100%" }}>
                 <div style={{
                   background: C.white, border: `1.5px solid ${g.border}`,
                   borderRadius: 24, padding: "24px 22px", height: "100%", boxSizing: "border-box",
@@ -743,7 +742,7 @@ function PaceFeature() {
             Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en endurance ou à ton seuil.
           </p>
           <p style={{ color: C.outline, fontSize: 13, lineHeight: 1.6, marginBottom: 24, fontFamily: FONT }}>
-            🏆 Cette fonctionnalité est disponible pour le niveau <strong style={{ color: C.ink }}>Performance</strong>. Les autres niveaux ont des plans tout aussi structurés — sans avoir besoin de chrono.
+            Cette fonctionnalite est disponible pour le niveau <strong style={{ color: C.ink }}>Performance</strong>. Les autres niveaux ont des plans tout aussi structures — sans avoir besoin de chrono.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {["Endurance", "Effort soutenu", "Vitesse", "Sprint"].map((t, i) => (
@@ -860,7 +859,7 @@ function Pricing() {
               <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Gratuit</div>
               <div style={{ fontSize: 38, fontFamily: FONT, fontWeight: 800, color: C.ink, margin: "14px 0 4px" }}>0€</div>
               <div style={{ color: C.secondary, fontSize: 13, marginBottom: 24, fontFamily: FONT }}>Pour toujours</div>
-              <a href="/app" style={{
+              <a href="/" style={{
                 display: "block", textAlign: "center",
                 border: `1.5px solid ${C.outlineVar}`, color: C.ink,
                 background: C.bgCard, fontWeight: 600, fontSize: 15,
@@ -889,7 +888,7 @@ function Pricing() {
                 background: C.accent, color: C.accentText, fontSize: 11, fontWeight: 700,
                 padding: "4px 16px", borderRadius: 100, letterSpacing: "0.06em", whiteSpace: "nowrap",
                 fontFamily: FONT,
-              }}>⚡ MEILLEURE OFFRE</div>
+              }}>MEILLEURE OFFRE</div>
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 800, color: C.white }}>Premium Annuel</div>
@@ -1047,7 +1046,7 @@ function FinalCTA() {
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 17, lineHeight: 1.6, marginBottom: 32, fontFamily: FONT }}>
             Tu nages, on structure tout le reste. Lance ton programme en 2 minutes.
           </p>
-          <a href="/app" style={{
+          <a href="/" style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 17,
             padding: "16px 36px", borderRadius: 100, textDecoration: "none",
@@ -1070,7 +1069,7 @@ function FinalCTA() {
 function Footer() {
   const isMobile = useIsMobile();
   return (
-    <footer style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "32px 20px" : "36px 24px" }}>
+    <footer id="contact" style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "32px 20px" : "36px 24px" }}>
       <div style={{
         maxWidth: 1080, margin: "0 auto",
         display: "flex",
@@ -1082,18 +1081,31 @@ function Footer() {
         textAlign: isMobile ? "center" : "left",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 30, height: 30, background: C.accent, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={16} color={C.primaryDeep} />
-          </div>
           <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 16, color: C.white, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySwym</span>
         </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-          {[["L'application", "/app"], ["Blog", "/blog"], ["Tarifs", "#pricing"], ["Contact", "mailto:contact@myswym.app"]].map(([l, h]) => (
-            <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
-              onMouseEnter={e => e.target.style.color = C.white}
-              onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
-            >{l}</a>
-          ))}
+        <div style={{ display: "flex", gap: isMobile ? 18 : 30, flexWrap: "wrap", justifyContent: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
+            <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
+              Explorer
+            </span>
+            {[["Comment ca marche", "/comment-ca-marche"], ["Conformite", "/conformite"], ["Tarifs", "/tarifs"], ["Blog", "/blog"], ["Contact", "mailto:contact@myswym.app"]].map(([l, h]) => (
+              <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
+                onMouseEnter={e => e.target.style.color = C.white}
+                onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
+              >{l}</a>
+            ))}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
+            <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
+              Legal
+            </span>
+            {[["Mentions legales", "/mentions-legales"], ["Politique de confidentialite", "/politique-confidentialite"], ["CGU", "/cgu"], ["CGV", "/cgv"]].map(([l, h]) => (
+              <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
+                onMouseEnter={e => e.target.style.color = C.white}
+                onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
+              >{l}</a>
+            ))}
+          </div>
         </div>
         <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>© 2025 MySWYM. Tous droits réservés.</div>
       </div>
@@ -1107,12 +1119,29 @@ export default function Landing() {
     document.title = "MySWYM — Ton coach natation personnalisé";
     document.body.style.background = C.bg;
     document.body.style.fontFamily = FONT;
+
+    const path = window.location.pathname;
+    const sectionId = path === "/comment-ca-marche"
+      ? "how"
+      : path === "/objectifs"
+        ? "goals"
+      : path === "/conformite"
+        ? "conformite"
+        : path === "/contact"
+          ? "contact"
+          : null;
+    if (sectionId) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
   }, []);
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
-      <Nav />
+      <PublicNav />
       <Hero />
 
       <HowItWorks />
@@ -1122,7 +1151,6 @@ export default function Landing() {
       <ProgressTimeline />
       <Testimonials />
       <Comparison />
-      <Pricing />
       <FAQ />
       <FinalCTA />
       <Footer />

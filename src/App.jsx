@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase.js";
+import PublicNav from "./PublicNav.jsx";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
@@ -1312,7 +1313,7 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
 
-const ResetPasswordScreen = ({ onDone }) => {
+const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   const [password, setPassword] = useState("");
   const [confirm,  setConfirm]  = useState("");
   const [loading,  setLoading]  = useState(false);
@@ -1333,13 +1334,12 @@ const ResetPasswordScreen = ({ onDone }) => {
   const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
 
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 44 }}>
-        <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Waves size={20} color={G.white} />
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
+      {showBrandHeader && (
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
+          <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
         </div>
-        <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
-      </div>
+      )}
       <div className="fade-up">
         <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
@@ -1356,7 +1356,7 @@ const ResetPasswordScreen = ({ onDone }) => {
   );
 };
 
-const AuthScreen = ({ onAuth, onBack, initialMode = "password" }) => {
+const AuthScreen = ({ onAuth, onBack, initialMode = "password", showBrandHeader = true }) => {
   // mode :
   //   "password" — login classique avec mot de passe
   //   "register" — création de compte avec mot de passe
@@ -1417,20 +1417,21 @@ const AuthScreen = ({ onAuth, onBack, initialMode = "password" }) => {
   };
 
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: 64, paddingBottom: 40 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 40, height: 40, background: G.ink, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={20} color={G.white} />
-          </div>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
+      {(showBrandHeader || onBack) && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
+          {showBrandHeader ? (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
+            </div>
+          ) : <div />}
+          {onBack && (
+            <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
+              ← Retour
+            </button>
+          )}
         </div>
-        {onBack && (
-          <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
-            ← Retour
-          </button>
-        )}
-      </div>
+      )}
       <div className="fade-up">
         <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
           {titleMap[mode]}
@@ -2952,9 +2953,27 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
             </button>
             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 900, color: G.blueMid, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
           </div>
-          <button onClick={() => onTabChange("profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
-            <Settings size={20} color={G.grey} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <a
+              href="/accueil"
+              style={{
+                textDecoration: "none",
+                border: `1px solid ${G.greyLight}`,
+                color: G.grey,
+                fontSize: 12,
+                fontWeight: 700,
+                borderRadius: 8,
+                padding: "6px 10px",
+                lineHeight: 1,
+                background: G.white,
+              }}
+            >
+              Accueil
+            </a>
+            <button onClick={() => onTabChange("profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
+              <Settings size={20} color={G.grey} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -5328,6 +5347,7 @@ export default function App() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [authInitialMode, setAuthInitialMode] = useState("password");
   const forceAuthRef = useRef(false);
+  const authOpenedFromUrlRef = useRef(false);
   // Hydratation initiale : si un plan anonyme existe en local, on saute l'onboarding et on l'affiche directement.
   const [screen, setScreen] = useState(() => {
     try {
@@ -5392,11 +5412,12 @@ export default function App() {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
-  // Deep link auth flow: /app?auth=login ouvre directement la connexion.
+  // Deep link auth flow: /?auth=login ouvre directement la connexion.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const auth = params.get("auth");
     if (!auth) return;
+    authOpenedFromUrlRef.current = true;
     if (auth === "login") {
       forceAuthRef.current = true;
       setAuthInitialMode("password");
@@ -5410,6 +5431,20 @@ export default function App() {
     const next = params.toString();
     window.history.replaceState({}, "", `${window.location.pathname}${next ? `?${next}` : ""}`);
   }, []);
+
+  const handleAuthBack = () => {
+    forceAuthRef.current = false;
+    if (authOpenedFromUrlRef.current) {
+      authOpenedFromUrlRef.current = false;
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = "/accueil";
+      return;
+    }
+    setScreen(plans.length > 0 ? "app" : "onboarding");
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -5912,8 +5947,9 @@ export default function App() {
   if (isRecovery) return (
     <>
       <style>{css}</style><FontLoader />
+      <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg }}>
-        <ResetPasswordScreen onDone={() => {
+        <ResetPasswordScreen showBrandHeader={false} onDone={() => {
           setIsRecovery(false);
           // Recharge les données utilisateur après reset
           supabase.auth.getUser().then(({ data }) => {
@@ -5931,14 +5967,13 @@ export default function App() {
   if (screen === "auth") return (
     <>
       <style>{css}</style><FontLoader />
+      <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         <AuthScreen
           onAuth={setUser}
           initialMode={authInitialMode}
-          onBack={() => {
-            forceAuthRef.current = false;
-            setScreen(plans.length > 0 ? "app" : "onboarding");
-          }}
+          showBrandHeader={false}
+          onBack={handleAuthBack}
         />
       </div>
     </>
@@ -5949,15 +5984,21 @@ export default function App() {
   if (screen === "onboarding") return (
     <>
       <style>{css}</style><FontLoader />
-      <div style={{ minHeight: "100vh", background: G.bg }}>
+      <PublicNav />
+      <PublicNav />
+      <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
-          <div style={{ paddingTop: 56, paddingBottom: 40 }}>
+          <div style={{ paddingTop: 84, paddingBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 38, height: 38, background: G.ink, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center" }}><Waves size={18} color={G.white} /></div>
+              <div style={{ display: "flex", alignItems: "center" }}>
                 <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {!addingPlan && (
+                  <a href="/accueil" style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+                    Accueil
+                  </a>
+                )}
                 {addingPlan && (
                   <button onClick={() => { setAddingPlan(false); setProfile(BLANK_PROFILE); setScreen("app"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                     ← Mes plans
@@ -5974,7 +6015,7 @@ export default function App() {
                   </button>
                 )}
                 {!addingPlan && !user && (
-                  <button onClick={() => { forceAuthRef.current = true; setAuthInitialMode("password"); setScreen("auth"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer" }}>
+                  <button onClick={() => { authOpenedFromUrlRef.current = false; forceAuthRef.current = true; setAuthInitialMode("password"); setScreen("auth"); }} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: G.grey, cursor: "pointer" }}>
                     Se connecter
                   </button>
                 )}
@@ -6077,7 +6118,7 @@ export default function App() {
             <span style={{ flex: 1, lineHeight: 1.3 }}>
               💾 Sauvegarde ton plan pour le retrouver sur tous tes appareils
             </span>
-            <button onClick={() => { forceAuthRef.current = true; setAuthInitialMode("register"); setScreen("auth"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+            <button onClick={() => { authOpenedFromUrlRef.current = false; forceAuthRef.current = true; setAuthInitialMode("register"); setScreen("auth"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
               Créer mon compte
             </button>
           </div>

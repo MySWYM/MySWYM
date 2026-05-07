@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { POSTS } from "./posts.js";
-import { Waves, ArrowRight, Clock, ChevronRight } from "lucide-react";
+import { ArrowRight, Clock, ChevronRight } from "lucide-react";
+import PublicNav from "./PublicNav.jsx";
 
 const FONT = "'Lexend', sans-serif";
 
@@ -46,6 +47,13 @@ function FontLoader() {
 function Nav() {
   const isMobile = useIsMobile();
   const [scrolled, setScrolled] = useState(false);
+  const navLinks = [
+    ["Comment ca marche", "/comment-ca-marche"],
+    ["Conformite", "/conformite"],
+    ["Tarifs", "/tarifs"],
+    ["Blog", "/blog"],
+    ["Contact", "/contact"],
+  ];
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn);
@@ -61,24 +69,37 @@ function Nav() {
       boxShadow: scrolled ? "0 1px 20px rgba(142,179,255,0.12)" : "none",
       transition: "background 0.3s, box-shadow 0.3s",
     }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
         <Link to="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <div style={{ width: 34, height: 34, background: C.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={18} color={C.accentText} />
-          </div>
           <span style={{ fontFamily: FONT, fontWeight: 900, fontSize: 18, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {!isMobile && (
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" }}>
+            {navLinks.map(([label, href]) => (
+              <Link key={href} to={href} style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
+                {label}
+              </Link>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {!isMobile && (
-            <Link to="/#pricing" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", fontFamily: FONT }}>Tarifs</Link>
+            <Link to="/?auth=login" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
+              Se connecter
+            </Link>
           )}
-          <Link to="/app" style={{
+          {isMobile && (
+            <Link to="/?auth=login" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
+              Se connecter
+            </Link>
+          )}
+          <Link to="/?auth=register" style={{
             background: C.accent, color: C.accentText,
             fontSize: 13, fontWeight: 700,
             padding: "9px 18px", borderRadius: 100,
             textDecoration: "none", fontFamily: FONT,
             boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
-          }}>Commencer</Link>
+          }}>Creer mon compte</Link>
         </div>
       </div>
     </nav>
@@ -97,7 +118,7 @@ export default function Blog() {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
-      <Nav />
+      <PublicNav />
 
       {/* Hero */}
       <div style={{
@@ -187,10 +208,20 @@ export default function Blog() {
       {/* Footer */}
       <footer style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}`, padding: "32px 24px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-          <div style={{ width: 28, height: 28, background: C.accent, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={15} color={C.accentText} />
-          </div>
           <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15, color: C.accent, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySwym</span>
+        </div>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 10 }}>
+          {[
+            ["Mentions legales", "/mentions-legales"],
+            ["Confidentialite", "/politique-confidentialite"],
+            ["CGU", "/cgu"],
+            ["CGV", "/cgv"],
+            ["Contact", "mailto:contact@myswym.app"],
+          ].map(([label, href]) => (
+            <a key={label} href={href} style={{ color: C.outline, fontSize: 12, textDecoration: "none", fontFamily: FONT }}>
+              {label}
+            </a>
+          ))}
         </div>
         <p style={{ color: C.outline, fontSize: 12, fontFamily: FONT }}>© 2025 MySWYM. Tous droits réservés.</p>
       </footer>

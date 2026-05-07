@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { POSTS } from "./posts.js";
-import { Waves, ArrowLeft, Clock, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowLeft, Clock, ArrowRight, ChevronRight } from "lucide-react";
+import PublicNav from "./PublicNav.jsx";
 
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
@@ -54,24 +55,47 @@ function RichText({ text }) {
 
 function Nav() {
   const isMobile = useIsMobile();
+  const navLinks = [
+    ["Comment ca marche", "/comment-ca-marche"],
+    ["Conformite", "/conformite"],
+    ["Tarifs", "/tarifs"],
+    ["Blog", "/blog"],
+    ["Contact", "/contact"],
+  ];
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
       background: "rgba(12,17,23,0.95)", backdropFilter: "blur(16px)",
       borderBottom: `1px solid ${C.border}`,
     }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 58, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
         <Link to="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <div style={{ width: 30, height: 30, background: C.blue, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={16} color={C.white} />
-          </div>
           <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: C.white }}>MySWYM</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {!isMobile && (
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" }}>
+            {navLinks.map(([label, href]) => (
+              <Link key={href} to={href} style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                {label}
+              </Link>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {!isMobile && (
+            <Link to="/?auth=login" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+              Se connecter
+            </Link>
+          )}
           <Link to="/blog" style={{ color: C.grey, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}>
-            <ArrowLeft size={13} /> {!isMobile && "Blog"}
+            <ArrowLeft size={13} /> {!isMobile && "Retour"}
           </Link>
-          <Link to="/app" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Commencer</Link>
+          {isMobile && (
+            <Link to="/?auth=login" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+              Se connecter
+            </Link>
+          )}
+          <Link to="/?auth=register" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Creer mon compte</Link>
         </div>
       </div>
     </nav>
@@ -98,7 +122,7 @@ export default function BlogPost() {
 
   return (
     <div style={{ background: C.ink, minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <Nav post={post} />
+      <PublicNav />
 
       {/* Header article */}
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "80px 18px 0" }}>
@@ -156,12 +180,9 @@ export default function BlogPost() {
           boxShadow: "0 0 60px rgba(10,132,255,0.08)",
           marginTop: 20,
         }}>
-          <div style={{ width: 52, height: 52, background: "rgba(10,132,255,0.12)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-            <Waves size={26} color={C.blue} />
-          </div>
           <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: C.white, margin: "0 0 12px" }}>{post.cta.title}</h3>
           <p style={{ color: C.grey, fontSize: 14, lineHeight: 1.65, margin: "0 0 24px", maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>{post.cta.text}</p>
-          <Link to="/app" style={{
+          <Link to="/" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
             background: C.blue, color: C.white, fontWeight: 700, fontSize: 15,
             padding: "13px 28px", borderRadius: 12, textDecoration: "none",
@@ -201,10 +222,20 @@ export default function BlogPost() {
       {/* Footer */}
       <footer style={{ background: C.inkLight, borderTop: `1px solid ${C.border}`, padding: "32px 24px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-          <div style={{ width: 26, height: 26, background: C.blue, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Waves size={14} color={C.white} />
-          </div>
           <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 15, color: C.white }}>MySWYM</span>
+        </div>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 10 }}>
+          {[
+            ["Mentions legales", "/mentions-legales"],
+            ["Confidentialite", "/politique-confidentialite"],
+            ["CGU", "/cgu"],
+            ["CGV", "/cgv"],
+            ["Contact", "mailto:contact@myswym.app"],
+          ].map(([label, href]) => (
+            <a key={label} href={href} style={{ color: C.grey, fontSize: 12, textDecoration: "none" }}>
+              {label}
+            </a>
+          ))}
         </div>
         <p style={{ color: C.grey, fontSize: 12 }}>© 2025 MySWYM. Tous droits réservés.</p>
       </footer>
