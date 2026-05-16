@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
 
 const C = {
   bg: "#f8f9fc",
@@ -23,6 +24,7 @@ function LegalLayout({ title, subtitle, children }) {
           {children}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

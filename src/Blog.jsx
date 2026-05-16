@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { POSTS } from "./posts.js";
 import { ArrowRight, Clock, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
 
 const FONT = "'Lexend', sans-serif";
 
@@ -84,16 +85,16 @@ function Nav() {
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {!isMobile && (
-            <Link to="/?auth=login" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
+            <Link to="/connexion" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
               Se connecter
             </Link>
           )}
           {isMobile && (
-            <Link to="/?auth=login" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
+            <Link to="/connexion" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
               Se connecter
             </Link>
           )}
-          <Link to="/?auth=register" style={{
+          <Link to="/inscription" style={{
             background: C.accent, color: C.accentText,
             fontSize: 13, fontWeight: 700,
             padding: "9px 18px", borderRadius: 100,
@@ -205,26 +206,7 @@ export default function Blog() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}`, padding: "32px 24px", textAlign: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-          <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 15, color: C.accent, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySwym</span>
-        </div>
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 10 }}>
-          {[
-            ["Mentions legales", "/mentions-legales"],
-            ["Confidentialite", "/politique-confidentialite"],
-            ["CGU", "/cgu"],
-            ["CGV", "/cgv"],
-            ["Contact", "/contact"],
-          ].map(([label, href]) => (
-            <a key={label} href={href} style={{ color: C.outline, fontSize: 12, textDecoration: "none", fontFamily: FONT }}>
-              {label}
-            </a>
-          ))}
-        </div>
-        <p style={{ color: C.outline, fontSize: 12, fontFamily: FONT }}>© 2025 MySWYM. Tous droits réservés.</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
+
+const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
+const isAuthPath = (pathname) => pathname in AUTH_PATHS;
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
@@ -211,6 +216,36 @@ const checkIsPremium = (user) => {
 const weeksUntil = (dateStr) => {
   if (!dateStr) return null;
   return Math.max(1, Math.ceil((new Date(dateStr) - new Date()) / (7 * 86400000)));
+};
+
+const MONTHS_FR = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+];
+const WEEKDAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+const eventMinDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 42);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const toISODate = (y, m, d) =>
+  `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+const parseISODate = (iso) => {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setHours(0, 0, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatDateFR = (iso) => {
+  const date = parseISODate(iso);
+  if (!date) return "";
+  return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 };
 
 const formatDuration = (mins) => {
@@ -1356,19 +1391,25 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   );
 };
 
-const AuthScreen = ({ onAuth, onBack, initialMode = "password", showBrandHeader = true }) => {
+const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", showBrandHeader = true }) => {
   // mode :
   //   "password" — login classique avec mot de passe
   //   "register" — création de compte avec mot de passe
   //   "reset"    — réinitialisation du mot de passe
   const [mode, setMode] = useState(initialMode);
+  useEffect(() => { setMode(initialMode); }, [initialMode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
 
-  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); };
+  const switchMode = (m) => {
+    if (m === "register" || m === "password") onNavigateMode?.(m);
+    setMode(m);
+    setError(null);
+    setSuccess(null);
+  };
 
   const handle = async () => {
     setError(null); setSuccess(null); setLoading(true);
@@ -1570,40 +1611,93 @@ const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, 
   );
 };
 
-const Step2_Date = ({ value, onChange, onNext, onBack }) => {
-  const weeks = weeksUntil(value);
+const dateSelectStyle = {
+  flex: 1,
+  minWidth: 0,
+  padding: "12px 14px",
+  borderRadius: 12,
+  border: `1.5px solid ${G.greyLight}`,
+  background: G.greyXLight,
+  fontSize: 15,
+  fontWeight: 600,
+  fontFamily: "'Lexend', sans-serif",
+  color: G.ink,
+  cursor: "pointer",
+  outline: "none",
+  appearance: "none",
+  WebkitAppearance: "none",
+};
 
-  // Affichage jj/mm/aaaa — stockage ISO yyyy-mm-dd
-  const toDisplay = (iso) => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    return `${d}/${m}/${y}`;
-  };
-  const [display, setDisplay] = useState(toDisplay(value));
+const Step2_Date = ({ value, onChange, onNext, onBack }) => {
+  const minD = eventMinDate();
+  const maxYear = minD.getFullYear() + 2;
+  const selected = parseISODate(value);
+  const initialView = selected && selected >= minD ? selected : minD;
+
+  const [viewYear, setViewYear] = useState(initialView.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initialView.getMonth());
   const [err, setErr] = useState("");
 
-  const handleChange = (raw) => {
-    // Garde uniquement les chiffres
-    const digits = raw.replace(/\D/g, "").slice(0, 8);
-    // Auto-insère les "/"
-    let formatted = digits;
-    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
-    if (digits.length > 4) formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
-    setDisplay(formatted);
-    setErr("");
-
-    if (digits.length === 8) {
-      const dd = digits.slice(0, 2), mm = digits.slice(2, 4), yyyy = digits.slice(4);
-      const iso = `${yyyy}-${mm}-${dd}`;
-      const date = new Date(iso);
-      const minDate = new Date(); minDate.setDate(minDate.getDate() + 42);
-      if (isNaN(date.getTime())) { setErr("Date invalide"); onChange(""); return; }
-      if (date < minDate) { setErr("Minimum 6 semaines à partir d'aujourd'hui"); onChange(""); return; }
-      onChange(iso);
-    } else {
-      onChange("");
+  useEffect(() => {
+    if (!value) return;
+    const d = parseISODate(value);
+    if (d) {
+      setViewYear(d.getFullYear());
+      setViewMonth(d.getMonth());
     }
+  }, [value]);
+
+  const weeks = weeksUntil(value);
+  const years = [];
+  for (let y = minD.getFullYear(); y <= maxYear; y++) years.push(y);
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDow = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+  const calendarCells = [];
+  for (let i = 0; i < firstDow; i++) calendarCells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d);
+
+  const pickDate = (day) => {
+    const date = new Date(viewYear, viewMonth, day);
+    date.setHours(0, 0, 0, 0);
+    if (date < minD) {
+      setErr("Minimum 6 semaines à partir d'aujourd'hui");
+      onChange("");
+      return;
+    }
+    setErr("");
+    onChange(toISODate(viewYear, viewMonth + 1, day));
   };
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
+
+  const canPrevMonth = viewYear > minD.getFullYear() || (viewYear === minD.getFullYear() && viewMonth > minD.getMonth());
+  const maxMonth = new Date(maxYear, 11, 31);
+  const canNextMonth = viewYear < maxYear || (viewYear === maxYear && viewMonth < 11);
+
+  const dayOptions = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d);
+    date.setHours(0, 0, 0, 0);
+    if (date >= minD && date <= maxMonth) dayOptions.push(d);
+  }
+
+  const selectedDay = selected && selected.getFullYear() === viewYear && selected.getMonth() === viewMonth
+    ? selected.getDate()
+    : "";
+
+  const isDaySelected = (day) =>
+    !!selected &&
+    selected.getFullYear() === viewYear &&
+    selected.getMonth() === viewMonth &&
+    selected.getDate() === day;
 
   return (
     <div className="fade-up">
@@ -1611,15 +1705,109 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
       <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
       <div style={{ background: G.white, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
-        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 10 }}>Date de l'événement</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="jj/mm/aaaa"
-          value={display}
-          onChange={e => handleChange(e.target.value)}
-          style={{ width: "100%", border: "none", fontSize: 28, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, background: "transparent", outline: "none" }}
-        />
+        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>Date de l'événement</label>
+
+        {value && !err && (
+          <div style={{ fontSize: 15, fontWeight: 600, color: G.blue, marginBottom: 14, textTransform: "capitalize" }}>
+            {formatDateFR(value)}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <select
+            value={viewMonth}
+            onChange={e => setViewMonth(Number(e.target.value))}
+            style={dateSelectStyle}
+            aria-label="Mois"
+          >
+            {MONTHS_FR.map((name, i) => {
+              const monthStart = new Date(viewYear, i, 1);
+              const monthEnd = new Date(viewYear, i + 1, 0);
+              monthEnd.setHours(23, 59, 59, 999);
+              if (monthEnd < minD || monthStart > maxMonth) return null;
+              return <option key={name} value={i}>{name}</option>;
+            })}
+          </select>
+          <select
+            value={viewYear}
+            onChange={e => setViewYear(Number(e.target.value))}
+            style={{ ...dateSelectStyle, flex: "0 0 96px" }}
+            aria-label="Année"
+          >
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <button
+            type="button"
+            onClick={prevMonth}
+            disabled={!canPrevMonth}
+            aria-label="Mois précédent"
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.white, color: G.ink, cursor: canPrevMonth ? "pointer" : "not-allowed", opacity: canPrevMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
+          >‹</button>
+          <span style={{ fontSize: 14, fontWeight: 700, color: G.inkLight }}>{MONTHS_FR[viewMonth]} {viewYear}</span>
+          <button
+            type="button"
+            onClick={nextMonth}
+            disabled={!canNextMonth}
+            aria-label="Mois suivant"
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.white, color: G.ink, cursor: canNextMonth ? "pointer" : "not-allowed", opacity: canNextMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
+          >›</button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 14 }}>
+          {WEEKDAYS_FR.map(w => (
+            <div key={w} style={{ fontSize: 11, fontWeight: 700, color: G.grey, textAlign: "center", padding: "4px 0" }}>{w}</div>
+          ))}
+          {calendarCells.map((day, i) => {
+            if (!day) return <div key={`e-${i}`} />;
+            const disabled = new Date(viewYear, viewMonth, day) < minD;
+            const isSel = isDaySelected(day);
+            const today = (() => {
+              const t = new Date(); t.setHours(0, 0, 0, 0);
+              const d = new Date(viewYear, viewMonth, day);
+              return d.getTime() === t.getTime();
+            })();
+            return (
+              <button
+                key={`d-${day}-${i}`}
+                type="button"
+                disabled={disabled}
+                onClick={() => pickDate(day)}
+                aria-label={`${day} ${MONTHS_FR[viewMonth]} ${viewYear}`}
+                aria-pressed={isSel}
+                style={{
+                  aspectRatio: "1",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: isSel ? 700 : 500,
+                  fontFamily: "'Lexend', sans-serif",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  background: isSel ? G.blue : today ? G.blueLight : "transparent",
+                  color: isSel ? G.white : disabled ? G.greyMid : G.ink,
+                  opacity: disabled ? 0.35 : 1,
+                }}
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, flexShrink: 0 }}>Jour</span>
+          <select
+            value={selectedDay}
+            onChange={e => { const d = Number(e.target.value); if (d) pickDate(d); }}
+            style={{ ...dateSelectStyle, flex: 1 }}
+            aria-label="Jour"
+          >
+            <option value="">Choisir un jour…</option>
+            {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
       </div>
       {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
       {weeks && !err && (
@@ -1636,6 +1824,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
     </div>
   );
 };
+
 
 const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6, disabledLevels = [] }) => (
   <div className="fade-up">
@@ -2053,7 +2242,7 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 9; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 10; // Incrémenter à chaque changement de structure du plan
 
 const PREMIUM_FEATURES = [
   { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
@@ -3343,6 +3532,11 @@ const calcSessionDistance = (details = []) => {
   return total;
 };
 
+// Eau libre & triathlon : priorité crawl/dos — pas les blocs perf « 4 nages » lourds en brasse
+const isOpenWaterGoal = (g) => g?.startsWith("open_water") || g?.startsWith("eau_libre");
+const isTriathlonGoal = (g) => g?.startsWith("triathlon");
+const usePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
+
 const SESSION_TEMPLATES = {
 
   // ── ENDURANCE ────────────────────────────────────────────────────────────
@@ -3507,8 +3701,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── PERFORMANCE / EXPERT : endurance + 4 nages ───────────────────────
-    if (isAdv) {
+    // ── PERFORMANCE / EXPERT : endurance + 4 nages (piscine polyvalente uniquement) ──
+    if (isAdv && usePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
       const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
       const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
@@ -3580,8 +3774,8 @@ const SESSION_TEMPLATES = {
 
     const isDiplome   = goal === "bnssa" || goal === "bpjeps_aan";
     const isBNSSA     = goal === "bnssa";
-    const isTriathlon = goal.startsWith("triathlon");
-    const isOpenWater = goal.startsWith("open_water") || goal.startsWith("eau_libre");
+    const isTriathlon = isTriathlonGoal(goal);
+    const isOpenWater = isOpenWaterGoal(goal);
 
     const vp  = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
     const r3  = Math.min(12*P, 300);
@@ -3732,7 +3926,7 @@ const SESSION_TEMPLATES = {
             `10' d'adaptation : nage lente avec la combi — ressens la flottaison`,
             `3×5' de nage continue — récup 2' — sighting toutes les 6–8 bras`,
             `Effort : allure conversation, objectif orientation`,
-            `Récup : retour au départ en brasse ou dos lent`,
+            `Récup : retour au départ en crawl ou dos très lent`,
           ] : [
             `Échauffement : 200m crawl + 100m dos + 4×${P}m accélérations`,
             `${nLong}×${rLong}m crawl — R15" — allure maîtrisée sur la totalité${isTriathlon ? " — maintiens ton allure de compétition" : ""}`,
@@ -3748,7 +3942,7 @@ const SESSION_TEMPLATES = {
             `Échauffement : 10' de nage lente, teste tes repères visuels`,
             `20–30' de nage continue — sighting toutes les 8 bras, gère ton allure de A à Z`,
             `Si combi : teste les transitions (enlever la combi en 2')`,
-            `Récup : 5' de brasse ou dos très lent`,
+            `Récup : 5' de crawl ou dos très lent`,
           ] : [
             `Échauffement : 200m crawl + 100m jambes`,
             `${nR2}×${r2}m crawl — R20" — régulier${goalCue}`,
@@ -3782,7 +3976,17 @@ const SESSION_TEMPLATES = {
             `Retour calme : 200m dos lent`,
           ],
         },
-        {
+        isOpenWater ? {
+          title: "🌊 Prépa eau libre — crawl en bassin",
+          intensity: "Endurance OW — sighting et allure tenue",
+          details: [
+            `Échauffement : 300m crawl progressif + 4×${P}m sighting (tête hors de l'eau tous les 6 bras)`,
+            `${nR3b}×${r3}m crawl — R20" — sighting tous les 8 bras, allure tenue${goalCue}`,
+            `${Math.max(2, Math.round(nR2b * 0.7))}×${r2}m crawl — R20" — respiration bilatérale, même allure`,
+            `${nFill}×${r1}m dos — R15" — récup active`,
+            `Retour calme : 200m crawl très lent`,
+          ],
+        } : {
           title: "Endurance 3 nages",
           intensity: "Endurance — polyvalence crawl, dos, brasse",
           details: [
@@ -3939,8 +4143,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── PERFORMANCE / EXPERT : seuil + 4 nages ───────────────────────────
-    if (isAdv) {
+    // ── PERFORMANCE / EXPERT : seuil + 4 nages (piscine polyvalente uniquement) ──
+    if (isAdv && usePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
       const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
       const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
@@ -4011,8 +4215,8 @@ const SESSION_TEMPLATES = {
 
     const isDiplomeS   = goal === "bnssa" || goal === "bpjeps_aan";
     const isBNSSAS     = goal === "bnssa";
-    const isTriathlon  = goal.startsWith("triathlon");
-    const isOpenWater  = goal.startsWith("open_water") || goal.startsWith("eau_libre");
+    const isTriathlon  = isTriathlonGoal(goal);
+    const isOpenWater  = isOpenWaterGoal(goal);
 
     const vp  = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
     const r2S = Math.min(8*P,  200);
@@ -4195,7 +4399,16 @@ const SESSION_TEMPLATES = {
             `Retour calme : 200m dos lent`,
           ],
         },
-        {
+        isOpenWater ? {
+          title: "Seuil crawl — allure tenue",
+          intensity: "Soutenu — prépa eau libre en bassin",
+          details: [
+            `Échauffement : 200m crawl + 100m dos + 4×${P}m accélérations`,
+            `${nR2S}×${r2S}m crawl — ${dep(r2S, lvl, 'threshold')} — allure tenue, sighting tous les 8 bras`,
+            `${nFillS}×${2*P}m dos — R20"`,
+            `Retour calme : 200m dos lent`,
+          ],
+        } : {
           title: "Seuil 4 nages — polyvalence",
           intensity: "Soutenu toutes nages — crawl, dos, brasse en rotation",
           details: [
@@ -4343,8 +4556,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── PERFORMANCE / EXPERT : vitesse + 4 nages ─────────────────────────
-    if (isAdv) {
+    // ── PERFORMANCE / EXPERT : vitesse + 4 nages (piscine polyvalente uniquement) ──
+    if (isAdv && usePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
       const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
       const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
@@ -4413,8 +4626,8 @@ const SESSION_TEMPLATES = {
 
     const isDiplomeV   = goal === "bnssa" || goal === "bpjeps_aan";
     const isBNSSAV     = goal === "bnssa";
-    const isTriathlonV = goal.startsWith("triathlon");
-    const isOpenWaterV = goal.startsWith("open_water") || goal.startsWith("eau_libre");
+    const isTriathlonV = isTriathlonGoal(goal);
+    const isOpenWaterV = isOpenWaterGoal(goal);
 
     const WARMV = 300, COOLV = 200, availV = dist - WARMV - COOLV;
     const nSprV = Math.max(6, Math.min(10, Math.round(availV * 0.5 / P)));
@@ -4774,8 +4987,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── INTERMÉDIAIRE (7 variants — ~70% éducatif) ───────────────────────
-    if (!isAdv) {
+    // ── INTERMÉDIAIRE (+ perf eau libre / triathlon : crawl, pas blocs 4 nages brasse) ──
+    if (!isAdv || !usePoolIMBlock(goal)) {
       const v = rot(7);
       return {
         type: "TECHNIQUE",
@@ -4861,7 +5074,82 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── EXPERT / PERFORMANCE : technique 4 nages (6 variants) ───────────
+    // ── PERF eau libre / triathlon : technique crawl & sighting ───────────
+    if (isAdv && !usePoolIMBlock(goal)) {
+      const v = rot(6);
+      return {
+        type: "TECHNIQUE",
+        ...[
+          {
+            title: "Technique crawl — prise & rotation",
+            intensity: "Faible — qualité de nage OW",
+            details: [
+              `Échauffement : ${repR}m crawl + ${repR}m dos`,
+              `${nPerBlock}×${repR}m catch-up drill — R10" — allongement, attente la main adverse`,
+              `${nPerBlock}×${repR}m sighting tous les 6 bras — R15" — tête stable, vise un repère au fond`,
+              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — intègre sighting + allongement`,
+              `Retour calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Sighting & respiration",
+            intensity: "Faible — prépa navigation eau libre",
+            details: [
+              `Échauffement : ${repR}m crawl progressif`,
+              `${nPerBlock}×${repR}m crawl respiration bilatérale — R10" — 3 bras / 5 bras en alternance`,
+              `${nPerBlock}×${repR}m crawl sighting — R15" — lève la tête sans casser l'allure`,
+              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — même effort, technique propre`,
+              `Retour calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Allonge & DPS",
+            intensity: "Faible — économie de nage",
+            details: [
+              `Échauffement : ${repR}m crawl + ${repR}m palmes`,
+              `${nPerBlock}×${repR}m DPS comptage — R10" — vise moins de cycles à même allure`,
+              `${nPerBlock}×${repR}m fist drill — R10" — avant-bras, coude haut`,
+              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — glisse entre les cycles`,
+              `Retour calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Enchaînement 4 nages léger",
+            intensity: "Modéré — 1 tour IM, volume brasse minimal",
+            details: [
+              `Échauffement : ${repR}m crawl + ${repR}m dos`,
+              `${Math.max(2, Math.round(nPerBlock * 0.5))}×${4*P}m 4 nages (${P}m pap · ${P}m dos · ${P}m crawl · ${P}m crawl) — R30" — fluidité`,
+              `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — repose sur le crawl`,
+              `Retour calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Virages & coulées",
+            intensity: "Faible — relance sans perdre l'allure",
+            details: [
+              `Échauffement : ${repR}m crawl + ${repR}m palmes`,
+              `${nPerBlock}×${repR}m coulées — R10" — flèche gainée depuis le mur`,
+              `${nPerBlock}×${repR}m crawl virages — R15" — enchaîne sans t'arrêter au milieu`,
+              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — allure régulière`,
+              `Retour calme : ${repR}m dos lent`,
+            ],
+          },
+          {
+            title: "Tempo & cycles crawl",
+            intensity: "Modéré — efficacité",
+            details: [
+              `Échauffement : ${repR}m crawl + ${repR}m dos`,
+              `${nPerBlock}×${repR}m crawl — R10" — compte tes cycles par longueur`,
+              `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — même cycles, un peu plus vite`,
+              `${nInteg}×${repR}m crawl sighting — ${dep(repR,lvl,'easy')} — intègre la tête haute`,
+              `Retour calme : ${repR}m dos lent`,
+            ],
+          },
+        ][v],
+      };
+    }
+
+    // ── EXPERT / PERFORMANCE piscine : technique 4 nages (6 variants) ─────
     const v = rot(6);
     return {
       type: "TECHNIQUE",
@@ -5034,8 +5322,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── PERFORMANCE / EXPERT : récup active + 4 nages ─────────────────────
-    if (!isBeg && (level === "performance" || level === "advanced")) {
+    // ── PERFORMANCE / EXPERT : récup active + 4 nages (piscine polyvalente) ──
+    if (!isBeg && (level === "performance" || level === "advanced") && usePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 3;
       return {
         type: "RÉCUPÉRATION",
@@ -5345,11 +5633,15 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [authInitialMode, setAuthInitialMode] = useState("password");
   const forceAuthRef = useRef(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const locationRef = useRef(location);
+  locationRef.current = location;
   const authOpenedFromUrlRef = useRef(false);
   // Hydratation initiale : si un plan anonyme existe en local, on saute l'onboarding et on l'affiche directement.
   const [screen, setScreen] = useState(() => {
+    if (isAuthPath(window.location.pathname)) return "auth";
     try {
       const raw = localStorage.getItem("myswym_anon_plans");
       if (raw) {
@@ -5404,7 +5696,8 @@ export default function App() {
   // Back button → landing page
   useEffect(() => {
     const handlePop = () => {
-      if (!window.location.pathname.startsWith("/app")) {
+      const p = window.location.pathname;
+      if (!p.startsWith("/app") && !isAuthPath(p)) {
         window.location.replace("/");
       }
     };
@@ -5412,38 +5705,46 @@ export default function App() {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
-  // Deep link auth flow: /?auth=login ouvre directement la connexion.
+  // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const auth = params.get("auth");
-    if (!auth) return;
-    authOpenedFromUrlRef.current = true;
-    if (auth === "login") {
+    const params = new URLSearchParams(location.search);
+    const legacyAuth = params.get("auth");
+    if (legacyAuth === "login") {
+      navigate("/connexion", { replace: true });
+      return;
+    }
+    if (legacyAuth === "register") {
+      navigate("/inscription", { replace: true });
+      return;
+    }
+    if (isAuthPath(location.pathname)) {
+      authOpenedFromUrlRef.current = true;
       forceAuthRef.current = true;
-      setAuthInitialMode("password");
-      setScreen("auth");
-    } else if (auth === "register") {
-      forceAuthRef.current = true;
-      setAuthInitialMode("register");
       setScreen("auth");
     }
-    params.delete("auth");
-    const next = params.toString();
-    window.history.replaceState({}, "", `${window.location.pathname}${next ? `?${next}` : ""}`);
-  }, []);
+  }, [location.pathname, location.search, navigate]);
+
+  const openAuth = (mode = "password") => {
+    forceAuthRef.current = true;
+    navigate(mode === "register" ? "/inscription" : "/connexion");
+  };
+
+  const handleAuthNavigateMode = (mode) => {
+    navigate(mode === "register" ? "/inscription" : "/connexion", { replace: true });
+  };
 
   const handleAuthBack = () => {
     forceAuthRef.current = false;
-    if (authOpenedFromUrlRef.current) {
-      authOpenedFromUrlRef.current = false;
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-      window.location.href = "/accueil";
-      return;
-    }
+    authOpenedFromUrlRef.current = false;
     setScreen(plans.length > 0 ? "app" : "onboarding");
+    navigate(plans.length > 0 ? "/" : "/accueil", { replace: true });
+  };
+
+  const handleAuthSuccess = (u) => {
+    setUser(u);
+    forceAuthRef.current = false;
+    authOpenedFromUrlRef.current = false;
+    navigate("/", { replace: true });
   };
 
   useEffect(() => {
@@ -5553,7 +5854,7 @@ export default function App() {
       if (u) {
         forceAuthRef.current = false;
         loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
-      } else if (forceAuthRef.current) {
+      } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) {
         setScreen("auth");
         setAuthLoading(false);
       } else {
@@ -5958,6 +6259,7 @@ export default function App() {
           });
         }} />
       </div>
+      <Footer />
     </>
   );
 
@@ -5970,12 +6272,14 @@ export default function App() {
       <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         <AuthScreen
-          onAuth={setUser}
-          initialMode={authInitialMode}
+          onAuth={handleAuthSuccess}
+          initialMode={AUTH_PATHS[location.pathname] || "password"}
+          onNavigateMode={handleAuthNavigateMode}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />
       </div>
+      <Footer />
     </>
   );
 
@@ -6077,6 +6381,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 
@@ -6091,7 +6396,7 @@ export default function App() {
             <span style={{ flex: 1, lineHeight: 1.3 }}>
               💾 Sauvegarde ton plan pour le retrouver sur tous tes appareils
             </span>
-            <button onClick={() => { authOpenedFromUrlRef.current = false; forceAuthRef.current = true; setAuthInitialMode("register"); setScreen("auth"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+            <button onClick={() => { authOpenedFromUrlRef.current = false; openAuth("register"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
               Créer mon compte
             </button>
           </div>
@@ -6100,6 +6405,7 @@ export default function App() {
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} />}
 
+        <Footer aboveBottomNav />
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
         {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} />}

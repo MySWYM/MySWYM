@@ -6,6 +6,7 @@ import {
   ChevronDown, RotateCcw, Menu,
 } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
 
 // ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
 const C = {
@@ -190,9 +191,9 @@ function Nav() {
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isMobile && (
-              <a href="/?auth=login" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: FONT }}>Se connecter</a>
+              <a href="/connexion" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: FONT }}>Se connecter</a>
             )}
-            <a href="/" style={{
+            <a href="/inscription" style={{
               background: C.accent, color: C.accentText,
               fontSize: isMobile ? 13 : 14, fontWeight: 700,
               padding: isMobile ? "9px 16px" : "10px 22px",
@@ -240,12 +241,12 @@ function Nav() {
               </a>
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href="/?auth=login" onClick={() => setMenuOpen(false)} style={{
+              <a href="/connexion" onClick={() => setMenuOpen(false)} style={{
                 display: "block", textAlign: "center", padding: "13px", borderRadius: 16,
                 border: `1.5px solid ${C.outlineVar}`, color: C.ink, fontSize: 15, fontWeight: 600,
                 textDecoration: "none", background: C.bgCard, fontFamily: FONT,
               }}>Se connecter</a>
-              <a href="/" onClick={() => setMenuOpen(false)} style={{
+              <a href="/inscription" onClick={() => setMenuOpen(false)} style={{
                 display: "block", textAlign: "center", padding: "13px", borderRadius: 16,
                 background: C.accent, color: C.accentText, fontSize: 15, fontWeight: 700,
                 textDecoration: "none", boxShadow: "0 6px 20px rgba(142,179,255,0.35)", fontFamily: FONT,
@@ -1065,53 +1066,6 @@ function FinalCTA() {
   );
 }
 
-// ── Footer ─────────────────────────────────────────────────────────────────
-function Footer() {
-  const isMobile = useIsMobile();
-  return (
-    <footer id="contact" style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "32px 20px" : "36px 24px" }}>
-      <div style={{
-        maxWidth: 1080, margin: "0 auto",
-        display: "flex",
-        flexDirection: isMobile ? "column" : "row",
-        flexWrap: "wrap",
-        justifyContent: isMobile ? "center" : "space-between",
-        alignItems: "center",
-        gap: isMobile ? 20 : 16,
-        textAlign: isMobile ? "center" : "left",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 16, color: C.white, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySwym</span>
-        </div>
-        <div style={{ display: "flex", gap: isMobile ? 18 : 30, flexWrap: "wrap", justifyContent: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
-            <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              Explorer
-            </span>
-            {[["Comment ca marche", "/comment-ca-marche"], ["Objectifs", "/objectifs"], ["Tarifs", "/tarifs"], ["Blog", "/blog"], ["Contact", "/contact"]].map(([l, h]) => (
-              <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
-                onMouseEnter={e => e.target.style.color = C.white}
-                onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
-              >{l}</a>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
-            <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              Legal
-            </span>
-            {[["Mentions legales", "/mentions-legales"], ["Politique de confidentialite", "/politique-confidentialite"], ["Politique de cookies", "/politique-cookies"], ["CGU", "/cgu"], ["CGV", "/cgv"]].map(([l, h]) => (
-              <a key={l} href={h} style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
-                onMouseEnter={e => e.target.style.color = C.white}
-                onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.4)"}
-              >{l}</a>
-            ))}
-          </div>
-        </div>
-        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>© 2025 MySWYM. Tous droits réservés.</div>
-      </div>
-    </footer>
-  );
-}
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Landing() {

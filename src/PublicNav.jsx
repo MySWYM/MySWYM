@@ -70,7 +70,7 @@ export default function PublicNav() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isMobile && (
-              <a href="/?auth=login" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: "'Lexend', sans-serif" }}>
+              <a href="/connexion" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: "'Lexend', sans-serif" }}>
                 Se connecter
               </a>
             )}
@@ -79,7 +79,7 @@ export default function PublicNav() {
               padding: isMobile ? "9px 16px" : "10px 22px", borderRadius: 100, textDecoration: "none",
               fontFamily: "'Lexend', sans-serif", boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
             }}>
-              {isMobile ? "Commencer" : "Creer mon compte"}
+              Generer mon plan
             </a>
             {isMobile && (
               <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink }}>
@@ -106,7 +106,7 @@ export default function PublicNav() {
               </a>
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href="/?auth=login" onClick={() => setMenuOpen(false)} style={{ display: "block", textAlign: "center", padding: "13px", borderRadius: 16, border: "1.5px solid #c3c6d2", color: C.ink, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "#f2f3f6", fontFamily: "'Lexend', sans-serif" }}>
+              <a href="/connexion" onClick={() => setMenuOpen(false)} style={{ display: "block", textAlign: "center", padding: "13px", borderRadius: 16, border: "1.5px solid #c3c6d2", color: C.ink, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "#f2f3f6", fontFamily: "'Lexend', sans-serif" }}>
                 Se connecter
               </a>
             </div>

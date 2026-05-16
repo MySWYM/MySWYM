@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { supabase } from "./supabase.js";
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
 
 const C = {
   bg: "#f8f9fc",
@@ -51,7 +52,7 @@ export default function TarifsPage() {
 
   const handlePremium = async (priceId) => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = "/?auth=register"; return; }
+    if (!session) { window.location.href = "/inscription"; return; }
     try {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
@@ -108,7 +109,7 @@ export default function TarifsPage() {
               <div style={{ fontSize: isMobile ? 34 : 22, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Gratuit</div>
               <div style={{ fontSize: isMobile ? 52 : 38, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, margin: "14px 0 4px", lineHeight: 1 }}>0€</div>
               <div style={{ color: C.secondary, fontSize: isMobile ? 15 : 13, fontFamily: FONT, marginBottom: isMobile ? 16 : 24 }}>Pour toujours</div>
-              <Link to="/?auth=register" style={{ display: "block", textAlign: "center", border: `1.5px solid ${C.outlineVar}`, color: C.ink, background: C.bgCard, fontWeight: 700, fontSize: isMobile ? 16 : 15, fontFamily: FONT, padding: isMobile ? "12px" : "13px", borderRadius: 16, textDecoration: "none", marginBottom: isMobile ? 18 : 24 }}>
+              <Link to="/inscription" style={{ display: "block", textAlign: "center", border: `1.5px solid ${C.outlineVar}`, color: C.ink, background: C.bgCard, fontWeight: 700, fontSize: isMobile ? 16 : 15, fontFamily: FONT, padding: isMobile ? "12px" : "13px", borderRadius: 16, textDecoration: "none", marginBottom: isMobile ? 18 : 24 }}>
                 Creer mon compte
               </Link>
               <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
@@ -168,6 +169,7 @@ export default function TarifsPage() {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }

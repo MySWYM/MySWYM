@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { POSTS } from "./posts.js";
+import Footer from "./Footer.jsx";
 import { ArrowLeft, Clock, ArrowRight, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 
@@ -83,7 +84,7 @@ function Nav() {
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!isMobile && (
-            <Link to="/?auth=login" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+            <Link to="/connexion" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
               Se connecter
             </Link>
           )}
@@ -91,11 +92,11 @@ function Nav() {
             <ArrowLeft size={13} /> {!isMobile && "Retour"}
           </Link>
           {isMobile && (
-            <Link to="/?auth=login" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+            <Link to="/connexion" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
               Se connecter
             </Link>
           )}
-          <Link to="/?auth=register" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Creer mon compte</Link>
+          <Link to="/inscription" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Creer mon compte</Link>
         </div>
       </div>
     </nav>
@@ -219,26 +220,7 @@ export default function BlogPost() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer style={{ background: C.inkLight, borderTop: `1px solid ${C.border}`, padding: "32px 24px", textAlign: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 15, color: C.white }}>MySWYM</span>
-        </div>
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 10 }}>
-          {[
-            ["Mentions legales", "/mentions-legales"],
-            ["Confidentialite", "/politique-confidentialite"],
-            ["CGU", "/cgu"],
-            ["CGV", "/cgv"],
-            ["Contact", "/contact"],
-          ].map(([label, href]) => (
-            <a key={label} href={href} style={{ color: C.grey, fontSize: 12, textDecoration: "none" }}>
-              {label}
-            </a>
-          ))}
-        </div>
-        <p style={{ color: C.grey, fontSize: 12 }}>© 2025 MySWYM. Tous droits réservés.</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

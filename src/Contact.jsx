@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
 
 const C = {
   bg: "#f8f9fc",
@@ -141,6 +142,7 @@ export default function ContactPage() {
           </section>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
