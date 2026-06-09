@@ -5370,7 +5370,7 @@ const SESSION_TEMPLATES = {
             intensity: "Très facile",
             details: [
               `${nA}×${repR}m dos crawlé — R10" — jambes molles, pense à flotter`,
-              `${nB}×${repR}m sculling avant — R10" — mains en figure 8, sens la portance de l'eau`,
+              `${nB}×${repR}m godilles avant — R10" — mains en figure 8, sens la portance de l'eau`,
               `${nC}×${repR}m NL lent — R10" — 1 long. resp 2 temps / 1 long. resp 3 temps`,
               `Fin : flotte 2 min en étoile sur le dos`,
             ],
@@ -5443,10 +5443,10 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: "Sculling & relâchement",
+          title: "Godilles & relâchement",
           intensity: "Z1 — ressentir l'eau",
           details: [
-            `${nA}×${P}m sculling — R10" — mains en 'figure 8', sens la portance`,
+            `${nA}×${P}m godilles — R10" — mains en 'figure 8', sens la portance`,
             `${nB}×${repR}m dos lent — R10" — jambes molles, récupère mentalement`,
             `${nC}×${repR}m NL lent — R10" — méditation active, compte les longueurs`,
             `${nD}×${repR}m alternance 25 dos / 25 crawl — R10" — nage croisée, jambes souples`,
@@ -5458,7 +5458,7 @@ const SESSION_TEMPLATES = {
           details: [
             `${nA}×${repR}m NL — sans pression — Z1 confort, pense à ta posture`,
             `${nB}×${repR}m dos crawlé — R10" — focus rotation du bassin, relâche les épaules`,
-            nC > 0 ? `${nC}×${P}m sculling dos — R10" — mains au niveau des hanches, sens la portance` : `${repR}m NL très lent libre`,
+            nC > 0 ? `${nC}×${P}m godilles dos — R10" — mains au niveau des hanches, sens la portance` : `${repR}m NL très lent libre`,
             `Fin : 200m NL très lent — aucune contrainte de temps`,
           ],
         },
