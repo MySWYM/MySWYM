@@ -256,6 +256,16 @@ const formatDuration = (mins) => {
 const isSessionResolved = (s) => s.completed || !!s.skipped;
 const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
 
+// Garde une semaine existante dès qu'il y a du progrès, un feedback ou une satisfaction
+const shouldPreserveWeek = (week) => {
+  if (!week) return false;
+  if (week.feedback || week.satisfaction) return true;
+  return week.sessions?.some(isSessionResolved) ?? false;
+};
+
+const mergePreservingProgress = (oldWeeks, newWeeks) =>
+  newWeeks.map((week, i) => (shouldPreserveWeek(oldWeeks[i]) ? oldWeeks[i] : week));
+
 const computeStats = (plan) => {
   if (!plan?.weeks) return { totalSessions: 0, totalMeters: 0, streak: 0, perfectWeeks: 0, speedSessions: 0, techniqueSessions: 0, planTotal: 0, weeklyData: [] };
   let totalSessions = 0, totalMeters = 0, currentStreak = 0, maxStreak = 0, perfectWeeks = 0, speedSessions = 0, techniqueSessions = 0;
@@ -705,7 +715,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
               }}>Utiliser</button>
             )}
             {stravaIsUsed && (
-              <span style={{ fontSize: 11, color: "#FC4C02", fontWeight: 600 }}>✓ utilisé</span>
+              <span style={{ fontSize: 11, color: "#FC4C02", fontWeight: 600 }}>utilisé</span>
             )}
           </div>
         )}
@@ -990,10 +1000,10 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
                 <div style={{ fontSize: 11, color: G.grey }}>Valide ta séance du programme ?</div>
               </div>
               <button
-                onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: "Séance validée depuis Strava ✓" }); }}
+                onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: "Séance validée depuis Strava" }); }}
                 style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: G.blue, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}
               >
-                Valider ✓
+                Valider
               </button>
             </div>
           )}
@@ -1007,7 +1017,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>
                   Meilleur 100m Strava : {fmtPace(bestPace)}
-                  {hasBetterPace && " 🔥"}
+                  {hasBetterPace && " — record"}
                 </div>
                 <div style={{ fontSize: 11, color: G.grey }}>
                   {hasBetterPace
@@ -1017,7 +1027,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
               </div>
               {hasBetterPace && onPaceUpdate && (
                 <button
-                  onClick={() => { onPaceUpdate(bestPace); setMsg({ type: "ok", text: `Référence mise à jour : ${fmtPace(bestPace)} ✓` }); }}
+                  onClick={() => { onPaceUpdate(bestPace); setMsg({ type: "ok", text: `Référence mise à jour : ${fmtPace(bestPace)}` }); }}
                   style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.gold, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Utiliser
@@ -1111,7 +1121,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      setMsg({ type: "ok", text: "Mot de passe mis à jour ✓" });
+      setMsg({ type: "ok", text: "Mot de passe mis à jour" });
       setPassword("");
     } catch (e) { setMsg({ type: "err", text: e.message }); }
     finally { setSaving(false); }
@@ -1239,6 +1249,8 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
       </div>
 
       <div style={{ padding: "0 16px" }}>
+
+        <SubscriptionStatusCard isPremium={isPremium} plan={plan} onUpgrade={onUpgrade} />
 
         {/* ── 1. Stats ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
@@ -1822,7 +1834,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
           <Calendar size={20} color="rgba(255,255,255,0.3)" />
         </div>
       )}
-      <Btn onClick={onNext} disabled={!value}>Générer mon plan 🚀</Btn>
+      <Btn onClick={onNext} disabled={!value}>Générer mon plan</Btn>
       <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
     </div>
   );
@@ -2033,16 +2045,19 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
   );
 };
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, onUpgrade }) => (
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => (
   <div className="fade-up">
     <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
     <h2 style={{ fontSize: 34, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
+    <p style={{ color: G.grey, fontSize: 15, marginBottom: !isPremium ? 12 : 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
+    {!isPremium && (
+      <p style={{ color: G.gold, fontSize: 13, fontWeight: 600, marginBottom: 24, background: G.goldLight, borderRadius: 10, padding: "10px 12px" }}>
+        Gratuit : 1 ou 2 séances/semaine. 3× et plus avec Premium.
+      </p>
+    )}
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
       {FREQUENCIES.map(f => {
-        // Onboarding accessible à tous : on ne verrouille plus les fréquences ≥3 séances.
-        // Le paywall existant après FREE_WEEKS_LIMIT semaines reste actif après que l'utilisateur ait vu son plan.
-        const locked = false;
+        const locked = !isPremium && f.id > FREE_FREQ_LIMIT;
         const isActive = value === f.id;
         return (
           <button key={f.id} onClick={() => locked ? onUpgrade?.() : onChange(f.id)} style={{
@@ -2069,7 +2084,7 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
         );
       })}
     </div>
-    <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan 🚀" : "Continuer"}</Btn>
+    <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
     <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
   </div>
 );
@@ -2168,7 +2183,7 @@ const SMILEY_OPTS = [
   { id: "hard", Face: FaceTired, label: "Difficile",        sub: "Fatigue ou surcharge",        color: "#FF3B30", bg: "#FFF0EF" },
 ];
 
-const FeedbackModal = ({ weekNumber, onSubmit, onSkip }) => {
+const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
   const [selected, setSelected] = useState(null);
 
   const confirm = (id) => {
@@ -2191,9 +2206,16 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip }) => {
         <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment tu t'es senti·e ?
         </h3>
-        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 28, lineHeight: 1.5 }}>
-          Ta réponse ajuste les prochaines séances.
+        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: isPremium ? 28 : 12, lineHeight: 1.5 }}>
+          {isPremium
+            ? "Ta réponse ajuste le volume des prochaines séances."
+            : "On enregistre ton ressenti pour suivre ta progression."}
         </p>
+        {!isPremium && (
+          <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 28, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
+            Premium : ajustement automatique si c'était trop facile ou trop dur.
+          </p>
+        )}
 
         {/* 3 smiley cards */}
         <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
@@ -2245,16 +2267,85 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const PLAN_VERSION = 10; // Incrémenter à chaque changement de structure du plan
+const FREE_FREQ_LIMIT = 2;
+const PLAN_VERSION = 11; // Incrémenter à chaque changement de structure du plan
 
-const PREMIUM_FEATURES = [
-  { Icon: Plus,       label: "Plusieurs projets",     desc: "Triathlon + eau libre + BNSSA en parallèle" },
-  { Icon: Calendar,   label: "Plans illimités",       desc: "Jusqu'à 52 semaines selon ton événement" },
-  { Icon: TrendingUp, label: "Plan adaptatif",        desc: "Ajuste automatiquement selon tes retours" },
-  { Icon: BarChart2,  label: "Stats avancées",        desc: "Graphiques détaillés et historique complet" },
-  { Icon: Activity,   label: "Partage de séances",    desc: "Cartes visuelles pour Instagram & Strava" },
-  { Icon: Award,      label: "Tous les badges",       desc: "Collection complète débloquée" },
+const FREE_TIER_LINES = [
+  "4 premières semaines du plan",
+  "1 à 2 séances par semaine",
+  "Tous les objectifs (triathlon, BNSSA, eau libre…)",
+  "Déblocage : 1 semaine par semaine",
+  "Retours hebdo sans ajustement auto",
+  "Intervalles en récupération (R…)",
 ];
+
+const PREMIUM_TIER_LINES = [
+  "Plan complet jusqu'à ton événement",
+  "Jusqu'à 5 séances par semaine",
+  "Ajustement du volume selon tes retours",
+  "Déblocage par blocs de 4 semaines",
+  "Départs avec allure cible (D…)",
+  "Plusieurs projets · modifier fréquence et allure",
+];
+
+const PlanTierComparison = ({ compact = false }) => (
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 8 : 10, marginBottom: compact ? 0 : 20 }}>
+    <div style={{ border: `1px solid ${G.greyLight}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.white }}>
+      <div style={{ fontSize: 10, fontWeight: 800, color: G.grey, letterSpacing: "0.08em", marginBottom: 8 }}>GRATUIT</div>
+      {FREE_TIER_LINES.map((line, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < FREE_TIER_LINES.length - 1 ? 6 : 0 }}>
+          <Check size={11} color={G.greyMid} style={{ flexShrink: 0, marginTop: 2 }} />
+          <span style={{ fontSize: compact ? 10 : 11, color: G.grey, lineHeight: 1.4 }}>{line}</span>
+        </div>
+      ))}
+    </div>
+    <div style={{ border: `2px solid ${G.blue}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.blueLight }}>
+      <div style={{ fontSize: 10, fontWeight: 800, color: G.blue, letterSpacing: "0.08em", marginBottom: 8 }}>PREMIUM</div>
+      {PREMIUM_TIER_LINES.map((line, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < PREMIUM_TIER_LINES.length - 1 ? 6 : 0 }}>
+          <Check size={11} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
+          <span style={{ fontSize: compact ? 10 : 11, color: G.ink, fontWeight: 600, lineHeight: 1.4 }}>{line}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade }) => {
+  if (isPremium) {
+    return (
+      <div style={{ background: G.ink, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Zap size={18} color={G.gold} />
+        </div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: G.white }}>Premium actif</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Plan complet · départs D… · multi-projets</div>
+        </div>
+      </div>
+    );
+  }
+  const totalWeeks = plan?.totalRealWeeks ?? plan?.weeks?.length ?? FREE_WEEKS_LIMIT;
+  const shownWeeks = Math.min(FREE_WEEKS_LIMIT, plan?.weeks?.length ?? FREE_WEEKS_LIMIT);
+  return (
+    <div style={{ background: G.white, borderRadius: 16, padding: "16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Ton abonnement</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Gratuit</div>
+          <div style={{ fontSize: 12, color: G.grey, marginTop: 4 }}>
+            {shownWeeks} semaine{shownWeeks > 1 ? "s" : ""} accessibles
+            {totalWeeks > shownWeeks ? ` sur ${totalWeeks} prévues` : ""}
+          </div>
+        </div>
+        <button onClick={onUpgrade} style={{ padding: "9px 14px", borderRadius: 10, border: "none", background: G.blue, color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+          Voir Premium
+        </button>
+      </div>
+      <PlanTierComparison compact />
+    </div>
+  );
+};
 
 const PRICE_MONTHLY = "price_1TP5yOAVxucD4jHaRYk2cbHC";
 const PRICE_ANNUAL  = "price_1TPKQfAVxucD4jHaUDssY5cs";
@@ -2342,21 +2433,13 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
 
         {/* 1 mois offert pill — visible only on annual */}
         {isAnnual && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 16 }}>🎁</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>1 mois offert par rapport au mensuel</span>
           </div>
         )}
 
-        {/* Features */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 20 }}>
-          {PREMIUM_FEATURES.map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: G.greyXLight, borderRadius: 12 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 9, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><f.Icon size={14} color={G.blue} /></div>
-              <div><div style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>{f.label}</div><div style={{ fontSize: 11, color: G.grey }}>{f.desc}</div></div>
-            </div>
-          ))}
-        </div>
+        <p style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>Gratuit vs Premium</p>
+        <PlanTierComparison />
 
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
@@ -2390,11 +2473,49 @@ const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>+{weeksTotal - weeksShown} semaines bloquées</div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Plan complet jusqu'à ton événement avec Premium</div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Plan complet · départs D… · ajustement auto</div>
     </div>
     <button onClick={onUpgrade} style={{ background: G.white, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Voir</button>
   </div>
 );
+
+const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => {
+  if (!weeks?.length) return null;
+  const extra = Math.max(0, totalBlocked - weeks.length);
+  return (
+    <div style={{ position: "relative", marginBottom: 16, borderRadius: 20, overflow: "hidden" }}>
+      <div style={{ filter: "blur(5px)", pointerEvents: "none", userSelect: "none", opacity: 0.5 }}>
+        {weeks.map((week, j) => (
+          <WeekCard key={j} week={week} weekIndex={FREE_WEEKS_LIMIT + j} onComplete={() => {}} onShare={() => {}} isCurrentWeek={false} />
+        ))}
+      </div>
+      <div style={{
+        position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        background: "rgba(248,249,252,0.72)", padding: "24px 20px", textAlign: "center",
+      }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: G.white, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, boxShadow: "0 4px 16px rgba(53,93,163,0.12)" }}>
+          <Lock size={22} color={G.blue} />
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 6 }}>
+          {totalBlocked} semaine{totalBlocked > 1 ? "s" : ""} pour arriver prêt
+        </div>
+        <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 4, maxWidth: 280 }}>
+          {weeks[0]?.focus ? `Sem. ${weeks[0].number} : ${weeks[0].focus}` : "La suite de ton programme t'attend"}
+          {weeks[1]?.focus ? ` · Sem. ${weeks[1].number} : ${weeks[1].focus}` : ""}
+        </p>
+        {daysToEvent !== null && (
+          <p style={{ fontSize: 12, color: G.blue, fontWeight: 600, marginBottom: 14 }}>J−{daysToEvent} avant ton objectif</p>
+        )}
+        {extra > 0 && (
+          <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 14 }}>+ {extra} autre{extra > 1 ? "s" : ""} semaine{extra > 1 ? "s" : ""} ensuite</p>
+        )}
+        <button onClick={onUpgrade} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px rgba(53,93,163,0.28)" }}>
+          Débloquer avec Premium
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // ── SESSION CARD ──────────────────────────────────────────────────────────
 const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) => {
@@ -2655,7 +2776,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
               )}
               {allDone && !isCurrentWeek && (
                 <span style={{ fontSize: 9, fontWeight: 800, color: allActuallyDone ? G.mint : G.gold, background: allActuallyDone ? G.mintLight : G.goldLight, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>
-                  {allActuallyDone ? "✓ TERMINÉE" : "PASSÉE"}
+                  {allActuallyDone ? "TERMINÉE" : "PASSÉE"}
                 </span>
               )}
             </div>
@@ -2753,7 +2874,7 @@ const ResetConfirmButton = ({ onReset }) => {
   const [confirm, setConfirm] = useState(false);
   if (confirm) return (
     <div style={{ marginTop: 8, background: G.coralLight, border: `1px solid ${G.coral}`, borderRadius: 12, padding: "16px 18px" }}>
-      <p style={{ fontSize: 13, color: G.coral, fontWeight: 600, marginBottom: 4 }}>⚠️ Effacer ce plan ?</p>
+      <p style={{ fontSize: 13, color: G.coral, fontWeight: 600, marginBottom: 4 }}>Effacer ce plan ?</p>
       <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.5, marginBottom: 14 }}>
         Toute ta progression sera perdue et tu devras recommencer le questionnaire depuis le début.
       </p>
@@ -2919,6 +3040,12 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
                  || "Mon plan";
+  const daysToEvent = profile.eventDate
+    ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000))
+    : null;
+  const blockedWeeks = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT
+    ? plan.totalRealWeeks - FREE_WEEKS_LIMIT
+    : 0;
 
   return (
     <div style={{ paddingBottom: 100 }}>
@@ -2931,9 +3058,25 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
         paddingTop: "env(safe-area-inset-top)",
       }}>
         <div style={{ padding: "14px 16px 12px" }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, marginBottom: 2, lineHeight: 1 }}>{planLabel}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
+            <span style={{
+              fontSize: 9, fontWeight: 800, letterSpacing: "0.06em",
+              color: isPremium ? G.white : G.grey,
+              background: isPremium ? G.ink : G.greyXLight,
+              padding: "3px 8px", borderRadius: 100, flexShrink: 0,
+            }}>
+              {isPremium ? "PREMIUM" : "GRATUIT"}
+            </span>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, color: G.grey }}>Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length} / {plan.weeks.length}</span>
+            <span style={{ fontSize: 12, color: G.grey }}>Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length} / {isPremium ? plan.weeks.length : Math.min(plan.weeks.length, plan.totalRealWeeks ?? plan.weeks.length)}</span>
+            {!isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT && (
+              <>
+                <span style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyMid, display: "inline-block" }} />
+                <span style={{ fontSize: 12, color: G.gold, fontWeight: 600 }}>{plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. en Premium</span>
+              </>
+            )}
             {currentWeekIndex >= 0 && currentWeek?.focus && (
               <>
                 <span style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyMid, display: "inline-block" }} />
@@ -2982,11 +3125,13 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
             })}
             <button onClick={onAddPlan} style={{
               flexShrink: 0, padding: "8px 14px", borderRadius: 100, cursor: "pointer",
-              border: `1.5px dashed ${G.greyLight}`, background: "transparent",
-              color: G.greyMid, fontSize: 13, fontWeight: 600,
+              border: `1.5px dashed ${isPremium ? G.greyLight : G.gold + "66"}`,
+              background: isPremium ? "transparent" : G.goldLight,
+              color: isPremium ? G.greyMid : G.gold, fontSize: 13, fontWeight: 600,
               display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", minHeight: 44,
             }}>
-              <Plus size={13} /> Ajouter
+              {isPremium ? <Plus size={13} /> : <Lock size={12} />}
+              {isPremium ? "Ajouter" : "Premium"}
             </button>
           </div>
         )}
@@ -3112,12 +3257,22 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
           </div>
         ))}
 
-        {/* Free : paywall après FREE_WEEKS_LIMIT */}
-        {!isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT && unlocked >= FREE_WEEKS_LIMIT && (
-          <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
+        {/* Free : paywall + aperçu des semaines bloquées */}
+        {!isPremium && blockedWeeks > 0 && (
+          <>
+            {unlocked >= FREE_WEEKS_LIMIT && (
+              <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
+            )}
+            <LockedWeeksPreview
+              weeks={plan.previewWeeks}
+              totalBlocked={blockedWeeks}
+              daysToEvent={daysToEvent}
+              onUpgrade={onUpgrade}
+            />
+          </>
         )}
 
-        {/* Prochain lot flouté (aperçu) */}
+        {/* Prochain lot flouté (déblocage progressif) */}
         {(isPremium || unlocked < FREE_WEEKS_LIMIT) && unlocked < plan.weeks.length && (() => {
           const nextBatch = plan.weeks.slice(unlocked, isPremium ? unlocked + 4 : unlocked + 1);
           return (
@@ -3986,10 +4141,10 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: isOpenWater ? "🌊 Séance eau libre — test combinaison" : "Reps longues",
+          title: isOpenWater ? "Séance eau libre — test combinaison" : "Reps longues",
           intensity: isOpenWater ? "Découverte OW — flottaison, navigation, sighting" : "Endurance — gestion sur la distance",
           details: isOpenWater ? [
-            `📍 À faire en eau libre (lac, rivière calme, mer protégée)`,
+            `À faire en eau libre (lac, rivière calme, mer protégée)`,
             `10' d'adaptation : nage lente avec la combi — ressens la flottaison`,
             `3×5' de nage continue — récup 2' — sighting toutes les 6–8 bras`,
             `Effort : allure conversation, objectif orientation`,
@@ -4002,10 +4157,10 @@ const SESSION_TEMPLATES = {
           ],
         },
         {
-          title: isOpenWater ? "🌊 Séance eau libre — endurance" : "Crawl & dos alternés",
+          title: isOpenWater ? "Séance eau libre — endurance" : "Crawl & dos alternés",
           intensity: isOpenWater ? "Endurance OW — tenir l'allure sans repères" : "Endurance — polyvalence, récup naturelle",
           details: isOpenWater ? [
-            `📍 À faire en eau libre`,
+            `À faire en eau libre`,
             `Échauffement : 10' de nage lente, teste tes repères visuels`,
             `20–30' de nage continue — sighting toutes les 8 bras, gère ton allure de A à Z`,
             `Si combi : teste les transitions (enlever la combi en 2')`,
@@ -4044,7 +4199,7 @@ const SESSION_TEMPLATES = {
           ],
         },
         isOpenWater ? {
-          title: "🌊 Prépa eau libre — crawl en bassin",
+          title: "Prépa eau libre — crawl en bassin",
           intensity: "Endurance OW — sighting et allure tenue",
           details: [
             `Échauffement : 300m crawl progressif + 4×${P}m sighting (tête hors de l'eau tous les 6 bras)`,
@@ -5647,10 +5802,9 @@ const generatePlan = async (profile, isPremium = false) => {
     rawWeeks = Math.min(52, weeksUntil(profile.eventDate) || 8);
   }
 
-  const totalWeeks = isPremium ? rawWeeks : Math.min(rawWeeks, FREE_MAX_WEEKS);
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.régulier;
   const progressionPhaseList = progression ? buildProgressionPhases() : null;
-  const phaseList = progression ? progressionPhaseList.slice(0, totalWeeks) : wellness ? buildWellnessPhases(totalWeeks) : buildPlanPhases(totalWeeks);
+  const phaseList = progression ? progressionPhaseList.slice(0, rawWeeks) : wellness ? buildWellnessPhases(rawWeeks) : buildPlanPhases(rawWeeks);
   // Résolution du levelKey pour les patterns : priorité aux nouveaux niveaux, fallback anciens
   const levelKey = (PHASE_PATTERNS[level] ? level : (level === "advanced" ? "performance" : level === "beginner" ? "régulier" : level === "intermediate" ? "sportif" : "régulier"));
   // PROGRESSION_PATTERNS et WELLNESS_PATTERNS sont indexés par "beginner"/"intermediate"/"advanced"
@@ -5659,8 +5813,8 @@ const generatePlan = async (profile, isPremium = false) => {
                  : wellness   ? (WELLNESS_PATTERNS[progLvlKey] || WELLNESS_PATTERNS.intermediate)
                  : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS
                  : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
-  const f = Math.min(freq, 5);
-  const weeks = phaseList.map((phase, wi) => {
+  const f = Math.min(isPremium ? freq : Math.min(freq ?? FREE_FREQ_LIMIT, FREE_FREQ_LIMIT), 5);
+  const buildWeeks = (phases) => phases.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
     return {
       number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false,
@@ -5668,10 +5822,7 @@ const generatePlan = async (profile, isPremium = false) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
         const sessionData = SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
         const realDist = calcSessionDistance(sessionData.details);
-
-        // Si le contenu généré est trop loin de la cible, on ajoute un bloc de volume explicite
         const deficit = distBase - realDist;
-        // Taille des reps selon le déficit : petites distances → 100m, moyennes → 200m, grandes → 400m
         const fillRep = deficit >= 2000 ? 400 : deficit >= 800 ? 200 : pool * 2;
         const nFill = deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
         let details = sessionData.details;
@@ -5688,7 +5839,10 @@ const generatePlan = async (profile, isPremium = false) => {
       }),
     };
   });
-  return { weeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now(), version: PLAN_VERSION };
+  const allWeeks = buildWeeks(phaseList);
+  const weeks = isPremium ? allWeeks : allWeeks.slice(0, FREE_MAX_WEEKS);
+  const previewWeeks = isPremium || rawWeeks <= FREE_MAX_WEEKS ? [] : allWeeks.slice(FREE_MAX_WEEKS, FREE_MAX_WEEKS + 3);
+  return { weeks, previewWeeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now(), version: PLAN_VERSION };
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
@@ -5877,7 +6031,7 @@ export default function App() {
         );
         const json = await res.json();
         if (json.error) throw new Error(json.error);
-        showToast(`Strava connecté${json.athlete ? ` — Bonjour ${json.athlete} 👋` : ""} · Synchronisation en cours…`, 6000);
+        showToast(`Strava connecté${json.athlete ? ` — Bonjour ${json.athlete}` : ""} · Synchronisation en cours…`, 6000);
         setActiveTab("profile");
       } catch (e) {
         showToast(`Erreur Strava : ${e.message}`, 8000);
@@ -5897,9 +6051,14 @@ export default function App() {
     if (ap && aprof.goal && ap.totalRealWeeks > ap.weeks.length) {
       setScreen("loading");
       generatePlan(aprof, true).then(newPlan => {
-        // Préserve le startDate original pour que le calendrier parte de la vraie date de début
         const originalStartDate = ap.startDate ?? activePlanEntry.startDate ?? null;
-        const planWithDate = originalStartDate ? { ...newPlan, startDate: originalStartDate } : newPlan;
+        const mergedWeeks = mergePreservingProgress(ap.weeks ?? [], newPlan.weeks);
+        const planWithDate = {
+          ...newPlan,
+          weeks: mergedWeeks,
+          previewWeeks: [],
+          ...(originalStartDate ? { startDate: originalStartDate } : {}),
+        };
         setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
         setScreen("app"); setActiveTab("home");
       });
@@ -6080,32 +6239,52 @@ export default function App() {
   }, [plans, activePlanId, user]);
 
 
-  // Migration silencieuse : régénère les plans dont la version est obsolète
+  // Migration légère : ne régénère JAMAIS les semaines existantes (préserve la progression).
+  // Ajoute uniquement les métadonnées manquantes (previewWeeks, version).
   useEffect(() => {
     if (!user || plans.length === 0 || screen !== "app") return;
-    const outdated = plans.filter(e => (e.plan?.version ?? 0) < PLAN_VERSION);
-    if (outdated.length === 0) return;
-    Promise.all(
-      outdated.map(entry =>
-        generatePlan(entry.profile, isPremium).then(newPlan => {
-          const oldWeeks = entry.plan?.weeks ?? [];
-          const originalStartDate = entry.plan?.startDate ?? entry.startDate ?? null;
-          const mergedWeeks = newPlan.weeks.map((week, i) => {
-            const oldWeek = oldWeeks[i];
-            if (!oldWeek) return week;
-            const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(isSessionResolved);
-            return allDone ? oldWeek : week;
-          });
-          return { id: entry.id, updated: { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) } };
-        })
-      )
-    ).then(results => {
+    const needsUpdate = plans.filter(e => {
+      const p = e.plan;
+      if (!p) return false;
+      const needsVersion = (p.version ?? 0) < PLAN_VERSION;
+      const needsPreview = !isPremium && !p.previewWeeks?.length
+        && (p.totalRealWeeks ?? p.weeks?.length ?? 0) > FREE_WEEKS_LIMIT;
+      return needsVersion || needsPreview;
+    });
+    if (needsUpdate.length === 0) return;
+
+    Promise.all(needsUpdate.map(async entry => {
+      const p = entry.plan;
+      const originalStartDate = p.startDate ?? entry.startDate ?? null;
+      const needsPreview = !isPremium && !p.previewWeeks?.length
+        && (p.totalRealWeeks ?? p.weeks?.length ?? 0) > FREE_WEEKS_LIMIT;
+
+      if (needsPreview) {
+        const generated = await generatePlan(entry.profile, false);
+        return {
+          id: entry.id,
+          updated: {
+            ...p,
+            weeks: p.weeks,
+            previewWeeks: generated.previewWeeks ?? [],
+            totalRealWeeks: p.totalRealWeeks ?? generated.totalRealWeeks,
+            version: PLAN_VERSION,
+            ...(originalStartDate ? { startDate: originalStartDate } : {}),
+          },
+        };
+      }
+
+      return {
+        id: entry.id,
+        updated: { ...p, version: PLAN_VERSION, ...(originalStartDate ? { startDate: originalStartDate } : {}) },
+      };
+    })).then(results => {
       setPlans(prev => prev.map(e => {
         const r = results.find(x => x.id === e.id);
         return r ? { ...e, plan: r.updated } : e;
       }));
     });
-  }, [user?.id, screen]);
+  }, [user?.id, screen, isPremium]);
 
   useEffect(() => {
     if (!plan) return;
@@ -6122,9 +6301,12 @@ export default function App() {
   const handleGenerate = async () => {
     setScreen("loading"); setError(null);
     try {
-      const p  = await generatePlan(profile, isPremium);
+      const genProfile = !isPremium && profile.sessionsPerWeek > FREE_FREQ_LIMIT
+        ? { ...profile, sessionsPerWeek: FREE_FREQ_LIMIT }
+        : profile;
+      const p  = await generatePlan(genProfile, isPremium);
       const id = `plan_${Date.now()}`;
-      const entry = { id, profile: { ...profile }, plan: p, startDate: Date.now() };
+      const entry = { id, profile: { ...genProfile }, plan: p, startDate: Date.now() };
       if (addingPlan) {
         setPlans(prev => [...prev, entry]);
         setAddingPlan(false);
@@ -6166,11 +6348,12 @@ export default function App() {
     if (feedbackWeek === null) return;
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
-      const adjusted = adjustPlan(e.plan, feedbackWeek, rating);
+      const base = isPremium ? adjustPlan(e.plan, feedbackWeek, rating) : e.plan;
       const withSatisfaction = {
-        ...adjusted,
-        weeks: adjusted.weeks.map((w, i) => i !== feedbackWeek ? w : {
+        ...base,
+        weeks: base.weeks.map((w, i) => i !== feedbackWeek ? w : {
           ...w,
+          feedback: rating,
           satisfaction: { motivation, pain, comment, at: new Date().toISOString() },
         }),
       };
@@ -6187,6 +6370,9 @@ export default function App() {
         comment: comment || null,
         created_at: new Date().toISOString(),
       }).then(() => {});
+    }
+    if (!isPremium) {
+      showToast("Retour enregistré. Premium ajuste le volume des prochaines séances.", 5500);
     }
     setFeedbackWeek(null);
   };
@@ -6215,13 +6401,7 @@ export default function App() {
       // Semaines entièrement validées → on garde l'ancienne semaine telle quelle
       // (même nombre de séances, même contenu, même historique)
       // Semaines non validées → on prend la nouvelle semaine générée avec la nouvelle fréquence
-      const mergedWeeks = newPlan.weeks.map((week, i) => {
-        const oldWeek = oldWeeks[i];
-        if (!oldWeek) return week;
-        const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(isSessionResolved);
-        if (!allDone) return week;
-        return oldWeek; // Semaine validée : on ne touche à rien
-      });
+      const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
       const planWithDate = { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
       setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: newProfile, plan: planWithDate }));
       setScreen("app"); setActiveTab("plan");
@@ -6468,7 +6648,7 @@ export default function App() {
         {!user && plans.length > 0 && (
           <div style={{ position: "sticky", top: 0, zIndex: 50, background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 2px 12px rgba(0,87,255,0.25)" }}>
             <span style={{ flex: 1, lineHeight: 1.3 }}>
-              💾 Sauvegarde ton plan pour le retrouver sur tous tes appareils
+              Sauvegarde ton plan pour le retrouver sur tous tes appareils
             </span>
             <button onClick={() => { authOpenedFromUrlRef.current = false; openAuth("register"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
               Créer mon compte
@@ -6482,7 +6662,7 @@ export default function App() {
         <Footer aboveBottomNav />
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
-        {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} />}
+        {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} isPremium={isPremium} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
         {toast && (

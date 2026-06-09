@@ -28,7 +28,7 @@
 
 - **BNSSA / tests pompiers** : séances orientées **examen** — répétitions 100 m, **simulations sauvetage** (sortie eau, enchaînement, marche), pas seulement de l’endurance crawl générique. `tests_pompiers` partage les templates `bnssa`.
 - **BPJEPS AAN** : focus **400 m NL** (objectif < 7'40"), fractionné, régularité des temps — pas le même contenu que BNSSA.
-- **Eau libre** : préfixer `📍 À faire en eau libre`, sighting, combinaison, repères — pas uniquement des reps bassin.
+- **Eau libre** : préfixer `À faire en eau libre`, sighting, combinaison, repères — pas uniquement des reps bassin.
 - **Triathlon** : cues course (régularité, bouée, allure compétition sur reps longues).
 
 ### Pédagogie & ton
@@ -52,6 +52,7 @@
 | 2026-05-16 | Mémoire initiale | Création de ce fichier + règles Cursor pour éviter de répéter les erreurs | ✅ |
 | 2026-05-16 | Eau libre + Performance | Ne pas utiliser le bloc perf « 4 nages » (brasse) : `usePoolIMBlock` = false pour OW/triathlon. Séances crawl/sighting. 4 nages léger OK (1 tour IM, peu de brasse). `PLAN_VERSION` → 10 | ✅ |
 | 2026-06-09 | Vocabulaire séances | Remplacer « sculling » par « godilles » (terme français) dans les templates récup / technique | ✅ |
+| 2026-06-09 | Migration PLAN_VERSION | Ne plus régénérer les semaines au bump de version — préserver toute semaine avec séance validée/oubliée/sautée ou feedback | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -72,6 +73,7 @@
 6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`).
 7. **Sportif / Performance** : mêmes volumes et mêmes intitulés — doit rester différencié.
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance.
+9. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement.
 
 ---
 

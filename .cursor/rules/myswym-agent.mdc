@@ -19,6 +19,7 @@ Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif*
 - Auth : `/connexion`, `/inscription` (legacy `?auth=` → redirect).
 - Footer global : `src/Footer.jsx` sur toutes les pages.
 - Freemium : 4 semaines, déblocage progressif, Premium = plans complets, multi-plans, départs `D…`.
+- **Ne jamais régénérer silencieusement les semaines d'un plan existant** (progression utilisateur). `PLAN_VERSION` = métadonnées uniquement ; merge via `shouldPreserveWeek` / `mergePreservingProgress`.
 
 ## Fichiers sensibles
 
