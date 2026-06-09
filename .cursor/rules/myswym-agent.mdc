@@ -1,0 +1,26 @@
+---
+description: Comportement agent sur le projet MySWYM (mémoire, produit, routes)
+alwaysApply: true
+---
+
+# Agent MySWYM
+
+## Mémoire des corrections natation
+
+Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif**, ou une règle métier natation :
+
+1. Appliquer le fix dans le code si demandé.
+2. **Documenter** dans `docs/natation-corrections.md` (tableau historique + section « erreurs récurrentes » si nouvelle règle).
+3. Ne pas refaire une erreur déjà listée dans ce fichier.
+
+## Produit (rappels)
+
+- Plans = moteur rule-based dans `App.jsx`, pas d'IA générative.
+- Auth : `/connexion`, `/inscription` (legacy `?auth=` → redirect).
+- Footer global : `src/Footer.jsx` sur toutes les pages.
+- Freemium : 4 semaines, déblocage progressif, Premium = plans complets, multi-plans, départs `D…`.
+
+## Fichiers sensibles
+
+- `src/App.jsx` (~6000 lignes) : plan + séances — changements ciblés uniquement.
+- Ne pas committer secrets ; pas de README marketing sans demande.

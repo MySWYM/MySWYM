@@ -10,7 +10,7 @@ import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -253,6 +253,9 @@ const formatDuration = (mins) => {
   return `${Math.floor(mins / 60)}h${mins % 60 ? (mins % 60).toString().padStart(2, "0") : ""}`;
 };
 
+const isSessionResolved = (s) => s.completed || !!s.skipped;
+const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
+
 const computeStats = (plan) => {
   if (!plan?.weeks) return { totalSessions: 0, totalMeters: 0, streak: 0, perfectWeeks: 0, speedSessions: 0, techniqueSessions: 0, planTotal: 0, weeklyData: [] };
   let totalSessions = 0, totalMeters = 0, currentStreak = 0, maxStreak = 0, perfectWeeks = 0, speedSessions = 0, techniqueSessions = 0;
@@ -263,7 +266,7 @@ const computeStats = (plan) => {
     total: w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
   }));
   plan.weeks.forEach(week => {
-    if (week.sessions.length > 0 && week.sessions.every(s => s.completed)) perfectWeeks++;
+    if (week.sessions.length > 0 && week.sessions.every(s => s.completed && !s.skipped)) perfectWeeks++;
     week.sessions.forEach(s => {
       if (s.completed) {
         totalSessions++; totalMeters += parseInt(s.distance) || 0; currentStreak++;
@@ -904,14 +907,14 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   // ── Première séance non validée du plan courant ──────────────────────────
   const currentSessionRef = (() => {
     if (!plan?.weeks) return null;
-    const wi = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
+    const wi = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
     if (wi === -1) return null;
-    const si = plan.weeks[wi].sessions.findIndex(s => !s.completed);
+    const si = plan.weeks[wi].sessions.findIndex(s => !isSessionResolved(s));
     if (si === -1) return null;
     return { weekIndex: wi, sessionIndex: si, session: plan.weeks[wi].sessions[si] };
   })();
 
-  const canValidate = todaySwim && currentSessionRef && !currentSessionRef.session.completed;
+  const canValidate = todaySwim && currentSessionRef && !isSessionResolved(currentSessionRef.session);
 
   // Pendant le chargement on affiche le bouton "Connecter" (état optimiste)
   // il sera remplacé par l'état réel dès que checkConnection() répond
@@ -2396,9 +2399,31 @@ const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
 // ── SESSION CARD ──────────────────────────────────────────────────────────
 const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) => {
   const done = session.completed;
+  const skipped = session.skipped;
+  const resolved = isSessionResolved(session);
   const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const close = () => setShowMenu(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [showMenu]);
+
+  const handleCheckboxClick = (e) => {
+    e.stopPropagation();
+    if (resolved) {
+      onComplete(weekIndex, sessionIndex, "reset");
+      setShowMenu(false);
+    } else {
+      setShowMenu(v => !v);
+    }
+  };
+
+  const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
 
   // First detail line shown as inline description
   const firstDetail = session.details?.[0] || null;
@@ -2406,17 +2431,17 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
 
   return (
     <div style={{
-      background: done ? G.greyXLight : G.white,
+      background: resolved ? G.greyXLight : G.white,
       borderRadius: 16,
-      border: `1px solid ${done ? G.greyLight : "rgba(142,179,255,0.13)"}`,
-      opacity: done ? 0.72 : 1,
+      border: `1px solid ${resolved ? G.greyLight : "rgba(142,179,255,0.13)"}`,
+      opacity: resolved ? 0.72 : 1,
       transition: "all 0.3s",
-      boxShadow: done ? "none" : "0 2px 12px rgba(142,179,255,0.10)",
+      boxShadow: resolved ? "none" : "0 2px 12px rgba(142,179,255,0.10)",
       overflow: "hidden",
       position: "relative",
     }}>
       {/* Left accent bar */}
-      {!done && (
+      {!resolved && (
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
           background: tm.color, borderRadius: "3px 0 0 3px",
@@ -2430,13 +2455,13 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
           onClick={() => setShowTooltip(v => !v)}
           style={{
             width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-            background: done ? G.greyLight : tm.bg,
+            background: resolved ? G.greyLight : tm.bg,
             border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
             position: "relative", marginTop: 1,
           }}
         >
-          <tm.Icon size={20} color={done ? G.greyMid : tm.color} />
+          <tm.Icon size={20} color={resolved ? G.greyMid : tm.color} />
           {showTooltip && tm.tooltip && (
             <div
               onClick={e => { e.stopPropagation(); setShowTooltip(false); }}
@@ -2457,27 +2482,66 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: done ? G.greyMid : tm.color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: done ? G.grey : G.ink, lineHeight: 1.3 }}>{session.title}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: resolved ? G.greyMid : tm.color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: resolved ? G.grey : G.ink, lineHeight: 1.3 }}>{session.title}</div>
+              {skipped && (
+                <span style={{ display: "inline-block", marginTop: 4, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
+                  {SKIP_LABELS[skipped]}
+                </span>
+              )}
             </div>
             {/* Right: distance pill + checkbox */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0, position: "relative" }}>
               <button
-                onClick={() => onComplete(weekIndex, sessionIndex)}
+                onClick={handleCheckboxClick}
                 style={{
                   width: 30, height: 30, borderRadius: "50%",
-                  border: `2px solid ${done ? G.mint : G.greyLight}`,
-                  background: done ? G.mint : "transparent",
+                  border: `2px solid ${checkboxColor}`,
+                  background: resolved ? checkboxColor : "transparent",
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
                 }}
               >
                 {done && <Check size={12} color={G.white} />}
+                {skipped === "missed" && <RotateCcw size={11} color={G.white} />}
+                {skipped === "not_done" && <X size={11} color={G.white} />}
               </button>
+              {showMenu && (
+                <div
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 60,
+                    background: G.white, borderRadius: 12, padding: 6,
+                    boxShadow: "0 8px 28px rgba(0,0,0,0.14)", border: `1px solid ${G.greyLight}`,
+                    minWidth: 168,
+                  }}
+                >
+                  {[
+                    { id: "done", label: "Séance faite", icon: Check, color: G.mint },
+                    { id: "missed", label: "Oubliée", icon: RotateCcw, color: G.gold },
+                    { id: "not_done", label: "Pas faite", icon: X, color: G.grey },
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => { onComplete(weekIndex, sessionIndex, opt.id); setShowMenu(false); }}
+                      style={{
+                        width: "100%", padding: "9px 10px", borderRadius: 8, border: "none",
+                        background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+                        fontSize: 13, fontWeight: 600, color: G.ink, textAlign: "left",
+                      }}
+                    >
+                      <span style={{ width: 22, height: 22, borderRadius: "50%", background: `${opt.color}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <opt.icon size={12} color={opt.color} />
+                      </span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <span style={{
                 fontSize: 11, fontWeight: 700,
-                color: done ? G.greyMid : tm.color,
-                background: done ? G.greyLight : tm.bg,
+                color: resolved ? G.greyMid : tm.color,
+                background: resolved ? G.greyLight : tm.bg,
                 padding: "3px 10px", borderRadius: 100,
                 whiteSpace: "nowrap",
               }}>{session.distance}</span>
@@ -2490,8 +2554,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
               <Timer size={11} color={G.greyMid} />
               <span style={{ fontSize: 11, color: G.grey }}>{formatDuration(session.duration)}</span>
             </div>
-            <span style={{ fontSize: 11, color: done ? G.greyMid : G.grey }}>·</span>
-            <span style={{ fontSize: 11, color: done ? G.greyMid : G.inkLight, fontWeight: 500 }}>{session.intensity}</span>
+            <span style={{ fontSize: 11, color: resolved ? G.greyMid : G.grey }}>·</span>
+            <span style={{ fontSize: 11, color: resolved ? G.greyMid : G.inkLight, fontWeight: 500 }}>{session.intensity}</span>
           </div>
 
           {/* First detail line shown inline */}
@@ -2547,9 +2611,10 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
 const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
   const [open, setOpen] = useState(isCurrentWeek);
-  const done = week.sessions.filter(s => s.completed).length;
+  const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
   const allDone = done === total && total > 0;
+  const allActuallyDone = total > 0 && week.sessions.every(s => s.completed && !s.skipped);
   const totalDist = week.sessions.reduce((acc, s) => acc + (parseInt(s.distance) || 0), 0);
   const doneDist  = week.sessions.filter(s => s.completed).reduce((acc, s) => acc + (parseInt(s.distance) || 0), 0);
   const distLabel = totalDist >= 1000 ? `${(totalDist/1000).toFixed(1)} km` : `${totalDist} m`;
@@ -2561,18 +2626,18 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
       overflow: "hidden",
       border: isCurrentWeek
         ? `2px solid ${G.blue}`
-        : allDone ? `1px solid ${G.mint}40` : `1px solid rgba(142,179,255,0.13)`,
+        : allDone ? `1px solid ${allActuallyDone ? G.mint : G.gold}40` : `1px solid rgba(142,179,255,0.13)`,
       marginBottom: 12,
       boxShadow: isCurrentWeek
         ? "0 6px 24px rgba(53,93,163,0.16)"
-        : allDone ? "0 2px 10px rgba(0,196,140,0.08)" : "0 2px 10px rgba(142,179,255,0.07)",
+        : allDone ? `0 2px 10px ${allActuallyDone ? "rgba(0,196,140,0.08)" : "rgba(245,158,11,0.10)"}` : "0 2px 10px rgba(142,179,255,0.07)",
     }}>
       {/* Top gradient bar */}
       {isCurrentWeek && (
         <div style={{ height: 4, background: `linear-gradient(90deg, ${G.blue}, ${G.blueMid})` }} />
       )}
       {allDone && !isCurrentWeek && (
-        <div style={{ height: 4, background: `linear-gradient(90deg, ${G.mint}, #34d399)` }} />
+        <div style={{ height: 4, background: `linear-gradient(90deg, ${allActuallyDone ? G.mint : G.gold}, ${allActuallyDone ? "#34d399" : "#fbbf24"})` }} />
       )}
 
       {/* Header button */}
@@ -2589,7 +2654,9 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
                 <span style={{ fontSize: 9, fontWeight: 800, color: G.white, background: G.blue, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>EN COURS</span>
               )}
               {allDone && !isCurrentWeek && (
-                <span style={{ fontSize: 9, fontWeight: 800, color: G.mint, background: G.mintLight, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>✓ TERMINÉE</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: allActuallyDone ? G.mint : G.gold, background: allActuallyDone ? G.mintLight : G.goldLight, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>
+                  {allActuallyDone ? "✓ TERMINÉE" : "PASSÉE"}
+                </span>
               )}
             </div>
             {/* Metric chips row */}
@@ -2607,10 +2674,10 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
           {/* Right: ring + counter + chevron */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: 12 }}>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: allDone ? G.mint : G.blue, letterSpacing: "-0.02em", lineHeight: 1 }}>{done}/{total}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: allDone ? (allActuallyDone ? G.mint : G.gold) : G.blue, letterSpacing: "-0.02em", lineHeight: 1 }}>{done}/{total}</div>
               <div style={{ fontSize: 9, color: G.greyMid, letterSpacing: "0.04em", textTransform: "uppercase", marginTop: 2 }}>séances</div>
             </div>
-            <Ring value={total > 0 ? done / total : 0} size={36} stroke={4} color={allDone ? G.mint : G.blue} bg={G.greyLight} label="" />
+            <Ring value={total > 0 ? done / total : 0} size={36} stroke={4} color={allDone ? (allActuallyDone ? G.mint : G.gold) : G.blue} bg={G.greyLight} label="" />
             <div style={{ color: G.greyMid }}>
               {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
@@ -2827,7 +2894,7 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
   const startDate = plan.startDate ?? startDateProp ?? null;
-  const completedWeeks = plan.weeks.filter(w => w.sessions.every(s => s.completed)).length;
+  const completedWeeks = plan.weeks.filter(w => w.sessions.every(isSessionResolved)).length;
   const daysElapsed = startDate ? Math.floor((Date.now() - startDate) / (24 * 60 * 60 * 1000)) : null;
   const weeksElapsed = daysElapsed !== null ? Math.floor(daysElapsed / 7) : null;
 
@@ -2846,7 +2913,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
     ? (isPremium ? 28 - (daysElapsed % 28) : 7 - (daysElapsed % 7))
     : null;
 
-  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
+  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
 
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
@@ -3083,9 +3150,9 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
 const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
   const stats = computeStats(plan);
-  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(s => s.completed));
+  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
-  const nextSession = currentWeek?.sessions.find(s => !s.completed);
+  const nextSession = currentWeek?.sessions.find(s => !isSessionResolved(s));
   const daysToEvent = profile.eventDate ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000)) : null;
   const tm = nextSession ? (TYPE_META[nextSession.type] || TYPE_META.ENDURANCE) : null;
 
@@ -3093,7 +3160,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
   const weekPlanned  = currentWeek?.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
   const weekDone     = currentWeek?.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
   const weekPct      = weekPlanned > 0 ? Math.min(100, Math.round(weekDone / weekPlanned * 100)) : 0;
-  const weekSessions = currentWeek?.sessions.filter(s => s.completed).length ?? 0;
+  const weekSessions = currentWeek?.sessions.filter(isSessionResolved).length ?? 0;
   const weekTotal    = currentWeek?.sessions.length ?? 0;
 
   // Recent completed sessions (last 3)
@@ -5617,7 +5684,7 @@ const generatePlan = async (profile, isPremium = false) => {
             : [...details, fillLine];
         }
         const dist = calcSessionDistance(details);
-        return { ...sessionData, details, distance: `${dist}m`, duration: Math.max(30, Math.min(120, Math.round(dist / 38))), completed: false };
+        return { ...sessionData, details, distance: `${dist}m`, duration: Math.max(30, Math.min(120, Math.round(dist / 38))), completed: false, skipped: null };
       }),
     };
   });
@@ -6026,7 +6093,7 @@ export default function App() {
           const mergedWeeks = newPlan.weeks.map((week, i) => {
             const oldWeek = oldWeeks[i];
             if (!oldWeek) return week;
-            const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(s => s.completed);
+            const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(isSessionResolved);
             return allDone ? oldWeek : week;
           });
           return { id: entry.id, updated: { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) } };
@@ -6073,17 +6140,24 @@ export default function App() {
     }
   };
 
-  const handleComplete = (weekIndex, sessionIndex) => {
+  const handleComplete = (weekIndex, sessionIndex, status) => {
     setPlans(prev => prev.map(entry => {
       if (entry.id !== activePlanId) return entry;
       const newPlan = {
         ...entry.plan,
         weeks: entry.plan.weeks.map((w, wi) => wi !== weekIndex ? w : {
-          ...w, sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, completed: !s.completed }),
+          ...w, sessions: w.sessions.map((s, si) => {
+            if (si !== sessionIndex) return s;
+            if (status === "reset") return { ...s, completed: false, skipped: null };
+            if (status === "done") return { ...s, completed: true, skipped: null };
+            if (status === "missed") return { ...s, completed: false, skipped: "missed" };
+            if (status === "not_done") return { ...s, completed: false, skipped: "not_done" };
+            return { ...s, completed: true, skipped: null };
+          }),
         }),
       };
       const updatedWeek = newPlan.weeks[weekIndex];
-      if (updatedWeek.sessions.every(s => s.completed) && !updatedWeek.feedback) setTimeout(() => setFeedbackWeek(weekIndex), 700);
+      if (updatedWeek.sessions.every(isSessionResolved) && !updatedWeek.feedback) setTimeout(() => setFeedbackWeek(weekIndex), 700);
       return { ...entry, plan: newPlan };
     }));
   };
@@ -6144,7 +6218,7 @@ export default function App() {
       const mergedWeeks = newPlan.weeks.map((week, i) => {
         const oldWeek = oldWeeks[i];
         if (!oldWeek) return week;
-        const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(s => s.completed);
+        const allDone = oldWeek.sessions.length > 0 && oldWeek.sessions.every(isSessionResolved);
         if (!allDone) return week;
         return oldWeek; // Semaine validée : on ne touche à rien
       });

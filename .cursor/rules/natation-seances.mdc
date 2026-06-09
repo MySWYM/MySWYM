@@ -1,0 +1,42 @@
+---
+description: Règles pour le contenu des séances et programmes natation MySWYM
+globs: src/App.jsx
+alwaysApply: false
+---
+
+# Séances natation MySWYM
+
+## Avant toute modification
+
+1. **Lire** `docs/natation-corrections.md` (mémoire des corrections Arthur).
+2. Ne pas réintroduire les erreurs listées en bas de ce fichier mémoire.
+3. Si Arthur corrige une séance dans le chat → **mettre à jour** `docs/natation-corrections.md` avec une ligne datée avant de terminer.
+
+## Où coder
+
+- Corps des séances : `SESSION_TEMPLATES` dans `src/App.jsx`
+- Répartition semaines : `PHASE_PATTERNS`, `BNSSA_PATTERNS`, `WELLNESS_PATTERNS`, etc.
+- Changement de structure → incrémenter `PLAN_VERSION`
+
+## Règles de contenu
+
+- **Découverte** : court, simple, encourageant ; pas de charge seuil/vitesse précoce.
+- **BNSSA / pompiers** : 100 m répétés + **simulations sauvetage** (sortie eau, enchaînement) ; pas endurance générique seule.
+- **BPJEPS** : 400 m NL, objectif examen, régularité — distinct de BNSSA.
+- **Eau libre** : `📍` + sighting / combinaison ; pas que du bassin.
+- **Triathlon** : cues régularité / bouée sur reps longues.
+- Toujours **échauffement + retour calme** (sauf OW déjà structuré autrement).
+- Distances = multiples du bassin (`pool` 25/50).
+- Premium : `dep()` → `D…` + allure si `pace100`. Gratuit : `R…`.
+- Sprint = récup **complète** entre reps.
+
+## Qualité
+
+- Vérifier cohérence distance annoncée vs `calcSessionDistance(details)`.
+- Varier les titres / détails via `weekIdx` ; éviter copier-coller une variante déjà refusée (voir mémoire).
+- Ton : français, tutoiement, consignes concrètes.
+
+## Interdit
+
+- Générer des séances via API LLM dans l’app.
+- Ignorer `docs/natation-corrections.md` quand on touche aux templates.
