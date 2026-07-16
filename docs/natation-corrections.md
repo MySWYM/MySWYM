@@ -10,7 +10,9 @@
 
 ### Moteur & format
 
-- Les séances sont générées dans `src/App.jsx` : `SESSION_TEMPLATES`, `PHASE_PATTERNS`, `generatePlan`, `PLAN_VERSION`.
+- Les séances sont générées dans `generatePlan` :
+  - **Moteur coaching** (`src/lib/swim-session-generator.js` + `swim-plan-bridge.js`) : triathlon, eau libre, progression, bien-être, compétition maître. Structure **départ (godilles Z1) → technique rotative → corps physio (Z1–Z4) → fin RAC**, règle **+10 %** hebdo.
+  - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : BNSSA, BPJEPS, tests pompiers uniquement.
 - **Pas de LLM** pour générer les séances : logique déterministe uniquement.
 - Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m).
 - Chaque séance structurée : **échauffement** + **retour calme** (sauf séances eau libre spécifiques).
@@ -53,6 +55,14 @@
 | 2026-05-16 | Eau libre + Performance | Ne pas utiliser le bloc perf « 4 nages » (brasse) : `usePoolIMBlock` = false pour OW/triathlon. Séances crawl/sighting. 4 nages léger OK (1 tour IM, peu de brasse). `PLAN_VERSION` → 10 | ✅ |
 | 2026-06-09 | Vocabulaire séances | Remplacer « sculling » par « godilles » (terme français) dans les templates récup / technique | ✅ |
 | 2026-06-09 | Migration PLAN_VERSION | Ne plus régénérer les semaines au bump de version — préserver toute semaine avec séance validée/oubliée/sautée ou feedback | ✅ |
+| 2026-07-15 | Moteur coaching | Intégration `swim-session-generator.js` (phases Foncier→Affûtage, +10%, allures Z1–Z4, godilles) via `swim-plan-bridge.js` — BNSSA/BPJEPS conservent l'ancien moteur | ✅ |
+| 2026-07-16 | Format Arthur | Source de vérité séances = Excel OpenSwim (Thierry) : départ → technique → corps Z → RAC. Titres type `Construction du volume S4.1`, zones en intensité. Doc `arthur-session-format.md`. UI allégée. | ✅ |
+| 2026-07-16 | COSD + Arthur | UI figée. Contenu = format Arthur + programmation polarisée COSD (rôles Aéro/Seuil/VO2/Vitesse par mésocycle). Doc `plan-methodology.md`. SessionCard restaurée. | ✅ |
+| 2026-07-16 | Force regen v14 | Arthur : aucun user actif → `PLAN_VERSION` 14 régénère les semaines au chargement (migration forcée) pour preview contenu | ✅ |
+| 2026-07-16 | Distances propres | Corps/départs sans 125/175m — blocs type Excel (50/100/150/200/400). `PLAN_VERSION` 15 | ✅ |
+| 2026-07-16 | Roulis = palmes | Jamais de plaquettes sur roulis/rotation du corps — uniquement palmes. `PLAN_VERSION` 16 | ✅ |
+| 2026-07-16 | Grand & petit chien | Focus `technique_chiens` 3× dans le cycle + départs ; présent dans ~2/3 des séances. `PLAN_VERSION` 17 | ✅ |
+| 2026-06-29 | Eau libre 5k/10k S1–S3 | Banque `OW_BASE_SESSIONS` (9 archétypes signature coach) en phase base semaines 1–3 : éducatifs lents → Z2 nage appliquée → sensation/RAC. Scaling régulier/sportif/perf. `OPEN_WATER_PATTERNS`. `PLAN_VERSION` → 12 | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -73,7 +83,7 @@
 6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`).
 7. **Sportif / Performance** : mêmes volumes et mêmes intitulés — doit rester différencié.
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance.
-9. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement.
+9. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement. **Exception** : force regen explicite demandée par Arthur (ex. v14, aucun user actif).
 
 ---
 

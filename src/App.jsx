@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator } from "./lib/swim-plan-bridge.js";
 
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
@@ -208,9 +209,30 @@ const checkIsPremium = (user) => {
   if (meta?.subscription !== "premium") return false;
   // Si subscription_end existe, vérifier qu'elle n'est pas dépassée
   if (meta?.subscription_end != null) {
-    return meta.subscription_end * 1000 > Date.now();
+    const endMs = Number(meta.subscription_end) * 1000;
+    if (!Number.isFinite(endMs)) return true; // métadonnée invalide → ne pas bloquer à tort
+    return endMs > Date.now();
   }
   return true; // pas de date de fin = premium sans limite (legacy)
+};
+
+const syncSubscriptionFromStripe = async () => {
+  const { data: refreshData } = await supabase.auth.refreshSession();
+  const session = refreshData?.session;
+  if (!session) return null;
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-subscription`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({}),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Synchronisation échouée");
+  const { data } = await supabase.auth.refreshSession();
+  return data?.user ?? null;
 };
 
 const weeksUntil = (dateStr) => {
@@ -255,6 +277,8 @@ const formatDuration = (mins) => {
 
 const isSessionResolved = (s) => s.completed || !!s.skipped;
 const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
+const INSTAGRAM_ARTHUR = "https://www.instagram.com/arthurnatation/";
+
 
 // Garde une semaine existante dès qu'il y a du progrès, un feedback ou une satisfaction
 const shouldPreserveWeek = (week) => {
@@ -265,6 +289,66 @@ const shouldPreserveWeek = (week) => {
 
 const mergePreservingProgress = (oldWeeks, newWeeks) =>
   newWeeks.map((week, i) => (shouldPreserveWeek(oldWeeks[i]) ? oldWeeks[i] : week));
+
+// Empreinte profil pour détecter les doublons cross-device (même objectif recréé avec un autre id)
+const planFingerprint = (entry) => {
+  const p = entry?.profile ?? {};
+  return [p.category, p.goal, p.eventDate, p.level, p.pool, p.sessionsPerWeek].join("|");
+};
+
+const planProgressScore = (entry) => {
+  if (!entry?.plan?.weeks) return 0;
+  return entry.plan.weeks.reduce((n, w) => n + (w.sessions?.filter(isSessionResolved).length ?? 0), 0);
+};
+
+const dedupePlans = (plans) => {
+  if (!plans?.length) return plans;
+  const groups = new Map();
+  for (const entry of plans) {
+    const fp = planFingerprint(entry);
+    if (!groups.has(fp)) groups.set(fp, []);
+    groups.get(fp).push(entry);
+  }
+  const out = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) { out.push(group[0]); continue; }
+    // Plusieurs ids pour le même objectif : garde ceux avec progression, sinon le premier
+    const withProgress = group.filter(e => planProgressScore(e) > 0);
+    if (withProgress.length >= 2) out.push(...withProgress);
+    else if (withProgress.length === 1) out.push(withProgress[0]);
+    else out.push(group[0]);
+  }
+  return out;
+};
+
+// Fusion local + remote : la source la plus récente décide quels plans existent
+// (sinon une suppression locale est ressuscitée par le remote). Pour un même id,
+// on garde la version avec le plus de progression.
+const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, localUpdatedAt = 0, remoteUpdatedAt = 0, currentActive = null, deletedIds = null) => {
+  const localIsNewer = (localUpdatedAt || 0) >= (remoteUpdatedAt || 0);
+  const base = localIsNewer ? (localPlans || []) : (remotePlans || []);
+  const other = localIsNewer ? (remotePlans || []) : (localPlans || []);
+  const byId = new Map();
+  for (const e of base) {
+    if (deletedIds?.has(e.id)) continue;
+    byId.set(e.id, e);
+  }
+  for (const e of other) {
+    if (deletedIds?.has(e.id)) continue;
+    const existing = byId.get(e.id);
+    if (!existing) continue; // ne pas réintroduire un plan absent de la source plus récente
+    byId.set(e.id, planProgressScore(e) >= planProgressScore(existing) ? e : existing);
+  }
+  const merged = dedupePlans([...byId.values()]);
+  let active = currentActive;
+  if (!active || !merged.some(e => e.id === active)) {
+    if (localActive && merged.some(e => e.id === localActive)) active = localActive;
+    else if (remoteActive && merged.some(e => e.id === remoteActive)) active = remoteActive;
+    else active = merged[0]?.id ?? null;
+  }
+  const updatedAt = new Date(Math.max(localUpdatedAt || 0, remoteUpdatedAt || 0) || Date.now()).toISOString();
+  return { plans: merged, active, updatedAt };
+};
 
 const computeStats = (plan) => {
   if (!plan?.weeks) return { totalSessions: 0, totalMeters: 0, streak: 0, perfectWeeks: 0, speedSessions: 0, techniqueSessions: 0, planTotal: 0, weeklyData: [] };
@@ -1087,7 +1171,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
   const [password,      setPassword]      = useState("");
   const [saving,        setSaving]        = useState(false);
   const [msg,           setMsg]           = useState(null);
@@ -1250,15 +1334,10 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
       <div style={{ padding: "0 16px" }}>
 
-        <SubscriptionStatusCard isPremium={isPremium} plan={plan} onUpgrade={onUpgrade} />
-
-        {/* ── 1. Stats ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
-            { Icon: Waves,   value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés",            color: G.blue,  bg: G.blueLight  },
-            { Icon: Check,   value: stats.totalSessions,                             label: "Séances",          color: G.mint,  bg: G.mintLight  },
-            { Icon: Flame,   value: stats.streak,                                    label: "Série actuelle",   color: G.coral, bg: G.coralLight },
-            { Icon: Star,    value: stats.perfectWeeks,                              label: "Sem. parfaites",   color: G.gold,  bg: G.goldLight  },
+            { Icon: Waves, value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés", color: G.blue, bg: G.blueLight },
+            { Icon: Check, value: stats.totalSessions, label: "Séances", color: G.mint, bg: G.mintLight },
           ].map(({ Icon, value, label, color, bg }, i) => (
             <div key={i} style={{ background: G.white, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1272,26 +1351,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           ))}
         </div>
 
-        {/* ── 2. Badges (compact strip) ── */}
-        {earned.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
-              Badges — {earned.length}/{BADGE_DEFS.length} débloqués
-            </div>
-            <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, marginLeft: -16, paddingLeft: 16, marginRight: -16, paddingRight: 16 }}>
-              {BADGE_DEFS.filter(b => earned.includes(b.id)).map((b, i) => (
-                <div key={b.id} style={{ flexShrink: 0, width: 56, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: badgeGradients[i % badgeGradients.length], display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 3px 10px ${b.color}33` }}>
-                    <b.icon size={20} color="#fff" />
-                  </div>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: G.ink, textAlign: "center", lineHeight: 1.2, textTransform: "uppercase" }}>{b.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── 3. Modifier le programme ── */}
+        {/* ── Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} stravaBestPace={stravaBestPace} />
 
         {/* ── 4. Compte ── */}
@@ -1548,20 +1608,12 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
 // ── STEP 1 : CATÉGORIE ────────────────────────────────────────────────────
 const Step1_Category = ({ onSelect }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 1 sur 5</p>
-    <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 48, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Pourquoi<br />tu nages ?</h2>
-    <p style={{ color: G.grey, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>Ton plan sera entièrement construit autour de ton objectif.</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>Ton objectif</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {CATEGORIES.map(cat => (
         <button key={cat.id} onClick={() => onSelect(cat.id)}
-          style={{ display: "flex", alignItems: "center", gap: 16, padding: "18px 20px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: G.greyXLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <cat.Icon size={20} color={G.ink} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: G.ink, marginBottom: 2 }}>{cat.label}</div>
-            <div style={{ fontSize: 13, color: G.grey }}>{cat.desc}</div>
-          </div>
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left" }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{cat.label}</span>
           <ArrowRight size={16} color={G.greyMid} />
         </button>
       ))}
@@ -1575,22 +1627,17 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?" };
   return (
     <div className="fade-up">
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 2 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{titles[category] || "Précise ton objectif"}</h2>
-      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>On calibre le volume de tes séances.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>{titles[category] || "Précise ton objectif"}</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
         {subs.map(s => (
           <button key={s.id} onClick={() => onSelect(s.id)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderRadius: 16, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
-            <div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: G.ink }}>{s.label}</div>
-              <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{s.dist}</div>
-            </div>
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left" }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{s.label}</span>
             <ChevronDown size={16} color={G.greyMid} style={{ transform: "rotate(-90deg)" }} />
           </button>
         ))}
       </div>
-      <button onClick={onBack} style={{ width: "100%", padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <button onClick={onBack} style={{ width: "100%", padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
     </div>
   );
 };
@@ -1843,11 +1890,8 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
 
 const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6, disabledLevels = [] }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 3 sur {total}</p>
-    <h2 style={{ fontSize: 32, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Tu es<br />où dans l'eau ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>Choisis ce qui te correspond le mieux — ton plan sera construit en conséquence.</p>
-
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 20, lineHeight: 1.1 }}>Ton niveau</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
       {LEVELS.map(l => {
         const isActive = value === l.id;
         const isDisabled = disabledLevels.includes(l.id);
@@ -1856,50 +1900,24 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
             onClick={() => !isDisabled && onChange(l.id)}
             disabled={isDisabled}
             style={{
-              display: "flex", alignItems: "center", gap: 14,
-              padding: "16px 18px", borderRadius: 16,
+              padding: "14px 16px", borderRadius: 14,
               border: `2px solid ${isDisabled ? G.greyLight : isActive ? l.color : G.greyLight}`,
               background: isDisabled ? G.greyXLight : isActive ? l.bg : G.white,
-              cursor: isDisabled ? "default" : "pointer", transition: "all 0.2s",
-              boxShadow: isActive ? `0 4px 16px ${l.color}22` : "0 2px 8px rgba(0,0,0,0.04)",
-              textAlign: "left", opacity: isDisabled ? 0.55 : 1,
+              cursor: isDisabled ? "default" : "pointer", textAlign: "left", opacity: isDisabled ? 0.55 : 1,
             }}>
-            {/* Level dots — Apple-style simple indicator */}
-            <div style={{ display: "flex", gap: 3, flexShrink: 0, alignSelf: "center" }}>
-              {[1,2,3,4].map(n => (
-                <div key={n} style={{ width: 7, height: 7, borderRadius: "50%", background: n <= l.dot ? (isDisabled ? G.greyMid : l.color) : G.greyLight, transition: "background 0.2s" }} />
-              ))}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: isDisabled ? G.grey : isActive ? l.color : G.ink, marginBottom: 2 }}>{l.label}</div>
-              {isDisabled
-                ? <div style={{ fontSize: 12, color: G.grey, fontStyle: "italic" }}>Passe d'abord par Nager &amp; progresser</div>
-                : <>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? l.color : G.inkLight }}>{l.desc}</div>
-                    <div style={{ fontSize: 11, color: G.grey, marginTop: 2, lineHeight: 1.4 }}>{l.detail}</div>
-                  </>
-              }
-            </div>
-            {isActive && !isDisabled && (
-              <div style={{ width: 22, height: 22, borderRadius: "50%", background: l.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Check size={13} color={G.white} />
-              </div>
-            )}
+            <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? l.color : G.ink }}>{l.label}</div>
+            {!isDisabled && <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{l.desc}</div>}
           </button>
         );
       })}
     </div>
-
-    <div style={{ marginBottom: 28 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Ton bassin habituel</p>
-      <div style={{ display: "flex", gap: 12 }}>
-        {POOLS.map(p => (
-          <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "16px", borderRadius: 14, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.white, color: pool === p.id ? G.white : G.ink, fontSize: 17, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{p.label}</button>
-        ))}
-      </div>
+    <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+      {POOLS.map(p => (
+        <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.white, color: pool === p.id ? G.white : G.ink, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{p.label}</button>
+      ))}
     </div>
     <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
-    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
   </div>
 );
 
@@ -2047,15 +2065,8 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
 
 const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => (
   <div className="fade-up">
-    <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 5 sur {total}</p>
-    <h2 style={{ fontSize: 34, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.05 }}>Séances<br />par semaine ?</h2>
-    <p style={{ color: G.grey, fontSize: 15, marginBottom: !isPremium ? 12 : 32 }}>On s'adapte à ta vie, pas l'inverse.</p>
-    {!isPremium && (
-      <p style={{ color: G.gold, fontSize: 13, fontWeight: 600, marginBottom: 24, background: G.goldLight, borderRadius: 10, padding: "10px 12px" }}>
-        Gratuit : 1 ou 2 séances/semaine. 3× et plus avec Premium.
-      </p>
-    )}
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 20, lineHeight: 1.1 }}>Séances par semaine</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
       {FREQUENCIES.map(f => {
         const locked = !isPremium && f.id > FREE_FREQ_LIMIT;
         const isActive = value === f.id;
@@ -2070,8 +2081,7 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
             opacity: locked ? 0.8 : 1,
           }}>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 17, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{f.label}</div>
-              <div style={{ fontSize: 13, color: isActive ? "rgba(255,255,255,0.65)" : locked ? G.greyMid : G.grey }}>{f.desc}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{f.label}</div>
             </div>
             {isActive && !locked && <Check size={16} color={G.white} />}
             {locked && (
@@ -2091,15 +2101,9 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
 
 // ── LOADING ───────────────────────────────────────────────────────────────
 const Loading = () => (
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 24, background: G.bg }}>
-    <div style={{ fontSize: 60 }}><span className="swimmer"><Waves size={52} color={G.blue} /></span></div>
-    <div style={{ textAlign: "center" }}>
-      <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 8 }}>On prépare ton plan…</h3>
-      <p style={{ color: G.grey, fontSize: 14 }}>Calcul des phases d'entraînement<br />et génération des séances</p>
-    </div>
-    <div style={{ display: "flex", gap: 8 }}>
-      {[0, 1, 2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: G.blue, animation: `pulse 1.2s ease ${i * 0.2}s infinite` }} />)}
-    </div>
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 16, background: G.bg }}>
+    <Waves size={40} color={G.blue} />
+    <p style={{ color: G.grey, fontSize: 15 }}>Génération du plan…</p>
   </div>
 );
 
@@ -2268,7 +2272,7 @@ const BadgeToast = ({ badgeId }) => {
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 2;
-const PLAN_VERSION = 11; // Incrémenter à chaque changement de structure du plan
+const PLAN_VERSION = 17; // v17 = grand chien + petit chien fréquents
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
@@ -2283,7 +2287,7 @@ const PREMIUM_TIER_LINES = [
   "Plan complet jusqu'à ton événement",
   "Jusqu'à 5 séances par semaine",
   "Ajustement du volume selon tes retours",
-  "Déblocage par blocs de 4 semaines",
+  "Toutes les semaines débloquées",
   "Départs avec allure cible (D…)",
   "Plusieurs projets · modifier fréquence et allure",
 ];
@@ -2311,7 +2315,7 @@ const PlanTierComparison = ({ compact = false }) => (
   </div>
 );
 
-const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade }) => {
+const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus }) => {
   if (isPremium) {
     return (
       <div style={{ background: G.ink, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
@@ -2343,6 +2347,11 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade }) => {
         </button>
       </div>
       <PlanTierComparison compact />
+      {onRefreshStatus && (
+        <button onClick={onRefreshStatus} style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          Actualiser le statut (déjà payé ?)
+        </button>
+      )}
     </div>
   );
 };
@@ -2438,8 +2447,9 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           </div>
         )}
 
-        <p style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>Gratuit vs Premium</p>
-        <PlanTierComparison />
+        <p style={{ fontSize: 12, color: G.grey, marginBottom: 16, lineHeight: 1.5 }}>
+          Plan complet, multi-plans, départs D… et ajustement selon ton ressenti.
+        </p>
 
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
@@ -2517,15 +2527,213 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
   );
 };
 
+// ── SESSION DETAIL PARSER ──────────────────────────────────────────────────
+// Transforme "4×50m crawl — R20" — respiration 3 temps" en blocs propres
+// (plus de · / — en chaîne dans l'UI).
+const REST_CHUNK_RE = /^(R\d+["']?|D(?:toutes les )?\d+['′]\d+"|D\d+")$/i;
+const DEPART_INLINE_RE = /D(?:toutes les )?(\d+['′]\d+"|\d+")/g;
+
+const parseIntensity = (raw) => {
+  if (!raw) return { zone: null, cue: null };
+  const parts = String(raw).split(/\s*[—–]\s*/).map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) return { zone: null, cue: null };
+  const zone = parts[0];
+  const cue = parts.slice(1).join(". ") || null;
+  return { zone, cue };
+};
+
+const parseSessionDetail = (raw) => {
+  const text = String(raw || "").trim();
+  if (!text) return null;
+
+  let kind = "work";
+  let label = null;
+  let body = text;
+
+  if (/^échauffement\s*:/i.test(text)) {
+    kind = "warm";
+    label = "Échauffement";
+    body = text.replace(/^échauffement\s*:\s*/i, "");
+  } else if (/^retour(\s+au\s+calme)?\s*:/i.test(text)) {
+    kind = "cool";
+    label = "Retour au calme";
+    body = text.replace(/^retour(\s+au\s+calme)?\s*:\s*/i, "");
+  }
+
+  const chunks = body.split(/\s*[—–]\s*/).map(s => s.trim()).filter(Boolean);
+  let main = chunks[0] || body;
+  const restParts = [];
+  const cues = [];
+
+  for (let i = 1; i < chunks.length; i++) {
+    const c = chunks[i];
+    if (REST_CHUNK_RE.test(c)) restParts.push(c.replace(/^Dtoutes les /i, "D"));
+    else cues.push(c.replace(/\s*·\s*/g, " · ").replace(/\s+/g, " ").trim());
+  }
+
+  // Rest parfois collé dans le main ("… crawl R20"")
+  if (!restParts.length) {
+    const embedded = main.match(/\s+(R\d+["']?|D(?:toutes les )?\d+['′]\d+"|D\d+")\s*$/i);
+    if (embedded) {
+      restParts.push(embedded[1].replace(/^Dtoutes les /i, "D"));
+      main = main.slice(0, embedded.index).trim();
+    }
+  }
+
+  // Séries progressives "1 lent · 2 ↗ · 3 ↗ · 4 rapide" → chips
+  let steps = null;
+  const stepSource = main.includes(":") ? main.slice(main.indexOf(":") + 1).trim() : main;
+  const stepSplit = stepSource.split(/\s*·\s*/).map(s => s.trim()).filter(Boolean);
+  if (stepSplit.length >= 3 && stepSplit.every(s => /^\d/.test(s) && s.length <= 22)) {
+    steps = stepSplit;
+    main = main.includes(":") ? main.slice(0, main.indexOf(":")).trim() : null;
+  }
+
+  return {
+    kind,
+    label,
+    main,
+    steps,
+    rest: restParts[0] || null,
+    cues,
+  };
+};
+
+const RestPill = ({ value }) => {
+  if (!value) return null;
+  const isDepart = /^D/i.test(value);
+  const pill = (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 3,
+      background: isDepart ? G.blueLight : G.greyXLight,
+      color: isDepart ? G.blue : G.inkLight,
+      fontSize: 11, fontWeight: 700, padding: "3px 8px",
+      borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0,
+      letterSpacing: "0.01em",
+    }}>
+      {isDepart && <Clock size={10} color={G.blue} />}
+      {value}
+    </span>
+  );
+  if (!isDepart) return pill;
+  return (
+    <a href="/blog/depart-interval-natation" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+      {pill}
+    </a>
+  );
+};
+
+const RichText = ({ text }) => {
+  if (!text) return null;
+  const parts = [];
+  let last = 0;
+  let match;
+  DEPART_INLINE_RE.lastIndex = 0;
+  while ((match = DEPART_INLINE_RE.exec(text)) !== null) {
+    if (match.index > last) parts.push({ type: "text", val: text.slice(last, match.index) });
+    parts.push({ type: "depart", val: `D${match[1]}` });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push({ type: "text", val: text.slice(last) });
+  if (!parts.length) return <span>{text}</span>;
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.type === "text" ? <span key={i}>{p.val}</span> : <RestPill key={i} value={p.val} />
+      )}
+    </>
+  );
+};
+
+const SessionBlock = ({ detail, index, workIndex, accent }) => {
+  const parsed = parseSessionDetail(detail);
+  if (!parsed) return null;
+  const isSection = parsed.kind === "warm" || parsed.kind === "cool";
+
+  if (isSection) {
+    return (
+      <div style={{
+        padding: "12px 14px",
+        background: parsed.kind === "warm" ? "rgba(0,180,216,0.06)" : "rgba(0,196,140,0.06)",
+        borderRadius: 12,
+        border: `1px solid ${parsed.kind === "warm" ? "rgba(0,180,216,0.12)" : "rgba(0,196,140,0.12)"}`,
+      }}>
+        <div style={{
+          fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
+          color: parsed.kind === "warm" ? "#0097A7" : "#00897B", marginBottom: 6,
+        }}>
+          {parsed.label}
+        </div>
+        {parsed.main && (
+          <div style={{ fontSize: 14, fontWeight: 600, color: G.ink, lineHeight: 1.35 }}>
+            <RichText text={parsed.main} />
+          </div>
+        )}
+        {parsed.cues.map((c, i) => (
+          <div key={i} style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, marginTop: 4 }}>
+            {c.charAt(0).toUpperCase() + c.slice(1)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      display: "flex", gap: 12, padding: "12px 4px",
+      borderTop: index > 0 ? `1px solid ${G.greyLight}` : "none",
+    }}>
+      <div style={{
+        width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+        background: accent.bg, color: accent.color,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 12, fontWeight: 800, marginTop: 1,
+      }}>
+        {workIndex}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {parsed.main && (
+              <div style={{ fontSize: 14, fontWeight: 600, color: G.ink, lineHeight: 1.35 }}>
+                <RichText text={parsed.main} />
+              </div>
+            )}
+            {parsed.steps && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: parsed.main ? 8 : 0 }}>
+                {parsed.steps.map((s, i) => (
+                  <span key={i} style={{
+                    fontSize: 11, fontWeight: 600, color: G.inkLight,
+                    background: G.greyXLight, padding: "4px 8px", borderRadius: 8,
+                  }}>{s}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <RestPill value={parsed.rest} />
+        </div>
+        {parsed.cues.map((c, i) => (
+          <div key={i} style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, marginTop: 5 }}>
+            {c.charAt(0).toUpperCase() + c.slice(1)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── SESSION CARD ──────────────────────────────────────────────────────────
-const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) => {
+const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, defaultExpanded = false }) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
   const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const intensity = parseIntensity(session.intensity);
+  const details = session.details || [];
+  const blockCount = details.length;
 
   useEffect(() => {
     if (!showMenu) return;
@@ -2546,22 +2754,19 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
 
   const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
 
-  // First detail line shown as inline description
-  const firstDetail = session.details?.[0] || null;
-  const hasMoreDetails = session.details?.length > 1;
+  let workCounter = 0;
 
   return (
     <div style={{
       background: resolved ? G.greyXLight : G.white,
-      borderRadius: 16,
-      border: `1px solid ${resolved ? G.greyLight : "rgba(142,179,255,0.13)"}`,
-      opacity: resolved ? 0.72 : 1,
-      transition: "all 0.3s",
-      boxShadow: resolved ? "none" : "0 2px 12px rgba(142,179,255,0.10)",
+      borderRadius: 18,
+      border: `1px solid ${resolved ? G.greyLight : "rgba(142,179,255,0.14)"}`,
+      opacity: resolved ? 0.78 : 1,
+      transition: "opacity 0.25s, box-shadow 0.25s",
+      boxShadow: resolved ? "none" : "0 1px 3px rgba(25,28,30,0.04), 0 8px 24px rgba(53,93,163,0.06)",
       overflow: "hidden",
       position: "relative",
     }}>
-      {/* Left accent bar */}
       {!resolved && (
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
@@ -2569,20 +2774,20 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
         }} />
       )}
 
-      {/* Main row */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 14px 14px 18px" }}>
-        {/* Icon circle */}
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 14px 12px 16px" }}>
         <button
           onClick={() => setShowTooltip(v => !v)}
+          aria-label={`Type ${session.type}`}
           style={{
-            width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+            width: 42, height: 42, borderRadius: 12, flexShrink: 0,
             background: resolved ? G.greyLight : tm.bg,
             border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative", marginTop: 1,
+            position: "relative",
           }}
         >
-          <tm.Icon size={20} color={resolved ? G.greyMid : tm.color} />
+          <tm.Icon size={18} color={resolved ? G.greyMid : tm.color} />
           {showTooltip && tm.tooltip && (
             <div
               onClick={e => { e.stopPropagation(); setShowTooltip(false); }}
@@ -2590,7 +2795,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
                 position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
                 background: G.ink, color: G.white, fontSize: 12, lineHeight: 1.5,
                 padding: "10px 14px", borderRadius: 12, width: 230,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.22)", cursor: "pointer",
+                boxShadow: "0 8px 28px rgba(0,0,0,0.22)", cursor: "pointer",
                 textAlign: "left", fontWeight: 400,
               }}
             >
@@ -2599,42 +2804,42 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
           )}
         </button>
 
-        {/* Title + meta + description */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: resolved ? G.greyMid : tm.color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: resolved ? G.grey : G.ink, lineHeight: 1.3 }}>{session.title}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: resolved ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: resolved ? G.grey : G.ink, lineHeight: 1.25, letterSpacing: "-0.01em" }}>{session.title}</div>
               {skipped && (
-                <span style={{ display: "inline-block", marginTop: 4, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
+                <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
                 </span>
               )}
             </div>
-            {/* Right: distance pill + checkbox */}
+
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0, position: "relative" }}>
               <button
                 onClick={handleCheckboxClick}
+                aria-label={resolved ? "Réinitialiser la séance" : "Marquer la séance"}
                 style={{
-                  width: 30, height: 30, borderRadius: "50%",
+                  width: 32, height: 32, borderRadius: "50%",
                   border: `2px solid ${checkboxColor}`,
                   background: resolved ? checkboxColor : "transparent",
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
                 }}
               >
-                {done && <Check size={12} color={G.white} />}
-                {skipped === "missed" && <RotateCcw size={11} color={G.white} />}
-                {skipped === "not_done" && <X size={11} color={G.white} />}
+                {done && <Check size={13} color={G.white} />}
+                {skipped === "missed" && <RotateCcw size={12} color={G.white} />}
+                {skipped === "not_done" && <X size={12} color={G.white} />}
               </button>
               {showMenu && (
                 <div
                   onClick={e => e.stopPropagation()}
                   style={{
                     position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 60,
-                    background: G.white, borderRadius: 12, padding: 6,
-                    boxShadow: "0 8px 28px rgba(0,0,0,0.14)", border: `1px solid ${G.greyLight}`,
-                    minWidth: 168,
+                    background: G.white, borderRadius: 14, padding: 6,
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.14)", border: `1px solid ${G.greyLight}`,
+                    minWidth: 172,
                   }}
                 >
                   {[
@@ -2646,12 +2851,12 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
                       key={opt.id}
                       onClick={() => { onComplete(weekIndex, sessionIndex, opt.id); setShowMenu(false); }}
                       style={{
-                        width: "100%", padding: "9px 10px", borderRadius: 8, border: "none",
+                        width: "100%", padding: "10px 10px", borderRadius: 10, border: "none",
                         background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
                         fontSize: 13, fontWeight: 600, color: G.ink, textAlign: "left",
                       }}
                     >
-                      <span style={{ width: 22, height: 22, borderRadius: "50%", background: `${opt.color}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 8, background: `${opt.color}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <opt.icon size={12} color={opt.color} />
                       </span>
                       {opt.label}
@@ -2659,69 +2864,125 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare }) 
                   ))}
                 </div>
               )}
-              <span style={{
-                fontSize: 11, fontWeight: 700,
-                color: resolved ? G.greyMid : tm.color,
-                background: resolved ? G.greyLight : tm.bg,
-                padding: "3px 10px", borderRadius: 100,
-                whiteSpace: "nowrap",
-              }}>{session.distance}</span>
             </div>
           </div>
 
-          {/* Inline meta: time + intensity */}
-          <div style={{ display: "flex", gap: 10, marginTop: 6, alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          {/* Meta chips — clean, no middle dots */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: resolved ? G.greyMid : tm.color,
+              background: resolved ? G.greyLight : tm.bg, padding: "4px 9px", borderRadius: 8,
+            }}>{session.distance}</span>
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: G.grey, background: G.greyXLight,
+              padding: "4px 9px", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 4,
+            }}>
               <Timer size={11} color={G.greyMid} />
-              <span style={{ fontSize: 11, color: G.grey }}>{formatDuration(session.duration)}</span>
-            </div>
-            <span style={{ fontSize: 11, color: resolved ? G.greyMid : G.grey }}>·</span>
-            <span style={{ fontSize: 11, color: resolved ? G.greyMid : G.inkLight, fontWeight: 500 }}>{session.intensity}</span>
+              {formatDuration(session.duration)}
+            </span>
+            {intensity.zone && (
+              <span style={{
+                fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.white,
+                border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
+              }}>{intensity.zone}</span>
+            )}
           </div>
-
-          {/* First detail line shown inline */}
-          {firstDetail && (
-            <div style={{ marginTop: 8, fontSize: 12, color: G.grey, lineHeight: 1.55 }}>
-              <DetailLine text={firstDetail} />
-            </div>
+          {intensity.cue && !expanded && (
+            <p style={{ fontSize: 12, color: G.grey, marginTop: 8, lineHeight: 1.4, marginBottom: 0 }}>
+              {intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}
+            </p>
           )}
         </div>
       </div>
 
-      {/* More details accordion */}
-      {hasMoreDetails && (
+      {/* Workout blocks */}
+      {blockCount > 0 && (
         <>
           <button
             onClick={() => setExpanded(v => !v)}
             style={{
-              width: "100%", padding: "7px 16px",
-              background: expanded ? G.greyXLight : "transparent",
+              width: "100%", padding: "10px 16px",
+              background: expanded ? "#fafbfc" : "transparent",
               border: "none", borderTop: `1px solid ${G.greyLight}`,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
-              color: G.greyMid, fontSize: 11, fontWeight: 600,
+              color: G.inkLight, fontSize: 12, fontWeight: 600,
             }}
           >
-            <span>{expanded ? "Réduire" : `Voir tous les exercices (${session.details.length})`}</span>
-            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <span>{expanded ? "Masquer le détail" : `${blockCount} bloc${blockCount > 1 ? "s" : ""}`}</span>
+            {expanded ? <ChevronUp size={14} color={G.greyMid} /> : <ChevronDown size={14} color={G.greyMid} />}
           </button>
           {expanded && (
-            <div style={{ background: G.greyXLight, padding: "10px 16px 12px" }}>
-              {session.details.slice(1).map((d, i) => (
-                <div key={i} style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.9 }}>· <DetailLine text={d} /></div>
-              ))}
+            <div style={{ background: "#fafbfc", padding: "8px 12px 14px" }}>
+              {intensity.cue && (
+                <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, margin: "0 4px 12px" }}>
+                  {intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}
+                </p>
+              )}
+              {(() => {
+                const parsedAll = details.map(d => ({ raw: d, parsed: parseSessionDetail(d) }));
+                const nodes = [];
+                let i = 0;
+                while (i < parsedAll.length) {
+                  const { raw, parsed } = parsedAll[i];
+                  if (!parsed) { i += 1; continue; }
+                  if (parsed.kind !== "work") {
+                    nodes.push(
+                      <SessionBlock key={i} detail={raw} index={0} workIndex={0} accent={{ bg: tm.bg, color: tm.color }} />
+                    );
+                    i += 1;
+                    continue;
+                  }
+                  // Groupe les séries principales dans une seule carte
+                  const group = [];
+                  while (i < parsedAll.length && parsedAll[i].parsed?.kind === "work") {
+                    workCounter += 1;
+                    group.push({ raw: parsedAll[i].raw, workIndex: workCounter, key: i });
+                    i += 1;
+                  }
+                  nodes.push(
+                    <div key={`g-${group[0].key}`} style={{
+                      background: G.white, borderRadius: 14, padding: "4px 12px",
+                      border: `1px solid ${G.greyLight}`,
+                    }}>
+                      {group.map((g, gi) => (
+                        <SessionBlock
+                          key={g.key}
+                          detail={g.raw}
+                          index={gi}
+                          workIndex={g.workIndex}
+                          accent={{ bg: tm.bg, color: tm.color }}
+                        />
+                      ))}
+                    </div>
+                  );
+                }
+                return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{nodes}</div>;
+              })()}
+              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "14px 4px 0" }}>
+                Un terme technique ou une séance pas clair ? Regarde les vidéos sur{" "}
+                <a
+                  href={INSTAGRAM_ARTHUR}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
+                >
+                  Instagram Arthur Natation
+                </a>
+                {" "}— n’hésite pas.
+              </p>
               {done && onShare && (
-                <button onClick={() => onShare(session)} style={{ marginTop: 10, padding: "7px 12px", borderRadius: 10, background: G.white, border: `1px solid ${G.greyLight}`, fontSize: 11, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-                  <Activity size={11} color={G.grey} /> Partager cette séance
+                <button onClick={() => onShare(session)} style={{ marginTop: 12, width: "100%", padding: "10px 12px", borderRadius: 12, background: G.white, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <Activity size={12} color={G.grey} /> Partager cette séance
                 </button>
               )}
             </div>
           )}
         </>
       )}
-      {!hasMoreDetails && done && onShare && (
-        <div style={{ padding: "0 16px 12px" }}>
-          <button onClick={() => onShare(session)} style={{ padding: "7px 12px", borderRadius: 10, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 11, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-            <Activity size={11} color={G.grey} /> Partager cette séance
+      {blockCount === 0 && done && onShare && (
+        <div style={{ padding: "0 14px 12px" }}>
+          <button onClick={() => onShare(session)} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Activity size={12} color={G.grey} /> Partager cette séance
           </button>
         </div>
       )}
@@ -2737,8 +2998,8 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
   const allDone = done === total && total > 0;
   const allActuallyDone = total > 0 && week.sessions.every(s => s.completed && !s.skipped);
   const totalDist = week.sessions.reduce((acc, s) => acc + (parseInt(s.distance) || 0), 0);
-  const doneDist  = week.sessions.filter(s => s.completed).reduce((acc, s) => acc + (parseInt(s.distance) || 0), 0);
-  const distLabel = totalDist >= 1000 ? `${(totalDist/1000).toFixed(1)} km` : `${totalDist} m`;
+  const distLabel = totalDist >= 1000 ? `${(totalDist / 1000).toFixed(1)} km` : `${totalDist} m`;
+  const progress = total > 0 ? done / total : 0;
 
   return (
     <div style={{
@@ -2746,126 +3007,104 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
       borderRadius: 20,
       overflow: "hidden",
       border: isCurrentWeek
-        ? `2px solid ${G.blue}`
-        : allDone ? `1px solid ${allActuallyDone ? G.mint : G.gold}40` : `1px solid rgba(142,179,255,0.13)`,
+        ? `1.5px solid ${G.blue}`
+        : allDone ? `1px solid ${allActuallyDone ? G.mint : G.gold}35` : `1px solid ${G.greyLight}`,
       marginBottom: 12,
       boxShadow: isCurrentWeek
-        ? "0 6px 24px rgba(53,93,163,0.16)"
-        : allDone ? `0 2px 10px ${allActuallyDone ? "rgba(0,196,140,0.08)" : "rgba(245,158,11,0.10)"}` : "0 2px 10px rgba(142,179,255,0.07)",
+        ? "0 8px 28px rgba(53,93,163,0.12)"
+        : "0 1px 3px rgba(25,28,30,0.03), 0 6px 16px rgba(53,93,163,0.04)",
     }}>
-      {/* Top gradient bar */}
       {isCurrentWeek && (
-        <div style={{ height: 4, background: `linear-gradient(90deg, ${G.blue}, ${G.blueMid})` }} />
+        <div style={{ height: 3, background: `linear-gradient(90deg, ${G.blue}, ${G.blueMid})` }} />
       )}
       {allDone && !isCurrentWeek && (
-        <div style={{ height: 4, background: `linear-gradient(90deg, ${allActuallyDone ? G.mint : G.gold}, ${allActuallyDone ? "#34d399" : "#fbbf24"})` }} />
+        <div style={{ height: 3, background: allActuallyDone ? G.mint : G.gold }} />
       )}
 
-      {/* Header button */}
       <button
         onClick={() => setOpen(o => !o)}
-        style={{ width: "100%", padding: "15px 16px", background: "none", border: "none", cursor: "pointer" }}
+        style={{ width: "100%", padding: "16px", background: "none", border: "none", cursor: "pointer" }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {/* Left: title + badges */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: G.ink, letterSpacing: "-0.01em" }}>Semaine {week.number}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 17, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Semaine {week.number}</span>
               {isCurrentWeek && (
-                <span style={{ fontSize: 9, fontWeight: 800, color: G.white, background: G.blue, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>EN COURS</span>
+                <span style={{ fontSize: 10, fontWeight: 800, color: G.white, background: G.blue, padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em" }}>EN COURS</span>
               )}
               {allDone && !isCurrentWeek && (
-                <span style={{ fontSize: 9, fontWeight: 800, color: allActuallyDone ? G.mint : G.gold, background: allActuallyDone ? G.mintLight : G.goldLight, padding: "3px 9px", borderRadius: 100, letterSpacing: "0.06em" }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 800,
+                  color: allActuallyDone ? G.mint : G.gold,
+                  background: allActuallyDone ? G.mintLight : G.goldLight,
+                  padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em",
+                }}>
                   {allActuallyDone ? "TERMINÉE" : "PASSÉE"}
                 </span>
               )}
             </div>
-            {/* Metric chips row */}
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {week.focus}
+            </p>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, color: G.grey, lineHeight: 1.3 }}>{week.focus}</span>
               {totalDist > 0 && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: isCurrentWeek ? G.blue : G.greyMid, background: isCurrentWeek ? G.blueLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: isCurrentWeek ? G.blue : G.inkLight,
+                  background: isCurrentWeek ? G.blueLight : G.greyXLight,
+                  padding: "3px 9px", borderRadius: 8,
+                }}>
                   {distLabel}
                 </span>
               )}
-              <span style={{ fontSize: 11, fontWeight: 600, color: G.greyMid }}>· {total} séance{total > 1 ? "s" : ""}</span>
+              <span style={{
+                fontSize: 11, fontWeight: 600, color: G.grey,
+                background: G.greyXLight, padding: "3px 9px", borderRadius: 8,
+              }}>
+                {total} séance{total > 1 ? "s" : ""}
+              </span>
             </div>
           </div>
 
-          {/* Right: ring + counter + chevron */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: 12 }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: allDone ? (allActuallyDone ? G.mint : G.gold) : G.blue, letterSpacing: "-0.02em", lineHeight: 1 }}>{done}/{total}</div>
-              <div style={{ fontSize: 9, color: G.greyMid, letterSpacing: "0.04em", textTransform: "uppercase", marginTop: 2 }}>séances</div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{
+                fontSize: 15, fontWeight: 800,
+                color: allDone ? (allActuallyDone ? G.mint : G.gold) : G.blue,
+                fontVariantNumeric: "tabular-nums",
+              }}>{done}/{total}</span>
+              <div style={{ color: G.greyMid }}>
+                {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
             </div>
-            <Ring value={total > 0 ? done / total : 0} size={36} stroke={4} color={allDone ? (allActuallyDone ? G.mint : G.gold) : G.blue} bg={G.greyLight} label="" />
-            <div style={{ color: G.greyMid }}>
-              {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {/* Mini progress bar */}
+            <div style={{ width: 48, height: 4, borderRadius: 4, background: G.greyLight, overflow: "hidden" }}>
+              <div style={{
+                width: `${Math.round(progress * 100)}%`, height: "100%", borderRadius: 4,
+                background: allDone ? (allActuallyDone ? G.mint : G.gold) : G.blue,
+                transition: "width 0.35s ease",
+              }} />
             </div>
           </div>
         </div>
       </button>
 
-      {/* Sessions list */}
       {open && (
-        <div style={{ padding: "0 12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: "0 12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           {week.sessions.map((s, i) => (
-            <SessionCard key={i} session={s} weekIndex={weekIndex} sessionIndex={i} onComplete={onComplete} onShare={onShare} />
+            <SessionCard
+              key={i}
+              session={s}
+              weekIndex={weekIndex}
+              sessionIndex={i}
+              onComplete={onComplete}
+              onShare={onShare}
+              defaultExpanded={isCurrentWeek && i === week.sessions.findIndex(x => !isSessionResolved(x))}
+            />
           ))}
-          {week.tip && (
-            <div style={{ background: G.goldLight, borderRadius: 14, padding: "11px 14px", display: "flex", gap: 10, alignItems: "flex-start", marginTop: 2 }}>
-              <Star size={14} color={G.gold} style={{ flexShrink: 0, marginTop: 2 }} />
-              <span style={{ fontSize: 12, color: "#92400E", lineHeight: 1.55 }}>{week.tip}</span>
-            </div>
-          )}
         </div>
       )}
     </div>
-  );
-};
-
-// ── DETAIL LINE — rend les départs en badges tappables ──────────────────────
-// Capture "D1'45"" (nouveau) ET "Dtoutes les 1'45"" (ancien format stocké)
-const DEPART_RE = /D(?:toutes les )?(\d+['′]\d+"|\d+")/g;
-
-const DetailLine = ({ text }) => {
-  const parts = [];
-  let last = 0;
-  let match;
-  DEPART_RE.lastIndex = 0;
-  while ((match = DEPART_RE.exec(text)) !== null) {
-    if (match.index > last) parts.push({ type: "text", val: text.slice(last, match.index) });
-    parts.push({ type: "depart", val: `D${match[1]}` });
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) parts.push({ type: "text", val: text.slice(last) });
-
-  return (
-    <>
-      {parts.map((p, i) =>
-        p.type === "text" ? (
-          <span key={i}>{p.val}</span>
-        ) : (
-          <a
-            key={i}
-            href="/blog/depart-interval-natation"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 3,
-              background: G.blueLight, color: G.blue,
-              fontSize: 11, fontWeight: 700, padding: "1px 7px",
-              borderRadius: 6, textDecoration: "none",
-              borderBottom: `1.5px solid ${G.blue}22`,
-              verticalAlign: "middle", margin: "0 1px",
-            }}
-          >
-            <Clock size={10} color={G.blue} />
-            {p.val}
-          </a>
-        )
-      )}
-    </>
   );
 };
 
@@ -3019,19 +3258,17 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
   const daysElapsed = startDate ? Math.floor((Date.now() - startDate) / (24 * 60 * 60 * 1000)) : null;
   const weeksElapsed = daysElapsed !== null ? Math.floor(daysElapsed / 7) : null;
 
-  // Premium : +4 semaines par mois (tranche de 4)
+  // Premium : plan complet débloqué
   // Free    : +1 semaine par semaine, limité à FREE_WEEKS_LIMIT
   const unlocked = isPremium
-    ? (weeksElapsed !== null
-        ? Math.min(plan.weeks.length, (Math.floor(weeksElapsed / 4) + 1) * 4)
-        : Math.min(plan.weeks.length, (Math.floor(completedWeeks / 4) + 1) * 4))
+    ? plan.weeks.length
     : (weeksElapsed !== null
         ? Math.min(FREE_WEEKS_LIMIT, weeksElapsed + 1)
         : Math.min(FREE_WEEKS_LIMIT, completedWeeks + 1));
 
-  // Jours avant le prochain déblocage
-  const daysToNext = daysElapsed !== null
-    ? (isPremium ? 28 - (daysElapsed % 28) : 7 - (daysElapsed % 7))
+  // Jours avant le prochain déblocage (gratuit uniquement)
+  const daysToNext = !isPremium && daysElapsed !== null
+    ? 7 - (daysElapsed % 7)
     : null;
 
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
@@ -3040,9 +3277,6 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
                  || "Mon plan";
-  const daysToEvent = profile.eventDate
-    ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000))
-    : null;
   const blockedWeeks = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT
     ? plan.totalRealWeeks - FREE_WEEKS_LIMIT
     : 0;
@@ -3060,28 +3294,16 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
         <div style={{ padding: "14px 16px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
-            <span style={{
-              fontSize: 9, fontWeight: 800, letterSpacing: "0.06em",
-              color: isPremium ? G.white : G.grey,
-              background: isPremium ? G.ink : G.greyXLight,
-              padding: "3px 8px", borderRadius: 100, flexShrink: 0,
-            }}>
-              {isPremium ? "PREMIUM" : "GRATUIT"}
-            </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, color: G.grey }}>Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length} / {isPremium ? plan.weeks.length : Math.min(plan.weeks.length, plan.totalRealWeeks ?? plan.weeks.length)}</span>
-            {!isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT && (
-              <>
-                <span style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyMid, display: "inline-block" }} />
-                <span style={{ fontSize: 12, color: G.gold, fontWeight: 600 }}>{plan.totalRealWeeks - FREE_WEEKS_LIMIT} sem. en Premium</span>
-              </>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{
+              fontSize: 12, fontWeight: 600, color: G.inkLight,
+              background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
+            }}>
+              Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{isPremium ? plan.weeks.length : Math.min(plan.weeks.length, plan.totalRealWeeks ?? plan.weeks.length)}
+            </span>
             {currentWeekIndex >= 0 && currentWeek?.focus && (
-              <>
-                <span style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyMid, display: "inline-block" }} />
-                <span style={{ fontSize: 12, color: G.blue, fontWeight: 600 }}>{currentWeek.focus}</span>
-              </>
+              <span style={{ fontSize: 12, color: G.blue, fontWeight: 600 }}>{currentWeek.focus}</span>
             )}
           </div>
         </div>
@@ -3113,7 +3335,11 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
                     {lbl}{days !== null ? ` · J−${days}` : ""}
                   </button>
                   {plans.length > 1 && (
-                    <button onClick={() => onDeletePlan(entry.id)} style={{
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onDeletePlan(entry.id); }}
+                      aria-label="Supprimer ce plan"
+                      style={{
                       padding: "8px 12px 8px 4px", cursor: "pointer",
                       background: "none", border: "none",
                       color: isActive ? G.blue : G.greyMid,
@@ -3138,163 +3364,28 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
       </div>
 
       <div style={{ padding: "16px 16px 0" }}>
-        <CoachCard plan={plan} profile={profile} currentWeekIndex={currentWeekIndex} />
-
-        {/* Hero bento stats card */}
-        {(() => {
-          const totalDist = plan.weeks.reduce((acc, w) => acc + w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0), 0);
-          const completedDist = plan.weeks.reduce((acc, w) => acc + w.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0), 0);
-          const totalMins = plan.weeks.reduce((acc, w) => acc + w.sessions.reduce((a, s) => a + (parseInt(s.duration) || 0), 0), 0);
-          const daysToEvent = profile.eventDate
-            ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000))
-            : null;
-          const progressPct = Math.round(completedDist / (totalDist || 1) * 100);
-          const distLabel = totalDist >= 1000 ? `${(totalDist/1000).toFixed(1)} km` : `${totalDist} m`;
-          const timeLabel = totalMins >= 60 ? `${Math.floor(totalMins/60)}h${totalMins%60 ? (totalMins%60)+'min' : ''}` : `${totalMins} min`;
-          // Mini weekly bar chart data
-          const bars = plan.weeks.map(w => ({
-            total: w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
-            done:  w.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
-          }));
-          const maxBar = Math.max(...bars.map(b => b.total), 1);
-
-          return (
-            <div style={{ marginBottom: 22 }}>
-              {/* Title row */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink }}>Vue d'ensemble</h2>
-                <span style={{ fontSize: 12, color: G.grey, fontWeight: 600 }}>{unlocked}/{plan.weeks.length} sem. débloquées</span>
-              </div>
-
-              {/* Bento grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {/* Big distance card — col span 2 if no chart, else left half */}
-                <div style={{
-                  background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
-                  borderRadius: 18, padding: "18px 16px",
-                  boxShadow: "0 6px 20px rgba(53,93,163,0.22)",
-                  display: "flex", flexDirection: "column", justifyContent: "space-between",
-                }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Distance totale</div>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: G.white, letterSpacing: "-0.03em", lineHeight: 1 }}>{distLabel}</div>
-                  {/* Progress bar */}
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.2)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${progressPct}%`, background: G.blueMid, borderRadius: 2, transition: "width 0.8s ease" }} />
-                    </div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 5 }}>{progressPct}% accompli</div>
-                  </div>
-                </div>
-
-                {/* Mini bar chart card */}
-                <div style={{
-                  background: G.white, borderRadius: 18, padding: "14px 12px",
-                  border: `1px solid rgba(142,179,255,0.13)`,
-                  boxShadow: "0 2px 12px rgba(142,179,255,0.09)",
-                  display: "flex", flexDirection: "column",
-                }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: G.greyMid, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Par semaine</div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 3, flex: 1, minHeight: 44 }}>
-                    {bars.map((b, i) => (
-                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, height: "100%" }}>
-                        <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
-                          <div style={{ width: "100%", borderRadius: "3px 3px 0 0", overflow: "hidden", background: G.greyXLight, height: `${Math.max(8, (b.total / maxBar) * 48)}px` }}>
-                            <div style={{ width: "100%", height: `${b.total > 0 ? (b.done / b.total) * 100 : 0}%`, background: G.blue, borderRadius: "3px 3px 0 0" }} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Time card */}
-                <div style={{
-                  background: G.white, borderRadius: 18, padding: "16px 14px",
-                  border: `1px solid rgba(142,179,255,0.13)`,
-                  boxShadow: "0 2px 12px rgba(142,179,255,0.09)",
-                }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: G.purpleLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-                    <Clock size={16} color={G.purple} />
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{timeLabel}</div>
-                  <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>Durée totale</div>
-                </div>
-
-                {/* Event countdown or sessions/week */}
-                <div style={{
-                  background: G.white, borderRadius: 18, padding: "16px 14px",
-                  border: `1px solid rgba(142,179,255,0.13)`,
-                  boxShadow: "0 2px 12px rgba(142,179,255,0.09)",
-                }}>
-                  {daysToEvent !== null ? (
-                    <>
-                      <div style={{ width: 34, height: 34, borderRadius: 10, background: G.mintLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-                        <Target size={16} color={G.mint} />
-                      </div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>J−{daysToEvent}</div>
-                      <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>Avant l'event</div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ width: 34, height: 34, borderRadius: 10, background: G.coralLight, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-                        <Zap size={16} color={G.coral} />
-                      </div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em", lineHeight: 1 }}>{profile.sessionsPerWeek}×/sem</div>
-                      <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{plan.weeks.length} semaines</div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Semaines débloquées */}
         {plan.weeks.slice(0, unlocked).map((week, i) => (
           <div key={i}>
             <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} />
-            {!isPremium && i === 0 && plan.totalRealWeeks > 1 && <PremiumTeaser onUpgrade={onUpgrade} />}
           </div>
         ))}
 
-        {/* Free : paywall + aperçu des semaines bloquées */}
-        {!isPremium && blockedWeeks > 0 && (
-          <>
-            {unlocked >= FREE_WEEKS_LIMIT && (
-              <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
-            )}
-            <LockedWeeksPreview
-              weeks={plan.previewWeeks}
-              totalBlocked={blockedWeeks}
-              daysToEvent={daysToEvent}
-              onUpgrade={onUpgrade}
-            />
-          </>
+        {/* Free : paywall */}
+        {!isPremium && blockedWeeks > 0 && unlocked >= FREE_WEEKS_LIMIT && (
+          <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
         )}
 
-        {/* Prochain lot flouté (déblocage progressif) */}
-        {(isPremium || unlocked < FREE_WEEKS_LIMIT) && unlocked < plan.weeks.length && (() => {
-          const nextBatch = plan.weeks.slice(unlocked, isPremium ? unlocked + 4 : unlocked + 1);
-          return (
-            <div style={{ position: "relative", marginBottom: 10, borderRadius: 16, overflow: "hidden" }}>
-              <div style={{ filter: "blur(6px)", pointerEvents: "none", userSelect: "none", opacity: 0.55 }}>
-                {nextBatch.map((week, j) => (
-                  <WeekCard key={j} week={week} weekIndex={unlocked + j} onComplete={() => {}} onShare={() => {}} isCurrentWeek={false} />
-                ))}
-              </div>
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(240,244,248,0.5)", borderRadius: 16 }}>
-                <div style={{ background: G.white, borderRadius: 12, padding: "12px 20px", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 16px rgba(0,0,0,0.10)" }}>
-                  <Lock size={14} color={G.blue} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: G.ink }}>
-                    {daysToNext
-                      ? `${isPremium ? "4 semaines" : "Semaine suivante"} dans ${daysToNext} jour${daysToNext > 1 ? "s" : ""}`
-                      : isPremium ? "Complète le mois en cours" : "Complète la semaine en cours"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+        {/* Prochain déblocage (gratuit uniquement) */}
+        {!isPremium && unlocked < FREE_WEEKS_LIMIT && unlocked < plan.weeks.length && (
+          <p style={{ fontSize: 13, color: G.grey, textAlign: "center", marginBottom: 16, padding: "12px 16px", background: G.white, borderRadius: 12, border: `1px solid ${G.greyLight}` }}>
+            <Lock size={12} color={G.blue} style={{ verticalAlign: "middle", marginRight: 6 }} />
+            {daysToNext
+              ? `Semaine suivante dans ${daysToNext} jour${daysToNext > 1 ? "s" : ""}`
+              : "Complète la semaine en cours"}
+          </p>
+        )}
 
         <ResetConfirmButton onReset={onReset} />
       </div>
@@ -3308,23 +3399,14 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
   const nextSession = currentWeek?.sessions.find(s => !isSessionResolved(s));
-  const daysToEvent = profile.eventDate ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000)) : null;
-  const tm = nextSession ? (TYPE_META[nextSession.type] || TYPE_META.ENDURANCE) : null;
 
   // Weekly progress
   const weekPlanned  = currentWeek?.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
   const weekDone     = currentWeek?.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
-  const weekPct      = weekPlanned > 0 ? Math.min(100, Math.round(weekDone / weekPlanned * 100)) : 0;
   const weekSessions = currentWeek?.sessions.filter(isSessionResolved).length ?? 0;
   const weekTotal    = currentWeek?.sessions.length ?? 0;
 
-  // Recent completed sessions (last 3)
-  const allSessions = plan.weeks.flatMap((w, wi) =>
-    w.sessions.map((s, si) => ({ ...s, weekIndex: wi, sessionIndex: si, weekNum: w.number }))
-  );
-  const recentDone = allSessions.filter(s => s.completed).slice(-3).reverse();
-
-  // Avatar / name — user_metadata en priorité (cross-device), localStorage en fallback
+  // Avatar / name
   const avatarUrl = user?.user_metadata?.avatar_url
     || (() => { try { return localStorage.getItem("myswym_avatar"); } catch { return null; } })();
   const firstName = user?.user_metadata?.firstname
@@ -3333,10 +3415,6 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
     || user?.email?.split("@")[0]
     || "Nageur";
   const initials = firstName.slice(0, 2).toUpperCase();
-
-  // Ring dimensions — compact for mobile
-  const RS = 72, RSK = 7, Rr = (RS - RSK) / 2, Rcirc = 2 * Math.PI * Rr;
-  const Roffset = Rcirc * (1 - weekPct / 100);
 
   const planFinished = stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
 
@@ -3413,38 +3491,49 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
         )}
 
         {/* ── Prochaine séance — card principale ── */}
-        {nextSession && tm ? (
+        {nextSession ? (
           <button onClick={() => onTabChange("plan")} style={{
             width: "100%", textAlign: "left", cursor: "pointer",
-            background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
-            borderRadius: 24, padding: "20px 18px", marginBottom: 12,
-            border: "none", boxShadow: "0 10px 32px rgba(53,93,163,0.32)",
-            WebkitTapHighlightColor: "transparent", display: "block",
+            background: G.white, borderRadius: 20, padding: "18px", marginBottom: 12,
+            border: `1px solid ${G.greyLight}`,
+            boxShadow: "0 1px 3px rgba(25,28,30,0.04), 0 10px 28px rgba(53,93,163,0.07)",
+            display: "block",
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-              Sem. {currentWeekIndex + 1} · {currentWeek?.focus || "À faire"}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(255,255,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <tm.Icon size={22} color={G.white} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: G.white, lineHeight: 1.2, marginBottom: 3 }}>{nextSession.title}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{nextSession.type}</span>
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>·</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: G.blueMid }}>{nextSession.distance}</span>
-                </div>
-              </div>
-            </div>
-            <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: 100, padding: "10px 18px", display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <Waves size={14} color={G.white} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: G.white }}>C'est ma séance du jour</span>
-              <ArrowRight size={14} color="rgba(255,255,255,0.6)" />
-            </div>
+            {(() => {
+              const tm = TYPE_META[nextSession.type] || TYPE_META.ENDURANCE;
+              const intensity = parseIntensity(nextSession.intensity);
+              return (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Prochaine séance</span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, color: tm.color, background: tm.bg,
+                      padding: "4px 9px", borderRadius: 8, letterSpacing: "0.04em",
+                    }}>{nextSession.type}</span>
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{nextSession.title}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: intensity.cue ? 10 : 0 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: G.blue, background: G.blueLight, padding: "5px 10px", borderRadius: 8 }}>{nextSession.distance}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, background: G.greyXLight, padding: "5px 10px", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Timer size={12} color={G.greyMid} />
+                      {formatDuration(nextSession.duration)}
+                    </span>
+                    {intensity.zone && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: G.inkLight, border: `1px solid ${G.greyLight}`, padding: "5px 10px", borderRadius: 8 }}>{intensity.zone}</span>
+                    )}
+                  </div>
+                  {intensity.cue && (
+                    <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: 0 }}>{intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}</p>
+                  )}
+                  <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 6, color: G.blue, fontSize: 13, fontWeight: 700 }}>
+                    Voir le plan <ArrowRight size={14} color={G.blue} />
+                  </div>
+                </>
+              );
+            })()}
           </button>
         ) : !planFinished && (
-          <div style={{ background: G.white, borderRadius: 24, padding: "20px 18px", marginBottom: 12, textAlign: "center", border: "1px solid rgba(142,179,255,0.10)" }}>
+          <div style={{ background: G.white, borderRadius: 20, padding: "20px 18px", marginBottom: 12, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
             <Trophy size={28} color={G.gold} style={{ margin: "0 auto 8px" }} />
             <p style={{ color: G.grey, fontSize: 14, fontWeight: 600 }}>Toutes les séances sont terminées !</p>
           </div>
@@ -3452,163 +3541,31 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
 
         {/* ── Semaine en cours ── */}
         <div style={{
-          background: G.white, borderRadius: 24, padding: "18px",
-          boxShadow: "0 4px 20px rgba(142,179,255,0.08)",
-          border: "1px solid rgba(142,179,255,0.08)",
+          background: G.white, borderRadius: 20, padding: "18px",
+          boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
+          border: `1px solid ${G.greyLight}`,
           marginBottom: 12,
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cette semaine</span>
-            {daysToEvent !== null && (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: G.blueLight, borderRadius: 100, padding: "3px 10px" }}>
-                <Target size={10} color={G.blue} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: G.blue }}>J−{daysToEvent}</span>
-              </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cette semaine</div>
+            <span style={{ fontSize: 13, fontWeight: 800, color: G.blue, fontVariantNumeric: "tabular-nums" }}>{weekSessions}/{weekTotal}</span>
+          </div>
+          <div style={{ height: 6, borderRadius: 6, background: G.greyLight, overflow: "hidden", marginBottom: 12 }}>
+            <div style={{
+              width: `${weekTotal > 0 ? Math.round((weekSessions / weekTotal) * 100) : 0}%`,
+              height: "100%", borderRadius: 6, background: G.blue, transition: "width 0.4s ease",
+            }} />
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: G.inkLight, background: G.greyXLight, padding: "5px 10px", borderRadius: 8 }}>
+              {weekSessions} / {weekTotal} séances
+            </span>
+            {weekPlanned > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: G.inkLight, background: G.greyXLight, padding: "5px 10px", borderRadius: 8 }}>
+                {weekDone > 0 ? weekDone.toLocaleString("fr") : "0"} / {weekPlanned >= 1000 ? `${(weekPlanned / 1000).toFixed(1)} km` : `${weekPlanned} m`}
+              </span>
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            {/* Ring */}
-            <div style={{ position: "relative", width: RS, height: RS, flexShrink: 0 }}>
-              <svg width={RS} height={RS} style={{ transform: "rotate(-90deg)" }}>
-                <circle cx={RS/2} cy={RS/2} r={Rr} fill="transparent" stroke={G.greyLight} strokeWidth={RSK} />
-                <circle cx={RS/2} cy={RS/2} r={Rr} fill="transparent" stroke={G.blue}
-                  strokeWidth={RSK} strokeLinecap="round"
-                  strokeDasharray={Rcirc} strokeDashoffset={Roffset}
-                  style={{ transition: "stroke-dashoffset 1s ease" }}
-                />
-              </svg>
-              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: G.blue, lineHeight: 1 }}>{weekPct}%</span>
-              </div>
-            </div>
-            {/* Numbers */}
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                <span style={{ fontSize: 32, fontWeight: 800, color: G.blue, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                  {weekDone > 0 ? weekDone.toLocaleString("fr") : "0"}
-                </span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: G.blueMid }}>m</span>
-                <span style={{ fontSize: 12, color: G.greyMid, marginLeft: 4 }}>/ {weekPlanned >= 1000 ? `${(weekPlanned/1000).toFixed(1)} km` : `${weekPlanned} m`}</span>
-              </div>
-              <p style={{ fontSize: 13, color: G.grey }}>{weekSessions} / {weekTotal} séances{currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}</p>
-            </div>
-            {/* Streak */}
-            <div style={{ textAlign: "center", flexShrink: 0 }}>
-              <div style={{ width: 44, height: 44, background: "#FFF3E0", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px" }}>
-                <Flame size={20} color="#E65100" />
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{stats.streak}</div>
-              <div style={{ fontSize: 10, color: G.grey }}>série</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Dernières séances ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Dernières séances</h2>
-          <button onClick={() => onTabChange("plan")} style={{ background: "none", border: "none", fontSize: 12, color: G.blue, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 3, padding: "8px 0", WebkitTapHighlightColor: "transparent", minHeight: 44 }}>
-            Tout voir <ArrowRight size={12} color={G.blue} />
-          </button>
-        </div>
-
-        {recentDone.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-            {recentDone.map((s, i) => {
-              const stm = TYPE_META[s.type] || TYPE_META.ENDURANCE;
-              return (
-                <div key={i} style={{
-                  background: G.white, borderRadius: 18, padding: "14px 16px",
-                  boxShadow: "0 2px 10px rgba(142,179,255,0.07)",
-                  border: "1px solid rgba(142,179,255,0.08)",
-                  display: "flex", alignItems: "center", gap: 14,
-                }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 13, background: stm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <stm.Icon size={20} color={stm.color} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 11, color: G.grey }}>Sem. {s.weekNum}</span>
-                      <div style={{ width: 3, height: 3, borderRadius: "50%", background: G.greyLight }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: stm.color }}>{s.distance}</span>
-                    </div>
-                  </div>
-                  <Check size={18} color={G.mint} style={{ flexShrink: 0 }} />
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div style={{ background: G.white, borderRadius: 18, padding: "28px 16px", textAlign: "center", border: "1px solid rgba(142,179,255,0.10)", marginBottom: 16 }}>
-            <Waves size={28} color={G.blueMid} style={{ margin: "0 auto 10px" }} />
-            <p style={{ color: G.grey, fontSize: 14 }}>Aucune séance terminée — commence maintenant !</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ── STATS TAB ──────────────────────────────────────────────────────────────
-const StatsTab = ({ plan }) => {
-  const stats = computeStats(plan);
-  const maxMeters = Math.max(...stats.weeklyData.map(w => w.total), 1);
-  return (
-    <div style={{ paddingBottom: 100 }}>
-      <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes performances</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white }}>Statistiques</h1>
-      </div>
-      <div style={{ padding: "20px 16px 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-          <StatPill icon={Waves}       value={`${(stats.totalMeters / 1000).toFixed(1)} km`} label="Total nagés"         color={G.blue}  bg={G.blueLight} />
-          <StatPill icon={Flame}       value={stats.streak}                                   label="Meilleure série"     color={G.coral} bg={G.coralLight} />
-          <StatPill icon={Check}       value={stats.totalSessions}                            label="Séances faites"      color={G.mint}  bg={G.mintLight} />
-          <StatPill icon={Star}        value={stats.perfectWeeks}                             label="Semaines parfaites"  color={G.gold}  bg={G.goldLight} />
-        </div>
-        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 16 }}>Volume par semaine</h3>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
-            {stats.weeklyData.map((w, i) => (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
-                <div style={{ flex: 1, width: "100%", position: "relative" }}>
-                  <div style={{ width: "100%", height: `${(w.total / maxMeters) * 100}%`, background: G.greyLight, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0 }} />
-                  <div style={{ width: "100%", height: `${(w.done / maxMeters) * 100}%`, background: w.done === w.total && w.total > 0 ? G.mint : `linear-gradient(180deg, ${G.water} 0%, ${G.blue} 100%)`, borderRadius: "4px 4px 0 0", position: "absolute", bottom: 0, transition: "height 0.8s ease" }} />
-                </div>
-                <span style={{ fontSize: 10, color: G.grey }}>{w.label}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-            {[{ color: G.blue, label: "Réalisé" }, { color: G.greyLight, label: "Prévu" }].map((l, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: l.color }} />
-                <span style={{ fontSize: 11, color: G.grey }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", border: `1px solid ${G.greyLight}` }}>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 14 }}>Répartition des types</h3>
-          {Object.entries(TYPE_META).map(([type, tm]) => {
-            const count = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type && s.completed).length;
-            const total = plan.weeks.flatMap(w => w.sessions).filter(s => s.type === type).length;
-            if (total === 0) return null;
-            return (
-              <div key={type} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <tm.Icon size={12} color={tm.color} />
-                    <span style={{ fontSize: 13, fontWeight: 500, color: G.ink }}>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
-                  </div>
-                  <span style={{ fontSize: 12, color: G.grey }}>{count}/{total}</span>
-                </div>
-                <div style={{ height: 6, background: G.greyLight, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${total > 0 ? count / total * 100 : 0}%`, background: tm.color, borderRadius: 3, transition: "width 0.6s ease" }} />
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>
@@ -3758,6 +3715,178 @@ const calcSessionDistance = (details = []) => {
 const isOpenWaterGoal = (g) => g?.startsWith("open_water") || g?.startsWith("eau_libre");
 const isTriathlonGoal = (g) => g?.startsWith("triathlon");
 const usePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
+
+// ── EAU LIBRE — banque réathlétisation S1–S3 (9 archétypes, signature coach) ──
+const OW_VOL = { découverte: 0.35, beginner: 0.55, régulier: 0.55, intermediate: 0.75, sportif: 0.75, advanced: 1, performance: 1 };
+const owVol = (level) => OW_VOL[level] ?? 0.75;
+const owRep = (n, level, min = 2) => Math.max(min, Math.round(n * (owVol(level) >= 1 ? 1 : owVol(level) >= 0.75 ? 0.8 : 0.6)));
+const owM = (m, level, P, floor = 100) => Math.max(floor, snap(Math.round(m * owVol(level) / P) * P, P));
+const owBeg = (level) => level === "découverte" || level === "beginner" || level === "régulier";
+const owTuba = (level) => getLvlIndex(level) >= 2;
+const ow50Int = (P, level, lvl) => owBeg(level)
+  ? `R${P <= 25 ? "25\"" : "30\""} — respiration 3 temps, nage propre`
+  : (_isPremium ? `${dep(P, lvl, "threshold")} — respiration 3 temps, nage appliquée` : `R20" — respiration 3 temps, nage appliquée`);
+const ow100Rest = (P, level) => owBeg(level) ? `R${P <= 25 ? "30\"" : "25\""}` : `R20"`;
+const owRAC = (m, level, P) => `${owM(m, level, P, P)}m au choix — souple, sans chrono`;
+
+const OW_BASE_SESSIONS = [
+  // S1.1 — Grand chien & roulis
+  (P, level) => {
+    const lvl = getLvlIndex(level), tuba = owTuba(level);
+    const w = owM(400, level, P), n50 = owRep(4, level), nMain = owRep(10, level, 4), rac = owM(200, level, P, P);
+    return {
+      type: "TECHNIQUE",
+      title: "Grand chien & roulis",
+      intensity: "Z1/Z2 — réathlétisation, nage appliquée sans forcer",
+      details: [
+        `Échauffement : ${w}m crawl/dos par ${P}m — Z1, alterne à chaque longueur`,
+        `${n50}×${P}m grand chien${tuba ? " + tuba frontal" : ""} — le plus lentement possible — R20" — un bras tendu devant, échange complet, sens la prise d'eau`,
+        tuba
+          ? `${n50}×${P}m palmes + tuba roulis — R20" — rotation du bassin, talons à la surface`
+          : `${n50}×${P}m palmes crawl — R20" — jambes actives, corps à plat`,
+        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl)} — garde la technique des éducatifs, sighting tous les 8 bras`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S1.2 — Position & endurance 100m
+  (P, level) => {
+    const w = owM(400, level, P), n50 = owRep(4, level), n100 = owRep(6, level, 3), slow = owM(200, level, P), rac = owM(300, level, P, P);
+    return {
+      type: "ENDURANCE",
+      title: "Position & endurance 100m",
+      intensity: "Z2 — allure régulière, recherche de position dans l'eau",
+      details: [
+        `Échauffement : ${w}m crawl palmes — Z1, jambes actives, corps à plat`,
+        `${slow}m le plus lent possible — recherche de sensation, loin devant / loin derrière, teste différentes positions`,
+        `${n50}×${P}m palmes : ${P}m bras droit devant / gauche cuisse · ${P}m inversé — respiration latérale — R20"`,
+        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — Z2, allure régulière, respiration 3 temps`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S1.3 — Sensibilité & continuité
+  (P, level) => {
+    const w1 = owM(200, level, P), w2 = owM(200, level, P), n50 = owRep(8, level, 4), cont = owM(400, level, P), palmes = owM(200, level, P), rac = owM(100, level, P, P);
+    return {
+      type: "RÉCUPÉRATION",
+      title: "Sensibilité & continuité",
+      intensity: "Z1/Z2 léger — efficacité et position, sans pression",
+      details: [
+        `Échauffement : ${w1}m crawl + ${w2}m dos — Z1`,
+        `${n50}×${P}m le moins de mouvements possible par ${P}m — R20" — concentre-toi sur la position, efficacité de traction, loin devant / loin derrière`,
+        `${cont}m crawl Z2 — sans pause, rythme régulier — tu dois tenir de bout en bout`,
+        `${palmes}m palmes : ${P}m ondulation sous l'eau / ${3*P}m crawl — R20" — sens l'ondulation, enchaîne en nage fluide`,
+        `Retour au calme : ${rac} relâché — Z1`,
+      ],
+    };
+  },
+  // S2.1 — DPS & progressif/dégressif
+  (P, level) => {
+    const lvl = getLvlIndex(level), w = owM(400, level, P), n50 = owRep(4, level), nMain = owRep(10, level, 4), rac = owM(300, level, P, P);
+    return {
+      type: "TECHNIQUE",
+      title: "DPS & progressif/dégressif",
+      intensity: "Z2 — modulation d'allure sans vitesse, nage appliquée",
+      details: [
+        `Échauffement : ${w}m crawl/dos par ${2*P}m — Z1`,
+        `${n50}×${P}m le moins de coups de bras possible sur ${P}m — R20" — compte tes bras, vise moins de cycles`,
+        `${n50}×${P}m progressif : 1 lent · 2 ↗ · 3 ↗ · 4 rapide — R20" — monte en puissance sur la série`,
+        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl)} — même technique qu'en éducatif`,
+        `${n50}×${P}m dégressif : 1 rapide · 2 ↘ · 3 ↘ · 4 lent — R20" — redescends progressivement`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S2.2 — Endurance 100m & position palmes
+  (P, level) => {
+    const w = owM(400, level, P), n50 = owRep(4, level), n100 = owRep(8, level, 4), slow = owM(200, level, P), rac = owM(200, level, P, P);
+    return {
+      type: "ENDURANCE",
+      title: "Endurance 100m & position palmes",
+      intensity: "Z2 — fond aérobie, travail de position en échauffement",
+      details: [
+        `Échauffement : ${w}m crawl palmes — Z1`,
+        `${n50}×${P}m palmes : ${P}m bras droit devant / gauche cuisse · ${P}m inversé — respiration latérale — R20"`,
+        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — Z2, allure tenue du 1er au dernier 100m`,
+        `${slow}m le plus lent possible — recherche de sensation, relâche les épaules`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S2.3 — Hypoxie intégrée
+  (P, level) => {
+    const w = owM(400, level, P), jambes = owM(200, level, P), n50 = owRep(6, level), n100 = owRep(6, level, 3), rac = owM(200, level, P, P);
+    const hyp50 = owBeg(level) ? `${P}m resp. 3 temps · ${P}m normal` : `${P}m grand chien · ${P}m normal`;
+    const hyp100 = owBeg(level)
+      ? "3 temps · 3 temps · 5 temps · 5 temps · 3 temps · 3 temps"
+      : "3 temps · 5 temps · 7 temps · 9 temps · 7 temps · 5 temps";
+    return {
+      type: "TECHNIQUE",
+      title: "Hypoxie intégrée",
+      intensity: "Z2 — contrôle respiratoire intégré au set, pas de sprint",
+      details: [
+        `Échauffement : ${w}m au choix — Z1, crawl ou dos`,
+        `${jambes}m jambes planche — battements mains en flèche, corps gainé`,
+        `${n50}×${2*P}m : ${hyp50} — R15" — le plus lentement possible sur l'éducatif`,
+        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — respiration par 100m : ${hyp100}`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S3.1 — Volume 50m & hypoxie rotative
+  (P, level) => {
+    const lvl = getLvlIndex(level), tuba = owTuba(level), w = owM(400, level, P), n50 = owRep(5, level), nMain = owRep(12, level, 6), slow = owM(400, level, P);
+    const hypRot = owBeg(level) ? "3 temps · 3 temps · 5 temps · 5 temps" : "3 temps · 5 temps · 7 temps · 9 temps";
+    return {
+      type: "TECHNIQUE",
+      title: "Volume 50m & hypoxie rotative",
+      intensity: "Z2 — montée de volume, nage appliquée, épaule en confiance",
+      details: [
+        `Échauffement : ${w}m crawl/dos par ${P}m — Z1`,
+        `${n50}×${P}m${tuba ? " tuba lent" : ""} : ${P}m grand chien · ${P}m crawl normal — R20" — le plus lentement possible`,
+        tuba ? `${n50}×${P}m palmes + tuba roulis — R20" — rotation consciente` : `${n50}×${P}m palmes crawl — R20" — rotation du bassin`,
+        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl)} — respiration par 50m en rotation : ${hypRot}`,
+        `${slow}m le plus lent possible — recherche de sensation + récup — relâche tout`,
+      ],
+    };
+  },
+  // S3.2 — Endurance 100m & travail sous l'eau
+  (P, level) => {
+    const lvl = getLvlIndex(level), tuba = owTuba(level), w = owM(400, level, P), n25 = owRep(8, level, 4), n100 = owRep(10, level, 5), rac = owM(200, level, P, P);
+    const edu = tuba ? `2×${2*P}m catch-up drill + tuba — le plus lentement possible — R20" — un bras attend l'autre` : `2×${2*P}m catch-up drill — R20" — un bras attend l'autre, nage lente`;
+    return {
+      type: "ENDURANCE",
+      title: "Endurance 100m & travail sous l'eau",
+      intensity: "Z2 — fond aérobie, volume en hausse sans monter l'intensité",
+      details: [
+        `Échauffement : ${w}m crawl palmes — Z1`,
+        edu,
+        `${n25}×${P}m palmes : 1× crawl sous l'eau · 1× godille pied en avant sur le dos — R20" — alterne les ${P}m`,
+        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — Z2, allure régulière — note si tu tiens le même rythme sur toutes les reps`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S3.3 — Reps 150m & ondulation palmes
+  (P, level) => {
+    const lvl = getLvlIndex(level), w = owM(400, level, P), n50 = owRep(8, level, 4), n150 = owRep(4, level, 2), n100 = owRep(4, level, 2), slow = owM(200, level, P), rep150 = Math.min(6*P, 150);
+    const hyp150 = owBeg(level) ? "3 temps · 3 temps · 5 temps · 3 temps · 3 temps" : "3 temps · 5 temps · 7 temps · 5 temps · 3 temps";
+    const palmesDep = owBeg(level) ? `R${P <= 25 ? "30\"" : "25\""}` : (_isPremium ? dep(2*P, lvl, "threshold") : `R25"`);
+    return {
+      type: "ENDURANCE",
+      title: "Reps 150m & ondulation palmes",
+      intensity: "Z2 — reps longues, respiration et ondulation, gestion d'allure",
+      details: [
+        `Échauffement : ${w}m au choix — Z1`,
+        `${n50}×${2*P}m : ${P}m grand chien · ${P}m crawl normal — R15" — le plus lentement possible sur l'éducatif`,
+        `${n150}×${rep150}m crawl — R25" — respiration par 25m : ${hyp150} — même allure malgré le changement respiratoire`,
+        `${n100}×${2*P}m palmes : ${P}m ondulation sous l'eau / ${3*P}m crawl — ${palmesDep} — sens l'ondulation, enchaîne en nage fluide`,
+        `${slow}m le plus lent possible — souple + sensation`,
+      ],
+    };
+  },
+];
 
 const SESSION_TEMPLATES = {
 
@@ -5690,6 +5819,17 @@ const PHASE_PATTERNS = {
   },
 };
 
+// Eau libre 5k/10k — patterns crawl (S1–S3 = banque OW_BASE_SESSIONS en phase base)
+const OPEN_WATER_PATTERNS = {
+  régulier: PHASE_PATTERNS.régulier,
+  beginner: PHASE_PATTERNS.régulier,
+  sportif: PHASE_PATTERNS.sportif,
+  intermediate: PHASE_PATTERNS.sportif,
+  performance: PHASE_PATTERNS.performance,
+  advanced: PHASE_PATTERNS.performance,
+  découverte: PHASE_PATTERNS.régulier,
+};
+
 const BNSSA_PATTERNS = {
   base:        { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "endurance", "bnssa", "récupération"],         5: ["endurance", "endurance", "bnssa", "récupération", "endurance"] },
   development: { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"],                     5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
@@ -5776,8 +5916,30 @@ const buildPlanPhases = (totalWeeks) => {
 
 const FREE_MAX_WEEKS = FREE_WEEKS_LIMIT;
 
-const generatePlan = async (profile, isPremium = false) => {
-  await new Promise(r => setTimeout(r, 1800));
+const computePlanTotalWeeks = (profile, referenceTime = Date.now()) => {
+  const { goal } = profile;
+  const wellness = isWellnessGoal(goal);
+  const progression = isProgressionGoal(goal);
+
+  if (progression) return 12;
+
+  if (wellness) {
+    if (goal === "perte_de_poids") {
+      const loss = Math.max(0, (parseFloat(profile.weightCurrent) || 0) - (parseFloat(profile.weightGoal) || 0));
+      return loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : 8;
+    }
+    if (goal === "reprendre") return 6;
+    return 8;
+  }
+
+  const eventDate = profile.eventDate ? new Date(profile.eventDate) : null;
+  if (!eventDate || Number.isNaN(eventDate.getTime())) return 8;
+  const refDate = new Date(referenceTime);
+  return Math.min(52, Math.max(1, Math.ceil((eventDate - refDate) / (7 * 86400000))) || 8);
+};
+
+const generatePlan = async (profile, isPremium = false, referenceTime = Date.now(), { skipDelay = false } = {}) => {
+  if (!skipDelay) await new Promise(r => setTimeout(r, 1800));
   const { level, sessionsPerWeek: freq, pool, goal } = profile;
 
   // Active les paces personnalisées pour toute la génération du plan
@@ -5785,22 +5947,7 @@ const generatePlan = async (profile, isPremium = false) => {
   _isPremium = !!isPremium;
   const wellness = isWellnessGoal(goal);
   const progression = isProgressionGoal(goal);
-
-  let rawWeeks;
-  if (progression) {
-    rawWeeks = 12;
-  } else if (wellness) {
-    if (goal === "perte_de_poids") {
-      const loss = Math.max(0, (parseFloat(profile.weightCurrent) || 0) - (parseFloat(profile.weightGoal) || 0));
-      rawWeeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : 8;
-    } else if (goal === "reprendre") {
-      rawWeeks = 6;
-    } else {
-      rawWeeks = 8;
-    }
-  } else {
-    rawWeeks = Math.min(52, weeksUntil(profile.eventDate) || 8);
-  }
+  const rawWeeks = computePlanTotalWeeks(profile, referenceTime);
 
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.régulier;
   const progressionPhaseList = progression ? buildProgressionPhases() : null;
@@ -5812,19 +5959,25 @@ const generatePlan = async (profile, isPremium = false) => {
   const patterns = progression ? (PROGRESSION_PATTERNS[progLvlKey] || PROGRESSION_PATTERNS.intermediate)
                  : wellness   ? (WELLNESS_PATTERNS[progLvlKey] || WELLNESS_PATTERNS.intermediate)
                  : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS
+                 : isOpenWaterGoal(goal) ? (OPEN_WATER_PATTERNS[levelKey] || OPEN_WATER_PATTERNS.sportif)
                  : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
   const f = Math.min(isPremium ? freq : Math.min(freq ?? FREE_FREQ_LIMIT, FREE_FREQ_LIMIT), 5);
   const buildWeeks = (phases) => phases.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
+    const useOwBase = isOpenWaterGoal(goal) && phase.phase === "base" && wi < 3;
     return {
       number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false,
       sessions: types.map((type, si) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
-        const sessionData = SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
+        const owArcheIdx = useOwBase && si < 3 ? wi * 3 + si : -1;
+        const useOwCustom = owArcheIdx >= 0 && owArcheIdx < OW_BASE_SESSIONS.length;
+        let sessionData = useOwCustom
+          ? OW_BASE_SESSIONS[owArcheIdx](pool, level)
+          : SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
         const realDist = calcSessionDistance(sessionData.details);
         const deficit = distBase - realDist;
         const fillRep = deficit >= 2000 ? 400 : deficit >= 800 ? 200 : pool * 2;
-        const nFill = deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
+        const nFill = !useOwCustom && deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
         let details = sessionData.details;
         if (nFill > 0) {
           const last = details[details.length - 1];
@@ -5839,7 +5992,9 @@ const generatePlan = async (profile, isPremium = false) => {
       }),
     };
   });
-  const allWeeks = buildWeeks(phaseList);
+  const allWeeks = shouldUseCoachGenerator(goal)
+    ? buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, FREE_FREQ_LIMIT)
+    : buildWeeks(phaseList);
   const weeks = isPremium ? allWeeks : allWeeks.slice(0, FREE_MAX_WEEKS);
   const previewWeeks = isPremium || rawWeeks <= FREE_MAX_WEEKS ? [] : allWeeks.slice(FREE_MAX_WEEKS, FREE_MAX_WEEKS + 3);
   return { weeks, previewWeeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now(), version: PLAN_VERSION };
@@ -5908,6 +6063,8 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const showToast = (msg, duration = 5000) => { setToast(msg); setTimeout(() => setToast(null), duration); };
   const prevBadgesRef = useRef([]);
+  const plansHydratedRef = useRef(false);
+  const deletedPlanIdsRef = useRef(new Set());
 
   // Valeurs dérivées du plan actif
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
@@ -5982,22 +6139,25 @@ export default function App() {
       if (premium) setShowUpgrade(false);
     };
 
-    // Refresh immédiat
-    supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
+    const syncAndApply = () => syncSubscriptionFromStripe()
+      .then(u => applyUser(u))
+      .catch(() => supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user)));
 
-    if (payment === "success") {
-      showToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.", 8000);
+    if (payment === "success" || payment === "portal") {
+      syncAndApply();
+      if (payment === "success") {
+        showToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.", 8000);
+      }
+      const retry = (ms) => setTimeout(syncAndApply, ms);
+      const t1 = retry(2000);
+      const t2 = retry(5000);
+      const t3 = retry(10000);
+      const t4 = retry(20000);
+      const t5 = retry(30000);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
     }
 
-    // Retry jusqu'à 30s pour laisser le webhook Stripe arriver
-    const retry = (ms) => setTimeout(() => supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user)), ms);
-    const t1 = retry(2000);
-    const t2 = retry(5000);
-    const t3 = retry(10000);
-    const t4 = retry(20000);
-    const t5 = retry(30000);
-
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+    supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
   }, []);
 
   // ── Strava OAuth callback ────────────────────────────────────────────────
@@ -6048,22 +6208,27 @@ export default function App() {
   useEffect(() => {
     if (!isPremium || !activePlanEntry) return;
     const { plan: ap, profile: aprof } = activePlanEntry;
-    if (ap && aprof.goal && ap.totalRealWeeks > ap.weeks.length) {
-      setScreen("loading");
-      generatePlan(aprof, true).then(newPlan => {
-        const originalStartDate = ap.startDate ?? activePlanEntry.startDate ?? null;
-        const mergedWeeks = mergePreservingProgress(ap.weeks ?? [], newPlan.weeks);
-        const planWithDate = {
-          ...newPlan,
-          weeks: mergedWeeks,
-          previewWeeks: [],
-          ...(originalStartDate ? { startDate: originalStartDate } : {}),
-        };
-        setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
-        setScreen("app"); setActiveTab("home");
-      });
-    }
-  }, [isPremium]);
+    if (!aprof?.goal || !ap?.weeks) return;
+    const originalStartDate = ap.startDate ?? activePlanEntry.startDate ?? Date.now();
+    const expectedWeeks = computePlanTotalWeeks(aprof, originalStartDate);
+    const storedWeeks = ap.totalRealWeeks ?? 0;
+    const needsLegacyRepair = ap.weeks.length <= FREE_WEEKS_LIMIT && expectedWeeks > ap.weeks.length;
+    const needsMoreWeeks = Math.max(storedWeeks, expectedWeeks) > ap.weeks.length;
+    const needsMetadataRepair = storedWeeks > 0 && storedWeeks < expectedWeeks;
+    if (!needsLegacyRepair && !needsMoreWeeks && !needsMetadataRepair) return;
+    setScreen("loading");
+    generatePlan(aprof, true, originalStartDate).then(newPlan => {
+      const mergedWeeks = mergePreservingProgress(ap.weeks ?? [], newPlan.weeks);
+      const planWithDate = {
+        ...newPlan,
+        weeks: mergedWeeks,
+        previewWeeks: [],
+        ...(originalStartDate ? { startDate: originalStartDate } : {}),
+      };
+      setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
+      setScreen("app"); setActiveTab("home");
+    });
+  }, [isPremium, activePlanEntry, activePlanId]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -6084,6 +6249,7 @@ export default function App() {
         setScreen("auth");
         setAuthLoading(false);
       } else {
+        plansHydratedRef.current = false;
         setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setAuthLoading(false);
       }
     });
@@ -6105,18 +6271,18 @@ export default function App() {
       anonActive = localStorage.getItem("myswym_anon_active");
     } catch {}
 
-    // Merge le plan anon avec les plans existants (en évitant les doublons par id)
+    // Merge le plan anon avec les plans existants (dédupliqué par empreinte profil)
     // puis nettoie la clé anonyme une fois la migration faite.
     const finalize = (existing, existingActive) => {
-      let merged = existing || [];
+      let merged = dedupePlans(existing || []);
       let active = existingActive || null;
       if (anonPlans.length > 0) {
-        const ids = new Set(merged.map(e => e.id));
-        const toAdd = anonPlans.filter(e => !ids.has(e.id));
-        merged = [...merged, ...toAdd];
-        // Si l'utilisateur n'avait pas de plan actif jusque-là, on bascule sur le plan anon migré
+        const fps = new Set(merged.map(planFingerprint));
+        const toAdd = anonPlans.filter(e => !fps.has(planFingerprint(e)));
+        merged = dedupePlans([...merged, ...toAdd]);
         if (!active && anonActive) active = anonActive;
         if (!active && merged.length > 0) active = merged[0].id;
+        if (active && !merged.some(e => e.id === active)) active = merged[0]?.id ?? null;
         try {
           localStorage.removeItem("myswym_anon_plans");
           localStorage.removeItem("myswym_anon_active");
@@ -6126,48 +6292,68 @@ export default function App() {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
         setScreen("app");
+        plansHydratedRef.current = true;
         return true;
       }
       return false;
     };
 
-    // 1. Nouveau format multi-plans (localStorage)
+    const enforceAll = (arr) => (arr || []).map(e => ({ ...e, plan: enforce(e.plan) }));
+    const cachePlans = (arr, activeId, updatedAt) => {
+      try {
+        const ts = updatedAt || new Date().toISOString();
+        localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(arr));
+        localStorage.setItem(`myswym_active_${userId}`, activeId || arr[0].id);
+        localStorage.setItem(`myswym_plans_updated_${userId}`, ts);
+      } catch {}
+    };
+
+    // 1. localStorage (cache hors-ligne)
+    let localPlans = null, localActive = null, localUpdatedAt = 0;
     try {
       const raw = localStorage.getItem(`myswym_plans_${userId}`);
-      const activeId = localStorage.getItem(`myswym_active_${userId}`);
+      localActive = localStorage.getItem(`myswym_active_${userId}`);
+      const ts = localStorage.getItem(`myswym_plans_updated_${userId}`);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const enforced = parsed.map(e => ({ ...e, plan: enforce(e.plan) }));
-          if (finalize(enforced, activeId)) return;
+        if (Array.isArray(parsed) && parsed.length > 0) localPlans = parsed;
+      }
+      if (ts) localUpdatedAt = new Date(ts).getTime() || 0;
+    } catch {}
+
+    // 2. Supabase — source de vérité cross-device (comparée au cache local)
+    let remotePlans = null, remoteActive = null, remoteUpdatedAt = 0, remoteUpdatedIso = null;
+    try {
+      const { data, error } = await supabase.from("user_plans")
+        .select("profile, plan, plans_json, active_plan_id, updated_at")
+        .eq("user_id", userId).single();
+      if (data && !error) {
+        remoteUpdatedIso = data.updated_at || null;
+        if (data.updated_at) remoteUpdatedAt = new Date(data.updated_at).getTime() || 0;
+        if (Array.isArray(data.plans_json) && data.plans_json.length > 0) {
+          remotePlans = data.plans_json;
+          remoteActive = data.active_plan_id;
+        } else if (data.profile && data.plan) {
+          const id = `plan_${Date.now()}`;
+          remotePlans = [{ id, profile: data.profile, plan: data.plan }];
+          remoteActive = id;
         }
       }
     } catch {}
 
-    // 2. Supabase multi-plans (source de vérité cross-device)
-    try {
-      const { data, error } = await supabase.from("user_plans")
-        .select("profile, plan, plans_json, active_plan_id")
-        .eq("user_id", userId).single();
-      if (data && !error) {
-        // 2a. Nouveau format multi-plans
-        if (Array.isArray(data.plans_json) && data.plans_json.length > 0) {
-          const enforced = data.plans_json.map(e => ({ ...e, plan: enforce(e.plan) }));
-          // Hydrate aussi le localStorage pour accès hors-ligne
-          try {
-            localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(enforced));
-            localStorage.setItem(`myswym_active_${userId}`, data.active_plan_id || enforced[0].id);
-          } catch {}
-          if (finalize(enforced, data.active_plan_id)) return;
-        }
-        // 2b. Ancien format mono-plan (compat)
-        if (data.profile && data.plan) {
-          const id = `plan_${Date.now()}`;
-          const entry = { id, profile: data.profile, plan: enforce(data.plan) };
-          if (finalize([entry], id)) return;
-        }
-      }
-    } catch {}
+    let chosenPlans = null, chosenActive = null, chosenUpdatedIso = null;
+    if (localPlans || remotePlans) {
+      const merged = mergePlanLists(localPlans, remotePlans, localActive, remoteActive, localUpdatedAt, remoteUpdatedAt);
+      chosenPlans = merged.plans;
+      chosenActive = merged.active;
+      chosenUpdatedIso = merged.updatedAt;
+    }
+
+    if (chosenPlans?.length) {
+      const enforced = enforceAll(chosenPlans);
+      cachePlans(enforced, chosenActive, chosenUpdatedIso);
+      if (finalize(enforced, chosenActive)) return;
+    }
 
     // 3. Ancien localStorage mono-plan (migration)
     try {
@@ -6183,6 +6369,7 @@ export default function App() {
     // 4. Aucun plan existant — si on a un plan anonyme, on le promeut comme plan principal
     // Sinon, on bascule sur l'onboarding pour qu'il puisse créer son premier plan.
     if (!finalize([], null)) {
+      plansHydratedRef.current = true;
       setScreen("onboarding");
       setStep(1);
     }
@@ -6192,11 +6379,18 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const check = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        const premium = checkIsPremium(data.user);
-        setUser(data.user);
-        setIsPremium(premium);
+      try {
+        const u = await syncSubscriptionFromStripe();
+        if (u) {
+          setUser(u);
+          setIsPremium(checkIsPremium(u));
+        }
+      } catch {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          setUser(data.user);
+          setIsPremium(checkIsPremium(data.user));
+        }
       }
     };
     const onVisible = () => { if (document.visibilityState === "visible") check(); };
@@ -6221,70 +6415,137 @@ export default function App() {
   }, [plans, activePlanId, user]);
 
   useEffect(() => {
-    if (!user || plans.length === 0) return;
-    try {
-      localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(plans));
-      localStorage.setItem(`myswym_active_${user.id}`, activePlanId);
-    } catch {}
-    // Supabase : sauvegarde TOUS les plans pour sync cross-device
-    supabase.from("user_plans").upsert({
-      user_id:        user.id,
-      plans_json:     plans,
-      active_plan_id: activePlanId,
-      // Compat ancien format mono-plan
-      profile:        activePlanEntry?.profile ?? null,
-      plan:           activePlanEntry?.plan    ?? null,
-      updated_at:     new Date().toISOString(),
-    }, { onConflict: "user_id" }).then(() => {});
+    if (!user || plans.length === 0 || !plansHydratedRef.current) return;
+    let cancelled = false;
+    const save = async () => {
+      const now = new Date().toISOString();
+      let toSave = plans;
+      let activeToSave = activePlanId;
+      try {
+        const { data } = await supabase.from("user_plans")
+          .select("plans_json, active_plan_id, updated_at")
+          .eq("user_id", user.id).single();
+        if (!cancelled && Array.isArray(data?.plans_json) && data.plans_json.length > 0) {
+          const remoteTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+          const localTs = localStorage.getItem(`myswym_plans_updated_${user.id}`);
+          const localTime = localTs ? new Date(localTs).getTime() : 0;
+          const { plans: merged, active } = mergePlanLists(
+            plans, data.plans_json, activePlanId, data.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
+          );
+          const missingOnDevice = merged.some(m => !plans.find(p => p.id === m.id));
+          if (missingOnDevice) {
+            setPlans(merged);
+            setActivePlanId(active);
+            return;
+          }
+          toSave = merged;
+          activeToSave = active;
+        }
+      } catch {}
+      if (cancelled) return;
+      try {
+        localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(toSave));
+        localStorage.setItem(`myswym_active_${user.id}`, activeToSave);
+        localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+      } catch {}
+      const activeEntry = toSave.find(e => e.id === activeToSave) ?? toSave[0];
+      const { error } = await supabase.from("user_plans").upsert({
+        user_id:        user.id,
+        plans_json:     toSave,
+        active_plan_id: activeToSave,
+        profile:        activeEntry?.profile ?? null,
+        plan:           activeEntry?.plan    ?? null,
+        updated_at:     now,
+      }, { onConflict: "user_id" });
+      if (!error && !cancelled) {
+        // Les suppressions sont bien persistées : on peut oublier les tombstones
+        for (const id of [...deletedPlanIdsRef.current]) {
+          if (!toSave.some(e => e.id === id)) deletedPlanIdsRef.current.delete(id);
+        }
+      }
+    };
+    save();
+    return () => { cancelled = true; };
   }, [plans, activePlanId, user]);
 
-
-  // Migration légère : ne régénère JAMAIS les semaines existantes (préserve la progression).
-  // Ajoute uniquement les métadonnées manquantes (previewWeeks, version).
+  // Re-sync au retour sur l'app : fusionne cache local + Supabase (ne jamais écraser un plan d'un autre appareil)
   useEffect(() => {
-    if (!user || plans.length === 0 || screen !== "app") return;
-    const needsUpdate = plans.filter(e => {
-      const p = e.plan;
-      if (!p) return false;
-      const needsVersion = (p.version ?? 0) < PLAN_VERSION;
-      const needsPreview = !isPremium && !p.previewWeeks?.length
-        && (p.totalRealWeeks ?? p.weeks?.length ?? 0) > FREE_WEEKS_LIMIT;
-      return needsVersion || needsPreview;
-    });
+    if (!user) return;
+    const syncFromRemote = async () => {
+      try {
+        let localPlans = [];
+        const localRaw = localStorage.getItem(`myswym_plans_${user.id}`);
+        const localActive = localStorage.getItem(`myswym_active_${user.id}`);
+        const localTs = localStorage.getItem(`myswym_plans_updated_${user.id}`);
+        const localTime = localTs ? new Date(localTs).getTime() : 0;
+        if (localRaw) {
+          const parsed = JSON.parse(localRaw);
+          if (Array.isArray(parsed)) localPlans = parsed;
+        }
+
+        const { data, error } = await supabase.from("user_plans")
+          .select("plans_json, active_plan_id, updated_at")
+          .eq("user_id", user.id).single();
+        if (error) return;
+        const remotePlans = Array.isArray(data?.plans_json) ? data.plans_json : [];
+        const remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
+        if (!localPlans.length && !remotePlans.length) return;
+
+        const enforce = (p) => (!isPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+        const { plans: merged, active, updatedAt } = mergePlanLists(
+          localPlans, remotePlans, localActive, data?.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
+        );
+        const enforced = merged.map(e => ({ ...e, plan: enforce(e.plan) }));
+
+        const mergedIds = enforced.map(e => e.id).sort().join(",");
+        const currentIds = plans.map(e => e.id).sort().join(",");
+        const mergedProgress = enforced.reduce((s, e) => s + planProgressScore(e), 0);
+        const currentProgress = plans.reduce((s, e) => s + planProgressScore(e), 0);
+        if (mergedIds === currentIds && enforced.length === plans.length && mergedProgress <= currentProgress) return;
+
+        setPlans(enforced);
+        setActivePlanId(active);
+        localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(enforced));
+        localStorage.setItem(`myswym_active_${user.id}`, active);
+        localStorage.setItem(`myswym_plans_updated_${user.id}`, updatedAt);
+      } catch {}
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") syncFromRemote(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [user?.id, isPremium, plans, activePlanId]);
+
+
+  // Migration v14 : régénère les semaines (forcé — aucun user actif, Arthur 2026-07-16).
+  // Les plans version < PLAN_VERSION sont entièrement reconstruits avec le moteur Arthur+COSD.
+  useEffect(() => {
+    if (plans.length === 0 || screen !== "app") return;
+    const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
     if (needsUpdate.length === 0) return;
 
+    let cancelled = false;
     Promise.all(needsUpdate.map(async entry => {
       const p = entry.plan;
       const originalStartDate = p.startDate ?? entry.startDate ?? null;
-      const needsPreview = !isPremium && !p.previewWeeks?.length
-        && (p.totalRealWeeks ?? p.weeks?.length ?? 0) > FREE_WEEKS_LIMIT;
-
-      if (needsPreview) {
-        const generated = await generatePlan(entry.profile, false);
-        return {
-          id: entry.id,
-          updated: {
-            ...p,
-            weeks: p.weeks,
-            previewWeeks: generated.previewWeeks ?? [],
-            totalRealWeeks: p.totalRealWeeks ?? generated.totalRealWeeks,
-            version: PLAN_VERSION,
-            ...(originalStartDate ? { startDate: originalStartDate } : {}),
-          },
-        };
-      }
-
+      const premium = !!(entry.plan?.isPremium || isPremium);
+      const generated = await generatePlan(entry.profile, premium, originalStartDate || Date.now(), { skipDelay: true });
       return {
         id: entry.id,
-        updated: { ...p, version: PLAN_VERSION, ...(originalStartDate ? { startDate: originalStartDate } : {}) },
+        updated: {
+          ...generated,
+          startDate: originalStartDate || generated.startDate,
+          version: PLAN_VERSION,
+        },
       };
     })).then(results => {
+      if (cancelled) return;
       setPlans(prev => prev.map(e => {
         const r = results.find(x => x.id === e.id);
-        return r ? { ...e, plan: r.updated } : e;
+        return r ? { ...e, plan: r.updated, startDate: r.updated.startDate ?? e.startDate } : e;
       }));
     });
-  }, [user?.id, screen, isPremium]);
+    return () => { cancelled = true; };
+  }, [user?.id, screen, isPremium, plans.length]);
 
   useEffect(() => {
     if (!plan) return;
@@ -6423,22 +6684,45 @@ export default function App() {
 
   const handleDeletePlan = (id) => {
     if (plans.length <= 1) return; // bouton caché si 1 seul plan, mais sécurité
+    if (!window.confirm("Supprimer ce plan ? Cette action est définitive.")) return;
     const remaining = plans.filter(e => e.id !== id);
+    const nextActive = activePlanId === id ? remaining[0].id : activePlanId;
+    deletedPlanIdsRef.current.add(id);
     setPlans(remaining);
-    if (activePlanId === id) setActivePlanId(remaining[0].id);
+    if (activePlanId === id) setActivePlanId(nextActive);
+    // Persiste immédiatement pour que la fusion ne ressuscite pas le plan
+    if (user) {
+      const now = new Date().toISOString();
+      try {
+        localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(remaining));
+        localStorage.setItem(`myswym_active_${user.id}`, nextActive);
+        localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+      } catch {}
+    }
   };
 
   const handleReset = () => {
     if (plans.length > 1) {
       // Supprime uniquement le plan actif, garde les autres
+      const removedId = activePlanId;
       const remaining = plans.filter(e => e.id !== activePlanId);
+      if (removedId) deletedPlanIdsRef.current.add(removedId);
       setPlans(remaining);
       setActivePlanId(remaining[0].id);
+      if (user) {
+        const now = new Date().toISOString();
+        try {
+          localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(remaining));
+          localStorage.setItem(`myswym_active_${user.id}`, remaining[0].id);
+          localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+        } catch {}
+      }
     } else {
       // Dernier plan — reset complet
       if (user) {
         localStorage.removeItem(`myswym_plans_${user.id}`);
         localStorage.removeItem(`myswym_active_${user.id}`);
+        localStorage.removeItem(`myswym_plans_updated_${user.id}`);
         localStorage.removeItem(`myswym_profile_${user.id}`);
         localStorage.removeItem(`myswym_plan_${user.id}`);
         supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {});
@@ -6452,10 +6736,18 @@ export default function App() {
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
   const handleRefreshStatus = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data?.user) {
-      setUser(data.user);
-      setIsPremium(checkIsPremium(data.user));
+    showToast("Synchronisation avec Stripe…");
+    try {
+      const u = await syncSubscriptionFromStripe();
+      if (u) {
+        setUser(u);
+        const premium = checkIsPremium(u);
+        setIsPremium(premium);
+        showToast(premium ? "Premium activé ✓" : "Statut gratuit confirmé", 5000);
+        if (premium) setShowUpgrade(false);
+      }
+    } catch {
+      showToast("Impossible de synchroniser. Réessaie ou contacte support@myswym.app", 8000);
     }
   };
 
@@ -6542,7 +6834,6 @@ export default function App() {
   if (screen === "onboarding") return (
     <>
       <style>{css}</style><FontLoader />
-      <PublicNav />
       <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>

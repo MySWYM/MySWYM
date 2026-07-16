@@ -79,7 +79,7 @@ export default function PublicNav() {
               padding: isMobile ? "9px 16px" : "10px 22px", borderRadius: 100, textDecoration: "none",
               fontFamily: "'Lexend', sans-serif", boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
             }}>
-              Generer mon plan
+              Générer mon plan
             </a>
             {isMobile && (
               <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink }}>
