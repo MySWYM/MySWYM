@@ -64,15 +64,19 @@ export default function TarifsPage() {
         body: JSON.stringify({ priceId }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      alert(data.error || "Impossible d'ouvrir le paiement. Réessaie.");
     } catch {
-      window.location.href = "/";
+      alert("Impossible d'ouvrir le paiement. Réessaie.");
     }
   };
 
   // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx
-  const PRICE_MONTHLY = "price_1TP5yOAVxucD4jHaRYk2cbHC";
-  const PRICE_ANNUAL = "price_1TPKQfAVxucD4jHaUDssY5cs";
+  const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
+  const PRICE_ANNUAL = "price_1TPjyeAS4mfgF2TwmSjSiidD";
 
   const freeFeatures = [
     "Plan du premier mois (4 semaines)",

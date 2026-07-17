@@ -2361,8 +2361,8 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
   );
 };
 
-const PRICE_MONTHLY = "price_1TP5yOAVxucD4jHaRYk2cbHC";
-const PRICE_ANNUAL  = "price_1TPKQfAVxucD4jHaUDssY5cs";
+const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
+const PRICE_ANNUAL  = "price_1TPjyeAS4mfgF2TwmSjSiidD";
 
 const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const [loading, setLoading] = useState(false);
