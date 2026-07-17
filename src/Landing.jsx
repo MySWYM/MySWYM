@@ -200,7 +200,7 @@ function Nav() {
               borderRadius: 100, textDecoration: "none",
               fontFamily: FONT,
               boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
-            }}>Creer mon compte</a>
+            }}>Créer mon compte</a>
 
             {isMobile && (
               <button
@@ -250,7 +250,7 @@ function Nav() {
                 display: "block", textAlign: "center", padding: "13px", borderRadius: 16,
                 background: C.accent, color: C.accentText, fontSize: 15, fontWeight: 700,
                 textDecoration: "none", boxShadow: "0 6px 20px rgba(142,179,255,0.35)", fontFamily: FONT,
-              }}>Creer mon compte</a>
+              }}>Créer mon compte</a>
             </div>
           </div>
         </div>
@@ -465,7 +465,7 @@ function WeekExample() {
   const [activeDay, setActiveDay] = useState(0);
 
   const sessions = [
-    { day: "Debutant", type: "ENDURANCE", color: "#8eb3ff", title: "Nage a ton rythme",    total: "900m",   warmup: "200m tranquille — crawl ou dos, comme tu veux", main: "5× (2 longueurs nage + 30 sec de repos) — sans te presser", cool: "200m tres calme pour recuperer", tip: "L'objectif : finir sans etre epuise. Si tu dois allonger la pause, c'est normal." },
+    { day: "Débutant", type: "ENDURANCE", color: "#8eb3ff", title: "Nage à ton rythme",    total: "900m",   warmup: "200m tranquille — crawl ou dos, comme tu veux", main: "5× (2 longueurs nage + 30 sec de repos) — sans te presser", cool: "200m très calme pour récupérer", tip: "L'objectif : finir sans être épuisé. Si tu dois allonger la pause, c'est normal." },
     { day: "Lundi",       type: "ENDURANCE", color: C.primary,  title: "Fond en séries",        total: "2 200m", warmup: "400m échauffement tranquille", main: "5×300m crawl allure confortable — 30 sec de repos entre chaque", cool: "400m retour au calme mixte", tip: "Respiration toutes les 3 bras. Pense à bien glisser après chaque coulée." },
     { day: "Mercredi",    type: "SEUIL",     color: "#E65100",  title: "Un peu plus vite",      total: "2 000m", warmup: "300m échauffement + 4×50m accélérations progressives", main: "8×100m crawl — effort soutenu mais régulier · 20 sec de repos", cool: "300m nage libre tranquille", tip: "Garde le même rythme du 1er au 8e. Si tu accélères au dernier, c'est que tu partais trop lentement." },
     { day: "Vendredi",    type: "TECHNIQUE", color: "#0097A7",  title: "Glisse & technique",    total: "1 800m", warmup: "200m libre + 4×25m avec palmes", main: "6×50m en pensant aux bras — 6×50m en pensant à la glisse", cool: "200m nage dos décontraction", tip: "Sur chaque longueur, choisis UN truc à améliorer. Pas tout à la fois." },
@@ -743,7 +743,7 @@ function PaceFeature() {
             Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en endurance ou à ton seuil.
           </p>
           <p style={{ color: C.outline, fontSize: 13, lineHeight: 1.6, marginBottom: 24, fontFamily: FONT }}>
-            Cette fonctionnalite est disponible pour le niveau <strong style={{ color: C.ink }}>Performance</strong>. Les autres niveaux ont des plans tout aussi structures — sans avoir besoin de chrono.
+            Cette fonctionnalité est disponible pour le niveau <strong style={{ color: C.ink }}>Performance</strong>. Les autres niveaux ont des plans tout aussi structurés — sans avoir besoin de chrono.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {["Endurance", "Effort soutenu", "Vitesse", "Sprint"].map((t, i) => (
@@ -823,8 +823,9 @@ function Pricing() {
     } catch { window.location.href = "/app"; }
   };
 
-  const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-  const PRICE_ANNUAL  = "price_1TPjyeAS4mfgF2TwmSjSiidD";
+  // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx
+  const PRICE_MONTHLY = "price_1TP5yOAVxucD4jHaRYk2cbHC";
+  const PRICE_ANNUAL  = "price_1TPKQfAVxucD4jHaUDssY5cs";
 
   const freeFeatures = [
     "Plan du premier mois (4 semaines)",

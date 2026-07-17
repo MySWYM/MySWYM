@@ -100,7 +100,7 @@ function Nav() {
             padding: "9px 18px", borderRadius: 100,
             textDecoration: "none", fontFamily: FONT,
             boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
-          }}>Creer mon compte</Link>
+          }}>Créer mon compte</Link>
         </div>
       </div>
     </nav>

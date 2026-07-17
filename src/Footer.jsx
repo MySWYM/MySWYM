@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const FONT = "'Lexend', sans-serif";
 
 const EXPLORER_LINKS = [
-  ["Comment ca marche", "/comment-ca-marche"],
+  ["Comment ça marche", "/comment-ca-marche"],
   ["Objectifs", "/objectifs"],
   ["Tarifs", "/tarifs"],
   ["Blog", "/blog"],
@@ -11,8 +11,8 @@ const EXPLORER_LINKS = [
 ];
 
 const LEGAL_LINKS = [
-  ["Mentions legales", "/mentions-legales"],
-  ["Politique de confidentialite", "/politique-confidentialite"],
+  ["Mentions légales", "/mentions-legales"],
+  ["Politique de confidentialité", "/politique-confidentialite"],
   ["Politique de cookies", "/politique-cookies"],
   ["CGU", "/cgu"],
   ["CGV", "/cgv"],
@@ -78,7 +78,7 @@ export default function Footer({ aboveBottomNav = false }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
             <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              Legal
+              Légal
             </span>
             {LEGAL_LINKS.map(([l, h]) => (
               <a

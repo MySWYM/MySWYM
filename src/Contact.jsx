@@ -30,9 +30,9 @@ function FontLoader() {
 }
 
 const FAQ_ITEMS = [
-  { q: "Qu'est-ce que MySWYM ?", a: "MySWYM genere des plans natation structures selon ton niveau, ton objectif et ta frequence d'entrainement." },
-  { q: "Comment fonctionne la personnalisation ?", a: "Tu renseignes ton profil sportif (objectif, niveau, disponibilite), puis le plan est ajuste automatiquement semaine par semaine." },
-  { q: "Pour qui est fait MySWYM ?", a: "Debutants, nageurs loisirs, triathletes et candidats aux diplomes aquatiques qui veulent un cadre clair et progressif." },
+  { q: "Qu'est-ce que MySWYM ?", a: "MySWYM génère des plans natation structurés selon ton niveau, ton objectif et ta fréquence d'entraînement." },
+  { q: "Comment fonctionne la personnalisation ?", a: "Tu renseignes ton profil sportif (objectif, niveau, disponibilité), puis le plan est ajusté automatiquement semaine par semaine." },
+  { q: "Pour qui est fait MySWYM ?", a: "Débutants, nageurs loisirs, triathlètes et candidats aux diplômes aquatiques qui veulent un cadre clair et progressif." },
 ];
 
 export default function ContactPage() {
@@ -51,10 +51,10 @@ export default function ContactPage() {
               <span style={{ color: "#355da3", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>CONTACT</span>
             </div>
             <h1 style={{ margin: 0, color: C.ink, fontSize: "clamp(34px,5.2vw,56px)", fontWeight: 800, lineHeight: 1.02, letterSpacing: "-0.02em", fontFamily: FONT_DISPLAY, textTransform: "uppercase" }}>
-              Nous sommes a votre ecoute !
+              Nous sommes à votre écoute !
             </h1>
             <p style={{ color: C.secondary, fontSize: isMobile ? 16 : 18, lineHeight: 1.65, marginTop: 14, maxWidth: 560 }}>
-              Une suggestion d'amelioration ? Une question ? Contacte-nous et nous te repondrons rapidement.
+              Une suggestion d'amélioration ? Une question ? Contacte-nous et nous te répondrons rapidement.
             </p>
 
             <div style={{ marginTop: isMobile ? 24 : 34, background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 22, boxShadow: "0 2px 12px rgba(142,179,255,0.10)" }}>
@@ -99,9 +99,9 @@ export default function ContactPage() {
           </section>
 
           <section style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 24, boxShadow: "0 8px 24px rgba(142,179,255,0.18)" }}>
-            <h2 style={{ margin: 0, color: C.ink, fontFamily: FONT_DISPLAY, fontSize: isMobile ? 34 : 42, fontWeight: 800, lineHeight: 1.05, textTransform: "uppercase", letterSpacing: "0" }}>Parlons de votre entrainement</h2>
+            <h2 style={{ margin: 0, color: C.ink, fontFamily: FONT_DISPLAY, fontSize: isMobile ? 34 : 42, fontWeight: 800, lineHeight: 1.05, textTransform: "uppercase", letterSpacing: "0" }}>Parlons de votre entraînement</h2>
             <p style={{ color: C.secondary, fontSize: 16, lineHeight: 1.6, marginTop: 12 }}>
-              Laisse-nous tes coordonnees et un message, nous revenons vers toi rapidement.
+              Laisse-nous tes coordonnées et un message, nous revenons vers toi rapidement.
             </p>
 
             <form
@@ -112,11 +112,11 @@ export default function ContactPage() {
                 <Field label="Nom complet *" placeholder="Votre nom" />
                 <Field label="Email *" type="email" placeholder="vous@exemple.com" />
               </div>
-              <Field label="Objet du message *" placeholder="Selectionnez un sujet" />
+              <Field label="Objet du message *" placeholder="Sélectionnez un sujet" />
               <Field label="Message *" as="textarea" placeholder="Expliquez-nous votre contexte, vos enjeux, ou vos questions." />
 
               <p style={{ margin: 0, color: C.secondary, fontSize: 13, lineHeight: 1.55 }}>
-                En soumettant ce formulaire, vous acceptez que vos donnees soient utilisees pour vous recontacter.
+                En soumettant ce formulaire, vous acceptez que vos données soient utilisées pour vous recontacter.
               </p>
 
               <button

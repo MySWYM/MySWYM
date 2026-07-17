@@ -25,55 +25,55 @@ function LegalLayout({ title, subtitle, children }) {
         </div>
       </main>
       <Footer />
-    </div>
+    </motion.div>
   );
 }
 
 export function MentionsLegalesPage() {
   return (
-    <LegalLayout title="Mentions legales" subtitle="Informations legales de l'editeur du site myswym.app">
-      <p><strong>Editeur du site :</strong> MySWYM.</p>
+    <LegalLayout title="Mentions légales" subtitle="Informations légales de l'éditeur du site myswym.app">
+      <p><strong>Éditeur du site :</strong> MySWYM.</p>
       <p><strong>Contact :</strong> contact@myswym.app.</p>
       <p><strong>Directeur de publication :</strong> Arthur Noel.</p>
-      <p><strong>Hebergeur :</strong> Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, USA.</p>
-      <p><strong>Propriete intellectuelle :</strong> l'ensemble des contenus (textes, visuels, logo, code) est protege et ne peut etre reproduit sans autorisation prealable.</p>
+      <p><strong>Hébergeur :</strong> Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, USA.</p>
+      <p><strong>Propriété intellectuelle :</strong> l'ensemble des contenus (textes, visuels, logo, code) est protégé et ne peut être reproduit sans autorisation préalable.</p>
     </LegalLayout>
   );
 }
 
 export function PolitiqueConfidentialitePage() {
   return (
-    <LegalLayout title="Politique de confidentialite" subtitle="Traitement des donnees personnelles sur MySWYM">
-      <p><strong>Donnees collecte es :</strong> email de compte, donnees de profil sportif, plans d'entrainement, donnees de paiement (via Stripe), et donnees Strava si l'utilisateur connecte son compte.</p>
-      <p><strong>Finalites :</strong> creation et suivi du plan d'entrainement, gestion du compte, facturation, support utilisateur, amelioration du service.</p>
-      <p><strong>Base legale :</strong> execution du service, respect d'obligations legales et interet legitime d'amelioration produit.</p>
-      <p><strong>Duree de conservation :</strong> les donnees sont conservees pendant la duree d'utilisation du compte puis supprimees/anonimisees selon les obligations legales applicables.</p>
-      <p><strong>Sous-traitants :</strong> Supabase (authentification et base de donnees), Stripe (paiement), Vercel (hebergement), Strava (integration optionnelle).</p>
-      <p><strong>Droits :</strong> acces, rectification, suppression, limitation, opposition et portabilite, a exercer a l'adresse contact@myswym.app.</p>
+    <LegalLayout title="Politique de confidentialité" subtitle="Traitement des données personnelles sur MySWYM">
+      <p><strong>Données collectées :</strong> email de compte, données de profil sportif, plans d'entraînement, données de paiement (via Stripe), et données Strava si l'utilisateur connecte son compte.</p>
+      <p><strong>Finalités :</strong> création et suivi du plan d'entraînement, gestion du compte, facturation, support utilisateur, amélioration du service.</p>
+      <p><strong>Base légale :</strong> exécution du service, respect d'obligations légales et intérêt légitime d'amélioration produit.</p>
+      <p><strong>Durée de conservation :</strong> les données sont conservées pendant la durée d'utilisation du compte puis supprimées/anonymisées selon les obligations légales applicables.</p>
+      <p><strong>Sous-traitants :</strong> Supabase (authentification et base de données), Stripe (paiement), Vercel (hébergement), Strava (intégration optionnelle).</p>
+      <p><strong>Droits :</strong> accès, rectification, suppression, limitation, opposition et portabilité, à exercer à l'adresse contact@myswym.app.</p>
     </LegalLayout>
   );
 }
 
 export function CguPage() {
   return (
-    <LegalLayout title="CGU" subtitle="Conditions generales d'utilisation de l'application MySWYM">
-      <p>L'application propose un accompagnement d'entrainement natation base sur les informations fournies par l'utilisateur.</p>
-      <p>L'utilisateur est responsable de l'exactitude des donnees saisies et de son aptitude physique a pratiquer une activite sportive.</p>
-      <p>Les contenus fournis sont des recommandations d'entrainement et ne remplacent pas un avis medical.</p>
-      <p>MySWYM peut faire evoluer le service, ses fonctionnalites et ses conditions a tout moment.</p>
-      <p>Tout usage frauduleux, detournement technique ou atteinte au service peut entrainer la suspension du compte.</p>
+    <LegalLayout title="CGU" subtitle="Conditions générales d'utilisation de l'application MySWYM">
+      <p>L'application propose un accompagnement d'entraînement natation basé sur les informations fournies par l'utilisateur.</p>
+      <p>L'utilisateur est responsable de l'exactitude des données saisies et de son aptitude physique à pratiquer une activité sportive.</p>
+      <p>Les contenus fournis sont des recommandations d'entraînement et ne remplacent pas un avis médical.</p>
+      <p>MySWYM peut faire évoluer le service, ses fonctionnalités et ses conditions à tout moment.</p>
+      <p>Tout usage frauduleux, détournement technique ou atteinte au service peut entraîner la suspension du compte.</p>
     </LegalLayout>
   );
 }
 
 export function CgvPage() {
   return (
-    <LegalLayout title="CGV" subtitle="Conditions generales de vente de l'offre Premium MySWYM">
-      <p><strong>Offres :</strong> abonnement mensuel ou annuel, detaille sur la page Tarifs.</p>
-      <p><strong>Paiement :</strong> le paiement est securise et traite par Stripe.</p>
-      <p><strong>Renouvellement :</strong> l'abonnement est reconduit automatiquement sauf resiliation avant la date de renouvellement.</p>
-      <p><strong>Resiliation :</strong> possible a tout moment depuis le portail client; l'acces Premium reste actif jusqu'a la fin de la periode deja payee.</p>
-      <p><strong>Droit de retractation :</strong> applique conformement aux dispositions legales en vigueur, sauf exceptions liees a l'execution immediate du service numerique.</p>
+    <LegalLayout title="CGV" subtitle="Conditions générales de vente de l'offre Premium MySWYM">
+      <p><strong>Offres :</strong> abonnement mensuel ou annuel, détaillé sur la page Tarifs.</p>
+      <p><strong>Paiement :</strong> le paiement est sécurisé et traité par Stripe.</p>
+      <p><strong>Renouvellement :</strong> l'abonnement est reconduit automatiquement sauf résiliation avant la date de renouvellement.</p>
+      <p><strong>Résiliation :</strong> possible à tout moment depuis le portail client ; l'accès Premium reste actif jusqu'à la fin de la période déjà payée.</p>
+      <p><strong>Droit de rétractation :</strong> appliqué conformément aux dispositions légales en vigueur, sauf exceptions liées à l'exécution immédiate du service numérique.</p>
       <p><strong>Support :</strong> contact@myswym.app.</p>
     </LegalLayout>
   );
@@ -82,12 +82,12 @@ export function CgvPage() {
 export function PolitiqueCookiesPage() {
   return (
     <LegalLayout title="Politique de cookies" subtitle="Information sur l'utilisation des cookies sur MySWYM">
-      <p><strong>Cookies necessaires :</strong> indispensables au fonctionnement technique de l'application (session, securite, preferences de base).</p>
-      <p><strong>Cookies de mesure d'audience :</strong> utilises uniquement si vous donnez votre consentement via la banniere cookies.</p>
-      <p><strong>Finalite :</strong> comprendre l'usage du site pour ameliorer l'experience utilisateur.</p>
-      <p><strong>Duree de conservation :</strong> les choix de consentement sont conserves pour limiter la repetition de la banniere.</p>
-      <p><strong>Gestion du consentement :</strong> vous pouvez accepter ou refuser depuis la banniere affichee a votre premiere visite.</p>
-      <p><strong>Contact :</strong> pour toute question, ecrivez a contact@myswym.app.</p>
+      <p><strong>Cookies nécessaires :</strong> indispensables au fonctionnement technique de l'application (session, sécurité, préférences de base).</p>
+      <p><strong>Cookies de mesure d'audience :</strong> utilisés uniquement si vous donnez votre consentement via la bannière cookies.</p>
+      <p><strong>Finalité :</strong> comprendre l'usage du site pour améliorer l'expérience utilisateur.</p>
+      <p><strong>Durée de conservation :</strong> les choix de consentement sont conservés pour limiter la répétition de la bannière.</p>
+      <p><strong>Gestion du consentement :</strong> vous pouvez accepter ou refuser depuis la bannière affichée à votre première visite.</p>
+      <p><strong>Contact :</strong> pour toute question, écrivez à contact@myswym.app.</p>
     </LegalLayout>
   );
 }

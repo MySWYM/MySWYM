@@ -41,7 +41,7 @@ export default function CookieBanner() {
       fontFamily: "'Lexend', sans-serif",
     }}>
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#434751" }}>
-        Nous utilisons des cookies necessaires au fonctionnement du site et, avec votre accord,
+        Nous utilisons des cookies nécessaires au fonctionnement du site et, avec votre accord,
         des cookies de mesure d'audience.{" "}
         <Link to="/politique-cookies" style={{ color: "#154388", fontWeight: 700, textDecoration: "none" }}>
           En savoir plus

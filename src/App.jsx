@@ -203,17 +203,17 @@ const BADGE_DEFS = [
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
 
-// Vérifie si un user a un accès premium valide (subscription active + non expirée)
+// Premium = app_metadata uniquement (écrit par service role / Stripe).
+// user_metadata est falsifiable par le client → jamais utilisé pour l'accès.
 const checkIsPremium = (user) => {
-  const meta = user?.user_metadata;
+  const meta = user?.app_metadata;
   if (meta?.subscription !== "premium") return false;
-  // Si subscription_end existe, vérifier qu'elle n'est pas dépassée
   if (meta?.subscription_end != null) {
     const endMs = Number(meta.subscription_end) * 1000;
-    if (!Number.isFinite(endMs)) return true; // métadonnée invalide → ne pas bloquer à tort
+    if (!Number.isFinite(endMs)) return false; // date invalide → refuser l'accès
     return endMs > Date.now();
   }
-  return true; // pas de date de fin = premium sans limite (legacy)
+  return true; // legacy : premium actif sans date de fin (sync Stripe la renseignera)
 };
 
 const syncSubscriptionFromStripe = async () => {
@@ -1367,6 +1367,11 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
             ) : (
               <button onClick={onUpgrade} style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54, boxShadow: "0 6px 20px rgba(53,93,163,0.30)" }}>
                 <Zap size={17} color={G.gold} /> Passer en Premium
+              </button>
+            )}
+            {onRefreshStatus && (
+              <button onClick={onRefreshStatus} style={{ width: "100%", marginTop: 8, padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                Actualiser le statut (déjà payé ?)
               </button>
             )}
           </div>
@@ -2959,7 +2964,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                 return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{nodes}</div>;
               })()}
               <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "14px 4px 0" }}>
-                Un terme technique ou une séance pas clair ? Regarde les vidéos sur{" "}
+                Un terme technique ou une séance pas claire ? Regarde les vidéos sur{" "}
                 <a
                   href={INSTAGRAM_ARTHUR}
                   target="_blank"
@@ -2969,6 +2974,18 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                   Instagram Arthur Natation
                 </a>
                 {" "}— n’hésite pas.
+              </p>
+              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "6px 4px 0" }}>
+                Tu ne comprends pas tout le vocabulaire ? Consulte le{" "}
+                <a
+                  href="/blog/glossaire-natation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
+                >
+                  glossaire natation
+                </a>
+                .
               </p>
               {done && onShare && (
                 <button onClick={() => onShare(session)} style={{ marginTop: 12, width: "100%", padding: "10px 12px", borderRadius: 12, background: G.white, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -6245,6 +6262,18 @@ export default function App() {
       if (u) {
         forceAuthRef.current = false;
         loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
+        // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          syncSubscriptionFromStripe()
+            .then((synced) => {
+              if (!synced) return;
+              setUser(synced);
+              const premium = checkIsPremium(synced);
+              setIsPremium(premium);
+              if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
+            })
+            .catch(() => {});
+        }
       } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) {
         setScreen("auth");
         setAuthLoading(false);
@@ -6758,14 +6787,7 @@ export default function App() {
       const session = refreshData?.session;
       if (!session) { showToast("Reconnecte-toi pour gérer ton abonnement."); return; }
 
-      // Vérifie si stripe_customer_id est présent
-      const { data: userData } = await supabase.auth.getUser();
-      const customerId = userData?.user?.user_metadata?.stripe_customer_id;
-      if (!customerId) {
-        showToast("Abonnement introuvable. Contacte support@myswym.app");
-        return;
-      }
-
+      // Le serveur résout le customer via app_metadata ou email — pas de gate client
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },

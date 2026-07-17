@@ -70,23 +70,24 @@ export default function TarifsPage() {
     }
   };
 
-  const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-  const PRICE_ANNUAL = "price_1TPjyeAS4mfgF2TwmSjSiidD";
+  // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx
+  const PRICE_MONTHLY = "price_1TP5yOAVxucD4jHaRYk2cbHC";
+  const PRICE_ANNUAL = "price_1TPKQfAVxucD4jHaUDssY5cs";
 
   const freeFeatures = [
     "Plan du premier mois (4 semaines)",
     "Tous les objectifs sportifs",
-    "1 a 2 seances par semaine",
-    "Seances detaillees avec cues",
+    "1 à 2 séances par semaine",
+    "Séances détaillées avec cues",
   ];
   const premiumFeatures = [
-    "Plusieurs projets en parallele",
-    "Plan complet jusqu'a 52 semaines",
-    "Jusqu'a 4 seances par semaine",
-    "Toutes les variantes de seances",
-    "Progression avancee (seuil, vitesse)",
-    "Seances specialisees BNSSA / eau libre",
-    "Acces a vie aux mises a jour",
+    "Plusieurs projets en parallèle",
+    "Plan complet jusqu'à 52 semaines",
+    "Jusqu'à 4 séances par semaine",
+    "Toutes les variantes de séances",
+    "Progression avancée (seuil, vitesse)",
+    "Séances spécialisées BNSSA / eau libre",
+    "Accès à vie aux mises à jour",
   ];
 
   return (
@@ -101,7 +102,7 @@ export default function TarifsPage() {
             <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", lineHeight: 0.95, fontWeight: 800, color: C.ink, margin: "8px 0 12px", textTransform: "uppercase", letterSpacing: "0" }}>
               Commence gratuitement.<br />Passe premium quand tu veux.
             </h1>
-            <p style={{ color: C.secondary, fontSize: isMobile ? 20 : 16, fontFamily: FONT }}>Annule a tout moment.</p>
+            <p style={{ color: C.secondary, fontSize: isMobile ? 20 : 16, fontFamily: FONT }}>Annule à tout moment.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: isMobile ? 14 : 16, alignItems: "start", paddingTop: isMobile ? 4 : 16 }}>
@@ -110,7 +111,7 @@ export default function TarifsPage() {
               <div style={{ fontSize: isMobile ? 52 : 38, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.ink, margin: "14px 0 4px", lineHeight: 1 }}>0€</div>
               <div style={{ color: C.secondary, fontSize: isMobile ? 15 : 13, fontFamily: FONT, marginBottom: isMobile ? 16 : 24 }}>Pour toujours</div>
               <Link to="/inscription" style={{ display: "block", textAlign: "center", border: `1.5px solid ${C.outlineVar}`, color: C.ink, background: C.bgCard, fontWeight: 700, fontSize: isMobile ? 16 : 15, fontFamily: FONT, padding: isMobile ? "12px" : "13px", borderRadius: 16, textDecoration: "none", marginBottom: isMobile ? 18 : 24 }}>
-                Creer mon compte
+                Créer mon compte
               </Link>
               <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
                 {freeFeatures.map((f) => (
@@ -135,7 +136,7 @@ export default function TarifsPage() {
                 <span style={{ color: "rgba(255,255,255,0.75)", fontSize: isMobile ? 16 : 14, fontFamily: FONT, marginBottom: isMobile ? 8 : 6 }}>/mois</span>
               </div>
               <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{ display: "block", width: "100%", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: isMobile ? 18 : 16, fontFamily: FONT, padding: isMobile ? "12px" : "15px", borderRadius: 16, border: "none", cursor: "pointer", marginBottom: isMobile ? 16 : 20 }}>
-                Demarrer - 40€/an
+                Démarrer — 40€/an
               </button>
               <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
                 {premiumFeatures.map((f) => (

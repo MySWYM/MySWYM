@@ -96,7 +96,7 @@ function Nav() {
               Se connecter
             </Link>
           )}
-          <Link to="/inscription" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Creer mon compte</Link>
+          <Link to="/inscription" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Créer mon compte</Link>
         </div>
       </div>
     </nav>
