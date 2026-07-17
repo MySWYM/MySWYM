@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 
@@ -25,7 +24,7 @@ function LegalLayout({ title, subtitle, children }) {
         </div>
       </main>
       <Footer />
-    </motion.div>
+    </div>
   );
 }
 
