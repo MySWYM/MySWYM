@@ -5,6 +5,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 
 const PRICE_MONTHLY = Deno.env.get("STRIPE_PRICE_MONTHLY") ?? "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
 const PRICE_ANNUAL = Deno.env.get("STRIPE_PRICE_ANNUAL") ?? "price_1TudyVAS4mfgF2TwHiSo3Vrg";
+const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 const COUPON_UNLOCK = Deno.env.get("STRIPE_COUPON_UNLOCK") ?? "UNLOCK50";
 const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
 
@@ -12,9 +13,11 @@ const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
 const ALLOWED_PRICE_IDS = new Set([
   PRICE_MONTHLY,
   PRICE_ANNUAL,
+  PRICE_BIENNIAL,
   Deno.env.get("STRIPE_PRICE_ID") ?? "",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
+  "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   // Anciens IDs (clients / cache)
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
   "price_1TP5yOAVxucD4jHaRYk2cbHC",
@@ -190,11 +193,13 @@ Deno.serve(async (req) => {
       ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       metadata: {
         supabase_user_id: user.id,
+        ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
         ...(referredByUserId ? { referred_by: referredByUserId } : {}),
       },
       subscription_data: {
         metadata: {
           supabase_user_id: user.id,
+          ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
           ...(referredByUserId ? { referred_by: referredByUserId } : {}),
         },
       },

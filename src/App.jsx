@@ -2817,8 +2817,9 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
   );
 };
 
-const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-const PRICE_ANNUAL  = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
+const PRICE_MONTHLY  = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
+const PRICE_ANNUAL   = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
+const PRICE_BIENNIAL = "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 
 const ReferralShareCard = () => {
   const [code, setCode] = useState(null);
@@ -2904,7 +2905,7 @@ const ReferralShareCard = () => {
 const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState("annual");
+  const [period, setPeriod] = useState(weeksBlocked ? "biennial" : "annual");
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -2929,7 +2930,9 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const handleCheckout = async () => {
     setLoading(true); setErr(null);
     try {
-      const priceId = period === "annual" ? PRICE_ANNUAL : PRICE_MONTHLY;
+      const priceId = period === "biennial" ? PRICE_BIENNIAL
+        : period === "annual" ? PRICE_ANNUAL
+        : PRICE_MONTHLY;
       const referralCode = resolveReferralCode(user);
       const json = await callFunction("create-checkout", {
         origin: window.location.origin,
@@ -2942,11 +2945,16 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   };
 
   const isAnnual = period === "annual";
-  const monthlyCta = hasReferral
-    ? "Démarrer — −20% parrainage"
-    : weeksBlocked
-      ? "Démarrer — 2,50€ le 1er mois"
-      : "Démarrer — 4,99€/mois";
+  const isBiennial = period === "biennial";
+  const ctaLabel = isBiennial
+    ? "Démarrer — 29,99€ / 2 ans"
+    : isAnnual
+      ? "Démarrer — 29,99€/an"
+      : hasReferral
+        ? "Démarrer — −20% parrainage"
+        : weeksBlocked
+          ? "Démarrer — 2,50€ le 1er mois"
+          : "Démarrer — 4,99€/mois";
 
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2962,8 +2970,31 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
         </div>
 
+        {/* Offre 2 ans — mise en avant */}
+        <button onClick={() => setPeriod("biennial")} style={{
+          width: "100%", padding: "16px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left",
+          border: `2px solid ${isBiennial ? G.blue : G.greyLight}`,
+          background: isBiennial ? G.ink : G.white,
+          marginBottom: 10, position: "relative", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", top: 10, right: 10,
+            background: "#22C55E", color: G.white,
+            fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
+          }}>−50% · 2 ANS</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: isBiennial ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ENGAGEMENT 24 MOIS</div>
+          <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>59,98€</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 800, color: isBiennial ? G.white : G.ink }}>29,99€</div>
+            <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.5)" : G.greyMid }}>/ 2 ans</div>
+          </div>
+          <div style={{ fontSize: 11, color: isBiennial ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 6 }}>
+            Soit ~1,25€/mois · non résiliable avant la fin de période
+          </div>
+        </button>
+
         {/* Cards mensuel / annuel */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
           {/* Mensuel */}
           <button onClick={() => setPeriod("monthly")} style={{
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
@@ -2993,35 +3024,34 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             )}
           </button>
 
-          {/* Annuel — mis en avant */}
+          {/* Annuel */}
           <button onClick={() => setPeriod("annual")} style={{
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
-            background: period === "annual" ? G.ink : G.white,
+            background: period === "annual" ? G.blueLight : G.white,
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
-            {/* Badge -50% */}
-            <div style={{
-              position: "absolute", top: 8, right: 8,
-              background: "#22C55E", color: G.white,
-              fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-            }}>−50%</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
-            {/* Prix barré */}
-            <div style={{ fontSize: 12, color: period === "annual" ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€/mois</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.white : G.ink }}>2,50€</div>
-            <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 29,99€/an</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>29,99€</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · ~2,50€/mois</div>
           </button>
         </div>
 
-        {/* 6 mois offerts pill — visible only on annual */}
-        {isAnnual && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>6 mois offerts par rapport au mensuel</span>
+        {isBiennial && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
+              Engagement 24 mois · 29,99€ facturés une fois · accès jusqu’à la fin de période
+            </span>
           </div>
         )}
 
-        {!isAnnual && weeksBlocked && !hasReferral && (
+        {isAnnual && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>6 mois offerts vs mensuel plein tarif</span>
+          </div>
+        )}
+
+        {period === "monthly" && weeksBlocked && !hasReferral && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}>−50% sur ton 1er mois après l’essai gratuit</span>
           </div>
@@ -3053,7 +3083,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
 
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
-          {loading ? "Redirection…" : isAnnual ? "Démarrer — 29,99€/an" : monthlyCta}
+          {loading ? "Redirection…" : ctaLabel}
         </Btn>
         <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
       </div>
