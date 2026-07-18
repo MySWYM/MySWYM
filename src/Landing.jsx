@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase.js";
 import {
   Waves, Activity, Award, Target, ChevronRight, Check, X, Minus,
-  ArrowRight, Star, Zap, TrendingUp, Calendar, Timer,
+  ArrowRight, Star, Zap, TrendingUp, Calendar, Timer, Play,
   ChevronDown, RotateCcw, Menu,
 } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
@@ -270,123 +270,83 @@ function Hero() {
   const isMobile = useIsMobile();
   return (
     <section style={{
-      background: `radial-gradient(circle at top left, ${C.bg} 0%, #eef2ff 100%)`,
-      padding: isMobile ? "100px 20px 64px" : "120px 24px 80px",
+      background: `radial-gradient(ellipse 90% 70% at 10% -10%, rgba(142,179,255,0.28), transparent 55%), radial-gradient(ellipse 60% 50% at 100% 20%, rgba(216,226,255,0.5), transparent 45%), ${C.bg}`,
+      padding: isMobile ? "96px 20px 56px" : "112px 24px 72px",
       overflow: "hidden", position: "relative",
     }}>
-      {/* Decorative blob */}
-      <div style={{
-        position: "absolute", top: -80, right: -80, width: 480, height: 480,
-        background: `radial-gradient(circle, rgba(142,179,255,0.18) 0%, transparent 70%)`,
-        pointerEvents: "none",
-      }} />
-
-      <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 480px", gap: isMobile ? 48 : 64, alignItems: "center", position: "relative" }}>
-        {/* Left */}
+      <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.05fr 0.95fr", gap: isMobile ? 40 : 56, alignItems: "center", position: "relative" }}>
         <div style={{ textAlign: isMobile ? "center" : "left" }}>
-          {/* Social proof badge */}
-          <div style={{ display: "flex", gap: 8, justifyContent: isMobile ? "center" : "flex-start", marginBottom: 20, flexWrap: "wrap" }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: C.primaryFix, borderRadius: 100,
-              padding: "5px 14px",
-            }}>
-              <Waves size={12} color={C.primary} />
-              <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", fontFamily: FONT }}>NATATION · TRIATHLON · BNSSA · EAU LIBRE</span>
-            </div>
-          </div>
+          <p style={{
+            fontFamily: FONT_DISPLAY, fontWeight: 900, fontSize: isMobile ? 18 : 20,
+            color: C.accent, letterSpacing: "0.1em", textTransform: "uppercase",
+            margin: "0 0 16px",
+          }}>
+            MySWYM
+          </p>
 
           <h1 style={{
             fontFamily: FONT_DISPLAY, fontWeight: 800,
-            fontSize: "clamp(42px, 6.5vw, 78px)",
-            color: C.ink, lineHeight: 1.0,
-            letterSpacing: "-0.01em",
-            margin: "0 0 20px",
+            fontSize: "clamp(40px, 6vw, 68px)",
+            color: C.ink, lineHeight: 0.98,
+            letterSpacing: "0",
+            margin: "0 0 18px",
             textTransform: "uppercase",
           }}>
-            Nage.<br />
-            <span style={{ color: C.accent }}>On s'occupe<br />du reste.</span>
+            Tu nages déjà.<br />
+            <span style={{ color: C.primary }}>On structure<br />le reste.</span>
           </h1>
 
-          <p style={{ color: C.inkLight, fontSize: "clamp(15px, 2vw, 17px)", lineHeight: 1.7, marginBottom: 36, maxWidth: isMobile ? "100%" : 480, fontFamily: FONT }}>
-            Ton programme d'entraînement structuré semaine par semaine —
-            adapté à ton niveau, ton objectif et ta dispo. Comme un vrai coach.
+          <p style={{ color: C.inkLight, fontSize: isMobile ? 16 : 17, lineHeight: 1.65, marginBottom: 28, maxWidth: isMobile ? "100%" : 440, fontFamily: FONT, marginLeft: isMobile ? "auto" : 0, marginRight: isMobile ? "auto" : 0 }}>
+            Ton plan de séances, clair et prêt — adapté à ton objectif. Pas une école de natation : un générateur d’entraînement pour ceux qui savent déjà nager.
           </p>
 
-          <div style={{ display: "flex", gap: 12, justifyContent: isMobile ? "center" : "flex-start", flexWrap: "wrap", marginBottom: 20 }}>
+          <div style={{ display: "flex", gap: 12, justifyContent: isMobile ? "center" : "flex-start", flexWrap: "wrap", marginBottom: 14 }}>
             <a href="/" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               background: C.accent, color: C.accentText, fontWeight: 700,
               fontSize: isMobile ? 15 : 16, fontFamily: FONT,
-              padding: isMobile ? "14px 22px" : "15px 30px",
-              borderRadius: 100, textDecoration: "none",
+              padding: isMobile ? "14px 22px" : "15px 28px",
+              borderRadius: 16, textDecoration: "none",
               boxShadow: "0 8px 28px rgba(142,179,255,0.40)",
               transition: "transform 0.2s, box-shadow 0.2s",
             }}
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(142,179,255,0.50)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(142,179,255,0.40)"; }}
             >
-              Créer mon plan gratuitement <ArrowRight size={16} />
+              Créer mon plan — gratuit <ArrowRight size={16} />
             </a>
           </div>
-          <p style={{ color: C.outline, fontSize: 13, fontFamily: FONT }}>Gratuit · Aucune carte bancaire · 2 minutes</p>
+          <p style={{ color: C.outline, fontSize: 13, fontFamily: FONT }}>4 semaines offertes · Sans carte · 2 minutes</p>
         </div>
 
-        {/* Right — App mockup */}
+        {/* Phone — séance lisible, zéro jargon */}
         <div style={{ display: "flex", justifyContent: "center", position: "relative" }}>
           <div style={{
-            width: isMobile ? "min(300px, calc(100vw - 48px))" : "clamp(280px, 38vw, 320px)",
-            background: C.ink, borderRadius: 44,
-            border: "6px solid rgba(0,0,0,0.08)",
-            padding: 12,
-            boxShadow: `0 40px 100px rgba(142,179,255,0.20), 0 0 0 1px rgba(0,0,0,0.05)`,
+            width: isMobile ? "min(300px, calc(100vw - 48px))" : "clamp(280px, 34vw, 310px)",
+            background: C.ink, borderRadius: 40,
+            border: "5px solid rgba(0,0,0,0.06)",
+            padding: 10,
+            boxShadow: `0 36px 80px rgba(53,93,163,0.22)`,
           }}>
-            <div style={{ background: C.white, borderRadius: 32, overflow: "hidden" }}>
-              {/* Status bar */}
-              <div style={{ background: "#0A1628", padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.9)", fontWeight: 600, fontFamily: FONT }}>9:41</span>
-                <div style={{ width: 70, height: 8, background: "rgba(255,255,255,0.15)", borderRadius: 5 }} />
+            <div style={{ background: C.white, borderRadius: 30, overflow: "hidden" }}>
+              <div style={{ background: C.ink, padding: "16px 18px 18px" }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 4, letterSpacing: "0.08em", fontFamily: FONT }}>AUJOURD’HUI · SÉANCE 1</div>
+                <div style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 800, color: C.white, textTransform: "uppercase", letterSpacing: "0.02em" }}>Nage à ton rythme</div>
+                <div style={{ marginTop: 8, fontSize: 13, color: C.accent, fontWeight: 600, fontFamily: FONT }}>900 m · ~35 min</div>
               </div>
-              {/* Header */}
-              <div style={{ background: "#0A1628", padding: "8px 20px 20px" }}>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 4, letterSpacing: "0.08em", fontFamily: FONT }}>SEMAINE 4 · BASE</div>
-                <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 800, color: C.white }}>Ton programme</div>
-                <div style={{ marginTop: 12, height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 2 }}>
-                  <div style={{ width: "55%", height: "100%", background: C.accent, borderRadius: 2 }} />
-                </div>
-              </div>
-              {/* Session cards */}
-              <div style={{ background: C.bg, padding: "14px 14px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ background: C.bg, padding: "14px 14px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
-                  { type: "ENDURANCE", title: "Nage à ton rythme", dist: "1 200m", color: C.primary, done: true },
-                  { type: "VITESSE",   title: "Accélérations fun",  dist: "900m",  color: "#E65100",  done: false },
-                  { type: "TECHNIQUE", title: "Glisse & respiration",dist: "800m", color: "#0097A7",  done: false },
-                ].map((s, i) => (
-                  <div key={i} style={{
-                    background: s.done ? C.primaryFix : C.white,
-                    border: `1px solid ${s.done ? "rgba(53,93,163,0.15)" : C.border}`,
-                    borderRadius: 16, padding: "11px 13px",
-                    display: "flex", alignItems: "center", gap: 10,
-                    boxShadow: C.shadow,
-                  }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 10, background: `${s.color}14`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {s.done ? <Check size={15} color={s.color} /> : <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 9, color: s.color, fontWeight: 700, letterSpacing: "0.07em", marginBottom: 2, fontFamily: FONT }}>{s.type}</div>
-                      <div style={{ fontSize: 13, color: C.ink, fontWeight: 600, lineHeight: 1.2, fontFamily: FONT }}>{s.title}</div>
-                    </div>
-                    <div style={{ fontSize: 12, color: C.secondary, fontWeight: 600, fontFamily: FONT }}>{s.dist}</div>
+                  { label: "Échauffement", text: "200 m tranquille — crawl ou dos, comme tu veux" },
+                  { label: "Corps", text: "5× (2 longueurs + 30 s de repos) — sans te presser" },
+                  { label: "Retour calme", text: "200 m très lent pour récupérer" },
+                ].map((b, i) => (
+                  <div key={i} style={{ background: C.white, borderRadius: 14, padding: "11px 13px", border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: C.primary, letterSpacing: "0.06em", marginBottom: 4, fontFamily: FONT }}>{b.label.toUpperCase()}</div>
+                    <div style={{ fontSize: 13, color: C.inkLight, lineHeight: 1.45, fontFamily: FONT }}>{b.text}</div>
                   </div>
                 ))}
-                {/* Bottom nav preview */}
-                <div style={{ display: "flex", justifyContent: "space-around", paddingTop: 8, borderTop: `1px solid ${C.outlineVar}`, marginTop: 2 }}>
-                  {["Accueil", "Programme", "Profil"].map((t, i) => (
-                    <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                      <div style={{ width: 18, height: 18, borderRadius: 4, background: i === 0 ? C.primaryFix : "transparent" }} />
-                      <span style={{ fontSize: 9, color: i === 0 ? C.primary : C.outline, fontWeight: i === 0 ? 700 : 400, fontFamily: FONT }}>{t}</span>
-                    </div>
-                  ))}
+                <div style={{ fontSize: 12, color: C.secondary, fontFamily: FONT, padding: "4px 2px 0", lineHeight: 1.45 }}>
+                  Astuce : finis sans être épuisé. Allonger la pause, c’est normal.
                 </div>
               </div>
             </div>
@@ -397,65 +357,53 @@ function Hero() {
   );
 }
 
-// ── Stats ──────────────────────────────────────────────────────────────────
-function Stats() {
-  const stats = [
-    { value: 4,    suffix: "",  label: "Disciplines couvertes" },
-    { value: 100,  suffix: "%", label: "Structuré comme un coach" },
-  ];
-  return (
-    <section style={{ background: C.accent, padding: "52px 24px" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 24 }}>
-        {stats.map((s, i) => (
-          <FadeIn key={i} delay={i * 0.1} style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: FONT, fontSize: "clamp(30px, 5vw, 48px)", fontWeight: 800, color: C.primaryDeep, letterSpacing: "-1px" }}>
-              <AnimCounter to={s.value} suffix={s.suffix} />
-            </div>
-            <div style={{ color: C.accentText, fontSize: 13, marginTop: 4, fontFamily: FONT, fontWeight: 500 }}>{s.label}</div>
-          </FadeIn>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ── How it works ───────────────────────────────────────────────────────────
+// ── How it works — storytelling ────────────────────────────────────────────
 function HowItWorks() {
   const steps = [
-    { n: "01", icon: Target,    title: "Ton niveau en 2 questions",    desc: "\"Est-ce que tu peux nager 20 min sans pause ?\" — on identifie ton niveau en quelques secondes. Pas de jargon, pas de chrono obligatoire." },
-    { n: "02", icon: Calendar,  title: "Ton plan prêt en 30 secondes", desc: "Ton programme est construit automatiquement, semaine par semaine. Adapté à ta fréquence (1×, 2×, 3× par semaine) et à ton objectif." },
-    { n: "03", icon: Waves,     title: "Tu sais exactement quoi faire",desc: "Chaque séance est détaillée : quoi nager, combien de temps reprendre son souffle, et une idée sur quoi se concentrer." },
-    { n: "04", icon: TrendingUp,title: "Tu vois que tu progresses",    desc: "Séances cochées, distance parcourue, régularité — tu visualises tes progrès et tu restes motivé même les semaines difficiles." },
+    {
+      n: "01", icon: Target, title: "Tu dis où tu vas",
+      desc: "Triathlon, technique, eau libre, diplôme… Tu choisis ton cap. Pas de questionnaire interminable — juste de quoi construire le bon plan.",
+    },
+    {
+      n: "02", icon: Calendar, title: "Le plan apparaît",
+      desc: "Semaine après semaine, séances prêtes. Adaptées à ta fréquence et à ton niveau. Comme si un coach avait préparé ton carnet d’entraînement.",
+    },
+    {
+      n: "03", icon: Waves, title: "Tu nages. C’est clair.",
+      desc: "Avant d’entrer dans l’eau, tu sais quoi faire : combien, à quelle intensité ressentie, et sur quoi te concentrer. Zéro improvisation.",
+    },
   ];
   return (
     <section id="how" style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 48 }}>
           <SectionLabel text="COMMENT ÇA MARCHE" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
-            Ton plan personnalisé<br />en 4 étapes
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
+            Du cap au bassin,<br />sans friction
           </h2>
+          <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 440, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
+            Pas un quiz froid. Une trajectoire : tu choisis, on structure, tu nages.
+          </p>
         </FadeIn>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 18 }}>
           {steps.map((s, i) => (
-            <FadeIn key={i} delay={i * 0.1}>
+            <FadeIn key={i} delay={i * 0.12}>
               <div style={{
                 background: C.white, border: `1px solid ${C.border}`,
-                borderRadius: 24, padding: 28, height: "100%", boxSizing: "border-box",
-                boxShadow: C.shadow, transition: "box-shadow 0.3s, transform 0.3s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                  <div style={{ width: 44, height: 44, background: C.primaryFix, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <s.icon size={20} color={C.primary} />
-                  </div>
-                  <span style={{ fontFamily: FONT, fontSize: 13, fontWeight: 800, color: C.accent, letterSpacing: "0.04em" }}>{s.n}</span>
+                borderRadius: 28, padding: "28px 26px", height: "100%", boxSizing: "border-box",
+                boxShadow: C.shadow, position: "relative", overflow: "hidden",
+              }}>
+                <div style={{
+                  position: "absolute", top: -8, right: 12,
+                  fontFamily: FONT_DISPLAY, fontSize: 72, fontWeight: 900,
+                  color: C.primaryFix, lineHeight: 1, letterSpacing: "-0.04em", pointerEvents: "none",
+                }}>{s.n}</div>
+                <div style={{ width: 48, height: 48, background: C.primaryFix, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+                  <s.icon size={22} color={C.primary} />
                 </div>
-                <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: C.ink, margin: "0 0 10px" }}>{s.title}</h3>
-                <p style={{ color: C.inkLight, fontSize: 14, lineHeight: 1.65, fontFamily: FONT }}>{s.desc}</p>
+                <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.ink, margin: "0 0 10px" }}>{s.title}</h3>
+                <p style={{ color: C.inkLight, fontSize: 14, lineHeight: 1.7, fontFamily: FONT, margin: 0 }}>{s.desc}</p>
               </div>
             </FadeIn>
           ))}
@@ -465,75 +413,101 @@ function HowItWorks() {
   );
 }
 
-// ── Week Example ──────────────────────────────────────────────────────────
+// ── Week Example — séances lisibles ────────────────────────────────────────
 function WeekExample() {
   const isMobile = useIsMobile();
   const [activeDay, setActiveDay] = useState(0);
 
   const sessions = [
-    { day: "Débutant", type: "ENDURANCE", color: "#8eb3ff", title: "Nage à ton rythme",    total: "900m",   warmup: "200m tranquille — crawl ou dos, comme tu veux", main: "5× (2 longueurs nage + 30 sec de repos) — sans te presser", cool: "200m très calme pour récupérer", tip: "L'objectif : finir sans être épuisé. Si tu dois allonger la pause, c'est normal." },
-    { day: "Lundi",       type: "ENDURANCE", color: C.primary,  title: "Fond en séries",        total: "2 200m", warmup: "400m échauffement tranquille", main: "5×300m crawl allure confortable — 30 sec de repos entre chaque", cool: "400m retour au calme mixte", tip: "Respiration toutes les 3 bras. Pense à bien glisser après chaque coulée." },
-    { day: "Mercredi",    type: "SEUIL",     color: "#E65100",  title: "Un peu plus vite",      total: "2 000m", warmup: "300m échauffement + 4×50m accélérations progressives", main: "8×100m crawl — effort soutenu mais régulier · 20 sec de repos", cool: "300m nage libre tranquille", tip: "Garde le même rythme du 1er au 8e. Si tu accélères au dernier, c'est que tu partais trop lentement." },
-    { day: "Vendredi",    type: "TECHNIQUE", color: "#0097A7",  title: "Glisse & technique",    total: "1 800m", warmup: "200m libre + 4×25m avec palmes", main: "6×50m en pensant aux bras — 6×50m en pensant à la glisse", cool: "200m nage dos décontraction", tip: "Sur chaque longueur, choisis UN truc à améliorer. Pas tout à la fois." },
+    {
+      day: "Reprise", vibe: "Tranquille", color: "#355da3",
+      title: "Nage à ton rythme", total: "900 m · ~35 min",
+      warmup: "200 m tout doux — crawl ou dos, comme tu veux",
+      main: "5 fois : 2 longueurs, puis 30 secondes de repos. Sans te presser.",
+      cool: "200 m très calme pour récupérer",
+      tip: "L’objectif : sortir de l’eau avec envie de revenir. Allonger la pause, c’est normal.",
+    },
+    {
+      day: "Fond", vibe: "Endurance", color: "#0097A7",
+      title: "Séries confortables", total: "2 000 m · ~50 min",
+      warmup: "400 m échauffement tranquille",
+      main: "5 × 300 m crawl à une allure où tu pourrais encore parler — 30 s entre chaque.",
+      cool: "300 m retour au calme mixte",
+      tip: "Respiration régulière. Pense à glisser après chaque coulée.",
+    },
+    {
+      day: "Technique", vibe: "Sensation", color: "#154388",
+      title: "Glisse & bras", total: "1 600 m · ~45 min",
+      warmup: "200 m libre + quelques longueurs pour sentir l’eau",
+      main: "6 × 50 m focus bras, puis 6 × 50 m focus glisse. Un seul point à la fois.",
+      cool: "200 m dos décontracté",
+      tip: "Sur chaque longueur, un seul truc à améliorer. Pas tout d’un coup.",
+    },
+    {
+      day: "Effort", vibe: "Soutenu", color: "#E65100",
+      title: "Un cran au-dessus", total: "1 800 m · ~45 min",
+      warmup: "300 m + 4 × 50 m qui accélèrent progressivement",
+      main: "8 × 100 m crawl — effort régulier, pas un sprint. 20 s de repos.",
+      cool: "300 m nage libre tranquille",
+      tip: "Même rythme du 1er au 8e. Si tu accélères à la fin, tu partais trop lentement.",
+    },
   ];
 
   const s = sessions[activeDay];
 
   return (
     <section id="conformite" style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="EXEMPLES DE SÉANCES" />
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 48 }}>
+          <SectionLabel text="APERÇU DE SÉANCE" />
           <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 14px", letterSpacing: "0", textTransform: "uppercase" }}>
-            Que tu démarres ou que tu<br />vises la performance
+            Clair avant<br />d’entrer dans l’eau
           </h2>
-          <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 480, margin: "0 auto", fontFamily: FONT }}>
-            Tu sais exactement quoi faire avant même d'entrer dans l'eau — du débutant au sportif confirmé.
+          <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 460, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
+            Pas de jargon opaque. Tu lis, tu comprends, tu nages — du rythme tranquille à l’effort soutenu.
           </p>
         </FadeIn>
 
         <FadeIn>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "180px 1fr", gap: 16, alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "160px 1fr", gap: 16, alignItems: "start" }}>
             <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", gap: 8 }}>
               {sessions.map((sess, i) => (
-                <button key={i} onClick={() => setActiveDay(i)} style={{
+                <button key={i} type="button" onClick={() => setActiveDay(i)} style={{
                   flex: isMobile ? 1 : "none",
-                  padding: isMobile ? "10px 6px" : "14px 18px",
-                  borderRadius: 18,
+                  padding: isMobile ? "12px 6px" : "14px 16px",
+                  borderRadius: 16,
                   border: `1.5px solid ${activeDay === i ? sess.color : C.border}`,
-                  background: activeDay === i ? `${sess.color}14` : C.white,
-                  cursor: "pointer", textAlign: "center", transition: "all 0.15s",
-                  boxShadow: activeDay === i ? `0 4px 16px ${sess.color}22` : C.shadow,
-                  overflow: "hidden", minWidth: 0,
+                  background: activeDay === i ? `${sess.color}12` : C.white,
+                  cursor: "pointer", textAlign: isMobile ? "center" : "left", transition: "all 0.15s",
+                  boxShadow: activeDay === i ? `0 4px 16px ${sess.color}18` : C.shadow,
+                  minWidth: 0,
                 }}>
-                  <div style={{ fontSize: isMobile ? 11 : 14, fontWeight: 700, color: activeDay === i ? C.ink : C.secondary, fontFamily: FONT, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sess.day}</div>
-                  {!isMobile && <div style={{ fontSize: 11, color: activeDay === i ? sess.color : C.outline, fontWeight: 600, marginTop: 2, fontFamily: FONT }}>{sess.type}</div>}
+                  <div style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: activeDay === i ? C.ink : C.secondary, fontFamily: FONT }}>{sess.day}</div>
+                  {!isMobile && <div style={{ fontSize: 12, color: activeDay === i ? sess.color : C.outline, fontWeight: 600, marginTop: 2, fontFamily: FONT }}>{sess.vibe}</div>}
                 </button>
               ))}
             </div>
 
             <div style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 20 : 28, boxShadow: C.shadow }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-                <div style={{ background: `${s.color}14`, borderRadius: 12, padding: "7px 14px" }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: s.color, letterSpacing: "0.07em", fontFamily: FONT }}>{s.type}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+                <div style={{ background: `${s.color}14`, borderRadius: 12, padding: "6px 12px" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: s.color, fontFamily: FONT }}>{s.vibe}</span>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 120 }}>
                   <div style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.ink }}>{s.title}</div>
                 </div>
-                <div style={{ background: C.bgSoft, borderRadius: 10, padding: "6px 12px" }}>
-                  <span style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: C.ink }}>{s.total}</span>
-                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.secondary, fontFamily: FONT }}>{s.total}</div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
                 {[
-                  { label: "ÉCHAUFFEMENT",    content: s.warmup, color: "#34C759" },
-                  { label: "CORPS DE SÉANCE", content: s.main,   color: s.color },
-                  { label: "RETOUR AU CALME", content: s.cool,   color: C.outline },
+                  { label: "Échauffement", content: s.warmup, color: "#34C759" },
+                  { label: "Corps de séance", content: s.main, color: s.color },
+                  { label: "Retour au calme", content: s.cool, color: C.outline },
                 ].map((block, i) => (
-                  <div key={i} style={{ background: C.bgCard, borderLeft: `3px solid ${block.color}`, borderRadius: "0 14px 14px 0", padding: "12px 16px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: block.color, letterSpacing: "0.08em", marginBottom: 4, fontFamily: FONT }}>{block.label}</div>
-                    <div style={{ fontSize: 14, color: C.inkLight, lineHeight: 1.55, fontFamily: FONT }}>{block.content}</div>
+                  <div key={i} style={{ background: C.bgCard, borderLeft: `3px solid ${block.color}`, borderRadius: "0 14px 14px 0", padding: "14px 16px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: block.color, letterSpacing: "0.04em", marginBottom: 4, fontFamily: FONT }}>{block.label}</div>
+                    <div style={{ fontSize: 15, color: C.inkLight, lineHeight: 1.55, fontFamily: FONT }}>{block.content}</div>
                   </div>
                 ))}
               </div>
@@ -550,43 +524,99 @@ function WeekExample() {
   );
 }
 
-// ── Goals ──────────────────────────────────────────────────────────────────
+// ── Goals — cards type Elevate ─────────────────────────────────────────────
 function Goals() {
+  const isMobile = useIsMobile();
   const goals = [
-    { icon: Waves,     color: "#8eb3ff", bg: "rgba(142,179,255,0.12)", border: "rgba(142,179,255,0.2)",  title: "Je débute",  sub: "Reprendre · Apprendre · Progresser",  desc: "Tu t'arrêtes après quelques longueurs ou tu reprends après un arrêt ? C'est parfait — le plan commence là où tu en es." },
-    { icon: Activity,  color: "#E65100", bg: "rgba(230,81,0,0.08)",    border: "rgba(230,81,0,0.15)",    title: "Triathlon",  sub: "Sprint · Olympique · Half · Ironman",  desc: "Plans structurés pour gérer l'effort en compétition — fond, intensité et gestion du rythme." },
-    { icon: Award,     color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.15)",  title: "Diplômes",   sub: "BNSSA · BPJEPS · Pompiers",            desc: "Apnée, remorquage, parcours spécifiques — prépare-toi exactement pour le jour J." },
-    { icon: RotateCcw, color: "#00C48C", bg: "rgba(0,196,140,0.08)",   border: "rgba(0,196,140,0.15)",   title: "Progresser", sub: "Nager plus · Plus vite · Mieux",       desc: "Tu nages régulièrement et tu veux franchir un cap ? Plan structuré sans deadline de compétition." },
-    { icon: Target,    color: "#7C3AED", bg: "rgba(124,58,237,0.08)",  border: "rgba(124,58,237,0.15)",  title: "Bien-être",  sub: "Remise en forme · Perte de poids",     desc: "Séances douces et progressives, à ton rythme. Nager pour se sentir bien, sans pression de chrono." },
+    {
+      icon: RotateCcw, color: "#355da3", tint: "rgba(53,93,163,0.08)",
+      title: "Technique & progression",
+      sub: "Nager mieux, plus longtemps",
+      desc: "Tu sais déjà nager. Tu veux un plan clair pour progresser sans improvisation.",
+      href: "/",
+    },
+    {
+      icon: Activity, color: "#E65100", tint: "rgba(230,81,0,0.08)",
+      title: "Triathlon",
+      sub: "Sprint → Ironman",
+      desc: "Volumes et intensités pensés pour la partie natation de ta course.",
+      href: "/",
+    },
+    {
+      icon: Waves, color: "#0097A7", tint: "rgba(0,151,167,0.08)",
+      title: "Eau libre",
+      sub: "Lac · Mer · Traversée",
+      desc: "Endurance, orientation, gestion de l’effort hors lignes d’eau.",
+      href: "/",
+    },
+    {
+      icon: Award, color: "#B45309", tint: "rgba(180,83,9,0.08)",
+      title: "Examens & diplômes",
+      sub: "BNSSA · BPJEPS · Pompiers",
+      desc: "Préparation ciblée pour le jour J — parcours, apnée, remorquage.",
+      href: "/",
+    },
   ];
+
   return (
-    <section id="goals" style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="POUR TOUT LE MONDE" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
-            Reprendre la nage,<br />progresser ou compétir
+    <section id="goals" style={{ background: C.bgSoft, padding: "clamp(56px,7vw,88px) 20px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
+          <SectionLabel text="TON OBJECTIF" />
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
+            Choisis ton cap
           </h2>
+          <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 420, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
+            Comme Elevate pour la course : tu te projettes d’abord. Le plan suit.
+          </p>
         </FadeIn>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
+          gap: 14,
+        }}>
           {goals.map((g, i) => (
-            <FadeIn key={i} delay={i * 0.08}>
-              <a href="/" style={{ textDecoration: "none", display: "block", height: "100%" }}>
-                <div style={{
-                  background: C.white, border: `1.5px solid ${g.border}`,
-                  borderRadius: 24, padding: "24px 22px", height: "100%", boxSizing: "border-box",
-                  boxShadow: C.shadow, transition: "box-shadow 0.25s, transform 0.25s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 12px 40px ${g.color}22`; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = "translateY(0)"; }}
+            <FadeIn key={i} delay={i * 0.07}>
+              <a href={g.href} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+                <div
+                  style={{
+                    background: C.white,
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: 24,
+                    padding: isMobile ? "22px 20px" : "26px 24px",
+                    height: "100%",
+                    boxSizing: "border-box",
+                    boxShadow: C.shadow,
+                    transition: "box-shadow 0.25s, transform 0.25s, border-color 0.25s",
+                    display: "flex",
+                    gap: 18,
+                    alignItems: "flex-start",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = `0 14px 40px ${g.color}22`;
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.borderColor = `${g.color}40`;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = C.shadow;
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = C.border;
+                  }}
                 >
-                  <div style={{ width: 46, height: 46, background: g.bg, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                    <g.icon size={22} color={g.color} />
+                  <div style={{
+                    width: 56, height: 56, flexShrink: 0,
+                    background: g.tint, borderRadius: 18,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <g.icon size={26} color={g.color} />
                   </div>
-                  <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: C.ink, margin: "0 0 4px" }}>{g.title}</h3>
-                  <div style={{ fontSize: 11, color: g.color, fontWeight: 700, marginBottom: 10, letterSpacing: "0.03em", fontFamily: FONT }}>{g.sub}</div>
-                  <p style={{ color: C.inkLight, fontSize: 13, lineHeight: 1.65, margin: 0, fontFamily: FONT }}>{g.desc}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.ink, margin: "0 0 4px" }}>{g.title}</h3>
+                    <div style={{ fontSize: 12, color: g.color, fontWeight: 700, marginBottom: 8, fontFamily: FONT }}>{g.sub}</div>
+                    <p style={{ color: C.inkLight, fontSize: 14, lineHeight: 1.55, margin: 0, fontFamily: FONT }}>{g.desc}</p>
+                  </div>
+                  <ChevronRight size={18} color={C.outline} style={{ flexShrink: 0, marginTop: 6 }} />
                 </div>
               </a>
             </FadeIn>
@@ -597,22 +627,120 @@ function Goals() {
   );
 }
 
+// ── Instagram bridge ───────────────────────────────────────────────────────
+function InstagramBridge() {
+  const isMobile = useIsMobile();
+  const previews = [
+    { title: "Respiration bilatérale", tag: "Crawl" },
+    { title: "Coup de pied efficace", tag: "Éducatif" },
+    { title: "Glisse & alignement", tag: "Sensation" },
+    { title: "Virages & coulées", tag: "Bassin" },
+  ];
+
+  return (
+    <section style={{ background: C.ink, padding: "clamp(56px,7vw,88px) 20px", overflow: "hidden" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1.1fr",
+          gap: isMobile ? 36 : 48,
+          alignItems: "center",
+        }}>
+          <FadeIn>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "rgba(142,179,255,0.15)", borderRadius: 100,
+              padding: "5px 14px", marginBottom: 16,
+            }}>
+              <span style={{ color: C.accent, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", fontFamily: FONT }}>INSTAGRAM × APP</span>
+            </div>
+            <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.white, margin: "0 0 14px", letterSpacing: "0", textTransform: "uppercase" }}>
+              La technique sur IG.<br />Le plan dans l’app.
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.65, marginBottom: 24, fontFamily: FONT, maxWidth: 400 }}>
+              Sur Instagram : sensations, éducatifs, tips. Dans MySWYM : ton programme structuré. Les deux se complètent — on ne remplace pas le coach, on prépare ta séance.
+            </p>
+            <a
+              href="https://www.instagram.com/arthurnatation/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                background: C.accent, color: C.accentText, fontWeight: 700,
+                fontSize: 15, fontFamily: FONT,
+                padding: "13px 22px", borderRadius: 14, textDecoration: "none",
+              }}
+            >
+              Voir @arthurnatation <ArrowRight size={16} />
+            </a>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 12,
+            }}>
+              {previews.map((p, i) => (
+                <a
+                  key={i}
+                  href="https://www.instagram.com/arthurnatation/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    textDecoration: "none",
+                    aspectRatio: "4/5",
+                    borderRadius: 20,
+                    background: `linear-gradient(160deg, rgba(142,179,255,${0.22 + i * 0.06}) 0%, rgba(53,93,163,0.55) 55%, rgba(25,28,30,0.9) 100%)`,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+                >
+                  <div style={{
+                    position: "absolute", top: "42%", left: "50%", transform: "translate(-50%, -50%)",
+                    width: 44, height: 44, borderRadius: "50%",
+                    background: "rgba(255,255,255,0.18)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    backdropFilter: "blur(6px)",
+                  }}>
+                    <Play size={18} color="#fff" fill="#fff" />
+                  </div>
+                  <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginBottom: 4, fontFamily: FONT }}>{p.tag}</div>
+                  <div style={{ fontSize: 14, color: C.white, fontWeight: 600, fontFamily: FONT, lineHeight: 1.3 }}>{p.title}</div>
+                </a>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Progress timeline ──────────────────────────────────────────────────────
 function ProgressTimeline() {
   const isMobile = useIsMobile();
   const milestones = [
-    { week: "Semaine 1",  title: "Tu reprends confiance",  desc: "Les premières séances sont courtes, faites pour que tu sortes de l'eau avec envie de revenir. Pas de chrono, pas de pression." },
-    { week: "Semaine 4",  title: "Tu vois la différence",  desc: "Les longueurs coulent. Tu tiens plus longtemps, tu récupères plus vite. La confiance dans l'eau monte." },
-    { week: "Semaine 8",  title: "Tu franchis un cap",     desc: "Les séances deviennent plus intenses — naturellement. Ton corps s'est adapté et est prêt pour aller plus loin." },
-    { week: "Semaine 12+",title: "Tu arrives prêt",        desc: "Que ce soit la compétition, le diplôme ou juste l'objectif perso — tu as fait le travail. Il ne reste qu'à profiter." },
+    { week: "Semaine 1",  title: "Tu reprends le fil",  desc: "Séances courtes, langage simple. Tu sors de l’eau en sachant exactement ce que tu as fait — et pourquoi." },
+    { week: "Semaine 4",  title: "Le rythme s’installe",  desc: "Les longueurs coulent. Tu tiens plus longtemps, tu récupères mieux. La confiance monte." },
+    { week: "Semaine 8",  title: "Tu montes d’un cran",     desc: "Les séances se densifient naturellement. Ton corps suit — le plan aussi." },
+    { week: "Semaine 12+",title: "Tu arrives prêt",        desc: "Course, diplôme ou objectif perso : tu as fait le travail. Il reste à profiter." },
   ];
   return (
-    <section style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 840, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 56 }}>
+    <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 48 }}>
           <SectionLabel text="TA PROGRESSION" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
-            De "je m'essouffle"<br />à "je me sens bien dans l'eau"
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
+            Un fil rouge,<br />semaine après semaine
           </h2>
         </FadeIn>
 
@@ -622,7 +750,7 @@ function ProgressTimeline() {
             <FadeIn key={i} delay={i * 0.15}>
               <div style={{ display: "flex", gap: isMobile ? 16 : 32, marginBottom: i < milestones.length - 1 ? (isMobile ? 28 : 40) : 0 }}>
                 <div style={{ flexShrink: 0, width: isMobile ? 28 : 50, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: C.accent, border: `3px solid ${C.bgSoft}`, boxShadow: `0 0 0 3px rgba(142,179,255,0.25)`, marginTop: 6 }} />
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: C.accent, border: `3px solid ${C.bg}`, boxShadow: `0 0 0 3px rgba(142,179,255,0.25)`, marginTop: 6 }} />
                 </div>
                 <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: 20, padding: 22, boxShadow: C.shadow }}>
                   <div style={{ fontSize: 12, color: C.primary, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 6, fontFamily: FONT }}>{m.week}</div>
@@ -649,12 +777,12 @@ function Comparison() {
   const isMobile = useIsMobile();
   const rows = [
     { label: "Plan structuré semaine par semaine", alone: false, generic: "partial", myswym: true },
-    { label: "Adapté à ton niveau exact",          alone: false, generic: false,     myswym: true },
-    { label: "Objectif sportif spécifique",        alone: false, generic: false,     myswym: true },
-    { label: "Allures cibles personnalisées",      alone: false, generic: false,     myswym: true },
-    { label: "Séances variées (5 formats/type)",   alone: false, generic: "partial", myswym: true },
+    { label: "Adapté à ton objectif",              alone: false, generic: false,     myswym: true },
+    { label: "Séances lisibles, prêtes à nager",   alone: false, generic: "partial", myswym: true },
+    { label: "Allures cibles (Premium)",           alone: false, generic: false,     myswym: true },
+    { label: "Formats de séance variés",           alone: false, generic: "partial", myswym: true },
     { label: "Progression en phases",             alone: false, generic: "partial", myswym: true },
-    { label: "Éducatifs techniques intégrés",      alone: false, generic: false,     myswym: true },
+    { label: "Pont Instagram ↔ plan",              alone: false, generic: false,     myswym: true },
     { label: "Gratuit pour commencer",             alone: true,  generic: false,     myswym: true },
   ];
   const Cell = ({ val }) => {
@@ -673,8 +801,8 @@ function Comparison() {
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 44 }}>
           <SectionLabel text="POURQUOI MYSWYM" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
-            La différence que tu<br />ressentiras dans l'eau
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.ink, margin: 0, letterSpacing: "0", textTransform: "uppercase" }}>
+            Un plan clair,<br />pas de l’improvisation
           </h2>
         </FadeIn>
 
@@ -726,36 +854,28 @@ function PaceFeature() {
   const [time, setTime] = useState("1:45");
   const [secs, setSecs] = useState(105);
   const zones = [
-    { label: "Facile",  zone: "Z1/Z2", mult: 1.35, color: "#00C48C", desc: "Endurance & récupération" },
-    { label: "Seuil",   zone: "Z3/Z4", mult: 1.08, color: "#F59E0B", desc: "Effort soutenu · allure seuil" },
-    { label: "Sprint",  zone: "Z5/Z6", mult: 0.95, color: "#FF3B30", desc: "Vitesse maximale" },
+    { label: "Facile",  zone: "Endurance", mult: 1.35, color: "#00C48C", desc: "Fond & récupération" },
+    { label: "Soutenu", zone: "Seuil", mult: 1.08, color: "#F59E0B", desc: "Effort régulier" },
+    { label: "Rapide",  zone: "Vitesse", mult: 0.95, color: "#FF3B30", desc: "Courtes accélérations" },
   ];
   const examples = ["0:55", "1:20", "1:45", "2:10", "2:45"];
   const toSecs = (str) => { const [m, s] = str.split(":").map(Number); return m * 60 + (s || 0); };
   const fmtSecs = (s) => `${Math.floor(s/60)}'${Math.round(s%60).toString().padStart(2,"0")}"`;
 
   return (
-    <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, alignItems: "center" }}>
+    <section style={{ background: C.bgSoft, padding: "clamp(60px,8vw,100px) 20px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 40, alignItems: "center" }}>
         <FadeIn>
-          <SectionLabel text="PREMIUM" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.ink, margin: "0 0 18px", letterSpacing: "0", textTransform: "uppercase" }}>
-            Tes allures cibles,<br />calculées à la seconde
+          <SectionLabel text="OPTION PREMIUM" />
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 800, color: C.ink, margin: "0 0 16px", letterSpacing: "0", textTransform: "uppercase" }}>
+            Les chronos,<br />si tu les veux
           </h2>
-          <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.7, marginBottom: 20, fontFamily: FONT }}>
-            Tu entres ton meilleur 100m crawl. On calcule automatiquement tes zones d'intensité — chaque séance Premium affiche l'allure exacte à viser.
+          <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.7, marginBottom: 16, fontFamily: FONT }}>
+            Le plan gratuit te dit quoi nager, clairement. Premium ajoute les allures cibles à la seconde — pour ceux qui aiment calibrer l’effort.
           </p>
-          <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.7, marginBottom: 8, fontFamily: FONT }}>
-            Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en endurance ou à ton seuil.
+          <p style={{ color: C.outline, fontSize: 13, lineHeight: 1.6, marginBottom: 8, fontFamily: FONT }}>
+            Pas obligatoire. Pas intimidant. Juste là quand tu es prêt.
           </p>
-          <p style={{ color: C.outline, fontSize: 13, lineHeight: 1.6, marginBottom: 24, fontFamily: FONT }}>
-            Disponible avec <strong style={{ color: C.ink }}>MySWYM Premium</strong>. La version gratuite te donne le plan structuré — sans chronos d'allure.
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {["Endurance", "Effort soutenu", "Vitesse", "Sprint"].map((t, i) => (
-              <span key={i} style={{ background: C.primaryFix, color: C.primary, fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 100, fontFamily: FONT }}>{t}</span>
-            ))}
-          </div>
         </FadeIn>
 
         <FadeIn delay={0.12}>
@@ -798,9 +918,9 @@ function PaceFeature() {
               })}
             </div>
             <div style={{ background: C.primaryFix, borderRadius: 16, padding: "13px 16px" }}>
-              <div style={{ fontSize: 10, color: C.primary, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 5, fontFamily: FONT }}>APERÇU DANS TES SÉANCES</div>
-              <div style={{ fontSize: 12, color: C.inkLight, lineHeight: 1.7, fontFamily: "monospace", wordBreak: "break-all" }}>
-                {`8×200m crawl — repos ${fmtSecs(Math.round(Math.ceil((200 * secs * 1.08 / 100 + 15) / 5) * 5))} ≈ ${fmtSecs(Math.round(secs * 1.08))}/100m`}
+              <div style={{ fontSize: 10, color: C.primary, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 5, fontFamily: FONT }}>DANS UNE SÉANCE PREMIUM</div>
+              <div style={{ fontSize: 13, color: C.inkLight, lineHeight: 1.6, fontFamily: FONT }}>
+                {`8 × 200 m crawl — viser environ ${fmtSecs(Math.round(secs * 1.08))} / 100 m`}
               </div>
             </div>
           </div>
@@ -873,8 +993,8 @@ function Pricing() {
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 52 }}>
           <SectionLabel text="TARIFS" />
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
-            Commence gratuitement.<br />Passe premium quand tu veux.
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "0", textTransform: "uppercase" }}>
+            4 semaines pour tester.<br />Premium quand tu veux.
           </h2>
           <p style={{ color: C.secondary, fontSize: 16, fontFamily: FONT }}>Annule à tout moment.</p>
         </FadeIn>
@@ -1001,8 +1121,8 @@ function FAQ() {
     { q: "Je ne connais pas mon temps au 100m — est-ce un problème ?",      a: "Non. Le 100m sert uniquement à calibrer les allures cibles Premium. Sans lui, tu as quand même un plan structuré séance par séance. Tu pourras renseigner ton temps plus tard dans ton profil Premium." },
     { q: "Qu'est-ce qui est inclus dans la version gratuite ?",             a: "Le premier mois de ton plan complet (4 semaines), avec le détail de chaque séance. C'est suffisant pour voir si l'approche te correspond. Aucune carte bancaire requise." },
     { q: "Puis-je changer d'objectif en cours de plan ?",                   a: "Oui. Dans l'onglet Profil, tu peux redémarrer l'onboarding pour définir un nouvel objectif et régénérer un plan complet. Avec Premium, tu peux même avoir plusieurs plans actifs en parallèle." },
-    { q: "Les séances fonctionnent en bassin 25m et 50m ?",                 a: "Oui. Lors de l'onboarding tu choisis la longueur de ton bassin. Toutes les distances, séries et temps de départ sont automatiquement calculés pour s'adapter." },
-    { q: "L'abonnement est sans engagement ?",                              a: "Oui. Tu peux annuler à tout moment depuis ton espace client. Si tu annules, tu gardes l'accès Premium jusqu'à la fin de la période payée." },
+    { q: "Les séances fonctionnent en bassin 25m et 50m ?",                 a: "Oui. Tu choisis la longueur de ton bassin à l’onboarding. Distances et séries s’adaptent automatiquement." },
+    { q: "L'abonnement est sans engagement ?",                              a: "Oui pour le mensuel. Tu peux annuler à tout moment depuis ton espace client et tu gardes l’accès jusqu’à la fin de la période payée. L’offre 2 ans est un engagement prépayé — clairement indiqué au checkout." },
   ];
 
   return (
@@ -1062,30 +1182,33 @@ function FAQ() {
 function FinalCTA() {
   return (
     <section style={{ background: C.ink, padding: "clamp(60px,8vw,100px) 20px", textAlign: "center" }}>
-      <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <FadeIn>
-          <div style={{ width: 60, height: 60, background: C.accent + "18", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
-            <Waves size={28} color={C.accent} />
-          </div>
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(36px, 5.5vw, 58px)", fontWeight: 800, color: C.white, margin: "0 0 16px", letterSpacing: "0", textTransform: "uppercase" }}>
-            Ton coach dans ta poche.<br />Gratuit pour commencer.
+          <p style={{
+            fontFamily: FONT_DISPLAY, fontWeight: 900, fontSize: 16,
+            color: C.accent, letterSpacing: "0.1em", textTransform: "uppercase",
+            margin: "0 0 16px",
+          }}>
+            MySWYM
+          </p>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(36px, 5.5vw, 54px)", fontWeight: 800, color: C.white, margin: "0 0 16px", letterSpacing: "0", textTransform: "uppercase" }}>
+            Ton plan.<br />Clair. Prêt.
           </h2>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 17, lineHeight: 1.6, marginBottom: 32, fontFamily: FONT }}>
-            Tu nages, on structure tout le reste. Lance ton programme en 2 minutes.
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 16, lineHeight: 1.65, marginBottom: 28, fontFamily: FONT }}>
+            Tu nages déjà. On structure le reste — 4 semaines offertes, sans carte.
           </p>
           <a href="/" style={{
             display: "inline-flex", alignItems: "center", gap: 10,
-            background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 17,
-            padding: "16px 36px", borderRadius: 100, textDecoration: "none",
+            background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 16,
+            padding: "15px 32px", borderRadius: 16, textDecoration: "none",
             boxShadow: "0 10px 32px rgba(142,179,255,0.35)", fontFamily: FONT,
             transition: "transform 0.2s, box-shadow 0.2s",
           }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(142,179,255,0.45)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 10px 32px rgba(142,179,255,0.35)"; }}
           >
-            Créer mon plan maintenant <ArrowRight size={18} />
+            Créer mon plan — gratuit <ArrowRight size={18} />
           </a>
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, marginTop: 12, fontFamily: FONT }}>Gratuit · 2 minutes · Sans carte bancaire</p>
         </FadeIn>
       </div>
     </section>
@@ -1096,7 +1219,7 @@ function FinalCTA() {
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Landing() {
   useEffect(() => {
-    document.title = "MySWYM — Ton coach natation personnalisé";
+    document.title = "MySWYM — Générateur de séances de natation";
     document.body.style.background = C.bg;
     document.body.style.fontFamily = FONT;
 
@@ -1121,14 +1244,14 @@ export default function Landing() {
       <FontLoader />
       <PublicNav />
       <Hero />
-
+      <Goals />
       <HowItWorks />
       <WeekExample />
-      <Goals />
-      <PaceFeature />
+      <InstagramBridge />
       <ProgressTimeline />
-      <Testimonials />
+      <PaceFeature />
       <Comparison />
+      <Pricing />
       <FAQ />
       <FinalCTA />
       <Footer />
