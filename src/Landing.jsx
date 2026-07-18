@@ -99,9 +99,15 @@ function AnimCounter({ to, suffix = "", duration = 1400 }) {
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
   useEffect(() => {
-    const fn = () => setMobile(window.innerWidth < bp);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
+    const mq = window.matchMedia(`(max-width: ${bp - 1}px)`);
+    const apply = () => setMobile(mq.matches || window.innerWidth < bp);
+    apply();
+    mq.addEventListener?.("change", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      mq.removeEventListener?.("change", apply);
+      window.removeEventListener("resize", apply);
+    };
   }, [bp]);
   return mobile;
 }
@@ -732,18 +738,18 @@ function PaceFeature() {
     <section style={{ background: C.bg, padding: "clamp(60px,8vw,100px) 20px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, alignItems: "center" }}>
         <FadeIn>
-          <SectionLabel text="NIVEAU PERFORMANCE" />
+          <SectionLabel text="PREMIUM" />
           <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)", fontWeight: 800, color: C.ink, margin: "0 0 18px", letterSpacing: "0", textTransform: "uppercase" }}>
             Tes allures cibles,<br />calculées à la seconde
           </h2>
           <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.7, marginBottom: 20, fontFamily: FONT }}>
-            Tu entres ton meilleur 100m crawl. On calcule automatiquement tes 3 zones d'intensité — chaque séance affiche l'allure exacte à viser.
+            Tu entres ton meilleur 100m crawl. On calcule automatiquement tes zones d'intensité — chaque séance Premium affiche l'allure exacte à viser.
           </p>
           <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.7, marginBottom: 8, fontFamily: FONT }}>
             Plus de "nage à allure confortable" vague. Tu sais exactement si tu es en endurance ou à ton seuil.
           </p>
           <p style={{ color: C.outline, fontSize: 13, lineHeight: 1.6, marginBottom: 24, fontFamily: FONT }}>
-            Cette fonctionnalité est disponible pour le niveau <strong style={{ color: C.ink }}>Performance</strong>. Les autres niveaux ont des plans tout aussi structurés — sans avoir besoin de chrono.
+            Disponible avec <strong style={{ color: C.ink }}>MySWYM Premium</strong>. La version gratuite te donne le plan structuré — sans chronos d'allure.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {["Endurance", "Effort soutenu", "Vitesse", "Sprint"].map((t, i) => (
@@ -843,10 +849,10 @@ function Pricing() {
     "Plusieurs projets en parallèle (triathlon + eau libre…)",
     "Plan complet jusqu'à 52 semaines",
     "Jusqu'à 4 séances par semaine",
-    "Toutes les variantes de séances",
+    "Allures cibles par zone (à la seconde)",
+    "Vidéos techniques Instagram",
+    "Départs avec allure cible (D…)",
     "Progression avancée (seuil, vitesse)",
-    "Séances spécialisées BNSSA / eau libre",
-    "Accès à vie aux mises à jour",
   ];
 
   return (
@@ -978,8 +984,8 @@ function Pricing() {
 function FAQ() {
   const [open, setOpen] = useState(null);
   const items = [
-    { q: "Je suis débutant total, MySWYM est fait pour moi ?",              a: "Oui. Le niveau \"débutant\" est conçu pour les gens qui reprennent après des années d'arrêt. Les premières séances travaillent la position dans l'eau avant tout. On progresse à ton rythme." },
-    { q: "Je ne connais pas mon temps au 100m — est-ce un problème ?",      a: "Pas du tout. Le temps au 100m est optionnel. Si tu le passes, l'app calcule des allures précises. Sinon, elle utilise des allures adaptées à ton niveau déclaré. Le plan reste 100% utilisable." },
+    { q: "Je suis débutant total, MySWYM est fait pour moi ?",              a: "MySWYM est un générateur de séances pour gens qui savent déjà nager. Si tu reprends après une pause, le niveau débutant te donne un plan simple. Pour apprendre le geste de A à Z, le coaching en DM / Instagram reste plus adapté." },
+    { q: "Je ne connais pas mon temps au 100m — est-ce un problème ?",      a: "Non. Le 100m sert uniquement à calibrer les allures cibles Premium. Sans lui, tu as quand même un plan structuré séance par séance. Tu pourras renseigner ton temps plus tard dans ton profil Premium." },
     { q: "Qu'est-ce qui est inclus dans la version gratuite ?",             a: "Le premier mois de ton plan complet (4 semaines), avec le détail de chaque séance. C'est suffisant pour voir si l'approche te correspond. Aucune carte bancaire requise." },
     { q: "Puis-je changer d'objectif en cours de plan ?",                   a: "Oui. Dans l'onglet Profil, tu peux redémarrer l'onboarding pour définir un nouvel objectif et régénérer un plan complet. Avec Premium, tu peux même avoir plusieurs plans actifs en parallèle." },
     { q: "Les séances fonctionnent en bassin 25m et 50m ?",                 a: "Oui. Lors de l'onboarding tu choisis la longueur de ton bassin. Toutes les distances, séries et temps de départ sont automatiquement calculés pour s'adapter." },

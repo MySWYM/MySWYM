@@ -21,9 +21,15 @@ const LEGAL_LINKS = [
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
   useEffect(() => {
-    const fn = () => setMobile(window.innerWidth < bp);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
+    const mq = window.matchMedia(`(max-width: ${bp - 1}px)`);
+    const apply = () => setMobile(mq.matches || window.innerWidth < bp);
+    apply();
+    mq.addEventListener?.("change", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      mq.removeEventListener?.("change", apply);
+      window.removeEventListener("resize", apply);
+    };
   }, [bp]);
   return mobile;
 }
@@ -38,7 +44,9 @@ export default function Footer({ aboveBottomNav = false }) {
         background: "#191c1e",
         borderTop: "1px solid rgba(255, 255, 255, 0.06)",
         padding: isMobile ? "32px 20px" : "36px 24px",
-        marginBottom: aboveBottomNav ? "calc(72px + env(safe-area-inset-bottom))" : undefined,
+        marginBottom: aboveBottomNav
+          ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))"
+          : undefined,
       }}
     >
       <div

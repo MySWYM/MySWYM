@@ -27,6 +27,12 @@ verify_jwt = true
 import_map = "./functions/create-portal/deno.json"
 entrypoint = "./functions/create-portal/index.ts"
 
+[functions.sync-subscription]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sync-subscription/deno.json"
+entrypoint = "./functions/sync-subscription/index.ts"
+
 [functions.strava-callback]
 enabled = true
 verify_jwt = true

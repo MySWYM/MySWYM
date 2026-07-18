@@ -33,10 +33,12 @@ Voir `arthur-session-format.md`.
 |-----------|--------------|--------|--------|
 | Reprise | début `base` | montée douce | 100 % aéro |
 | Volume / Général | `base` tardif + `development` | max de la période | aéro dominant, un peu seuil/VO2 |
+| **Test** | `test` | ~−15 % vs précédente | chronos 100/400 — mesurer l’évolution |
 | Spécifique | `peak` | un peu moins | allure course, qualité |
-| Affûtage | `taper` / `competition` | −35 à −50 % | quasi 100 % aéro + touches vitesse |
+| Affûtage | `taper` (1–2 sem.) / `competition` | −30 à −50 % | quasi 100 % aéro + touches vitesse |
 
-Semaine **transition / allégée** : toutes les ~4 semaines + avant compétition (−25 à −40 %).
+Semaine **transition / allégée** : toutes les ~4 semaines + avant compétition (−25 à −40 %).  
+**Affûtage** : 1 semaine si plan ≥ 6 sem., **2 semaines** si ≥ 10 sem.
 
 ### Répartition filières (cible hebdo, modèle polarisé)
 
@@ -56,7 +58,8 @@ Dans l’app (2–5 séances/sem), on traduit ça en **rôles de séance** dans 
 
 ### Règle +10 %
 
-Comme Excel OpenSwim : semaine N ≤ semaine N−1 × 1,10 (sauf référence / allégée).
+Comme Excel OpenSwim : semaine N ≤ semaine N−1 × 1,10 (sauf référence / allégée / test).  
+Appliqué dans `genererSemaineSessions` via `weekScale = target / refTotal` (pas seulement en commentaire).
 
 ### Ratios repos (référence COSD — déjà dans le contenu des séries)
 

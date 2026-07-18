@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
+const ENTITLEMENT_KEYS = ["subscription", "subscription_end", "cancel_at_period_end", "stripe_customer_id"] as const;
+
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
   "http://localhost:5173",
@@ -19,6 +21,12 @@ function corsHeaders(reqOrigin: string | null) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
+}
+
+function stripEntitlementFromUserMeta(meta: Record<string, unknown> | undefined) {
+  const next = { ...(meta ?? {}) };
+  for (const key of ENTITLEMENT_KEYS) delete next[key];
+  return next;
 }
 
 Deno.serve(async (req) => {
@@ -41,31 +49,67 @@ Deno.serve(async (req) => {
     if (userError) throw new Error(`Auth error: ${userError.message}`);
     if (!user) throw new Error("Utilisateur introuvable après getUser()");
 
-    const customerId = user.user_metadata?.stripe_customer_id;
-    console.log("[create-portal] user:", user.id, "customerId:", customerId ?? "MISSING");
-    if (!customerId) throw new Error(`stripe_customer_id manquant dans user_metadata (user: ${user.id})`);
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);
+    const sourceUser = adminUser ?? user;
 
-    // Ignore client-provided origin — use the validated request origin instead
+    const customerId = (sourceUser.app_metadata?.stripe_customer_id
+      ?? sourceUser.user_metadata?.stripe_customer_id) as string | undefined;
+    console.log("[create-portal] user:", user.id, "customerId:", customerId ?? "MISSING");
+
+    let resolvedCustomerId = customerId ?? null;
+    if (resolvedCustomerId) {
+      try {
+        const c = await stripe.customers.retrieve(resolvedCustomerId);
+        if ((c as { deleted?: boolean }).deleted) resolvedCustomerId = null;
+      } catch {
+        resolvedCustomerId = null;
+      }
+    }
+    if (!resolvedCustomerId && user.email) {
+      const list = await stripe.customers.list({ email: user.email, limit: 10 });
+      const match = list.data.find(c => !(c as { deleted?: boolean }).deleted);
+      resolvedCustomerId = match?.id ?? null;
+      if (resolvedCustomerId) {
+        await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          app_metadata: {
+            ...(sourceUser.app_metadata ?? {}),
+            stripe_customer_id: resolvedCustomerId,
+          },
+          user_metadata: stripEntitlementFromUserMeta(sourceUser.user_metadata),
+        });
+      }
+    }
+    if (!resolvedCustomerId) {
+      throw new Error(`stripe_customer_id manquant (user: ${user.id}) — clique sur « Actualiser le statut » dans Profil`);
+    }
+
     const returnOrigin = reqOrigin && isAllowedOrigin(reqOrigin)
       ? reqOrigin
       : ALLOWED_ORIGINS[0] ?? "https://myswym.fr";
 
-    console.log("[create-portal] creating portal session for customer:", customerId);
+    console.log("[create-portal] creating portal session for customer:", resolvedCustomerId);
     let session;
     try {
       session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: `${returnOrigin}?payment=portal`,
+        customer: resolvedCustomerId,
+        return_url: `${returnOrigin}/app?payment=portal`,
       });
-    } catch (stripeErr: any) {
-      if (stripeErr?.code === "resource_missing") {
-        // Customer ID périmé (test→live ou supprimé) : on le retire du metadata
-        const supabaseAdmin = createClient(
-          Deno.env.get("SUPABASE_URL")!,
-          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-        );
+    } catch (stripeErr: unknown) {
+      const code = (stripeErr as { code?: string })?.code;
+      if (code === "resource_missing") {
         await supabaseAdmin.auth.admin.updateUserById(user.id, {
-          user_metadata: { ...user.user_metadata, stripe_customer_id: null },
+          app_metadata: {
+            ...(sourceUser.app_metadata ?? {}),
+            stripe_customer_id: null,
+            subscription: "free",
+            subscription_end: null,
+            cancel_at_period_end: false,
+          },
+          user_metadata: stripEntitlementFromUserMeta(sourceUser.user_metadata),
         });
         throw new Error("Lien Stripe périmé — ton compte a été réinitialisé. Contacte support@myswym.app si le problème persiste.");
       }

@@ -88,10 +88,10 @@ export default function TarifsPage() {
     "Plusieurs projets en parallèle",
     "Plan complet jusqu'à 52 semaines",
     "Jusqu'à 4 séances par semaine",
-    "Toutes les variantes de séances",
+    "Allures cibles par zone (à la seconde)",
+    "Vidéos techniques Instagram",
+    "Départs avec allure cible (D…)",
     "Progression avancée (seuil, vitesse)",
-    "Séances spécialisées BNSSA / eau libre",
-    "Accès à vie aux mises à jour",
   ];
 
   return (

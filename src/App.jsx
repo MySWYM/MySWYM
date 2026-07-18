@@ -7,11 +7,12 @@ const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import SupportBubble from "./SupportBubble.jsx";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
-  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X,
+  Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -60,8 +61,28 @@ const TYPE_META = {
 };
 
 const css = `
+  :root {
+    --myswym-bg: ${G.bg};
+    --myswym-ink: ${G.ink};
+    --myswym-blue: ${G.blue};
+    --bottom-nav-h: 64px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --app-pad-x: 16px;
+    --app-max: 100%;
+    --sheet-max: 100%;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${G.bg}; font-family: 'Lexend', sans-serif; overscroll-behavior: none; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: ${G.bg};
+    font-family: 'Lexend', sans-serif;
+    overscroll-behavior: none;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+  #root { min-height: 100dvh; }
   h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; text-transform: uppercase; font-weight: 800; }
   h4 { letter-spacing: -0.01em; }
   .syne { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; font-weight: 800; text-transform: uppercase; }
@@ -80,11 +101,123 @@ const css = `
   .badge-pop { animation: badgePop 0.55s cubic-bezier(.175,.885,.32,1.275) both; }
   .toast-in  { animation: toastIn 0.4s cubic-bezier(.175,.885,.32,1.275) both; }
   input[type=date]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
-  ::-webkit-scrollbar { width: 0; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  button { -webkit-tap-highlight-color: transparent; }
   button:active { transform: scale(0.97); transition: transform 0.1s; }
-  input, textarea { -webkit-appearance: none; }
+  input, textarea { -webkit-appearance: none; font-size: 16px; }
+
+  /* Mobile-first app column */
+  .app-shell {
+    width: 100%;
+    max-width: var(--app-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--app-pad-x);
+    padding-right: var(--app-pad-x);
+  }
+  .app-shell--flush {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .app-shell--flush > .app-shell-inner {
+    padding-left: var(--app-pad-x);
+    padding-right: var(--app-pad-x);
+  }
+  .bottom-nav-inner {
+    width: 100%;
+    max-width: var(--app-max);
+    margin: 0 auto;
+    display: flex;
+  }
+  .app-toast {
+    position: fixed;
+    z-index: 300;
+    left: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
+  }
+  .support-fab {
+    position: fixed;
+    z-index: 150;
+    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
+  }
+  .support-fab--bare {
+    bottom: calc(16px + var(--safe-bottom));
+  }
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .sheet-panel {
+    width: 100%;
+    max-width: var(--sheet-max);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .h-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 12px;
+    padding-left: var(--app-pad-x);
+    padding-right: var(--app-pad-x);
+  }
+  .h-scroll::-webkit-scrollbar { display: none; }
+
+  @media (min-width: 640px) {
+    :root {
+      --app-pad-x: 24px;
+      --app-max: 480px;
+      --sheet-max: 440px;
+      --bottom-nav-h: 68px;
+    }
+    .sheet-overlay {
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .sheet-panel {
+      border-radius: 24px !important;
+      max-height: min(88vh, 720px);
+      overflow-y: auto;
+    }
+  }
+  @media (min-width: 900px) {
+    :root {
+      --app-pad-x: 28px;
+      --app-max: 560px;
+      --sheet-max: 480px;
+    }
+  }
+  @media (min-width: 1200px) {
+    :root {
+      --app-max: 600px;
+      --app-pad-x: 32px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up, .fade-up-1, .fade-up-2, .fade-up-3, .scale-in, .swimmer, .badge-pop, .toast-in {
+      animation: none !important;
+    }
+  }
 `;
 
+/** Conteneur app mobile-first → colonne centrée sur tablette/PC */
+const AppShell = ({ children, flush = false, style = {} }) => (
+  <div className={flush ? "app-shell app-shell--flush" : "app-shell"} style={style}>
+    {flush ? <div className="app-shell-inner">{children}</div> : children}
+  </div>
+);
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
   { id: "triathlon_sprint",  label: "Triathlon Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
@@ -279,6 +412,20 @@ const isSessionResolved = (s) => s.completed || !!s.skipped;
 const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
 const INSTAGRAM_ARTHUR = "https://www.instagram.com/arthurnatation/";
 
+/** Texte plat d'une séance — WhatsApp / description Strava */
+const formatSessionPlainText = (session) => {
+  const lines = [
+    `${session.title || "Séance"} — ${session.distance || ""}${session.duration ? ` — ${formatDuration(session.duration)}` : ""}`.trim(),
+  ];
+  if (session.intensity) lines.push(String(session.intensity));
+  lines.push("");
+  (session.details || []).forEach((d) => {
+    const t = String(d).trim();
+    if (t) lines.push(t);
+  });
+  lines.push("", "— MySWYM");
+  return lines.join("\n");
+};
 
 // Garde une semaine existante dès qu'il y a du progrès, un feedback ou une satisfaction
 const shouldPreserveWeek = (week) => {
@@ -1267,15 +1414,16 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: G.bg, paddingBottom: 100 }}>
-
+    <div style={{ minHeight: "100dvh", background: G.bg, paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 24px)" }}>
+      <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
-      <div style={{ padding: "56px 20px 24px", textAlign: "center" }}>
+      <div style={{ padding: "48px 0 24px", textAlign: "center" }}>
         {/* Avatar — tappable pour changer la photo */}
         <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
-            style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "block" }}
+            style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "block", minWidth: 44, minHeight: 44 }}
           >
             <div style={{
               width: 90, height: 90, borderRadius: "50%",
@@ -1313,12 +1461,13 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
               placeholder="Ton prénom"
               style={{ fontSize: 20, fontWeight: 700, color: G.ink, border: "none", borderBottom: `2px solid ${G.blue}`, outline: "none", background: "transparent", textAlign: "center", width: 160 }}
             />
-            <button onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "4px 10px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>OK</button>
+            <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => { setNameInput(displayName); setEditingName(true); }}
-            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 0 }}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
           >
             <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
             <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1332,7 +1481,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
         <div style={{ fontSize: 11, color: G.greyMid }}>{user?.email}</div>
       </div>
 
-      <div style={{ padding: "0 16px" }}>
+      <div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
@@ -1399,6 +1548,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </div>
         </div>
       </div>
+      </AppShell>
     </div>
   );
 };
@@ -1410,18 +1560,35 @@ const BottomNav = ({ active, onChange, newBadge }) => {
     { id: "profile", Icon: User,      label: "Profil" },
   ];
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderTop: `1px solid ${G.greyLight}`, display: "flex", padding: "10px 0 max(10px, env(safe-area-inset-bottom))" }}>
-      {tabs.map(t => {
-        const isActive = active === t.id;
-        return (
-          <button key={t.id} onClick={() => onChange(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "2px 0", position: "relative" }}>
-            <t.Icon size={22} color={isActive ? G.blue : G.greyMid} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
-            <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 400, color: isActive ? G.blue : G.grey }}>{t.label}</span>
-            {t.id === "profile" && newBadge && <div style={{ position: "absolute", top: 0, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
-            {isActive && <div style={{ position: "absolute", bottom: -10, width: 24, height: 3, borderRadius: 2, background: G.blue }} />}
-          </button>
-        );
-      })}
+    <div style={{
+      position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+      background: "rgba(255,255,255,0.94)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+      borderTop: `1px solid ${G.greyLight}`,
+      paddingBottom: "var(--safe-bottom)",
+    }}>
+      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "6px 0 8px" }} aria-label="Navigation principale">
+        {tabs.map(t => {
+          const isActive = active === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onChange(t.id)}
+              aria-current={isActive ? "page" : undefined}
+              style={{
+                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 4, background: "none", border: "none", cursor: "pointer",
+                minHeight: 48, padding: "6px 4px", position: "relative",
+              }}
+            >
+              <t.Icon size={22} color={isActive ? G.blue : G.greyMid} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
+              <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 500, color: isActive ? G.blue : G.grey }}>{t.label}</span>
+              {t.id === "profile" && newBadge && <div style={{ position: "absolute", top: 6, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
+              {isActive && <div style={{ position: "absolute", bottom: 2, width: 28, height: 3, borderRadius: 2, background: G.blue }} />}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 };
@@ -2007,10 +2174,10 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
       <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        Tes références<br />personnelles
+        Tes allures cibles
       </h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
-        Ces temps calibrent ton plan à la seconde. Renseigne au moins le 100 m.
+        Premium : on calcule tes zones d'intensité. Chaque séance affichera l'allure exacte à viser.
       </p>
 
       {/* Inputs */}
@@ -2129,8 +2296,8 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
     });
   };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
+    <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="sheet-panel scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
         <div style={{ background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
@@ -2204,8 +2371,8 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
-      <div className="scale-in" style={{ background: G.white, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
+    <div className="sheet-overlay">
+      <div className="sheet-panel scale-in" style={{ background: G.white, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
         {/* Handle */}
         <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
 
@@ -2277,7 +2444,7 @@ const BadgeToast = ({ badgeId }) => {
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 2;
-const PLAN_VERSION = 17; // v17 = grand chien + petit chien fréquents
+const PLAN_VERSION = 21; // v21 = périodisation : tests chrono + affûtage 1–2 sem + volume +10% réel
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
@@ -2291,8 +2458,8 @@ const FREE_TIER_LINES = [
 const PREMIUM_TIER_LINES = [
   "Plan complet jusqu'à ton événement",
   "Jusqu'à 5 séances par semaine",
-  "Ajustement du volume selon tes retours",
-  "Toutes les semaines débloquées",
+  "Allures cibles par zone (à la seconde)",
+  "Vidéos techniques Instagram",
   "Départs avec allure cible (D…)",
   "Plusieurs projets · modifier fréquence et allure",
 ];
@@ -2397,8 +2564,8 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const saving = isAnnual ? "1 mois offert" : null;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
+    <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="sheet-panel scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
@@ -2535,7 +2702,7 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
 // ── SESSION DETAIL PARSER ──────────────────────────────────────────────────
 // Transforme "4×50m crawl — R20" — respiration 3 temps" en blocs propres
 // (plus de · / — en chaîne dans l'UI).
-const REST_CHUNK_RE = /^(R\d+["']?|D(?:toutes les )?\d+['′]\d+"|D\d+")$/i;
+const REST_CHUNK_RE = /^(R\d+["']?|repos\s+\d+\s*(?:s|sec|min)?|D(?:toutes les )?\d+['′]\d+"|D\d+")$/i;
 const DEPART_INLINE_RE = /D(?:toutes les )?(\d+['′]\d+"|\d+")/g;
 
 const parseIntensity = (raw) => {
@@ -2576,9 +2743,9 @@ const parseSessionDetail = (raw) => {
     else cues.push(c.replace(/\s*·\s*/g, " · ").replace(/\s+/g, " ").trim());
   }
 
-  // Rest parfois collé dans le main ("… crawl R20"")
+  // Rest parfois collé dans le main ("… crawl R20"" ou "… — repos 15s")
   if (!restParts.length) {
-    const embedded = main.match(/\s+(R\d+["']?|D(?:toutes les )?\d+['′]\d+"|D\d+")\s*$/i);
+    const embedded = main.match(/\s+(R\d+["']?|repos\s+\d+\s*(?:s|sec|min)?|D(?:toutes les )?\d+['′]\d+"|D\d+")\s*$/i);
     if (embedded) {
       restParts.push(embedded[1].replace(/^Dtoutes les /i, "D"));
       main = main.slice(0, embedded.index).trim();
@@ -2728,7 +2895,7 @@ const SessionBlock = ({ detail, index, workIndex, accent }) => {
 };
 
 // ── SESSION CARD ──────────────────────────────────────────────────────────
-const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, defaultExpanded = false }) => {
+const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, defaultExpanded = false, isPremium = false, onUpgrade }) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
@@ -2736,6 +2903,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [copied, setCopied] = useState(false);
   const intensity = parseIntensity(session.intensity);
   const details = session.details || [];
   const blockCount = details.length;
@@ -2757,6 +2925,26 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
     }
   };
 
+  const handleCopy = async (e) => {
+    e.stopPropagation();
+    const text = formatSessionPlainText(session);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
 
   let workCounter = 0;
@@ -2764,11 +2952,11 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
   return (
     <div style={{
       background: resolved ? G.greyXLight : G.white,
-      borderRadius: 18,
-      border: `1px solid ${resolved ? G.greyLight : "rgba(142,179,255,0.14)"}`,
+      borderRadius: 24,
+      border: `1px solid ${resolved ? G.greyLight : "rgba(53,93,163,0.10)"}`,
       opacity: resolved ? 0.78 : 1,
       transition: "opacity 0.25s, box-shadow 0.25s",
-      boxShadow: resolved ? "none" : "0 1px 3px rgba(25,28,30,0.04), 0 8px 24px rgba(53,93,163,0.06)",
+      boxShadow: resolved ? "none" : "0 2px 12px rgba(142,179,255,0.10), 0 8px 32px rgba(53,93,163,0.06)",
       overflow: "hidden",
       position: "relative",
     }}>
@@ -2780,12 +2968,12 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 14px 12px 16px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px 14px 18px" }}>
         <button
           onClick={() => setShowTooltip(v => !v)}
           aria-label={`Type ${session.type}`}
           style={{
-            width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+            width: 44, height: 44, borderRadius: 14, flexShrink: 0,
             background: resolved ? G.greyLight : tm.bg,
             border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -2813,7 +3001,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: resolved ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: resolved ? G.grey : G.ink, lineHeight: 1.25, letterSpacing: "-0.01em" }}>{session.title}</div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, color: resolved ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -2823,19 +3011,21 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0, position: "relative" }}>
               <button
+                type="button"
                 onClick={handleCheckboxClick}
                 aria-label={resolved ? "Réinitialiser la séance" : "Marquer la séance"}
                 style={{
-                  width: 32, height: 32, borderRadius: "50%",
+                  width: 44, height: 44, borderRadius: "50%",
                   border: `2px solid ${checkboxColor}`,
                   background: resolved ? checkboxColor : "transparent",
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
+                  flexShrink: 0,
                 }}
               >
-                {done && <Check size={13} color={G.white} />}
-                {skipped === "missed" && <RotateCcw size={12} color={G.white} />}
-                {skipped === "not_done" && <X size={12} color={G.white} />}
+                {done && <Check size={16} color={G.white} />}
+                {skipped === "missed" && <RotateCcw size={15} color={G.white} />}
+                {skipped === "not_done" && <X size={15} color={G.white} />}
               </button>
               {showMenu && (
                 <div
@@ -2904,13 +3094,14 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
       {blockCount > 0 && (
         <>
           <button
+            type="button"
             onClick={() => setExpanded(v => !v)}
             style={{
-              width: "100%", padding: "10px 16px",
+              width: "100%", padding: "14px 16px", minHeight: 48,
               background: expanded ? "#fafbfc" : "transparent",
               border: "none", borderTop: `1px solid ${G.greyLight}`,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
-              color: G.inkLight, fontSize: 12, fontWeight: 600,
+              color: G.inkLight, fontSize: 13, fontWeight: 600,
             }}
           >
             <span>{expanded ? "Masquer le détail" : `${blockCount} bloc${blockCount > 1 ? "s" : ""}`}</span>
@@ -2963,44 +3154,85 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                 }
                 return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{nodes}</div>;
               })()}
-              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "14px 4px 0" }}>
-                Un terme technique ou une séance pas claire ? Regarde les vidéos sur{" "}
-                <a
-                  href={INSTAGRAM_ARTHUR}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
+              <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  style={{
+                    flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
+                    background: copied ? G.mint : G.white, border: `1px solid ${copied ? G.mint : G.greyLight}`,
+                    fontSize: 12, fontWeight: 600, color: copied ? G.white : G.inkLight, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  }}
                 >
-                  Instagram Arthur Natation
-                </a>
-                {" "}— n’hésite pas.
+                  {copied ? <><CheckCheck size={13} color="#fff" /> Copié</> : <><Copy size={13} color={G.grey} /> Copier la séance</>}
+                </button>
+                {done && onShare && (
+                  <button onClick={() => onShare(session)} style={{
+                    flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
+                    background: G.white, border: `1px solid ${G.greyLight}`,
+                    fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  }}>
+                    <Activity size={12} color={G.grey} /> Partager
+                  </button>
+                )}
+              </div>
+              <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
+                Colle le texte dans WhatsApp ou la description Strava.
               </p>
-              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "6px 4px 0" }}>
-                Tu ne comprends pas tout le vocabulaire ? Consulte le{" "}
+              {isPremium ? (
+                <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "12px 4px 0" }}>
+                  Un terme ou un éducatif pas clair ?{" "}
+                  <a
+                    href={INSTAGRAM_ARTHUR}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
+                  >
+                    Vidéos sur Instagram
+                  </a>
+                  {" "}— Premium.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onUpgrade?.()}
+                  style={{
+                    display: "block", width: "100%", marginTop: 12, padding: "10px 12px",
+                    borderRadius: 12, border: `1px dashed ${G.blue}55`, background: G.blueLight,
+                    fontSize: 12, fontWeight: 600, color: G.blue, cursor: "pointer", textAlign: "left",
+                  }}
+                >
+                  Vidéos techniques Instagram — débloquer avec Premium
+                </button>
+              )}
+              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "8px 4px 0" }}>
+                Vocabulaire ?{" "}
                 <a
                   href="/blog/glossaire-natation"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
                 >
-                  glossaire natation
+                  Glossaire natation
                 </a>
                 .
               </p>
-              {done && onShare && (
-                <button onClick={() => onShare(session)} style={{ marginTop: 12, width: "100%", padding: "10px 12px", borderRadius: 12, background: G.white, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <Activity size={12} color={G.grey} /> Partager cette séance
-                </button>
-              )}
             </div>
           )}
         </>
       )}
-      {blockCount === 0 && done && onShare && (
-        <div style={{ padding: "0 14px 12px" }}>
-          <button onClick={() => onShare(session)} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <Activity size={12} color={G.grey} /> Partager cette séance
+      {blockCount === 0 && (
+        <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <button type="button" onClick={handleCopy} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            {copied ? <><CheckCheck size={12} /> Copié</> : <><Copy size={12} /> Copier la séance</>}
           </button>
+          {done && onShare && (
+            <button onClick={() => onShare(session)} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Activity size={12} color={G.grey} /> Partager cette séance
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -3008,7 +3240,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
 };
 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
-const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
+const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek, isPremium = false, onUpgrade }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
@@ -3116,6 +3348,8 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek }) => {
               sessionIndex={i}
               onComplete={onComplete}
               onShare={onShare}
+              isPremium={isPremium}
+              onUpgrade={onUpgrade}
               defaultExpanded={isCurrentWeek && i === week.sessions.findIndex(x => !isSessionResolved(x))}
             />
           ))}
@@ -3192,6 +3426,10 @@ const COACH_MESSAGES = {
   competition: [
     "Semaine de compétition. Reste calme, fais confiance à ton travail. La préparation est terminée — il ne reste plus qu'à exécuter.",
   ],
+  test: [
+    "Semaine chrono : note tes temps (100m / 400m). Pas de forçage — des chronos propres pour mesurer si tu progresses vraiment.",
+    "Compare avec le test précédent. Même 2–3 secondes de mieux, c'est une vraie évolution. Note-les quelque part.",
+  ],
   wellness: [
     "On reprend doucement. L'objectif ce mois : créer l'habitude. Deux séances régulières valent mieux qu'une séance intense suivie d'une semaine sans.",
     "Le corps s'adapte progressivement. Tu vas peut-être te sentir limité — c'est une bonne chose. On construit sur du solide.",
@@ -3205,22 +3443,27 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
   const week = plan.weeks[Math.max(0, currentWeekIndex)];
   const isDecouverte = profile?.level === "découverte";
 
-  const phase = week
-    ? (plan.isProgression ? (currentWeekIndex < 4 ? "base" : currentWeekIndex < 8 ? "development" : "peak")
-       : (week.isBilan ? "taper" : ["base","development","peak","taper","competition"].includes(
-           plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("compét") ? "competition"
-           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("affût") ? "taper"
-           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("vitesse") ? "peak"
-           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("seuil") ? "development"
-           : "base"
-         ) ? (
-           plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("compét") ? "competition"
-           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("affût") ? "taper"
-           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("vitesse") ? "peak"
-           : plan.weeks[currentWeekIndex]?.focus?.toLowerCase().includes("seuil") ? "development"
-           : "base"
-         ) : "base"))
-    : "default";
+  const resolveCoachPhase = () => {
+    if (!week) return "default";
+    const f = (week.focus || "").toLowerCase();
+    if (week.isTest || f.includes("test") || f.includes("contrôle")) return "test";
+    if (week.isBilan || f.includes("bilan")) return "taper";
+    if (f.includes("compét")) return "competition";
+    if (f.includes("affût")) return "taper";
+    if (f.includes("vitesse") || f.includes("intensité") || f.includes("volume maximum")) return "peak";
+    if (f.includes("seuil") || f.includes("développement")) return "development";
+    if (f.includes("mise en") || f.includes("construction") || f.includes("jambes") || f.includes("aérobie")) return "base";
+    if (plan.isProgression) {
+      if (currentWeekIndex < 3) return "base";
+      if (currentWeekIndex === 3) return "test";
+      if (currentWeekIndex < 7) return "development";
+      if (currentWeekIndex === 7) return "test";
+      if (currentWeekIndex < 11) return "peak";
+      return "taper";
+    }
+    return "base";
+  };
+  const phase = resolveCoachPhase();
 
   // Découverte level gets its own set of simple, jargon-free messages
   const phaseKey = isDecouverte
@@ -3299,16 +3542,16 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
     : 0;
 
   return (
-    <div style={{ paddingBottom: 100 }}>
+    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 24px)", minHeight: "100dvh" }}>
       {/* ── Header sticky ── */}
       <div style={{
         position: "sticky", top: 0, zIndex: 30,
         background: "rgba(248,249,252,0.96)", backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: `1px solid rgba(142,179,255,0.10)`,
-        paddingTop: "env(safe-area-inset-top)",
+        paddingTop: "var(--safe-top)",
       }}>
-        <div style={{ padding: "14px 16px 12px" }}>
+        <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
           </div>
@@ -3326,7 +3569,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
         </div>
         {/* Plan switcher */}
         {plans && plans.length > 0 && (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 12, paddingLeft: 16, paddingRight: 16 }}>
+          <div className="h-scroll" style={{ paddingBottom: 12 }}>
             {plans.map(entry => {
               const isActive = entry.id === activePlanId;
               const lbl = GOALS.find(g => g.id === entry.profile.goal)?.label
@@ -3380,12 +3623,12 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
         )}
       </div>
 
-      <div style={{ padding: "16px 16px 0" }}>
+      <div className="app-shell" style={{ paddingTop: 16 }}>
 
         {/* Semaines débloquées */}
         {plan.weeks.slice(0, unlocked).map((week, i) => (
           <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} />
+            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} />
           </div>
         ))}
 
@@ -3436,7 +3679,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
   const planFinished = stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
 
   return (
-    <div style={{ paddingBottom: "max(140px, calc(100px + env(safe-area-inset-bottom)))", background: G.bg, minHeight: "100dvh" }}>
+    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 32px)", background: G.bg, minHeight: "100dvh" }}>
 
       {/* ── Top App Bar ── */}
       <header style={{
@@ -3445,11 +3688,11 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: `1px solid rgba(142,179,255,0.10)`,
         boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
-        paddingTop: "env(safe-area-inset-top)",
+        paddingTop: "var(--safe-top)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", minHeight: 56 }}>
+        <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={() => onTabChange("profile")} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, WebkitTapHighlightColor: "transparent" }}>
+            <button type="button" onClick={() => onTabChange("profile")} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}`, flexShrink: 0 }}>
                 {avatarUrl
                   ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -3469,21 +3712,24 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
                 fontSize: 12,
                 fontWeight: 700,
                 borderRadius: 8,
-                padding: "6px 10px",
+                padding: "10px 12px",
                 lineHeight: 1,
                 background: G.white,
+                minHeight: 44,
+                display: "inline-flex",
+                alignItems: "center",
               }}
             >
               Accueil
             </a>
-            <button onClick={() => onTabChange("profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, margin: -4, WebkitTapHighlightColor: "transparent" }}>
+            <button type="button" onClick={() => onTabChange("profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
               <Settings size={20} color={G.grey} />
             </button>
           </div>
         </div>
       </header>
 
-      <div style={{ padding: "16px 16px 0" }}>
+      <div className="app-shell" style={{ paddingTop: 16 }}>
 
         {/* ── Greeting ── */}
         {(() => {
@@ -4140,8 +4386,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isDiplome   = goal === "bnssa" || goal === "bpjeps_aan";
-    const isBNSSA     = goal === "bnssa";
+    const isDiplome   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers";
+    const isBNSSA     = goal === "bnssa" || goal === "tests_pompiers";
     const isTriathlon = isTriathlonGoal(goal);
     const isOpenWater = isOpenWaterGoal(goal);
 
@@ -4168,7 +4414,9 @@ const SESSION_TEMPLATES = {
             intensity: isBNSSA ? "Régulier + explosif court" : "Endurance — vise l'allure exam (≈1'55\"/100m)",
             details: isBNSSA ? [
               `Échauffement : 200m crawl + 100m dos`,
-              `${n100}×100m crawl — R30" — allure régulière, respiration contrôlée`,
+              `${n100}×100m crawl — R30" — allure régulière`,
+              `${Math.max(4, Math.round(n100 * 0.4))}×${2*P}m palmes + tuba — R20"`,
+              `Apnée : 6×15m — R1'30" — immersion complète`,
               `Simulation : 25m vite → sortie eau → récup 1' — ×3`,
               `Retour calme : 100m dos lent`,
             ] : [
@@ -4581,8 +4829,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isDiplomeS   = goal === "bnssa" || goal === "bpjeps_aan";
-    const isBNSSAS     = goal === "bnssa";
+    const isDiplomeS   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers";
+    const isBNSSAS     = goal === "bnssa" || goal === "tests_pompiers";
     const isTriathlon  = isTriathlonGoal(goal);
     const isOpenWater  = isOpenWaterGoal(goal);
 
@@ -4992,8 +5240,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isDiplomeV   = goal === "bnssa" || goal === "bpjeps_aan";
-    const isBNSSAV     = goal === "bnssa";
+    const isDiplomeV   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers";
+    const isBNSSAV     = goal === "bnssa" || goal === "tests_pompiers";
     const isTriathlonV = isTriathlonGoal(goal);
     const isOpenWaterV = isOpenWaterGoal(goal);
 
@@ -5594,11 +5842,12 @@ const SESSION_TEMPLATES = {
 
   // ── BNSSA ────────────────────────────────────────────────────────────────
   bnssa: (dist, pool, level = "intermediate", weekIdx = 0, goal = "") => {
-    const P = pool, v = weekIdx % 3;
-    const nApnee  = Math.max(4, Math.min(10, Math.round(dist * 0.15 / 15)));
-    const nRem    = Math.max(3, Math.min(6,  Math.round(dist * 0.15 / P)));
-    const nPalmes = Math.max(4, Math.min(8,  Math.round(dist * 0.25 / (2*P))));
-    const nNL     = Math.max(3, Math.min(8,  Math.round(dist * 0.25 / (2*P))));
+    const P = pool, v = weekIdx % 5;
+    const nApnee  = Math.max(4, Math.min(12, Math.round(dist * 0.18 / 15)));
+    const nRem    = Math.max(3, Math.min(8,  Math.round(dist * 0.15 / P)));
+    const nPalmes = Math.max(4, Math.min(10, Math.round(dist * 0.30 / (2*P))));
+    const nNL     = Math.max(3, Math.min(8,  Math.round(dist * 0.22 / (2*P))));
+    const nTuba   = Math.max(4, Math.min(8,  Math.round(dist * 0.20 / (2*P))));
 
     return {
       type: "BNSSA",
@@ -5607,21 +5856,21 @@ const SESSION_TEMPLATES = {
           title: "Simulation parcours 100m",
           intensity: "Apnée & remorquage — qualité de parcours",
           details: [
-            `Échauffement : 200m NL progressif + 100m battements de jambes`,
-            `Apnée dynamique : ${nApnee}×15m immersion complète — R2' — tracé fond, sans appui, sans pied`,
-            `Simulation 100m : 25m NL → 15m apnée → virage mur → 15m apnée → virage mur → 25m remorquage — R3' — reproduis le parcours`,
-            `Remorquage : ${nRem}×${P}m — R1'30" — position dorsale, visage hors de l'eau, bras sous les aisselles`,
+            `Échauffement : 200m NL progressif + 100m battements`,
+            `Apnée dynamique : ${nApnee}×15m immersion complète — R2' — tracé fond, sans appui`,
+            `Simulation 100m : 25m NL → 15m apnée → virage → 15m apnée → 25m remorquage — R3'`,
+            `Remorquage : ${nRem}×${P}m — R1'30" — position dorsale, visage hors de l'eau`,
             `Retour au calme : 200m dos lent`,
           ],
         },
         {
           title: "Prépa 250m palmes & plongée",
-          intensity: "Endurance équipée + apnée profonde",
+          intensity: "Endurance équipée + apnée",
           details: [
-            `Échauffement : 200m NL + 100m battements de jambes`,
+            `Échauffement : 200m NL + 100m battements`,
             `${nPalmes}×${2*P}m palmes + masque + tuba — R20" — touche le mur à chaque virage`,
-            `Plongée canard : 6× plongée → fond 2–3m → saisie mannequin → remontée — R2' — contrôle la remontée, voies aériennes dégagées`,
-            `Remorquage : ${nRem}×${P}m position dorsale — R1'30" — visage mannequin au-dessus de l'eau`,
+            `Plongée canard : 6× plongée → fond → saisie mannequin → remontée — R2'`,
+            `Remorquage : ${nRem}×${P}m position dorsale — R1'30"`,
             `Retour au calme : 200m dos lent`,
           ],
         },
@@ -5629,10 +5878,32 @@ const SESSION_TEMPLATES = {
           title: "Endurance & apnée sous fatigue",
           intensity: "Tenir les apnées après l'effort",
           details: [
-            `Échauffement : 200m NL progressif + 100m battements de jambes`,
-            `${nNL}×${2*P}m NL — R20" — endurance de base pour tenir le rythme du 100m et du 250m`,
-            `Apnée dynamique : ${nApnee}×15m — R2' — immersion complète sans appui, reproduis les sections du parcours`,
-            `${nRem}×${P}m remorquage — R1'30" — position dorsale, traction régulière`,
+            `Échauffement : 200m NL progressif + 100m battements`,
+            `${nNL}×${2*P}m NL — R20" — endurance de base`,
+            `Apnée dynamique : ${nApnee}×15m — R2' — immersion complète sans appui`,
+            `${nRem}×${P}m remorquage — R1'30" — position dorsale`,
+            `Retour au calme : 200m dos lent`,
+          ],
+        },
+        {
+          title: "Palmes + tuba — volume équipé",
+          intensity: "Endurance masque/tuba + apnées courtes",
+          details: [
+            `Échauffement : 200m NL + 100m palmes souples`,
+            `${nTuba}×${2*P}m palmes + masque + tuba — R15" — respiration tuba régulière, virages propres`,
+            `Apnée : ${nApnee}×15m — R1'30" — après fatigue équipée`,
+            `${nRem}×${P}m remorquage dorsale — R1'`,
+            `Retour au calme : 200m dos sans matériel`,
+          ],
+        },
+        {
+          title: "Enchaînement exam — palmes → apnée → remorquage",
+          intensity: "Simulation complète sous fatigue",
+          details: [
+            `Échauffement : 200m NL + 100m battements`,
+            `${Math.max(3, Math.round(nPalmes * 0.6))}×${2*P}m palmes + tuba — R20"`,
+            `Bloc exam : 50m palmes → 15m apnée → ${P}m remorquage — ×${Math.max(3, Math.min(6, nRem))} — R2'30"`,
+            `Apnée isolée : ${Math.max(4, Math.round(nApnee * 0.7))}×15m — R2'`,
             `Retour au calme : 200m dos lent`,
           ],
         },
@@ -5777,6 +6048,7 @@ const TIPS = {
   volume:      "Semaine de charge maximale. Mange +15 % de glucides, vise 8 h de sommeil — c'est pendant la récupération que le corps s'adapte.",
   affutage:    "Réduis le volume de 40 % mais maintiens 2–3 accélérations par séance pour garder la réactivité musculaire.",
   competition: "Dernière semaine : nage légère, visualise chaque virage et chaque poussée. Ton entraînement est fait — fais confiance au travail accompli.",
+  test:        "Semaine chrono : note tes temps (100m / 400m). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
 };
 
 // Ratios par niveau — découverte : fun + endurance légère, pas de seuil/vitesse au début
@@ -5788,6 +6060,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["endurance"], 2: ["endurance","vitesse"],      3: ["endurance","vitesse","technique"],      4: ["endurance","vitesse","technique","récupération"],  5: ["endurance","vitesse","technique","récupération","endurance"] },
     taper:       { 1: ["récupération"], 2: ["endurance","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["endurance","seuil","récupération"], 4: ["endurance","seuil","technique","récupération"], 5: ["endurance","seuil","technique","récupération","endurance"] },
   },
   // Régulier = alias de beginner
   régulier: {
@@ -5796,6 +6069,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
     taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   // Sportif = alias de intermediate
   sportif: {
@@ -5804,6 +6078,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
     taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   // Performance = alias de advanced
   performance: {
@@ -5812,6 +6087,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["seuil"],     2: ["seuil","vitesse"],        3: ["endurance","seuil","vitesse"],       4: ["endurance","seuil","vitesse","seuil"],              5: ["endurance","seuil","vitesse","seuil","récupération"] },
     taper:       { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["seuil","endurance"], 3: ["seuil","vitesse","récupération"], 4: ["endurance","seuil","vitesse","récupération"], 5: ["endurance","seuil","vitesse","récupération","endurance"] },
   },
   beginner: {
     base:        { 1: ["technique"], 2: ["technique","technique"], 3: ["technique","technique","endurance"], 4: ["technique","technique","technique","endurance"], 5: ["technique","technique","technique","endurance","récupération"] },
@@ -5819,6 +6095,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","endurance","technique"], 4: ["technique","technique","endurance","récupération"], 5: ["technique","technique","endurance","technique","récupération"] },
     taper:       { 1: ["technique"], 2: ["technique","récupération"], 3: ["technique","technique","récupération"], 4: ["technique","technique","récupération","récupération"], 5: ["technique","technique","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["technique","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","technique"] },
   },
   intermediate: {
     base:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["endurance","technique","technique","récupération"], 5: ["endurance","technique","technique","récupération","endurance"] },
@@ -5826,6 +6103,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
     taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   advanced: {
     base:        { 1: ["endurance"], 2: ["endurance","technique"], 3: ["endurance","endurance","technique"], 4: ["endurance","endurance","technique","récupération"], 5: ["endurance","endurance","technique","récupération","endurance"] },
@@ -5833,6 +6111,7 @@ const PHASE_PATTERNS = {
     peak:        { 1: ["seuil"],     2: ["seuil","vitesse"],        3: ["endurance","seuil","vitesse"],       4: ["endurance","seuil","vitesse","seuil"],              5: ["endurance","seuil","vitesse","seuil","récupération"] },
     taper:       { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
     competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+    test:        { 1: ["seuil"], 2: ["seuil","endurance"], 3: ["seuil","vitesse","récupération"], 4: ["endurance","seuil","vitesse","récupération"], 5: ["endurance","seuil","vitesse","récupération","endurance"] },
   },
 };
 
@@ -5848,25 +6127,29 @@ const OPEN_WATER_PATTERNS = {
 };
 
 const BNSSA_PATTERNS = {
-  base:        { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "endurance", "bnssa", "récupération"],         5: ["endurance", "endurance", "bnssa", "récupération", "endurance"] },
-  development: { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"],                     5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
-  peak:        { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["endurance", "bnssa", "bnssa"],         4: ["endurance", "seuil", "bnssa", "bnssa"],                     5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
-  taper:       { 1: ["endurance"], 2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],  4: ["endurance", "bnssa", "récupération", "récupération"],       5: ["endurance", "bnssa", "récupération", "récupération", "endurance"] },
+  base:        { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["bnssa", "endurance", "bnssa"],           4: ["endurance", "bnssa", "bnssa", "récupération"],              5: ["endurance", "bnssa", "bnssa", "récupération", "endurance"] },
+  development: { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["endurance", "bnssa", "bnssa"],           4: ["endurance", "bnssa", "bnssa", "bnssa"],                      5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
+  peak:        { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["bnssa", "bnssa", "bnssa"],               4: ["endurance", "bnssa", "bnssa", "bnssa"],                      5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
+  taper:       { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],    4: ["endurance", "bnssa", "récupération", "récupération"],       5: ["endurance", "bnssa", "récupération", "récupération", "endurance"] },
   competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"], 5: ["endurance", "récupération", "récupération", "récupération", "récupération"] },
+  test:        { 1: ["bnssa"], 2: ["bnssa", "endurance"], 3: ["bnssa", "endurance", "récupération"], 4: ["bnssa", "bnssa", "endurance", "récupération"], 5: ["bnssa", "bnssa", "endurance", "récupération", "bnssa"] },
 };
 
 const WELLNESS_PATTERNS = {
   beginner: {
     base:        { 1: ["technique"], 2: ["technique","récupération"], 3: ["technique","technique","récupération"], 4: ["technique","technique","technique","récupération"], 5: ["technique","technique","technique","récupération","endurance"] },
     development: { 1: ["technique"], 2: ["technique","endurance"],    3: ["technique","technique","endurance"],    4: ["technique","technique","endurance","récupération"],  5: ["technique","technique","endurance","récupération","technique"] },
+    test:        { 1: ["endurance"], 2: ["technique","endurance"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","technique"], 5: ["technique","endurance","récupération","technique","endurance"] },
   },
   intermediate: {
     base:        { 1: ["technique"], 2: ["endurance","technique"],    3: ["technique","endurance","récupération"], 4: ["endurance","technique","technique","récupération"], 5: ["endurance","technique","technique","récupération","endurance"] },
     development: { 1: ["endurance"], 2: ["technique","endurance"],    3: ["technique","endurance","endurance"],    4: ["technique","endurance","endurance","récupération"],  5: ["technique","endurance","endurance","récupération","endurance"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   advanced: {
     base:        { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","endurance","technique","récupération"], 5: ["endurance","endurance","technique","récupération","endurance"] },
     development: { 1: ["endurance"], 2: ["endurance","technique"],    3: ["endurance","endurance","technique"],    4: ["endurance","endurance","technique","récupération"],  5: ["endurance","endurance","technique","récupération","endurance"] },
+    test:        { 1: ["seuil"], 2: ["seuil","endurance"], 3: ["seuil","endurance","récupération"], 4: ["endurance","seuil","technique","récupération"], 5: ["endurance","seuil","technique","récupération","endurance"] },
   },
 };
 
@@ -5876,33 +6159,59 @@ const PROGRESSION_PATTERNS = {
     development: { 1: ["technique"],    2: ["technique","endurance"],        3: ["technique","endurance","technique"],                 4: ["technique","endurance","technique","récupération"],             5: ["technique","technique","endurance","récupération","endurance"] },
     peak:        { 1: ["technique"],    2: ["technique","seuil"],            3: ["technique","seuil","endurance"],                    4: ["technique","seuil","endurance","récupération"],                 5: ["technique","seuil","endurance","récupération","technique"] },
     bilan:       { 1: ["récupération"], 2: ["récupération","technique"],     3: ["récupération","technique","endurance"],             4: ["récupération","technique","technique","endurance"],             5: ["récupération","technique","technique","endurance","endurance"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","technique"] },
   },
   intermediate: {
     base:        { 1: ["technique"],    2: ["technique","endurance"],        3: ["technique","endurance","récupération"],              4: ["endurance","technique","endurance","récupération"],             5: ["endurance","technique","endurance","récupération","endurance"] },
     development: { 1: ["seuil"],        2: ["technique","seuil"],            3: ["technique","seuil","endurance"],                    4: ["technique","seuil","endurance","récupération"],                 5: ["technique","seuil","endurance","technique","récupération"] },
     peak:        { 1: ["vitesse"],      2: ["technique","vitesse"],          3: ["vitesse","seuil","endurance"],                      4: ["technique","vitesse","seuil","récupération"],                   5: ["technique","vitesse","seuil","endurance","récupération"] },
     bilan:       { 1: ["récupération"], 2: ["récupération","technique"],     3: ["récupération","technique","endurance"],             4: ["récupération","technique","endurance","technique"],             5: ["récupération","technique","endurance","technique","endurance"] },
+    test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   advanced: {
     base:        { 1: ["endurance"],    2: ["endurance","technique"],        3: ["endurance","technique","récupération"],              4: ["endurance","endurance","technique","récupération"],             5: ["endurance","endurance","technique","récupération","endurance"] },
     development: { 1: ["endurance"],    2: ["seuil","endurance"],            3: ["seuil","endurance","technique"],                    4: ["seuil","endurance","technique","récupération"],                 5: ["seuil","endurance","technique","récupération","endurance"] },
     peak:        { 1: ["vitesse"],      2: ["vitesse","seuil"],              3: ["vitesse","seuil","endurance"],                      4: ["vitesse","seuil","endurance","récupération"],                   5: ["vitesse","seuil","endurance","récupération","vitesse"] },
     bilan:       { 1: ["récupération"], 2: ["récupération","technique"],     3: ["récupération","technique","endurance"],             4: ["récupération","technique","endurance","technique"],             5: ["récupération","technique","endurance","technique","endurance"] },
+    test:        { 1: ["seuil"], 2: ["seuil","endurance"], 3: ["seuil","vitesse","récupération"], 4: ["endurance","seuil","vitesse","récupération"], 5: ["endurance","seuil","vitesse","récupération","endurance"] },
   },
 };
 
 const buildProgressionPhases = () => {
+  // 12 semaines : base → test → développement → test → peak → bilan (affûtage léger)
   const phases = [];
-  for (let i = 0; i < 4; i++) { const t = i / 3; phases.push({ phase: "base",        focus: t < 0.5 ? "Mise en place" : "Construction du volume", progression: 1.0 + t * 0.20, tipKey: t < 0.5 ? "debut" : "aerobie",    isBilan: false }); }
-  for (let i = 0; i < 4; i++) { const t = i / 3; phases.push({ phase: "development", focus: t < 0.5 ? "Développement" : "Travail au seuil",       progression: 1.20 + t * 0.20, tipKey: "seuil",                            isBilan: false }); }
-  for (let i = 0; i < 3; i++) { const t = i / 2; phases.push({ phase: "peak",        focus: t < 0.5 ? "Intensité max" : "Volume maximum",          progression: 1.40 + t * 0.15, tipKey: "vitesse",                          isBilan: false }); }
-  phases.push({ phase: "bilan", focus: "Bilan & récupération", progression: 1.0, tipKey: "affutage", isBilan: true });
+  for (let i = 0; i < 3; i++) {
+    const t = i / 2;
+    phases.push({ phase: "base", focus: t < 0.5 ? "Mise en place" : "Construction du volume", progression: 1.0 + t * 0.18, tipKey: t < 0.5 ? "debut" : "aerobie", isBilan: false, isTest: false });
+  }
+  phases.push({ phase: "test", focus: "Test de progression", progression: 1.05, tipKey: "test", isBilan: false, isTest: true });
+  for (let i = 0; i < 3; i++) {
+    const t = i / 2;
+    phases.push({ phase: "development", focus: t < 0.5 ? "Développement" : "Travail au seuil", progression: 1.20 + t * 0.18, tipKey: "seuil", isBilan: false, isTest: false });
+  }
+  phases.push({ phase: "test", focus: "Contrôle allure", progression: 1.25, tipKey: "test", isBilan: false, isTest: true });
+  for (let i = 0; i < 3; i++) {
+    const t = i / 2;
+    phases.push({ phase: "peak", focus: t < 0.5 ? "Intensité max" : "Volume maximum", progression: 1.40 + t * 0.12, tipKey: "vitesse", isBilan: false, isTest: false });
+  }
+  phases.push({ phase: "bilan", focus: "Bilan & récupération", progression: 1.0, tipKey: "affutage", isBilan: true, isTest: false });
   return phases;
 };
 
 const buildWellnessPhases = (totalWeeks) => {
   const phases = [];
+  const testAt = totalWeeks >= 6 ? Math.floor(totalWeeks / 2) : -1;
   for (let i = 0; i < totalWeeks; i++) {
+    if (i === testAt) {
+      phases.push({
+        phase: "test",
+        focus: "Test de progression",
+        progression: 1.1,
+        tipKey: "test",
+        isTest: true,
+      });
+      continue;
+    }
     const t = totalWeeks > 1 ? i / (totalWeeks - 1) : 0;
     const isBase = t < 0.5;
     phases.push({
@@ -5910,6 +6219,7 @@ const buildWellnessPhases = (totalWeeks) => {
       focus: t < 0.25 ? "Mise en mouvement" : t < 0.5 ? "Construction" : t < 0.75 ? "Progression" : "Consolidation",
       progression: 1.0 + t * 0.35,
       tipKey: t < 0.4 ? "debut" : "endurance",
+      isTest: false,
     });
   }
   return phases;
@@ -5918,16 +6228,54 @@ const buildWellnessPhases = (totalWeeks) => {
 const buildPlanPhases = (totalWeeks) => {
   if (totalWeeks === 1) return [{ phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" }];
   if (totalWeeks === 2) return [{ phase: "base", focus: "Mise en jambes", progression: 1.00, tipKey: "debut" }, { phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" }];
-  if (totalWeeks === 3) return [{ phase: "base", focus: "Mise en jambes", progression: 1.00, tipKey: "debut" }, { phase: "development", focus: "Développement", progression: 1.20, tipKey: "endurance" }, { phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" }];
+  if (totalWeeks === 3) return [
+    { phase: "base", focus: "Mise en jambes", progression: 1.00, tipKey: "debut" },
+    { phase: "development", focus: "Développement", progression: 1.20, tipKey: "endurance" },
+    { phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" },
+  ];
+  if (totalWeeks === 4) return [
+    { phase: "base", focus: "Mise en jambes", progression: 1.00, tipKey: "debut" },
+    { phase: "development", focus: "Développement", progression: 1.20, tipKey: "endurance" },
+    { phase: "test", focus: "Test de progression", progression: 1.10, tipKey: "test", isTest: true },
+    { phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" },
+  ];
 
-  const compWeeks = 1, taperWeeks = totalWeeks >= 6 ? 1 : 0, remaining = totalWeeks - compWeeks - taperWeeks;
-  const peakCount = Math.max(1, Math.round(remaining * 0.20)), devCount = Math.max(1, Math.round(remaining * 0.38)), baseCount = remaining - peakCount - devCount;
+  // Affûtage : 2 semaines si plan long (≥10), sinon 1 dès 6 semaines
+  const compWeeks = 1;
+  const taperWeeks = totalWeeks >= 10 ? 2 : totalWeeks >= 6 ? 1 : 0;
+  // Tests : 2 si ≥10 sem, 1 si ≥5
+  const testSlots = totalWeeks >= 10 ? 2 : totalWeeks >= 5 ? 1 : 0;
+  const remaining = totalWeeks - compWeeks - taperWeeks - testSlots;
+  const peakCount = Math.max(1, Math.round(remaining * 0.20));
+  const devCount = Math.max(1, Math.round(remaining * 0.38));
+  const baseCount = Math.max(1, remaining - peakCount - devCount);
   const phases = [];
-  for (let i = 0; i < baseCount; i++) { const t = baseCount > 1 ? i / (baseCount - 1) : 0; phases.push({ phase: "base", focus: t < 0.45 ? "Mise en jambes" : "Construction aérobie", progression: 1.0 + t * 0.28, tipKey: t < 0.45 ? "debut" : "aerobie" }); }
-  for (let i = 0; i < devCount; i++) { const t = devCount > 1 ? i / (devCount - 1) : 0; phases.push({ phase: "development", focus: t < 0.5 ? "Développement endurance" : "Travail au seuil", progression: 1.28 + t * 0.22, tipKey: t < 0.5 ? "endurance" : "seuil" }); }
-  for (let i = 0; i < peakCount; i++) { const t = peakCount > 1 ? i / (peakCount - 1) : 0; phases.push({ phase: "peak", focus: t < 0.5 ? "Intensité & vitesse" : "Volume maximum", progression: 1.50 + t * 0.10, tipKey: t < 0.5 ? "vitesse" : "volume" }); }
-  if (taperWeeks > 0) phases.push({ phase: "taper", focus: "Affûtage", progression: 1.15, tipKey: "affutage" });
-  phases.push({ phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition" });
+
+  for (let i = 0; i < baseCount; i++) {
+    const t = baseCount > 1 ? i / (baseCount - 1) : 0;
+    phases.push({ phase: "base", focus: t < 0.45 ? "Mise en jambes" : "Construction aérobie", progression: 1.0 + t * 0.28, tipKey: t < 0.45 ? "debut" : "aerobie", isTest: false });
+  }
+  if (testSlots >= 1) {
+    phases.push({ phase: "test", focus: "Test de progression", progression: 1.10, tipKey: "test", isTest: true });
+  }
+  for (let i = 0; i < devCount; i++) {
+    const t = devCount > 1 ? i / (devCount - 1) : 0;
+    phases.push({ phase: "development", focus: t < 0.5 ? "Développement endurance" : "Travail au seuil", progression: 1.28 + t * 0.22, tipKey: t < 0.5 ? "endurance" : "seuil", isTest: false });
+  }
+  if (testSlots >= 2) {
+    phases.push({ phase: "test", focus: "Contrôle allure", progression: 1.30, tipKey: "test", isTest: true });
+  }
+  for (let i = 0; i < peakCount; i++) {
+    const t = peakCount > 1 ? i / (peakCount - 1) : 0;
+    phases.push({ phase: "peak", focus: t < 0.5 ? "Intensité & vitesse" : "Volume maximum", progression: 1.50 + t * 0.10, tipKey: t < 0.5 ? "vitesse" : "volume", isTest: false });
+  }
+  if (taperWeeks === 2) {
+    phases.push({ phase: "taper", focus: "Affûtage — volume ↓", progression: 1.10, tipKey: "affutage", isTest: false });
+    phases.push({ phase: "taper", focus: "Affûtage final", progression: 0.90, tipKey: "affutage", isTest: false });
+  } else if (taperWeeks === 1) {
+    phases.push({ phase: "taper", focus: "Affûtage", progression: 1.05, tipKey: "affutage", isTest: false });
+  }
+  phases.push({ phase: "competition", focus: "Semaine de compétition", progression: 0.60, tipKey: "competition", isTest: false });
   return phases;
 };
 
@@ -5983,7 +6331,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
     const useOwBase = isOpenWaterGoal(goal) && phase.phase === "base" && wi < 3;
     return {
-      number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false,
+      number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false, isTest: phase.isTest ?? false,
       sessions: types.map((type, si) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
         const owArcheIdx = useOwBase && si < 3 ? wi * 3 + si : -1;
@@ -6545,8 +6893,8 @@ export default function App() {
   }, [user?.id, isPremium, plans, activePlanId]);
 
 
-  // Migration v14 : régénère les semaines (forcé — aucun user actif, Arthur 2026-07-16).
-  // Les plans version < PLAN_VERSION sont entièrement reconstruits avec le moteur Arthur+COSD.
+  // Migration v20 : régénère (forcé — volume par niveau + diplôme apnée/palmes).
+  // Les plans version < PLAN_VERSION sont entièrement reconstruits.
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
@@ -6873,7 +7221,7 @@ export default function App() {
               const isProgression = profile.category === "progression";
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
-              const hasPaceStep = !isDiplome && (profile.level === "performance" || profile.level === "advanced");
+              const hasPaceStep = isPremium && !isDiplome;
               // Niveaux grisés pour triathlon et eau_libre
               const disabledLevels = (profile.category === "triathlon" || profile.category === "eau_libre") ? ["découverte"] : [];
               // Calcul total steps
@@ -6973,13 +7321,14 @@ export default function App() {
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} />}
 
         <Footer aboveBottomNav />
+        <SupportBubble aboveBottomNav />
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
         {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} isPremium={isPremium} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
         {toast && (
-          <div className="toast-in" style={{ position: "fixed", bottom: 90, left: 16, right: 16, zIndex: 300, background: G.ink, color: G.white, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}>
+          <div className="toast-in app-toast" style={{ background: G.ink, color: G.white, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}>
             {toast}
           </div>
         )}

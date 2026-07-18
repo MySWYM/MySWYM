@@ -4,7 +4,7 @@
  *
  * Voir docs/plan-methodology.md
  */
-import { genererSemaineSessions } from "./swim-session-generator.js";
+import { genererSemaineSessions, volumeMultFromProfileLevel } from "./swim-session-generator.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers"]);
 
@@ -15,6 +15,7 @@ const PHASE_MAP = {
   taper: "affutage",
   competition: "affutage",
   bilan: "affutage",
+  test: "developpement",
 };
 
 /**
@@ -32,11 +33,19 @@ function cosdRolesForWeek(phaseName, weekIndexInPhase, nbSeances, profileObjecti
   const vitesse = { objectif: "vitesse", zone: "Z4" };
   const mixte = { objectif: "mixte", zone: "Z2" };
   const ow = { objectif: "eau_libre", zone: "Z2" };
+  const test = { objectif: "test", zone: "Z3" };
 
   const baseObj =
     profileObjectif === "eau_libre" ? ow
       : profileObjectif === "mixte" ? mixte
         : aeroZ2;
+
+  // Semaine test : 1 chrono + le reste aéro (fraîcheur pour des temps propres)
+  if (phaseName === "test") {
+    if (n === 1) return [test];
+    if (n === 2) return [aero, test];
+    return [aero, test, ...(n > 3 ? [aeroZ2] : []), aero].slice(0, n);
+  }
 
   // Reprise (100 % aéro) — premières semaines base
   if (phaseName === "base" && weekIndexInPhase < 2) {
@@ -107,6 +116,7 @@ function mapObjectifProfil(profile) {
 
 function mapRoleToType(role) {
   if (!role) return "ENDURANCE";
+  if (role.objectif === "test") return "SEUIL";
   if (role.zone === "Z4" || role.objectif === "vitesse") return "VITESSE";
   if (role.zone === "Z3") return "SEUIL";
   if (role.objectif?.startsWith("technique_")) return "TECHNIQUE";
@@ -116,6 +126,7 @@ function mapRoleToType(role) {
 
 function weekTypeForIndex(phaseName, weekIndex) {
   if (weekIndex === 0) return "reference";
+  if (phaseName === "test") return "test";
   if (phaseName === "taper" || phaseName === "competition" || phaseName === "bilan") return "allegee";
   // Transition COSD : décharge périodique (~toutes les 4 semaines)
   if (weekIndex > 0 && (weekIndex + 1) % 4 === 0) return "allegee";
@@ -136,32 +147,47 @@ function sessionTextToDetails(text) {
   return details;
 }
 
-function zoneLabel(details, role) {
+function zoneLabel(details, role, beginnerFriendly = false) {
+  let zone;
   if (role?.zone) {
-    if (role.zone === "Z1") return "Z1";
-    if (role.zone === "Z2") return "Z1-Z2";
-    if (role.zone === "Z3") return "Z1-Z3";
-    if (role.zone === "Z4") return "Z1-Z4";
+    if (role.zone === "Z1") zone = "Z1";
+    else if (role.zone === "Z2") zone = "Z1-Z2";
+    else if (role.zone === "Z3") zone = "Z1-Z3";
+    else if (role.zone === "Z4") zone = "Z1-Z4";
+    else zone = role.zone;
+  } else {
+    const joined = details.join(" ");
+    if (/Z4|rapide/i.test(joined)) zone = "Z1-Z4";
+    else if (/Z3|soutenu|chrono|CSS/i.test(joined)) zone = "Z1-Z3";
+    else if (/Z2|confortable/i.test(joined)) zone = "Z1-Z2";
+    else zone = "Z1";
   }
-  const joined = details.join(" ");
-  if (/Z4/.test(joined)) return "Z1-Z4";
-  if (/Z3/.test(joined)) return "Z1-Z3";
-  if (/Z2/.test(joined)) return "Z1-Z2";
-  return "Z1";
+  if (!beginnerFriendly) return zone;
+  const cues = {
+    Z1: "Facile — tu peux parler",
+    "Z1-Z2": "Facile → confortable",
+    "Z1-Z3": "Confortable → soutenu",
+    "Z1-Z4": "Jusqu'à rapide",
+  };
+  return cues[zone] || zone;
 }
 
-function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel) {
+function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false) {
   const details = sessionTextToDetails(res.text);
   const total = res.total;
+  const isTest = role?.objectif === "test";
   return {
     type: mapRoleToType(role),
-    title: `${focusLabel} S${weekNumber}.${sessionIndex + 1}`,
-    intensity: zoneLabel(details, role),
+    title: isTest
+      ? `Test progression S${weekNumber}.${sessionIndex + 1}`
+      : `${focusLabel} S${weekNumber}.${sessionIndex + 1}`,
+    intensity: zoneLabel(details, role, beginnerFriendly),
     details,
     distance: `${total}m`,
     duration: Math.max(40, Math.min(90, Math.round(total / 35))),
     completed: false,
     skipped: null,
+    isTest: isTest || undefined,
   };
 }
 
@@ -186,8 +212,13 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
   );
   const niveauKey = mapNiveau(profile);
   const profilObj = mapObjectifProfil(profile);
-  const ref100 = secToPaceStr(profile.pace100);
-  const ref400 = secToPaceStr(profile.pace400);
+  // Allures @mm:ss = Premium only (gratuit : zones sans chiffres)
+  const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
+  const ref400 = isPremium ? secToPaceStr(profile.pace400) : "";
+  // Wording simplifié uniquement découverte (pas régulier) — générateur, pas école
+  const simplifyWording = profile.level === "découverte" || profile.level === "beginner";
+  const beginnerFriendly = simplifyWording;
+  const volMult = volumeMultFromProfileLevel(profile.level, profile.category);
 
   let prevWeekDistance = 0;
 
@@ -198,7 +229,6 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     const typeSemaine = weekTypeForIndex(phase.phase, wi);
     const roles = cosdRolesForWeek(phase.phase, wiInPhase, freq, profilObj);
 
-    // Objectif passé au findBestBlockUnit : dominant du profil (volume)
     const weekData = genererSemaineSessions(
       niveauKey,
       profilObj,
@@ -210,6 +240,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       typeSemaine,
       prevWeekDistance,
       roles,
+      { volMult, simplifyWording },
     );
     prevWeekDistance = weekData.totalDistance;
 
@@ -219,8 +250,9 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       tip: TIPS?.[phase.tipKey] ?? null,
       feedback: null,
       isBilan: phase.isBilan ?? false,
+      isTest: phase.isTest ?? false,
       sessions: weekData.sessions.map((s, si) =>
-        toMySwymSession(s, roles[si], wi + 1, si, focusLabel),
+        toMySwymSession(s, roles[si], wi + 1, si, focusLabel, beginnerFriendly),
       ),
     };
   });

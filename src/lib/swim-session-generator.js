@@ -137,6 +137,15 @@ const CORPS_PHYSIO = {
     () => ({ text: `5x100m avec départ groupé simulé R20''`, distance: 500, repDist: 100 }),
     () => ({ text: `3x300m continu, sighting toutes les 8 coups R30''`, distance: 900, repDist: 300 }),
   ],
+  /** Chronos de contrôle — noter les temps pour mesurer l'évolution */
+  test: [
+    () => ({ text: `400m chrono continu — note ton temps (CSS)`, distance: 400, repDist: 400 }),
+    () => ({ text: `2x200m chrono R3' — note chaque temps`, distance: 400, repDist: 200 }),
+    () => ({ text: `100m chrono max + 300m facile R3' — note le 100m`, distance: 400, repDist: 100 }),
+    () => ({ text: `3x100m chrono R2'30 — note chaque 100m (régularité)`, distance: 300, repDist: 100 }),
+    () => ({ text: `200m allure course + 100m max R2' — note les 2 temps`, distance: 300, repDist: 100 }),
+    () => ({ text: `8x50m D1'15 (Z3) — note le temps moyen /50m`, distance: 400, repDist: 50 }),
+  ],
 };
 
 /* ---- Retours au calme / fins de séance : fonction(distance) -> lignes exactes ---- */
@@ -308,16 +317,21 @@ function findBestBlockUnit(niveauKey){
 }
 
 function computeWeekTarget(niveauKey, typeSemaine, prevDistance){
+  const refTotal = { debutant:3600, intermediaire:4800, confirme:6000, triathlete:6600 }[niveauKey] || 4800;
   if(typeSemaine === "reference" || !prevDistance || prevDistance <= 0){
-    const refTotal = { debutant:3600, intermediaire:4800, confirme:6000, triathlete:6600 }[niveauKey];
-    return { target: refTotal, maxAutorise:null, statutLabel:"Référence (1ère semaine)", prevDistance:0 };
+    return { target: refTotal, maxAutorise:null, statutLabel:"Référence (1ère semaine)", prevDistance:0, refTotal };
   }
   if(typeSemaine === "allegee"){
-    const target = Math.round(prevDistance*0.75/100)*100;
-    return { target, maxAutorise:null, statutLabel:"Semaine allégée — décharge (~-25%)", prevDistance };
+    const target = Math.round(prevDistance*0.70/100)*100;
+    return { target, maxAutorise:null, statutLabel:"Semaine allégée — décharge (~-30%)", prevDistance, refTotal };
+  }
+  if(typeSemaine === "test"){
+    // Volume modéré : on garde de la fraîcheur pour des chronos propres
+    const target = Math.round(prevDistance*0.85/100)*100;
+    return { target, maxAutorise:null, statutLabel:"Semaine test — chronos de contrôle", prevDistance, refTotal };
   }
   const maxAutorise = Math.floor((prevDistance*1.10) / 100) * 100;
-  return { target: maxAutorise, maxAutorise, statutLabel:"Charge normale — cible +10%", prevDistance };
+  return { target: maxAutorise, maxAutorise, statutLabel:"Charge normale — cible +10%", prevDistance, refTotal };
 }
 
 /** Choisit un corps physio dans une fourchette de volume (évite 1200m + 400m n'importe comment). */
@@ -332,15 +346,95 @@ function pickCorpsInRange(objectifKey, minDist, maxDist, pickKey){
   return chosen.r;
 }
 
-function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, indexSeance, techniqueFocusKey, ref100Seconds, ref400Seconds, u, forcedZone = null, volumeTier = "normale"){
+/**
+ * Volume relatif — même structure de séance, distances adaptées au niveau.
+ * MySWYM = générateur de séances, pas école de natation.
+ */
+const VOL_BY_NIVEAU_KEY = {
+  debutant: 0.7,
+  intermediaire: 1.0,
+  confirme: 1.25,
+  triathlete: 1.35,
+};
+
+/** Multiplicateur volume depuis le level UI (découverte → performance). */
+function volumeMultFromProfileLevel(level, category) {
+  if (category === "triathlon" && (level === "performance" || level === "advanced")) return 1.35;
+  const m = {
+    découverte: 0.55,
+    beginner: 0.6,
+    régulier: 0.8,
+    sportif: 1.0,
+    intermediate: 1.0,
+    performance: 1.25,
+    advanced: 1.25,
+  };
+  return m[level] ?? 1.0;
+}
+
+function scaleDepartBlock(depart, volMult) {
+  const d = Math.max(100, roundTo(depart.distance * volMult, 50));
+  const text = depart.text.replace(/^-\d+m/, `-${d}m`);
+  return { distance: d, text };
+}
+
+/**
+ * Wording débutant : zones / repos lisibles. Pas un tutoriel technique
+ * (MySWYM = générateur de séances).
+ */
+function clarifyBeginnerLine(line) {
+  if (!line) return line;
+  const indent = line.match(/^\s*/)?.[0] || "";
+  let t = line.trim();
+
+  t = t.replace(/\bR(\d+)''/g, "— repos $1s");
+  t = t.replace(/\bR(\d+)"/g, "— repos $1s");
+  t = t.replace(/\bR(\d+)'(?!\d)/g, "— repos $1min");
+  t = t.replace(/\bD(\d+)'(\d+)"/g, "— départ toutes les $1min$2s");
+  t = t.replace(/\bD(\d+)'(?!\d)/g, "— départ toutes les $1min");
+  t = t.replace(/\bD(\d+)"/g, "— départ toutes les $1s");
+
+  t = t.replace(/\(Z1\s*@/g, "(facile @");
+  t = t.replace(/\(Z2\s*@/g, "(confortable @");
+  t = t.replace(/\(Z3\s*@/g, "(soutenu @");
+  t = t.replace(/\(Z4\s*@/g, "(rapide @");
+  t = t.replace(/\(Z1\)/g, "(facile)");
+  t = t.replace(/\(Z2\)/g, "(confortable)");
+  t = t.replace(/\(Z3\)/g, "(soutenu)");
+  t = t.replace(/\(Z4\)/g, "(rapide)");
+  t = t.replace(/\(Z1 souple\)/gi, "(facile — souple)");
+
+  t = t.replace(/\(RAC\)/gi, "(récup)");
+  t = t.replace(/\bRAC\b/g, "récup");
+  t = t.replace(/\bCr\/Dos\b/g, "crawl/dos");
+  t = t.replace(/\bDos\/Cr\b/g, "dos/crawl");
+  t = t.replace(/\bCr\b(?=\s|\/|$)/g, "crawl");
+  t = t.replace(/\btubas\b/gi, "tuba");
+
+  t = t.replace(/^(-?\d+x\d+)(?=\s|—|$|\()/i, "$1m");
+  t = t.replace(/\b(\d+x\d+)(?=\s*:)/g, "$1m");
+
+  t = t.replace(/\s*—\s*—\s*/g, " — ");
+  t = t.replace(/\s{2,}/g, " ").trim();
+  return indent + t;
+}
+
+function clarifyBeginnerSession(lignes) {
+  return lignes.map(clarifyBeginnerLine);
+}
+
+function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, indexSeance, techniqueFocusKey, ref100Seconds, ref400Seconds, u, forcedZone = null, volumeTier = "normale", volMult = null, simplifyWording = null, weekScale = 1){
   const phase = PHASES[phaseKey];
   const lignes = [];
+  const mult = (volMult ?? VOL_BY_NIVEAU_KEY[niveauKey] ?? 1) * (weekScale > 0 ? weekScale : 1);
+  const isBeginner = simplifyWording != null ? !!simplifyWording : niveauKey === "debutant";
+  const isTest = objectifKey === "test";
 
-  // Départ Z1 — toujours ~400m (format Excel Arthur)
-  const depart = pick(DEPARTS_SEMAINE, "depart")();
+  // Départ Z1 — même base, distance × niveau × progression semaine
+  const depart = scaleDepartBlock(pick(DEPARTS_SEMAINE, "depart")(), isTest ? Math.min(mult, 0.85) : mult);
   lignes.push(depart.text);
 
-  // Technique rotative
+  // Technique rotative (distance fixe — le volume varie surtout sur départ/corps/fin)
   const techBlock = TECHNIQUE[techniqueFocusKey];
   const techPicked = pick(techBlock.drills, "tech_semaine_"+techniqueFocusKey);
   const materielPool = (techniqueFocusKey === "technique_roulis" || techniqueFocusKey === "technique_chiens")
@@ -353,17 +447,30 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const zone = forcedZone || pick(phase.zones, "zone_"+indexSeance);
   let principalDist, principalLines;
 
-  // Fourchettes corps selon tier de volume (réf / normale / allégée)
-  const corpsRange =
+  // Fourchettes corps : tier × niveau × progression hebdo
+  const baseCorps =
     volumeTier === "allegee" ? [300, 600]
+    : volumeTier === "test" ? [300, 500]
     : volumeTier === "reference" ? [400, 800]
     : [500, 1200];
+  const corpsRange = [
+    Math.max(200, roundTo(baseCorps[0] * mult, 50)),
+    Math.max(300, roundTo(baseCorps[1] * mult, 50)),
+  ];
 
   if(objectifKey.startsWith("technique_")){
     const mainTech = TECHNIQUE[objectifKey];
     const mainPicked = pick(mainTech.drills, "tech_principal_"+objectifKey);
     principalDist = mainPicked.distance;
     principalLines = [`-${principalDist}m ${mainTech.label.toLowerCase()}`, ...mainPicked.lines.map(l => "  " + l)];
+  } else if (isTest) {
+    const r = pick(CORPS_PHYSIO.test, "physio_test")();
+    const tag = paceTag(ref100Seconds, ref400Seconds, zone === "Z4" ? "Z4" : "Z3", r.repDist);
+    principalDist = r.distance;
+    principalLines = [
+      `-${r.text} ${tag}`,
+      `  → Note ton temps. Compare avec le test précédent.`,
+    ];
   } else {
     const r = pickCorpsInRange(objectifKey, corpsRange[0], corpsRange[1], "physio_semaine_"+objectifKey);
     const tag = paceTag(ref100Seconds, ref400Seconds, zone, r.repDist);
@@ -372,18 +479,19 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   }
   lignes.push(...principalLines);
 
-  // Fin RAC : 200 ou 300m (propre)
+  // Fin RAC — scale légère
   const subtotal = depart.distance + techPicked.distance + principalDist;
-  const finDist = volumeTier === "allegee" ? 200 : 200;
-  const totalArrondi = roundTo(subtotal + finDist, 100);
+  const finBase = volumeTier === "allegee" || volumeTier === "test" ? 150 : 200;
+  const finTarget = Math.max(100, roundTo(finBase * Math.min(1.2, Math.max(0.6, mult)), 50));
+  const totalArrondi = roundTo(subtotal + finTarget, 100);
   const finReal = Math.max(100, totalArrondi - subtotal);
-  // garder fin à 100/200/300/400
-  const finClean = Math.min(400, Math.max(100, roundTo(finReal, 100)));
+  const finClean = Math.min(400, Math.max(100, roundTo(finReal, 50)));
   const totalFinal = subtotal + finClean;
   lignes.push(pick(FINS_SEMAINE, "fin")(finClean));
 
+  const body = isBeginner ? clarifyBeginnerSession(lignes) : lignes;
   const header = `S${numSemaine}.${indexSeance} : ${totalFinal}m`;
-  return { text: header + "\n" + lignes.join("\n"), total: totalFinal, zone, role: objectifKey };
+  return { text: header + "\n" + body.join("\n"), total: totalFinal, zone, role: objectifKey };
 }
 
 function genererSemaine(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine, ref100Str, ref400Str, typeSemaine, prevDistance){
@@ -391,15 +499,16 @@ function genererSemaine(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine,
   const ref400Seconds = parseTime(ref400Str);
   const focusCycle = FOCUS_CYCLE;
 
-  const { target, maxAutorise, statutLabel } = computeWeekTarget(niveauKey, typeSemaine, prevDistance);
+  const { target, maxAutorise, statutLabel, refTotal } = computeWeekTarget(niveauKey, typeSemaine, prevDistance);
   const u = findBestBlockUnit(niveauKey);
-  const volumeTier = typeSemaine === "allegee" ? "allegee" : typeSemaine === "reference" ? "reference" : "normale";
+  const volumeTier = typeSemaine === "allegee" ? "allegee" : typeSemaine === "test" ? "test" : typeSemaine === "reference" ? "reference" : "normale";
+  const weekScale = Math.max(0.55, Math.min(1.45, target / (refTotal || target)));
 
   const blocs = [];
   let totalReel = 0;
   for(let i=1;i<=nbSeances;i++){
     const focus = focusCycle[(i-1) % focusCycle.length];
-    const res = genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, i, focus, ref100Seconds, ref400Seconds, u, null, volumeTier);
+    const res = genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, i, focus, ref100Seconds, ref400Seconds, u, null, volumeTier, null, null, weekScale);
     blocs.push(res.text);
     totalReel += res.total;
   }
@@ -420,13 +529,19 @@ function genererSemaine(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine,
 }
 
 /** Retourne les séances structurées pour intégration app (sans en-tête semaine).
- *  sessionRoles (optionnel) : tableau [{ objectif, zone }] longueur = nbSeances — pilotage COSD. */
-export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine, ref100Str, ref400Str, typeSemaine, prevDistance, sessionRoles = null) {
+ *  sessionRoles (optionnel) : tableau [{ objectif, zone }] longueur = nbSeances — pilotage COSD.
+ *  opts.volMult : scale distances (même base, volume selon niveau).
+ *  opts.simplifyWording : clarifier Z1/R15 pour découverte uniquement. */
+export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine, ref100Str, ref400Str, typeSemaine, prevDistance, sessionRoles = null, opts = {}) {
   const ref100Seconds = parseTime(ref100Str);
   const ref400Seconds = parseTime(ref400Str);
   const focusCycle = FOCUS_CYCLE;
   const u = findBestBlockUnit(niveauKey);
-  const volumeTier = typeSemaine === "allegee" ? "allegee" : typeSemaine === "reference" ? "reference" : "normale";
+  const volumeTier = typeSemaine === "allegee" ? "allegee" : typeSemaine === "test" ? "test" : typeSemaine === "reference" ? "reference" : "normale";
+  const volMult = opts.volMult ?? null;
+  const simplifyWording = opts.simplifyWording ?? null;
+  const { target, refTotal } = computeWeekTarget(niveauKey, typeSemaine, prevDistance);
+  const weekScale = Math.max(0.55, Math.min(1.45, target / (refTotal || target)));
 
   const sessions = [];
   let totalReel = 0;
@@ -435,11 +550,11 @@ export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeanc
     const role = sessionRoles && sessionRoles[i - 1] ? sessionRoles[i - 1] : null;
     const obj = role?.objectif || objectifKey;
     const zone = role?.zone || null;
-    const res = genererSeanceDeSemaine(niveauKey, obj, phaseKey, numSemaine, i, focus, ref100Seconds, ref400Seconds, u, zone, volumeTier);
+    const res = genererSeanceDeSemaine(niveauKey, obj, phaseKey, numSemaine, i, focus, ref100Seconds, ref400Seconds, u, zone, volumeTier, volMult, simplifyWording, weekScale);
     sessions.push(res);
     totalReel += res.total;
   }
   return { sessions, totalDistance: totalReel };
 }
 
-export { genererSeance, genererSemaine, genererSeanceDeSemaine, TECHNIQUE, PHASES, NIVEAUX };
+export { genererSeance, genererSemaine, genererSeanceDeSemaine, TECHNIQUE, PHASES, NIVEAUX, volumeMultFromProfileLevel, VOL_BY_NIVEAU_KEY };
