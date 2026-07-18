@@ -2952,9 +2952,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
       ? "Démarrer — 29,99€/an"
       : hasReferral
         ? "Démarrer — −20% parrainage"
-        : weeksBlocked
-          ? "Démarrer — 2,50€ le 1er mois"
-          : "Démarrer — 4,99€/mois";
+        : "Démarrer — 4,99€/mois";
 
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2966,11 +2964,11 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           </div>
           <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
           {weeksBlocked
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Accès gratuit limité au <strong style={{ color: G.ink }}>premier mois</strong>.<br />Débloque ton programme complet.</p>
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Ton mois gratuit est terminé.<br /><strong style={{ color: G.ink }}>Offre spéciale : Premium 2 ans à −50%.</strong></p>
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
         </div>
 
-        {/* Offre 2 ans — mise en avant */}
+        {/* Offre 2 ans — mise en avant (promo unlock après 4 semaines) */}
         <button onClick={() => setPeriod("biennial")} style={{
           width: "100%", padding: "16px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left",
           border: `2px solid ${isBiennial ? G.blue : G.greyLight}`,
@@ -2981,7 +2979,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             position: "absolute", top: 10, right: 10,
             background: "#22C55E", color: G.white,
             fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-          }}>−50% · 2 ANS</div>
+          }}>{weeksBlocked ? "OFFRE FIN D’ESSAI" : "−50% · 2 ANS"}</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: isBiennial ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ENGAGEMENT 24 MOIS</div>
           <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>59,98€</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -3002,26 +3000,16 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             background: period === "monthly" ? G.blueLight : G.white,
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
-            {(weeksBlocked || hasReferral) && (
+            {hasReferral && (
               <div style={{
                 position: "absolute", top: 8, right: 8,
                 background: "#22C55E", color: G.white,
                 fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-              }}>{hasReferral ? "−20%" : "−50%"}</div>
+              }}>−20%</div>
             )}
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            {weeksBlocked && !hasReferral ? (
-              <>
-                <div style={{ fontSize: 12, color: G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€</div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>2,50€</div>
-                <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>1er mois, puis 4,99€</div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
-                <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
-              </>
-            )}
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
           </button>
 
           {/* Annuel */}
@@ -3048,12 +3036,6 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
         {isAnnual && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>6 mois offerts vs mensuel plein tarif</span>
-          </div>
-        )}
-
-        {period === "monthly" && weeksBlocked && !hasReferral && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}>−50% sur ton 1er mois après l’essai gratuit</span>
           </div>
         )}
 

@@ -6,7 +6,6 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 const PRICE_MONTHLY = Deno.env.get("STRIPE_PRICE_MONTHLY") ?? "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
 const PRICE_ANNUAL = Deno.env.get("STRIPE_PRICE_ANNUAL") ?? "price_1TudyVAS4mfgF2TwHiSo3Vrg";
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
-const COUPON_UNLOCK = Deno.env.get("STRIPE_COUPON_UNLOCK") ?? "UNLOCK50";
 const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
 
 // Prix actifs + anciens IDs (sécurité si un client a encore un cache)
@@ -175,11 +174,6 @@ Deno.serve(async (req) => {
           referredByUserId = referrer.id;
         }
       }
-    }
-
-    if (!couponId && price === PRICE_MONTHLY) {
-      await ensureCoupon(COUPON_UNLOCK, 50, "Premier mois −50%");
-      couponId = COUPON_UNLOCK;
     }
 
     const session = await stripe.checkout.sessions.create({
