@@ -18,12 +18,16 @@
 - Chaque séance structurée : **échauffement** + **retour calme** (sauf séances eau libre spécifiques).
 - Premium : intervalles en `D…` (départ) + allure cible si `pace100` renseigné. Gratuit : `R…` (récup simple) **sans** tags `@mm:ss` d'allure.
 - Allures cibles / step onboarding « Tes allures cibles » / vidéos Instagram sous séance : **Premium only**.
+- Moteur coaching : à côté de chaque `(Z1)`…`(Z4)`, afficher `@mm:ss-mm:ss` calculé depuis `pace100`/`pace400` — **uniquement Premium** (gratuit = zone seule). Inclut départ et fin, pas seulement le corps.
+- Profil Premium : carte **Évolution des temps** (courbe projetée sur les semaines + points saisis via `paceHistory`). Gratuit = teaser verrouillé.
 - Coefficients allure si `pace100` : easy ×1,35 · seuil ×1,08 · sprint ×0,95.
 - Rotation des variantes via `weekIdx` — ne pas dupliquer la même variante deux semaines de suite sans raison.
 
 ### Niveaux
 
 - **MySWYM = générateur de séances** (pas école de natation / correction de geste).
+- **Bloc milieu** : privilégier **jambes** et nage appliquée. **Grand/petit chien** = rare (≈1 séance sur 8), pas dominant. Trop d’éducatifs fait fuir.
+- **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos) uniquement — pas de tutoriel technique.
 - **Triathlon / eau libre** : niveau « découverte » **interdit** à l’onboarding (déjà en UI).
@@ -79,6 +83,9 @@
 | 2026-07-18 | Générateur + Premium | Positionnement = générateur de séances (pas école de natation). Allures `@mm:ss` + step onboarding allures = **Premium only**. Lien vidéos IG sous séance = Premium. Copier séance (texte Strava/WhatsApp). Bulle support DM. UI séance style landing. `PLAN_VERSION` 19 (force regen) | ✅ |
 | 2026-07-18 | Volume × niveau | Même base coach, distances × niveau (découverte 0.55 → perf 1.25). Wording light uniquement découverte. Diplôme BNSSA/pompiers : +apnée/palmes/tuba, patterns plus `bnssa`. `PLAN_VERSION` 20 | ✅ |
 | 2026-07-18 | Périodisation | Progression distance (+10 % réel), semaines **test chrono**, affûtage 1–2 sem. avant échéance, bilans progression. `PLAN_VERSION` 21 (force regen) | ✅ |
+| 2026-07-18 | Allures départ/fin | Les `(Zx)` du départ et de la fin n’avaient pas `@mm:ss` (corps seul). Annoter toutes les zones nues si Premium + pace. `PLAN_VERSION` 22 | ✅ |
+| 2026-07-18 | Jambes > chiens | Trop de petit/grand chien → fait peur. Cycle : ~3/8 jambes, chiens 1/8. Départs sans chien. Croisement sans éducatif chien. `PLAN_VERSION` 23 | ✅ |
+| 2026-07-18 | Jambes ≠ jambes | Jamais 400m jambes puis encore 8x50 jambes. Focus jambes = **éducatif court + série jambes**. Pas de départ jambes si focus jambes. `PLAN_VERSION` 24 | ✅ |
 | 2026-06-29 | Eau libre 5k/10k S1–S3 | Banque `OW_BASE_SESSIONS` (9 archétypes signature coach) en phase base semaines 1–3 : éducatifs lents → Z2 nage appliquée → sensation/RAC. Scaling régulier/sportif/perf. `OPEN_WATER_PATTERNS`. `PLAN_VERSION` → 12 | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
@@ -100,8 +107,9 @@
 6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`).
 7. **Sportif / Performance** : mêmes volumes et mêmes intitulés — doit rester différencié.
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance. Sur débutant : expliquer les éducatifs (grand/petit chien) plutôt que le terme seul.
-9. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement. **Exception** : force regen explicite demandée par Arthur (ex. v14, aucun user actif).
-10. **Confirmé / inter** : ne pas appliquer le wording débutant (format Arthur Excel doit rester).
+9. **Éducatifs** : ne pas saturer les séances de grand/petit chien — privilégier **jambes** et nage. MySWYM = générateur, pas école. **Jamais** deux blocs jambes d’affilée (ex. 400m jambes + 8x50 jambes) — éducatif puis jambes.
+10. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement. **Exception** : force regen explicite demandée par Arthur (ex. v14, aucun user actif).
+11. **Confirmé / inter** : ne pas appliquer le wording débutant (format Arthur Excel doit rester).
 
 ---
 

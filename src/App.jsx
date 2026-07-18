@@ -5,6 +5,21 @@ import { buildCoachPlanWeeks, shouldUseCoachGenerator } from "./lib/swim-plan-br
 
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
+
+const REF_STORAGE_KEY = "myswym_ref";
+const captureReferralFromUrl = () => {
+  try {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref?.trim()) localStorage.setItem(REF_STORAGE_KEY, ref.trim().toUpperCase());
+  } catch { /* ignore */ }
+};
+const getStoredReferralCode = () => {
+  try { return (localStorage.getItem(REF_STORAGE_KEY) || "").toUpperCase(); } catch { return ""; }
+};
+const resolveReferralCode = (user) => {
+  const fromMeta = String(user?.user_metadata?.referred_by || "").toUpperCase();
+  return fromMeta || getStoredReferralCode() || undefined;
+};
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
@@ -688,6 +703,214 @@ function fmtTime(totalSecs) {
   return `${m}'${String(s).padStart(2,'0')}"`;
 }
 
+/** Gain max relatif sur un plan (temps ↓) selon le niveau. */
+function maxPaceGainForLevel(level) {
+  const l = (level || "").toLowerCase();
+  if (l === "découverte" || l === "beginner") return 0.10;
+  if (l === "régulier" || l === "regulier") return 0.07;
+  if (l === "sportif" || l === "intermediate") return 0.05;
+  if (l === "performance" || l === "advanced") return 0.035;
+  return 0.06;
+}
+
+function getCurrentWeekNumber(plan) {
+  if (!plan?.weeks?.length) return 1;
+  const idx = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
+  if (idx < 0) return plan.weeks[plan.weeks.length - 1]?.number || plan.weeks.length;
+  return plan.weeks[idx]?.number || idx + 1;
+}
+
+/** Projection indicative : amélioration asymptotique sur les semaines du plan. */
+function projectedPaceAtWeek(pace0, week, totalWeeks, maxGain) {
+  if (!pace0 || totalWeeks <= 0) return pace0;
+  const w = Math.max(0, Math.min(week, totalWeeks));
+  const progress = 1 - Math.exp((-3 * w) / totalWeeks);
+  return pace0 * (1 - maxGain * progress);
+}
+
+function appendPaceHistory(profile, { pace100, pace400, week, source = "manual" }) {
+  if (!pace100) return profile;
+  const hist = Array.isArray(profile.paceHistory) ? [...profile.paceHistory] : [];
+  const entry = {
+    week: week || 1,
+    pace100,
+    pace400: pace400 ?? null,
+    at: new Date().toISOString(),
+    source,
+  };
+  const last = hist[hist.length - 1];
+  if (last && last.pace100 === entry.pace100 && (last.pace400 ?? null) === entry.pace400 && last.week === entry.week) {
+    return profile;
+  }
+  hist.push(entry);
+  return { ...profile, paceHistory: hist };
+}
+
+const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
+  const [metric, setMetric] = useState("100");
+  const pace100 = profile?.pace100 ?? null;
+  const pace400 = profile?.pace400 ?? null;
+  const totalWeeks = plan?.weeks?.length || 0;
+  const currentWeek = getCurrentWeekNumber(plan);
+  const maxGain = maxPaceGainForLevel(profile?.level);
+  const history = Array.isArray(profile?.paceHistory) ? profile.paceHistory : [];
+
+  if (!isPremium) {
+    return (
+      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <Lock size={14} color={G.greyMid} />
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+        </div>
+        <p style={{ fontSize: 13, color: G.grey, marginBottom: 14, lineHeight: 1.45 }}>
+          Courbe de progression de tes chronos sur les semaines d’entraînement — réservé aux membres Premium.
+        </p>
+        <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Zap size={14} color={G.blue} /> Passer en Premium
+        </button>
+      </div>
+    );
+  }
+
+  if (!pace100 || totalWeeks < 2) {
+    return (
+      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <TrendingUp size={16} color={G.blue} />
+          </div>
+          <div>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection sur ton plan</p>
+          </div>
+        </div>
+        <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: 0 }}>
+          {!pace100
+            ? "Renseigne ton allure 100 m ci-dessous pour voir la courbe de progression possible."
+            : "Ton plan est trop court pour afficher une courbe."}
+        </p>
+      </div>
+    );
+  }
+
+  const use400 = metric === "400" && pace400;
+  const basePace = use400 ? pace400 : pace100;
+  const firstHist = history.find(h => (use400 ? h.pace400 : h.pace100));
+  const startPace = use400
+    ? (firstHist?.pace400 || pace400)
+    : (firstHist?.pace100 || pace100);
+  const startWeek = firstHist?.week || 1;
+
+  const weeks = Array.from({ length: totalWeeks }, (_, i) => i + 1);
+  const projected = weeks.map(w => {
+    const rel = Math.max(0, w - startWeek);
+    const span = Math.max(1, totalWeeks - startWeek + 1);
+    return projectedPaceAtWeek(startPace, rel, span, maxGain);
+  });
+
+  const actualByWeek = new Map();
+  history.forEach(h => {
+    const v = use400 ? h.pace400 : h.pace100;
+    if (!v || !h.week) return;
+    const prev = actualByWeek.get(h.week);
+    if (prev == null || v < prev) actualByWeek.set(h.week, v);
+  });
+  // Point courant si pas encore en historique
+  if (!actualByWeek.has(currentWeek)) {
+    actualByWeek.set(currentWeek, basePace);
+  }
+
+  const allVals = [...projected, ...actualByWeek.values()];
+  const tMin = Math.min(...allVals) * 0.98;
+  const tMax = Math.max(...allVals) * 1.02;
+  const SVG_W = 280, SVG_H = 110, PAD_L = 4, PAD_R = 4, PAD_T = 8, PAD_B = 4;
+  const xOf = (w) => PAD_L + ((w - 1) / Math.max(1, totalWeeks - 1)) * (SVG_W - PAD_L - PAD_R);
+  const yOf = (t) => PAD_T + (1 - (t - tMin) / (tMax - tMin || 1)) * (SVG_H - PAD_T - PAD_B);
+  const projPts = weeks.map(w => `${xOf(w).toFixed(1)},${yOf(projected[w - 1]).toFixed(1)}`).join(" ");
+  const endPace = projected[projected.length - 1];
+  const gainSec = Math.max(0, Math.round(startPace - endPace));
+  const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 100) : 0;
+
+  return (
+    <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <TrendingUp size={16} color={G.blue} />
+          </div>
+          <div>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection sur {totalWeeks} semaines</p>
+          </div>
+        </div>
+        {pace400 ? (
+          <div style={{ display: "flex", background: G.greyXLight, borderRadius: 10, padding: 3, gap: 2 }}>
+            {["100", "400"].map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMetric(m)}
+                style={{
+                  border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer",
+                  fontSize: 12, fontWeight: 700, minHeight: 32,
+                  background: metric === m ? G.white : "transparent",
+                  color: metric === m ? G.blue : G.grey,
+                  boxShadow: metric === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                }}
+              >
+                {m} m
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ background: G.greyXLight, borderRadius: 12, padding: "12px 10px 8px", marginBottom: 14 }}>
+        <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }} aria-label="Courbe d'évolution des temps">
+          <defs>
+            <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={G.blue} stopOpacity="0.20" />
+              <stop offset="100%" stopColor={G.blue} stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+          {[0.25, 0.5, 0.75].map((f, i) => (
+            <line key={i} x1={SVG_W * f} y1={0} x2={SVG_W * f} y2={SVG_H} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
+          ))}
+          <polygon points={`${xOf(1).toFixed(1)},${SVG_H} ${projPts} ${xOf(totalWeeks).toFixed(1)},${SVG_H}`} fill="url(#evolGrad)" />
+          <polyline points={projPts} fill="none" stroke={G.blue} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Semaine actuelle */}
+          <line x1={xOf(currentWeek)} y1={0} x2={xOf(currentWeek)} y2={SVG_H} stroke={G.mint} strokeWidth="1.5" strokeDasharray="4,3" />
+          {[...actualByWeek.entries()].map(([w, t]) => (
+            <circle key={w} cx={xOf(w)} cy={yOf(t)} r="4.5" fill={G.mint} stroke={G.white} strokeWidth="2" />
+          ))}
+        </svg>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          <span style={{ fontSize: 10, color: G.greyMid, fontWeight: 600 }}>S1</span>
+          <span style={{ fontSize: 10, color: G.mint, fontWeight: 700 }}>S{currentWeek} · aujourd’hui</span>
+          <span style={{ fontSize: 10, color: G.greyMid, fontWeight: 600 }}>S{totalWeeks}</span>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+        {[
+          { label: "Départ", value: fmtTime(Math.round(startPace)), color: G.ink },
+          { label: "Actuel", value: fmtTime(Math.round(basePace)), color: G.blue },
+          { label: "Objectif fin", value: fmtTime(Math.round(endPace)), color: G.mint },
+        ].map((c, i) => (
+          <div key={i} style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: G.grey, fontWeight: 600, marginBottom: 4 }}>{c.label}</div>
+            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 800, color: c.color }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.5 }}>
+        Projection indicative (~{gainPct}% / −{gainSec}s sur {use400 ? "400" : "100"} m). Les points verts = temps enregistrés. Mets à jour ton allure après les semaines test pour affiner la courbe.
+      </p>
+    </div>
+  );
+};
+
 const PaceProjectionCard = ({ pace100, pace400 }) => {
   if (!pace100) return null;
   const proj = calcProjection(pace100, pace400);
@@ -892,13 +1115,65 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
 
   if (!isPremium) {
     return (
-      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
+      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
         </div>
-        <p style={{ fontSize: 13, color: G.grey, marginBottom: 14 }}>Adapte le nombre de séances et ton allure — réservé aux membres Premium.</p>
-        <button onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Adapte le nombre de séances et ton allure — réservé aux membres Premium.</p>
+
+        {/* Aperçu grisé — clic → popup Premium */}
+        <button
+          type="button"
+          onClick={onUpgrade}
+          style={{
+            display: "block", width: "100%", textAlign: "left", cursor: "pointer",
+            border: "none", background: "transparent", padding: 0, WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: G.greyMid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Séances par semaine</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18, opacity: 0.45, pointerEvents: "none" }}>
+            {FREQUENCIES.map(f => {
+              const active = (profile?.sessionsPerWeek ?? 2) === f.id;
+              return (
+                <span key={f.id} style={{
+                  padding: "8px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                  border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                  background: active ? G.blueLight : G.greyXLight,
+                  color: active ? G.blue : G.inkLight,
+                }}>
+                  {f.label}
+                </span>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: 12, fontWeight: 700, color: G.greyMid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+            Allure 100m crawl
+          </div>
+          <div style={{
+            position: "relative", marginBottom: 6,
+            borderRadius: 12, border: `1.5px dashed ${G.greyLight}`,
+            background: G.greyXLight, opacity: 0.75,
+          }}>
+            <div style={{
+              width: "100%", padding: "12px 48px 12px 14px",
+              fontSize: 16, fontWeight: 700, color: G.greyMid,
+              fontFamily: "'Lexend', sans-serif", boxSizing: "border-box",
+            }}>
+              {paceRaw || "ex: 2:10"}
+            </div>
+            <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: G.greyMid, display: "flex", alignItems: "center", gap: 6 }}>
+              <Lock size={14} color={G.greyMid} />
+              /100m
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: G.greyMid, marginBottom: 16 }}>
+            Saisis ton temps pour adapter les allures de tes séances
+          </div>
+        </button>
+
+        <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44 }}>
           <Zap size={14} color={G.blue} /> Passer en Premium
         </button>
       </div>
@@ -1500,6 +1775,9 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           ))}
         </div>
 
+        {/* ── Évolution des temps (Premium) ── */}
+        <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
+
         {/* ── Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} stravaBestPace={stravaBestPace} />
 
@@ -1523,6 +1801,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
                 Actualiser le statut (déjà payé ?)
               </button>
             )}
+            {isPremium && <ReferralShareCard />}
           </div>
 
           {/* Email + mdp groupés */}
@@ -1645,11 +1924,13 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
   //   "reset"    — réinitialisation du mot de passe
   const [mode, setMode] = useState(initialMode);
   useEffect(() => { setMode(initialMode); }, [initialMode]);
+  useEffect(() => { captureReferralFromUrl(); }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
+  const referralCode = getStoredReferralCode();
 
   const switchMode = (m) => {
     if (m === "register" || m === "password") onNavigateMode?.(m);
@@ -1669,11 +1950,16 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/app` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/app`,
+            data: referralCode ? { referred_by: referralCode } : undefined,
+          },
         });
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error("Un compte existe déjà avec cet email.");
-        setSuccess("Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.");
+        setSuccess(referralCode
+          ? "Compte créé ! Parrainage enregistré — vérifie ton email, puis connecte-toi."
+          : "Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.");
         switchMode("password");
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -1695,7 +1981,9 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
   };
   const subtitleMap = {
     password: "Connecte-toi avec ton mot de passe.",
-    register: "Choisis un mot de passe pour ton compte.",
+    register: referralCode
+      ? `Code parrain ${referralCode} — −20% sur ta 1ère facture Premium.`
+      : "Choisis un mot de passe pour ton compte.",
     reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
   };
   const ctaMap = {
@@ -2444,13 +2732,12 @@ const BadgeToast = ({ badgeId }) => {
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 2;
-const PLAN_VERSION = 21; // v21 = périodisation : tests chrono + affûtage 1–2 sem + volume +10% réel
+const PLAN_VERSION = 24; // v24 = jambes = éducatif + battements (pas jambes→jambes)
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
   "1 à 2 séances par semaine",
   "Tous les objectifs (triathlon, BNSSA, eau libre…)",
-  "Déblocage : 1 semaine par semaine",
   "Retours hebdo sans ajustement auto",
   "Intervalles en récupération (R…)",
 ];
@@ -2459,6 +2746,8 @@ const PREMIUM_TIER_LINES = [
   "Plan complet jusqu'à ton événement",
   "Jusqu'à 5 séances par semaine",
   "Allures cibles par zone (à la seconde)",
+  "Courbe d'évolution des temps (profil)",
+  "Copier la séance (WhatsApp / Strava)",
   "Vidéos techniques Instagram",
   "Départs avec allure cible (D…)",
   "Plusieurs projets · modifier fréquence et allure",
@@ -2529,12 +2818,101 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
 };
 
 const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-const PRICE_ANNUAL  = "price_1TPjyeAS4mfgF2TwmSjSiidD";
+const PRICE_ANNUAL  = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
+
+const ReferralShareCard = () => {
+  const [code, setCode] = useState(null);
+  const [shareUrl, setShareUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        const session = refreshData?.session;
+        if (!session) throw new Error("Non connecté");
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ensure-referral-code`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: "{}",
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Erreur parrainage");
+        if (!cancelled) {
+          setCode(json.code);
+          setShareUrl(json.shareUrl);
+        }
+      } catch (e) {
+        if (!cancelled) setErr(e.message || "Impossible de charger le lien");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const copy = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div style={{
+      marginTop: 10, padding: 14, borderRadius: 14,
+      border: `1px solid ${G.greyLight}`, background: G.white,
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Parraine un nageur</div>
+      <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, marginBottom: 10 }}>
+        Ton ami bénéficie de −20% sur sa 1ère facture. Tu reçois 4,99€ de crédit quand il s’abonne.
+      </div>
+      {loading && <div style={{ fontSize: 12, color: G.greyMid }}>Chargement du lien…</div>}
+      {err && <div style={{ fontSize: 12, color: "#CC0000" }}>{err}</div>}
+      {code && shareUrl && (
+        <>
+          <div style={{
+            fontFamily: "monospace", fontSize: 18, fontWeight: 700, letterSpacing: "0.12em",
+            color: G.blue, marginBottom: 8,
+          }}>{code}</div>
+          <button
+            type="button"
+            onClick={copy}
+            style={{
+              width: "100%", padding: "11px 12px", borderRadius: 12, border: `1.5px solid ${G.blue}`,
+              background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 13, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}
+          >
+            {copied ? <><CheckCheck size={15} /> Lien copié</> : <><Copy size={15} /> Copier le lien d’invitation</>}
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
 
 const UpgradeModal = ({ onClose, weeksBlocked }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const [period, setPeriod] = useState("annual");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    captureReferralFromUrl();
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
+  }, []);
+
+  const hasReferral = Boolean(resolveReferralCode(user));
 
   const callFunction = async (fnName, body) => {
     const { data: refreshData } = await supabase.auth.refreshSession();
@@ -2552,16 +2930,23 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
     setLoading(true); setErr(null);
     try {
       const priceId = period === "annual" ? PRICE_ANNUAL : PRICE_MONTHLY;
-      const json = await callFunction("create-checkout", { origin: window.location.origin, priceId });
+      const referralCode = resolveReferralCode(user);
+      const json = await callFunction("create-checkout", {
+        origin: window.location.origin,
+        priceId,
+        ...(referralCode ? { referralCode } : {}),
+      });
       if (json.url) { window.location.href = json.url; return; }
       throw new Error(json.error || "Lien de paiement introuvable");
     } catch (e) { setErr(e.message || "Erreur."); setLoading(false); }
   };
 
   const isAnnual = period === "annual";
-  const monthlyPrice = isAnnual ? "3,33 €" : "4,99 €";
-  const totalLabel = isAnnual ? "39,99 € / an" : "4,99 € / mois";
-  const saving = isAnnual ? "1 mois offert" : null;
+  const monthlyCta = hasReferral
+    ? "Démarrer — −20% parrainage"
+    : weeksBlocked
+      ? "Démarrer — 2,50€ le 1er mois"
+      : "Démarrer — 4,99€/mois";
 
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2584,11 +2969,28 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "monthly" ? G.blue : G.greyLight}`,
             background: period === "monthly" ? G.blueLight : G.white,
-            transition: "all 0.18s",
+            transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
+            {(weeksBlocked || hasReferral) && (
+              <div style={{
+                position: "absolute", top: 8, right: 8,
+                background: "#22C55E", color: G.white,
+                fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
+              }}>{hasReferral ? "−20%" : "−50%"}</div>
+            )}
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
+            {weeksBlocked && !hasReferral ? (
+              <>
+                <div style={{ fontSize: 12, color: G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€</div>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>2,50€</div>
+                <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>1er mois, puis 4,99€</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+                <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
+              </>
+            )}
           </button>
 
           {/* Annuel — mis en avant */}
@@ -2598,34 +3000,60 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
             background: period === "annual" ? G.ink : G.white,
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
-            {/* Badge -33% */}
+            {/* Badge -50% */}
             <div style={{
               position: "absolute", top: 8, right: 8,
               background: "#22C55E", color: G.white,
               fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-            }}>−33%</div>
+            }}>−50%</div>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
             {/* Prix barré */}
             <div style={{ fontSize: 12, color: period === "annual" ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>4,99€/mois</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.white : G.ink }}>3,33€</div>
-            <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 40€/an</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.white : G.ink }}>2,50€</div>
+            <div style={{ fontSize: 11, color: period === "annual" ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 2 }}>/ mois · 29,99€/an</div>
           </button>
         </div>
 
-        {/* 1 mois offert pill — visible only on annual */}
+        {/* 6 mois offerts pill — visible only on annual */}
         {isAnnual && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>1 mois offert par rapport au mensuel</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>6 mois offerts par rapport au mensuel</span>
           </div>
         )}
 
-        <p style={{ fontSize: 12, color: G.grey, marginBottom: 16, lineHeight: 1.5 }}>
-          Plan complet, multi-plans, départs D… et ajustement selon ton ressenti.
-        </p>
+        {!isAnnual && weeksBlocked && !hasReferral && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}>−50% sur ton 1er mois après l’essai gratuit</span>
+          </div>
+        )}
+
+        {hasReferral && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>Parrainage actif — −20% auto au paiement</span>
+          </div>
+        )}
+
+        {!hasReferral && (
+          <p style={{ fontSize: 12, color: G.greyMid, textAlign: "center", marginBottom: 16, lineHeight: 1.4 }}>
+            Un ami t’a parrainé ? −20% auto au paiement.
+          </p>
+        )}
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+            Débloqué avec Premium
+          </div>
+          {PREMIUM_TIER_LINES.map((line, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: i < PREMIUM_TIER_LINES.length - 1 ? 8 : 0 }}>
+              <Check size={14} color={G.blue} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>{line}</span>
+            </div>
+          ))}
+        </div>
 
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
-          {loading ? "Redirection…" : isAnnual ? "Démarrer — 40€/an" : "Démarrer — 4,99€/mois"}
+          {loading ? "Redirection…" : isAnnual ? "Démarrer — 29,99€/an" : monthlyCta}
         </Btn>
         <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
       </div>
@@ -2927,6 +3355,10 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
 
   const handleCopy = async (e) => {
     e.stopPropagation();
+    if (!isPremium) {
+      onUpgrade?.();
+      return;
+    }
     const text = formatSessionPlainText(session);
     try {
       await navigator.clipboard.writeText(text);
@@ -3158,14 +3590,23 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                 <button
                   type="button"
                   onClick={handleCopy}
+                  title={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
+                  aria-label={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
                   style={{
                     flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
-                    background: copied ? G.mint : G.white, border: `1px solid ${copied ? G.mint : G.greyLight}`,
-                    fontSize: 12, fontWeight: 600, color: copied ? G.white : G.inkLight, cursor: "pointer",
+                    background: copied ? G.mint : isPremium ? G.white : G.greyXLight,
+                    border: `1px solid ${copied ? G.mint : G.greyLight}`,
+                    fontSize: 12, fontWeight: 600,
+                    color: copied ? G.white : isPremium ? G.inkLight : G.grey,
+                    cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   }}
                 >
-                  {copied ? <><CheckCheck size={13} color="#fff" /> Copié</> : <><Copy size={13} color={G.grey} /> Copier la séance</>}
+                  {copied
+                    ? <><CheckCheck size={13} color="#fff" /> Copié</>
+                    : isPremium
+                      ? <><Copy size={13} color={G.grey} /> Copier la séance</>
+                      : <><Lock size={13} color={G.grey} /> Copier la séance</>}
                 </button>
                 {done && onShare && (
                   <button onClick={() => onShare(session)} style={{
@@ -3178,9 +3619,11 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                   </button>
                 )}
               </div>
-              <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
-                Colle le texte dans WhatsApp ou la description Strava.
-              </p>
+              {isPremium && (
+                <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
+                  Colle le texte dans WhatsApp ou la description Strava.
+                </p>
+              )}
               {isPremium ? (
                 <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "12px 4px 0" }}>
                   Un terme ou un éducatif pas clair ?{" "}
@@ -3198,13 +3641,17 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                 <button
                   type="button"
                   onClick={() => onUpgrade?.()}
+                  title="Passe Premium pour accéder aux vidéos techniques"
+                  aria-label="Passe Premium pour accéder aux vidéos techniques"
                   style={{
-                    display: "block", width: "100%", marginTop: 12, padding: "10px 12px",
-                    borderRadius: 12, border: `1px dashed ${G.blue}55`, background: G.blueLight,
-                    fontSize: 12, fontWeight: 600, color: G.blue, cursor: "pointer", textAlign: "left",
+                    display: "flex", width: "100%", marginTop: 12, padding: "10px 12px",
+                    borderRadius: 12, border: `1px solid ${G.greyLight}`, background: G.greyXLight,
+                    fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
+                    alignItems: "center", justifyContent: "center", gap: 6,
                   }}
                 >
-                  Vidéos techniques Instagram — débloquer avec Premium
+                  <Lock size={13} color={G.grey} />
+                  Vidéo technique
                 </button>
               )}
               <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "8px 4px 0" }}>
@@ -3225,8 +3672,18 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
       )}
       {blockCount === 0 && (
         <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <button type="button" onClick={handleCopy} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            {copied ? <><CheckCheck size={12} /> Copié</> : <><Copy size={12} /> Copier la séance</>}
+          <button
+            type="button"
+            onClick={handleCopy}
+            title={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
+            aria-label={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          >
+            {copied
+              ? <><CheckCheck size={12} /> Copié</>
+              : isPremium
+                ? <><Copy size={12} /> Copier la séance</>
+                : <><Lock size={12} /> Copier la séance</>}
           </button>
           {done && onShare && (
             <button onClick={() => onShare(session)} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -3512,24 +3969,12 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, startDate: startDateProp, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
-  const startDate = plan.startDate ?? startDateProp ?? null;
-  const completedWeeks = plan.weeks.filter(w => w.sessions.every(isSessionResolved)).length;
-  const daysElapsed = startDate ? Math.floor((Date.now() - startDate) / (24 * 60 * 60 * 1000)) : null;
-  const weeksElapsed = daysElapsed !== null ? Math.floor(daysElapsed / 7) : null;
-
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
   // Premium : plan complet débloqué
-  // Free    : +1 semaine par semaine, limité à FREE_WEEKS_LIMIT
+  // Free    : les 4 premières semaines visibles tout de suite ; le reste = Premium
   const unlocked = isPremium
     ? plan.weeks.length
-    : (weeksElapsed !== null
-        ? Math.min(FREE_WEEKS_LIMIT, weeksElapsed + 1)
-        : Math.min(FREE_WEEKS_LIMIT, completedWeeks + 1));
-
-  // Jours avant le prochain déblocage (gratuit uniquement)
-  const daysToNext = !isPremium && daysElapsed !== null
-    ? 7 - (daysElapsed % 7)
-    : null;
+    : Math.min(FREE_WEEKS_LIMIT, plan.weeks.length);
 
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
@@ -3632,23 +4077,90 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
           </div>
         ))}
 
-        {/* Free : paywall */}
-        {!isPremium && blockedWeeks > 0 && unlocked >= FREE_WEEKS_LIMIT && (
+        {/* Free : paywall au-delà des 4 premières semaines */}
+        {!isPremium && blockedWeeks > 0 && (
           <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
-        )}
-
-        {/* Prochain déblocage (gratuit uniquement) */}
-        {!isPremium && unlocked < FREE_WEEKS_LIMIT && unlocked < plan.weeks.length && (
-          <p style={{ fontSize: 13, color: G.grey, textAlign: "center", marginBottom: 16, padding: "12px 16px", background: G.white, borderRadius: 12, border: `1px solid ${G.greyLight}` }}>
-            <Lock size={12} color={G.blue} style={{ verticalAlign: "middle", marginRight: 6 }} />
-            {daysToNext
-              ? `Semaine suivante dans ${daysToNext} jour${daysToNext > 1 ? "s" : ""}`
-              : "Complète la semaine en cours"}
-          </p>
         )}
 
         <ResetConfirmButton onReset={onReset} />
       </div>
+    </div>
+  );
+};
+
+/** Badges sur l’accueil : colorés si débloqués, grisés sinon. */
+const HomeBadgesSection = ({ plan }) => {
+  const stats = computeStats(plan);
+  const earned = checkBadges(stats);
+  const earnedSet = new Set(earned);
+  return (
+    <div style={{
+      background: G.white, borderRadius: 20, padding: "18px",
+      boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
+      border: `1px solid ${G.greyLight}`,
+      marginBottom: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Award size={16} color={G.blue} />
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Badges</div>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 800, color: G.blue, fontVariantNumeric: "tabular-nums" }}>
+          {earned.length}/{BADGE_DEFS.length}
+        </span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px 8px" }}>
+        {BADGE_DEFS.map(b => {
+          const unlocked = earnedSet.has(b.id);
+          return (
+            <div
+              key={b.id}
+              title={unlocked ? b.desc : `À débloquer — ${b.desc}`}
+              style={{ textAlign: "center", minWidth: 0 }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: "50%",
+                margin: "0 auto 6px",
+                background: unlocked ? `${b.color}20` : G.greyXLight,
+                border: unlocked ? `1.5px solid ${b.color}40` : `1.5px solid ${G.greyLight}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                position: "relative",
+                boxShadow: unlocked ? `0 4px 12px ${b.color}22` : "none",
+                filter: unlocked ? "none" : "grayscale(1)",
+                opacity: unlocked ? 1 : 0.45,
+              }}>
+                <b.icon size={20} color={unlocked ? b.color : G.greyMid} />
+                {!unlocked && (
+                  <div style={{
+                    position: "absolute", bottom: -2, right: -2,
+                    width: 16, height: 16, borderRadius: "50%",
+                    background: G.white, border: `1px solid ${G.greyLight}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Lock size={9} color={G.greyMid} />
+                  </div>
+                )}
+              </div>
+              <div style={{
+                fontSize: 10, fontWeight: unlocked ? 700 : 600,
+                color: unlocked ? G.ink : G.greyMid,
+                lineHeight: 1.25,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }}>
+                {b.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {earned.length < BADGE_DEFS.length && (
+        <p style={{ fontSize: 11, color: G.greyMid, margin: "12px 0 0", lineHeight: 1.4 }}>
+          Complète des séances pour débloquer les badges grisés.
+        </p>
+      )}
     </div>
   );
 };
@@ -3830,6 +4342,9 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
             )}
           </div>
         </div>
+
+        {/* ── Badges (débloqués + grisés) ── */}
+        <HomeBadgesSection plan={plan} />
       </div>
     </div>
   );
@@ -6893,8 +7408,8 @@ export default function App() {
   }, [user?.id, isPremium, plans, activePlanId]);
 
 
-  // Migration v20 : régénère (forcé — volume par niveau + diplôme apnée/palmes).
-  // Les plans version < PLAN_VERSION sont entièrement reconstruits.
+  // Migration : plans version < PLAN_VERSION entièrement reconstruits (contenu générateur).
+  // v24 = focus jambes = éducatif + battements (pas jambes→jambes).
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
@@ -6944,7 +7459,16 @@ export default function App() {
         : profile;
       const p  = await generatePlan(genProfile, isPremium);
       const id = `plan_${Date.now()}`;
-      const entry = { id, profile: { ...genProfile }, plan: p, startDate: Date.now() };
+      let entryProfile = { ...genProfile };
+      if (entryProfile.pace100) {
+        entryProfile = appendPaceHistory(entryProfile, {
+          pace100: entryProfile.pace100,
+          pace400: entryProfile.pace400,
+          week: 1,
+          source: "onboarding",
+        });
+      }
+      const entry = { id, profile: entryProfile, plan: p, startDate: Date.now() };
       if (addingPlan) {
         setPlans(prev => [...prev, entry]);
         setAddingPlan(false);
@@ -7016,23 +7540,43 @@ export default function App() {
   };
 
   const handlePaceUpdate = (newPace100, newPace400 = undefined) => {
-    setPlans(prev => prev.map(e => e.id !== activePlanId ? e : {
-      ...e, profile: {
+    setPlans(prev => prev.map(e => {
+      if (e.id !== activePlanId) return e;
+      const week = getCurrentWeekNumber(e.plan);
+      const next = {
         ...e.profile,
         pace100: newPace100,
         ...(newPace400 !== undefined ? { pace400: newPace400 } : {}),
-      }
+      };
+      return {
+        ...e,
+        profile: appendPaceHistory(next, {
+          pace100: newPace100,
+          pace400: newPace400 !== undefined ? newPace400 : next.pace400,
+          week,
+          source: "manual",
+        }),
+      };
     }));
   };
 
   const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
     if (!activePlanEntry) return;
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
-    const newProfile = {
+    const week = getCurrentWeekNumber(activePlanEntry.plan);
+    let newProfile = {
       ...activePlanEntry.profile,
       sessionsPerWeek: newFreq,
       ...(newPace100 !== undefined ? { pace100: newPace100 } : {}),
     };
+    if (newPace100 !== undefined) {
+      newProfile = appendPaceHistory(newProfile, {
+        pace100: newPace100,
+        pace400: newProfile.pace400,
+        week,
+        source: "program",
+      });
+    }
     setScreen("loading");
     generatePlan(newProfile, isPremium).then(newPlan => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;

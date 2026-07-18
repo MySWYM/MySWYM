@@ -52,8 +52,21 @@ export default function TarifsPage() {
 
   const handlePremium = async (priceId) => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = "/inscription"; return; }
+    if (!session) {
+      try {
+        const ref = new URLSearchParams(window.location.search).get("ref");
+        if (ref?.trim()) localStorage.setItem("myswym_ref", ref.trim().toUpperCase());
+      } catch { /* ignore */ }
+      window.location.href = "/inscription";
+      return;
+    }
     try {
+      let referralCode;
+      try {
+        referralCode = (session.user?.user_metadata?.referred_by
+          || localStorage.getItem("myswym_ref")
+          || "").toUpperCase() || undefined;
+      } catch { referralCode = undefined; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
         headers: {
@@ -61,7 +74,7 @@ export default function TarifsPage() {
           "Authorization": `Bearer ${session.access_token}`,
           "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, ...(referralCode ? { referralCode } : {}) }),
       });
       const data = await res.json();
       if (data.url) {
@@ -76,7 +89,7 @@ export default function TarifsPage() {
 
   // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx
   const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-  const PRICE_ANNUAL = "price_1TPjyeAS4mfgF2TwmSjSiidD";
+  const PRICE_ANNUAL = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
 
   const freeFeatures = [
     "Plan du premier mois (4 semaines)",
@@ -133,14 +146,14 @@ export default function TarifsPage() {
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 12 : 16 }}>
                 <div style={{ fontSize: isMobile ? 34 : 20, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.white, lineHeight: 1.0 }}>Premium Annuel</div>
-                <div style={{ background: "#22C55E", color: C.white, fontSize: isMobile ? 14 : 12, fontFamily: FONT, fontWeight: 800, padding: isMobile ? "5px 10px" : "4px 10px", borderRadius: 8 }}>-33%</div>
+                <div style={{ background: "#22C55E", color: C.white, fontSize: isMobile ? 14 : 12, fontFamily: FONT, fontWeight: 800, padding: isMobile ? "5px 10px" : "4px 10px", borderRadius: 8 }}>-50%</div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginBottom: isMobile ? 14 : 20 }}>
-                <span style={{ fontSize: isMobile ? 58 : 44, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.white, lineHeight: 1 }}>3,33€</span>
+                <span style={{ fontSize: isMobile ? 58 : 44, fontFamily: FONT_DISPLAY, fontWeight: 800, color: C.white, lineHeight: 1 }}>2,50€</span>
                 <span style={{ color: "rgba(255,255,255,0.75)", fontSize: isMobile ? 16 : 14, fontFamily: FONT, marginBottom: isMobile ? 8 : 6 }}>/mois</span>
               </div>
               <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{ display: "block", width: "100%", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: isMobile ? 18 : 16, fontFamily: FONT, padding: isMobile ? "12px" : "15px", borderRadius: 16, border: "none", cursor: "pointer", marginBottom: isMobile ? 16 : 20 }}>
-                Démarrer — 40€/an
+                Démarrer — 29,99€/an
               </button>
               <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 9 : 11 }}>
                 {premiumFeatures.map((f) => (

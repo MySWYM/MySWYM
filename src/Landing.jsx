@@ -817,12 +817,25 @@ function Pricing() {
 
   const handlePremium = async (priceId) => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = "/inscription"; return; }
+    if (!session) {
+      try {
+        const ref = new URLSearchParams(window.location.search).get("ref");
+        if (ref?.trim()) localStorage.setItem("myswym_ref", ref.trim().toUpperCase());
+      } catch { /* ignore */ }
+      window.location.href = "/inscription";
+      return;
+    }
     try {
+      let referralCode;
+      try {
+        referralCode = (session.user?.user_metadata?.referred_by
+          || localStorage.getItem("myswym_ref")
+          || "").toUpperCase() || undefined;
+      } catch { referralCode = undefined; }
       const res = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": SUPABASE_ANON_KEY },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, ...(referralCode ? { referralCode } : {}) }),
       });
       const data = await res.json();
       if (data.url) {
@@ -837,7 +850,7 @@ function Pricing() {
 
   // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx
   const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-  const PRICE_ANNUAL  = "price_1TPjyeAS4mfgF2TwmSjSiidD";
+  const PRICE_ANNUAL  = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
 
   const freeFeatures = [
     "Plan du premier mois (4 semaines)",
@@ -906,7 +919,7 @@ function Pricing() {
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 800, color: C.white }}>Premium Annuel</div>
-                <div style={{ background: "#22C55E", color: C.white, fontSize: 12, fontWeight: 800, padding: "4px 10px", borderRadius: 8, letterSpacing: "0.04em", fontFamily: FONT }}>−33%</div>
+                <div style={{ background: "#22C55E", color: C.white, fontSize: 12, fontWeight: 800, padding: "4px 10px", borderRadius: 8, letterSpacing: "0.04em", fontFamily: FONT }}>−50%</div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -914,14 +927,14 @@ function Pricing() {
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", fontFamily: FONT }}>/mois</span>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 44, fontFamily: FONT, fontWeight: 800, color: C.white, lineHeight: 1 }}>3,33€</span>
+                <span style={{ fontSize: 44, fontFamily: FONT, fontWeight: 800, color: C.white, lineHeight: 1 }}>2,50€</span>
                 <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6, fontFamily: FONT }}>/mois</span>
               </div>
 
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "6px 12px", marginBottom: 20 }}>
                 <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: FONT }}>Facturé</span>
-                <span style={{ color: C.white, fontSize: 13, fontWeight: 700, fontFamily: FONT }}>40€/an</span>
-                <span style={{ color: "#22C55E", fontSize: 12, fontWeight: 700, fontFamily: FONT }}>· 1 mois offert</span>
+                <span style={{ color: C.white, fontSize: 13, fontWeight: 700, fontFamily: FONT }}>29,99€/an</span>
+                <span style={{ color: "#22C55E", fontSize: 12, fontWeight: 700, fontFamily: FONT }}>· 6 mois offerts</span>
               </div>
 
               <button onClick={() => handlePremium(PRICE_ANNUAL)} style={{
@@ -933,7 +946,7 @@ function Pricing() {
               }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              >Démarrer — 40€/an</button>
+              >Démarrer — 29,99€/an</button>
               <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                 {premiumFeatures.map((f, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>

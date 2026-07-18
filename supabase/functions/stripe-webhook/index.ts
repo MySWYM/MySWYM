@@ -4,7 +4,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
 /** Entitlement keys — never trusted from user_metadata (client-writable). */
-const ENTITLEMENT_KEYS = ["subscription", "subscription_end", "cancel_at_period_end", "stripe_customer_id"] as const;
+const ENTITLEMENT_KEYS = [
+  "subscription",
+  "subscription_end",
+  "cancel_at_period_end",
+  "stripe_customer_id",
+  "referral_code",
+  "referral_rewarded",
+] as const;
+
+const REFERRAL_CREDIT_CENTS = 499; // 4,99 €
 
 type AuthUser = {
   id: string;
@@ -54,6 +63,44 @@ async function setEntitlement(
     // Neutralise toute falsification côté client
     user_metadata: stripEntitlementFromUserMeta(user.user_metadata),
   });
+}
+
+async function creditReferrer(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  filleul: AuthUser,
+  referredById: string,
+) {
+  if (!referredById || referredById === filleul.id) return;
+  if (filleul.app_metadata?.referral_rewarded === true) return;
+
+  const { data: { user: parrain } } = await supabaseAdmin.auth.admin.getUserById(referredById);
+  if (!parrain) {
+    console.error("[stripe-webhook] referrer not found:", referredById);
+    return;
+  }
+
+  const parrainCustomerId = getStripeCustomerId(parrain as AuthUser);
+  if (!parrainCustomerId) {
+    console.error("[stripe-webhook] referrer has no stripe_customer_id:", referredById);
+    // Mark as rewarded anyway to avoid retry loops if parrain never had Stripe
+    await setEntitlement(supabaseAdmin, filleul, { referral_rewarded: true });
+    return;
+  }
+
+  try {
+    await stripe.customers.createBalanceTransaction(parrainCustomerId, {
+      amount: -REFERRAL_CREDIT_CENTS, // crédit = montant négatif
+      currency: "eur",
+      description: `Parrainage MySWYM — filleul ${filleul.id.slice(0, 8)}`,
+      metadata: { filleul_id: filleul.id, type: "referral_reward" },
+    });
+  } catch (err) {
+    console.error("[stripe-webhook] balance credit failed:", err);
+    return; // ne pas marquer rewarded → retry possible
+  }
+
+  await setEntitlement(supabaseAdmin, filleul, { referral_rewarded: true });
+  console.log("[stripe-webhook] referral credit OK →", referredById);
 }
 
 Deno.serve(async (req) => {
@@ -111,6 +158,8 @@ Deno.serve(async (req) => {
     const userId = session?.client_reference_id;
     const customerId = session?.customer;
     const subscriptionId = session?.subscription;
+    const referredBy = (session?.metadata?.referred_by
+      ?? session?.subscription_details?.metadata?.referred_by) as string | undefined;
 
     if (userId) {
       const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -127,6 +176,22 @@ Deno.serve(async (req) => {
           subscription_end: subscriptionEnd,
           cancel_at_period_end: false,
         });
+
+        // Recharge user après setEntitlement pour avoir app_metadata à jour
+        const { data: { user: fresh } } = await supabaseAdmin.auth.admin.getUserById(userId);
+        const filleul = (fresh ?? user) as AuthUser;
+        const refId = referredBy
+          || (typeof subscriptionId === "string"
+            ? (await stripe.subscriptions.retrieve(subscriptionId)).metadata?.referred_by
+            : undefined);
+
+        if (refId && session?.payment_status === "paid") {
+          await creditReferrer(supabaseAdmin, filleul, refId);
+        } else if (refId && session?.payment_status !== "paid") {
+          // Abonnement créé mais paiement pending — on crédite quand même si checkout completed
+          // (checkout.session.completed pour subscription = paiement initial OK en général)
+          await creditReferrer(supabaseAdmin, filleul, refId);
+        }
       }
     }
   }

@@ -62,30 +62,32 @@ const TECHNIQUE = {
     block(400, ["· 6x50m catch-up + plaquettes légères, focus prise d'appui R20''", "· 4x25m nage complète en gardant le temps de glisse"]),
     block(400, ["· 8x25m catch-up, compter le temps de glisse à voix haute R15''", "· 4x50m catch-up / nage normale alterné par 25m"])
   ]},
-  technique_chiens: { label:"Grand chien & petit chien", drills:[
-    // Format Excel Arthur — très fréquent
-    block(400, ["· 8x50 : 25m grand chien · 25m normal"]),
-    block(400, ["· 8x50 : 25m petit chien · 25m normal"]),
-    block(400, ["· 6x50 : · 25m grand chien · 25m normal"]),
-    block(400, ["· 6x50 : · 25m petit chien · 25m normal"]),
-    block(300, ["· 5x50 tubas lent : · 25m grand chien · 25m normal"]),
-    block(300, ["· 5x50 tubas lent : · 25m petit chien · 25m normal"]),
-    block(400, ["· 4x50 tubas lent en grand chien", "· 4x50 tubas lent en petit chien"]),
-    block(400, ["· 8x25m grand chien lent R15''", "· 8x25m petit chien (traction courte sous le buste, coudes hauts) R15''"]),
-    block(450, ["· 6x25m grand chien (bras large, entrée devant l'épaule) R15''", "· 6x25m petit chien (mains près du corps, pas d'extension longue) R15''", "· 4x50m nage normale"]),
-    block(400, ["· 8x25m petit chien → grand chien alterné R15''", "· 4x50m nage normale, garder la précision de l'entrée"]),
-    block(400, ["· 8x25m grand chien avec pause 1s bras tendu devant R15''", "· 4x50m : 25m petit chien · 25m normal"]),
-    block(500, ["· 8x25m grand chien lent R15''", "· 4x50m alterné grand chien / nage normale par 25m", "· 4x25m petit chien focus regard vers le fond"]),
-    block(400, ["· 10x25m grand chien, main qui entre devant l'épaule pas devant la tête R15''", "· 4x50m : 25m petit chien · 25m crawl"]),
+  /** Jambes = série battements + toujours un éducatif court avant (jamais jambes→jambes). */
+  technique_jambes: { label:"Éducatif + jambes", drills:[
+    block(400, ["· 4x25m catch-up R15''", "· 6x50m jambes crawl planche R15''"]),
+    block(400, ["· 4x50m un bras (l'autre tendu devant) R20''", "· 4x50m jambes crawl planche R15''"]),
+    block(400, ["· 8x25m godilles R15''", "· 6x50m jambes dos planche R15''"]),
+    block(450, ["· 4x25m catch-up R15''", "· 4x50m jambes crawl palmes R20''", "· 4x25m nage complète"]),
+    block(400, ["· 6x25m crawl lent regard fond R15''", "· 5x50m jambes crawl planche R15''"]),
+    block(400, ["· 4x50m catch-up R20''", "· 4x50m jambes crawl sans planche (bras devant) R20''"]),
+    block(450, ["· 8x25m un bras R15''", "· 6x50m jambes crawl planche R15''", "· 2x25m nage complète"]),
+    block(400, ["· 4x25m entrée de main alignée R15''", "· 4x50m jambes crawl planche R15''", "· 4x25m nage"]),
+    block(500, ["· 4x50m catch-up R20''", "· 4x100m : 50m jambes · 50m crawl R20''"]),
+    block(400, ["· 6x25m glisse / position R15''", "· 4x50m jambes crawl R15''", "· 4x25m nage complète"]),
   ]},
-  technique_croisement: { label:"Croisement des bras (correction)", drills:[
-    block(450, ["· 6x25m grand chien (bras large, entrée devant l'épaule) R15''", "· 4x50m focus entrée de main alignée épaule R20''", "· 4x25m nage normale, penser à l'entrée large"]),
-    block(500, ["· 8x25m grand chien lent R15''", "· 4x50m alterné grand chien / nage normale par 25m", "· 4x25m focus regard vers le fond en respirant"]),
+  /** Chien = rare (1 slot / cycle). Blocs courts, peu de jargon. */
+  technique_chiens: { label:"Grand chien & petit chien", drills:[
     block(400, ["· 8x50 : 25m grand chien · 25m normal"]),
     block(400, ["· 8x50 : 25m petit chien · 25m normal"]),
-    block(450, ["· 10x25m grand chien, main qui entre devant l'épaule pas devant la tête R15''", "· 4x50m nage normale, checker l'alignement toutes les 25m"]),
-    block(400, ["· 8x25m grand chien avec pause 1s bras tendu devant R15''", "· 4x50m alterné 25 petit chien / 25 normal, focus regard bas"]),
-    block(400, ["· 6x50m grand chien + palmes, sentir l'appui large R20''", "· 4x25m nage complète, contrôle de l'entrée de main"]),
+    block(300, ["· 6x25m grand chien R15''", "· 6x25m petit chien R15''", "· 4x50m nage normale"]),
+    block(400, ["· 8x25m grand chien R15''", "· 4x50m nage complète"]),
+  ]},
+  technique_croisement: { label:"Alignement / entrée de main", drills:[
+    block(400, ["· 8x50m focus entrée de main alignée épaule R20''"]),
+    block(400, ["· 6x50m : 25m un bras · 25m nage complète R20''"]),
+    block(450, ["· 8x25m crawl lent, regard vers le fond R15''", "· 4x50m nage normale, checker l'alignement"]),
+    block(400, ["· 8x50m : 25m catch-up large · 25m nage R20''"]),
+    block(400, ["· 6x50m nage complète, entrée de main devant l'épaule R20''"]),
   ]},
   technique_virages: { label:"Virages culbute", drills:[
     block(470, ["· 8x15m culbute sans mur (rotation seule) R20''", "· 6x25m approche + virage, mains fixes hauteur hanches R20''", "· 4x50m avec virage au mur, sortie propulsée"]),
@@ -165,26 +167,34 @@ const FINS_SEMAINE = [
   (d) => `-${d}m au choix - souple`,
 ];
 const DEPARTS_SEMAINE = [
-  () => ({ distance: 400, text: `-400m au choix (3ème 25m chq 100 en grand chien) (Z1)` }),
-  () => ({ distance: 400, text: `-400m au choix (3ème 25m chq 100 en petit chien) (Z1)` }),
-  () => ({ distance: 400, text: `-400m au choix (3ème 25m chq 100 en godille) (Z1)` }),
   () => ({ distance: 400, text: `-400m Dos/Cr par 100m (Z1)` }),
+  () => ({ distance: 400, text: `-400m Cr/Dos par 50m (Z1)` }),
   () => ({ distance: 400, text: `-400m Cr palmes (Z1)` }),
   () => ({ distance: 400, text: `-400m mixte crawl/dos souple (Z1)` }),
   () => ({ distance: 350, text: `-350m mixte crawl/dos (Z1)` }),
-  () => ({ distance: 400, text: `-400m Cr/Dos par 50m (Z1)` }),
+  () => ({ distance: 400, text: `-400m au choix (3ème 25m chq 100 en godille) (Z1)` }),
+  () => ({ distance: 400, text: `-400m Cr souple (Z1)` }),
+  () => ({ distance: 400, text: `-400m Dos/Cr par 50m (Z1)` }),
+];
+/** Départs avec jambes — uniquement si le focus technique n'est PAS déjà jambes. */
+const DEPARTS_AVEC_JAMBES = [
+  () => ({ distance: 400, text: `-400m au choix (3ème 25m chq 100 en jambes) (Z1)` }),
+  () => ({ distance: 400, text: `-400m jambes crawl planche (Z1)` }),
 ];
 
-/** Cycle technique : grand/petit chien très présents (comme Excel Arthur). */
+/**
+ * Cycle focus : ~3/8 jambes, chiens rare (1/8).
+ * MySWYM = générateur de séances, pas école d'éducatifs.
+ */
 const FOCUS_CYCLE = [
-  "technique_chiens",
-  "technique_roulis",
-  "technique_chiens",
+  "technique_jambes",
   "technique_respiration",
-  "technique_chiens",
+  "technique_roulis",
+  "technique_jambes",
   "technique_catchup",
-  "technique_croisement",
   "technique_virages",
+  "technique_chiens",
+  "technique_jambes",
 ];
 
 const MATERIEL = ["", " palmes", " palmes + tubas", " plaquettes", " palmes + plaquettes"];
@@ -234,6 +244,28 @@ function paceTag(ref100Seconds, ref400Seconds, zoneKey, distance){
   const low = basePace100*lo*(distance/100);
   const high = basePace100*hi*(distance/100);
   return `(${zoneKey} @${formatTime(low)}-${formatTime(high)})`;
+}
+
+/** Distance d'allure : « par 100m » / « 8x50 » prioritaire, sinon distance de tête. */
+function extractPaceDistance(line){
+  const par = line.match(/par\s+(\d+)\s*m/i);
+  if(par) return parseInt(par[1], 10);
+  const reps = line.match(/(\d+)\s*x\s*(\d+)\s*m?/i);
+  if(reps) return parseInt(reps[2], 10);
+  const lead = line.match(/-?\s*(\d+)\s*m\b/i);
+  if(lead) return parseInt(lead[1], 10);
+  return 100;
+}
+
+/** Remplace les (Z1) nus par (Z1 @mm:ss-mm:ss) si allures dispo (Premium). Lignes déjà @ inchangées. */
+function annotateBareZones(lignes, ref100Seconds, ref400Seconds){
+  if(!ref100Seconds && !ref400Seconds) return lignes;
+  return lignes.map(line => {
+    if(/\(Z[1-4]\s*@/i.test(line)) return line;
+    return line.replace(/\(Z([1-4])\)/g, (_m, n) =>
+      paceTag(ref100Seconds, ref400Seconds, `Z${n}`, extractPaceDistance(line))
+    );
+  });
 }
 
 /* ============== GÉNÉRATEUR — SÉANCE UNIQUE ============== */
@@ -430,8 +462,11 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const isBeginner = simplifyWording != null ? !!simplifyWording : niveauKey === "debutant";
   const isTest = objectifKey === "test";
 
-  // Départ Z1 — même base, distance × niveau × progression semaine
-  const depart = scaleDepartBlock(pick(DEPARTS_SEMAINE, "depart")(), isTest ? Math.min(mult, 0.85) : mult);
+  // Départ Z1 — jamais jambes si le focus technique est déjà jambes
+  const departPool = techniqueFocusKey === "technique_jambes"
+    ? DEPARTS_SEMAINE
+    : [...DEPARTS_SEMAINE, ...DEPARTS_AVEC_JAMBES];
+  const depart = scaleDepartBlock(pick(departPool, "depart")(), isTest ? Math.min(mult, 0.85) : mult);
   lignes.push(depart.text);
 
   // Technique rotative (distance fixe — le volume varie surtout sur départ/corps/fin)
@@ -439,7 +474,9 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const techPicked = pick(techBlock.drills, "tech_semaine_"+techniqueFocusKey);
   const materielPool = (techniqueFocusKey === "technique_roulis" || techniqueFocusKey === "technique_chiens")
     ? MATERIEL_ROULIS
-    : MATERIEL;
+    : techniqueFocusKey === "technique_jambes"
+      ? [""] // matériel déjà dans les lignes (planche / palmes)
+      : MATERIEL;
   const materiel = pick(materielPool, "materiel");
   lignes.push(`-${techPicked.distance}m ${techBlock.label.toLowerCase()}${materiel}`);
   techPicked.lines.forEach(l => lignes.push("  " + l));
@@ -489,7 +526,9 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const totalFinal = subtotal + finClean;
   lignes.push(pick(FINS_SEMAINE, "fin")(finClean));
 
-  const body = isBeginner ? clarifyBeginnerSession(lignes) : lignes;
+  // Départ / fin : (Zx) → (Zx @…) si Premium + allures ; corps déjà taggé via paceTag
+  const withPace = annotateBareZones(lignes, ref100Seconds, ref400Seconds);
+  const body = isBeginner ? clarifyBeginnerSession(withPace) : withPace;
   const header = `S${numSemaine}.${indexSeance} : ${totalFinal}m`;
   return { text: header + "\n" + body.join("\n"), total: totalFinal, zone, role: objectifKey };
 }
@@ -507,7 +546,7 @@ function genererSemaine(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine,
   const blocs = [];
   let totalReel = 0;
   for(let i=1;i<=nbSeances;i++){
-    const focus = focusCycle[(i-1) % focusCycle.length];
+    const focus = focusCycle[(numSemaine - 1 + i - 1) % focusCycle.length];
     const res = genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, i, focus, ref100Seconds, ref400Seconds, u, null, volumeTier, null, null, weekScale);
     blocs.push(res.text);
     totalReel += res.total;
@@ -546,7 +585,8 @@ export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeanc
   const sessions = [];
   let totalReel = 0;
   for (let i = 1; i <= nbSeances; i++) {
-    const focus = focusCycle[(i - 1) % focusCycle.length];
+    // Rotation sur semaine + séance → tout le cycle apparaît même à 2–3×/sem
+    const focus = focusCycle[(numSemaine - 1 + i - 1) % focusCycle.length];
     const role = sessionRoles && sessionRoles[i - 1] ? sessionRoles[i - 1] : null;
     const obj = role?.objectif || objectifKey;
     const zone = role?.zone || null;
