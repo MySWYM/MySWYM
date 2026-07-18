@@ -32,7 +32,7 @@ function FontLoader() {
   return null;
 }
 
-function useIsMobile(bp = 760) {
+function useIsMobile(bp = 768) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
   useEffect(() => {
     const fn = () => setMobile(window.innerWidth < bp);

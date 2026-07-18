@@ -45,7 +45,7 @@ export default function Footer({ aboveBottomNav = false }) {
         borderTop: "1px solid rgba(255, 255, 255, 0.06)",
         padding: isMobile ? "32px 20px" : "36px 24px",
         marginBottom: aboveBottomNav
-          ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))"
+          ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + var(--nav-lift, 0px))"
           : undefined,
       }}
     >

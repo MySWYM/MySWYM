@@ -44,7 +44,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             zIndex: 250,
             padding: 16,
             paddingBottom: aboveBottomNav
-              ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 16px)"
+              ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + var(--nav-lift, 0px) + 16px)"
               : "calc(16px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))",
             alignItems: "center",
             justifyContent: "flex-end",

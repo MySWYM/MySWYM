@@ -86,6 +86,7 @@ const css = `
     --app-pad-x: 16px;
     --app-max: 100%;
     --sheet-max: 100%;
+    --nav-lift: 0px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; }
@@ -121,7 +122,7 @@ const css = `
   button:active { transform: scale(0.97); transition: transform 0.1s; }
   input, textarea { -webkit-appearance: none; font-size: 16px; }
 
-  /* Mobile-first app column */
+  /* Mobile-first app column — inchangé sur téléphone */
   .app-shell {
     width: 100%;
     max-width: var(--app-max);
@@ -138,6 +139,18 @@ const css = `
     padding-left: var(--app-pad-x);
     padding-right: var(--app-pad-x);
   }
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid ${G.greyLight};
+    padding-bottom: var(--safe-bottom);
+  }
   .bottom-nav-inner {
     width: 100%;
     max-width: var(--app-max);
@@ -149,13 +162,13 @@ const css = `
     z-index: 300;
     left: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
     right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
-    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
+    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab {
     position: fixed;
     z-index: 150;
     right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
-    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
+    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab--bare {
     bottom: calc(16px + var(--safe-bottom));
@@ -188,13 +201,31 @@ const css = `
     padding-right: var(--app-pad-x);
   }
   .h-scroll::-webkit-scrollbar { display: none; }
+  .myswym-app {
+    min-height: 100dvh;
+    background: ${G.bg};
+  }
+  .sticky-app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
 
+  /* Tablette : même UX téléphone, colonne centrée + nav flottante */
   @media (min-width: 640px) {
     :root {
       --app-pad-x: 24px;
       --app-max: 480px;
       --sheet-max: 440px;
       --bottom-nav-h: 68px;
+      --nav-lift: 14px;
+    }
+    body {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(142,179,255,0.22), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(142,179,255,0.10), transparent 50%),
+        ${G.bg};
+      background-attachment: fixed;
     }
     .sheet-overlay {
       justify-content: center;
@@ -205,21 +236,58 @@ const css = `
       border-radius: 24px !important;
       max-height: min(88vh, 720px);
       overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(25,28,30,0.22);
+    }
+    .bottom-nav {
+      left: 50%;
+      right: auto;
+      width: min(var(--app-max), calc(100vw - 32px));
+      transform: translateX(-50%);
+      bottom: var(--nav-lift);
+      border-radius: 22px;
+      border: 1px solid rgba(142,179,255,0.18);
+      border-top: 1px solid rgba(142,179,255,0.18);
+      box-shadow: 0 12px 40px rgba(53,93,163,0.18);
+      padding-bottom: 0;
+      overflow: hidden;
+    }
+    .myswym-app {
+      background: transparent;
     }
   }
+
+  @media (min-width: 768px) {
+    :root {
+      --app-max: 520px;
+      --sheet-max: 460px;
+      --app-pad-x: 26px;
+    }
+  }
+
   @media (min-width: 900px) {
     :root {
       --app-pad-x: 28px;
       --app-max: 560px;
       --sheet-max: 480px;
+      --nav-lift: 18px;
     }
   }
+
   @media (min-width: 1200px) {
     :root {
       --app-max: 600px;
       --app-pad-x: 32px;
+      --sheet-max: 500px;
     }
   }
+
+  /* Souris / trackpad uniquement — ne change pas le feeling tactile */
+  @media (hover: hover) and (pointer: fine) {
+    button:active { transform: none; }
+    .bottom-nav button:hover { opacity: 0.88; }
+    .app-shell button:hover { filter: brightness(0.98); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .fade-up, .fade-up-1, .fade-up-2, .fade-up-3, .scale-in, .swimmer, .badge-pop, .toast-in {
       animation: none !important;
@@ -1689,7 +1757,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   ];
 
   return (
-    <div style={{ minHeight: "100dvh", background: G.bg, paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 24px)" }}>
+    <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
       <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
       <div style={{ padding: "48px 0 24px", textAlign: "center" }}>
@@ -1839,12 +1907,7 @@ const BottomNav = ({ active, onChange, newBadge }) => {
     { id: "profile", Icon: User,      label: "Profil" },
   ];
   return (
-    <div style={{
-      position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
-      background: "rgba(255,255,255,0.94)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-      borderTop: `1px solid ${G.greyLight}`,
-      paddingBottom: "var(--safe-bottom)",
-    }}>
+    <div className="bottom-nav">
       <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "6px 0 8px" }} aria-label="Navigation principale">
         {tabs.map(t => {
           const isActive = active === t.id;
@@ -3999,7 +4062,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
     : 0;
 
   return (
-    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 24px)", minHeight: "100dvh" }}>
+    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
       {/* ── Header sticky ── */}
       <div style={{
         position: "sticky", top: 0, zIndex: 30,
@@ -4203,7 +4266,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
   const planFinished = stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
 
   return (
-    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 32px)", background: G.bg, minHeight: "100dvh" }}>
+    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", background: "transparent", minHeight: "100dvh" }}>
 
       {/* ── Top App Bar ── */}
       <header style={{
@@ -7859,17 +7922,19 @@ export default function App() {
   return (
     <>
       <style>{css}</style><FontLoader />
-      <div style={{ minHeight: "100vh", background: G.bg }}>
+      <div className="myswym-app">
         {/* Bandeau persistant pour les utilisateurs anonymes : nudge vers la création de compte
             sans bloquer l'usage de l'app. Le plan est déjà sauvegardé localement. */}
         {!user && plans.length > 0 && (
-          <div style={{ position: "sticky", top: 0, zIndex: 50, background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 2px 12px rgba(0,87,255,0.25)" }}>
+          <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
             <span style={{ flex: 1, lineHeight: 1.3 }}>
               Sauvegarde ton plan pour le retrouver sur tous tes appareils
             </span>
             <button onClick={() => { authOpenedFromUrlRef.current = false; openAuth("register"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
               Créer mon compte
             </button>
+            </div>
           </div>
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
