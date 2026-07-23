@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator } from "./lib/swim-plan-bridge.js";
+import {
+  appZoneMultForT100,
+  calcDistanceProjection,
+  maxPaceGainFromT100,
+  projectedPaceAtWeek,
+} from "./lib/swim-pace.js";
 
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
@@ -619,16 +625,104 @@ const checkBadges = (stats) => {
   return e;
 };
 
-const adjustPlan = (plan, weekIndex, rating) => {
-  const factor = rating === "easy" ? 1.12 : rating === "hard" ? 0.88 : 1.0;
-  return {
-    ...plan,
-    weeks: plan.weeks.map((w, i) => {
-      if (i === weekIndex) return { ...w, feedback: rating };
-      if (i < weekIndex) return w;
-      return { ...w, sessions: w.sessions.map(s => ({ ...s, distance: `${Math.round(parseInt(s.distance) * factor / 50) * 50}m` })) };
-    }),
-  };
+// Feedback hebdo : multiplicateur cumulé plafonné (évite ×1.12^n sans borne vs règle +10 %/sem.)
+const VOLUME_ADJ_MIN = 0.7;
+const VOLUME_ADJ_MAX = 1.3;
+const VOLUME_ADJ_EASY = 1.12;
+const VOLUME_ADJ_HARD = 0.88;
+const clampVolumeAdj = (v) => Math.min(VOLUME_ADJ_MAX, Math.max(VOLUME_ADJ_MIN, v));
+
+/** Scale les distances dans une ligne de détail (N×Xm, pyramides, Xm) sans double-comptage. */
+const scaleDetailLineMeters = (line, ratio) => {
+  if (!ratio || ratio === 1) return line;
+  const snap = (m) => Math.max(25, Math.round(Number(m) * ratio / 25) * 25);
+  const held = [];
+  let out = String(line).replace(/(\d+)\s*([×x])\s*(\d+)\s*m/g, (_, n, x, dist) => {
+    const tok = `\0${held.length}\0`;
+    held.push(`${n}${x}${snap(dist)}m`);
+    return tok;
+  });
+  out = out.replace(/(\d+(?:\s*[–\-]\s*\d+)+)\s*m/g, (_, seq) => {
+    const tok = `\0${held.length}\0`;
+    const scaled = seq.split(/([–\-])/).map((p) => (/[–\-]/.test(p) ? p : String(snap(parseInt(p, 10))))).join("");
+    held.push(`${scaled}m`);
+    return tok;
+  });
+  out = out.replace(/\b(\d+)\s*m\b/g, (_, d) => `${snap(d)}m`);
+  return out.replace(/\0(\d+)\0/g, (_, idx) => held[Number(idx)]);
+};
+
+/** Patch volume séance : distance + duration + details (total = somme des blocs). */
+const scaleSessionVolume = (s, factor) => {
+  if (!factor || factor === 1) return s;
+  const oldD = parseInt(s.distance, 10) || 0;
+  const details = (s.details || []).map((line) => scaleDetailLineMeters(line, factor));
+  const sum = calcSessionDistance(details);
+  const dist = sum > 0 ? sum : Math.round(oldD * factor / 50) * 50;
+  const durBase = s.duration || Math.max(40, Math.round((dist || oldD) / 35));
+  const duration = Math.max(20, Math.round(durBase * (oldD > 0 ? dist / oldD : factor) / 5) * 5);
+  return { ...s, details, distance: `${dist}m`, duration };
+};
+
+const phaseListForAdjust = (profile, plan) => {
+  const rawWeeks = plan.totalRealWeeks || plan.weeks.length;
+  const n = plan.weeks.length;
+  const goal = profile.goal;
+  const full = isProgressionGoal(goal)
+    ? buildProgressionPhases().slice(0, rawWeeks)
+    : isWellnessGoal(goal)
+      ? buildWellnessPhases(rawWeeks)
+      : buildPlanPhases(rawWeeks);
+  return full.slice(0, n);
+};
+
+/**
+ * Applique le feedback easy/ok/hard aux semaines futures.
+ * - volumeAdj cumulé plafonné [0.70, 1.30]
+ * - Coach : régénère les semaines futures vierges (details cohérents)
+ * - Legacy / échec regen : scale distance+duration+details
+ * Ne touche jamais une semaine déjà commencée (completed/skipped/feedback).
+ */
+const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true) => {
+  const step = rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1;
+  const prevAdj = plan.volumeAdj ?? 1;
+  const nextAdj = step === 1 ? prevAdj : clampVolumeAdj(prevAdj * step);
+  const applyFactor = prevAdj > 0 ? nextAdj / prevAdj : 1;
+
+  const weeksWithFeedback = plan.weeks.map((w, i) =>
+    (i === weekIndex ? { ...w, feedback: rating } : w),
+  );
+
+  let nextWeeks = weeksWithFeedback;
+
+  if (applyFactor !== 1 && profile && shouldUseCoachGenerator(profile.goal)) {
+    try {
+      const phaseList = phaseListForAdjust(profile, plan);
+      const fresh = buildCoachPlanWeeks(
+        { ...profile, volumeAdj: nextAdj },
+        phaseList,
+        premium,
+        TIPS,
+        FREE_FREQ_LIMIT,
+      );
+      nextWeeks = weeksWithFeedback.map((w, i) => {
+        if (i <= weekIndex || shouldPreserveWeek(w)) return w;
+        return fresh[i] ?? w;
+      });
+    } catch {
+      nextWeeks = weeksWithFeedback.map((w, i) => {
+        if (i <= weekIndex || shouldPreserveWeek(w)) return w;
+        return { ...w, sessions: w.sessions.map((s) => scaleSessionVolume(s, applyFactor)) };
+      });
+    }
+  } else if (applyFactor !== 1) {
+    nextWeeks = weeksWithFeedback.map((w, i) => {
+      if (i <= weekIndex || shouldPreserveWeek(w)) return w;
+      return { ...w, sessions: w.sessions.map((s) => scaleSessionVolume(s, applyFactor)) };
+    });
+  }
+
+  return { ...plan, volumeAdj: nextAdj, weeks: nextWeeks };
 };
 
 // ── SHARE CARD (Canvas) ────────────────────────────────────────────────────
@@ -673,7 +767,7 @@ const createShareCanvas = (session, goalLabel) => {
     ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 40px sans-serif"; ctx.fillText(s.value, x + 20, 734);
   });
   if (goalLabel) { ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.font = "400 26px sans-serif"; ctx.fillText(`Objectif : ${goalLabel}`, 80, 854); }
-  ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "400 22px sans-serif"; ctx.fillText("myswym.vercel.app", 80, 1016);
+  ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "400 22px sans-serif"; ctx.fillText("myswym.app", 80, 1016);
   return canvas;
 };
 
@@ -718,11 +812,12 @@ const StatPill = ({ icon: Icon, value, label, color, bg }) => (
 );
 
 // ── PACE ZONES CARD ─────────────────────────────────────────────────────
+/** Labels UI — les mults réels viennent de appZoneMultForT100(T100). */
 const ZONE_DEFS = [
   {
     zone: "Zone 1–2",
     label: "Facile — Longue durée",
-    mult: 1.35,
+    key: "easy",
     color: "#34C759",
     bg: "#34C75914",
     desc: "Tu pourrais parler pendant que tu nages. C'est l'allure de base — confortable, régulière. C'est là que tu construis ton moteur.",
@@ -731,16 +826,16 @@ const ZONE_DEFS = [
   {
     zone: "Zone 3–4",
     label: "Allure seuil",
-    mult: 1.08,
+    key: "threshold",
     color: "#FF9F0A",
     bg: "#FF9F0A14",
-    desc: "Effort soutenu — tu peux tenir cette allure sur 10–20 min mais pas indéfiniment. C'est ton allure de compétition sur 400–1500m.",
+    desc: "Effort soutenu — tu peux tenir cette allure sur 10–20 min mais pas indéfiniment. C'est ton allure de compétition sur distances moyennes.",
     tip: "Améliore ton endurance rapidement",
   },
   {
     zone: "Zone 5–6",
     label: "Sprint",
-    mult: 0.95,
+    key: "sprint",
     color: "#FF3B30",
     bg: "#FF3B3014",
     desc: "Effort maximal sur de courtes distances (25–50m). Tu dois récupérer complètement entre chaque sprint. Développe ta puissance.",
@@ -748,19 +843,9 @@ const ZONE_DEFS = [
   },
 ];
 
-// ── PROJECTION CURVE (Performance only) ──────────────────────────────────
-// Loi de puissance natation : T(d) = a * d^e
-// Si 100m ET 400m connus : e = ln(T400/T100) / ln(4) — sinon e = 1.06 (valeur typique)
-function calcProjection(pace100, pace400 = null) {
-  if (!pace100) return null;
-  const e = pace400
-    ? Math.log(pace400 / pace100) / Math.log(400 / 100)
-    : 1.065; // valeur standard pour nageurs entraînés
-  // Clamp exponent in realistic range
-  const exp = Math.min(Math.max(e, 1.02), 1.14);
-  const a   = pace100 / Math.pow(100, exp);
-  const predict = (d) => a * Math.pow(d, exp);
-  return { exp, predict };
+// ── PROJECTION DISTANCE (loi de puissance, T100 seul) ───────────────────
+function calcProjection(pace100) {
+  return calcDistanceProjection(pace100);
 }
 
 function fmtTime(totalSecs) {
@@ -771,16 +856,6 @@ function fmtTime(totalSecs) {
   return `${m}'${String(s).padStart(2,'0')}"`;
 }
 
-/** Gain max relatif sur un plan (temps ↓) selon le niveau. */
-function maxPaceGainForLevel(level) {
-  const l = (level || "").toLowerCase();
-  if (l === "découverte" || l === "beginner") return 0.10;
-  if (l === "régulier" || l === "regulier") return 0.07;
-  if (l === "sportif" || l === "intermediate") return 0.05;
-  if (l === "performance" || l === "advanced") return 0.035;
-  return 0.06;
-}
-
 function getCurrentWeekNumber(plan) {
   if (!plan?.weeks?.length) return 1;
   const idx = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
@@ -788,26 +863,17 @@ function getCurrentWeekNumber(plan) {
   return plan.weeks[idx]?.number || idx + 1;
 }
 
-/** Projection indicative : amélioration asymptotique sur les semaines du plan. */
-function projectedPaceAtWeek(pace0, week, totalWeeks, maxGain) {
-  if (!pace0 || totalWeeks <= 0) return pace0;
-  const w = Math.max(0, Math.min(week, totalWeeks));
-  const progress = 1 - Math.exp((-3 * w) / totalWeeks);
-  return pace0 * (1 - maxGain * progress);
-}
-
-function appendPaceHistory(profile, { pace100, pace400, week, source = "manual" }) {
+function appendPaceHistory(profile, { pace100, week, source = "manual" }) {
   if (!pace100) return profile;
   const hist = Array.isArray(profile.paceHistory) ? [...profile.paceHistory] : [];
   const entry = {
     week: week || 1,
     pace100,
-    pace400: pace400 ?? null,
     at: new Date().toISOString(),
     source,
   };
   const last = hist[hist.length - 1];
-  if (last && last.pace100 === entry.pace100 && (last.pace400 ?? null) === entry.pace400 && last.week === entry.week) {
+  if (last && last.pace100 === entry.pace100 && last.week === entry.week) {
     return profile;
   }
   hist.push(entry);
@@ -815,12 +881,11 @@ function appendPaceHistory(profile, { pace100, pace400, week, source = "manual" 
 }
 
 const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
-  const [metric, setMetric] = useState("100");
   const pace100 = profile?.pace100 ?? null;
-  const pace400 = profile?.pace400 ?? null;
   const totalWeeks = plan?.weeks?.length || 0;
   const currentWeek = getCurrentWeekNumber(plan);
-  const maxGain = maxPaceGainForLevel(profile?.level);
+  // Rendements décroissants : gain plafonné selon le T100 de départ
+  const maxGain = maxPaceGainFromT100(pace100);
   const history = Array.isArray(profile?.paceHistory) ? profile.paceHistory : [];
 
   if (!isPremium) {
@@ -854,20 +919,17 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
         </div>
         <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: 0 }}>
           {!pace100
-            ? "Renseigne ton allure 100 m ci-dessous pour voir la courbe de progression possible."
+            ? "Renseigne ton temps 100 m (T100) ci-dessous pour voir la courbe de progression possible."
             : "Ton plan est trop court pour afficher une courbe."}
         </p>
       </div>
     );
   }
 
-  const use400 = metric === "400" && pace400;
-  const basePace = use400 ? pace400 : pace100;
-  const firstHist = history.find(h => (use400 ? h.pace400 : h.pace100));
-  const startPace = use400
-    ? (firstHist?.pace400 || pace400)
-    : (firstHist?.pace100 || pace100);
+  const firstHist = history.find(h => h.pace100);
+  const startPace = firstHist?.pace100 || pace100;
   const startWeek = firstHist?.week || 1;
+  const basePace = pace100;
 
   const weeks = Array.from({ length: totalWeeks }, (_, i) => i + 1);
   const projected = weeks.map(w => {
@@ -878,12 +940,10 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
 
   const actualByWeek = new Map();
   history.forEach(h => {
-    const v = use400 ? h.pace400 : h.pace100;
-    if (!v || !h.week) return;
+    if (!h.pace100 || !h.week) return;
     const prev = actualByWeek.get(h.week);
-    if (prev == null || v < prev) actualByWeek.set(h.week, v);
+    if (prev == null || h.pace100 < prev) actualByWeek.set(h.week, h.pace100);
   });
-  // Point courant si pas encore en historique
   if (!actualByWeek.has(currentWeek)) {
     actualByWeek.set(currentWeek, basePace);
   }
@@ -897,44 +957,22 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
   const projPts = weeks.map(w => `${xOf(w).toFixed(1)},${yOf(projected[w - 1]).toFixed(1)}`).join(" ");
   const endPace = projected[projected.length - 1];
   const gainSec = Math.max(0, Math.round(startPace - endPace));
-  const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 100) : 0;
+  const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 1000) / 10 : 0;
 
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <TrendingUp size={16} color={G.blue} />
-          </div>
-          <div>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
-            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection sur {totalWeeks} semaines</p>
-          </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <TrendingUp size={16} color={G.blue} />
         </div>
-        {pace400 ? (
-          <div style={{ display: "flex", background: G.greyXLight, borderRadius: 10, padding: 3, gap: 2 }}>
-            {["100", "400"].map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMetric(m)}
-                style={{
-                  border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer",
-                  fontSize: 12, fontWeight: 700, minHeight: 32,
-                  background: metric === m ? G.white : "transparent",
-                  color: metric === m ? G.blue : G.grey,
-                  boxShadow: metric === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                }}
-              >
-                {m} m
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <div>
+          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>T100 — projection sur {totalWeeks} semaines</p>
+        </div>
       </div>
 
       <div style={{ background: G.greyXLight, borderRadius: 12, padding: "12px 10px 8px", marginBottom: 14 }}>
-        <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }} aria-label="Courbe d'évolution des temps">
+        <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }} aria-label="Courbe d'évolution du T100">
           <defs>
             <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={G.blue} stopOpacity="0.20" />
@@ -946,7 +984,6 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           ))}
           <polygon points={`${xOf(1).toFixed(1)},${SVG_H} ${projPts} ${xOf(totalWeeks).toFixed(1)},${SVG_H}`} fill="url(#evolGrad)" />
           <polyline points={projPts} fill="none" stroke={G.blue} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Semaine actuelle */}
           <line x1={xOf(currentWeek)} y1={0} x2={xOf(currentWeek)} y2={SVG_H} stroke={G.mint} strokeWidth="1.5" strokeDasharray="4,3" />
           {[...actualByWeek.entries()].map(([w, t]) => (
             <circle key={w} cx={xOf(w)} cy={yOf(t)} r="4.5" fill={G.mint} stroke={G.white} strokeWidth="2" />
@@ -973,25 +1010,24 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
       </div>
 
       <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.5 }}>
-        Projection indicative (~{gainPct}% / −{gainSec}s sur {use400 ? "400" : "100"} m). Les points verts = temps enregistrés. Mets à jour ton allure après les semaines test pour affiner la courbe.
+        Projection indicative (~{gainPct}% / −{gainSec}s sur 100 m). Plus ton T100 est déjà rapide, plus le gain estimé est faible (rendements décroissants). Mets à jour ton T100 après les semaines test.
       </p>
     </div>
   );
 };
 
-const PaceProjectionCard = ({ pace100, pace400 }) => {
+const PaceProjectionCard = ({ pace100 }) => {
   if (!pace100) return null;
-  const proj = calcProjection(pace100, pace400);
+  const proj = calcProjection(pace100);
   if (!proj) return null;
 
   const TARGETS = [
     { dist: 400,  label: "400 m",   color: "#0057FF" },
-    { dist: 1000, label: "1 000 m", color: "#7C3AED" },
+    { dist: 1000, label: "1 000 m", color: G.blue },
     { dist: 1500, label: "1 500 m", color: "#00C48C" },
     { dist: 3000, label: "3 000 m", color: "#FF9F0A" },
   ];
 
-  // Courbe SVG : de 100m à 3000m
   const SVG_W = 280, SVG_H = 90;
   const distMin = 100, distMax = 3200;
   const allPredicted = [100, 400, 1000, 1500, 3000].map(d => proj.predict(d));
@@ -1007,36 +1043,32 @@ const PaceProjectionCard = ({ pace100, pace400 }) => {
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <TrendingUp size={16} color="#7C3AED" />
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <TrendingUp size={16} color={G.blue} />
         </div>
         <div>
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
             Projection de performance
           </h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>
-            Estimation basée sur tes temps — loi de puissance
+            Estimation basée sur ton T100 — loi de puissance
           </p>
         </div>
       </div>
 
-      {/* Mini courbe SVG */}
       <div style={{ background: G.greyXLight, borderRadius: 12, padding: "12px 12px 8px", marginBottom: 16, overflow: "hidden" }}>
         <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }}>
-          {/* Grid lines */}
           {[0.25, 0.5, 0.75].map((f, i) => (
             <line key={i} x1={SVG_W * f} y1={0} x2={SVG_W * f} y2={SVG_H} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
           ))}
-          {/* Gradient fill */}
           <defs>
             <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.18"/>
-              <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.02"/>
+              <stop offset="0%" stopColor={G.blue} stopOpacity="0.18"/>
+              <stop offset="100%" stopColor={G.blue} stopOpacity="0.02"/>
             </linearGradient>
           </defs>
           <polygon points={`0,${SVG_H} ${pts} ${SVG_W},${SVG_H}`} fill="url(#projGrad)" />
-          <polyline points={pts} fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Dots at key distances */}
+          <polyline points={pts} fill="none" stroke={G.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           {TARGETS.map(t => (
             <circle key={t.dist} cx={xOf(t.dist)} cy={yOf(proj.predict(t.dist))} r="4" fill={t.color} />
           ))}
@@ -1048,20 +1080,16 @@ const PaceProjectionCard = ({ pace100, pace400 }) => {
         </div>
       </div>
 
-      {/* Predicted times */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {TARGETS.map(t => {
           const raw = proj.predict(t.dist);
           const pace = raw / (t.dist / 100);
           const paceStr = `${Math.floor(pace/60)}'${String(Math.round(pace%60)).padStart(2,'0')}"/100m`;
-          // If the user has the actual time for this distance, show it
-          const actual = t.dist === 100 ? pace100 : t.dist === 400 ? pace400 : null;
           return (
             <div key={t.dist} style={{ background: `${t.color}0D`, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.color}22` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginBottom: 4, letterSpacing: "0.04em" }}>{t.label}</div>
               <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
-                {actual ? fmtTime(actual) : fmtTime(Math.round(raw))}
-                {actual && <span style={{ fontSize: 10, color: G.mint, marginLeft: 4, fontWeight: 600 }}>réel</span>}
+                {fmtTime(Math.round(raw))}
               </div>
               <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{paceStr}</div>
             </div>
@@ -1070,49 +1098,44 @@ const PaceProjectionCard = ({ pace100, pace400 }) => {
       </div>
 
       <p style={{ fontSize: 11, color: G.greyMid, marginTop: 12, lineHeight: 1.5 }}>
-        Projection indicative — s'affine avec le temps quand tu ajoutes tes 400 m.
+        Projection indicative à partir de ton seul test de référence : le 100 m (T100).
       </p>
     </div>
   );
 };
 
-const PaceZonesCard = ({ pace100, pace400, onSave }) => {
+const PaceZonesCard = ({ pace100, onSave }) => {
   const [val100, setVal100] = useState(pace100 || null);
-  const [val400, setVal400] = useState(pace400 || null);
   const [saved,  setSaved]  = useState(false);
+  const zoneMult = appZoneMultForT100(val100);
 
   const handleSave = () => {
     if (!val100) return;
-    onSave(val100, val400);
+    onSave(val100);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
   const fmtZone = (s) => `${Math.floor(s/60)}'${String(Math.round(s%60)).padStart(2,'0')}"/100m`;
-  const hasChange = val100 !== pace100 || val400 !== (pace400 || null);
+  const hasChange = val100 !== pace100;
 
   return (
     <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Gauge size={16} color={G.blue} />
         </div>
         <div>
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
-          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur tes temps personnels</p>
+          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton T100 (départ dans l&apos;eau)</p>
         </div>
       </div>
 
-      {/* Inputs */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-        <PaceInput label="100 m crawl" hint="ex : 1:45" placeholder="1:45"
+        <PaceInput label="100 m crawl (T100)" hint="ex : 1:45" placeholder="1:45"
           value={val100} onChange={setVal100} maxLen={3} minSec={45} maxSec={5*60} />
-        <PaceInput label="400 m crawl" hint="optionnel" placeholder="8:00"
-          value={val400} onChange={setVal400} maxLen={4} minSec={3*60} maxSec={20*60} />
       </div>
 
-      {/* Save button */}
       <button onClick={handleSave} disabled={!val100 || !hasChange} style={{
         width: "100%", padding: "13px", borderRadius: 12, border: "none",
         cursor: (val100 && hasChange) ? "pointer" : "not-allowed",
@@ -1123,11 +1146,10 @@ const PaceZonesCard = ({ pace100, pace400, onSave }) => {
         {saved ? <><Check size={14} /> Enregistré</> : "Enregistrer"}
       </button>
 
-      {/* Zone cards */}
       {val100 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {ZONE_DEFS.map((z, i) => {
-            const ps = Math.round(val100 * z.mult);
+            const ps = Math.round(val100 * zoneMult[z.key]);
             return (
               <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -1217,7 +1239,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
           </div>
 
           <div style={{ fontSize: 12, fontWeight: 700, color: G.greyMid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
-            Allure 100m crawl
+            Temps 100 m (T100)
           </div>
           <div style={{
             position: "relative", marginBottom: 6,
@@ -1237,7 +1259,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             </span>
           </div>
           <div style={{ fontSize: 11, color: G.greyMid, marginBottom: 16 }}>
-            Saisis ton temps pour adapter les allures de tes séances
+            Départ dans l&apos;eau (pas de plongeon) — adapte les allures de tes séances
           </div>
         </button>
 
@@ -1274,7 +1296,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
       {/* Allure 100m */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-          Allure 100m crawl
+          Temps 100 m (T100)
         </div>
         {stravaBestPace && (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1312,8 +1334,8 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
       </div>
       <div style={{ fontSize: 11, color: pace100 ? G.blue : G.greyMid, marginBottom: 16, display: "flex", alignItems: "center", gap: 4 }}>
         {pace100
-          ? <><Gauge size={11} color={G.blue} /> Les allures de tes séances seront recalculées sur cette base</>
-          : "Optionnel — si renseigné, les allures s'adaptent à ton niveau réel"}
+          ? <><Gauge size={11} color={G.blue} /> Départ dans l&apos;eau — les allures seront recalculées sur ce T100</>
+          : "Optionnel — test 100 m départ dans l'eau (pas de plongeon)"}
       </div>
 
       {hasChange && (
@@ -2444,7 +2466,7 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
   </div>
 );
 
-// ── STEP 4 : TEMPS AU 100m ET 400m (Performance uniquement) ──────────────
+// ── STEP 4 : TEMPS AU 100m (T100) — Premium ─────────────────────────────
 // Helper partagé : parse "m:ss" ou "mm:ss" en secondes
 function parsePaceInput(raw, maxSecs = 9 * 60) {
   const digits = raw.replace(/\D/g, "").slice(0, 4);
@@ -2512,11 +2534,12 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
   );
 }
 
-const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onBack, total = 6 }) => {
+const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
+  const zoneMult = appZoneMultForT100(value);
   const ZONES = [
-    { label: "Endurance",  mult: 1.35, color: "#34C759" },
-    { label: "Seuil",      mult: 1.08, color: "#FF9F0A" },
-    { label: "Sprint",     mult: 0.95, color: "#FF3B30" },
+    { label: "Endurance",  key: "easy",      color: "#34C759" },
+    { label: "Seuil",      key: "threshold", color: "#FF9F0A" },
+    { label: "Sprint",     key: "sprint",    color: "#FF3B30" },
   ];
 
   const fmtZone = (secs) => `${Math.floor(secs/60)}'${String(Math.round(secs%60)).padStart(2,'0')}"/100m`;
@@ -2525,16 +2548,24 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
       <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        Tes allures cibles
+        Ton temps sur 100 m
       </h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
-        Premium : on calcule tes zones d'intensité. Chaque séance affichera l'allure exacte à viser.
+      <p style={{ color: G.grey, fontSize: 15, marginBottom: 12, lineHeight: 1.5 }}>
+        Un seul test de référence (T100) suffit. On en déduit tes zones d&apos;intensité pour chaque séance.
       </p>
 
-      {/* Inputs */}
+      <div style={{
+        background: G.blueLight, borderRadius: 14, padding: "12px 14px", marginBottom: 18,
+        border: `1px solid ${G.blueMid}55`,
+      }}>
+        <p style={{ fontSize: 13, color: G.blueDeep, lineHeight: 1.5, margin: 0, fontWeight: 600 }}>
+          Comment faire le test : nage 100 m crawl à fond en départ dans l&apos;eau (pas de plongeon depuis le plot). Chronomètre dès la poussée au mur.
+        </p>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
         <PaceInput
-          label="100 m crawl"
+          label="100 m crawl (T100)"
           hint="ex : 1:45"
           placeholder="1:45"
           value={value}
@@ -2543,23 +2574,12 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
           minSec={45}
           maxSec={5 * 60}
         />
-        <PaceInput
-          label="400 m crawl"
-          hint="optionnel — ex : 8:00"
-          placeholder="8:00"
-          value={value400}
-          onChange={onChange400}
-          maxLen={4}
-          minSec={3 * 60}
-          maxSec={20 * 60}
-        />
       </div>
 
-      {/* Zone preview */}
       {value && (
         <div style={{ background: G.greyXLight, borderRadius: 14, padding: "14px 16px", marginBottom: 20 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>
-            Tes zones d'intensité
+            Tes zones d&apos;intensité
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ZONES.map((z, i) => (
@@ -2567,17 +2587,20 @@ const Step_Pace = ({ value, value400, onChange, onChange400, onNext, onSkip, onB
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: G.ink, flex: 1 }}>{z.label}</span>
                 <span style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 700, color: z.color }}>
-                  {fmtZone(Math.round(value * z.mult))}
+                  {fmtZone(Math.round(value * zoneMult[z.key]))}
                 </span>
               </div>
             ))}
           </div>
+          <p style={{ fontSize: 11, color: G.greyMid, marginTop: 10, marginBottom: 0, lineHeight: 1.4 }}>
+            Plus ton T100 est rapide, plus les allures de zone sont un peu plus tolérantes (moins dures).
+          </p>
         </div>
       )}
 
-      <Btn variant="blue" onClick={onNext} disabled={!value}>Utiliser ces temps</Btn>
+      <Btn variant="blue" onClick={onNext} disabled={!value}>Utiliser ce temps</Btn>
       <button onClick={onSkip} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
-        Je ne connais pas mes temps
+        Je ne connais pas mon temps
       </button>
       <button onClick={onBack} style={{ width: "100%", marginTop: 8, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>
         Retour
@@ -2795,7 +2818,10 @@ const BadgeToast = ({ badgeId }) => {
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 2;
-const PLAN_VERSION = 24; // v24 = jambes = éducatif + battements (pas jambes→jambes)
+const PLAN_VERSION = 25; // v25 = T100 seul, zones adaptatives, projection rendements décroissants
+// Force regen volontaire pour UN bump précis (ex. v14, aucun user actif). Laisser false :
+// la migration merge toujours via mergePreservingProgress — ne jamais écraser la progression.
+const FORCE_PLAN_REGEN = false;
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
@@ -3959,7 +3985,7 @@ const COACH_MESSAGES = {
     "Semaine de compétition. Reste calme, fais confiance à ton travail. La préparation est terminée — il ne reste plus qu'à exécuter.",
   ],
   test: [
-    "Semaine chrono : note tes temps (100m / 400m). Pas de forçage — des chronos propres pour mesurer si tu progresses vraiment.",
+    "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Pas de forçage — un chrono propre pour mesurer si tu progresses vraiment.",
     "Compare avec le test précédent. Même 2–3 secondes de mieux, c'est une vraie évolution. Note-les quelque part.",
   ],
   wellness: [
@@ -4506,13 +4532,13 @@ const PACE = {
 };
 
 // ── Paces personnalisées ─────────────────────────────────────────────────
-// Set par generatePlan quand profile.pace100 est renseigné.
+// Set par generatePlan quand profile.pace100 (T100) est renseigné.
 // null = fallback sur le tableau PACE par niveau.
 let _pace100 = null;
 let _isPremium = false;
 
-// Facteurs de zone basés sur le meilleur 100m personnel
-const ZONE_MULT = { easy: 1.35, threshold: 1.08, sprint: 0.95 };
+// Facteurs de zone : recalculés via appZoneMultForT100(_pace100) — plus tolérants si T100 rapide
+let _zoneMult = { easy: 1.35, threshold: 1.08, sprint: 0.95 };
 
 // Formate des secondes en m'ss"
 const fmtS = s => `${Math.floor(s/60)}'${Math.round(s%60).toString().padStart(2,'0')}"`;
@@ -4523,7 +4549,7 @@ const di = (meters, lvl, zone = 'easy') => {
   const rest = zone === 'sprint' ? 90 : zone === 'threshold' ? 15 : 20;
   let secsPer100;
   if (_pace100 !== null) {
-    secsPer100 = _pace100 * (ZONE_MULT[zone] ?? 1.35);
+    secsPer100 = _pace100 * (_zoneMult[zone] ?? 1.35);
   } else {
     secsPer100 = PACE[zone][lvl];
   }
@@ -4569,177 +4595,8 @@ const isOpenWaterGoal = (g) => g?.startsWith("open_water") || g?.startsWith("eau
 const isTriathlonGoal = (g) => g?.startsWith("triathlon");
 const usePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
 
-// ── EAU LIBRE — banque réathlétisation S1–S3 (9 archétypes, signature coach) ──
-const OW_VOL = { découverte: 0.35, beginner: 0.55, régulier: 0.55, intermediate: 0.75, sportif: 0.75, advanced: 1, performance: 1 };
-const owVol = (level) => OW_VOL[level] ?? 0.75;
-const owRep = (n, level, min = 2) => Math.max(min, Math.round(n * (owVol(level) >= 1 ? 1 : owVol(level) >= 0.75 ? 0.8 : 0.6)));
-const owM = (m, level, P, floor = 100) => Math.max(floor, snap(Math.round(m * owVol(level) / P) * P, P));
-const owBeg = (level) => level === "découverte" || level === "beginner" || level === "régulier";
-const owTuba = (level) => getLvlIndex(level) >= 2;
-const ow50Int = (P, level, lvl) => owBeg(level)
-  ? `R${P <= 25 ? "25\"" : "30\""} — respiration 3 temps, nage propre`
-  : (_isPremium ? `${dep(P, lvl, "threshold")} — respiration 3 temps, nage appliquée` : `R20" — respiration 3 temps, nage appliquée`);
-const ow100Rest = (P, level) => owBeg(level) ? `R${P <= 25 ? "30\"" : "25\""}` : `R20"`;
-const owRAC = (m, level, P) => `${owM(m, level, P, P)}m au choix — souple, sans chrono`;
+// Banque confirmé (ex-OW_BASE_SESSIONS) : src/lib/swim-session-generator.js — branchée via swim-plan-bridge.
 
-const OW_BASE_SESSIONS = [
-  // S1.1 — Grand chien & roulis
-  (P, level) => {
-    const lvl = getLvlIndex(level), tuba = owTuba(level);
-    const w = owM(400, level, P), n50 = owRep(4, level), nMain = owRep(10, level, 4), rac = owM(200, level, P, P);
-    return {
-      type: "TECHNIQUE",
-      title: "Grand chien & roulis",
-      intensity: "Z1/Z2 — réathlétisation, nage appliquée sans forcer",
-      details: [
-        `Échauffement : ${w}m crawl/dos par ${P}m — Z1, alterne à chaque longueur`,
-        `${n50}×${P}m grand chien${tuba ? " + tuba frontal" : ""} — le plus lentement possible — R20" — un bras tendu devant, échange complet, sens la prise d'eau`,
-        tuba
-          ? `${n50}×${P}m palmes + tuba roulis — R20" — rotation du bassin, talons à la surface`
-          : `${n50}×${P}m palmes crawl — R20" — jambes actives, corps à plat`,
-        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl)} — garde la technique des éducatifs, sighting tous les 8 bras`,
-        `Retour au calme : ${rac}`,
-      ],
-    };
-  },
-  // S1.2 — Position & endurance 100m
-  (P, level) => {
-    const w = owM(400, level, P), n50 = owRep(4, level), n100 = owRep(6, level, 3), slow = owM(200, level, P), rac = owM(300, level, P, P);
-    return {
-      type: "ENDURANCE",
-      title: "Position & endurance 100m",
-      intensity: "Z2 — allure régulière, recherche de position dans l'eau",
-      details: [
-        `Échauffement : ${w}m crawl palmes — Z1, jambes actives, corps à plat`,
-        `${slow}m le plus lent possible — recherche de sensation, loin devant / loin derrière, teste différentes positions`,
-        `${n50}×${P}m palmes : ${P}m bras droit devant / gauche cuisse · ${P}m inversé — respiration latérale — R20"`,
-        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — Z2, allure régulière, respiration 3 temps`,
-        `Retour au calme : ${rac}`,
-      ],
-    };
-  },
-  // S1.3 — Sensibilité & continuité
-  (P, level) => {
-    const w1 = owM(200, level, P), w2 = owM(200, level, P), n50 = owRep(8, level, 4), cont = owM(400, level, P), palmes = owM(200, level, P), rac = owM(100, level, P, P);
-    return {
-      type: "RÉCUPÉRATION",
-      title: "Sensibilité & continuité",
-      intensity: "Z1/Z2 léger — efficacité et position, sans pression",
-      details: [
-        `Échauffement : ${w1}m crawl + ${w2}m dos — Z1`,
-        `${n50}×${P}m le moins de mouvements possible par ${P}m — R20" — concentre-toi sur la position, efficacité de traction, loin devant / loin derrière`,
-        `${cont}m crawl Z2 — sans pause, rythme régulier — tu dois tenir de bout en bout`,
-        `${palmes}m palmes : ${P}m ondulation sous l'eau / ${3*P}m crawl — R20" — sens l'ondulation, enchaîne en nage fluide`,
-        `Retour au calme : ${rac} relâché — Z1`,
-      ],
-    };
-  },
-  // S2.1 — DPS & progressif/dégressif
-  (P, level) => {
-    const lvl = getLvlIndex(level), w = owM(400, level, P), n50 = owRep(4, level), nMain = owRep(10, level, 4), rac = owM(300, level, P, P);
-    return {
-      type: "TECHNIQUE",
-      title: "DPS & progressif/dégressif",
-      intensity: "Z2 — modulation d'allure sans vitesse, nage appliquée",
-      details: [
-        `Échauffement : ${w}m crawl/dos par ${2*P}m — Z1`,
-        `${n50}×${P}m le moins de coups de bras possible sur ${P}m — R20" — compte tes bras, vise moins de cycles`,
-        `${n50}×${P}m progressif : 1 lent · 2 ↗ · 3 ↗ · 4 rapide — R20" — monte en puissance sur la série`,
-        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl)} — même technique qu'en éducatif`,
-        `${n50}×${P}m dégressif : 1 rapide · 2 ↘ · 3 ↘ · 4 lent — R20" — redescends progressivement`,
-        `Retour au calme : ${rac}`,
-      ],
-    };
-  },
-  // S2.2 — Endurance 100m & position palmes
-  (P, level) => {
-    const w = owM(400, level, P), n50 = owRep(4, level), n100 = owRep(8, level, 4), slow = owM(200, level, P), rac = owM(200, level, P, P);
-    return {
-      type: "ENDURANCE",
-      title: "Endurance 100m & position palmes",
-      intensity: "Z2 — fond aérobie, travail de position en échauffement",
-      details: [
-        `Échauffement : ${w}m crawl palmes — Z1`,
-        `${n50}×${P}m palmes : ${P}m bras droit devant / gauche cuisse · ${P}m inversé — respiration latérale — R20"`,
-        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — Z2, allure tenue du 1er au dernier 100m`,
-        `${slow}m le plus lent possible — recherche de sensation, relâche les épaules`,
-        `Retour au calme : ${rac}`,
-      ],
-    };
-  },
-  // S2.3 — Hypoxie intégrée
-  (P, level) => {
-    const w = owM(400, level, P), jambes = owM(200, level, P), n50 = owRep(6, level), n100 = owRep(6, level, 3), rac = owM(200, level, P, P);
-    const hyp50 = owBeg(level) ? `${P}m resp. 3 temps · ${P}m normal` : `${P}m grand chien · ${P}m normal`;
-    const hyp100 = owBeg(level)
-      ? "3 temps · 3 temps · 5 temps · 5 temps · 3 temps · 3 temps"
-      : "3 temps · 5 temps · 7 temps · 9 temps · 7 temps · 5 temps";
-    return {
-      type: "TECHNIQUE",
-      title: "Hypoxie intégrée",
-      intensity: "Z2 — contrôle respiratoire intégré au set, pas de sprint",
-      details: [
-        `Échauffement : ${w}m au choix — Z1, crawl ou dos`,
-        `${jambes}m jambes planche — battements mains en flèche, corps gainé`,
-        `${n50}×${2*P}m : ${hyp50} — R15" — le plus lentement possible sur l'éducatif`,
-        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — respiration par 100m : ${hyp100}`,
-        `Retour au calme : ${rac}`,
-      ],
-    };
-  },
-  // S3.1 — Volume 50m & hypoxie rotative
-  (P, level) => {
-    const lvl = getLvlIndex(level), tuba = owTuba(level), w = owM(400, level, P), n50 = owRep(5, level), nMain = owRep(12, level, 6), slow = owM(400, level, P);
-    const hypRot = owBeg(level) ? "3 temps · 3 temps · 5 temps · 5 temps" : "3 temps · 5 temps · 7 temps · 9 temps";
-    return {
-      type: "TECHNIQUE",
-      title: "Volume 50m & hypoxie rotative",
-      intensity: "Z2 — montée de volume, nage appliquée, épaule en confiance",
-      details: [
-        `Échauffement : ${w}m crawl/dos par ${P}m — Z1`,
-        `${n50}×${P}m${tuba ? " tuba lent" : ""} : ${P}m grand chien · ${P}m crawl normal — R20" — le plus lentement possible`,
-        tuba ? `${n50}×${P}m palmes + tuba roulis — R20" — rotation consciente` : `${n50}×${P}m palmes crawl — R20" — rotation du bassin`,
-        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl)} — respiration par 50m en rotation : ${hypRot}`,
-        `${slow}m le plus lent possible — recherche de sensation + récup — relâche tout`,
-      ],
-    };
-  },
-  // S3.2 — Endurance 100m & travail sous l'eau
-  (P, level) => {
-    const lvl = getLvlIndex(level), tuba = owTuba(level), w = owM(400, level, P), n25 = owRep(8, level, 4), n100 = owRep(10, level, 5), rac = owM(200, level, P, P);
-    const edu = tuba ? `2×${2*P}m catch-up drill + tuba — le plus lentement possible — R20" — un bras attend l'autre` : `2×${2*P}m catch-up drill — R20" — un bras attend l'autre, nage lente`;
-    return {
-      type: "ENDURANCE",
-      title: "Endurance 100m & travail sous l'eau",
-      intensity: "Z2 — fond aérobie, volume en hausse sans monter l'intensité",
-      details: [
-        `Échauffement : ${w}m crawl palmes — Z1`,
-        edu,
-        `${n25}×${P}m palmes : 1× crawl sous l'eau · 1× godille pied en avant sur le dos — R20" — alterne les ${P}m`,
-        `${n100}×${2*P}m crawl — ${ow100Rest(P, level)} — Z2, allure régulière — note si tu tiens le même rythme sur toutes les reps`,
-        `Retour au calme : ${rac}`,
-      ],
-    };
-  },
-  // S3.3 — Reps 150m & ondulation palmes
-  (P, level) => {
-    const lvl = getLvlIndex(level), w = owM(400, level, P), n50 = owRep(8, level, 4), n150 = owRep(4, level, 2), n100 = owRep(4, level, 2), slow = owM(200, level, P), rep150 = Math.min(6*P, 150);
-    const hyp150 = owBeg(level) ? "3 temps · 3 temps · 5 temps · 3 temps · 3 temps" : "3 temps · 5 temps · 7 temps · 5 temps · 3 temps";
-    const palmesDep = owBeg(level) ? `R${P <= 25 ? "30\"" : "25\""}` : (_isPremium ? dep(2*P, lvl, "threshold") : `R25"`);
-    return {
-      type: "ENDURANCE",
-      title: "Reps 150m & ondulation palmes",
-      intensity: "Z2 — reps longues, respiration et ondulation, gestion d'allure",
-      details: [
-        `Échauffement : ${w}m au choix — Z1`,
-        `${n50}×${2*P}m : ${P}m grand chien · ${P}m crawl normal — R15" — le plus lentement possible sur l'éducatif`,
-        `${n150}×${rep150}m crawl — R25" — respiration par 25m : ${hyp150} — même allure malgré le changement respiratoire`,
-        `${n100}×${2*P}m palmes : ${P}m ondulation sous l'eau / ${3*P}m crawl — ${palmesDep} — sens l'ondulation, enchaîne en nage fluide`,
-        `${slow}m le plus lent possible — souple + sensation`,
-      ],
-    };
-  },
-];
 
 const SESSION_TEMPLATES = {
 
@@ -6638,7 +6495,7 @@ const TIPS = {
   volume:      "Semaine de charge maximale. Mange +15 % de glucides, vise 8 h de sommeil — c'est pendant la récupération que le corps s'adapte.",
   affutage:    "Réduis le volume de 40 % mais maintiens 2–3 accélérations par séance pour garder la réactivité musculaire.",
   competition: "Dernière semaine : nage légère, visualise chaque virage et chaque poussée. Ton entraînement est fait — fais confiance au travail accompli.",
-  test:        "Semaine chrono : note tes temps (100m / 400m). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
+  test:        "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
 };
 
 // Ratios par niveau — découverte : fun + endurance légère, pas de seuil/vitesse au début
@@ -6705,7 +6562,7 @@ const PHASE_PATTERNS = {
   },
 };
 
-// Eau libre 5k/10k — patterns crawl (S1–S3 = banque OW_BASE_SESSIONS en phase base)
+// Eau libre 5k/10k — patterns crawl (legacy ; contenu confirmé = banque dans swim-session-generator)
 const OPEN_WATER_PATTERNS = {
   régulier: PHASE_PATTERNS.régulier,
   beginner: PHASE_PATTERNS.régulier,
@@ -6899,6 +6756,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
 
   // Active les paces personnalisées pour toute la génération du plan
   _pace100 = profile.pace100 && profile.pace100 > 0 ? profile.pace100 : null;
+  _zoneMult = appZoneMultForT100(_pace100);
   _isPremium = !!isPremium;
   const wellness = isWellnessGoal(goal);
   const progression = isProgressionGoal(goal);
@@ -6919,20 +6777,15 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   const f = Math.min(isPremium ? freq : Math.min(freq ?? FREE_FREQ_LIMIT, FREE_FREQ_LIMIT), 5);
   const buildWeeks = (phases) => phases.map((phase, wi) => {
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
-    const useOwBase = isOpenWaterGoal(goal) && phase.phase === "base" && wi < 3;
     return {
       number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false, isTest: phase.isTest ?? false,
       sessions: types.map((type, si) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
-        const owArcheIdx = useOwBase && si < 3 ? wi * 3 + si : -1;
-        const useOwCustom = owArcheIdx >= 0 && owArcheIdx < OW_BASE_SESSIONS.length;
-        let sessionData = useOwCustom
-          ? OW_BASE_SESSIONS[owArcheIdx](pool, level)
-          : SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
+        let sessionData = SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
         const realDist = calcSessionDistance(sessionData.details);
         const deficit = distBase - realDist;
         const fillRep = deficit >= 2000 ? 400 : deficit >= 800 ? 200 : pool * 2;
-        const nFill = !useOwCustom && deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
+        const nFill = deficit >= fillRep ? Math.round(deficit / fillRep) : 0;
         let details = sessionData.details;
         if (nFill > 0) {
           const last = details[details.length - 1];
@@ -6956,7 +6809,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
-const BLANK_PROFILE = { category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null, pace400: null };
+const BLANK_PROFILE = { category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null };
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -7483,8 +7336,8 @@ export default function App() {
   }, [user?.id, isPremium, plans, activePlanId]);
 
 
-  // Migration : plans version < PLAN_VERSION entièrement reconstruits (contenu générateur).
-  // v24 = focus jambes = éducatif + battements (pas jambes→jambes).
+  // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
+  // FORCE_PLAN_REGEN = true uniquement pour un bump volontaire (ex. v14) ; sinon mergePreservingProgress.
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
@@ -7496,10 +7349,14 @@ export default function App() {
       const originalStartDate = p.startDate ?? entry.startDate ?? null;
       const premium = !!(entry.plan?.isPremium || isPremium);
       const generated = await generatePlan(entry.profile, premium, originalStartDate || Date.now(), { skipDelay: true });
+      const weeks = FORCE_PLAN_REGEN
+        ? generated.weeks
+        : mergePreservingProgress(p.weeks ?? [], generated.weeks);
       return {
         id: entry.id,
         updated: {
           ...generated,
+          weeks,
           startDate: originalStartDate || generated.startDate,
           version: PLAN_VERSION,
         },
@@ -7538,7 +7395,6 @@ export default function App() {
       if (entryProfile.pace100) {
         entryProfile = appendPaceHistory(entryProfile, {
           pace100: entryProfile.pace100,
-          pace400: entryProfile.pace400,
           week: 1,
           source: "onboarding",
         });
@@ -7585,7 +7441,7 @@ export default function App() {
     if (feedbackWeek === null) return;
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
-      const base = isPremium ? adjustPlan(e.plan, feedbackWeek, rating) : e.plan;
+      const base = isPremium ? adjustPlan(e.plan, feedbackWeek, rating, e.profile, isPremium) : e.plan;
       const withSatisfaction = {
         ...base,
         weeks: base.weeks.map((w, i) => i !== feedbackWeek ? w : {
@@ -7614,20 +7470,20 @@ export default function App() {
     setFeedbackWeek(null);
   };
 
-  const handlePaceUpdate = (newPace100, newPace400 = undefined) => {
+  const handlePaceUpdate = (newPace100) => {
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
       const week = getCurrentWeekNumber(e.plan);
       const next = {
         ...e.profile,
         pace100: newPace100,
-        ...(newPace400 !== undefined ? { pace400: newPace400 } : {}),
       };
+      // Ne plus stocker / utiliser pace400
+      delete next.pace400;
       return {
         ...e,
         profile: appendPaceHistory(next, {
           pace100: newPace100,
-          pace400: newPace400 !== undefined ? newPace400 : next.pace400,
           week,
           source: "manual",
         }),
@@ -7644,10 +7500,10 @@ export default function App() {
       sessionsPerWeek: newFreq,
       ...(newPace100 !== undefined ? { pace100: newPace100 } : {}),
     };
+    delete newProfile.pace400;
     if (newPace100 !== undefined) {
       newProfile = appendPaceHistory(newProfile, {
         pace100: newPace100,
-        pace400: newProfile.pace400,
         week,
         source: "program",
       });
@@ -7893,12 +7749,10 @@ export default function App() {
                   {step === 4 && hasPaceStep && (
                     <Step_Pace
                       value={profile.pace100}
-                      value400={profile.pace400}
                       onChange={v => update("pace100", v)}
-                      onChange400={v => update("pace400", v)}
                       total={totalSteps}
                       onNext={() => setStep(5)}
-                      onSkip={() => { update("pace100", null); update("pace400", null); setStep(5); }}
+                      onSkip={() => { update("pace100", null); setStep(5); }}
                       onBack={() => setStep(3)} />
                   )}
 

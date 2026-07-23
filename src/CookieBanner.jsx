@@ -1,54 +1,71 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const STORAGE_KEY = "myswym_cookie_consent_v1";
+export const COOKIE_CONSENT_KEY = "myswym_cookie_consent_v1";
+
+/** Remet la bannière (ex. lien « Gérer les cookies »). */
+export function resetCookieConsent() {
+  try {
+    localStorage.removeItem(COOKIE_CONSENT_KEY);
+  } catch { /* ignore */ }
+  window.dispatchEvent(new Event("myswym:cookie-consent-reset"));
+}
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      setVisible(!saved);
-    } catch {
-      setVisible(true);
-    }
+    const sync = () => {
+      try {
+        setVisible(!localStorage.getItem(COOKIE_CONSENT_KEY));
+      } catch {
+        setVisible(true);
+      }
+    };
+    sync();
+    window.addEventListener("myswym:cookie-consent-reset", sync);
+    return () => window.removeEventListener("myswym:cookie-consent-reset", sync);
   }, []);
 
   const saveChoice = (choice) => {
     try {
-      localStorage.setItem(STORAGE_KEY, choice);
-    } catch {
-      // Ignore storage failures and just hide banner.
-    }
+      localStorage.setItem(COOKIE_CONSENT_KEY, choice);
+    } catch { /* ignore */ }
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      left: 16,
-      right: 16,
-      bottom: 16,
-      zIndex: 999,
-      background: "#ffffff",
-      border: "1px solid rgba(53,93,163,0.12)",
-      borderRadius: 16,
-      padding: "14px 14px",
-      boxShadow: "0 12px 36px rgba(25,28,30,0.14)",
-      fontFamily: "'Lexend', sans-serif",
-    }}>
+    <div
+      role="dialog"
+      aria-label="Consentement cookies"
+      style={{
+        position: "fixed",
+        left: 16,
+        right: 16,
+        bottom: 16,
+        zIndex: 999,
+        background: "#ffffff",
+        border: "1px solid rgba(53,93,163,0.12)",
+        borderRadius: 16,
+        padding: "14px 14px",
+        boxShadow: "0 12px 36px rgba(25,28,30,0.14)",
+        fontFamily: "'Lexend', sans-serif",
+        maxWidth: 560,
+        margin: "0 auto",
+      }}
+    >
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#434751" }}>
-        Nous utilisons des cookies nécessaires au fonctionnement du site et, avec votre accord,
-        des cookies de mesure d'audience.{" "}
+        Nous utilisons des cookies et un stockage local <strong>nécessaires</strong> au fonctionnement
+        (session, sécurité, préférences). Aucune mesure d’audience tierce n’est active aujourd’hui.{" "}
         <Link to="/politique-cookies" style={{ color: "#154388", fontWeight: 700, textDecoration: "none" }}>
           En savoir plus
         </Link>
       </p>
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <button
+          type="button"
           onClick={() => saveChoice("refused")}
           style={{
             background: "none",
@@ -61,9 +78,10 @@ export default function CookieBanner() {
             fontWeight: 600,
           }}
         >
-          Refuser
+          Continuer sans cookies non essentiels
         </button>
         <button
+          type="button"
           onClick={() => saveChoice("accepted")}
           style={{
             background: "#8eb3ff",
@@ -76,7 +94,7 @@ export default function CookieBanner() {
             fontWeight: 700,
           }}
         >
-          Tout accepter
+          OK
         </button>
       </div>
     </div>

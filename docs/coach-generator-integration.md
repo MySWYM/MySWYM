@@ -22,8 +22,8 @@ const texteSemaine = genererSemaine(
   'developpement',     // phase : foncier | developpement | specifique | affutage
   3,                   // nb de séances dans la semaine
   2,                   // numéro de semaine (juste pour l'affichage "S2.1", "S2.2"...)
-  '1:08',              // allure repère 100m (optionnel, '' si absent)
-  '6:00',              // allure repère 400m (optionnel, '' si absent)
+  '1:08',              // allure repère T100 ('' si absent)
+  '',                  // legacy 400m — ignoré, ne plus utiliser
   'normale',           // type de semaine : reference | normale | allegee
   4700                 // distance de la semaine précédente en m (0 si type=reference)
 );
@@ -37,7 +37,7 @@ Toute la bibliothèque de contenu est dans des constantes en haut du fichier : `
 
 ## 4. Ce qui est déjà géré (donc à ne pas refaire)
 
-- Calcul des allures par zone à partir d'un temps de référence 100m/400m (mêmes % que ta grille réelle)
+- Calcul des allures par zone à partir du **seul** temps de référence **T100** (bandes adaptatives dans `src/lib/swim-pace.js`)
 - Règle des +10% avec comparaison à la semaine précédente et statut OK/Dépassement
 - Arrondi des totaux de séance à la centaine de mètres près
 - Anti-répétition (`pick()` évite de ressortir deux fois de suite le même contenu dans une catégorie)

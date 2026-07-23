@@ -4,7 +4,12 @@
  *
  * Voir docs/plan-methodology.md
  */
-import { genererSemaineSessions, volumeMultFromProfileLevel } from "./swim-session-generator.js";
+import {
+  genererSemaineSessions,
+  volumeMultFromProfileLevel,
+  buildConfirmeArchetypeSession,
+  usesConfirmeArchetypeBank,
+} from "./swim-session-generator.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers"]);
 
@@ -212,15 +217,26 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
   );
   const niveauKey = mapNiveau(profile);
   const profilObj = mapObjectifProfil(profile);
-  // Allures @mm:ss = Premium only (gratuit : zones sans chiffres)
+  // Allures @mm:ss = Premium only — référence unique T100 (jamais T400)
   const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
-  const ref400 = isPremium ? secToPaceStr(profile.pace400) : "";
+  const ref400 = ""; // legacy arg générateur — ignoré
   // Wording simplifié uniquement découverte (pas régulier) — générateur, pas école
   const simplifyWording = profile.level === "découverte" || profile.level === "beginner";
   const beginnerFriendly = simplifyWording;
-  const volMult = volumeMultFromProfileLevel(profile.level, profile.category);
+  // volumeAdj = feedback hebdo cumulé (easy/hard), plafonné dans adjustPlan — [0.70, 1.30]
+  const feedbackAdj = Math.min(1.3, Math.max(0.7, Number(profile.volumeAdj) || 1));
+  const volMult = volumeMultFromProfileLevel(profile.level, profile.category) * feedbackAdj;
+  const pool = profile.pool === 25 ? 25 : 50;
 
   let prevWeekDistance = 0;
+  // Banque confirmé (ex-OW_BASE_SESSIONS) : performance/advanced + eau libre / triathlon / progression
+  const useConfirmeBank = usesConfirmeArchetypeBank(niveauKey, profilObj);
+  const bankOpts = { isPremium: !!isPremium, pace100: profile.pace100 ?? null };
+  // Level UI cohérent avec owVol (performance/advanced → volume plein)
+  const bankLevel =
+    profile.level === "advanced" || profile.level === "performance"
+      ? profile.level
+      : "performance";
 
   return phaseList.map((phase, wi) => {
     const phaseKey = PHASE_MAP[phase.phase] || "foncier";
@@ -228,6 +244,22 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     const focusLabel = phase.focus || PHASE_MAP[phase.phase] || "Séance";
     const typeSemaine = weekTypeForIndex(phase.phase, wi);
     const roles = cosdRolesForWeek(phase.phase, wiInPhase, freq, profilObj);
+
+    if (useConfirmeBank) {
+      const sessions = Array.from({ length: freq }, (_, si) =>
+        buildConfirmeArchetypeSession(wi * 3 + si, pool, bankLevel, bankOpts),
+      );
+      prevWeekDistance = sessions.reduce((a, s) => a + (parseInt(s.distance, 10) || 0), 0);
+      return {
+        number: wi + 1,
+        focus: focusLabel,
+        tip: TIPS?.[phase.tipKey] ?? null,
+        feedback: null,
+        isBilan: phase.isBilan ?? false,
+        isTest: phase.isTest ?? false,
+        sessions,
+      };
+    }
 
     const weekData = genererSemaineSessions(
       niveauKey,
@@ -240,7 +272,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       typeSemaine,
       prevWeekDistance,
       roles,
-      { volMult, simplifyWording },
+      { volMult, simplifyWording, pool },
     );
     prevWeekDistance = weekData.totalDistance;
 

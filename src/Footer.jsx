@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { resetCookieConsent } from "./CookieBanner.jsx";
 
 const FONT = "'Lexend', sans-serif";
 
@@ -101,8 +102,20 @@ export default function Footer({ aboveBottomNav = false }) {
             ))}
           </div>
         </div>
-        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>
-          © 2025 MySWYM. Tous droits réservés.
+        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-end", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => resetCookieConsent()}
+            style={{
+              background: "none", border: "none", padding: 0, cursor: "pointer",
+              color: "rgba(255,255,255,0.4)", fontSize: 13, fontFamily: FONT, textDecoration: "underline",
+            }}
+          >
+            Gérer les cookies
+          </button>
+          <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>
+            © {new Date().getFullYear()} MySWYM. Tous droits réservés.
+          </div>
         </div>
       </div>
     </footer>

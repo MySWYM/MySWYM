@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
     const returnOrigin = reqOrigin && isAllowedOrigin(reqOrigin)
       ? reqOrigin
-      : ALLOWED_ORIGINS[0] ?? "https://myswym.fr";
+      : ALLOWED_ORIGINS[0] ?? "https://myswym.app";
 
     console.log("[create-portal] creating portal session for customer:", resolvedCustomerId);
     let session;

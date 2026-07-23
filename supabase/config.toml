@@ -56,3 +56,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/ensure-referral-code/deno.json"
 entrypoint = "./functions/ensure-referral-code/index.ts"
+
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+import_map = "./functions/delete-account/deno.json"
+entrypoint = "./functions/delete-account/index.ts"

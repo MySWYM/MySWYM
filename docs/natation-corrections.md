@@ -14,13 +14,14 @@
   - **Moteur coaching** (`src/lib/swim-session-generator.js` + `swim-plan-bridge.js`) : triathlon, eau libre, progression, bien-être, compétition maître. Structure **départ (godilles Z1) → technique rotative → corps physio (Z1–Z4) → fin RAC**, règle **+10 %** hebdo.
   - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : BNSSA, BPJEPS, tests pompiers uniquement.
 - **Pas de LLM** pour générer les séances : logique déterministe uniquement.
-- Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m).
+- Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m). Moteur coach : `profile.pool` passé via `opts.pool` ; pas de séries `Nx25m` en bassin 50 (variantes 50m / adaptation technique).
 - Chaque séance structurée : **échauffement** + **retour calme** (sauf séances eau libre spécifiques).
 - Premium : intervalles en `D…` (départ) + allure cible si `pace100` renseigné. Gratuit : `R…` (récup simple) **sans** tags `@mm:ss` d'allure.
 - Allures cibles / step onboarding « Tes allures cibles » / vidéos Instagram sous séance : **Premium only**.
-- Moteur coaching : à côté de chaque `(Z1)`…`(Z4)`, afficher `@mm:ss-mm:ss` calculé depuis `pace100`/`pace400` — **uniquement Premium** (gratuit = zone seule). Inclut départ et fin, pas seulement le corps.
+- Moteur coaching : à côté de chaque `(Z1)`…`(Z4)`, afficher `@mm:ss-mm:ss` calculé depuis **T100 seul** (`pace100`) — **uniquement Premium** (gratuit = zone seule). Inclut départ et fin, pas seulement le corps. **Plus de T400** (ni demandé, ni en formule).
 - Profil Premium : carte **Évolution des temps** (courbe projetée sur les semaines + points saisis via `paceHistory`). Gratuit = teaser verrouillé.
-- Coefficients allure si `pace100` : easy ×1,35 · seuil ×1,08 · sprint ×0,95.
+- Coefficients allure : adaptés au T100 via `src/lib/swim-pace.js` — plus le T100 est rapide, plus les zones aérobie sont tolérantes (mults ↑, bandes resserrées).
+- Projection progression : rendements décroissants selon T100 (`maxPaceGainFromT100`) — pas un −10 % fixe.
 - Rotation des variantes via `weekIdx` — ne pas dupliquer la même variante deux semaines de suite sans raison.
 
 ### Niveaux
@@ -36,7 +37,7 @@
 
 ### Périodisation (volume + difficulté)
 
-- **Montée volume** : semaine N ≤ semaine N−1 × **1,10** (réellement appliqué via `weekScale` dans le générateur).
+- **Montée volume** : semaine N ≤ semaine N−1 × **1,10** (réellement appliqué via `weekScale` dans le générateur). Feedback hebdo (`easy`/`hard`) : multiplicateur cumulé `volumeAdj` plafonné **[0,70 ; 1,30]** — ne pas composer ±12 % sans borne.
 - **Décharges** : ~toutes les 4 semaines (−30 %) + phases affûtage.
 - **Difficulté** : zones qui montent par mésocycle (Z1–Z2 foncier → Z3–Z4 spécifique).
 - **Semaines test** (`phase: "test"`) : chronos 100/200/400 m pour mesurer l’évolution — 1 à 2 selon la durée du plan (après base / après développement).
@@ -60,7 +61,7 @@
 ### Technique produit
 
 - Après changement structurel des plans : incrémenter `PLAN_VERSION` pour régénérer les plans obsolètes.
-- Feedback hebdo (`easy` / `ok` / `hard`) : ajuste le **volume** des semaines futures (`adjustPlan`), pas le texte des séances.
+- Feedback hebdo (`easy` / `ok` / `hard`) : ajuste le **volume** des semaines futures vierges (`adjustPlan` + `volumeAdj` plafonné). Coach = régénération générateur (details = total) ; jamais une semaine déjà commencée.
 
 ---
 
@@ -86,6 +87,12 @@
 | 2026-07-18 | Allures départ/fin | Les `(Zx)` du départ et de la fin n’avaient pas `@mm:ss` (corps seul). Annoter toutes les zones nues si Premium + pace. `PLAN_VERSION` 22 | ✅ |
 | 2026-07-18 | Jambes > chiens | Trop de petit/grand chien → fait peur. Cycle : ~3/8 jambes, chiens 1/8. Départs sans chien. Croisement sans éducatif chien. `PLAN_VERSION` 23 | ✅ |
 | 2026-07-18 | Jambes ≠ jambes | Jamais 400m jambes puis encore 8x50 jambes. Focus jambes = **éducatif court + série jambes**. Pas de départ jambes si focus jambes. `PLAN_VERSION` 24 | ✅ |
+| 2026-07-23 | Allures T100 seul | Suppression T400 onboarding/formules. Consigne UI départ dans l'eau. Zones % adaptatives + projection rendements décroissants (`swim-pace.js`). `PLAN_VERSION` 25 | ✅ |
+| 2026-07-23 | Bassin 25/50 coach | `profile.pool` n’arrivait pas au moteur coach ; reps 25m en bassin 50. Passage `pool` via bridge + variantes vitesse/mixte + adapt technique Nx25→N/2x50. Pas de regen rétroactive. | ✅ |
+| 2026-07-23 | Pool 50 = 25+25 | Variantes vitesse/technique bassin 50 : même nb de reps, chaque 50m = 25m à bloc + 25m relâché (pas un 50 sprint plein). Distance bloc recalculée. | ✅ |
+| 2026-07-23 | Feedback `adjustPlan` | (1) Ne plus patcher seul `s.distance` — régénère semaines futures vierges via bridge/`volumeAdj` (sinon scale details+duration). (2) Plafond cumulé `volumeAdj` ∈ [0,70 ; 1,30] (fini le ×1.12^n). | ✅ |
+| 2026-07-23 | Migration PLAN_VERSION | **Bug perte de progression** : l'effet migration remplaçait tout le plan sans `mergePreservingProgress` (contrairement au déblocage Premium). Fix = merge des semaines ; `FORCE_PLAN_REGEN` off par défaut pour un vrai force regen volontaire. | ✅ |
+| 2026-07-23 | Banque confirmé coach | Réintégration ex-`OW_BASE_SESSIONS` (9 archétypes) dans `swim-session-generator.js` + branchement `buildCoachPlanWeeks` pour eau_libre / triathlon / nager&progresser au niveau confirmé (tout le plan, rotation `wi*3+si`). Retrait du vieux câblage mort dans `buildWeeks`. | ✅ |
 | 2026-06-29 | Eau libre 5k/10k S1–S3 | Banque `OW_BASE_SESSIONS` (9 archétypes signature coach) en phase base semaines 1–3 : éducatifs lents → Z2 nage appliquée → sensation/RAC. Scaling régulier/sportif/perf. `OPEN_WATER_PATTERNS`. `PLAN_VERSION` → 12 | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
@@ -103,8 +110,8 @@
 2. **Découverte** : reprendre des séances « seuil » ou des départs serrés type confirmé. Ni jargon cru (Z1, RAC, R15'' sans explication) sur le moteur coaching débutant.
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
-5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné.
-6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`).
+5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.
+6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`). **Feedback hebdo** : ne jamais patcher seul `s.distance` sans `details`/`duration` — régénérer ou scale cohérent.
 7. **Sportif / Performance** : mêmes volumes et mêmes intitulés — doit rester différencié.
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance. Sur débutant : expliquer les éducatifs (grand/petit chien) plutôt que le terme seul.
 9. **Éducatifs** : ne pas saturer les séances de grand/petit chien — privilégier **jambes** et nage. MySWYM = générateur, pas école. **Jamais** deux blocs jambes d’affilée (ex. 400m jambes + 8x50 jambes) — éducatif puis jambes.
