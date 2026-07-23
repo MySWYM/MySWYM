@@ -7709,14 +7709,18 @@ export default function App() {
             {(() => {
               // Flux :
               //   progression : 1 → 3 (niveau) → [4 pace?] → 5 (fréq) — pas de date
-              //   triathlon/eau_libre : 1 → 2 (sous-obj) → 3 (niveau, découverte grisé) → [4 pace?] → 5 (fréq) → 6 (date)
+              //   triathlon/eau_libre : 1 → 2 (sous-obj) → 3 (niveau) → [4 pace?] → 5 (fréq) → 6 (date)
               //   diplome : 1 → 2 (BNSSA/BPJEPS) → 5 (fréq) → 6 (date) — pas de niveau
               const isProgression = profile.category === "progression";
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
               const hasPaceStep = isPremium && !isDiplome;
-              // Niveaux grisés pour triathlon et eau_libre
-              const disabledLevels = (profile.category === "triathlon" || profile.category === "eau_libre") ? ["découverte"] : [];
+              // Découverte OK seulement pour formats courts : triathlon XS/S, eau libre 500 m / 1 km
+              const allowsDecouverte = ["triathlon_xs", "triathlon_sprint", "open_water_500", "open_water_1k"].includes(profile.goal);
+              const disabledLevels =
+                (profile.category === "triathlon" || profile.category === "eau_libre") && !allowsDecouverte
+                  ? ["découverte"]
+                  : [];
               // Calcul total steps
               const baseSteps = noDate ? 3 : isDiplome ? 4 : 4;
               const totalSteps = baseSteps + (hasPaceStep ? 1 : 0);
