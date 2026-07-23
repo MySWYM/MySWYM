@@ -313,6 +313,9 @@ const GOALS = [
   { id: "triathlon_olympic", label: "Triathlon Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_half",    label: "Triathlon Half",         dist: "1 900 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "triathlon_ironman", label: "Triathlon Ironman",      dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "open_water_500",   label: "Eau libre 500 m",        dist: "500 m",                        icon: <Waves size={20} />,    wellness: false },
+  { id: "open_water_1k",     label: "Eau libre 1 km",         dist: "1 km",                         icon: <Waves size={20} />,    wellness: false },
+  { id: "open_water_2_5k",   label: "Eau libre 2,5 km",       dist: "2,5 km",                       icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_5k",     label: "Eau libre 5 km",         dist: "5 km",                         icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
   { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
@@ -327,7 +330,7 @@ const GOALS = [
 const CATEGORIES = [
   { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Tous niveaux · Progresser à ton rythme" },
   { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "Sprint · Olympique · Half · Ironman" },
-  { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "5 km · 10 km en eau vive" },
+  { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "500 m · 1 km · 2,5 km · 5 km · 10 km" },
   { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS" },
 ];
 
@@ -340,8 +343,11 @@ const SUB_GOALS = {
     { id: "triathlon_ironman", label: "Ironman",   dist: "3 800 m" },
   ],
   eau_libre: [
-    { id: "open_water_5k",  label: "5 km",  dist: "Eau vive" },
-    { id: "open_water_10k", label: "10 km", dist: "Eau vive" },
+    { id: "open_water_500",  label: "500 m",  dist: "Eau vive" },
+    { id: "open_water_1k",   label: "1 km",   dist: "Eau vive" },
+    { id: "open_water_2_5k", label: "2,5 km", dist: "Eau vive" },
+    { id: "open_water_5k",   label: "5 km",   dist: "Eau vive" },
+    { id: "open_water_10k",  label: "10 km",  dist: "Eau vive" },
   ],
   diplome: [
     { id: "bnssa",      label: "BNSSA",      dist: "100 m & 250 m sauvetage" },
