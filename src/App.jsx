@@ -321,7 +321,7 @@ const GOALS = [
   { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_25k",    label: "Eau libre 25 km",        dist: "25 km",                        icon: <Waves size={20} />,    wellness: false },
   { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
-  { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\"",            icon: <Award size={20} />,    wellness: false },
+  { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"", icon: <Award size={20} />, wellness: false },
   { id: "tests_pompiers",    label: "Tests Pompiers",         dist: "400 m NL + 50 m sauvetage",    icon: <Shield size={20} />,   wellness: false },
   { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
   { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
@@ -355,7 +355,7 @@ const SUB_GOALS = {
   ],
   diplome: [
     { id: "bnssa",      label: "BNSSA",      dist: "100 m & 250 m sauvetage" },
-    { id: "bpjeps_aan", label: "BPJEPS AAN", dist: "400 m NL < 7'40\"" },
+    { id: "bpjeps_aan", label: "BPJEPS AAN", dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"" },
   ],
 };
 
