@@ -309,12 +309,11 @@ const AppShell = ({ children, flush = false, style = {} }) => (
 );
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "triathlon_xs",      label: "Triathlon XS · Découverte", dist: "400 m nage",                  icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_sprint",  label: "Triathlon S · Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_olympic", label: "Triathlon M · Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_l",       label: "Triathlon L · Longue Distance", dist: "3 000 m nage",              icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_half",    label: "Triathlon XL · Half (70.3)", dist: "1 900 m nage",                 icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_ironman", label: "Triathlon XXL · Ironman",    dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_xs",      label: "Triathlon XS",           dist: "300–400 m nage",               icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_sprint",  label: "Triathlon S · Sprint",   dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_olympic", label: "Triathlon M · Olympique", dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_half",    label: "Triathlon L · Half-Ironman", dist: "1 900 m nage",              icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_ironman", label: "Triathlon XXL · Ironman", dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "open_water_500",   label: "Eau libre 500 m",        dist: "500 m",                        icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_1k",     label: "Eau libre 1 km",         dist: "1 km",                         icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_2_5k",   label: "Eau libre 2,5 km",       dist: "2,5 km",                       icon: <Waves size={20} />,    wellness: false },
@@ -332,7 +331,7 @@ const GOALS = [
 // Catégories onboarding (step 1)
 const CATEGORIES = [
   { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Tous niveaux · Progresser à ton rythme" },
-  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "XS · S · M · L · XL · XXL" },
+  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "XS · S · M · L · XXL" },
   { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "500 m · 1 km · 2,5 km · 5 km · 10 km · 25 km" },
   { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS" },
 ];
@@ -340,12 +339,11 @@ const CATEGORIES = [
 // Sous-objectifs par catégorie
 const SUB_GOALS = {
   triathlon: [
-    { id: "triathlon_xs",      label: "XS · Découverte",      dist: "400 m · 10 km vélo · 2,5 km CAP" },
-    { id: "triathlon_sprint",  label: "S · Sprint",           dist: "750 m · 20 km vélo · 5 km CAP" },
-    { id: "triathlon_olympic", label: "M · Olympique",        dist: "1,5 km · 40 km vélo · 10 km CAP" },
-    { id: "triathlon_l",       label: "L · Longue Distance",  dist: "3 km · 80 km vélo · 20 km CAP" },
-    { id: "triathlon_half",    label: "XL · Half Ironman",    dist: "1,9 km · 90 km vélo · 21,1 km CAP" },
-    { id: "triathlon_ironman", label: "XXL · Ironman",        dist: "3,8 km · 180 km vélo · 42,2 km CAP" },
+    { id: "triathlon_xs",      label: "XS",                dist: "300–400 m · 8–10 km vélo · 2–2,5 km CAP · 10,3–12,9 km" },
+    { id: "triathlon_sprint",  label: "S · Sprint",        dist: "750 m · 20 km vélo · 5 km CAP · 25,7 km" },
+    { id: "triathlon_olympic", label: "M · Olympique",     dist: "1,5 km · 40 km vélo · 10 km CAP · 51,5 km" },
+    { id: "triathlon_half",    label: "L · Half-Ironman",  dist: "1,9 km · 90 km vélo · 21,1 km CAP · 113 km" },
+    { id: "triathlon_ironman", label: "XXL · Ironman",     dist: "3,8 km · 180 km vélo · 42,195 km CAP · 226 km" },
   ],
   eau_libre: [
     { id: "open_water_500",  label: "500 m",  dist: "Eau vive" },
