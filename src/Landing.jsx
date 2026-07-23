@@ -552,7 +552,7 @@ function Goals() {
     {
       icon: Award, color: "#B45309", tint: "rgba(180,83,9,0.08)",
       title: "Examens & diplômes",
-      sub: "BNSSA · BPJEPS · Pompiers",
+      sub: "BNSSA · BPJEPS · CAEPMNS",
       desc: "Préparation ciblée pour le jour J — parcours, apnée, remorquage.",
       href: "/",
     },

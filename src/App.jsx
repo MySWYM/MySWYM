@@ -322,6 +322,7 @@ const GOALS = [
   { id: "open_water_25k",    label: "Eau libre 25 km",        dist: "25 km",                        icon: <Waves size={20} />,    wellness: false },
   { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
   { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"", icon: <Award size={20} />, wellness: false },
+  { id: "caepmns",           label: "Prépa CAEPMNS",          dist: "300 m palmes · parcours sauvetage", icon: <Shield size={20} />, wellness: false },
   { id: "tests_pompiers",    label: "Tests Pompiers",         dist: "400 m NL + 50 m sauvetage",    icon: <Shield size={20} />,   wellness: false },
   { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
   { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
@@ -333,7 +334,7 @@ const CATEGORIES = [
   { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Tous niveaux · Progresser à ton rythme" },
   { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "XS · S · M · L · XXL" },
   { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "500 m · 1 km · 2,5 km · 5 km · 10 km · 25 km" },
-  { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS" },
+  { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS · CAEPMNS" },
 ];
 
 // Sous-objectifs par catégorie
@@ -356,6 +357,7 @@ const SUB_GOALS = {
   diplome: [
     { id: "bnssa",      label: "BNSSA",      dist: "100 m & 250 m sauvetage" },
     { id: "bpjeps_aan", label: "BPJEPS AAN", dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"" },
+    { id: "caepmns",    label: "CAEPMNS",    dist: "300 m palmes · parcours sauvetage" },
   ],
 };
 
@@ -4534,8 +4536,11 @@ const BASE_DISTANCES = {
   advanced:     { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600, bnssa: 2000 },
   performance:  { endurance: 3200, seuil: 2600, vitesse: 2000, technique: 2400, récupération: 1600, bnssa: 2000 },
 };
-// Alias bnssa pour tests_pompiers (même type de séance)
-Object.keys(BASE_DISTANCES).forEach(k => { BASE_DISTANCES[k].tests_pompiers = BASE_DISTANCES[k].bnssa; });
+// Alias bnssa pour tests_pompiers / CAEPMNS (même type de séance sauvetage)
+Object.keys(BASE_DISTANCES).forEach(k => {
+  BASE_DISTANCES[k].tests_pompiers = BASE_DISTANCES[k].bnssa;
+  BASE_DISTANCES[k].caepmns = BASE_DISTANCES[k].bnssa;
+});
 
 // pace100[lvl][zone] = secondes aux 100m (0=découverte 1=régulier 2=sportif 3=performance)
 const PACE = {
@@ -4846,8 +4851,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isDiplome   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers";
-    const isBNSSA     = goal === "bnssa" || goal === "tests_pompiers";
+    const isDiplome   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers" || goal === "caepmns";
+    const isBNSSA     = goal === "bnssa" || goal === "tests_pompiers" || goal === "caepmns";
     const isTriathlon = isTriathlonGoal(goal);
     const isOpenWater = isOpenWaterGoal(goal);
 
@@ -5289,8 +5294,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isDiplomeS   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers";
-    const isBNSSAS     = goal === "bnssa" || goal === "tests_pompiers";
+    const isDiplomeS   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers" || goal === "caepmns";
+    const isBNSSAS     = goal === "bnssa" || goal === "tests_pompiers" || goal === "caepmns";
     const isTriathlon  = isTriathlonGoal(goal);
     const isOpenWater  = isOpenWaterGoal(goal);
 
@@ -5700,8 +5705,8 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    const isDiplomeV   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers";
-    const isBNSSAV     = goal === "bnssa" || goal === "tests_pompiers";
+    const isDiplomeV   = goal === "bnssa" || goal === "bpjeps_aan" || goal === "tests_pompiers" || goal === "caepmns";
+    const isBNSSAV     = goal === "bnssa" || goal === "tests_pompiers" || goal === "caepmns";
     const isTriathlonV = isTriathlonGoal(goal);
     const isOpenWaterV = isOpenWaterGoal(goal);
 
@@ -6784,7 +6789,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   const progLvlKey = getLvlIndex(level) >= 3 ? "advanced" : getLvlIndex(level) >= 2 ? "intermediate" : "beginner";
   const patterns = progression ? (PROGRESSION_PATTERNS[progLvlKey] || PROGRESSION_PATTERNS.intermediate)
                  : wellness   ? (WELLNESS_PATTERNS[progLvlKey] || WELLNESS_PATTERNS.intermediate)
-                 : (goal === "bnssa" || goal === "tests_pompiers") ? BNSSA_PATTERNS
+                 : (goal === "bnssa" || goal === "tests_pompiers" || goal === "caepmns") ? BNSSA_PATTERNS
                  : isOpenWaterGoal(goal) ? (OPEN_WATER_PATTERNS[levelKey] || OPEN_WATER_PATTERNS.sportif)
                  : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
   const f = Math.min(isPremium ? freq : Math.min(freq ?? FREE_FREQ_LIMIT, FREE_FREQ_LIMIT), 5);

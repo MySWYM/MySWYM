@@ -11,7 +11,7 @@ import {
   usesConfirmeArchetypeBank,
 } from "./swim-session-generator.js";
 
-const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers"]);
+const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
 const PHASE_MAP = {
   base: "foncier",
