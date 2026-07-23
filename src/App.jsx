@@ -309,10 +309,12 @@ const AppShell = ({ children, flush = false, style = {} }) => (
 );
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "triathlon_sprint",  label: "Triathlon Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_olympic", label: "Triathlon Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_half",    label: "Triathlon Half",         dist: "1 900 m nage",                 icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_ironman", label: "Triathlon Ironman",      dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_xs",      label: "Triathlon XS · Découverte", dist: "400 m nage",                  icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_sprint",  label: "Triathlon S · Sprint",       dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_olympic", label: "Triathlon M · Olympique",    dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_l",       label: "Triathlon L · Longue Distance", dist: "3 000 m nage",              icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_half",    label: "Triathlon XL · Half (70.3)", dist: "1 900 m nage",                 icon: <Activity size={20} />, wellness: false },
+  { id: "triathlon_ironman", label: "Triathlon XXL · Ironman",    dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
   { id: "open_water_500",   label: "Eau libre 500 m",        dist: "500 m",                        icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_1k",     label: "Eau libre 1 km",         dist: "1 km",                         icon: <Waves size={20} />,    wellness: false },
   { id: "open_water_2_5k",   label: "Eau libre 2,5 km",       dist: "2,5 km",                       icon: <Waves size={20} />,    wellness: false },
@@ -330,7 +332,7 @@ const GOALS = [
 // Catégories onboarding (step 1)
 const CATEGORIES = [
   { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Tous niveaux · Progresser à ton rythme" },
-  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "Sprint · Olympique · Half · Ironman" },
+  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "XS · S · M · L · XL · XXL" },
   { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "500 m · 1 km · 2,5 km · 5 km · 10 km · 25 km" },
   { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS" },
 ];
@@ -338,10 +340,12 @@ const CATEGORIES = [
 // Sous-objectifs par catégorie
 const SUB_GOALS = {
   triathlon: [
-    { id: "triathlon_sprint",  label: "Sprint",    dist: "750 m" },
-    { id: "triathlon_olympic", label: "Olympique", dist: "1 500 m" },
-    { id: "triathlon_half",    label: "Half",      dist: "1 900 m" },
-    { id: "triathlon_ironman", label: "Ironman",   dist: "3 800 m" },
+    { id: "triathlon_xs",      label: "XS · Découverte",      dist: "400 m · 10 km vélo · 2,5 km CAP" },
+    { id: "triathlon_sprint",  label: "S · Sprint",           dist: "750 m · 20 km vélo · 5 km CAP" },
+    { id: "triathlon_olympic", label: "M · Olympique",        dist: "1,5 km · 40 km vélo · 10 km CAP" },
+    { id: "triathlon_l",       label: "L · Longue Distance",  dist: "3 km · 80 km vélo · 20 km CAP" },
+    { id: "triathlon_half",    label: "XL · Half Ironman",    dist: "1,9 km · 90 km vélo · 21,1 km CAP" },
+    { id: "triathlon_ironman", label: "XXL · Ironman",        dist: "3,8 km · 180 km vélo · 42,2 km CAP" },
   ],
   eau_libre: [
     { id: "open_water_500",  label: "500 m",  dist: "Eau vive" },
@@ -2184,9 +2188,12 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
         {subs.map(s => (
           <button key={s.id} onClick={() => onSelect(s.id)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left" }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{s.label}</span>
-            <ChevronDown size={16} color={G.greyMid} style={{ transform: "rotate(-90deg)" }} />
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", gap: 12 }}>
+            <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{s.label}</span>
+              {s.dist && <span style={{ fontSize: 12, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>{s.dist}</span>}
+            </span>
+            <ChevronDown size={16} color={G.greyMid} style={{ transform: "rotate(-90deg)", flexShrink: 0 }} />
           </button>
         ))}
       </div>

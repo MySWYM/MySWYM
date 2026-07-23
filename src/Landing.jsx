@@ -538,7 +538,7 @@ function Goals() {
     {
       icon: Activity, color: "#E65100", tint: "rgba(230,81,0,0.08)",
       title: "Triathlon",
-      sub: "Sprint → Ironman",
+      sub: "XS → Ironman",
       desc: "Volumes et intensités pensés pour la partie natation de ta course.",
       href: "/",
     },
