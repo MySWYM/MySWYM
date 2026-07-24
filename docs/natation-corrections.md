@@ -93,6 +93,9 @@
 | 2026-07-23 | Feedback `adjustPlan` | (1) Ne plus patcher seul `s.distance` — régénère semaines futures vierges via bridge/`volumeAdj` (sinon scale details+duration). (2) Plafond cumulé `volumeAdj` ∈ [0,70 ; 1,30] (fini le ×1.12^n). | ✅ |
 | 2026-07-23 | Migration PLAN_VERSION | **Bug perte de progression** : l'effet migration remplaçait tout le plan sans `mergePreservingProgress` (contrairement au déblocage Premium). Fix = merge des semaines ; `FORCE_PLAN_REGEN` off par défaut pour un vrai force regen volontaire. | ✅ |
 | 2026-07-23 | Banque confirmé coach | Réintégration ex-`OW_BASE_SESSIONS` (9 archétypes) dans `swim-session-generator.js` + branchement `buildCoachPlanWeeks` pour eau_libre / triathlon / nager&progresser au niveau confirmé (tout le plan, rotation `wi*3+si`). Retrait du vieux câblage mort dans `buildWeeks`. | ✅ |
+| 2026-07-24 | Code mort générateur | Suppression `genererSeance` / `genererSemaine` / `phase.volMult` / `estimateSessionTotal` (+ avg*) — orphelins hors pipeline réel. Aucun changement de comportement. | ✅ |
+| 2026-07-24 | Onboarding niveaux | Wording Régulier/Sportif clarifié — distances repères (400m/1500m) au lieu de formulations qui se chevauchaient ("nage régulièrement" dans les deux). Performance reformulé "courses ou compétitions". Aucun changement d'id, pas d'impact logique. | ✅ |
+| 2026-07-24 | Sync multi-appareils | `mergePlanLists` perdait un plan créé hors-ligne si l'autre côté avait un `updatedAt` plus récent (absent ≠ supprimé). Fix : n'ignorer que les ids dans `deletedIds` ; sinon union + max progression. | ✅ |
 | 2026-06-29 | Eau libre 5k/10k S1–S3 | Banque `OW_BASE_SESSIONS` (9 archétypes signature coach) en phase base semaines 1–3 : éducatifs lents → Z2 nage appliquée → sensation/RAC. Scaling régulier/sportif/perf. `OPEN_WATER_PATTERNS`. `PLAN_VERSION` → 12 | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 

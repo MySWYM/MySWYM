@@ -378,8 +378,8 @@ const LEVELS = [
   {
     id: "régulier",
     label: "Régulier",
-    desc: "Je nage 20–30 min sans m'arrêter",
-    detail: "Je tiens mon rythme, mais je ne cherche pas encore la perf",
+    desc: "Je tiens 400m sans m'arrêter",
+    detail: "Je peux enchaîner sans forcer, mais je ne travaille pas encore mes allures",
     color: "#00C48C",
     bg: "#E6FFF6",
     dot: 2,
@@ -387,8 +387,8 @@ const LEVELS = [
   {
     id: "sportif",
     label: "Sportif",
-    desc: "Je nage régulièrement et je progresse",
-    detail: "J'enchaîne les longueurs, je veux une structure pour aller plus loin",
+    desc: "Je tiens 1500m sans m'arrêter, et je nage plusieurs fois par semaine",
+    detail: "Technique solide, je m'entraîne avec régularité et je veux structurer ma progression",
     color: "#0057FF",
     bg: "#EEF3FF",
     dot: 3,
@@ -396,7 +396,7 @@ const LEVELS = [
   {
     id: "performance",
     label: "Performance",
-    desc: "J'ai déjà des courses à mon actif",
+    desc: "J'ai déjà fait des courses ou des compétitions",
     detail: "Je connais mes chronos, je veux un plan taillé pour la compétition",
     color: "#7C3AED",
     bg: "#EDE9FE",
@@ -569,9 +569,9 @@ const dedupePlans = (plans) => {
   return out;
 };
 
-// Fusion local + remote : la source la plus récente décide quels plans existent
-// (sinon une suppression locale est ressuscitée par le remote). Pour un même id,
-// on garde la version avec le plus de progression.
+// Fusion local + remote : union des plans non tombstonés.
+// Suppression intentionnelle = présent dans deletedIds uniquement.
+// Pour un même id des deux côtés : garde la version avec le plus de progression.
 const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, localUpdatedAt = 0, remoteUpdatedAt = 0, currentActive = null, deletedIds = null) => {
   const localIsNewer = (localUpdatedAt || 0) >= (remoteUpdatedAt || 0);
   const base = localIsNewer ? (localPlans || []) : (remotePlans || []);
@@ -584,7 +584,11 @@ const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, loca
   for (const e of other) {
     if (deletedIds?.has(e.id)) continue;
     const existing = byId.get(e.id);
-    if (!existing) continue; // ne pas réintroduire un plan absent de la source plus récente
+    if (!existing) {
+      // Plan créé sur l'autre appareil (ex. hors-ligne) — pas une suppression
+      byId.set(e.id, e);
+      continue;
+    }
     byId.set(e.id, planProgressScore(e) >= planProgressScore(existing) ? e : existing);
   }
   const merged = dedupePlans([...byId.values()]);
@@ -7715,12 +7719,8 @@ export default function App() {
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
               const hasPaceStep = isPremium && !isDiplome;
-              // Découverte OK seulement pour formats courts : triathlon XS/S, eau libre 500 m / 1 km
-              const allowsDecouverte = ["triathlon_xs", "triathlon_sprint", "open_water_500", "open_water_1k"].includes(profile.goal);
-              const disabledLevels =
-                (profile.category === "triathlon" || profile.category === "eau_libre") && !allowsDecouverte
-                  ? ["découverte"]
-                  : [];
+              // Découverte disponible sur tous les programmes (triathlon, eau libre, etc.)
+              const disabledLevels = [];
               // Calcul total steps
               const baseSteps = noDate ? 3 : isDiplome ? 4 : 4;
               const totalSteps = baseSteps + (hasPaceStep ? 1 : 0);
