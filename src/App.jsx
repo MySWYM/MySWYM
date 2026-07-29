@@ -2837,10 +2837,10 @@ const BadgeToast = ({ badgeId }) => {
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 2;
-const PLAN_VERSION = 25; // v25 = T100 seul, zones adaptatives, projection rendements décroissants
-// Force regen volontaire pour UN bump précis (ex. v14, aucun user actif). Laisser false :
-// la migration merge toujours via mergePreservingProgress — ne jamais écraser la progression.
-const FORCE_PLAN_REGEN = false;
+const PLAN_VERSION = 26; // v26 = force regen contenu actuel (formats OW/triathlon, banque confirmé, etc.)
+// Force regen volontaire pour CE bump (v26) — écrase les semaines y compris progression.
+// Remettre à false dès le prochain bump (sinon chaque migration future réécrase tout).
+const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
