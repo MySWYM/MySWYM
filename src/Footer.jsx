@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { resetCookieConsent } from "./CookieBanner.jsx";
+import BrandLogo from "./BrandLogo.jsx";
 
 const FONT = "'Lexend', sans-serif";
 
@@ -66,6 +67,7 @@ export default function Footer({ aboveBottomNav = false }) {
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8, maxWidth: 260 }}>
+          <BrandLogo height={52} onDark />
           <p style={{ margin: 0, color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.5, fontFamily: FONT }}>
             Plan d&apos;entraînement natation personnalisé — prêt en 2 minutes.
           </p>
