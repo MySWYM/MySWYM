@@ -50,7 +50,9 @@ const FontLoader = () => {
 };
 
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────
-const THEME_STORAGE_KEY = "myswym_theme";
+const THEME_STORAGE_PREFIX = "myswym_theme_";
+const THEME_LAST_KEY = "myswym_theme_last";
+const THEME_LEGACY_KEY = "myswym_theme"; // ancien stockage global (migré)
 
 const G_LIGHT = {
   bg: "#f8f9fc",
@@ -113,20 +115,47 @@ const G_DARK = {
 /** Palette active — mutée par applyTheme pour que les styles inline suivent le thème. */
 const G = { ...G_LIGHT };
 
-const getStoredTheme = () => {
+const normalizeTheme = (value) => (value === "dark" ? "dark" : "light");
+
+const themeStorageKey = (userId) => `${THEME_STORAGE_PREFIX}${userId || "anon"}`;
+
+const getStoredTheme = (userId = null) => {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
-  } catch {
-    return "light";
-  }
+    const scoped = localStorage.getItem(themeStorageKey(userId));
+    if (scoped === "dark" || scoped === "light") return scoped;
+    // Migration : ancien thème global → utile surtout pour l'anon / 1re connexion
+    const legacy = localStorage.getItem(THEME_LEGACY_KEY);
+    if (legacy === "dark" || legacy === "light") return legacy;
+  } catch { /* ignore */ }
+  return "light";
 };
 
-const applyTheme = (theme) => {
-  const next = theme === "dark" ? G_DARK : G_LIGHT;
+const resolveThemeForUser = (user) => {
+  const fromMeta = user?.user_metadata?.theme;
+  if (fromMeta === "dark" || fromMeta === "light") return fromMeta;
+  try {
+    const scoped = localStorage.getItem(themeStorageKey(user?.id || null));
+    if (scoped === "dark" || scoped === "light") return scoped;
+    // Nouveau compte / pas encore de préférence : hériter du thème anon / dernier utilisé
+    if (user?.id) {
+      const inherited = [
+        localStorage.getItem(themeStorageKey(null)),
+        localStorage.getItem(THEME_LAST_KEY),
+        localStorage.getItem(THEME_LEGACY_KEY),
+      ].find((v) => v === "dark" || v === "light");
+      if (inherited) return inherited;
+    }
+  } catch { /* ignore */ }
+  return getStoredTheme(user?.id || null);
+};
+
+const applyTheme = (theme, { userId = null, persist = true } = {}) => {
+  const t = normalizeTheme(theme);
+  const next = t === "dark" ? G_DARK : G_LIGHT;
   Object.assign(G, next);
   const root = document.documentElement;
-  root.setAttribute("data-theme", theme);
-  root.style.colorScheme = theme;
+  root.setAttribute("data-theme", t);
+  root.style.colorScheme = t;
   root.style.setProperty("--myswym-bg", next.bg);
   root.style.setProperty("--myswym-surface", next.surface);
   root.style.setProperty("--myswym-ink", next.ink);
@@ -135,11 +164,32 @@ const applyTheme = (theme) => {
   root.style.setProperty("--myswym-nav-bg", next.navGlass);
   root.style.setProperty("--myswym-nav-border", next.greyLight);
   root.style.setProperty("--myswym-glass", next.glass);
-  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* ignore */ }
+  if (persist) {
+    try {
+      localStorage.setItem(themeStorageKey(userId), t);
+      localStorage.setItem(THEME_LAST_KEY, t);
+      localStorage.removeItem(THEME_LEGACY_KEY);
+    } catch { /* ignore */ }
+  }
+  return t;
 };
 
-// Appliquer avant le premier paint React (évite un flash clair → sombre)
-applyTheme(getStoredTheme());
+const persistThemeToAccount = (theme, user) => {
+  const t = applyTheme(theme, { userId: user?.id || null, persist: true });
+  if (user?.id) {
+    supabase.auth.updateUser({ data: { theme: t } }).catch(() => {});
+  }
+  return t;
+};
+
+// Dernier thème affiché (évite un flash) — remplacé dès que le compte est connu
+applyTheme((() => {
+  try {
+    return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || localStorage.getItem(THEME_LEGACY_KEY));
+  } catch {
+    return "light";
+  }
+})(), { persist: false });
 
 // Pastels figés (lisibles sur fond clair et sombre) — ne pas lier à G mutable
 const TYPE_META = {
@@ -7155,7 +7205,13 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [theme, setTheme] = useState(() => getStoredTheme());
+  const [theme, setTheme] = useState(() => {
+    try {
+      return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || getStoredTheme());
+    } catch {
+      return "light";
+    }
+  });
   const forceAuthRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -8024,9 +8080,21 @@ export default function App() {
 
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
+  // Thème propre à chaque compte (user_metadata + localStorage scopé par userId)
+  useEffect(() => {
+    const t = resolveThemeForUser(user);
+    applyTheme(t, { userId: user?.id || null, persist: true });
+    setTheme(t);
+    // Première fois sur ce compte : enregistrer le thème dans le profil (sync multi-appareils)
+    const meta = user?.user_metadata?.theme;
+    if (user?.id && meta !== "dark" && meta !== "light") {
+      supabase.auth.updateUser({ data: { theme: t } }).catch(() => {});
+    }
+  }, [user?.id, user?.user_metadata?.theme]);
+
   const handleToggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
-    applyTheme(next);
+    persistThemeToAccount(next, user);
     setTheme(next);
   };
 
