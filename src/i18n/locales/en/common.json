@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "homeAria": "mySWYM — Home",
+    "why": "Why",
+    "how": "How it works",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "contact": "Contact",
+    "login": "Log in",
+    "cta": "Build my plan",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "footer": {
+    "tagline": "Personalized swim training plan — ready in 2 minutes.",
+    "explore": "Explore",
+    "legal": "Legal",
+    "home": "Home",
+    "why": "Why MySWYM",
+    "how": "How it works",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "contact": "Contact",
+    "legalMentions": "Legal notice",
+    "privacy": "Privacy policy",
+    "cookies": "Cookie policy",
+    "cgu": "Terms of use",
+    "cgv": "Terms of sale",
+    "manageCookies": "Manage cookies",
+    "rights": "© {{year}} MySWYM. All rights reserved."
+  },
+  "lang": {
+    "label": "Language",
+    "fr": "FR",
+    "en": "EN",
+    "switchToFr": "Passer en français",
+    "switchToEn": "Switch to English"
+  }
+}

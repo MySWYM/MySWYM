@@ -1,0 +1,19 @@
+{
+  "language": {
+    "section": "Language",
+    "title": "Interface language",
+    "hint": "Landing and navigation. The rest of the app stays in French for now."
+  },
+  "appearance": {
+    "section": "Appearance",
+    "dark": "Dark background",
+    "light": "Light background",
+    "darkHint": "Night mode — less glare",
+    "lightHint": "Day mode — white background",
+    "switchToLight": "Switch to light background",
+    "switchToDark": "Switch to dark background"
+  },
+  "account": {
+    "section": "Account"
+  }
+}

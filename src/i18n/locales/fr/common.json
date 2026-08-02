@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "homeAria": "mySWYM — Accueil",
+    "why": "Pourquoi",
+    "how": "Fonctionnement",
+    "pricing": "Tarifs",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "contact": "Contact",
+    "login": "Se connecter",
+    "cta": "Créer mon plan",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
+  },
+  "footer": {
+    "tagline": "Plan d'entraînement natation personnalisé — prêt en 2 minutes.",
+    "explore": "Explorer",
+    "legal": "Légal",
+    "home": "Accueil",
+    "why": "Pourquoi MySWYM",
+    "how": "Fonctionnement",
+    "pricing": "Tarifs",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "contact": "Contact",
+    "legalMentions": "Mentions légales",
+    "privacy": "Politique de confidentialité",
+    "cookies": "Politique de cookies",
+    "cgu": "CGU",
+    "cgv": "CGV",
+    "manageCookies": "Gérer les cookies",
+    "rights": "© {{year}} MySWYM. Tous droits réservés."
+  },
+  "lang": {
+    "label": "Langue",
+    "fr": "FR",
+    "en": "EN",
+    "switchToFr": "Passer en français",
+    "switchToEn": "Switch to English"
+  }
+}

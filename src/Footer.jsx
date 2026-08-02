@@ -1,26 +1,10 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { resetCookieConsent } from "./CookieBanner.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 
 const FONT = "'Lexend', sans-serif";
-
-const EXPLORER_LINKS = [
-  ["Accueil", "/accueil"],
-  ["Pourquoi MySWYM", "/accueil#pourquoi"],
-  ["Fonctionnement", "/comment-ca-marche"],
-  ["Tarifs", "/accueil#pricing"],
-  ["FAQ", "/accueil#faq"],
-  ["Blog", "/blog"],
-  ["Contact", "/contact"],
-];
-
-const LEGAL_LINKS = [
-  ["Mentions légales", "/mentions-legales"],
-  ["Politique de confidentialité", "/politique-confidentialite"],
-  ["Politique de cookies", "/politique-cookies"],
-  ["CGU", "/cgu"],
-  ["CGV", "/cgv"],
-];
 
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
@@ -40,7 +24,28 @@ function useIsMobile(bp = 640) {
 
 /** Footer marketing — afficher sur toutes les pages publiques et l'app. */
 export default function Footer({ aboveBottomNav = false }) {
+  const { t } = useTranslation("common");
   const isMobile = useIsMobile();
+  const year = new Date().getFullYear();
+
+  const explorerLinks = [
+    [t("footer.home"), "/accueil"],
+    [t("footer.why"), "/accueil#pourquoi"],
+    [t("footer.how"), "/comment-ca-marche"],
+    [t("footer.pricing"), "/accueil#pricing"],
+    [t("footer.faq"), "/accueil#faq"],
+    [t("footer.blog"), "/blog"],
+    [t("footer.contact"), "/contact"],
+  ];
+
+  const legalLinks = [
+    [t("footer.legalMentions"), "/mentions-legales"],
+    [t("footer.privacy"), "/politique-confidentialite"],
+    [t("footer.cookies"), "/politique-cookies"],
+    [t("footer.cgu"), "/cgu"],
+    [t("footer.cgv"), "/cgv"],
+  ];
+
   return (
     <footer
       id="contact"
@@ -69,9 +74,8 @@ export default function Footer({ aboveBottomNav = false }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8, maxWidth: 260 }}>
           <BrandLogo height={52} onDark />
           <p style={{ margin: 0, color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.5, fontFamily: FONT }}>
-            Plan d&apos;entraînement natation personnalisé — prêt en 2 minutes.
+            {t("footer.tagline")}
           </p>
-          {/* TODO: liens réseaux sociaux réels (Instagram, etc.) quand prêts */}
           <a
             href="https://www.instagram.com/myswym.app/"
             target="_blank"
@@ -84,11 +88,11 @@ export default function Footer({ aboveBottomNav = false }) {
         <div style={{ display: "flex", gap: isMobile ? 18 : 30, flexWrap: "wrap", justifyContent: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
             <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              Explorer
+              {t("footer.explore")}
             </span>
-            {EXPLORER_LINKS.map(([l, h]) => (
+            {explorerLinks.map(([l, h]) => (
               <a
-                key={l}
+                key={h}
                 href={h}
                 style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
@@ -100,11 +104,11 @@ export default function Footer({ aboveBottomNav = false }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
             <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              Légal
+              {t("footer.legal")}
             </span>
-            {LEGAL_LINKS.map(([l, h]) => (
+            {legalLinks.map(([l, h]) => (
               <a
-                key={l}
+                key={h}
                 href={h}
                 style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
@@ -115,7 +119,8 @@ export default function Footer({ aboveBottomNav = false }) {
             ))}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-end", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-end", gap: 10 }}>
+          <LanguageSwitcher variant="footer" />
           <button
             type="button"
             onClick={() => resetCookieConsent()}
@@ -124,10 +129,10 @@ export default function Footer({ aboveBottomNav = false }) {
               color: "rgba(255,255,255,0.4)", fontSize: 13, fontFamily: FONT, textDecoration: "underline",
             }}
           >
-            Gérer les cookies
+            {t("footer.manageCookies")}
           </button>
           <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>
-            © {new Date().getFullYear()} MySWYM. Tous droits réservés.
+            {t("footer.rights", { year })}
           </div>
         </div>
       </div>

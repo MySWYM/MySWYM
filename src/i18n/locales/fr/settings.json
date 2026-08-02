@@ -1,0 +1,19 @@
+{
+  "language": {
+    "section": "Langue",
+    "title": "Langue de l'interface",
+    "hint": "Landing et navigation. Le reste de l'app reste en français pour l'instant."
+  },
+  "appearance": {
+    "section": "Apparence",
+    "dark": "Fond sombre",
+    "light": "Fond clair",
+    "darkHint": "Mode nuit — moins d'éblouissement",
+    "lightHint": "Mode jour — fond blanc",
+    "switchToLight": "Passer en fond clair",
+    "switchToDark": "Passer en fond sombre"
+  },
+  "account": {
+    "section": "Compte"
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "./supabase.js";
 import {
   Waves, Target, Calendar, Gauge, Clock, ArrowRight, Check, ChevronDown,
@@ -296,13 +297,21 @@ function PhoneFrame({ children, width = 260, darkStatus = true, style = {} }) {
 }
 
 function OnboardingMockup({ width = 240, step = 0 }) {
+  const { t } = useTranslation("landing");
+  const goals = [t("mock.goalTri"), t("mock.goalOw"), t("mock.goalTech"), t("mock.goalDiploma")];
+  const weekdays = t("mock.weekdays", { returnObjects: true });
+  const levels = [
+    { label: t("mock.beginner"), vol: "1 200 – 2 000 m" },
+    { label: t("mock.intermediate"), vol: "2 000 – 3 500 m" },
+    { label: t("mock.advanced"), vol: "3 000 – 5 000 m" },
+  ];
   const screens = [
     {
-      stepLabel: "ÉTAPE 1 / 4",
-      title: "Ton objectif",
+      stepLabel: t("mock.stepOf", { n: 1 }),
+      title: t("mock.goalTitle"),
       body: (
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 7, background: C.bg, flex: 1 }}>
-          {["Triathlon", "Eau libre", "Technique", "Diplôme"].map((label, i) => (
+          {goals.map((label, i) => (
             <div key={label} style={{
               background: i === 0 ? C.primaryFix : C.white,
               border: `1.5px solid ${i === 0 ? C.accent : C.border}`,
@@ -315,23 +324,23 @@ function OnboardingMockup({ width = 240, step = 0 }) {
       ),
     },
     {
-      stepLabel: "ÉTAPE 2 / 4",
-      title: "Date du jour J",
+      stepLabel: t("mock.stepOf", { n: 2 }),
+      title: t("mock.dateTitle"),
       body: (
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, background: C.bg, flex: 1 }}>
           <div style={{
             background: C.white, borderRadius: 14, border: `1.5px solid ${C.border}`,
             padding: "12px 14px", textAlign: "center",
           }}>
-            <div style={{ fontSize: 10, color: C.outline, fontWeight: 700, letterSpacing: "0.06em", fontFamily: FONT, marginBottom: 4 }}>ÉVÉNEMENT</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.1), fontWeight: 800, color: C.ink, textTransform: "uppercase" }}>15 sept. 2026</div>
-            <div style={{ marginTop: 6, fontSize: 12, color: C.primary, fontWeight: 600, fontFamily: FONT }}>Dans 8 semaines</div>
+            <div style={{ fontSize: 10, color: C.outline, fontWeight: 700, letterSpacing: "0.06em", fontFamily: FONT, marginBottom: 4 }}>{t("mock.event")}</div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.1), fontWeight: 800, color: C.ink, textTransform: "uppercase" }}>{t("mock.eventDate")}</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: C.primary, fontWeight: 600, fontFamily: FONT }}>{t("mock.inWeeks")}</div>
           </div>
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4,
             background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: 10,
           }}>
-            {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+            {(Array.isArray(weekdays) ? weekdays : ["L","M","M","J","V","S","D"]).map((d, i) => (
               <div key={`${d}${i}`} style={{ fontSize: 9, textAlign: "center", color: C.outline, fontFamily: FONT, fontWeight: 600 }}>{d}</div>
             ))}
             {Array.from({ length: 28 }, (_, i) => {
@@ -352,15 +361,11 @@ function OnboardingMockup({ width = 240, step = 0 }) {
       ),
     },
     {
-      stepLabel: "ÉTAPE 3 / 4",
-      title: "Ton niveau",
+      stepLabel: t("mock.stepOf", { n: 3 }),
+      title: t("mock.levelTitle"),
       body: (
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8, background: C.bg, flex: 1 }}>
-          {[
-            { label: "Débutant", vol: "1 200 – 2 000 m" },
-            { label: "Intermédiaire", vol: "2 000 – 3 500 m" },
-            { label: "Avancé", vol: "3 000 – 5 000 m" },
-          ].map((row, i) => (
+          {levels.map((row, i) => (
             <div key={row.label} style={{
               background: i === 1 ? C.primaryFix : C.white,
               border: `1.5px solid ${i === 1 ? C.accent : C.border}`,
@@ -373,19 +378,19 @@ function OnboardingMockup({ width = 240, step = 0 }) {
               <div style={{
                 fontSize: 11, fontFamily: FONT,
                 color: i === 1 ? C.primary : C.outline, fontWeight: 600,
-              }}>{row.vol} / séance</div>
+              }}>{row.vol} {t("mock.perSession")}</div>
             </div>
           ))}
         </div>
       ),
     },
     {
-      stepLabel: "ÉTAPE 4 / 4",
-      title: "Fréquence",
+      stepLabel: t("mock.stepOf", { n: 4 }),
+      title: t("mock.freqTitle"),
       body: (
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, background: C.bg, flex: 1 }}>
           <div style={{ fontSize: 11, color: C.secondary, fontFamily: FONT, textAlign: "center" }}>
-            Combien de séances par semaine&nbsp;?
+            {t("mock.freqAsk")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
             {[1, 2, 3, 4].map((n) => (
@@ -401,7 +406,7 @@ function OnboardingMockup({ width = 240, step = 0 }) {
                 <div style={{
                   fontSize: 10, marginTop: 4, fontFamily: FONT, fontWeight: 600,
                   color: n === 3 ? C.primary : C.outline,
-                }}>{n === 1 ? "séance" : "séances"}</div>
+                }}>{n === 1 ? t("mock.sessionOne") : t("mock.sessionMany")}</div>
               </div>
             ))}
           </div>
@@ -409,7 +414,7 @@ function OnboardingMockup({ width = 240, step = 0 }) {
             background: C.white, borderRadius: 12, border: `1px solid ${C.border}`,
             padding: "10px 12px", fontSize: 11, color: C.inkLight, fontFamily: FONT, lineHeight: 1.4,
           }}>
-            Planning réaliste : 3 créneaux tenables dans ta semaine.
+            {t("mock.freqHint")}
           </div>
         </div>
       ),
@@ -430,18 +435,19 @@ function OnboardingMockup({ width = 240, step = 0 }) {
 }
 
 function SessionMockup({ width = 260 }) {
+  const { t } = useTranslation("landing");
   return (
     <PhoneFrame width={width} darkStatus>
       <div style={{ background: C.ink, padding: "10px 14px 12px", flexShrink: 0 }}>
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", letterSpacing: "0.08em", fontFamily: FONT, marginBottom: 3 }}>SEMAINE 3 · SÉANCE 2</div>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.09), fontWeight: 800, color: C.white, textTransform: "uppercase", lineHeight: 1 }}>Endurance</div>
-        <div style={{ marginTop: 5, fontSize: 12, color: C.accent, fontWeight: 600, fontFamily: FONT }}>2 200 m · ~50 min</div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", letterSpacing: "0.08em", fontFamily: FONT, marginBottom: 3 }}>{t("mock.weekSession")}</div>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.09), fontWeight: 800, color: C.white, textTransform: "uppercase", lineHeight: 1 }}>{t("mock.endurance")}</div>
+        <div style={{ marginTop: 5, fontSize: 12, color: C.accent, fontWeight: 600, fontFamily: FONT }}>{t("mock.sessionMeta")}</div>
       </div>
       <div style={{ background: C.bg, padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 7, flex: 1, overflow: "hidden" }}>
         {[
-          { label: "Échauffement", text: "400 m nage libre progressive" },
-          { label: "Corps", text: "5 × 300 m crawl — R30\"" },
-          { label: "Retour au calme", text: "300 m mixte très lent" },
+          { label: t("mock.warm"), text: t("mock.warmText") },
+          { label: t("mock.main"), text: t("mock.mainText") },
+          { label: t("mock.cool"), text: t("mock.coolText") },
         ].map((b) => (
           <div key={b.label} style={{ background: C.white, borderRadius: 11, padding: "9px 11px", border: `1px solid ${C.border}` }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: C.primary, letterSpacing: "0.06em", marginBottom: 2, fontFamily: FONT }}>{b.label.toUpperCase()}</div>
@@ -449,7 +455,7 @@ function SessionMockup({ width = 260 }) {
           </div>
         ))}
         <div style={{ fontSize: 10, color: C.secondary, fontFamily: FONT, lineHeight: 1.4, padding: "2px 2px 0" }}>
-          Coach : allure conversation — tu pourrais encore parler.
+          {t("mock.coachTip")}
         </div>
       </div>
     </PhoneFrame>
@@ -458,6 +464,7 @@ function SessionMockup({ width = 260 }) {
 
 // ── 1. Hero ────────────────────────────────────────────────────────────────
 function Hero() {
+  const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
   return (
     <section style={{
@@ -475,7 +482,6 @@ function Hero() {
         linear-gradient(160deg, #0a3d62 0%, #154388 40%, #0c1a2e 100%)
       `,
     }}>
-      {/* Vague décorative — placeholder atmosphère bassin */}
       <div aria-hidden style={{
         position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.18,
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%238eb3ff' d='M0,160L48,170.7C96,181,192,203,288,197.3C384,192,480,160,576,154.7C672,149,768,171,864,186.7C960,203,1056,213,1152,197.3C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E")`,
@@ -502,8 +508,8 @@ function Hero() {
             color: C.white, lineHeight: 0.98,
             margin: "0 0 18px", textTransform: "uppercase",
           }}>
-            Ton plan de natation<br />
-            <span style={{ color: C.accent }}>personnalisé en 2 minutes</span>
+            {t("hero.titleLine1")}<br />
+            <span style={{ color: C.accent }}>{t("hero.titleAccent")}</span>
           </h1>
 
           <p style={{
@@ -512,20 +518,19 @@ function Hero() {
             fontFamily: FONT,
             marginLeft: isMobile ? "auto" : 0, marginRight: isMobile ? "auto" : 0,
           }}>
-            Objectif course, distance ou remise en forme — adapté à ton niveau, ta fréquence et la date de ton événement.
+            {t("hero.subtitle")}
           </p>
 
           <div style={{ display: "flex", gap: 12, justifyContent: isMobile ? "center" : "flex-start", flexWrap: "wrap", marginBottom: 12 }}>
             <PrimaryCta>
-              Créer mon plan gratuitement <ArrowRight size={16} />
+              {t("hero.cta")} <ArrowRight size={16} />
             </PrimaryCta>
           </div>
           <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontFamily: FONT }}>
-            {FREE_WEEKS} semaines offertes · Sans carte bancaire
+            {t("hero.freeNote", { weeks: FREE_WEEKS })}
           </p>
         </div>
 
-        {/* Mockups iPhone */}
         <div style={{
           display: "flex", justifyContent: "center", alignItems: "flex-end",
           gap: isMobile ? 0 : 16, position: "relative",
@@ -558,32 +563,32 @@ function Hero() {
 
 // ── 2. Pourquoi MySWYM ─────────────────────────────────────────────────────
 function WhyMyswym() {
+  const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
   const benefits = [
     {
       icon: Layers,
-      title: "6 types de séances",
-      stat: "Endurance · Seuil · Vitesse · Technique · Pyramide · Récup",
-      desc: "Des séances variées pour progresser sans monotonie.",
-      // TODO: capture d'écran réelle de la variété de séances
+      title: t("why.b1Title"),
+      stat: t("why.b1Stat"),
+      desc: t("why.b1Desc"),
     },
     {
       icon: Dumbbell,
-      title: "Adapté à ton matériel",
-      stat: "Pull-buoy · Planche · Palmes · Tuba",
-      desc: "Un plan qui s'adapte à ton niveau et au matériel que tu as.",
+      title: t("why.b2Title"),
+      stat: t("why.b2Stat"),
+      desc: t("why.b2Desc"),
     },
     {
       icon: Timer,
-      title: "Progression jusqu'au jour J",
-      stat: "Semaine après semaine",
-      desc: "Suis ta progression jusqu'à ton objectif, sans improviser.",
+      title: t("why.b3Title"),
+      stat: t("why.b3Stat"),
+      desc: t("why.b3Desc"),
     },
     {
       icon: Zap,
-      title: "Plan prêt en 2 minutes",
-      stat: "Génération instantanée",
-      desc: "Sans attente, sans IA externe — ton plan est prêt tout de suite.",
+      title: t("why.b4Title"),
+      stat: t("why.b4Stat"),
+      desc: t("why.b4Desc"),
     },
   ];
 
@@ -591,15 +596,15 @@ function WhyMyswym() {
     <section id="pourquoi" style={{ background: C.bg, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 1040, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
-          <SectionLabel text="POURQUOI MYSWYM" />
+          <SectionLabel text={t("why.label")} />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
             fontWeight: 800, color: C.ink, margin: "0 0 12px", textTransform: "uppercase",
           }}>
-            Pourquoi utiliser MySWYM&nbsp;?
+            {t("why.title")}
           </h2>
           <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 440, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
-            Tout ce qu'il faut pour structurer ton entraînement — rien de superflu.
+            {t("why.subtitle")}
           </p>
         </FadeIn>
 
@@ -615,7 +620,6 @@ function WhyMyswym() {
                 borderRadius: 24, overflow: "hidden", height: "100%",
                 boxShadow: C.shadow, display: "flex", flexDirection: "column",
               }}>
-                {/* Placeholder capture — fond gradient produit */}
                 <div style={{
                   height: isMobile ? 120 : 140,
                   background: `linear-gradient(135deg, ${C.primaryDeep} 0%, ${C.primary} 50%, ${C.accent} 100%)`,
@@ -627,8 +631,7 @@ function WhyMyswym() {
                     position: "absolute", bottom: 10, right: 12,
                     fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: FONT, fontWeight: 600,
                   }}>
-                    {/* TODO: remplacer par vraie capture d'écran app */}
-                    Aperçu UI
+                    {t("why.uiPreview")}
                   </span>
                 </div>
                 <div style={{ padding: "20px 22px 22px" }}>
@@ -647,6 +650,7 @@ function WhyMyswym() {
 
 // ── 3. Comment ça marche ───────────────────────────────────────────────────
 function HowItWorks() {
+  const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
   const [active, setActive] = useState(0);
 
@@ -654,26 +658,26 @@ function HowItWorks() {
     {
       n: "01",
       icon: Target,
-      title: "Objectif",
-      desc: "Définis ta course, ta distance ou ton objectif de forme. Triathlon, eau libre, technique ou diplôme — le plan part de ton cap, pas d'un modèle générique.",
+      title: t("how.s1Title"),
+      desc: t("how.s1Desc"),
     },
     {
       n: "02",
       icon: Calendar,
-      title: "Date de l'événement",
-      desc: "Indique le jour J. Le plan se cale sur le temps qu'il te reste : volume progressif, phases de construction et affûtage au bon moment.",
+      title: t("how.s2Title"),
+      desc: t("how.s2Desc"),
     },
     {
       n: "03",
       icon: Gauge,
-      title: "Niveau",
-      desc: "Débutant, intermédiaire ou avancé — volumes et intensités s'adaptent (environ 1 200–2 000 m, 2 000–3 500 m ou 3 000–5 000 m par séance).",
+      title: t("how.s3Title"),
+      desc: t("how.s3Desc"),
     },
     {
       n: "04",
       icon: Clock,
-      title: "Fréquence hebdo",
-      desc: "Choisis un planning réaliste selon ton emploi du temps. MySWYM construit des semaines tenables, pas un programme que tu abandonnes en 10 jours.",
+      title: t("how.s4Title"),
+      desc: t("how.s4Desc"),
     },
   ];
 
@@ -683,15 +687,15 @@ function HowItWorks() {
     <section id="how" style={{ background: C.bgSoft, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 1040, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
-          <SectionLabel text="COMMENT ÇA MARCHE" />
+          <SectionLabel text={t("how.label")} />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
             fontWeight: 800, color: C.ink, margin: "0 0 12px", textTransform: "uppercase",
           }}>
-            4 étapes. Ton plan.
+            {t("how.title")}
           </h2>
           <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 420, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
-            Le même onboarding que dans l'app — simple, rapide, concret.
+            {t("how.subtitle")}
           </p>
         </FadeIn>
 
@@ -701,7 +705,6 @@ function HowItWorks() {
           gap: isMobile ? 24 : 48,
           alignItems: "center",
         }}>
-          {/* Sur mobile : téléphone d'abord pour voir le changement tout de suite */}
           {isMobile && (
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
               <div style={{ position: "relative" }} key={active}>
@@ -781,26 +784,27 @@ function HowItWorks() {
 
 // ── 4. Aperçu d'une séance ─────────────────────────────────────────────────
 function SessionPreview() {
+  const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
   const blocks = [
-    { label: "Échauffement", color: "#34C759", content: "400 m nage libre — accélération progressive sur les 100 derniers mètres." },
-    { label: "Corps de séance", color: C.primary, content: "5 × 300 m crawl à allure endurance — 30 s de repos. Respiration régulière, glisse après chaque coulée." },
-    { label: "Retour au calme", color: C.outline, content: "300 m mixte très lent — dos et brasse pour relâcher les épaules." },
+    { label: t("session.warmLabel"), color: "#34C759", content: t("session.warmContent") },
+    { label: t("session.mainLabel"), color: C.primary, content: t("session.mainContent") },
+    { label: t("session.coolLabel"), color: C.outline, content: t("session.coolContent") },
   ];
 
   return (
     <section id="seance" style={{ background: C.bg, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 960, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
-          <SectionLabel text="APERÇU DE SÉANCE" />
+          <SectionLabel text={t("session.label")} />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
             fontWeight: 800, color: C.ink, margin: "0 0 12px", textTransform: "uppercase",
           }}>
-            Clair avant d'entrer dans l'eau
+            {t("session.title")}
           </h2>
           <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 460, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
-            Chaque séance a une structure coach : échauffement, corps, retour au calme — plus un conseil concret.
+            {t("session.subtitle")}
           </p>
         </FadeIn>
 
@@ -820,12 +824,12 @@ function SessionPreview() {
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
                 <div style={{ background: C.primaryFix, borderRadius: 12, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, fontFamily: FONT }}>Endurance</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.primary, fontFamily: FONT }}>{t("session.type")}</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 120 }}>
-                  <div style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.ink }}>Séries confortables</div>
+                  <div style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.ink }}>{t("session.heading")}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.secondary, fontFamily: FONT }}>2 200 m · ~50 min</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.secondary, fontFamily: FONT }}>{t("session.meta")}</div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -843,7 +847,7 @@ function SessionPreview() {
               <div style={{ background: C.primaryFix, borderRadius: 14, padding: "12px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <Zap size={14} color={C.primary} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span style={{ fontSize: 13, color: C.inkLight, lineHeight: 1.6, fontFamily: FONT }}>
-                  Conseil coach : allure conversation. Si tu ne peux plus parler, tu vas trop vite — allonge le repos.
+                  {t("session.tip")}
                 </span>
               </div>
             </div>
@@ -856,22 +860,23 @@ function SessionPreview() {
 
 // ── 5. Confiance / crédibilité ─────────────────────────────────────────────
 function Trust() {
+  const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
   const points = [
     {
       icon: Shield,
-      title: "Génération locale, fiable",
-      desc: "Ton plan est calculé dans l'app — sans dépendre d'une IA externe ni d'un délai de réponse. Résultat immédiat, reproductible.",
+      title: t("trust.p1Title"),
+      desc: t("trust.p1Desc"),
     },
     {
       icon: Layers,
-      title: "Structure pro",
-      desc: "Échauffement, corps de séance, retour au calme, types d'effort (endurance, seuil, vitesse…) — l'approche des plans d'entraînement structurés.",
+      title: t("trust.p2Title"),
+      desc: t("trust.p2Desc"),
     },
     {
       icon: Waves,
-      title: "Pensé pour le bassin",
-      desc: "Volumes par niveau, matériel optionnel, bassin 25 m ou 50 m. Des séances lisibles avant d'entrer dans l'eau.",
+      title: t("trust.p3Title"),
+      desc: t("trust.p3Desc"),
     },
   ];
 
@@ -879,15 +884,15 @@ function Trust() {
     <section id="confiance" style={{ background: C.night, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 960, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
-          <SectionLabel text="CRÉDIBILITÉ" dark />
+          <SectionLabel text={t("trust.label")} dark />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
             fontWeight: 800, color: C.white, margin: "0 0 12px", textTransform: "uppercase",
           }}>
-            Un coaching structuré,<br />pas une improvisation
+            {t("trust.titleLine1")}<br />{t("trust.titleLine2")}
           </h2>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, maxWidth: 480, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
-            MySWYM s'appuie sur des règles d'entraînement claires — pas sur des prompts aléatoires.
+            {t("trust.subtitle")}
           </p>
         </FadeIn>
 
@@ -923,6 +928,7 @@ function Trust() {
 
 // ── 6. Tarif / Freemium ────────────────────────────────────────────────────
 function Pricing() {
+  const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
 
   const handlePremium = async (priceId) => {
@@ -956,39 +962,39 @@ function Pricing() {
         window.location.href = data.url;
         return;
       }
-      alert(data.error || "Impossible d'ouvrir le paiement. Réessaie.");
+      alert(data.error || t("pricing.checkoutError"));
     } catch {
-      alert("Impossible d'ouvrir le paiement. Réessaie.");
+      alert(t("pricing.checkoutError"));
     }
   };
 
   const freeFeatures = [
-    `${FREE_WEEKS} premières semaines de ton plan`,
-    "Accès aux fonctionnalités de base",
-    "Séances détaillées avec conseils coach",
-    "Sans carte bancaire",
+    t("pricing.freeF1", { weeks: FREE_WEEKS }),
+    t("pricing.freeF2"),
+    t("pricing.freeF3"),
+    t("pricing.freeF4"),
   ];
   const premiumFeatures = [
-    "Déblocage des semaines jusqu'à l'événement",
-    "Jusqu'à 5 séances / semaine",
-    "Allures cibles (zones d'effort)",
-    "Multi-plans & départs chronométrés",
-    "Annulable à tout moment (mensuel)",
+    t("pricing.premF1"),
+    t("pricing.premF2"),
+    t("pricing.premF3"),
+    t("pricing.premF4"),
+    t("pricing.premF5"),
   ];
 
   return (
     <section id="pricing" style={{ background: C.bgSoft, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
-          <SectionLabel text="TARIFS" />
+          <SectionLabel text={t("pricing.label")} />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
             fontWeight: 800, color: C.ink, margin: "0 0 12px", textTransform: "uppercase",
           }}>
-            Commence gratuit.<br />Débloque quand tu veux.
+            {t("pricing.titleLine1")}<br />{t("pricing.titleLine2")}
           </h2>
           <p style={{ color: C.secondary, fontSize: 16, fontFamily: FONT }}>
-            {FREE_WEEKS} semaines pour tester — Premium pour aller jusqu'au bout.
+            {t("pricing.subtitle", { weeks: FREE_WEEKS })}
           </p>
         </FadeIn>
 
@@ -1003,10 +1009,10 @@ function Pricing() {
               borderRadius: 28, padding: isMobile ? 24 : 32, boxShadow: C.shadow,
               height: "100%", display: "flex", flexDirection: "column",
             }}>
-              <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Gratuit</div>
-              <div style={{ fontSize: 40, fontFamily: FONT, fontWeight: 800, color: C.ink, margin: "12px 0 4px" }}>0€</div>
+              <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>{t("pricing.freeTitle")}</div>
+              <div style={{ fontSize: 40, fontFamily: FONT, fontWeight: 800, color: C.ink, margin: "12px 0 4px" }}>{t("pricing.freePrice")}</div>
               <div style={{ color: C.secondary, fontSize: 13, marginBottom: 22, fontFamily: FONT }}>
-                {FREE_WEEKS} semaines · sans engagement
+                {t("pricing.freeMeta", { weeks: FREE_WEEKS })}
               </div>
               <a href={CTA_HREF} style={{
                 display: "block", textAlign: "center",
@@ -1015,7 +1021,7 @@ function Pricing() {
                 padding: "13px", borderRadius: 16, textDecoration: "none",
                 marginBottom: 22, fontFamily: FONT, minHeight: 48, boxSizing: "border-box",
               }}>
-                Créer mon plan gratuitement
+                {t("pricing.freeCta")}
               </a>
               <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: "auto" }}>
                 {freeFeatures.map((f) => (
@@ -1038,22 +1044,22 @@ function Pricing() {
                 position: "absolute", top: -12, right: 24,
                 background: C.accent, color: C.accentText, fontSize: 11, fontWeight: 700,
                 padding: "4px 14px", borderRadius: 100, letterSpacing: "0.05em", fontFamily: FONT,
-              }}>RECOMMANDÉ</div>
+              }}>{t("pricing.recommended")}</div>
 
-              <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.white, marginBottom: 4 }}>Abonnement</div>
+              <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.white, marginBottom: 4 }}>{t("pricing.subTitle")}</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, margin: "12px 0 4px" }}>
                 <span style={{ fontSize: 40, fontFamily: FONT, fontWeight: 800, color: C.white, lineHeight: 1 }}>{PRICE_MONTHLY_LABEL}</span>
-                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6, fontFamily: FONT }}>/mois</span>
+                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6, fontFamily: FONT }}>{t("pricing.perMonth")}</span>
               </div>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 22, fontFamily: FONT }}>
-                ou {PRICE_ANNUAL_LABEL}/an via Stripe · débloque les semaines suivantes
+                {t("pricing.orAnnual", { price: PRICE_ANNUAL_LABEL })}
               </div>
 
               <PrimaryCta
                 onClick={() => handlePremium(PRICE_ANNUAL)}
                 style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
               >
-                Débloquer mon plan complet
+                {t("pricing.unlockCta")}
               </PrimaryCta>
               <button
                 type="button"
@@ -1064,7 +1070,7 @@ function Pricing() {
                   padding: "10px", borderRadius: 12, cursor: "pointer", marginBottom: 22,
                 }}
               >
-                Ou mensuel à {PRICE_MONTHLY_LABEL}/mois
+                {t("pricing.orMonthly", { price: PRICE_MONTHLY_LABEL })}
               </button>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: "auto" }}>
@@ -1080,7 +1086,8 @@ function Pricing() {
         </div>
 
         <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: C.outline, fontFamily: FONT }}>
-          Détail des offres sur <a href="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>la page Tarifs</a>.
+          {t("pricing.moreLink")}{" "}
+          <a href="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</a>.
         </p>
       </div>
     </section>
@@ -1094,36 +1101,25 @@ function Pricing() {
 
 // ── 8. FAQ ─────────────────────────────────────────────────────────────────
 function FAQ() {
+  const { t } = useTranslation("landing");
   const [open, setOpen] = useState(null);
   const items = [
-    {
-      q: "Je n'ai jamais fait de plan structuré, c'est adapté ?",
-      a: "Oui si tu sais déjà nager. Le niveau débutant propose des volumes simples et un langage clair. MySWYM structure tes séances — ce n'est pas une école pour apprendre le geste de A à Z.",
-    },
-    {
-      q: "Puis-je changer mon objectif en cours de route ?",
-      a: "Oui. Depuis le profil, tu peux relancer l'onboarding pour un nouvel objectif et régénérer un plan. Avec Premium, tu peux aussi gérer plusieurs plans en parallèle.",
-    },
-    {
-      q: "Comment fonctionne l'abonnement ?",
-      a: `Les ${FREE_WEEKS} premières semaines sont gratuites. Ensuite, l'abonnement Stripe débloque le reste du plan jusqu'à ton événement (mensuel ou annuel). Paiement sécurisé, sans engagement sur le mensuel.`,
-    },
-    {
-      q: "Puis-je annuler à tout moment ?",
-      a: "Oui pour l'offre mensuelle : tu annules depuis ton espace client et tu gardes l'accès jusqu'à la fin de la période payée. L'offre annuelle est un prépaiement — clairement indiqué au checkout.",
-    },
+    { q: t("faq.q1"), a: t("faq.a1") },
+    { q: t("faq.q2"), a: t("faq.a2") },
+    { q: t("faq.q3"), a: t("faq.a3", { weeks: FREE_WEEKS }) },
+    { q: t("faq.q4"), a: t("faq.a4") },
   ];
 
   return (
     <section id="faq" style={{ background: C.bg, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
-          <SectionLabel text="FAQ" />
+          <SectionLabel text={t("faq.label")} />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
             fontWeight: 800, color: C.ink, margin: 0, textTransform: "uppercase",
           }}>
-            Questions fréquentes
+            {t("faq.title")}
           </h2>
         </FadeIn>
 
@@ -1178,6 +1174,7 @@ function FAQ() {
 
 // ── 9. CTA final ───────────────────────────────────────────────────────────
 function FinalCTA() {
+  const { t } = useTranslation("landing");
   return (
     <section style={{ background: C.night, padding: "clamp(56px,8vw,96px) 20px", textAlign: "center" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
@@ -1189,13 +1186,13 @@ function FinalCTA() {
             fontFamily: FONT_DISPLAY, fontSize: "clamp(34px, 5vw, 52px)",
             fontWeight: 800, color: C.white, margin: "0 0 16px", textTransform: "uppercase",
           }}>
-            Atteins ton objectif<br />avec un plan clair
+            {t("finalCta.titleLine1")}<br />{t("finalCta.titleLine2")}
           </h2>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.65, marginBottom: 28, fontFamily: FONT }}>
-            Plan personnalisé en 2 minutes — {FREE_WEEKS} semaines offertes, sans carte.
+            {t("finalCta.subtitle", { weeks: FREE_WEEKS })}
           </p>
           <PrimaryCta>
-            Créer mon plan gratuitement <ArrowRight size={18} />
+            {t("finalCta.cta")} <ArrowRight size={18} />
           </PrimaryCta>
         </FadeIn>
       </div>
@@ -1205,8 +1202,10 @@ function FinalCTA() {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Landing() {
+  const { t, i18n } = useTranslation("landing");
+
   useEffect(() => {
-    document.title = "MySWYM — Plan d'entraînement natation personnalisé";
+    document.title = t("meta.title");
     document.body.style.background = C.bg;
     document.body.style.fontFamily = FONT;
 
@@ -1228,7 +1227,7 @@ export default function Landing() {
     scrollToTarget();
     window.addEventListener("hashchange", scrollToTarget);
     return () => window.removeEventListener("hashchange", scrollToTarget);
-  }, []);
+  }, [t, i18n.language]);
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>

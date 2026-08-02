@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import BrandLogo from "./BrandLogo.jsx";
+import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 
 const C = {
   ink: "#191c1e",
@@ -11,19 +13,20 @@ const C = {
   accentText: "#154388",
 };
 
-const LINKS = [
-  ["Pourquoi", "/accueil#pourquoi"],
-  ["Fonctionnement", "/comment-ca-marche"],
-  ["Tarifs", "/accueil#pricing"],
-  ["FAQ", "/accueil#faq"],
-  ["Blog", "/blog"],
-  ["Contact", "/contact"],
-];
-
 export default function PublicNav() {
+  const { t } = useTranslation("common");
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+
+  const links = [
+    [t("nav.why"), "/accueil#pourquoi"],
+    [t("nav.how"), "/comment-ca-marche"],
+    [t("nav.pricing"), "/accueil#pricing"],
+    [t("nav.faq"), "/accueil#faq"],
+    [t("nav.blog"), "/blog"],
+    [t("nav.contact"), "/contact"],
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -56,13 +59,13 @@ export default function PublicNav() {
           padding: "0 20px", height: 64,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <a href="/accueil" style={{ textDecoration: "none", display: "flex", alignItems: "center" }} aria-label="mySWYM — Accueil">
+          <a href="/accueil" style={{ textDecoration: "none", display: "flex", alignItems: "center" }} aria-label={t("nav.homeAria")}>
             <BrandLogo variant="wordmark" height={22} />
           </a>
 
           {!isMobile && (
             <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-              {LINKS.map(([label, href]) => (
+              {links.map(([label, href]) => (
                 <a key={href} href={href} style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", fontFamily: "'Lexend', sans-serif" }}>
                   {label}
                 </a>
@@ -71,9 +74,10 @@ export default function PublicNav() {
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {!isMobile && <LanguageSwitcher variant="nav" />}
             {!isMobile && (
               <a href="/connexion" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: "'Lexend', sans-serif" }}>
-                Se connecter
+                {t("nav.login")}
               </a>
             )}
             <a href="/" style={{
@@ -81,10 +85,10 @@ export default function PublicNav() {
               padding: isMobile ? "9px 16px" : "10px 22px", borderRadius: 100, textDecoration: "none",
               fontFamily: "'Lexend', sans-serif", boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
             }}>
-              Créer mon plan
+              {t("nav.cta")}
             </a>
             {isMobile && (
-              <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink }}>
+              <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink }}>
                 {menuOpen ? <X size={22} color={C.ink} /> : <Menu size={22} color={C.ink} />}
               </button>
             )}
@@ -101,15 +105,16 @@ export default function PublicNav() {
             transform: menuOpen ? "translateY(0)" : "translateY(-100%)", visibility: menuOpen ? "visible" : "hidden",
             transition: menuOpen ? "transform 0.28s cubic-bezier(0.4,0,0.2,1), visibility 0s 0s" : "transform 0.28s cubic-bezier(0.4,0,0.2,1), visibility 0s 0.28s",
           }}>
-            {LINKS.map(([label, href]) => (
+            {links.map(([label, href]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", color: C.ink, fontSize: 16, fontWeight: 600, textDecoration: "none", borderBottom: `1px solid ${C.border}`, fontFamily: "'Lexend', sans-serif" }}>
                 {label}
                 <ChevronRight size={16} color="#737782" />
               </a>
             ))}
-            <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href="/connexion" onClick={() => setMenuOpen(false)} style={{ display: "block", textAlign: "center", padding: "13px", borderRadius: 16, border: "1.5px solid #c3c6d2", color: C.ink, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "#f2f3f6", fontFamily: "'Lexend', sans-serif" }}>
-                Se connecter
+            <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+              <LanguageSwitcher variant="nav" />
+              <a href="/connexion" onClick={() => setMenuOpen(false)} style={{ display: "block", width: "100%", textAlign: "center", padding: "13px", borderRadius: 16, border: "1.5px solid #c3c6d2", color: C.ink, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "#f2f3f6", fontFamily: "'Lexend', sans-serif", boxSizing: "border-box" }}>
+                {t("nav.login")}
               </a>
             </div>
           </div>

@@ -30,6 +30,8 @@ import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { useTranslation } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
@@ -1851,6 +1853,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
 };
 
 const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession, theme = "light", onToggleTheme }) => {
+  const { t: ts } = useTranslation("settings");
   const [password,      setPassword]      = useState("");
   const [saving,        setSaving]        = useState(false);
   const [msg,           setMsg]           = useState(null);
@@ -2038,9 +2041,9 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
         {/* ── Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} stravaBestPace={stravaBestPace} />
 
-        {/* ── Apparence ── */}
+        {/* ── Langue ── */}
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>Apparence</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>{ts("language.section")}</div>
           <div style={{
             background: G.surface, borderRadius: 16, padding: "14px 16px",
             border: `1px solid ${G.greyLight}`, marginBottom: 10,
@@ -2048,17 +2051,37 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>
-                {theme === "dark" ? "Fond sombre" : "Fond clair"}
+                {ts("language.title")}
               </div>
               <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.35 }}>
-                {theme === "dark" ? "Mode nuit — moins d'éblouissement" : "Mode jour — fond blanc"}
+                {ts("language.hint")}
+              </div>
+            </div>
+            <LanguageSwitcher variant="settings" />
+          </div>
+        </div>
+
+        {/* ── Apparence ── */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>{ts("appearance.section")}</div>
+          <div style={{
+            background: G.surface, borderRadius: 16, padding: "14px 16px",
+            border: `1px solid ${G.greyLight}`, marginBottom: 10,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>
+                {theme === "dark" ? ts("appearance.dark") : ts("appearance.light")}
+              </div>
+              <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.35 }}>
+                {theme === "dark" ? ts("appearance.darkHint") : ts("appearance.lightHint")}
               </div>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={theme === "dark"}
-              aria-label={theme === "dark" ? "Passer en fond clair" : "Passer en fond sombre"}
+              aria-label={theme === "dark" ? ts("appearance.switchToLight") : ts("appearance.switchToDark")}
               onClick={onToggleTheme}
               style={{
                 flexShrink: 0, width: 64, height: 36, borderRadius: 999,
@@ -2105,7 +2128,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* ── 4. Compte ── */}
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>Compte</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>{ts("account.section")}</div>
 
           {/* Premium / abonnement — premier car le plus important */}
           <div style={{ marginBottom: 10 }}>
