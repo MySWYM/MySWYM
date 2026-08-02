@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Lexend:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss" prefix(cv);
+
+@theme {
+  /* Brand — mySWYM × Apple Fitness+ */
+  --color-cv-bg: #f5f7fb;
+  --color-cv-bg-elevated: #ffffff;
+  --color-cv-ink: #0f1419;
+  --color-cv-ink-secondary: #5b6570;
+  --color-cv-ink-tertiary: #8b95a1;
+  --color-cv-blue: #355da3;
+  --color-cv-blue-deep: #154388;
+  --color-cv-blue-mid: #5b82c4;
+  --color-cv-blue-soft: #e8effc;
+  --color-cv-blue-glow: #d0ddf7;
+  --color-cv-mint: #1aad7a;
+  --color-cv-mint-soft: #e6f8f1;
+  --color-cv-coral: #e85d4c;
+  --color-cv-gold: #d4a017;
+  --color-cv-gold-soft: #fbf3dc;
+  --color-cv-border: rgba(15, 20, 25, 0.08);
+  --color-cv-border-strong: rgba(15, 20, 25, 0.14);
+  --color-cv-overlay: rgba(15, 20, 25, 0.45);
+
+  --font-cv-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+  --font-cv-body: "Lexend", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-cv-sm: 10px;
+  --radius-cv-md: 14px;
+  --radius-cv-lg: 20px;
+  --radius-cv-xl: 28px;
+  --radius-cv-full: 9999px;
+
+  --shadow-cv-sm: 0 1px 2px rgba(15, 20, 25, 0.04);
+  --shadow-cv-md: 0 4px 16px rgba(15, 20, 25, 0.06);
+  --shadow-cv-lg: 0 12px 40px rgba(53, 93, 163, 0.14);
+  --shadow-cv-sheet: 0 -8px 40px rgba(15, 20, 25, 0.12);
+
+  --ease-cv-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-cv-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Root shell — isolates conversion prototype from legacy App styles */
+.cv-root {
+  font-family: var(--font-cv-body);
+  color: var(--color-cv-ink);
+  background: var(--color-cv-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+}
+
+.cv-root * {
+  box-sizing: border-box;
+}
+
+.cv-display {
+  font-family: var(--font-cv-display);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-root *,
+  .cv-root *::before,
+  .cv-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

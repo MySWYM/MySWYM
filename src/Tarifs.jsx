@@ -94,7 +94,7 @@ export default function TarifsPage() {
   const freeFeatures = [
     "Plan du premier mois (4 semaines)",
     "Tous les objectifs sportifs",
-    "1 à 2 séances par semaine",
+    "Jusqu'à 3 séances par semaine",
     "Séances détaillées avec cues",
   ];
   const premiumFeatures = [

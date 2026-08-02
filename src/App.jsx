@@ -2846,7 +2846,10 @@ const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
 
 const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 20, lineHeight: 1.1 }}>Séances par semaine</h2>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Séances par semaine</h2>
+    <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
+      Gratuit jusqu’à {FREE_FREQ_LIMIT}×. Au-delà, Premium débloque la charge complète.
+    </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
       {FREQUENCIES.map(f => {
         const locked = !isPremium && f.id > FREE_FREQ_LIMIT;
@@ -3188,7 +3191,8 @@ const BadgeToast = ({ badgeId }) => {
 
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
-const FREE_FREQ_LIMIT = 2;
+const FREE_FREQ_LIMIT = 3;
+const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
 const PLAN_VERSION = 26; // v26 = force regen contenu actuel (formats OW/triathlon, banque confirmé, etc.)
 // Force regen volontaire pour CE bump (v26) — écrase les semaines y compris progression.
 // Remettre à false dès le prochain bump (sinon chaque migration future réécrase tout).
@@ -3196,11 +3200,14 @@ const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
-  "1 à 2 séances par semaine",
+  "Jusqu'à 3 séances par semaine",
   "Tous les objectifs (triathlon, BNSSA, eau libre…)",
   "Retours hebdo sans ajustement auto",
   "Intervalles en récupération (R…)",
 ];
+
+const countCompletedSessions = (p) =>
+  (p?.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0);
 
 const PREMIUM_TIER_LINES = [
   "Plan complet jusqu'à ton événement",
@@ -3362,10 +3369,10 @@ const ReferralShareCard = () => {
   );
 };
 
-const UpgradeModal = ({ onClose, weeksBlocked }) => {
+const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState(weeksBlocked ? "biennial" : "annual");
+  const [period, setPeriod] = useState(weeksBlocked ? "biennial" : softContext ? "annual" : "annual");
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -3422,8 +3429,12 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>MySWYM Premium</h3>
-          {weeksBlocked
+          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
+            {softContext === "after_first_session" ? "Belle première séance" : "MySWYM Premium"}
+          </h3>
+          {softContext === "after_first_session"
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Tu as déjà le rythme. Premium garde ce momentum jusqu’au jour J — sans coupure à la semaine 5.<br /><span style={{ color: G.greyMid, fontSize: 13 }}>Tu peux continuer en gratuit, sans pression.</span></p>
+            : weeksBlocked
             ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Ton mois gratuit est terminé.<br /><strong style={{ color: G.ink }}>Offre spéciale : Premium 2 ans à −50%.</strong></p>
             : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
         </div>
@@ -3527,7 +3538,9 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
-        <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Continuer en gratuit</button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
+          {softContext === "after_first_session" ? "Continuer en gratuit — 4 semaines" : "Continuer en gratuit"}
+        </button>
       </div>
     </div>
   );
@@ -7205,6 +7218,8 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
+  const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [theme, setTheme] = useState(() => {
     try {
       return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || getStoredTheme());
@@ -7311,6 +7326,38 @@ export default function App() {
     navigate(mode === "register" ? "/inscription" : "/connexion");
   };
 
+  const openUpgrade = (softContext = null) => {
+    setUpgradeSoftContext(softContext);
+    setShowUpgrade(true);
+  };
+  const closeUpgrade = () => {
+    setShowUpgrade(false);
+    setUpgradeSoftContext(null);
+  };
+
+  // Soft paywall après la 1ʳᵉ séance : attendre la fermeture des sheets feedback.
+  useEffect(() => {
+    if (!softPaywallPending || isPremium || showUpgrade) return;
+    if (sessionFeedbackTarget !== null || feedbackWeek !== null) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      try {
+        if (localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) {
+          setSoftPaywallPending(false);
+          return;
+        }
+        localStorage.setItem(SOFT_PAYWALL_STORAGE_KEY, "1");
+      } catch { /* ignore */ }
+      setSoftPaywallPending(false);
+      openUpgrade("after_first_session");
+    }, 1100);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
+
   const handleAuthNavigateMode = (mode) => {
     navigate(mode === "register" ? "/inscription" : "/connexion", { replace: true });
   };
@@ -7340,7 +7387,7 @@ export default function App() {
       setUser(u);
       const premium = checkIsPremium(u);
       setIsPremium(premium);
-      if (premium) setShowUpgrade(false);
+      if (premium) closeUpgrade();
     };
 
     const syncAndApply = () => syncSubscriptionFromStripe()
@@ -7804,7 +7851,7 @@ export default function App() {
       }
       setActivePlanId(id);
       setScreen("app"); setActiveTab("home");
-      if (!isPremium && p.totalRealWeeks > FREE_WEEKS_LIMIT) setTimeout(() => setShowUpgrade(true), 1200);
+      // Pas de paywall auto ici : valeur d’abord, soft paywall après la 1ʳᵉ séance.
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
       setScreen("onboarding"); setStep(5);
@@ -7813,6 +7860,18 @@ export default function App() {
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
     const resolvedStatus = status || "done";
+    if (resolvedStatus === "done" && !isPremium) {
+      const active = plans.find((e) => e.id === activePlanId);
+      const prevDone = countCompletedSessions(active?.plan);
+      const alreadyDone = active?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex]?.completed;
+      if (!alreadyDone && prevDone === 0) {
+        try {
+          if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
+        } catch {
+          setSoftPaywallPending(true);
+        }
+      }
+    }
     setPlans(prev => prev.map(entry => {
       if (entry.id !== activePlanId) return entry;
       const newPlan = {
@@ -8015,7 +8074,7 @@ export default function App() {
   };
 
   const handleAddPlan = () => {
-    if (!isPremium) { setShowUpgrade(true); return; }
+    if (!isPremium) { openUpgrade(); return; }
     setAddingPlan(true);
     setProfile(BLANK_PROFILE);
     setStep(1);
@@ -8107,7 +8166,7 @@ export default function App() {
         const premium = checkIsPremium(u);
         setIsPremium(premium);
         showToast(premium ? "Premium activé ✓" : "Statut gratuit confirmé", 5000);
-        if (premium) setShowUpgrade(false);
+        if (premium) closeUpgrade();
       }
     } catch {
       showToast("Impossible de synchroniser. Réessaie ou contacte support@myswym.app", 8000);
@@ -8268,7 +8327,7 @@ export default function App() {
                   )}
 
                   {step === 5 && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(stepBefore5)} isLast={noDate} isPremium={isPremium} onUpgrade={() => setShowUpgrade(true)} />
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(stepBefore5)} isLast={noDate} isPremium={isPremium} onUpgrade={() => openUpgrade()} />
                   )}
 
                   {step === 6 && !noDate && (
@@ -8303,8 +8362,8 @@ export default function App() {
           </div>
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} theme={theme} onToggleTheme={handleToggleTheme} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => openUpgrade()} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} theme={theme} onToggleTheme={handleToggleTheme} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
@@ -8331,7 +8390,7 @@ export default function App() {
             {toast}
           </div>
         )}
-        {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} weeksBlocked={plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null} />}
+        {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={upgradeSoftContext ? null : (plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null)} />}
       </div>
     </>
   );

@@ -10,6 +10,7 @@ import Blog from './Blog.jsx'
 import BlogPost from './BlogPost.jsx'
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from './LegalPages.jsx'
 import CookieBanner from './CookieBanner.jsx'
+import { ConversionFlow } from './conversion/ConversionFlow.tsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -24,6 +25,9 @@ createRoot(document.getElementById('root')).render(
         {/* Alias anglais → routes FR */}
         <Route path="/login" element={<Navigate to="/connexion" replace />} />
         <Route path="/register" element={<Navigate to="/inscription" replace />} />
+
+        {/* Prototype parcours conversion (design + UX) */}
+        <Route path="/prototype/conversion" element={<ConversionFlow />} />
 
         {/* Landing marketing */}
         <Route path="/accueil" element={<Landing />} />
