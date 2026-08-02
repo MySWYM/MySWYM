@@ -29,11 +29,13 @@ const resolveReferralCode = (user) => {
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
+import BrandLogo from "./BrandLogo.jsx";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
+  Sun, Moon,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -48,10 +50,14 @@ const FontLoader = () => {
 };
 
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────
-const G = {
+const THEME_STORAGE_KEY = "myswym_theme";
+
+const G_LIGHT = {
   bg: "#f8f9fc",
+  surface: "#FFFFFF",
   ink: "#191c1e",
   inkLight: "#434751",
+  inverse: "#FFFFFF",
   blue: "#355da3",
   blueLight: "#d8e2ff",
   blueMid: "#8eb3ff",
@@ -71,21 +77,89 @@ const G = {
   greyLight: "#e1e2e5",
   greyXLight: "#f2f3f6",
   white: "#FFFFFF",
+  glass: "rgba(255,255,255,0.95)",
+  navGlass: "rgba(255,255,255,0.94)",
 };
 
+const G_DARK = {
+  bg: "#0c0e12",
+  surface: "#161a22",
+  ink: "#f0f2f5",
+  inkLight: "#c5c9d2",
+  inverse: "#0c0e12",
+  blue: "#7aa2ef",
+  blueLight: "#1a2744",
+  blueMid: "#8eb3ff",
+  blueDeep: "#a8c5ff",
+  water: "#22c3e0",
+  waterLight: "#0c2a32",
+  coral: "#FF6B78",
+  coralLight: "#3a151a",
+  mint: "#2dd4a0",
+  mintLight: "#0c2a20",
+  gold: "#FBBF24",
+  goldLight: "#3a2a0a",
+  purple: "#a78bfa",
+  purpleLight: "#241a3d",
+  grey: "#9aa0ad",
+  greyMid: "#6b7280",
+  greyLight: "#2a303c",
+  greyXLight: "#1c212b",
+  white: "#FFFFFF",
+  glass: "rgba(12,14,18,0.92)",
+  navGlass: "rgba(22,26,34,0.94)",
+};
+
+/** Palette active — mutée par applyTheme pour que les styles inline suivent le thème. */
+const G = { ...G_LIGHT };
+
+const getStoredTheme = () => {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+};
+
+const applyTheme = (theme) => {
+  const next = theme === "dark" ? G_DARK : G_LIGHT;
+  Object.assign(G, next);
+  const root = document.documentElement;
+  root.setAttribute("data-theme", theme);
+  root.style.colorScheme = theme;
+  root.style.setProperty("--myswym-bg", next.bg);
+  root.style.setProperty("--myswym-surface", next.surface);
+  root.style.setProperty("--myswym-ink", next.ink);
+  root.style.setProperty("--myswym-blue", next.blue);
+  root.style.setProperty("--myswym-grey-light", next.greyLight);
+  root.style.setProperty("--myswym-nav-bg", next.navGlass);
+  root.style.setProperty("--myswym-nav-border", next.greyLight);
+  root.style.setProperty("--myswym-glass", next.glass);
+  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* ignore */ }
+};
+
+// Appliquer avant le premier paint React (évite un flash clair → sombre)
+applyTheme(getStoredTheme());
+
+// Pastels figés (lisibles sur fond clair et sombre) — ne pas lier à G mutable
 const TYPE_META = {
-  ENDURANCE:    { bg: G.blueLight,   color: G.blue,    Icon: Waves,    tooltip: "Nage à allure confortable — tu pourrais parler. C'est la base de toute progression." },
-  SEUIL:        { bg: "#FFF3E0",     color: "#E65100", Icon: Activity, tooltip: "Effort soutenu mais contrôlé — tu travailles à la limite de ton confort. Améliore ton endurance." },
-  VITESSE:      { bg: G.coralLight,  color: G.coral,   Icon: Zap,      tooltip: "Sprints courts et intenses — récup complète entre chaque. Développe ta puissance." },
-  TECHNIQUE:    { bg: G.waterLight,  color: "#0097A7", Icon: Target,   tooltip: "On travaille la façon de nager — position, bras, jambes. Moins d'effort, plus d'efficacité." },
-  RÉCUPÉRATION: { bg: G.mintLight,   color: "#00897B", Icon: Droplets, tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer — c'est là que le corps progresse." },
+  ENDURANCE:    { bg: G_LIGHT.blueLight,   color: G_LIGHT.blue,    Icon: Waves,    tooltip: "Nage à allure confortable — tu pourrais parler. C'est la base de toute progression." },
+  SEUIL:        { bg: "#FFF3E0",           color: "#E65100",       Icon: Activity, tooltip: "Effort soutenu mais contrôlé — tu travailles à la limite de ton confort. Améliore ton endurance." },
+  VITESSE:      { bg: G_LIGHT.coralLight,  color: G_LIGHT.coral,   Icon: Zap,      tooltip: "Sprints courts et intenses — récup complète entre chaque. Développe ta puissance." },
+  TECHNIQUE:    { bg: G_LIGHT.waterLight,  color: "#0097A7",       Icon: Target,   tooltip: "On travaille la façon de nager — position, bras, jambes. Moins d'effort, plus d'efficacité." },
+  RÉCUPÉRATION: { bg: G_LIGHT.mintLight,   color: "#00897B",       Icon: Droplets, tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer — c'est là que le corps progresse." },
 };
 
 const css = `
   :root {
-    --myswym-bg: ${G.bg};
-    --myswym-ink: ${G.ink};
-    --myswym-blue: ${G.blue};
+    --myswym-bg: ${G_LIGHT.bg};
+    --myswym-surface: ${G_LIGHT.surface};
+    --myswym-ink: ${G_LIGHT.ink};
+    --myswym-blue: ${G_LIGHT.blue};
+    --myswym-grey-light: ${G_LIGHT.greyLight};
+    --myswym-nav-bg: ${G_LIGHT.navGlass};
+    --myswym-nav-border: ${G_LIGHT.greyLight};
+    --myswym-glass: ${G_LIGHT.glass};
     --bottom-nav-h: 64px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-top: env(safe-area-inset-top, 0px);
@@ -97,12 +171,14 @@ const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    background: ${G.bg};
+    background: var(--myswym-bg);
+    color: var(--myswym-ink);
     font-family: 'Lexend', sans-serif;
     overscroll-behavior: none;
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     min-height: 100dvh;
+    transition: background-color 0.25s ease, color 0.2s ease;
   }
   #root { min-height: 100dvh; }
   h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; text-transform: uppercase; font-weight: 800; }
@@ -151,10 +227,10 @@ const css = `
     left: 0;
     right: 0;
     z-index: 100;
-    background: rgba(255,255,255,0.94);
+    background: var(--myswym-nav-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid ${G.greyLight};
+    border-top: 1px solid var(--myswym-nav-border);
     padding-bottom: var(--safe-bottom);
   }
   .bottom-nav-inner {
@@ -209,7 +285,7 @@ const css = `
   .h-scroll::-webkit-scrollbar { display: none; }
   .myswym-app {
     min-height: 100dvh;
-    background: ${G.bg};
+    background: var(--myswym-bg);
   }
   .sticky-app-bar {
     position: sticky;
@@ -230,7 +306,14 @@ const css = `
       background:
         radial-gradient(ellipse 80% 50% at 50% -10%, rgba(142,179,255,0.22), transparent 55%),
         radial-gradient(ellipse 60% 40% at 80% 100%, rgba(142,179,255,0.10), transparent 50%),
-        ${G.bg};
+        var(--myswym-bg);
+      background-attachment: fixed;
+    }
+    html[data-theme="dark"] body {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(122,162,239,0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(122,162,239,0.06), transparent 50%),
+        var(--myswym-bg);
       background-attachment: fixed;
     }
     .sheet-overlay {
@@ -256,6 +339,10 @@ const css = `
       box-shadow: 0 12px 40px rgba(53,93,163,0.18);
       padding-bottom: 0;
       overflow: hidden;
+    }
+    html[data-theme="dark"] .bottom-nav {
+      border-color: rgba(142,179,255,0.12);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
     }
     .myswym-app {
       background: transparent;
@@ -790,7 +877,7 @@ const createShareCanvas = (session, goalLabel) => {
 // ── PRIMITIVES ────────────────────────────────────────────────────────────
 const Btn = ({ children, onClick, variant = "primary", disabled, style: s }) => {
   const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "'Lexend', sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
-  const styles = { primary: { background: G.ink, color: G.white }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0,87,255,0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
+  const styles = { primary: { background: G.ink, color: G.inverse }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0,87,255,0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
   return <button onClick={disabled ? undefined : onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
 };
 
@@ -818,7 +905,7 @@ const Ring = ({ value, size = 64, stroke = 6, color = G.water, bg = "rgba(255,25
 };
 
 const StatPill = ({ icon: Icon, value, label, color, bg }) => (
-  <div style={{ background: G.white, borderRadius: 22, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, boxShadow: "0 4px 20px rgba(142,179,255,0.10)", border: `1px solid rgba(142,179,255,0.10)` }}>
+  <div style={{ background: G.surface, borderRadius: 22, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, boxShadow: "0 4px 20px rgba(142,179,255,0.10)", border: `1px solid rgba(142,179,255,0.10)` }}>
     <div style={{ width: 40, height: 40, borderRadius: 12, background: bg || G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Icon size={20} color={color || G.blue} />
     </div>
@@ -906,7 +993,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
 
   if (!isPremium) {
     return (
-      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
+      <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
@@ -923,7 +1010,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
 
   if (!pace100 || totalWeeks < 2) {
     return (
-      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <TrendingUp size={16} color={G.blue} />
@@ -976,7 +1063,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
   const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 1000) / 10 : 0;
 
   return (
-    <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <TrendingUp size={16} color={G.blue} />
@@ -1057,7 +1144,7 @@ const PaceProjectionCard = ({ pace100 }) => {
   }).join(" ");
 
   return (
-    <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+    <div style={{ background: G.surface, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <TrendingUp size={16} color={G.blue} />
@@ -1136,7 +1223,7 @@ const PaceZonesCard = ({ pace100, onSave }) => {
   const hasChange = val100 !== pace100;
 
   return (
-    <div style={{ background: G.white, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
+    <div style={{ background: G.surface, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Gauge size={16} color={G.blue} />
@@ -1221,7 +1308,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
 
   if (!isPremium) {
     return (
-      <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
@@ -1287,7 +1374,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
   }
 
   return (
-    <div style={{ background: G.white, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
       <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Tes semaines déjà validées sont conservées.</p>
 
@@ -1342,7 +1429,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             width: "100%", padding: "12px 48px 12px 14px", borderRadius: 12,
             border: `1.5px solid ${pace100 ? G.blue : G.greyLight}`,
             fontSize: 16, fontWeight: 700, color: G.ink,
-            fontFamily: "'Lexend', sans-serif", background: G.white,
+            fontFamily: "'Lexend', sans-serif", background: G.surface,
             outline: "none", boxSizing: "border-box",
           }}
         />
@@ -1542,7 +1629,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   // il sera remplacé par l'état réel dès que checkConnection() répond
 
   return (
-    <div style={{ background: G.white, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
 
       {/* ── En-tête ──────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -1699,7 +1786,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession }) => {
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession, theme = "light", onToggleTheme }) => {
   const [password,      setPassword]      = useState("");
   const [saving,        setSaving]        = useState(false);
   const [msg,           setMsg]           = useState(null);
@@ -1725,7 +1812,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const stats  = computeStats(plan);
   const earned = checkBadges(stats);
 
-  const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none", boxSizing: "border-box" };
+  const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none", boxSizing: "border-box" };
 
   const save = async () => {
     if (!password) return;
@@ -1869,7 +1956,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
             { Icon: Waves, value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés", color: G.blue, bg: G.blueLight },
             { Icon: Check, value: stats.totalSessions, label: "Séances", color: G.mint, bg: G.mintLight },
           ].map(({ Icon, value, label, color, bg }, i) => (
-            <div key={i} style={{ background: G.white, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div key={i} style={{ background: G.surface, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icon size={20} color={color} />
               </div>
@@ -1886,6 +1973,71 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
         {/* ── Modifier le programme ── */}
         <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} stravaBestPace={stravaBestPace} />
+
+        {/* ── Apparence ── */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>Apparence</div>
+          <div style={{
+            background: G.surface, borderRadius: 16, padding: "14px 16px",
+            border: `1px solid ${G.greyLight}`, marginBottom: 10,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>
+                {theme === "dark" ? "Fond sombre" : "Fond clair"}
+              </div>
+              <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.35 }}>
+                {theme === "dark" ? "Mode nuit — moins d'éblouissement" : "Mode jour — fond blanc"}
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={theme === "dark"}
+              aria-label={theme === "dark" ? "Passer en fond clair" : "Passer en fond sombre"}
+              onClick={onToggleTheme}
+              style={{
+                flexShrink: 0, width: 64, height: 36, borderRadius: 999,
+                border: "none", cursor: "pointer", padding: 3,
+                background: theme === "dark" ? "#1e293b" : "#fde68a",
+                position: "relative",
+                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.12)",
+                transition: "background 0.25s ease",
+                WebkitTapHighlightColor: "transparent",
+                minWidth: 64, minHeight: 36,
+              }}
+            >
+              <span style={{
+                position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
+                opacity: theme === "dark" ? 0.35 : 1, transition: "opacity 0.2s",
+                display: "flex",
+              }}>
+                <Sun size={14} color={theme === "dark" ? "#94a3b8" : "#b45309"} strokeWidth={2.4} />
+              </span>
+              <span style={{
+                position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                opacity: theme === "dark" ? 1 : 0.35, transition: "opacity 0.2s",
+                display: "flex",
+              }}>
+                <Moon size={14} color={theme === "dark" ? "#e2e8f0" : "#94a3b8"} strokeWidth={2.4} />
+              </span>
+              <span style={{
+                position: "absolute", top: 3,
+                left: theme === "dark" ? 31 : 3,
+                width: 30, height: 30, borderRadius: "50%",
+                background: G.white,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                transition: "left 0.25s cubic-bezier(.4,.0,.2,1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {theme === "dark"
+                  ? <Moon size={15} color="#334155" strokeWidth={2.4} />
+                  : <Sun size={15} color="#d97706" strokeWidth={2.4} />
+                }
+              </span>
+            </button>
+          </div>
+        </div>
 
         {/* ── 4. Compte ── */}
         <div style={{ marginBottom: 8 }}>
@@ -1911,7 +2063,7 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           </div>
 
           {/* Email + mdp groupés */}
-          <div style={{ background: G.white, borderRadius: 16, overflow: "hidden", border: `1px solid ${G.greyLight}`, marginBottom: 10 }}>
+          <div style={{ background: G.surface, borderRadius: 16, overflow: "hidden", border: `1px solid ${G.greyLight}`, marginBottom: 10 }}>
             <div style={{ padding: "13px 16px", borderBottom: `1px solid ${G.greyXLight}` }}>
               <div style={{ fontSize: 11, color: G.grey }}>Email</div>
               <div style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{user?.email}</div>
@@ -1993,13 +2145,13 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     finally { setLoading(false); }
   };
 
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none" };
 
   return (
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 20, color: G.ink }}>MySWYM</span>
+          <BrandLogo height={40} />
         </div>
       )}
       <div className="fade-up">
@@ -2073,7 +2225,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
     finally { setLoading(false); }
   };
 
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.white, color: G.ink, outline: "none" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none" };
 
   const titleMap = {
     password: "Connexion",
@@ -2099,7 +2251,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
             <div style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: G.ink, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
+              <BrandLogo height={44} />
             </div>
           ) : <div />}
           {onBack && (
@@ -2173,7 +2325,7 @@ const Step1_Category = ({ onSelect }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {CATEGORIES.map(cat => (
         <button key={cat.id} onClick={() => onSelect(cat.id)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left" }}>
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.surface, cursor: "pointer", textAlign: "left" }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{cat.label}</span>
           <ArrowRight size={16} color={G.greyMid} />
         </button>
@@ -2192,7 +2344,7 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
         {subs.map(s => (
           <button key={s.id} onClick={() => onSelect(s.id)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.white, cursor: "pointer", textAlign: "left", gap: 12 }}>
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.surface, cursor: "pointer", textAlign: "left", gap: 12 }}>
             <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{s.label}</span>
               {s.dist && <span style={{ fontSize: 12, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>{s.dist}</span>}
@@ -2209,18 +2361,18 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
   const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
   const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Lexend', sans-serif", fontWeight: 700, color: G.ink, background: G.white, outline: "none", textAlign: "center" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Lexend', sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
   return (
     <div className="fade-up">
       <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
       <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
-        <div style={{ background: G.white, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
+        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
           <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Poids actuel (kg)</label>
           <input type="number" inputMode="decimal" value={weightCurrent} onChange={e => onChangeCurrent(e.target.value)} placeholder="ex : 75" style={inp} />
         </div>
-        <div style={{ background: G.white, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
+        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
           <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Objectif (kg)</label>
           <input type="number" inputMode="decimal" value={weightGoal} onChange={e => onChangeGoal(e.target.value)} placeholder="ex : 72" style={inp} />
         </div>
@@ -2330,7 +2482,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 5 sur 5</p>
       <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
-      <div style={{ background: G.white, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
+      <div style={{ background: G.surface, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
         <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>Date de l'événement</label>
 
         {value && !err && (
@@ -2370,7 +2522,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
             onClick={prevMonth}
             disabled={!canPrevMonth}
             aria-label="Mois précédent"
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.white, color: G.ink, cursor: canPrevMonth ? "pointer" : "not-allowed", opacity: canPrevMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canPrevMonth ? "pointer" : "not-allowed", opacity: canPrevMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
           >‹</button>
           <span style={{ fontSize: 14, fontWeight: 700, color: G.inkLight }}>{MONTHS_FR[viewMonth]} {viewYear}</span>
           <button
@@ -2378,7 +2530,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
             onClick={nextMonth}
             disabled={!canNextMonth}
             aria-label="Mois suivant"
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.white, color: G.ink, cursor: canNextMonth ? "pointer" : "not-allowed", opacity: canNextMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canNextMonth ? "pointer" : "not-allowed", opacity: canNextMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
           >›</button>
         </div>
 
@@ -2466,7 +2618,7 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
             style={{
               padding: "14px 16px", borderRadius: 14,
               border: `2px solid ${isDisabled ? G.greyLight : isActive ? l.color : G.greyLight}`,
-              background: isDisabled ? G.greyXLight : isActive ? l.bg : G.white,
+              background: isDisabled ? G.greyXLight : isActive ? l.bg : G.surface,
               cursor: isDisabled ? "default" : "pointer", textAlign: "left", opacity: isDisabled ? 0.55 : 1,
             }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? l.color : G.ink }}>{l.label}</div>
@@ -2477,7 +2629,7 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
     </div>
     <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
       {POOLS.map(p => (
-        <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.white, color: pool === p.id ? G.white : G.ink, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{p.label}</button>
+        <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.surface, color: pool === p.id ? G.inverse : G.ink, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{p.label}</button>
       ))}
     </div>
     <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
@@ -2544,7 +2696,7 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
           fontFamily: "'Lexend', sans-serif", fontWeight: 700,
           textAlign: "center", letterSpacing: "0.06em",
           border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
-          borderRadius: 14, outline: "none", background: G.white, color: G.ink,
+          borderRadius: 14, outline: "none", background: G.surface, color: G.ink,
           transition: "border-color 0.2s",
         }}
       />
@@ -2640,7 +2792,7 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "18px 20px", borderRadius: 16,
             border: `2px solid ${isActive ? G.blue : locked ? G.greyLight : G.greyLight}`,
-            background: isActive ? G.blue : locked ? G.greyXLight : G.white,
+            background: isActive ? G.blue : locked ? G.greyXLight : G.surface,
             cursor: "pointer", transition: "all 0.2s",
             boxShadow: isActive ? "0 4px 16px rgba(0,87,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)",
             opacity: locked ? 0.8 : 1,
@@ -2690,7 +2842,7 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
   };
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="sheet-panel scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
         <div style={{ background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
@@ -2765,7 +2917,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
 
   return (
     <div className="sheet-overlay">
-      <div className="sheet-panel scale-in" style={{ background: G.white, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
         {/* Handle */}
         <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
 
@@ -2795,7 +2947,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
                 flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
                 padding: "18px 8px", borderRadius: 20,
                 border: `2px solid ${isActive ? o.color : G.greyLight}`,
-                background: isActive ? o.bg : G.white,
+                background: isActive ? o.bg : G.surface,
                 cursor: "pointer", transition: "all 0.18s",
                 transform: isActive ? "scale(1.04)" : "scale(1)",
               }}>
@@ -2863,7 +3015,7 @@ const PREMIUM_TIER_LINES = [
 
 const PlanTierComparison = ({ compact = false }) => (
   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 8 : 10, marginBottom: compact ? 0 : 20 }}>
-    <div style={{ border: `1px solid ${G.greyLight}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.white }}>
+    <div style={{ border: `1px solid ${G.greyLight}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.surface }}>
       <div style={{ fontSize: 10, fontWeight: 800, color: G.grey, letterSpacing: "0.08em", marginBottom: 8 }}>GRATUIT</div>
       {FREE_TIER_LINES.map((line, i) => (
         <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < FREE_TIER_LINES.length - 1 ? 6 : 0 }}>
@@ -2901,7 +3053,7 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
   const totalWeeks = plan?.totalRealWeeks ?? plan?.weeks?.length ?? FREE_WEEKS_LIMIT;
   const shownWeeks = Math.min(FREE_WEEKS_LIMIT, plan?.weeks?.length ?? FREE_WEEKS_LIMIT);
   return (
-    <div style={{ background: G.white, borderRadius: 16, padding: "16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: G.surface, borderRadius: 16, padding: "16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Ton abonnement</div>
@@ -2979,7 +3131,7 @@ const ReferralShareCard = () => {
   return (
     <div style={{
       marginTop: 10, padding: 14, borderRadius: 14,
-      border: `1px solid ${G.greyLight}`, background: G.white,
+      border: `1px solid ${G.greyLight}`, background: G.surface,
     }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Parraine un nageur</div>
       <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, marginBottom: 10 }}>
@@ -3064,7 +3216,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
 
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="sheet-panel scale-in" style={{ background: G.white, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
@@ -3080,7 +3232,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
         <button onClick={() => setPeriod("biennial")} style={{
           width: "100%", padding: "16px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left",
           border: `2px solid ${isBiennial ? G.blue : G.greyLight}`,
-          background: isBiennial ? G.ink : G.white,
+          background: isBiennial ? G.ink : G.surface,
           marginBottom: 10, position: "relative", overflow: "hidden",
         }}>
           <div style={{
@@ -3091,7 +3243,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <div style={{ fontSize: 11, fontWeight: 700, color: isBiennial ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ENGAGEMENT 24 MOIS</div>
           <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>59,98€</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 800, color: isBiennial ? G.white : G.ink }}>29,99€</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 800, color: isBiennial ? G.inverse : G.ink }}>29,99€</div>
             <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.5)" : G.greyMid }}>/ 2 ans</div>
           </div>
           <div style={{ fontSize: 11, color: isBiennial ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 6 }}>
@@ -3105,7 +3257,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <button onClick={() => setPeriod("monthly")} style={{
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "monthly" ? G.blue : G.greyLight}`,
-            background: period === "monthly" ? G.blueLight : G.white,
+            background: period === "monthly" ? G.blueLight : G.surface,
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
             {hasReferral && (
@@ -3124,7 +3276,7 @@ const UpgradeModal = ({ onClose, weeksBlocked }) => {
           <button onClick={() => setPeriod("annual")} style={{
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
-            background: period === "annual" ? G.blueLight : G.white,
+            background: period === "annual" ? G.blueLight : G.surface,
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
@@ -3191,7 +3343,7 @@ const PremiumTeaser = ({ onUpgrade }) => (
         <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>La suite t'attend</div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Débloque ton programme complet</div>
       </div>
-      <button onClick={onUpgrade} style={{ background: G.white, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
+      <button onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
         Voir
       </button>
     </div>
@@ -3205,7 +3357,7 @@ const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>+{weeksTotal - weeksShown} semaines bloquées</div>
       <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Plan complet · départs D… · ajustement auto</div>
     </div>
-    <button onClick={onUpgrade} style={{ background: G.white, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Voir</button>
+    <button onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Voir</button>
   </div>
 );
 
@@ -3223,7 +3375,7 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
         position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         background: "rgba(248,249,252,0.72)", padding: "24px 20px", textAlign: "center",
       }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: G.white, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, boxShadow: "0 4px 16px rgba(53,93,163,0.12)" }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: G.surface, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, boxShadow: "0 4px 16px rgba(53,93,163,0.12)" }}>
           <Lock size={22} color={G.blue} />
         </div>
         <div style={{ fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 6 }}>
@@ -3503,7 +3655,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
 
   return (
     <div style={{
-      background: resolved ? G.greyXLight : G.white,
+      background: resolved ? G.greyXLight : G.surface,
       borderRadius: 24,
       border: `1px solid ${resolved ? G.greyLight : "rgba(53,93,163,0.10)"}`,
       opacity: resolved ? 0.78 : 1,
@@ -3538,7 +3690,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
               onClick={e => { e.stopPropagation(); setShowTooltip(false); }}
               style={{
                 position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
-                background: G.ink, color: G.white, fontSize: 12, lineHeight: 1.5,
+                background: G.ink, color: G.inverse, fontSize: 12, lineHeight: 1.5,
                 padding: "10px 14px", borderRadius: 12, width: 230,
                 boxShadow: "0 8px 28px rgba(0,0,0,0.22)", cursor: "pointer",
                 textAlign: "left", fontWeight: 400,
@@ -3584,7 +3736,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                   onClick={e => e.stopPropagation()}
                   style={{
                     position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 60,
-                    background: G.white, borderRadius: 14, padding: 6,
+                    background: G.surface, borderRadius: 14, padding: 6,
                     boxShadow: "0 12px 40px rgba(0,0,0,0.14)", border: `1px solid ${G.greyLight}`,
                     minWidth: 172,
                   }}
@@ -3629,7 +3781,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
             </span>
             {intensity.zone && (
               <span style={{
-                fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.white,
+                fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.surface,
                 border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
               }}>{intensity.zone}</span>
             )}
@@ -3689,7 +3841,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                   }
                   nodes.push(
                     <div key={`g-${group[0].key}`} style={{
-                      background: G.white, borderRadius: 14, padding: "4px 12px",
+                      background: G.surface, borderRadius: 14, padding: "4px 12px",
                       border: `1px solid ${G.greyLight}`,
                     }}>
                       {group.map((g, gi) => (
@@ -3714,7 +3866,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                   aria-label={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
                   style={{
                     flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
-                    background: copied ? G.mint : isPremium ? G.white : G.greyXLight,
+                    background: copied ? G.mint : isPremium ? G.surface : G.greyXLight,
                     border: `1px solid ${copied ? G.mint : G.greyLight}`,
                     fontSize: 12, fontWeight: 600,
                     color: copied ? G.white : isPremium ? G.inkLight : G.grey,
@@ -3731,7 +3883,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                 {done && onShare && (
                   <button onClick={() => onShare(session)} style={{
                     flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
-                    background: G.white, border: `1px solid ${G.greyLight}`,
+                    background: G.surface, border: `1px solid ${G.greyLight}`,
                     fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   }}>
@@ -3829,7 +3981,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek, isPremi
 
   return (
     <div style={{
-      background: G.white,
+      background: G.surface,
       borderRadius: 20,
       overflow: "hidden",
       border: isCurrentWeek
@@ -3946,7 +4098,7 @@ const ResetConfirmButton = ({ onReset }) => {
         Toute ta progression sera perdue et tu devras recommencer le questionnaire depuis le début.
       </p>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => setConfirm(false)} style={{ flex: 1, padding: "10px", background: G.white, border: `1px solid ${G.greyLight}`, borderRadius: 8, fontSize: 13, color: G.grey, cursor: "pointer", fontWeight: 500 }}>
+        <button onClick={() => setConfirm(false)} style={{ flex: 1, padding: "10px", background: G.surface, border: `1px solid ${G.greyLight}`, borderRadius: 8, fontSize: 13, color: G.grey, cursor: "pointer", fontWeight: 500 }}>
           Annuler
         </button>
         <button onClick={onReset} style={{ flex: 1, padding: "10px", background: G.coral, border: "none", borderRadius: 8, fontSize: 13, color: G.white, cursor: "pointer", fontWeight: 600 }}>
@@ -4147,7 +4299,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
                 <div key={entry.id} style={{
                   flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 100,
                   border: `1.5px solid ${isActive ? G.blue : G.greyLight}`,
-                  background: isActive ? G.blueLight : G.white,
+                  background: isActive ? G.blueLight : G.surface,
                   transition: "all 0.15s", overflow: "hidden",
                 }}>
                   <button onClick={() => onSwitchPlan(entry.id)} style={{
@@ -4215,7 +4367,7 @@ const HomeBadgesSection = ({ plan }) => {
   const earnedSet = new Set(earned);
   return (
     <div style={{
-      background: G.white, borderRadius: 20, padding: "18px",
+      background: G.surface, borderRadius: 20, padding: "18px",
       boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
       border: `1px solid ${G.greyLight}`,
       marginBottom: 12,
@@ -4254,7 +4406,7 @@ const HomeBadgesSection = ({ plan }) => {
                   <div style={{
                     position: "absolute", bottom: -2, right: -2,
                     width: 16, height: 16, borderRadius: "50%",
-                    background: G.white, border: `1px solid ${G.greyLight}`,
+                    background: G.surface, border: `1px solid ${G.greyLight}`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <Lock size={9} color={G.greyMid} />
@@ -4316,9 +4468,9 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
       {/* ── Top App Bar ── */}
       <header style={{
         position: "sticky", top: 0, zIndex: 40,
-        background: "rgba(255,255,255,0.95)", backdropFilter: "blur(16px)",
+        background: G.glass, backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
-        borderBottom: `1px solid rgba(142,179,255,0.10)`,
+        borderBottom: `1px solid ${G.greyLight}`,
         boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
         paddingTop: "var(--safe-top)",
       }}>
@@ -4332,7 +4484,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
                 }
               </div>
             </button>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 900, color: G.blueMid, letterSpacing: "0.06em", textTransform: "uppercase" }}>MySWYM</span>
+            <BrandLogo height={40} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <a
@@ -4346,7 +4498,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
                 borderRadius: 8,
                 padding: "10px 12px",
                 lineHeight: 1,
-                background: G.white,
+                background: G.surface,
                 minHeight: 44,
                 display: "inline-flex",
                 alignItems: "center",
@@ -4377,7 +4529,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
 
         {/* ── Plan finished banner ── */}
         {planFinished && (
-          <div className="fade-up scale-in" style={{ background: G.white, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
+          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
             {plan.isProgression
               ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
               : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Plan terminé</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100 %.</p></>
@@ -4389,7 +4541,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
         {nextSession ? (
           <button onClick={() => onTabChange("plan")} style={{
             width: "100%", textAlign: "left", cursor: "pointer",
-            background: G.white, borderRadius: 20, padding: "18px", marginBottom: 12,
+            background: G.surface, borderRadius: 20, padding: "18px", marginBottom: 12,
             border: `1px solid ${G.greyLight}`,
             boxShadow: "0 1px 3px rgba(25,28,30,0.04), 0 10px 28px rgba(53,93,163,0.07)",
             display: "block",
@@ -4428,7 +4580,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
             })()}
           </button>
         ) : !planFinished && (
-          <div style={{ background: G.white, borderRadius: 20, padding: "20px 18px", marginBottom: 12, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
+          <div style={{ background: G.surface, borderRadius: 20, padding: "20px 18px", marginBottom: 12, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
             <Trophy size={28} color={G.gold} style={{ margin: "0 auto 8px" }} />
             <p style={{ color: G.grey, fontSize: 14, fontWeight: 600 }}>Toutes les séances sont terminées !</p>
           </div>
@@ -4436,7 +4588,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
 
         {/* ── Semaine en cours ── */}
         <div style={{
-          background: G.white, borderRadius: 20, padding: "18px",
+          background: G.surface, borderRadius: 20, padding: "18px",
           boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
           border: `1px solid ${G.greyLight}`,
           marginBottom: 12,
@@ -4494,7 +4646,7 @@ const BadgesTab = ({ plan }) => {
             <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
-                <div key={b.id} className="scale-in" style={{ background: G.white, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
+                <div key={b.id} className="scale-in" style={{ background: G.surface, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: `${b.color}18`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                     <b.icon size={24} color={b.color} />
                   </div>
@@ -6839,6 +6991,7 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [theme, setTheme] = useState(() => getStoredTheme());
   const forceAuthRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -7609,6 +7762,12 @@ export default function App() {
 
   const handleSignOut = async () => { await supabase.auth.signOut(); };
 
+  const handleToggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    applyTheme(next);
+    setTheme(next);
+  };
+
   const handleRefreshStatus = async () => {
     showToast("Synchronisation avec Stripe…");
     try {
@@ -7702,12 +7861,12 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
+      <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 72 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 19, color: G.ink }}>MySWYM</span>
+                <BrandLogo height={40} />
               </div>
             </div>
             {(() => {
@@ -7815,7 +7974,7 @@ export default function App() {
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} theme={theme} onToggleTheme={handleToggleTheme} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
@@ -7825,7 +7984,7 @@ export default function App() {
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
         {toast && (
-          <div className="toast-in app-toast" style={{ background: G.ink, color: G.white, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}>
+          <div className="toast-in app-toast" style={{ background: G.ink, color: G.inverse, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}>
             {toast}
           </div>
         )}

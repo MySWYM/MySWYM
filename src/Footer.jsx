@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { resetCookieConsent } from "./CookieBanner.jsx";
+import BrandLogo from "./BrandLogo.jsx";
 
 const FONT = "'Lexend', sans-serif";
 
 const EXPLORER_LINKS = [
-  ["Comment ça marche", "/comment-ca-marche"],
-  ["Objectifs", "/objectifs"],
-  ["Tarifs", "/tarifs"],
+  ["Accueil", "/accueil"],
+  ["Pourquoi MySWYM", "/accueil#pourquoi"],
+  ["Fonctionnement", "/comment-ca-marche"],
+  ["Tarifs", "/accueil#pricing"],
+  ["FAQ", "/accueil#faq"],
   ["Blog", "/blog"],
   ["Contact", "/contact"],
 ];
@@ -63,10 +66,20 @@ export default function Footer({ aboveBottomNav = false }) {
           textAlign: isMobile ? "center" : "left",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 16, color: "#ffffff", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            MySwym
-          </span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8, maxWidth: 260 }}>
+          <BrandLogo height={52} onDark />
+          <p style={{ margin: 0, color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.5, fontFamily: FONT }}>
+            Plan d&apos;entraînement natation personnalisé — prêt en 2 minutes.
+          </p>
+          {/* TODO: liens réseaux sociaux réels (Instagram, etc.) quand prêts */}
+          <a
+            href="https://www.instagram.com/arthurnatation/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "none", fontFamily: FONT }}
+          >
+            Instagram
+          </a>
         </div>
         <div style={{ display: "flex", gap: isMobile ? 18 : 30, flexWrap: "wrap", justifyContent: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>

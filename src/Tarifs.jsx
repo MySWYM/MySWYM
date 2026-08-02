@@ -100,7 +100,7 @@ export default function TarifsPage() {
   const premiumFeatures = [
     "Plusieurs projets en parallèle",
     "Plan complet jusqu'à 52 semaines",
-    "Jusqu'à 4 séances par semaine",
+    "Jusqu'à 5 séances par semaine",
     "Allures cibles par zone (à la seconde)",
     "Vidéos techniques Instagram",
     "Départs avec allure cible (D…)",

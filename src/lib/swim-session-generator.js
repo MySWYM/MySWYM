@@ -30,7 +30,7 @@ const ECHAUFFEMENTS = [
   (w,resp)=> block(w+250,   [`· ${w}m crawl libre facile`, `· 6x25m éducatif rattrapé R10''`, `· 4x25m accél. progressive`]),
   (w,resp)=> block(w+300,   [`· ${w}m mixte (crawl/dos), respiration ${resp}`, `· 4x50m pull-buoy Z1`, `· 4x25m sprint court R20''`]),
   (w,resp)=> block(w+300,   [`· ${w}m crawl ${resp}`, `· 4x50m jambes avec planche R15''`, `· 4x25m gainage + battements`]),
-  (w,resp)=> block(w+250,   [`· ${w}m crawl libre, focus glisse`, `· 6x25m éducatif catch-up R10''`, `· 4x25m dos facile`]),
+  (w,resp)=> block(w+250,   [`· ${w}m crawl libre, focus glisse`, `· 6x25m éducatif rattrapé R10''`, `· 4x25m dos facile`]),
   (w,resp)=> block(w+300,   [`· ${w}m mixte crawl/dos souple`, `· 8x25m 1 bras alterné R10''`, `· 4x25m crawl vitesse contrôlée`])
 ];
 
@@ -68,34 +68,34 @@ const TECHNIQUE = {
     block(400, ["· 8x25m un bras alterné, main qui reste devant R15''", "· 4x50m amplitude + roulis"]),
     block(200, ["· 4x50m palmes, focus rotation complète sans forcer R20''"]),
   ]},
-  technique_catchup: { label:"Catch-up", drills:[
-    block(500, ["· 8x25m catch-up (mains qui se touchent devant) R15''", "· 4x50m catch-up lent, focus glisse", "· 4x25m catch-up rapide, transition vers nage normale"]),
-    block(500, ["· 6x50m catch-up R20''", "· 4x25m catch-up avec palmes, focus appui", "· 4x25m retour à nage complète, garder la glisse"]),
-    block(450, ["· 10x25m catch-up très lent, glisse maximale R15''", "· 4x50m catch-up progressif (lent → rapide) R20''"]),
-    block(400, ["· 6x50m catch-up + plaquettes légères, focus prise d'appui R20''", "· 4x25m nage complète en gardant le temps de glisse"]),
-    block(400, ["· 8x25m catch-up, compter le temps de glisse à voix haute R15''", "· 4x50m catch-up / nage normale alterné par 25m"]),
-    block(450, ["· 8x25m catch-up, main qui attend franchement R15''", "· 4x50m catch-up rapide"]),
-    block(500, ["· 4x100m : 50m catch-up + 50m nage normale R20''"]),
-    block(400, ["· 6x50m catch-up avec palmes R20''", "· 4x25m nage complète, garder la glisse"]),
-    block(450, ["· 10x25m catch-up progressif (lent → rapide) R15''"]),
-    block(400, ["· 8x25m catch-up, focus alignement épaule-main R15''", "· 4x50m nage normale"]),
-    block(500, ["· 6x50m catch-up + plaquettes légères R20''", "· 4x50m nage complète"]),
+  technique_catchup: { label:"Rattrapé", drills:[
+    block(500, ["· 8x25m rattrapé (bras dans l'axe des épaules) R15''", "· 4x50m rattrapé lent, focus glisse", "· 4x25m rattrapé rapide, transition vers nage normale"]),
+    block(500, ["· 6x50m rattrapé R20''", "· 4x25m rattrapé avec palmes, focus appui", "· 4x25m retour à nage complète, garder la glisse"]),
+    block(450, ["· 10x25m rattrapé très lent, glisse maximale R15''", "· 4x50m rattrapé progressif (lent → rapide) R20''"]),
+    block(400, ["· 6x50m rattrapé + plaquettes légères, focus prise d'appui R20''", "· 4x25m nage complète en gardant le temps de glisse"]),
+    block(400, ["· 8x25m rattrapé, compter le temps de glisse à voix haute R15''", "· 4x50m rattrapé / nage normale alterné par 25m"]),
+    block(450, ["· 8x25m rattrapé, main qui attend franchement R15''", "· 4x50m rattrapé rapide"]),
+    block(500, ["· 4x100m : 50m rattrapé + 50m nage normale R20''"]),
+    block(400, ["· 6x50m rattrapé avec palmes R20''", "· 4x25m nage complète, garder la glisse"]),
+    block(450, ["· 10x25m rattrapé progressif (lent → rapide) R15''"]),
+    block(400, ["· 8x25m rattrapé, focus alignement épaule-main R15''", "· 4x50m nage normale"]),
+    block(500, ["· 6x50m rattrapé + plaquettes légères R20''", "· 4x50m nage complète"]),
   ]},
   /** Jambes = série battements + toujours un éducatif court avant (jamais jambes→jambes). */
   technique_jambes: { label:"Éducatif + jambes", drills:[
-    block(400, ["· 4x25m catch-up R15''", "· 6x50m jambes crawl planche R15''"]),
+    block(400, ["· 4x25m rattrapé R15''", "· 6x50m jambes crawl planche R15''"]),
     block(400, ["· 4x50m un bras (l'autre tendu devant) R20''", "· 4x50m jambes crawl planche R15''"]),
     block(400, ["· 8x25m godilles R15''", "· 6x50m jambes dos planche R15''"]),
-    block(450, ["· 4x25m catch-up R15''", "· 4x50m jambes crawl palmes R20''", "· 4x25m nage complète"]),
+    block(450, ["· 4x25m rattrapé R15''", "· 4x50m jambes crawl palmes R20''", "· 4x25m nage complète"]),
     block(400, ["· 6x25m crawl lent regard fond R15''", "· 5x50m jambes crawl planche R15''"]),
-    block(400, ["· 4x50m catch-up R20''", "· 4x50m jambes crawl sans planche (bras devant) R20''"]),
+    block(400, ["· 4x50m rattrapé R20''", "· 4x50m jambes crawl sans planche (bras devant) R20''"]),
     block(450, ["· 8x25m un bras R15''", "· 6x50m jambes crawl planche R15''", "· 2x25m nage complète"]),
     block(400, ["· 4x25m entrée de main alignée R15''", "· 4x50m jambes crawl planche R15''", "· 4x25m nage"]),
-    block(500, ["· 4x50m catch-up R20''", "· 4x100m : 50m jambes · 50m crawl R20''"]),
+    block(500, ["· 4x50m rattrapé R20''", "· 4x100m : 50m jambes · 50m crawl R20''"]),
     block(400, ["· 6x25m glisse / position R15''", "· 4x50m jambes crawl R15''", "· 4x25m nage complète"]),
     block(400, ["· 4x25m un bras R15''", "· 6x50m jambes crawl palmes R15''"]),
     block(450, ["· 6x25m godilles R15''", "· 5x50m jambes dos planche R15''", "· 2x25m nage complète"]),
-    block(400, ["· 4x50m catch-up R20''", "· 4x50m jambes crawl planche, focus gainage R20''"]),
+    block(400, ["· 4x50m rattrapé R20''", "· 4x50m jambes crawl planche, focus gainage R20''"]),
     block(500, ["· 4x25m respiration 3T R15''", "· 4x100m : 50m jambes · 50m crawl R20''"]),
     block(400, ["· 6x25m entrée de main alignée R15''", "· 4x50m jambes dos planche R15''"]),
     block(450, ["· 4x50m un bras R20''", "· 5x50m jambes crawl palmes R15''", "· 2x25m nage"]),
@@ -115,25 +115,25 @@ const TECHNIQUE = {
     block(400, ["· 8x50m focus entrée de main alignée épaule R20''"]),
     block(400, ["· 6x50m : 25m un bras · 25m nage complète R20''"]),
     block(450, ["· 8x25m crawl lent, regard vers le fond R15''", "· 4x50m nage normale, checker l'alignement"]),
-    block(400, ["· 8x50m : 25m catch-up large · 25m nage R20''"]),
+    block(400, ["· 8x50m : 25m rattrapé large · 25m nage R20''"]),
     block(400, ["· 6x50m nage complète, entrée de main devant l'épaule R20''"]),
     block(400, ["· 6x50m entrée de main devant l'épaule, focus alignement R20''"]),
     block(450, ["· 8x25m un bras, main qui entre alignée R15''", "· 4x50m nage complète"]),
-    block(400, ["· 6x50m : 25m catch-up serré · 25m nage normale R20''"]),
+    block(400, ["· 6x50m : 25m rattrapé serré · 25m nage normale R20''"]),
     block(400, ["· 8x50m focus regard vers le fond, alignement tête-colonne R20''"]),
     block(450, ["· 6x25m entrée de main + glisse avant traction R15''", "· 4x50m nage normale, vérifier l'alignement"]),
     block(400, ["· 4x100m : 50m focus alignement + 50m nage complète R20''"]),
   ]},
   technique_virages: { label:"Virages culbute", drills:[
     block(470, ["· 8x15m culbute sans mur (rotation seule) R20''", "· 6x25m approche + virage, mains fixes hauteur hanches R20''", "· 4x50m avec virage au mur, sortie propulsée"]),
-    block(470, ["· 6x25m virage + 5m de sortie en apnée R20''", "· 8x15m rotation seule, focus mains basses fixes", "· 4x50m enchaînement 2 virages par longueur"]),
+    block(470, ["· 6x25m virage + 5m de coulée R20''", "· 8x15m rotation seule, focus mains basses fixes", "· 4x50m enchaînement 2 virages par longueur"]),
     block(350, ["· 10x15m culbute isolée R15''", "· 4x50m virage + accélération sortie de mur R25''"]),
     block(270, ["· 8x15m rotation seule, compter 1-2 pour la rotation autour des épaules R20''", "· 6x25m virage complet, focus mains qui ne remontent pas R20''"]),
     block(350, ["· 6x25m approche à vitesse réelle + virage R20''", "· 4x50m 2 longueurs avec virage, sortie en 5 coups de jambes"]),
     block(350, ["· 8x15m culbute, focus position groupée R20''", "· 4x50m avec virage, sortie rapide"]),
     block(400, ["· 6x25m approche + virage, mains basses R20''", "· 6x25m sortie de virage en 5 coups de jambes R15''"]),
     block(300, ["· 10x15m rotation seule, apnée courte R15''", "· 4x50m virage complet enchaîné"]),
-    block(350, ["· 6x25m virage + 5m sortie en apnée R20''", "· 4x50m 2 virages par longueur, allure contrôlée"]),
+    block(350, ["· 6x25m virage + 5m coulée R20''", "· 4x50m 2 virages par longueur, allure contrôlée"]),
     block(270, ["· 8x15m culbute sans mur, compter la rotation R20''", "· 6x25m virage réel, mains fixes"]),
     block(400, ["· 4x100m avec 2 virages par répétition, sortie propulsée R20''"]),
   ]}
@@ -200,8 +200,8 @@ const CORPS_PHYSIO = {
     () => ({ text: `3x(2x100m physio + 2x25m technique) R20''`, distance: 750, repDist: 100, pools: [25] }),
     () => ({ text: `3x(2x100m physio + 1x50m technique) R20''`, distance: 750, repDist: 100, pools: [50] }),
     () => ({ text: `4x50m technique + 4x50m physio R20''`, distance: 400, repDist: 50 }),
-    () => ({ text: `5x100m : 25m catch-up + 75m physio R20''`, distance: 500, repDist: 100, pools: [25] }),
-    () => ({ text: `5x100m : 50m catch-up + 50m physio R20''`, distance: 500, repDist: 100, pools: [50] }),
+    () => ({ text: `5x100m : 25m rattrapé + 75m physio R20''`, distance: 500, repDist: 100, pools: [25] }),
+    () => ({ text: `5x100m : 50m rattrapé + 50m physio R20''`, distance: 500, repDist: 100, pools: [50] }),
     () => ({ text: `4x150m : 50m technique + 100m physio R20''`, distance: 600, repDist: 150 }),
     () => ({ text: `6x50m technique + 6x50m physio R15''`, distance: 600, repDist: 50 }),
     () => ({ text: `4x75m : 25m technique + 50m physio R20''`, distance: 300, repDist: 75, pools: [25] }),
@@ -824,7 +824,7 @@ const OW_BASE_SESSIONS = [
   // S3.2 — Endurance 100m & travail sous l'eau
   (P, level, opts = {}) => {
     const lvl = owLvlIndex(level), tuba = owTuba(level), w = owM(400, level, P), n25 = owRep(8, level, 4), n100 = owRep(10, level, 5), rac = owM(200, level, P, P);
-    const edu = tuba ? `2×${2*P}m catch-up drill + tuba — le plus lentement possible — R20" — un bras attend l'autre` : `2×${2*P}m catch-up drill — R20" — un bras attend l'autre, nage lente`;
+    const edu = tuba ? `2×${2*P}m rattrapé drill + tuba — le plus lentement possible — R20" — un bras attend l'autre` : `2×${2*P}m rattrapé drill — R20" — un bras attend l'autre, nage lente`;
     return {
       type: "ENDURANCE",
       title: "Endurance 100m & travail sous l'eau",
@@ -853,6 +853,144 @@ const OW_BASE_SESSIONS = [
         `${n150}×${rep150}m crawl — R25" — respiration par 25m : ${hyp150} — même allure malgré le changement respiratoire`,
         `${n100}×${2*P}m palmes : ${P}m ondulation sous l'eau / ${3*P}m crawl — ${palmesDep} — sens l'ondulation, enchaîne en nage fluide`,
         `${slow}m le plus lent possible — souple + sensation`,
+      ],
+    };
+  },
+  // S4.1 — Rythme de nage & fréquence de bras
+  (P, level, opts = {}) => {
+    const lvl = owLvlIndex(level);
+    const w = owM(400, level, P), n50 = owRep(6, level, 3), nMain = owRep(8, level, 4), rac = owM(200, level, P, P);
+    return {
+      type: "TECHNIQUE",
+      title: "Rythme de nage & fréquence de bras",
+      intensity: "Z2 — conscience du rythme, pas de vitesse pure",
+      details: [
+        `Échauffement : ${w}m crawl/dos — Z1, respiration libre`,
+        `${n50}×${P}m compte tes cycles de bras par longueur — R15" — vise le même chiffre à chaque fois`,
+        `${nMain}×${2*P}m crawl — ${ow50Int(P, level, lvl, opts)} — garde la même fréquence du 1er au dernier`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S4.2 — Endurance 200m & gestion d'allure
+  (P, level, opts = {}) => {
+    const w = owM(400, level, P), n50 = owRep(4, level), n200 = owRep(4, level, 2), slow = owM(200, level, P), rac = owM(200, level, P, P);
+    return {
+      type: "ENDURANCE",
+      title: "Endurance 200m & gestion d'allure",
+      intensity: "Z2 — allure tenue sur des reps longues",
+      details: [
+        `Échauffement : ${w}m crawl palmes — Z1`,
+        `${n50}×${P}m accélération progressive sur la longueur — R15"`,
+        `${slow}m le plus lent possible — recherche de sensation, relâche les épaules`,
+        `${n200}×${4*P}m crawl — ${ow100Rest(P, level)} — Z2, même allure du 1er au dernier 200m`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S4.3 — Virages & reprise de nage
+  (P, level, opts = {}) => {
+    const lvl = owLvlIndex(level), tuba = owTuba(level);
+    const w = owM(400, level, P), n25 = owRep(8, level, 4), nMain = owRep(8, level, 4), rac = owM(200, level, P, P);
+    return {
+      type: "TECHNIQUE",
+      title: "Virages & reprise de nage",
+      intensity: "Z2 — technique de virage, pas de vitesse",
+      details: [
+        `Échauffement : ${w}m crawl/dos par ${P}m — Z1`,
+        `${n25}×${P}m virage + 5m de coulée${tuba ? " + tuba" : ""} — R15" — reprise de nage progressive après le mur`,
+        `${nMain}×${2*P}m crawl — ${ow100Rest(P, level)} — enchaîne le virage sans casser l'allure`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S5.1 — Sighting avancé & navigation
+  (P, level, opts = {}) => {
+    const lvl = owLvlIndex(level);
+    const w = owM(400, level, P), n50 = owRep(4, level), nMain = owRep(10, level, 5), rac = owM(200, level, P, P);
+    return {
+      type: "ENDURANCE",
+      title: "Sighting avancé & navigation",
+      intensity: "Z2 — sighting fréquent, nage appliquée",
+      details: [
+        `Échauffement : ${w}m crawl palmes — Z1`,
+        `${n50}×${P}m sighting tous les 4 bras — R15" — lève les yeux sans casser le rythme`,
+        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl, opts)} — sighting tous les 6-8 bras, garde le cap`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S5.2 — Endurance longue & négatif split
+  (P, level, opts = {}) => {
+    const w = owM(400, level, P), cont = owM(600, level, P), rac = owM(300, level, P, P);
+    return {
+      type: "ENDURANCE",
+      title: "Endurance longue & négatif split",
+      intensity: "Z2 — 2ème moitié plus rapide que la 1ère",
+      details: [
+        `Échauffement : ${w}m au choix — Z1`,
+        `${cont}m crawl — première moitié Z1/Z2 souple, deuxième moitié un peu plus soutenue`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S5.3 — Jambes & gainage
+  (P, level, opts = {}) => {
+    const w = owM(400, level, P), jambes = owM(300, level, P), n50 = owRep(6, level), rac = owM(200, level, P, P);
+    return {
+      type: "TECHNIQUE",
+      title: "Jambes & gainage",
+      intensity: "Z2 — renforcement jambes/gainage, pas de vitesse",
+      details: [
+        `Échauffement : ${w}m au choix — Z1`,
+        `${jambes}m jambes planche — battements réguliers, corps gainé`,
+        `${n50}×${P}m pull-buoy sans battements — R15" — focus gainage et rotation`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S6.1 — Simulation allure course
+  (P, level, opts = {}) => {
+    const lvl = owLvlIndex(level);
+    const w = owM(400, level, P), n100 = owRep(6, level, 3), rac = owM(200, level, P, P);
+    return {
+      type: "ENDURANCE",
+      title: "Simulation allure course",
+      intensity: "Z2/Z3 — allure objectif, régularité",
+      details: [
+        `Échauffement : ${w}m crawl progressif — Z1`,
+        `${n100}×${2*P}m crawl — ${owDep(2*P, lvl, "threshold", opts)} — allure course cible, note si tu tiens le rythme`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S6.2 — Volume 200m & respiration contrôlée
+  (P, level, opts = {}) => {
+    const w = owM(400, level, P), n200 = owRep(4, level, 2), rac = owM(300, level, P, P);
+    const resp = owBeg(level) ? "3 temps · 3 temps · 5 temps · 5 temps" : "3 temps · 5 temps · 7 temps · 9 temps";
+    return {
+      type: "ENDURANCE",
+      title: "Volume 200m & respiration contrôlée",
+      intensity: "Z2 — fond aérobie, contrôle respiratoire",
+      details: [
+        `Échauffement : ${w}m au choix — Z1`,
+        `${n200}×${4*P}m crawl — ${ow100Rest(P, level)} — respiration par 200m : ${resp}`,
+        `Retour au calme : ${rac}`,
+      ],
+    };
+  },
+  // S6.3 — Récupération active & sensations fines
+  (P, level, opts = {}) => {
+    const w = owM(300, level, P), cont = owM(400, level, P), palmes = owM(200, level, P), rac = owM(200, level, P, P);
+    return {
+      type: "RÉCUPÉRATION",
+      title: "Récupération active & sensations fines",
+      intensity: "Z1 — très facile, aucune pression",
+      details: [
+        `Échauffement : ${w}m dos/crawl très facile — Z1`,
+        `${cont}m crawl Z1 — sans pause, relâché, focus respiration`,
+        `${palmes}m palmes ondulation très facile — sens le corps qui glisse`,
+        `Retour au calme : ${rac} relâché — Z1`,
       ],
     };
   },

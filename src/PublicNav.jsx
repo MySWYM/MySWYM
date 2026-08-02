@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronRight } from "lucide-react";
+import BrandLogo from "./BrandLogo.jsx";
 
 const C = {
   ink: "#191c1e",
@@ -11,9 +12,10 @@ const C = {
 };
 
 const LINKS = [
-  ["Comment ca marche", "/comment-ca-marche"],
-  ["Objectifs", "/objectifs"],
-  ["Tarifs", "/tarifs"],
+  ["Pourquoi", "/accueil#pourquoi"],
+  ["Fonctionnement", "/comment-ca-marche"],
+  ["Tarifs", "/accueil#pricing"],
+  ["FAQ", "/accueil#faq"],
   ["Blog", "/blog"],
   ["Contact", "/contact"],
 ];
@@ -51,11 +53,11 @@ export default function PublicNav() {
       }}>
         <div style={{
           maxWidth: 1120, margin: "0 auto",
-          padding: "0 20px", height: 64,
+          padding: "0 20px", height: 72,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <a href="/accueil" style={{ textDecoration: "none" }}>
-            <span style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 900, fontSize: 18, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase" }}>MYSWYM</span>
+          <a href="/accueil" style={{ textDecoration: "none", display: "flex", alignItems: "center" }} aria-label="mySWYM — Accueil">
+            <BrandLogo height={48} />
           </a>
 
           {!isMobile && (
@@ -79,7 +81,7 @@ export default function PublicNav() {
               padding: isMobile ? "9px 16px" : "10px 22px", borderRadius: 100, textDecoration: "none",
               fontFamily: "'Lexend', sans-serif", boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
             }}>
-              Générer mon plan
+              Créer mon plan
             </a>
             {isMobile && (
               <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink }}>
@@ -91,7 +93,7 @@ export default function PublicNav() {
       </nav>
 
       {isMobile && (
-        <div style={{ position: "fixed", top: 64, left: 0, right: 0, bottom: 0, zIndex: 199, pointerEvents: menuOpen ? "all" : "none" }}>
+        <div style={{ position: "fixed", top: 72, left: 0, right: 0, bottom: 0, zIndex: 199, pointerEvents: menuOpen ? "all" : "none" }}>
           <div onClick={() => setMenuOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(25,28,30,0.28)", opacity: menuOpen ? 1 : 0, transition: "opacity 0.25s" }} />
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, background: C.white, borderBottom: `1px solid ${C.border}`,

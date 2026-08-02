@@ -1,28 +1,32 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { POSTS } from "./posts.js";
-import { ArrowRight, Clock, ChevronRight } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import {
+  BLOG_CATEGORIES,
+  PAGE_SIZE,
+  fetchPublishedArticles,
+  formatArticleDate,
+} from "./blogData.js";
 
 const FONT = "'Lexend', sans-serif";
 
 const C = {
-  bg:          "#f8f9fc",
-  bgCard:      "#ffffff",
-  bgSoft:      "#edeef1",
-  ink:         "#191c1e",
-  inkLight:    "#434751",
-  primary:     "#355da3",
-  accent:      "#8eb3ff",
-  accentText:  "#154388",
-  primaryFix:  "#d8e2ff",
-  secondary:   "#5d5e61",
-  outline:     "#737782",
-  border:      "rgba(53,93,163,0.08)",
-  shadow:      "0 2px 12px rgba(142,179,255,0.10)",
-  shadowMd:    "0 8px 32px rgba(142,179,255,0.18)",
-  white:       "#ffffff",
+  bg: "#f8f9fc",
+  bgCard: "#ffffff",
+  bgSoft: "#edeef1",
+  ink: "#191c1e",
+  inkLight: "#434751",
+  primary: "#355da3",
+  accent: "#8eb3ff",
+  accentText: "#154388",
+  primaryFix: "#d8e2ff",
+  secondary: "#5d5e61",
+  outline: "#737782",
+  border: "rgba(53,93,163,0.08)",
+  shadow: "0 2px 12px rgba(142,179,255,0.10)",
+  shadowMd: "0 8px 32px rgba(142,179,255,0.18)",
 };
 
 function useIsMobile(bp = 640) {
@@ -45,70 +49,120 @@ function FontLoader() {
   return null;
 }
 
-function Nav() {
-  const isMobile = useIsMobile();
-  const [scrolled, setScrolled] = useState(false);
-  const navLinks = [
-    ["Comment ca marche", "/comment-ca-marche"],
-    ["Conformite", "/conformite"],
-    ["Tarifs", "/tarifs"],
-    ["Blog", "/blog"],
-    ["Contact", "/contact"],
-  ];
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
+function ArticleCard({ article, isMobile }) {
   return (
-    <nav style={{
-      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.0)",
-      backdropFilter: scrolled ? "blur(16px)" : "none",
-      borderBottom: scrolled ? `1px solid ${C.border}` : "none",
-      boxShadow: scrolled ? "0 1px 20px rgba(142,179,255,0.12)" : "none",
-      transition: "background 0.3s, box-shadow 0.3s",
-    }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
-        <Link to="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <span style={{ fontFamily: FONT, fontWeight: 900, fontSize: 18, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase" }}>MySwym</span>
-        </Link>
-        {!isMobile && (
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" }}>
-            {navLinks.map(([label, href]) => (
-              <Link key={href} to={href} style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
-                {label}
-              </Link>
-            ))}
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {!isMobile && (
-            <Link to="/connexion" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
-              Se connecter
-            </Link>
-          )}
-          {isMobile && (
-            <Link to="/connexion" style={{ color: C.secondary, fontSize: 13, fontWeight: 600, textDecoration: "none", fontFamily: FONT }}>
-              Se connecter
-            </Link>
-          )}
-          <Link to="/inscription" style={{
-            background: C.accent, color: C.accentText,
-            fontSize: 13, fontWeight: 700,
-            padding: "9px 18px", borderRadius: 100,
-            textDecoration: "none", fontFamily: FONT,
-            boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
-          }}>Créer mon compte</Link>
+    <Link to={`/blog/${article.slug}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+      <article
+        style={{
+          background: C.bgCard,
+          border: `1px solid ${C.border}`,
+          borderRadius: 22,
+          overflow: "hidden",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: C.shadow,
+          transition: "box-shadow 0.25s, transform 0.25s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = C.shadowMd;
+          e.currentTarget.style.transform = "translateY(-3px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = C.shadow;
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
+      >
+        <div
+          style={{
+            aspectRatio: "16 / 10",
+            background: article.image_url
+              ? `center / cover no-repeat url(${article.image_url})`
+              : `linear-gradient(135deg, ${C.primaryFix}, ${C.accent})`,
+            backgroundColor: C.bgSoft,
+          }}
+          role="img"
+          aria-label={article.titre}
+        />
+        <div style={{ padding: isMobile ? "18px 16px 20px" : "22px 22px 24px", display: "flex", flexDirection: "column", flex: 1 }}>
+          <span
+            style={{
+              alignSelf: "flex-start",
+              background: C.primaryFix,
+              color: C.primary,
+              fontSize: 11,
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: 100,
+              letterSpacing: "0.02em",
+              marginBottom: 12,
+            }}
+          >
+            {article.categorie}
+          </span>
+          <h2
+            style={{
+              fontFamily: FONT,
+              fontSize: isMobile ? 17 : 18,
+              fontWeight: 700,
+              color: C.ink,
+              margin: "0 0 8px",
+              lineHeight: 1.3,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {article.titre}
+          </h2>
+          <time
+            dateTime={article.date_publication}
+            style={{ color: C.outline, fontSize: 12, marginBottom: 10, display: "block" }}
+          >
+            {formatArticleDate(article.date_publication)}
+          </time>
+          <p
+            style={{
+              color: C.inkLight,
+              fontSize: 13,
+              lineHeight: 1.6,
+              margin: "0 0 16px",
+              flex: 1,
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {article.extrait}
+          </p>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              color: C.primary,
+              fontWeight: 600,
+              fontSize: 13,
+            }}
+          >
+            Lire l&apos;article <ArrowRight size={14} />
+          </span>
         </div>
-      </div>
-    </nav>
+      </article>
+    </Link>
   );
 }
 
 export default function Blog() {
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categorie = searchParams.get("categorie") || null;
+  const page = Math.max(1, Number(searchParams.get("page") || 1) || 1);
+
+  const [articles, setArticles] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.title = "Blog MySWYM — Conseils natation & entraînement";
     document.body.style.background = C.bg;
@@ -116,97 +170,229 @@ export default function Blog() {
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchPublishedArticles({ categorie, page }).then((res) => {
+      if (cancelled) return;
+      setArticles(res.articles);
+      setTotal(res.total);
+      setPageCount(res.pageCount);
+      setLoading(false);
+      if (res.page !== page) {
+        const next = new URLSearchParams(searchParams);
+        if (res.page <= 1) next.delete("page");
+        else next.set("page", String(res.page));
+        setSearchParams(next, { replace: true });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [categorie, page]);
+
+  const setCategorie = (cat) => {
+    const next = new URLSearchParams();
+    if (cat) next.set("categorie", cat);
+    setSearchParams(next);
+  };
+
+  const goPage = (p) => {
+    const next = new URLSearchParams(searchParams);
+    if (p <= 1) next.delete("page");
+    else next.set("page", String(p));
+    setSearchParams(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
       <PublicNav />
 
-      {/* Hero */}
-      <div style={{
-        paddingTop: isMobile ? 96 : 120, paddingBottom: 52,
-        paddingLeft: 20, paddingRight: 20, textAlign: "center",
-        background: `radial-gradient(circle at top center, #eef2ff 0%, ${C.bg} 60%)`,
-      }}>
-        <div style={{
-          display: "inline-block", background: C.primaryFix,
-          borderRadius: 100, padding: "5px 14px", marginBottom: 20,
-        }}>
-          <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", fontFamily: FONT }}>BLOG</span>
+      <div
+        style={{
+          paddingTop: isMobile ? 96 : 120,
+          paddingBottom: 40,
+          paddingLeft: 20,
+          paddingRight: 20,
+          textAlign: "center",
+          background: `radial-gradient(circle at top center, #eef2ff 0%, ${C.bg} 60%)`,
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            background: C.primaryFix,
+            borderRadius: 100,
+            padding: "5px 14px",
+            marginBottom: 20,
+          }}
+        >
+          <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>BLOG</span>
         </div>
-        <h1 style={{
-          fontFamily: FONT, fontWeight: 800,
-          fontSize: "clamp(30px, 5vw, 52px)",
-          color: C.ink, margin: "0 0 16px",
-          letterSpacing: "-0.02em", lineHeight: 1.1,
-        }}>
-          Conseils natation<br />&amp; entraînement
+        <h1
+          style={{
+            fontFamily: FONT,
+            fontWeight: 800,
+            fontSize: "clamp(30px, 5vw, 52px)",
+            color: C.ink,
+            margin: "0 0 16px",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.1,
+          }}
+        >
+          Conseils natation
+          <br />
+          &amp; entraînement
         </h1>
-        <p style={{ color: C.inkLight, fontSize: 17, maxWidth: 480, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
-          Méthodes, plans, techniques — tout ce qu'il faut pour progresser dans l'eau.
+        <p style={{ color: C.inkLight, fontSize: 17, maxWidth: 480, margin: "0 auto", lineHeight: 1.6 }}>
+          Méthodes, technique, mental — des articles pour progresser dans l&apos;eau.
         </p>
       </div>
 
-      {/* Articles */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: `0 16px 80px` }}>
-        {/* Article vedette */}
-        <Link to={`/blog/${POSTS[0].slug}`} style={{ textDecoration: "none", display: "block", marginBottom: 24 }}>
-          <div style={{
-            background: C.bgCard, border: `1px solid ${C.border}`,
-            borderRadius: 28, overflow: "hidden",
-            boxShadow: C.shadow,
-            transition: "box-shadow 0.25s, transform 0.25s",
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: `0 16px ${isMobile ? 64 : 80}px` }}>
+        {/* Filtre catégories */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            justifyContent: isMobile ? "flex-start" : "center",
+            marginBottom: 28,
+            overflowX: isMobile ? "auto" : "visible",
+            paddingBottom: isMobile ? 4 : 0,
+            WebkitOverflowScrolling: "touch",
           }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-3px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = "translateY(0)"; }}
-          >
-            <div style={{ height: 5, background: `linear-gradient(90deg, ${POSTS[0].coverColor}, transparent)` }} />
-            <div style={{ padding: isMobile ? "20px 18px" : "32px 36px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ background: `${POSTS[0].coverColor}18`, color: POSTS[0].coverColor, fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 100, letterSpacing: "0.05em", fontFamily: FONT }}>{POSTS[0].category}</span>
-                <span style={{ color: C.outline, fontSize: 13, fontFamily: FONT }}>{POSTS[0].date}</span>
-                <span style={{ color: C.outline, fontSize: 13, display: "flex", alignItems: "center", gap: 4, fontFamily: FONT }}><Clock size={12} />{POSTS[0].readingTime}</span>
-              </div>
-              <h2 style={{ fontFamily: FONT, fontSize: "clamp(20px, 3vw, 26px)", fontWeight: 800, color: C.ink, margin: "0 0 12px", letterSpacing: "-0.02em", lineHeight: 1.2 }}>{POSTS[0].title}</h2>
-              <p style={{ color: C.inkLight, fontSize: 15, lineHeight: 1.65, margin: "0 0 20px", maxWidth: 600, fontFamily: FONT }}>{POSTS[0].intro}</p>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: C.primary, fontWeight: 600, fontSize: 14, fontFamily: FONT }}>
-                Lire l'article <ArrowRight size={15} />
-              </span>
-            </div>
-          </div>
-        </Link>
-
-        {/* Autres articles */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-          {POSTS.slice(1).map(post => (
-            <Link key={post.slug} to={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
-              <div style={{
-                background: C.bgCard, border: `1px solid ${C.border}`,
-                borderRadius: 22, overflow: "hidden", height: "100%",
-                boxShadow: C.shadow,
-                transition: "box-shadow 0.25s, transform 0.25s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = C.shadowMd; e.currentTarget.style.transform = "translateY(-3px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = C.shadow; e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                <div style={{ height: 5, background: `linear-gradient(90deg, ${post.coverColor}, transparent)` }} />
-                <div style={{ padding: "24px 26px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                    <span style={{ background: `${post.coverColor}18`, color: post.coverColor, fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 100, fontFamily: FONT }}>{post.category}</span>
-                    <span style={{ color: C.outline, fontSize: 12, display: "flex", alignItems: "center", gap: 3, fontFamily: FONT }}><Clock size={11} />{post.readingTime}</span>
-                  </div>
-                  <h3 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: C.ink, margin: "0 0 10px", lineHeight: 1.3 }}>{post.title}</h3>
-                  <p style={{ color: C.inkLight, fontSize: 13, lineHeight: 1.6, margin: "0 0 16px", fontFamily: FONT }}>{post.intro.slice(0, 120)}…</p>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: C.primary, fontWeight: 600, fontSize: 13, fontFamily: FONT }}>
-                    Lire <ChevronRight size={14} />
-                  </span>
-                </div>
-              </div>
-            </Link>
+          role="tablist"
+          aria-label="Filtrer par catégorie"
+        >
+          <FilterChip active={!categorie} onClick={() => setCategorie(null)} label="Tous" />
+          {BLOG_CATEGORIES.map((cat) => (
+            <FilterChip key={cat} active={categorie === cat} onClick={() => setCategorie(cat)} label={cat} />
           ))}
         </div>
+
+        {loading ? (
+          <p style={{ textAlign: "center", color: C.secondary, padding: "48px 0" }}>Chargement des articles…</p>
+        ) : articles.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "56px 20px",
+              background: C.bgCard,
+              borderRadius: 22,
+              border: `1px solid ${C.border}`,
+            }}
+          >
+            <p style={{ color: C.ink, fontWeight: 700, fontSize: 17, margin: "0 0 8px" }}>Aucun article dans cette catégorie</p>
+            <p style={{ color: C.secondary, fontSize: 14, margin: 0 }}>
+              Les articles seront ajoutés manuellement. Réessaie avec « Tous » ou une autre catégorie.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))",
+                gap: 20,
+              }}
+            >
+              {articles.map((article) => (
+                <ArticleCard key={article.id || article.slug} article={article} isMobile={isMobile} />
+              ))}
+            </div>
+
+            {pageCount > 1 && (
+              <nav
+                aria-label="Pagination"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  marginTop: 36,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => goPage(page - 1)}
+                  disabled={page <= 1}
+                  style={pagerBtn(page <= 1)}
+                >
+                  <ChevronLeft size={16} /> Précédent
+                </button>
+                <span style={{ color: C.secondary, fontSize: 14, fontWeight: 600 }}>
+                  Page {page} / {pageCount}
+                  <span style={{ fontWeight: 500, color: C.outline }}> · {total} article{total > 1 ? "s" : ""}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goPage(page + 1)}
+                  disabled={page >= pageCount}
+                  style={pagerBtn(page >= pageCount)}
+                >
+                  Suivant <ChevronRight size={16} />
+                </button>
+              </nav>
+            )}
+
+            {pageCount === 1 && total > 0 && total <= PAGE_SIZE && (
+              <p style={{ textAlign: "center", color: C.outline, fontSize: 13, marginTop: 28 }}>
+                {total} article{total > 1 ? "s" : ""}
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       <Footer />
     </div>
   );
+}
+
+function FilterChip({ active, onClick, label }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      style={{
+        fontFamily: FONT,
+        fontSize: 13,
+        fontWeight: active ? 700 : 600,
+        padding: "8px 14px",
+        borderRadius: 100,
+        border: active ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
+        background: active ? C.primaryFix : C.bgCard,
+        color: active ? C.primary : C.secondary,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        boxShadow: active ? "none" : C.shadow,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function pagerBtn(disabled) {
+  return {
+    fontFamily: FONT,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    fontSize: 13,
+    fontWeight: 600,
+    padding: "10px 16px",
+    borderRadius: 100,
+    border: `1px solid ${C.border}`,
+    background: disabled ? C.bgSoft : C.bgCard,
+    color: disabled ? C.outline : C.primary,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.6 : 1,
+  };
 }

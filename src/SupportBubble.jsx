@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { Mail, MessageCircle, X } from "lucide-react";
 
-const IG_DM = "https://ig.me/m/arthurnatation";
+const SUPPORT_EMAIL = "contact@myswym.app";
+const MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Question MySWYM")}`;
 const FONT = "'Lexend', sans-serif";
 
 /**
@@ -82,13 +83,11 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             </div>
 
             <p style={{ fontSize: 15, color: "#434751", lineHeight: 1.55, margin: "0 0 18px" }}>
-              Coaching perso en DM — ou tu as un souci sur une séance ? Explique-moi tout, je te réponds.
+              Coaching perso ou souci sur une séance ? Écris-moi — je te réponds à {SUPPORT_EMAIL}.
             </p>
 
             <a
-              href={IG_DM}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={MAILTO}
               onClick={() => setOpen(false)}
               style={{
                 display: "flex",
@@ -106,8 +105,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                 textDecoration: "none",
               }}
             >
-              <MessageCircle size={18} color="#fff" />
-              Écrire sur Instagram
+              <Mail size={18} color="#fff" />
+              Envoyer un e-mail
             </a>
             <button
               type="button"

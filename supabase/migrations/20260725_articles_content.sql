@@ -1,0 +1,555 @@
+-- Migre les articles éditoriaux existants (posts.js) et retire les démos Lorem
+update public.articles set published = false
+where slug like 'demo-%';
+
+insert into public.articles (titre, slug, extrait, contenu, categorie, image_url, date_publication, published)
+values
+(
+  'Pourquoi ton meilleur 100m change tout à ton entraînement',
+  'personnalisation-100m-natation',
+  'Un seul temps suffit pour que ton plan devienne vraiment le tien. Départs calculés à la seconde, zones d''intensité réelles, allures cibles : voici comment ton 100m personnalise chaque séance.',
+  'La plupart des applications de natation te donnent un programme. MySWYM t''en donne un qui te ressemble. La différence tient à un seul chiffre : ton meilleur 100m. Voici pourquoi ce temps change absolument tout à la qualité de ton entraînement.
+
+## Le problème des programmes génériques
+
+Imagine deux nageurs : Marie, 100m en 1''20", et Thomas, 100m en 2''10". Si on leur donne le même programme — "6×100m, récup 20 secondes" — que se passe-t-il ?
+
+Marie finit chaque 100m en 1''20" et n''a que 20 secondes pour récupérer. Elle repart avant d''être prête. Sa séance vire à l''accumulation de fatigue, elle dégrade sa technique, et elle risque de finir à plat.
+
+Thomas, lui, finit en 2''10". Avec 20 secondes de récup, son départ toutes les 2''30" lui laisse largement le temps de souffler. Il récupère trop — la séance n''est pas assez stimulante pour progresser.
+
+**Le même programme, deux expériences opposées.** C''est pour ça que le 100m est la clef de voûte d''un plan intelligent.
+
+## Comment ton 100m est utilisé pour chaque séance
+
+Ton meilleur 100m NL est ta vitesse de référence — ce qu''on appelle en natation ton **allure de base**. À partir de là, chaque zone d''intensité est calculée par un coefficient :
+
+**Zone facile (Z1/Z2) — coefficient ×1,35**
+Si tu nages le 100m en 1''30" (90 secondes), ton allure en Z1/Z2 est 90 × 1,35 = **2''01"/100m**. C''est l''allure à laquelle tu peux nager longtemps, tenir une conversation, construire ton endurance sans te cramer.
+
+**Zone seuil / CSS (Z3/Z4) — coefficient ×1,08**
+Même exemple : 90 × 1,08 = **1''37"/100m**. C''est ton seuil anaérobie — l''allure la plus rapide que tu peux tenir sur une longue distance. Travailler juste en dessous ou au niveau de cette zone, c''est là que la vraie progression se fait.
+
+**Zone sprint (Z5/Z6) — coefficient ×0,95**
+90 × 0,95 = **1''25"/100m**. Effort maximal sur des répétitions courtes (25m, 50m). Cette zone travaille ta puissance et ta vitesse de pointe.
+
+**Sans ton 100m**, ces chiffres sont calculés par niveau déclaré (débutant, intermédiaire, avancé) — ça marche, mais c''est une estimation. **Avec ton 100m**, c''est ta physiologie réelle qui pilote ton entraînement.
+
+## Les départs à la montre : un exemple concret
+
+Prenons une séance seuil classique : **8×100m à allure CSS**.
+
+**Sans ton 100m renseigné (niveau "intermédiaire") :**
+Départ toutes les 1''55" — c''est la valeur moyenne pour ce niveau.
+
+**Avec ton 100m à 1''30" :**
+Allure CSS calculée = 1''37"/100m. Temps de nage estimé = 1''37". On ajoute 15" de récupération. Départ toutes les **1''55"** — ça coïncide ici.
+
+**Avec ton 100m à 1''15" :**
+Allure CSS = 1''21". Récup 15". Départ toutes les **1''40"** — soit 15 secondes de moins. Sur 8 répétitions, la différence est énorme en termes de densité de travail.
+
+**Avec ton 100m à 2''00" :**
+Allure CSS = 2''10". Récup 15". Départ toutes les **2''25"**. Si on t''avait laissé sur 1''55", tu aurais nagé trop vite ou pas eu le temps de récupérer.
+
+C''est ce grain de précision qui sépare un entraînement qui progresse d''un entraînement qui fatigue.
+
+## Comment mesurer ton meilleur 100m
+
+Pas besoin de conditions parfaites. Voici le protocole simple :
+
+**1. Choisis le bon moment**
+En milieu de séance, après un bon échauffement (400m minimum). Jamais en début de séance les muscles froids, jamais en fin si tu es épuisé.
+
+**2. L''échauffement spécifique**
+200m facile + 4×25m progressifs (le dernier quasi à fond). Tu dois arriver prêt à partir fort dès le premier mètre.
+
+**3. Le 100m**
+Départ du bord (pas plongé, ça fausse le résultat). Nage à effort maximal mais **régulier** — beaucoup de nageurs partent trop vite sur les 25 premiers mètres et s''effondrent. L''objectif : que tes 4 longueurs soient les plus régulières possible.
+
+**4. Note le temps**
+Arrête le chrono au toucher du mur. C''est ton 100m de référence.
+
+**Astuce :** refais ce test toutes les 6 semaines. Si tu as progressé, mets à jour ton temps dans MySWYM — tes départs seront automatiquement recalculés et ton plan s''adaptera à ta nouvelle forme.
+
+## Pourquoi ça change aussi ton endurance (pas juste les sprints)
+
+On imagine souvent que personnaliser les allures, ça ne sert que pour les séances intensives. C''est faux — c''est peut-être encore plus important pour l''endurance.
+
+**Trop d''entraînement se fait dans la "zone grise"** : ni assez lent pour être vraiment récupérateur, ni assez vite pour être vraiment stimulant. C''est la zone où beaucoup de nageurs passent 80% de leur temps, sans le savoir, et qui explique les plateaux de progression.
+
+Quand ton allure Z1/Z2 est correctement calculée à partir de ton 100m, tu évites ce piège. Tes séances d''endurance sont **vraiment faciles** — ce qui permet à ton corps de récupérer, de consolider les adaptations des séances intensives, et de revenir plus fort.
+
+C''est le principe de la **polarisation de l''entraînement** : 80% des séances très faciles, 20% très intenses. Mais pour que ça marche, il faut savoir où est "très facile" pour toi spécifiquement — pas pour un nageur hypothétique de ton niveau.
+
+## Et si je ne connais pas mon 100m ?
+
+Pas de panique. MySWYM fonctionne aussi sans — les allures sont estimées par niveau (débutant, intermédiaire, avancé). Tu auras un bon programme.
+
+Mais si tu veux aller plus loin, voici comment faire ton premier test rapidement :
+
+**Option 1 — Test bassin** : La prochaine fois que tu vas nager, intègre 3×100m à fond dans ta séance avec 5 minutes de récup entre chaque. Prends la moyenne des 3. C''est une bonne estimation de ton meilleur 100m en conditions d''entraînement.
+
+**Option 2 — Estimation depuis un test récent** : Tu as nagé une compétition ou un chrono récemment ? Sur 50m, multiplie ton temps par 2,1 pour estimer ton 100m. Sur 200m, divise par 2,3.
+
+Renseigne ce temps dans ton profil MySWYM et tes séances s''ajustent immédiatement. Pas besoin de régénérer ton plan — le calcul est automatique.',
+  'Conseils entraînement',
+  'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1200&q=80',
+  '2025-04-27T10:00:00.000Z',
+  true
+),
+(
+  'Programme natation pour triathlon : comment vraiment progresser',
+  'programme-natation-triathlon',
+  'Découvre comment structurer ton entraînement natation pour le triathlon — phases de préparation, séances CSS, travail au seuil et gestion de l''effort en open water.',
+  'La natation, c''est souvent le segment le plus stressant du triathlon — surtout pour les débutants. Pourtant, avec une préparation structurée, c''est aussi celui où on peut grappiller le plus de temps sans s''épuiser. Voici comment bâtir un programme efficace.
+
+## Pourquoi la plupart des triathlètes s''entraînent mal en natation
+
+La majorité des triathlètes font la même erreur : ils nagent "confortablement" — ni trop vite, ni trop lentement — sans jamais vraiment travailler les zones d''intensité. Résultat : une progression lente, des séances monotones, et un segment natation subi plutôt que maîtrisé.
+
+Un programme efficace repose sur **3 types de séances distinctes** : endurance, seuil et technique. Chacune a un rôle précis dans ta progression. Les mélanger ou les ignorer, c''est laisser de la performance sur la table.
+
+## Les 3 types de séances indispensables
+
+**Endurance (Z1/Z2)** — C''est le socle. Ces séances longues à allure conversation construisent ta capacité aérobie. Pour un triathlon olympique, vise 2 à 3 séances d''endurance par semaine en phase de base. Format type : 8×200m à allure régulière avec 20" de récupération.
+
+**Seuil (Z3/Z4)** — C''est ici que tu progresses vraiment. Le travail au seuil, aussi appelé CSS (Critical Swim Speed), te permet de tenir une allure élevée sur la distance de course. Format type : 6×200m à ton allure CSS avec départ à la montre.
+
+**Technique** — Souvent négligée, la technique est pourtant le meilleur "dopant légal" en natation. Un nageur technique moins puissant battra toujours un nageur fort mais inefficace sur 1 500m. 10 minutes de drill par séance suffisent pour progresser en quelques semaines.
+
+## La structure d''une semaine type (3 séances)
+
+Voici comment répartir tes 3 séances natation pour le triathlon :
+
+**Lundi — Endurance fondamentale**
+Échauffement 300m · 8×200m Z2 allure régulière · 4×50m pull-buoy · Retour au calme 200m
+
+**Mercredi — Seuil / CSS**
+Échauffement 300m + 4×25m accélérations · 6×150m allure CSS — vise tes meilleurs temps constants · 4×50m battements · Retour au calme 200m
+
+**Vendredi — Technique + négatifs splits**
+Échauffement 200m NL + 200m éducatifs · 6×100m catch-up drill / DPS · 6×150m NL — 1re moitié retenu, 2e moitié accéléré · Retour au calme 200m
+
+Cette répartition crée de la variété, évite la monotonie, et couvre les 3 filières énergétiques.
+
+## Comment calculer ta CSS (Critical Swim Speed)
+
+La CSS, c''est l''allure que tu peux tenir sur 1 500m. Pour la calculer précisément, fais un test simple :
+
+1. Nage 400m à fond, note ton temps (ex : 6''40")
+2. Récupère 10 minutes
+3. Nage 200m à fond, note ton temps (ex : 3''00")
+
+**CSS = (temps 400m − temps 200m) / 200** = (400 − 180) / 200 = **1.1 s/m** = **1''50"/100m**
+
+Avec MySWYM, tu renseignes ton meilleur 100m NL et l''app calcule automatiquement tes zones d''entraînement. Chaque séance t''affiche l''allure exacte à viser.
+
+## Les phases d''un plan triathlon complet
+
+Un plan triathlon de 12 à 20 semaines se structure en 4 phases :
+
+**Phase de base (semaines 1-6)** — Construction aérobie. Volume élevé, intensité modérée. C''est le moment de travailler la technique et d''augmenter progressivement les distances.
+
+**Phase de développement (semaines 7-12)** — Introduction du travail au seuil. Les séances CSS entrent en force. Le volume reste élevé, mais l''intensité monte.
+
+**Phase de pic (semaines 13-16)** — Séances spécifiques à la distance de course. Travail de vitesse, simulation de la sortie de l''eau après effort physique.
+
+**Affûtage (2-3 dernières semaines)** — Réduction du volume de 40%. On maintient quelques accélérations par séance pour garder la réactivité musculaire. L''entraînement est fait — le corps a juste besoin de se régénérer.
+
+## La natation en eau libre : ce qui change
+
+Le bassin et l''eau libre, c''est deux mondes différents. Voici ce à quoi tu dois te préparer spécifiquement :
+
+**Le sight (lever la tête)** — En bassin, les lignes de fond te guident. En eau libre, tu dois lever la tête toutes les 6-8 tractions pour te repérer. Intègre cet exercice en bassin : toutes les 2 longueurs, lève les yeux avant de respirer.
+
+**Le départ massif** — Les premières centaines de mètres d''un triathlon sont chaotiques. Entraîne-toi à partir fort sur 100m pour simuler le coup de fouet du départ, puis revenir à ton allure de croisière.
+
+**La combinaison** — Elle te fait flotter plus haut et va plus vite. Mais elle gêne la rotation des épaules. Entraîne-toi avec elle avant la course.
+
+**La gestion thermique** — L''eau froide affecte la respiration les premières minutes. Habitue-toi en nageant les premières longueurs à fond avant de trouver ton rythme.',
+  'Conseils entraînement',
+  'https://images.unsplash.com/photo-1519315901367-f34ff911840e?w=1200&q=80',
+  '2025-04-15T10:00:00.000Z',
+  true
+),
+(
+  'Comment réussir le BNSSA : le programme natation complet',
+  'comment-reussir-bnssa',
+  'Tout ce qu''il faut savoir pour préparer les épreuves de natation du BNSSA — 100m sauvetage, 250m palmes, apnée dynamique et remorquage. Plan d''entraînement inclus.',
+  'Le BNSSA (Brevet National de Sécurité et de Sauvetage Aquatique) est le diplôme de référence pour surveiller des nageurs. Ses épreuves de natation sont exigeantes — apnée, remorquage, vitesse — et nécessitent une préparation spécifique. Voici comment aborder chaque épreuve.
+
+## Les épreuves natation du BNSSA
+
+Le BNSSA comprend trois épreuves aquatiques éliminatoires :
+
+**Épreuve 1 — 100m sauvetage (temps limite : 2''40")** — Parcours : 25m NL → immersion (15m en apnée au fond) → virage mur → 15m apnée retour → 25m remorquage du mannequin en position dorsale. À réaliser sans équipement, en tenue réglementaire. En cas d''examen de rattrapage, le temps limite est porté à 3''00".
+
+**Épreuve 2 — 250m palmes/masque/tuba (temps limite : 4''20")** — 250m nage équipée en bassin, à réaliser en continu. L''objectif est de démontrer endurance et maîtrise des équipements dans le temps imparti.
+
+**Épreuve 3 — Assistance à personne en difficulté (pas de temps limite)** — Le jury évalue la qualité de l''intervention, la sécurité du sauveteur et la prise en charge de la victime. Il n''y a pas de chrono imposé : c''est la prestation globale qui est notée.
+
+Ces trois épreuves sont éliminatoires et se déroulent le même jour.
+
+## L''apnée dynamique : la clé du 100m sauvetage
+
+C''est souvent l''épreuve qui fait le plus peur. Pourtant, l''apnée dynamique s''entraîne comme n''importe quelle autre compétence natation.
+
+**Comment la travailler ?**
+
+Commence par des immersions courtes : plonge au fond du bassin et parcours 10m, puis 12m, puis 15m progressivement. L''objectif du BNSSA est 15m en immersion complète, sans appui sur le fond, sans pied.
+
+**Les erreurs à éviter :**
+- Hyperventiler avant l''apnée (dangereux et contre-productif)
+- Regarder vers le haut (brise l''alignement hydrodynamique)
+- Poser les pieds ou les mains sur le fond
+
+**La bonne technique :** Une bonne ventilation normale (pas excessive), une entrée dans l''eau en torpedo gainée, les bras le long du corps ou en flèche. L''expiration se fait en montant, jamais en descendant.
+
+Travaille 3 à 4 séries d''apnées par séance de BNSSA, avec 2 minutes de récupération entre chaque. La qualité prime sur la quantité.
+
+## Le remorquage : technique et endurance
+
+Remorquer un mannequin de 8kg sur 25m après avoir fait 50m de nage, c''est épuisant. La technique permet de compenser l''effort.
+
+**La position dorsale** — Le mannequin est maintenu en position dorsale, visage hors de l''eau, bras sous ses aisselles et mains croisées sur sa poitrine. Tu nages sur le dos avec un battement de jambes puissant.
+
+**Tes bras** — Ils propulsent en battage latéral sur les côtés, sans sortir de l''eau. Le mouvement est compact et régulier.
+
+**Les clés pour tenir :** Commence par t''entraîner sans mannequin, puis avec un partenaire (plus léger), puis avec le mannequin réglementaire. La progression est indispensable.
+
+Dans un programme sérieux, prévois 3 à 6 longueurs de remorquage par séance en fin de préparation.
+
+## Le 250m palmes/masque/tuba : endurance et maîtrise
+
+Cette épreuve est souvent sous-estimée. Nager 250m équipé sans s''arrêter demande une endurance spécifique et une bonne maîtrise des équipements.
+
+**S''équiper correctement :**
+- Palmes courtes type nageur ou palmes de plongée/sauveteur de la marque Mares
+- Masque bien ajusté, sans fuite — vérifie l''étanchéité à sec avant
+- Tuba fixe, sans valve de purge (réglementaire BNSSA)
+
+**L''erreur principale :** Se focaliser sur la vitesse. L''épreuve est chronométrée (4''20" maxi) mais la priorité reste de finir en continu, sans s''arrêter. Adopte une allure régulière dès le départ — un départ trop rapide finit en crampe ou en panique à mi-parcours.
+
+**L''entraînement :** Intègre des séries de 4×50m équipé, puis 2×100m, puis 1×200m progressivement. La coordination palmes/tuba change ton équilibre dans l''eau et demande une adaptation.
+
+## Plan type de préparation BNSSA — 8 semaines
+
+Voici comment structurer tes 8 dernières semaines avant les épreuves :
+
+**Semaines 1-2 : Base**
+2 séances par semaine. Endurance NL + premières apnées courtes (10m). Prise en main de l''équipement (palmes/masque).
+
+**Semaines 3-4 : Construction**
+3 séances par semaine. Apnées à 12m. Remorquage avec partenaire. 2×100m équipé.
+
+**Semaines 5-6 : Spécifique**
+3 séances par semaine. Simulation complète du 100m sauvetage (sans chronométrage). Apnées à 15m. Remorquage mannequin 2×25m.
+
+**Semaines 7-8 : Affûtage**
+Simulations chronométrées. Réduction du volume. Confiance mentale.
+
+Dans MySWYM, le plan BNSSA intègre automatiquement ces phases avec les séances détaillées (apnée, remorquage, simulation de parcours) à ton niveau et ta fréquence.
+
+## Les erreurs les plus fréquentes des candidats BNSSA
+
+**Arriver sans avoir nagé en eau libre** — Le BNSSA se passe en bassin, mais certains éléments (visibilité réduite, eau plus froide) peuvent surprendre. S''entraîner dans des conditions variées aide.
+
+**Sous-estimer la fatigue cumulée** — Les épreuves se succèdent le même jour. Si tu peux enchaîner 100m sauvetage + 250m palmes + épreuves physiques en une session, tu es prêt.
+
+**Négliger la technique** — Beaucoup de candidats préparent le BNSSA uniquement en volume. Mais 30 minutes de travail technique par semaine (apnée, remorquage, position dorsale) valent plus que 2 heures de nage non spécifique.
+
+**Paniquer en apnée** — Le stress consomme l''oxygène. Les candidats qui ratent l''apnée le font souvent par stress, pas par manque de capacité physique. Simule les conditions en entraînement pour apprivoiser la pression.',
+  'Conseils entraînement',
+  'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=1200&q=80',
+  '2025-04-08T10:00:00.000Z',
+  true
+),
+(
+  'Plan natation débutant : 8 semaines pour nager sans s''arrêter',
+  'plan-natation-debutant',
+  'Tu reprends la natation ou tu débutes ? Ce plan progressif de 8 semaines te permet de nager 1 000m sans t''arrêter, avec des séances détaillées adaptées aux débutants.',
+  'Reprendre la natation après des années d''arrêt — ou commencer pour la première fois — c''est intimidant. On arrive au bassin, on fait quelques longueurs, et on s''essoufle déjà. Pourtant, avec une progression bien structurée, n''importe qui peut nager 1 000m sans s''arrêter en 8 semaines.
+
+## Pourquoi tu t''essouffles en natation (et comment arrêter)
+
+La natation est le seul sport où tu dois gérer ta respiration en apnée partielle. À vélo ou en courant, tu peux respirer quand tu veux. En natation, tu as 2 à 3 secondes par cycle pour inspirer — et si tu ratesça, tu paniques, tu relèves la tête, et tout s''effondre.
+
+**L''erreur principale des débutants** : ils nagent trop vite et paniquent dès que ça brûle. Ils forcent alors, nagent encore plus vite, et finissent par s''arrêter au bout de 25m.
+
+La solution est contre-intuitive : **nage plus lentement**. Vraiment. Une allure où tu pourrais tenir une courte conversation. Si tu souffles, tu vas trop vite. C''est aussi simple que ça.
+
+## Les 3 erreurs techniques qui épuisent les débutants
+
+**1. La tête trop haute** — Si ta tête dépasse à la surface, tes hanches plongent et ton corps crée une résistance énorme. Maintiens ton regard vers le fond du bassin, et lève la tête uniquement pour respirer.
+
+**2. Les jambes qui coulent** — Des jambes qui battent dans tous les sens sans propulser drainent ton énergie. Les battements doivent être compacts (talons à la surface, pas de mouvement des genoux excessif) et souples.
+
+**3. Pas de coulée après les virages** — Chaque poussée de mur bien réalisée te donne 3 à 5 mètres gratuits. Profites-en : glisse en torpedo gainée avant de reprendre tes bras. Tu économises de l''énergie et tu vas plus vite.
+
+## Structure d''une séance pour débutant
+
+Une séance bien construite, même courte, fait plus de progrès qu''une session longue et anarchique.
+
+**L''échauffement (10-15%)** — Ne saute pas dedans à fond. Fais 2 longueurs tranquilles pour sentir l''eau, ajuster ta respiration, t''allonger. Ton corps doit trouver le bon alignement avant d''augmenter l''effort.
+
+**Le corps de séance (70-75%)** — Des séries courtes avec des récupérations. Pour un débutant : 6×50m avec 15" de récupération plutôt qu''un 300m continu. Même distance totale, mais beaucoup moins d''essoufflement et plus de qualité.
+
+**Le retour au calme (10-15%)** — 2 longueurs sur le dos très lentement. C''est aussi précieux que l''échauffement pour la régénération musculaire.
+
+## Le plan semaine par semaine
+
+**Semaines 1-2 : Trouver son eau**
+Objectif : nager 400m en séance, sans s''arrêter dans les séries courtes.
+Format type : 6×50m NL — R15" — si tu souffles c''est trop vite · 4×50m dos crawlé — R10" · Retour au calme
+
+**Semaines 3-4 : Construire l''endurance**
+Objectif : enchaîner des 100m sans s''arrêter.
+Format type : 4×100m NL — D3''30" — allure conversation · 4×50m pull-buoy — R15" · Retour au calme
+
+**Semaines 5-6 : Allonger les séries**
+Objectif : tenir 200m sans s''arrêter.
+Format type : 3×200m NL — D5''00" — respiration toutes les 3 tractions · 4×50m battements planche · Retour au calme
+
+**Semaines 7-8 : Le 1 000m**
+Objectif : enchaîner 1 000m en une seule séance.
+Format type : 2×400m NL — R30" — tu t''arrêtes pour boire, pas pour souffler · 200m récupération dos
+
+À la fin de la semaine 8, la plupart des débutants peuvent nager 1 000m en continu. Certains y arrivent dès la semaine 6.
+
+## La technique en priorité : les éducatifs incontournables
+
+On progresse 2x plus vite avec 10 minutes de technique par séance qu''en nageant aveuglément.
+
+**Nage avec palmes** — Les palmes compensent les jambes et te libèrent l''esprit pour te concentrer sur le haut du corps. Tu ressens immédiatement mieux la rotation des épaules et la prise d''eau — et ton corps reste horizontal sans effort. Indispensable pour les débutants.
+
+**Tuba frontal** — Le tuba frontal élimine la contrainte de respiration. Tu peux nager en gardant la tête dans l''axe en permanence et sentir ton alignement tête-hanches-pieds sans jamais te tordre le cou. Parfait pour travailler la technique bras à bras sans interruption.
+
+**Dos à 2 bras simultanés** — Nage sur le dos avec les deux bras qui tirent en même temps (comme un papillon mais sur le dos). Cet éducatif développe la conscience de la prise d''eau dorsale, le gainage du buste et la symétrie des appuis. Ce que tu corriges ici se transfère directement à ton crawl.
+
+**3 mouvements crawl / 3 mouvements dos** — Alterne 3 tractions crawl puis 3 tractions dos en continu, sans t''arrêter. La transition force ton corps à réajuster l''alignement à chaque changement et t''apprend à varier les prises d''appui. Excellent pour casser la monotonie et sentir les différences de propulsion entre les deux nages.
+
+## Combien de séances par semaine pour progresser ?
+
+**2 séances par semaine** — C''est le minimum pour progresser. En dessous, le corps "oublie" les sensations entre les séances et tu pars de zéro à chaque fois.
+
+**3 séances par semaine** — L''idéal pour un débutant. Tu progresseras visiblement de semaine en semaine.
+
+**4 séances par semaine ou plus** — Attention à la récupération. Le corps a besoin de temps pour intégrer les nouvelles sensations. Trop nager en faisant les mêmes erreurs peut ancrer de mauvaises habitudes.
+
+La régularité prime sur le volume. 2 séances bien construites de 45 minutes valent largement mieux qu''une longue séance chaotique par semaine.',
+  'Technique & éducatifs',
+  'https://images.unsplash.com/photo-1560089000-7433a4ebbd64?w=1200&q=80',
+  '2025-04-02T10:00:00.000Z',
+  true
+),
+(
+  'D1''45" : c''est quoi un départ à la montre en natation ?',
+  'depart-interval-natation',
+  'Tu vois D1''45" dans ton programme et tu ne sais pas quoi faire ? On t''explique comment lire l''horloge de bassin, pourquoi on n''utilise pas la montre pour les récups, et comment nager comme un vrai nageur.',
+  'Tu regardes ton programme, tu lis "8×100m NL — D1''45" — et tu te demandes ce que ça veut dire. C''est quoi ce D ? Pourquoi pas juste dire "récupère 15 secondes" ? La réponse change ta façon de t''entraîner — et te rapproche de la façon dont s''entraînent vraiment les nageurs.
+
+## D1''45" : départ toutes les 1 minute 45 secondes
+
+**D1''45"** signifie : tu pars (ou repars) toutes les 1 minute et 45 secondes. C''est ce qu''on appelle un **départ à la montre** — ou plus précisément, un départ à l''horloge de bassin.
+
+Concrètement, si tu nages 100m en 1''30", tu as **15 secondes de récupération** avant de repartir. Si tu nages en 1''38", tu n''as plus que 7 secondes. Si un jour tu nages en 1''50", tu attends le départ suivant.
+
+**Pourquoi ce système plutôt qu''une récup fixe ?**
+
+Parce qu''il récompense la performance. Plus tu nages vite, plus tu récupères. Plus tu travailles, plus ton intervalle devient confortable. C''est un outil de progression intégré directement dans la séance — et c''est aussi ce qui te donne une référence objective sur ta forme du jour.
+
+## L''horloge de bassin : ton meilleur ami
+
+Dans chaque bassin, il y a une grande horloge ronde avec une aiguille rouge (parfois verte) qui tourne. Elle fait un tour complet en **60 secondes**. C''est l''outil de référence de tout nageur sérieux.
+
+**Comment l''utiliser :**
+
+Tu n''as pas besoin de partir à un moment précis. Tu regardes où est l''aiguille au moment de ton départ, et tu repars quand elle revient exactement à la même position — ou après 1''45" si le départ est à 1''45".
+
+Par exemple : tu pars quand l''aiguille est sur le **12**. Tu reviens au mur. Tu repars quand elle est revenue sur le **12** (après 1 tour complet = 1 min), ou sur le **9** si tu attends 1''45", ou sur le **6** pour 1''30".
+
+**Le truc du nageur confirmé :** il ne regarde jamais sa montre pendant les séries. Il jette un œil à l''horloge en arrivant au mur, voit où est l''aiguille, et sait instinctivement s''il est dans les temps ou non.
+
+## La montre : utile, mais pas pour les récups
+
+Beaucoup de débutants font la même erreur : ils utilisent la montre pour gérer leurs récupérations. Ils appuient sur "tour" à chaque arrivée au mur, regardent le temps, attendent 15 secondes, et repartent. Ça marche, mais **ça casse le rythme** et ça te déconnecte du bassin.
+
+**La bonne façon d''utiliser la montre :**
+
+Lance-la au premier départ de la série. Arrête-la après la dernière répétition. C''est tout.
+
+La montre te sert pour **3 choses utiles** :
+— **Strava** — garder un historique propre de tes kilomètres, voir ta progression dans le temps
+— **Connaître ta moyenne** — même si légèrement faussée par les pauses entre séries, c''est une bonne indication de ton rythme global
+— **Savoir où tu en es dans la distance** — "j''ai nagé 1 800m, il me reste 400m" — la montre gère ça pour toi
+
+Mais pendant les séries, **laisse l''horloge de bassin faire son travail**. C''est elle qui donne le tempo. La montre, c''est pour après.
+
+## Pourquoi les vrais nageurs se fient à l''aiguille
+
+Dans un club, personne ne regarde sa montre pendant les séries. Tout le monde garde un œil sur l''horloge de bassin. Pourquoi ?
+
+**Parce que c''est plus précis, plus fluide, et plus formateur.** L''horloge ne ment pas — si tu arrives au mur et que l''aiguille est déjà passée, tu as des questions à te poser sur ton allure. Si tu as 20 secondes d''avance, tu sais que tu es allé trop vite sur cette rep.
+
+Avec le temps, tu développes une **conscience interne de l''allure**. Tu sais à 5 secondes près combien tu vas mettre sur un 100m. C''est ça, nager avec intelligence.
+
+**Le processus d''apprentissage :**
+
+1. Au début : regarder l''horloge à chaque arrivée et compter les secondes
+2. Après quelques séances : estimer le temps avant même d''arriver au mur
+3. À terme : sentir si tu es dans les temps dès le premier virage
+
+Ce n''est pas une compétence innée — c''est simplement le résultat de regarder l''horloge systématiquement pendant quelques mois.
+
+## Résumé pratique pour ta prochaine séance
+
+**Avant de sauter dans l''eau :**
+Repère l''horloge de bassin. Note la position de l''aiguille rouge.
+
+**Au départ de ta première répétition :**
+Démarre ta montre. Pars quand tu es prêt.
+
+**À chaque arrivée au mur :**
+Regarde l''aiguille. Mémorise sa position. Repars quand elle revient au même point (ou au point correspondant à ton intervalle).
+
+**À la fin de la série :**
+Arrête ta montre. Note le temps total si tu veux. Récupère entre les séries à ta guise.
+
+**Ce qu''il faut retenir :**
+— D1''45" = tu repars toutes les 1''45" (ton temps de nage + ta récup)
+— L''horloge de bassin = ton chrono de référence pendant les séries
+— La montre = ton outil pour Strava, la distance et ta moyenne globale
+— Plus tu nages vite, plus tu récupères — c''est la beauté du départ à la montre',
+  'Technique & éducatifs',
+  'https://images.unsplash.com/photo-1600965962102-9d260a71890a?w=1200&q=80',
+  '2025-04-27T10:00:00.000Z',
+  true
+),
+(
+  'Glossaire natation : tous les termes de l''app expliqués',
+  'glossaire-natation',
+  'NL, CSS, Z2, pull-buoy, coulée, seuil… Tu débutes et tu ne comprends pas la moitié des termes de tes séances ? Ce glossaire t''explique tout, simplement.',
+  'Tu ouvres ton plan d''entraînement et tu lis : "6×100m NL — D1''45" — Z2 — pull-buoy en récup". C''est du chinois ? Normal. La natation a son propre vocabulaire. Ce glossaire regroupe tous les termes que tu croiseras dans MySWYM, expliqués clairement.
+
+## Les nages et les abréviations
+
+**NL — Nage Libre**
+La nage libre, c''est le crawl. Techniquement, tu peux nager n''importe quel style en "nage libre", mais tout le monde utilise le crawl parce que c''est la nage la plus rapide. Quand tu vois NL, tu nages crawl.
+
+**Dos**
+Le dos crawlé. Tu nages sur le dos, les bras alternés, la tête dans l''eau. Souvent utilisé en retour au calme ou en récupération active entre les séries.
+
+**Brasse**
+Les deux bras et les deux jambes en simultané, en position frontale. Plus lente que le crawl, souvent utilisée pour les phases de récupération.
+
+**4 nages**
+Enchaînement dans l''ordre : papillon → dos → brasse → crawl. Utilisé dans certaines séances techniques.
+
+**Battements / planche**
+Nage avec une planche tenue à bout de bras, seules les jambes travaillent. L''objectif : travailler le fouet des chevilles et l''alignement du corps.
+
+**Pull-buoy**
+Un flotteur en forme de 8 coincé entre les cuisses. Il soutient les jambes pour que seuls les bras travaillent. Excellent pour sentir la prise d''eau et travailler les appuis sans se fatiguer en bas.
+
+## Les zones d''intensité (Z1 à Z5)
+
+Les zones d''intensité te disent à quelle vitesse nager. Elles sont calculées à partir de ton meilleur 100m.
+
+**Z1 — Très facile** · Allure récupération. Tu pourrais tenir une conversation. Utilisée en échauffement et retour au calme.
+
+**Z2 — Endurance** · Allure "longue durée". Tu respires normalement, tu peux tenir des heures. C''est la zone de base de l''entraînement.
+
+**Z3 — Tempo / Seuil bas** · Effort soutenu mais gérable. Tu peux tenir sur 20-30 minutes. Tu commences à te concentrer sur ta respiration.
+
+**Z4 — Seuil / CSS** · Allure que tu peux tenir sur 1 500m environ. Ça commence à faire mal. C''est la zone la plus importante pour progresser.
+
+**Z5 — Vitesse max** · Effort maximal sur des courtes distances (25-50m). Tu vas à fond, la récupération est longue entre les répétitions.
+
+## La CSS — Vitesse Critique de Nage
+
+**CSS** (Critical Swim Speed) est l''allure-seuil entre ce que tu peux tenir longtemps et ce qui devient vraiment difficile. C''est l''équivalent en natation de la VMA en course à pied.
+
+Pour la calculer : fais un 400m à fond, récupère 10 minutes, fais un 200m à fond. La CSS = (temps 400m − temps 200m) / 200.
+
+**Pourquoi c''est important ?** Parce que c''est l''allure à laquelle tu progresses le plus vite. Travailler régulièrement à ta CSS améliore ta capacité à tenir une allure élevée sur les longues distances.
+
+Dans MySWYM, tu renseignes ton meilleur 100m et l''app calcule automatiquement ta CSS et tes zones d''intensité.
+
+## Les structures de séance
+
+**Échauffement**
+Les premières longueurs à faible intensité (Z1-Z2). Le corps met 5 à 10 minutes pour trouver son rythme en natation. Ne saute jamais l''échauffement.
+
+**Corps de séance**
+La partie principale : séries, intensités variées selon l''objectif du jour.
+
+**Retour au calme**
+2 à 4 longueurs très lentes à la fin. Élimine les déchets métaboliques et aide la récupération. Souvent en dos ou en brasse.
+
+**Répétitions (reps)**
+Le nombre de fois que tu répètes un effort. "8×100m" = 8 répétitions de 100m.
+
+**Séries**
+Un ensemble de répétitions avec le même objectif. Séparées par une récupération plus longue que les récups entre reps.
+
+## Les récupérations
+
+**R15" / R30" / R2''**
+La lettre R suivie d''un temps = récupération fixe. Tu arrives au mur, tu attends exactement ce temps, tu repars.
+
+**D1''45" — Départ toutes les 1''45"**
+Le système professionnel. Tu pars (ou repars) toutes les 1 minute 45 secondes. Si tu nages en 1''30", tu récupères 15 secondes. Si tu nages en 1''38", tu récupères 7 secondes. Le chrono de référence, c''est l''horloge de bassin — pas ta montre. Plus tu vas vite, plus tu récupères. C''est l''outil de progression intégré dans la séance.
+
+**Récupération active**
+Tu ne t''arrêtes pas complètement entre les efforts — tu nages doucement (souvent pull-buoy ou dos) pour garder le sang qui circule.
+
+## Les exercices techniques (drills)
+
+**Coulée / Torpedo**
+La position hydrodynamique après un départ ou un virage : bras tendus devant la tête, corps gainé, pieds serrés. Chaque poussée de mur donne 3 à 5 mètres gratuits si tu glisses bien. Un classique des nageurs confirmés que les débutants oublient souvent.
+
+**Fist drill**
+Nager les poings fermés. Force à sentir l''avant-bras comme surface de propulsion, pas seulement la main. Excellent pour améliorer la prise d''eau.
+
+**Catch-up drill**
+Attendre que le bras avant soit revenu avant de lancer le suivant. Améliore la coordination et l''allongement.
+
+**DPS — Distance Par Stroke (distance par coup de bras)**
+Essayer de faire le plus de distance possible par traction. Force à s''allonger, à glisser, à être efficace plutôt que de mouliner.
+
+**Négatif split**
+Nager la deuxième moitié d''une distance plus vite que la première. Entraîne le contrôle du rythme et évite les départs trop rapides.
+
+## Les termes de la séance type
+
+**"à bloc"** → effort maximal, donne tout
+
+**"à l''aise"** → allure confortable, tu ne forces pas
+
+**"progressif"** → tu accélères tout au long de la longueur ou de la série
+
+**"régulier"** → toutes les répétitions au même tempo, pas de départ rapide / arrivée lente
+
+**"à fond de la 3e"** → lâche tout sur la 3e répétition (ex : quand les séries sont en 3 blocs)
+
+**"fouet des chevilles"** → battement de jambes efficace : souple, rapide, partant de la hanche, pas du genou
+
+**"coude haut"** → lors de la traction, garder le coude plus haut que la main pour une meilleure prise d''eau
+
+**"rotation des épaules"** → le corps tourne légèrement à chaque bras. La rotation permet une meilleure amplitude et moins de fatigue.
+
+**"torpille gainée"** → corps parfaitement aligné, abdos contractés, pas de déhanchement',
+  'Technique & éducatifs',
+  'https://images.unsplash.com/photo-1510025515888-c04e493739f5?w=1200&q=80',
+  '2025-04-27T10:00:00.000Z',
+  true
+)
+on conflict (slug) do update set
+  titre = excluded.titre,
+  extrait = excluded.extrait,
+  contenu = excluded.contenu,
+  categorie = excluded.categorie,
+  image_url = excluded.image_url,
+  date_publication = excluded.date_publication,
+  published = true,
+  updated_at = now();

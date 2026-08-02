@@ -1,9 +1,31 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
-import { POSTS } from "./posts.js";
-import Footer from "./Footer.jsx";
-import { ArrowLeft, Clock, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
+import Footer from "./Footer.jsx";
+import {
+  fetchArticleBySlug,
+  fetchRelatedArticles,
+  formatArticleDate,
+} from "./blogData.js";
+
+const FONT = "'Lexend', sans-serif";
+
+const C = {
+  bg: "#f8f9fc",
+  bgCard: "#ffffff",
+  bgSoft: "#edeef1",
+  ink: "#191c1e",
+  inkLight: "#434751",
+  primary: "#355da3",
+  accent: "#8eb3ff",
+  accentText: "#154388",
+  primaryFix: "#d8e2ff",
+  secondary: "#5d5e61",
+  outline: "#737782",
+  border: "rgba(53,93,163,0.08)",
+  shadow: "0 2px 12px rgba(142,179,255,0.10)",
+};
 
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
@@ -15,37 +37,68 @@ function useIsMobile(bp = 640) {
   return mobile;
 }
 
-const C = {
-  ink:      "#0C1117",
-  inkLight: "#141C26",
-  inkMid:   "#1E2A38",
-  blue:     "#0A84FF",
-  white:    "#FFFFFF",
-  offwhite: "#F2F4F8",
-  grey:     "#8A9BB0",
-  greyLight:"#C4CDD8",
-  border:   "rgba(255,255,255,0.08)",
-  borderMid:"rgba(255,255,255,0.14)",
-};
+function FontLoader() {
+  useEffect(() => {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
+    document.head.appendChild(l);
+  }, []);
+  return null;
+}
 
-// Transforme le markdown léger en JSX
-function RichText({ text }) {
-  const paragraphs = text.trim().split(/\n\n+/);
+/** Rendu markdown léger : ## titres, paragraphes, **gras** */
+function ArticleBody({ contenu }) {
+  const blocks = String(contenu || "")
+    .trim()
+    .split(/\n\n+/);
+
   return (
     <>
-      {paragraphs.map((para, i) => {
-        // Titre h3 **...**
-        if (para.startsWith("**") && para.endsWith("**") && !para.slice(2,-2).includes("**")) {
-          return <h3 key={i} style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 800, color: C.white, margin: "28px 0 8px" }}>{para.slice(2,-2)}</h3>;
+      {blocks.map((block, i) => {
+        const trimmed = block.trim();
+        if (!trimmed) return null;
+
+        if (trimmed.startsWith("## ")) {
+          return (
+            <h2
+              key={i}
+              style={{
+                fontFamily: FONT,
+                fontWeight: 800,
+                fontSize: "clamp(20px, 3vw, 26px)",
+                color: C.ink,
+                margin: "36px 0 14px",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.25,
+                paddingLeft: 14,
+                borderLeft: `3px solid ${C.accent}`,
+              }}
+            >
+              {trimmed.slice(3)}
+            </h2>
+          );
         }
-        // Paragraphe avec gras inline
-        const parts = para.split(/(\*\*[^*]+\*\*)/g);
+
+        if (trimmed.startsWith("**") && trimmed.endsWith("**") && !trimmed.slice(2, -2).includes("**")) {
+          return (
+            <h3 key={i} style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: C.ink, margin: "24px 0 8px" }}>
+              {trimmed.slice(2, -2)}
+            </h3>
+          );
+        }
+
+        const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
         return (
-          <p key={i} style={{ color: C.grey, fontSize: 15, lineHeight: 1.8, margin: "0 0 18px" }}>
+          <p key={i} style={{ color: C.inkLight, fontSize: 16, lineHeight: 1.8, margin: "0 0 18px" }}>
             {parts.map((part, j) =>
-              part.startsWith("**") && part.endsWith("**")
-                ? <strong key={j} style={{ color: C.offwhite, fontWeight: 600 }}>{part.slice(2,-2)}</strong>
-                : part
+              part.startsWith("**") && part.endsWith("**") ? (
+                <strong key={j} style={{ color: C.ink, fontWeight: 600 }}>
+                  {part.slice(2, -2)}
+                </strong>
+              ) : (
+                part
+              )
             )}
           </p>
         );
@@ -54,164 +107,236 @@ function RichText({ text }) {
   );
 }
 
-function Nav() {
-  const isMobile = useIsMobile();
-  const navLinks = [
-    ["Comment ca marche", "/comment-ca-marche"],
-    ["Conformite", "/conformite"],
-    ["Tarifs", "/tarifs"],
-    ["Blog", "/blog"],
-    ["Contact", "/contact"],
-  ];
-  return (
-    <nav style={{
-      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: "rgba(12,17,23,0.95)", backdropFilter: "blur(16px)",
-      borderBottom: `1px solid ${C.border}`,
-    }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
-        <Link to="/accueil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: C.white }}>MySWYM</span>
-        </Link>
-        {!isMobile && (
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" }}>
-            {navLinks.map(([label, href]) => (
-              <Link key={href} to={href} style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-                {label}
-              </Link>
-            ))}
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {!isMobile && (
-            <Link to="/connexion" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-              Se connecter
-            </Link>
-          )}
-          <Link to="/blog" style={{ color: C.grey, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}>
-            <ArrowLeft size={13} /> {!isMobile && "Retour"}
-          </Link>
-          {isMobile && (
-            <Link to="/connexion" style={{ color: C.grey, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-              Se connecter
-            </Link>
-          )}
-          <Link to="/inscription" style={{ background: C.blue, color: C.white, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 9, textDecoration: "none" }}>Créer mon compte</Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
 export default function BlogPost() {
   const { slug } = useParams();
-  const post = POSTS.find(p => p.slug === slug);
-  const others = POSTS.filter(p => p.slug !== slug).slice(0, 2);
+  const isMobile = useIsMobile();
+  const [article, setArticle] = useState(undefined); // undefined = loading, null = not found
+  const [related, setRelated] = useState([]);
 
   useEffect(() => {
-    if (post) {
-      document.title = `${post.title} — MySWYM`;
-      // Meta description
-      let meta = document.querySelector('meta[name="description"]');
-      if (!meta) { meta = document.createElement("meta"); meta.name = "description"; document.head.appendChild(meta); }
-      meta.content = post.description;
-    }
+    let cancelled = false;
+    setArticle(undefined);
     window.scrollTo(0, 0);
-  }, [post]);
 
-  if (!post) return <Navigate to="/blog" />;
+    fetchArticleBySlug(slug).then(async (data) => {
+      if (cancelled) return;
+      setArticle(data);
+      if (data) {
+        document.title = `${data.titre} — MySWYM`;
+        let meta = document.querySelector('meta[name="description"]');
+        if (!meta) {
+          meta = document.createElement("meta");
+          meta.name = "description";
+          document.head.appendChild(meta);
+        }
+        meta.content = data.extrait || data.titre;
+        const rel = await fetchRelatedArticles(data.slug, data.categorie, 2);
+        if (!cancelled) setRelated(rel);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  useEffect(() => {
+    document.body.style.background = C.bg;
+    document.body.style.fontFamily = FONT;
+  }, []);
+
+  if (article === undefined) {
+    return (
+      <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
+        <FontLoader />
+        <PublicNav />
+        <p style={{ textAlign: "center", color: C.secondary, padding: "120px 20px" }}>Chargement de l&apos;article…</p>
+      </div>
+    );
+  }
+
+  if (!article) return <Navigate to="/blog" replace />;
 
   return (
-    <div style={{ background: C.ink, minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
+      <FontLoader />
       <PublicNav />
 
-      {/* Header article */}
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "80px 18px 0" }}>
-        {/* Breadcrumb */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 28, fontSize: 13, color: C.grey }}>
-          <Link to="/accueil" style={{ color: C.grey, textDecoration: "none" }}>Accueil</Link>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "88px 16px 0" : "104px 20px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 24, fontSize: 13, color: C.outline, flexWrap: "wrap" }}>
+          <Link to="/accueil" style={{ color: C.outline, textDecoration: "none" }}>
+            Accueil
+          </Link>
           <ChevronRight size={12} />
-          <Link to="/blog" style={{ color: C.grey, textDecoration: "none" }}>Blog</Link>
+          <Link to="/blog" style={{ color: C.outline, textDecoration: "none" }}>
+            Blog
+          </Link>
           <ChevronRight size={12} />
-          <span style={{ color: post.coverColor }}>{post.category}</span>
+          <span style={{ color: C.primary }}>{article.categorie}</span>
         </div>
 
-        {/* Category + meta */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
-          <span style={{ background: `${post.coverColor}18`, color: post.coverColor, fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 100 }}>{post.category}</span>
-          <span style={{ color: C.grey, fontSize: 14 }}>{post.date}</span>
-          <span style={{ color: C.grey, fontSize: 14, display: "flex", alignItems: "center", gap: 4 }}><Clock size={13} />{post.readingTime} de lecture</span>
+        <Link
+          to="/blog"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            color: C.secondary,
+            fontSize: 13,
+            fontWeight: 600,
+            textDecoration: "none",
+            marginBottom: 20,
+          }}
+        >
+          <ArrowLeft size={14} /> Retour au blog
+        </Link>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          <span
+            style={{
+              background: C.primaryFix,
+              color: C.primary,
+              fontSize: 12,
+              fontWeight: 700,
+              padding: "5px 12px",
+              borderRadius: 100,
+            }}
+          >
+            {article.categorie}
+          </span>
+          <time dateTime={article.date_publication} style={{ color: C.outline, fontSize: 14 }}>
+            {formatArticleDate(article.date_publication)}
+          </time>
         </div>
 
-        {/* Title */}
-        <h1 style={{
-          fontFamily: "'Syne', sans-serif", fontWeight: 800,
-          fontSize: "clamp(28px, 5vw, 46px)", color: C.white,
-          margin: "0 0 24px", letterSpacing: "-1.2px", lineHeight: 1.12,
-        }}>{post.title}</h1>
+        <h1
+          style={{
+            fontFamily: FONT,
+            fontWeight: 800,
+            fontSize: "clamp(28px, 5vw, 42px)",
+            color: C.ink,
+            margin: "0 0 20px",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.15,
+          }}
+        >
+          {article.titre}
+        </h1>
 
-        {/* Color bar */}
-        <div style={{ height: 3, background: `linear-gradient(90deg, ${post.coverColor}, transparent)`, borderRadius: 2, marginBottom: 36 }} />
+        {article.image_url && (
+          <div
+            style={{
+              borderRadius: 20,
+              overflow: "hidden",
+              marginBottom: 28,
+              aspectRatio: "16 / 9",
+              background: `center / cover no-repeat url(${article.image_url}), ${C.bgSoft}`,
+              boxShadow: C.shadow,
+            }}
+            role="img"
+            aria-label={article.titre}
+          />
+        )}
 
-        {/* Intro */}
-        <p style={{ color: C.greyLight, fontSize: 18, lineHeight: 1.75, margin: "0 0 60px", fontStyle: "italic" }}>{post.intro}</p>
+        {article.extrait && (
+          <p style={{ color: C.secondary, fontSize: 18, lineHeight: 1.7, margin: "0 0 36px", fontStyle: "italic" }}>
+            {article.extrait}
+          </p>
+        )}
       </div>
 
-      {/* Article body */}
-      <article style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px 80px" }}>
-        {post.sections.map((section, i) => (
-          <section key={i} style={{ marginBottom: 52 }}>
-            <h2 style={{
-              fontFamily: "'Syne', sans-serif", fontWeight: 800,
-              fontSize: "clamp(20px, 3vw, 26px)", color: C.white,
-              margin: "0 0 20px", letterSpacing: "-0.5px", lineHeight: 1.25,
-              paddingLeft: 16,
-              borderLeft: `3px solid ${post.coverColor}`,
-            }}>{section.h2}</h2>
-            <RichText text={section.content} />
-          </section>
-        ))}
+      <article style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "0 16px 48px" : "0 20px 64px" }}>
+        <ArticleBody contenu={article.contenu} />
 
-        {/* CTA block */}
-        <div style={{
-          background: "linear-gradient(135deg, #0F1E32, #0C1117)",
-          border: `1px solid rgba(10,132,255,0.35)`,
-          borderRadius: 24, padding: "36px 32px",
-          textAlign: "center",
-          boxShadow: "0 0 60px rgba(10,132,255,0.08)",
-          marginTop: 20,
-        }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: C.white, margin: "0 0 12px" }}>{post.cta.title}</h3>
-          <p style={{ color: C.grey, fontSize: 14, lineHeight: 1.65, margin: "0 0 24px", maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>{post.cta.text}</p>
-          <Link to="/" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: C.blue, color: C.white, fontWeight: 700, fontSize: 15,
-            padding: "13px 28px", borderRadius: 12, textDecoration: "none",
-            boxShadow: "0 6px 24px rgba(10,132,255,0.3)",
-          }}>{post.cta.button} <ArrowRight size={15} /></Link>
-          <p style={{ color: C.grey, fontSize: 12, marginTop: 12 }}>Gratuit · 2 minutes · Sans carte bancaire</p>
+        <div
+          style={{
+            background: C.bgCard,
+            border: `1px solid ${C.border}`,
+            borderRadius: 22,
+            padding: isMobile ? "28px 20px" : "36px 32px",
+            textAlign: "center",
+            boxShadow: C.shadow,
+            marginTop: 40,
+          }}
+        >
+          <h3 style={{ fontFamily: FONT, fontSize: 20, fontWeight: 800, color: C.ink, margin: "0 0 10px" }}>
+            Passe à l&apos;entraînement structuré
+          </h3>
+          <p style={{ color: C.secondary, fontSize: 14, lineHeight: 1.65, margin: "0 0 22px", maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
+            Crée ton plan natation personnalisé en 2 minutes — adapté à ton niveau et à ton objectif.
+          </p>
+          <Link
+            to="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: C.accent,
+              color: C.accentText,
+              fontWeight: 700,
+              fontSize: 15,
+              padding: "12px 24px",
+              borderRadius: 100,
+              textDecoration: "none",
+              boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
+            }}
+          >
+            Créer mon plan <ArrowRight size={15} />
+          </Link>
         </div>
       </article>
 
-      {/* Articles similaires */}
-      {others.length > 0 && (
-        <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px 80px" }}>
-          <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: C.white, marginBottom: 20 }}>À lire aussi</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-            {others.map(p => (
+      {related.length > 0 && (
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "0 16px 72px" : "0 20px 80px" }}>
+          <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 16 }}>À lire aussi</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+            {related.map((p) => (
               <Link key={p.slug} to={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
-                <div style={{
-                  background: C.inkLight, border: `1px solid ${C.border}`, borderRadius: 18,
-                  overflow: "hidden", transition: "border-color 0.2s, transform 0.2s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; }}
+                <div
+                  style={{
+                    background: C.bgCard,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    height: "100%",
+                    boxShadow: C.shadow,
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
                 >
-                  <div style={{ height: 4, background: `linear-gradient(90deg, ${p.coverColor}, transparent)` }} />
-                  <div style={{ padding: "18px 20px" }}>
-                    <span style={{ background: `${p.coverColor}18`, color: p.coverColor, fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 100 }}>{p.category}</span>
-                    <h4 style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: C.white, margin: "10px 0 6px", lineHeight: 1.3 }}>{p.title}</h4>
-                    <span style={{ fontSize: 12, color: C.blue, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>Lire <ChevronRight size={12} /></span>
+                  <div
+                    style={{
+                      height: 100,
+                      background: p.image_url
+                        ? `center / cover no-repeat url(${p.image_url})`
+                        : `linear-gradient(135deg, ${C.primaryFix}, ${C.accent})`,
+                      backgroundColor: C.bgSoft,
+                    }}
+                  />
+                  <div style={{ padding: "14px 16px 16px" }}>
+                    <span
+                      style={{
+                        background: C.primaryFix,
+                        color: C.primary,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "3px 9px",
+                        borderRadius: 100,
+                      }}
+                    >
+                      {p.categorie}
+                    </span>
+                    <h4 style={{ fontFamily: FONT, fontSize: 15, fontWeight: 700, color: C.ink, margin: "10px 0 6px", lineHeight: 1.3 }}>
+                      {p.titre}
+                    </h4>
+                    <span style={{ fontSize: 12, color: C.primary, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      Lire l&apos;article <ChevronRight size={12} />
+                    </span>
                   </div>
                 </div>
               </Link>
