@@ -598,7 +598,7 @@ const formatDuration = (mins) => {
 
 const isSessionResolved = (s) => s.completed || !!s.skipped;
 const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
-const INSTAGRAM_ARTHUR = "https://www.instagram.com/arthurnatation/";
+const INSTAGRAM_MYSWYM = "https://www.instagram.com/myswym.app/";
 
 /** Texte plat d'une séance — WhatsApp / description Strava */
 const formatSessionPlainText = (session) => {
@@ -733,7 +733,19 @@ const VOLUME_ADJ_MIN = 0.7;
 const VOLUME_ADJ_MAX = 1.3;
 const VOLUME_ADJ_EASY = 1.12;
 const VOLUME_ADJ_HARD = 0.88;
+/** Micro-nudge sessionnel (entre deux bilans hebdo) — plus doux pour éviter le double-effet. */
+const VOLUME_ADJ_SESSION_EASY = 1.03;
+const VOLUME_ADJ_SESSION_HARD = 0.97;
 const clampVolumeAdj = (v) => Math.min(VOLUME_ADJ_MAX, Math.max(VOLUME_ADJ_MIN, v));
+
+const SESSION_FEEDBACK_TAGS = [
+  "trop long",
+  "trop court",
+  "incompréhensible",
+  "éducatifs top",
+  "trop intensif",
+  "j'ai adoré",
+];
 
 /** Scale les distances dans une ligne de détail (N×Xm, pyramides, Xm) sans double-comptage. */
 const scaleDetailLineMeters = (line, ratio) => {
@@ -786,14 +798,16 @@ const phaseListForAdjust = (profile, plan) => {
  * - Legacy / échec regen : scale distance+duration+details
  * Ne touche jamais une semaine déjà commencée (completed/skipped/feedback).
  */
-const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true) => {
-  const step = rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1;
+const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { sessionNudge = false } = {}) => {
+  const step = sessionNudge
+    ? (rating === "easy" ? VOLUME_ADJ_SESSION_EASY : rating === "hard" ? VOLUME_ADJ_SESSION_HARD : 1)
+    : (rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1);
   const prevAdj = plan.volumeAdj ?? 1;
   const nextAdj = step === 1 ? prevAdj : clampVolumeAdj(prevAdj * step);
   const applyFactor = prevAdj > 0 ? nextAdj / prevAdj : 1;
 
   const weeksWithFeedback = plan.weeks.map((w, i) =>
-    (i === weekIndex ? { ...w, feedback: rating } : w),
+    (i === weekIndex && !sessionNudge ? { ...w, feedback: rating } : w),
   );
 
   let nextWeeks = weeksWithFeedback;
@@ -2151,7 +2165,7 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <BrandLogo height={40} />
+          <BrandLogo variant="wordmark" height={22} />
         </div>
       )}
       <div className="fade-up">
@@ -2251,7 +2265,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
             <div style={{ display: "flex", alignItems: "center" }}>
-              <BrandLogo height={44} />
+              <BrandLogo variant="wordmark" height={24} />
             </div>
           ) : <div />}
           {onBack && (
@@ -2904,6 +2918,12 @@ const SMILEY_OPTS = [
   { id: "hard", Face: FaceTired, label: "Difficile",        sub: "Fatigue ou surcharge",        color: "#FF3B30", bg: "#FFF0EF" },
 ];
 
+const SESSION_SMILEY_OPTS = [
+  { id: "easy", Face: FaceGood,  label: "Trop facile", color: "#00C48C", bg: "#E6FFF6" },
+  { id: "ok",   Face: FaceMid,   label: "Juste bien",  color: "#FF9F0A", bg: "#FFF8EE" },
+  { id: "hard", Face: FaceTired, label: "Trop dur",    color: "#FF3B30", bg: "#FFF0EF" },
+];
+
 const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
   const [selected, setSelected] = useState(null);
 
@@ -2962,6 +2982,136 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
         </div>
 
         <button onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+          Passer
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremium }) => {
+  const [rating, setRating] = useState(initial?.rating ?? null);
+  const [tags, setTags] = useState(() => Array.isArray(initial?.tags) ? [...initial.tags] : []);
+  const [comment, setComment] = useState(initial?.comment ?? "");
+
+  const toggleTag = (tag) => {
+    setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const save = () => {
+    if (!rating) return;
+    if (navigator.vibrate) navigator.vibrate(40);
+    onSubmit({
+      rating,
+      tags,
+      comment: comment.trim() || null,
+    });
+  };
+
+  return (
+    <div className="sheet-overlay">
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+
+        <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+          Retour séance
+        </p>
+        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+          Comment c'était ?
+        </h3>
+        {sessionTitle && (
+          <p style={{ color: G.grey, fontSize: 13, textAlign: "center", marginBottom: 8, lineHeight: 1.4 }}>
+            {sessionTitle}
+          </p>
+        )}
+        <p style={{ color: G.grey, fontSize: 13, textAlign: "center", marginBottom: isPremium ? 20 : 10, lineHeight: 1.45 }}>
+          {isPremium
+            ? "Ton ressenti affine le volume des prochaines séances."
+            : "Ton avis nous aide à améliorer les séances."}
+        </p>
+        {!isPremium && (
+          <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 20, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
+            Premium : micro-ajustement auto si trop facile ou trop dur.
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+          {SESSION_SMILEY_OPTS.map(o => {
+            const isActive = rating === o.id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setRating(o.id)}
+                style={{
+                  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                  padding: "14px 6px", borderRadius: 18,
+                  border: `2px solid ${isActive ? o.color : G.greyLight}`,
+                  background: isActive ? o.bg : G.surface,
+                  cursor: "pointer", transition: "all 0.18s",
+                  transform: isActive ? "scale(1.03)" : "scale(1)",
+                }}
+              >
+                <o.Face size={44} color={o.color} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? o.color : G.ink }}>{o.label}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <p style={{ fontSize: 12, fontWeight: 700, color: G.inkLight, marginBottom: 10 }}>
+          Qu'est-ce qui cloche (ou pas) ?
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {SESSION_FEEDBACK_TAGS.map(tag => {
+            const on = tags.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                style={{
+                  padding: "8px 12px", borderRadius: 100, cursor: "pointer",
+                  border: `1.5px solid ${on ? G.blue : G.greyLight}`,
+                  background: on ? G.blueLight : G.surface,
+                  color: on ? G.blue : G.grey, fontSize: 12, fontWeight: 600,
+                }}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+
+        <input
+          type="text"
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          placeholder="Un commentaire ? (optionnel)"
+          maxLength={280}
+          style={{
+            width: "100%", boxSizing: "border-box",
+            padding: "12px 14px", borderRadius: 12, marginBottom: 16,
+            border: `1.5px solid ${G.greyLight}`, background: G.greyXLight,
+            fontSize: 14, color: G.ink, fontFamily: "inherit", outline: "none",
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={save}
+          disabled={!rating}
+          style={{
+            width: "100%", padding: "14px", borderRadius: 14, border: "none",
+            background: rating ? G.blue : G.greyLight,
+            color: rating ? G.white : G.greyMid,
+            fontSize: 15, fontWeight: 700, cursor: rating ? "pointer" : "not-allowed",
+            marginBottom: 8,
+          }}
+        >
+          Enregistrer
+        </button>
+        <button type="button" onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
           Passer
         </button>
       </div>
@@ -3595,7 +3745,7 @@ const SessionBlock = ({ detail, index, workIndex, accent }) => {
 };
 
 // ── SESSION CARD ──────────────────────────────────────────────────────────
-const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, defaultExpanded = false, isPremium = false, onUpgrade }) => {
+const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback, defaultExpanded = false, isPremium = false, onUpgrade }) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
@@ -3791,6 +3941,19 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
               {intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}
             </p>
           )}
+          {done && onEditFeedback && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEditFeedback(weekIndex, sessionIndex); }}
+              style={{
+                marginTop: 10, padding: 0, border: "none", background: "none",
+                color: G.blue, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              {session.feedback ? "Modifier mon retour" : "Donner mon avis"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -3900,7 +4063,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
                 <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "12px 4px 0" }}>
                   Un terme ou un éducatif pas clair ?{" "}
                   <a
-                    href={INSTAGRAM_ARTHUR}
+                    href={INSTAGRAM_MYSWYM}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
@@ -3969,7 +4132,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, de
 };
 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
-const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek, isPremium = false, onUpgrade }) => {
+const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
@@ -4077,6 +4240,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, isCurrentWeek, isPremi
               sessionIndex={i}
               onComplete={onComplete}
               onShare={onShare}
+              onEditFeedback={onEditFeedback}
               isPremium={isPremium}
               onUpgrade={onUpgrade}
               defaultExpanded={isCurrentWeek && i === week.sessions.findIndex(x => !isSessionResolved(x))}
@@ -4241,7 +4405,7 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
   // Premium : plan complet débloqué
   // Free    : les 4 premières semaines visibles tout de suite ; le reste = Premium
   const unlocked = isPremium
@@ -4345,7 +4509,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onReset, onUpg
         {/* Semaines débloquées */}
         {plan.weeks.slice(0, unlocked).map((week, i) => (
           <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} />
+            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} />
           </div>
         ))}
 
@@ -4484,7 +4648,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
                 }
               </div>
             </button>
-            <BrandLogo height={40} />
+            <BrandLogo variant="wordmark" height={22} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <a
@@ -7041,6 +7205,7 @@ export default function App() {
   const [addingPlan, setAddingPlan] = useState(false);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
+  const [sessionFeedbackTarget, setSessionFeedbackTarget] = useState(null);
   const [shareSession, setShareSession] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -7591,6 +7756,7 @@ export default function App() {
   };
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
+    const resolvedStatus = status || "done";
     setPlans(prev => prev.map(entry => {
       if (entry.id !== activePlanId) return entry;
       const newPlan = {
@@ -7598,18 +7764,114 @@ export default function App() {
         weeks: entry.plan.weeks.map((w, wi) => wi !== weekIndex ? w : {
           ...w, sessions: w.sessions.map((s, si) => {
             if (si !== sessionIndex) return s;
-            if (status === "reset") return { ...s, completed: false, skipped: null };
-            if (status === "done") return { ...s, completed: true, skipped: null };
-            if (status === "missed") return { ...s, completed: false, skipped: "missed" };
-            if (status === "not_done") return { ...s, completed: false, skipped: "not_done" };
+            if (resolvedStatus === "reset") return { ...s, completed: false, skipped: null, feedback: null };
+            if (resolvedStatus === "done") return { ...s, completed: true, skipped: null };
+            if (resolvedStatus === "missed") return { ...s, completed: false, skipped: "missed" };
+            if (resolvedStatus === "not_done") return { ...s, completed: false, skipped: "not_done" };
             return { ...s, completed: true, skipped: null };
           }),
         }),
       };
       const updatedWeek = newPlan.weeks[weekIndex];
-      if (updatedWeek.sessions.every(isSessionResolved) && !updatedWeek.feedback) setTimeout(() => setFeedbackWeek(weekIndex), 700);
+      // Semaine complète hors "done" → bilan hebdo tout de suite.
+      // Pour "done", on attend la fermeture du sheet séance.
+      if (
+        resolvedStatus !== "done"
+        && resolvedStatus !== "reset"
+        && updatedWeek.sessions.every(isSessionResolved)
+        && !updatedWeek.feedback
+      ) {
+        setTimeout(() => setFeedbackWeek(weekIndex), 700);
+      }
       return { ...entry, plan: newPlan };
     }));
+    if (resolvedStatus === "done") {
+      setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: true });
+    }
+  };
+
+  const maybePromptWeekFeedback = (weekIndex) => {
+    setTimeout(() => {
+      setPlans(prev => {
+        const entry = prev.find(e => e.id === activePlanId);
+        const week = entry?.plan?.weeks?.[weekIndex];
+        if (week?.sessions?.every(isSessionResolved) && !week.feedback) {
+          setFeedbackWeek(weekIndex);
+        }
+        return prev;
+      });
+    }, 700);
+  };
+
+  const closeSessionFeedbackSheet = () => {
+    const target = sessionFeedbackTarget;
+    setSessionFeedbackTarget(null);
+    if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
+  };
+
+  const handleSessionFeedback = ({ rating, tags, comment }) => {
+    if (!sessionFeedbackTarget) return;
+    const { weekIndex, sessionIndex, promptWeekAfter } = sessionFeedbackTarget;
+    const prevSession = plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+    const isFirstFeedback = !prevSession?.feedback;
+    const shouldNudge = isPremium && isFirstFeedback && (rating === "easy" || rating === "hard");
+
+    setPlans(prev => prev.map(e => {
+      if (e.id !== activePlanId) return e;
+
+      let base = e.plan;
+      if (shouldNudge) {
+        base = adjustPlan(e.plan, weekIndex, rating, e.profile, isPremium, { sessionNudge: true });
+      }
+
+      const feedback = {
+        rating,
+        tags: Array.isArray(tags) ? tags : [],
+        comment: comment || null,
+        at: new Date().toISOString(),
+      };
+
+      return {
+        ...e,
+        plan: {
+          ...base,
+          weeks: base.weeks.map((w, wi) => wi !== weekIndex ? w : {
+            ...w,
+            sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, feedback }),
+          }),
+        },
+      };
+    }));
+
+    if (user) {
+      const week = plan?.weeks?.[weekIndex];
+      const session = week?.sessions?.[sessionIndex];
+      supabase.from("session_feedback").insert({
+        user_id: user.id,
+        plan_id: activePlanId,
+        week_number: week?.number ?? weekIndex + 1,
+        session_index: sessionIndex,
+        session_type: session?.type ?? null,
+        session_title: session?.title ?? null,
+        rating,
+        tags: Array.isArray(tags) ? tags : [],
+        comment: comment || null,
+        created_at: new Date().toISOString(),
+      }).then(() => {});
+    }
+
+    if (!isPremium && (rating === "easy" || rating === "hard")) {
+      showToast("Retour enregistré. Premium affine le volume des prochaines séances.", 5500);
+    } else if (shouldNudge) {
+      showToast("Volume des prochaines séances légèrement ajusté.", 4000);
+    }
+
+    setSessionFeedbackTarget(null);
+    if (promptWeekAfter) maybePromptWeekFeedback(weekIndex);
+  };
+
+  const handleEditSessionFeedback = (weekIndex, sessionIndex) => {
+    setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: false });
   };
 
   const handleFeedback = ({ rating, motivation, pain, comment }) => {
@@ -7861,12 +8123,12 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 72 }}>
+      <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo height={40} />
+                <BrandLogo variant="wordmark" height={22} />
               </div>
             </div>
             {(() => {
@@ -7973,14 +8235,27 @@ export default function App() {
           </div>
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => setShowUpgrade(true)} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => setShowUpgrade(true)} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} theme={theme} onToggleTheme={handleToggleTheme} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
-        {feedbackWeek !== null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} isPremium={isPremium} />}
+        {sessionFeedbackTarget !== null && (() => {
+          const s = plan?.weeks?.[sessionFeedbackTarget.weekIndex]?.sessions?.[sessionFeedbackTarget.sessionIndex];
+          return (
+            <SessionFeedbackSheet
+              key={`${sessionFeedbackTarget.weekIndex}-${sessionFeedbackTarget.sessionIndex}-${s?.feedback?.at || "new"}`}
+              sessionTitle={s?.title}
+              initial={s?.feedback || null}
+              onSubmit={handleSessionFeedback}
+              onSkip={closeSessionFeedbackSheet}
+              isPremium={isPremium}
+            />
+          );
+        })()}
+        {feedbackWeek !== null && sessionFeedbackTarget === null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} isPremium={isPremium} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
         {toast && (

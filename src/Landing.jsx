@@ -466,7 +466,7 @@ function Hero() {
       display: "flex",
       alignItems: "center",
       overflow: "hidden",
-      padding: isMobile ? "96px 20px 48px" : "104px 24px 64px",
+      padding: isMobile ? "88px 20px 48px" : "96px 24px 64px",
       // TODO: remplacer par un vrai visuel piscine/eau libre (WebP) quand l'asset sera prêt
       background: `
         linear-gradient(180deg, rgba(12,26,46,0.72) 0%, rgba(21,67,136,0.55) 45%, rgba(12,26,46,0.78) 100%),
@@ -493,7 +493,7 @@ function Hero() {
       }}>
         <div style={{ textAlign: isMobile ? "center" : "left" }}>
           <div style={{ margin: "0 0 18px", display: "flex", justifyContent: isMobile ? "center" : "flex-start" }}>
-            <BrandLogo height={isMobile ? 72 : 88} onDark />
+            <BrandLogo variant="wordmark" height={isMobile ? 28 : 36} onDark />
           </div>
 
           <h1 style={{
@@ -1183,7 +1183,7 @@ function FinalCTA() {
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <FadeIn>
           <div style={{ margin: "0 0 16px", display: "flex", justifyContent: "center" }}>
-            <BrandLogo height={64} onDark />
+            <BrandLogo variant="wordmark" height={28} onDark />
           </div>
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(34px, 5vw, 52px)",

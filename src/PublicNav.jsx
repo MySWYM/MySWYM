@@ -53,11 +53,11 @@ export default function PublicNav() {
       }}>
         <div style={{
           maxWidth: 1120, margin: "0 auto",
-          padding: "0 20px", height: 72,
+          padding: "0 20px", height: 64,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <a href="/accueil" style={{ textDecoration: "none", display: "flex", alignItems: "center" }} aria-label="mySWYM — Accueil">
-            <BrandLogo height={48} />
+            <BrandLogo variant="wordmark" height={22} />
           </a>
 
           {!isMobile && (
@@ -93,7 +93,7 @@ export default function PublicNav() {
       </nav>
 
       {isMobile && (
-        <div style={{ position: "fixed", top: 72, left: 0, right: 0, bottom: 0, zIndex: 199, pointerEvents: menuOpen ? "all" : "none" }}>
+        <div style={{ position: "fixed", top: 64, left: 0, right: 0, bottom: 0, zIndex: 199, pointerEvents: menuOpen ? "all" : "none" }}>
           <div onClick={() => setMenuOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(25,28,30,0.28)", opacity: menuOpen ? 1 : 0, transition: "opacity 0.25s" }} />
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, background: C.white, borderBottom: `1px solid ${C.border}`,

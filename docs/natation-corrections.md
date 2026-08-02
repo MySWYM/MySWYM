@@ -37,7 +37,7 @@
 
 ### Périodisation (volume + difficulté)
 
-- **Montée volume** : semaine N ≤ semaine N−1 × **1,10** (réellement appliqué via `weekScale` dans le générateur). Feedback hebdo (`easy`/`hard`) : multiplicateur cumulé `volumeAdj` plafonné **[0,70 ; 1,30]** — ne pas composer ±12 % sans borne.
+- **Montée volume** : semaine N ≤ semaine N−1 × **1,10** (réellement appliqué via `weekScale` dans le générateur). Feedback hebdo (`easy`/`hard`) : multiplicateur cumulé `volumeAdj` plafonné **[0,70 ; 1,30]** — ne pas composer ±12 % sans borne. Feedback **séance** : micro-nudge **×1,03** / **×0,97** (premier retour only), même plafond.
 - **Décharges** : ~toutes les 4 semaines (−30 %) + phases affûtage.
 - **Difficulté** : zones qui montent par mésocycle (Z1–Z2 foncier → Z3–Z4 spécifique).
 - **Semaines test** (`phase: "test"`) : chronos 100/200/400 m pour mesurer l’évolution — 1 à 2 selon la durée du plan (après base / après développement).
@@ -62,6 +62,7 @@
 
 - Après changement structurel des plans : incrémenter `PLAN_VERSION` pour régénérer les plans obsolètes.
 - Feedback hebdo (`easy` / `ok` / `hard`) : ajuste le **volume** des semaines futures vierges (`adjustPlan` + `volumeAdj` plafonné). Coach = régénération générateur (details = total) ; jamais une semaine déjà commencée.
+- Feedback **par séance** (`session.feedback` : rating + tags + comment) : sheet après « séance faite » ; miroir table `session_feedback`. Premium : micro-`adjustPlan(..., { sessionNudge: true })` au **premier** retour only (±3 %) — le hebdo reste le levier principal. Ne pas poser `week.feedback` depuis un nudge sessionnel.
 
 ---
 
@@ -101,6 +102,7 @@
 | 2026-07-24 | Banque confirmé x2 | 9 nouveaux archétypes (S4.1–S6.3) ajoutés à la banque confirmé (ex-`OW_BASE_SESSIONS`, 9→18) : rythme de nage, gestion d'allure 200m, virages, sighting avancé, négatif split, jambes/gainage, simulation course, respiration contrôlée, récup active. Rotation `wi*3+si` sur 18 au lieu de 9 → repeat toutes les 6 semaines au lieu de 3 (3 séances/sem). | ✅ |
 | 2026-07-29 | Force regen v26 | Demande Arthur : `PLAN_VERSION` 26 + `FORCE_PLAN_REGEN=true` pour appliquer le contenu actuel à tous les plans existants (écrase aussi la progression). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-06-29 | Eau libre 5k/10k S1–S3 | Banque `OW_BASE_SESSIONS` (9 archétypes signature coach) en phase base semaines 1–3 : éducatifs lents → Z2 nage appliquée → sensation/RAC. Scaling régulier/sportif/perf. `OPEN_WATER_PATTERNS`. `PLAN_VERSION` → 12 | ✅ |
+| 2026-08-02 | Feedback par séance | Sheet après « séance faite » : rating easy/ok/hard + tags + commentaire. Stocké dans `session.feedback` + table `session_feedback`. Premium : micro-nudge `volumeAdj` ×1.03/×0.97 au premier retour (hebdo reste le levier ±12 %). | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -130,4 +132,3 @@
 ## Pistes produit (pas encore codées)
 
 - Table `coach_rules` en base + application dans `generatePlan` (mémoire globale app).
-- Feedback **par séance** (pas seulement fin de semaine) pour affiner les templates.
