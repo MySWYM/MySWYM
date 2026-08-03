@@ -109,6 +109,7 @@
 | 2026-08-03 | Force regen Découverte v28 | Plans déjà en v27 : bump `PLAN_VERSION` 28. Force overwrite **uniquement** niveau découverte/beginner (autres = merge progression). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-03 | Découverte sans T100 | Ne plus demander le temps au 100 m en onboarding / profil pour niveau découverte (souvent incapables d’enchaîner 100 m). Skip step pace Premium + hide carte évolution / champ T100. | ✅ |
 | 2026-08-03 | Semaine compétition easy | Dernière semaine avant event : 1 séance (≤3×/sem) ou 2 (>3), volume bas, touches vitesse ≤12,5 m, phrase rassurance. Affûtage inchangé. `PLAN_VERSION` 30 + force regen. | ✅ |
+| 2026-08-03 | Force regen v31 | Demande Arthur : bump `PLAN_VERSION` 31 + `FORCE_PLAN_REGEN=true` pour re-forcer tous les plans (déjà en v30). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-03 | Banque `session_templates` | Table Supabase + seed 18 archétypes confirmé (ex-`OW_BASE_SESSIONS`). Mémoire / CMS coach ; le générateur JS reste la source runtime. Migration `20260803153000_session_templates.sql`. | ✅ |
 | 2026-08-03 | Gold descend/DPS | 1ère séance `coach_approved` : structure concurrente réécrite format Arthur (2300m, D…). Migration `20260803154500_session_template_descend_dps.sql`. | ✅ |
 | 2026-08-03 | Gold pyramide pull | 2e gold : 600/pull/jambes/pull/600 (3300m). Migration `20260803155000_session_template_pyramide_pull.sql`. | ✅ |

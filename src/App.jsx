@@ -3236,7 +3236,7 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 30; // v30 = semaine compétition easy (1–2 séances, 12,5 m)
+const PLAN_VERSION = 31; // v31 = force regen (semaine compétition + contenu courant)
 // Force overwrite TOUS les plans au chargement. Remettre false au prochain bump.
 const FORCE_PLAN_REGEN = true;
 
@@ -7891,7 +7891,7 @@ export default function App() {
 
   // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
   // FORCE_PLAN_REGEN = true uniquement pour un bump volontaire ; sinon mergePreservingProgress.
-  // v30 : force full overwrite (semaine compétition allégée 1–2 séances).
+  // v31 : force full overwrite tous plans (re-trigger après v30).
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
