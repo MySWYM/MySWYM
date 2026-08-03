@@ -676,7 +676,8 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
  *  sessionRoles (optionnel) : tableau [{ objectif, zone }] longueur = nbSeances — pilotage COSD.
  *  opts.volMult : scale distances (même base, volume selon niveau).
  *  opts.simplifyWording : clarifier Z1/R15 pour découverte uniquement.
- *  opts.pool : 25 | 50 — longueur de bassin (onboarding). */
+ *  opts.pool : 25 | 50 — longueur de bassin (onboarding).
+ *  opts.tasteHints : goûts client (focus technique / clarté) — voir user-taste.js. */
 export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine, ref100Str, _ref400Str, typeSemaine, prevDistance, sessionRoles = null, opts = {}) {
   const ref100Seconds = parseTime(ref100Str);
   const bassin = normalizePool(opts.pool);
@@ -684,6 +685,7 @@ export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeanc
   const focusCycle = simplifyWording ? FOCUS_CYCLE_DECOUVERTE : FOCUS_CYCLE;
   const volumeTier = typeSemaine === "allegee" ? "allegee" : typeSemaine === "test" ? "test" : typeSemaine === "reference" ? "reference" : "normale";
   const volMult = opts.volMult ?? null;
+  const tasteHints = opts.tasteHints || null;
   const { target, refTotal } = computeWeekTarget(niveauKey, typeSemaine, prevDistance);
   const weekScale = Math.max(0.55, Math.min(1.45, target / (refTotal || target)));
 
@@ -691,7 +693,18 @@ export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeanc
   let totalReel = 0;
   for (let i = 1; i <= nbSeances; i++) {
     // Rotation sur semaine + séance → tout le cycle apparaît même à 2–3×/sem
-    const focus = focusCycle[(numSemaine - 1 + i - 1) % focusCycle.length];
+    // Goûts : léger biais jambes vs éducatifs (cap soft — générateur ≠ école)
+    const cycleIdx = (numSemaine - 1 + i - 1) % focusCycle.length;
+    let focus = focusCycle[cycleIdx];
+    if (tasteHints?.ready) {
+      if (tasteHints.preferJambes) {
+        const jambes = focusCycle.find((f) => String(f).includes("jambes"));
+        if (jambes && (i + numSemaine) % 2 === 0) focus = jambes;
+      } else if (tasteHints.educatifBias > 0.25) {
+        const tech = focusCycle.find((f) => !String(f).includes("jambes") && !String(f).includes("chiens"));
+        if (tech && (i + numSemaine) % 3 === 0) focus = tech;
+      }
+    }
     const role = sessionRoles && sessionRoles[i - 1] ? sessionRoles[i - 1] : null;
     const obj = role?.objectif || objectifKey;
     const zone = role?.zone || null;

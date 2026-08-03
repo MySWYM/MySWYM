@@ -719,6 +719,10 @@ const dedupePlans = (plans) => {
 // Fusion local + remote : union des plans non tombstonés.
 // Suppression intentionnelle = présent dans deletedIds uniquement.
 // Pour un même id des deux côtés : garde la version avec le plus de progression.
+// À progression égale : garder le côté le plus récent (base) — sinon un changement
+// de fréquence 2×→3× (même nb de séances validées) est écrasé par l'ancien plan au refresh.
+// Si les timestamps sont égaux : préférer la fréquence / le volume planifié du côté base
+// déjà choisi ; ne prendre `other` que s'il a strictement plus de séances validées.
 const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, localUpdatedAt = 0, remoteUpdatedAt = 0, currentActive = null, deletedIds = null) => {
   const localIsNewer = (localUpdatedAt || 0) >= (remoteUpdatedAt || 0);
   const base = localIsNewer ? (localPlans || []) : (remotePlans || []);
@@ -736,7 +740,7 @@ const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, loca
       byId.set(e.id, e);
       continue;
     }
-    byId.set(e.id, planProgressScore(e) >= planProgressScore(existing) ? e : existing);
+    if (planProgressScore(e) > planProgressScore(existing)) byId.set(e.id, e);
   }
   const merged = dedupePlans([...byId.values()]);
   let active = currentActive;
@@ -1361,6 +1365,14 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
   const [changed, setChanged] = useState(false);
   const isDecouverteLevel = profile?.level === "découverte" || profile?.level === "beginner";
 
+  // Resync si le profil parent change (ex. après régénération / reload)
+  useEffect(() => {
+    setFreq(profile?.sessionsPerWeek ?? 2);
+    setPace100(profile?.pace100 ?? null);
+    setPaceRaw(profile?.pace100 ? secToDisplay(profile.pace100) : "");
+    setChanged(false);
+  }, [profile?.sessionsPerWeek, profile?.pace100]);
+
   const freqChanged = freq    !== (profile?.sessionsPerWeek ?? 2);
   const paceChanged = !isDecouverteLevel && pace100 !== (profile?.pace100 ?? null);
   const hasChange   = freqChanged || paceChanged || changed;
@@ -1458,7 +1470,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
   return (
     <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
-      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Tes semaines déjà validées sont conservées.</p>
+      <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Tes semaines déjà entamées et tes séances validées sont conservées. La nouvelle fréquence s&apos;applique aux semaines pas encore commencées.</p>
 
       {/* Fréquence */}
       <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Séances par semaine</div>
@@ -1872,19 +1884,32 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession, theme = "light", onToggleTheme }) => {
+const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession, onUserUpdate, theme = "light", onToggleTheme }) => {
   const { t: ts } = useTranslation("settings");
   const [password,      setPassword]      = useState("");
   const [saving,        setSaving]        = useState(false);
   const [msg,           setMsg]           = useState(null);
   const [stravaBestPace, setStravaBestPace] = useState(null);
 
+  const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
+  const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
+
   // Avatar + firstName — Supabase user_metadata en priorité, localStorage en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => {
-    try { return user?.user_metadata?.avatar_url || localStorage.getItem("myswym_avatar") || null; } catch { return null; }
+    try {
+      return user?.user_metadata?.avatar_url
+        || (user?.id ? localStorage.getItem(`myswym_avatar_${user.id}`) : null)
+        || localStorage.getItem("myswym_avatar")
+        || null;
+    } catch { return null; }
   });
   const [firstName, setFirstName] = useState(() => {
-    try { return user?.user_metadata?.firstname || localStorage.getItem("myswym_firstname") || ""; } catch { return ""; }
+    try {
+      return user?.user_metadata?.firstname
+        || (user?.id ? localStorage.getItem(`myswym_firstname_${user.id}`) : null)
+        || localStorage.getItem("myswym_firstname")
+        || "";
+    } catch { return ""; }
   });
   const [editingName, setEditingName] = useState(false);
   const [nameInput,   setNameInput]   = useState(firstName);
@@ -1893,7 +1918,19 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   // Resync depuis user_metadata quand l'objet user arrive ou change
   useEffect(() => {
     if (user?.user_metadata?.firstname) setFirstName(user.user_metadata.firstname);
+    else if (user?.id) {
+      try {
+        const cached = localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
+        if (cached) setFirstName(cached);
+      } catch {}
+    }
     if (user?.user_metadata?.avatar_url) setAvatarUrl(user.user_metadata.avatar_url);
+    else if (user?.id) {
+      try {
+        const cached = localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
+        if (cached) setAvatarUrl(cached);
+      } catch {}
+    }
   }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url]);
 
   const stats  = computeStats(plan);
@@ -1916,10 +1953,15 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const saveName = () => {
     const v = nameInput.trim();
     if (v) {
-      localStorage.setItem("myswym_firstname", v);
+      try {
+        localStorage.setItem(nameStorageKey, v);
+        localStorage.setItem("myswym_firstname", v);
+      } catch {}
       setFirstName(v);
       // Sync cross-device via user_metadata
-      supabase.auth.updateUser({ data: { firstname: v } }).catch(() => {});
+      supabase.auth.updateUser({ data: { firstname: v } })
+        .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
+        .catch(() => {});
     }
     setEditingName(false);
   };
@@ -1927,6 +1969,10 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    // Reset input pour permettre de re-sélectionner le même fichier
+    e.target.value = "";
+
+    const previousUrl = avatarUrl;
 
     // Aperçu immédiat local
     const reader = new FileReader();
@@ -1935,22 +1981,37 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
     // Upload vers Supabase Storage → URL publique persistante cross-device
     try {
-      const ext  = file.name.split(".").pop();
+      const mime = file.type || "image/jpeg";
+      const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
       const path = `${user.id}/avatar.${ext}`;
-      const { error: uploadErr } = await supabase.storage
+
+      // Upsert exige une policy SELECT (RETURNING). Fallback remove+insert si besoin.
+      let uploadErr = (await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, file, { upsert: true, contentType: mime, cacheControl: "3600" })).error;
+      if (uploadErr) {
+        await supabase.storage.from("avatars").remove([path]).catch(() => {});
+        uploadErr = (await supabase.storage
+          .from("avatars")
+          .upload(path, file, { upsert: false, contentType: mime, cacheControl: "3600" })).error;
+      }
       if (uploadErr) throw uploadErr;
 
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       // Cache-busting pour forcer le rechargement de l'image
       const urlWithTs = `${publicUrl}?t=${Date.now()}`;
       setAvatarUrl(urlWithTs);
-      try { localStorage.setItem("myswym_avatar", urlWithTs); } catch {}
-      // Sync cross-device via user_metadata
-      await supabase.auth.updateUser({ data: { avatar_url: urlWithTs } });
-    } catch {
-      // Fallback silencieux : l'aperçu local reste affiché
+      try {
+        localStorage.setItem(avatarStorageKey, urlWithTs);
+        localStorage.setItem("myswym_avatar", urlWithTs);
+      } catch {}
+      // Sync cross-device via user_metadata + état parent (home header)
+      const { data: updated, error: metaErr } = await supabase.auth.updateUser({ data: { avatar_url: urlWithTs } });
+      if (metaErr) throw metaErr;
+      if (updated?.user && onUserUpdate) onUserUpdate(updated.user);
+    } catch (err) {
+      setAvatarUrl(previousUrl || null);
+      setMsg({ type: "err", text: err?.message || "Impossible d'enregistrer la photo de profil" });
     }
   };
 
@@ -3236,8 +3297,8 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 31; // v31 = force regen (semaine compétition + contenu courant)
-// Force overwrite TOUS les plans au chargement. Remettre false au prochain bump.
+const PLAN_VERSION = 32; // v32 = force regen
+// true : overwrite TOUS les plans au chargement. Remettre false après le bump.
 const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [
@@ -4357,28 +4418,112 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
   );
 };
 
-// ── RESET CONFIRM BUTTON ──────────────────────────────────────────────────
-const ResetConfirmButton = ({ onReset }) => {
+// ── RESET / CHANGER D'OBJECTIF ────────────────────────────────────────────
+/** Free : carte douce au-dessus du plan. Premium : lien discret en bas. */
+const ResetConfirmButton = ({ onReset, variant = "subtle" }) => {
   const [confirm, setConfirm] = useState(false);
-  if (confirm) return (
-    <div style={{ marginTop: 8, background: G.coralLight, border: `1px solid ${G.coral}`, borderRadius: 12, padding: "16px 18px" }}>
-      <p style={{ fontSize: 13, color: G.coral, fontWeight: 600, marginBottom: 4 }}>Effacer ce plan ?</p>
-      <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.5, marginBottom: 14 }}>
-        Toute ta progression sera perdue et tu devras recommencer le questionnaire depuis le début.
-      </p>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => setConfirm(false)} style={{ flex: 1, padding: "10px", background: G.surface, border: `1px solid ${G.greyLight}`, borderRadius: 8, fontSize: 13, color: G.grey, cursor: "pointer", fontWeight: 500 }}>
-          Annuler
-        </button>
-        <button onClick={onReset} style={{ flex: 1, padding: "10px", background: G.coral, border: "none", borderRadius: 8, fontSize: 13, color: G.white, cursor: "pointer", fontWeight: 600 }}>
-          Oui, effacer
-        </button>
+  const isCard = variant === "card";
+
+  if (confirm) {
+    return (
+      <div style={{
+        marginBottom: isCard ? 16 : 0,
+        marginTop: isCard ? 0 : 8,
+        background: isCard ? G.surface : G.coralLight,
+        border: `1px solid ${isCard ? G.greyLight : G.coral}`,
+        borderRadius: isCard ? 18 : 12,
+        padding: isCard ? "16px 16px 14px" : "16px 18px",
+        boxShadow: isCard ? "0 2px 8px rgba(0,0,0,0.04)" : "none",
+      }}>
+        <p style={{
+          fontSize: 14, fontWeight: 700, marginBottom: 4,
+          color: isCard ? G.ink : G.coral,
+        }}>
+          Remplacer ton plan actuel ?
+        </p>
+        <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.5, marginBottom: 14 }}>
+          Tu repartiras du questionnaire pour créer un nouveau plan. La progression de celui-ci ne sera pas conservée.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setConfirm(false)}
+            style={{
+              flex: 1, padding: "11px", background: G.surface,
+              border: `1.5px solid ${G.greyLight}`, borderRadius: 10,
+              fontSize: 13, color: G.grey, cursor: "pointer", fontWeight: 600, minHeight: 44,
+            }}
+          >
+            Garder mon plan
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            style={{
+              flex: 1, padding: "11px", background: G.blue, border: "none", borderRadius: 10,
+              fontSize: 13, color: G.white, cursor: "pointer", fontWeight: 700, minHeight: 44,
+            }}
+          >
+            Nouveau plan
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (isCard) {
+    return (
+      <div style={{
+        marginBottom: 16,
+        background: G.surface,
+        border: `1px solid ${G.greyLight}`,
+        borderRadius: 18,
+        padding: "16px 16px 14px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <RotateCcw size={16} color={G.blue} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: G.ink, margin: "0 0 4px" }}>
+              Pas le bon objectif ?
+            </p>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
+              Tu peux refaire le questionnaire en 2 minutes et générer un plan plus adapté.
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirm(true)}
+              style={{
+                width: "100%", padding: "11px 14px", borderRadius: 10, cursor: "pointer",
+                background: G.blueLight, border: `1.5px solid ${G.blue}33`,
+                color: G.blue, fontSize: 13, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44,
+              }}
+            >
+              Changer d&apos;objectif
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <button onClick={() => setConfirm(true)} style={{ width: "100%", marginTop: 8, padding: "14px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-      <RotateCcw size={14} color={G.greyMid} /> Recommencer l'onboarding
+    <button
+      type="button"
+      onClick={() => setConfirm(true)}
+      style={{
+        width: "100%", marginTop: 8, padding: "14px", background: "none",
+        border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer",
+        fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44,
+      }}
+    >
+      <RotateCcw size={14} color={G.greyMid} /> Changer d&apos;objectif
     </button>
   );
 };
@@ -4611,6 +4756,9 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
 
+        {/* Free : changer d'objectif bien visible au-dessus du plan */}
+        {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
+
         {/* Semaines débloquées */}
         {plan.weeks.slice(0, unlocked).map((week, i) => (
           <div key={i}>
@@ -4623,7 +4771,8 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
           <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
         )}
 
-        <ResetConfirmButton onReset={onReset} />
+        {/* Premium : lien discret en bas (ils peuvent aussi ajouter un plan) */}
+        {isPremium && <ResetConfirmButton onReset={onReset} variant="subtle" />}
       </div>
     </div>
   );
@@ -4721,9 +4870,23 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
 
   // Avatar / name
   const avatarUrl = user?.user_metadata?.avatar_url
-    || (() => { try { return localStorage.getItem("myswym_avatar"); } catch { return null; } })();
+    || (() => {
+      try {
+        if (user?.id) {
+          return localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
+        }
+        return localStorage.getItem("myswym_avatar");
+      } catch { return null; }
+    })();
   const firstName = user?.user_metadata?.firstname
-    || (() => { try { return localStorage.getItem("myswym_firstname"); } catch { return null; } })()
+    || (() => {
+      try {
+        if (user?.id) {
+          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
+        }
+        return localStorage.getItem("myswym_firstname");
+      } catch { return null; }
+    })()
     || user?.user_metadata?.full_name?.split(" ")[0]
     || user?.email?.split("@")[0]
     || "Nageur";
@@ -7350,6 +7513,8 @@ export default function App() {
   const prevBadgesRef = useRef([]);
   const plansHydratedRef = useRef(false);
   const deletedPlanIdsRef = useRef(new Set());
+  /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
+  const plansSaveGenRef = useRef(0);
 
   // Valeurs dérivées du plan actif
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
@@ -7789,7 +7954,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user || plans.length === 0 || !plansHydratedRef.current) return;
-    let cancelled = false;
+    const saveGen = ++plansSaveGenRef.current;
     const save = async () => {
       const now = new Date().toISOString();
       let toSave = plans;
@@ -7798,30 +7963,42 @@ export default function App() {
         const { data } = await supabase.from("user_plans")
           .select("plans_json, active_plan_id, updated_at")
           .eq("user_id", user.id).single();
-        if (!cancelled && Array.isArray(data?.plans_json) && data.plans_json.length > 0) {
+        // Un save plus récent a démarré (ex. passage 2×→3×) → abandonner celui-ci
+        if (saveGen !== plansSaveGenRef.current) return;
+        if (Array.isArray(data?.plans_json) && data.plans_json.length > 0) {
           const remoteTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
           const localTs = localStorage.getItem(`myswym_plans_updated_${user.id}`);
           const localTime = localTs ? new Date(localTs).getTime() : 0;
-          const { plans: merged, active } = mergePlanLists(
-            plans, data.plans_json, activePlanId, data.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
-          );
-          const missingOnDevice = merged.some(m => !plans.find(p => p.id === m.id));
-          if (missingOnDevice) {
-            setPlans(merged);
-            setActivePlanId(active);
-            return;
+          // Si le cache local est plus récent (ex. freq 2×→3× juste écrite), ne pas
+          // re-fusionner avec un remote périmé — ça peut réécrire l'ancien plan.
+          if (localTime > remoteTime) {
+            toSave = plans;
+            activeToSave = activePlanId;
+          } else {
+            const { plans: merged, active } = mergePlanLists(
+              plans, data.plans_json, activePlanId, data.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
+            );
+            const missingOnDevice = merged.some(m => !plans.find(p => p.id === m.id));
+            if (missingOnDevice) {
+              if (saveGen !== plansSaveGenRef.current) return;
+              setPlans(merged);
+              setActivePlanId(active);
+              return;
+            }
+            toSave = merged;
+            activeToSave = active;
           }
-          toSave = merged;
-          activeToSave = active;
         }
       } catch {}
-      if (cancelled) return;
+      if (saveGen !== plansSaveGenRef.current) return;
       try {
         localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(toSave));
         localStorage.setItem(`myswym_active_${user.id}`, activeToSave);
         localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
       } catch {}
       const activeEntry = toSave.find(e => e.id === activeToSave) ?? toSave[0];
+      // Dernière barrière avant l'écriture remote (évite qu'un upsert 2× parte après un 3×)
+      if (saveGen !== plansSaveGenRef.current) return;
       const { error } = await supabase.from("user_plans").upsert({
         user_id:        user.id,
         plans_json:     toSave,
@@ -7830,15 +8007,37 @@ export default function App() {
         plan:           activeEntry?.plan    ?? null,
         updated_at:     now,
       }, { onConflict: "user_id" });
-      if (!error && !cancelled) {
-        // Les suppressions sont bien persistées : on peut oublier les tombstones
-        for (const id of [...deletedPlanIdsRef.current]) {
-          if (!toSave.some(e => e.id === id)) deletedPlanIdsRef.current.delete(id);
-        }
+      // Si un save plus récent a démarré pendant l'upsert, une écriture stale a pu
+      // atterrir : on re-pousse immédiatement le cache local (source de vérité UI).
+      if (saveGen !== plansSaveGenRef.current) {
+        try {
+          const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+          const activeId = localStorage.getItem(`myswym_active_${user.id}`);
+          const ts = localStorage.getItem(`myswym_plans_updated_${user.id}`) || new Date().toISOString();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const entry = parsed.find(e => e.id === activeId) ?? parsed[0];
+              await supabase.from("user_plans").upsert({
+                user_id:        user.id,
+                plans_json:     parsed,
+                active_plan_id: activeId || parsed[0].id,
+                profile:        entry?.profile ?? null,
+                plan:           entry?.plan ?? null,
+                updated_at:     ts,
+              }, { onConflict: "user_id" });
+            }
+          }
+        } catch {}
+        return;
+      }
+      if (error) return;
+      // Les suppressions sont bien persistées : on peut oublier les tombstones
+      for (const id of [...deletedPlanIdsRef.current]) {
+        if (!toSave.some(e => e.id === id)) deletedPlanIdsRef.current.delete(id);
       }
     };
     save();
-    return () => { cancelled = true; };
   }, [plans, activePlanId, user]);
 
   // Re-sync au retour sur l'app : fusionne cache local + Supabase (ne jamais écraser un plan d'un autre appareil)
@@ -7874,7 +8073,15 @@ export default function App() {
         const currentIds = plans.map(e => e.id).sort().join(",");
         const mergedProgress = enforced.reduce((s, e) => s + planProgressScore(e), 0);
         const currentProgress = plans.reduce((s, e) => s + planProgressScore(e), 0);
-        if (mergedIds === currentIds && enforced.length === plans.length && mergedProgress <= currentProgress) return;
+        // Ne pas écraser un changement de fréquence local (2×→3×) si la progression est égale
+        const localFreq = plans.find(e => e.id === activePlanId)?.profile?.sessionsPerWeek;
+        const mergedFreq = enforced.find(e => e.id === active)?.profile?.sessionsPerWeek;
+        if (
+          mergedIds === currentIds
+          && enforced.length === plans.length
+          && mergedProgress <= currentProgress
+          && (mergedProgress < currentProgress || localFreq === mergedFreq || localTime >= remoteTime)
+        ) return;
 
         setPlans(enforced);
         setActivePlanId(active);
@@ -8255,16 +8462,52 @@ export default function App() {
         source: "program",
       });
     }
+    // Annule dès le clic les saves 2× en vol pendant la régénération (~1.8s).
+    plansSaveGenRef.current += 1;
     setScreen("loading");
     const taste = activePlanEntry.plan?.taste || tasteProfile;
-    generatePlan({ ...newProfile, taste }, isPremium).then(newPlan => {
+    const planIdToUpdate = activePlanId;
+    generatePlan({ ...newProfile, taste }, isPremium).then(async (newPlan) => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
-      // Semaines entièrement validées → on garde l'ancienne semaine telle quelle
-      // (même nombre de séances, même contenu, même historique)
-      // Semaines non validées → on prend la nouvelle semaine générée avec la nouvelle fréquence
+      // Semaines entamées (séance validée / skip / feedback) → conservées telles quelles.
+      // Semaines non entamées → nouvelle fréquence (séances ajoutées / retirées).
       const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
       const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
-      setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: newProfile, plan: planWithDate }));
+      const now = new Date().toISOString();
+      // Invalide tout save en cours (évite qu'un upsert 2× arrive après le cache 3×).
+      plansSaveGenRef.current += 1;
+
+      setPlans(prev => {
+        const nextPlans = prev.map(e => e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate });
+        if (user) {
+          try {
+            localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+            localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
+            localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+          } catch {}
+        }
+        return nextPlans;
+      });
+
+      // Persistance remote immédiate à partir du cache (source de vérité post-changement)
+      if (user) {
+        plansSaveGenRef.current += 1;
+        try {
+          const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+          const parsed = raw ? JSON.parse(raw) : null;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeEntry = parsed.find(e => e.id === planIdToUpdate) ?? parsed[0];
+            await supabase.from("user_plans").upsert({
+              user_id:        user.id,
+              plans_json:     parsed,
+              active_plan_id: planIdToUpdate,
+              profile:        activeEntry?.profile ?? null,
+              plan:           activeEntry?.plan ?? null,
+              updated_at:     now,
+            }, { onConflict: "user_id" });
+          }
+        } catch {}
+      }
       setScreen("app"); setActiveTab("plan");
     });
   };
@@ -8565,7 +8808,7 @@ export default function App() {
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => openUpgrade()} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} theme={theme} onToggleTheme={handleToggleTheme} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => openUpgrade()} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} onUserUpdate={setUser} theme={theme} onToggleTheme={handleToggleTheme} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
