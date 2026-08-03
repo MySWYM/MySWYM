@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
+import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator } from "./lib/swim-plan-bridge.js";
 import {
   blankTaste,
@@ -1390,7 +1391,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
           <Lock size={14} color={G.greyMid} />
           <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
         </div>
-        <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Adapte le nombre de séances et ton allure — réservé aux membres Premium.</p>
+        <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Adapte le nombre de séances{isDecouverteLevel ? "" : " et ton allure"} — réservé aux membres Premium.</p>
 
         {/* Aperçu grisé — clic → popup Premium */}
         <button
