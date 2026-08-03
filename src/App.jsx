@@ -3216,9 +3216,9 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 26; // v26 = force regen contenu actuel (formats OW/triathlon, banque confirmé, etc.)
-// Force regen volontaire pour CE bump (v26) — écrase les semaines y compris progression.
-// Remettre à false dès le prochain bump (sinon chaque migration future réécrase tout).
+const PLAN_VERSION = 27; // v27 = Découverte : éducatifs flèche + grand chien (palmes + tuba)
+// Force regen pour appliquer le contenu Découverte aux plans existants.
+// Remettre à false dès le prochain bump.
 const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [

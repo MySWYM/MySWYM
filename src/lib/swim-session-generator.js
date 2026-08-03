@@ -111,6 +111,24 @@ const TECHNIQUE = {
     block(400, ["· 4x50 : 25m grand chien · 25m petit chien", "· 4x50m nage normale"]),
     block(300, ["· 8x25m grand chien R10''", "· 4x25m nage complète"]),
   ]},
+  /** Découverte uniquement — flèche = glisse après poussée mur. */
+  technique_fleche: { label:"La flèche", drills:[
+    block(300, ["· 8x25m flèche : poussée mur + glisse bras tendus, tête entre les bras R15''", "· 4x50m crawl facile"]),
+    block(350, ["· 6x50m : 25m flèche · 25m crawl facile R20''"]),
+    block(300, ["· 10x25m flèche, sens la glisse le plus longtemps possible R15''", "· 4x25m crawl facile"]),
+    block(350, ["· 8x25m flèche R15''", "· 4x50m nage facile, garde la sensation de glisse"]),
+    block(300, ["· 6x50m : 25m flèche · 25m dos facile R20''"]),
+    block(320, ["· 8x25m flèche, souffle doucement pendant la glisse R15''", "· 4x50m crawl facile"]),
+  ]},
+  /** Découverte uniquement — grand chien seul (pas de petit chien). */
+  technique_grand_chien: { label:"Grand chien", drills:[
+    block(300, ["· 8x25m grand chien : bras qui restent sous l'eau, traction large R15''", "· 4x50m crawl facile"]),
+    block(350, ["· 6x50m : 25m grand chien · 25m crawl facile R20''"]),
+    block(300, ["· 10x25m grand chien, lentement, sens l'eau R15''", "· 4x25m crawl facile"]),
+    block(350, ["· 8x25m grand chien R15''", "· 4x50m nage facile"]),
+    block(300, ["· 6x50m : 25m grand chien · 25m flèche R20''"]),
+    block(320, ["· 8x25m grand chien, bras sous l'eau du début à la fin R15''", "· 4x50m crawl facile"]),
+  ]},
   technique_croisement: { label:"Alignement / entrée de main", drills:[
     block(400, ["· 8x50m focus entrée de main alignée épaule R20''"]),
     block(400, ["· 6x50m : 25m un bras · 25m nage complète R20''"]),
@@ -310,9 +328,23 @@ const FOCUS_CYCLE = [
   "technique_jambes",
 ];
 
+/** Découverte : uniquement flèche + grand chien (pas de catch-up / roulis / virages…). */
+const FOCUS_CYCLE_DECOUVERTE = [
+  "technique_fleche",
+  "technique_grand_chien",
+  "technique_fleche",
+  "technique_grand_chien",
+  "technique_fleche",
+  "technique_grand_chien",
+  "technique_fleche",
+  "technique_grand_chien",
+];
+
 const MATERIEL = ["", " palmes", " palmes + tubas", " plaquettes", " palmes + plaquettes"];
 /** Roulis / chiens : jamais de plaquettes — uniquement palmes (consigne Arthur). */
 const MATERIEL_ROULIS = [" palmes", " palmes + tubas", " palmes"];
+/** Découverte : palmes + tuba frontal pour flottaison et respiration simplifiée. */
+const MATERIEL_DECOUVERTE = [" palmes + tuba frontal", " palmes + tuba frontal"];
 const RESPIRATIONS = ["bilatérale 3T", "libre", "bilatérale alternée"];
 
 /* ============== UTILITAIRES ============== */
@@ -417,11 +449,19 @@ function pickCorpsInRange(objectifKey, minDist, maxDist, pickKey, pool = 50){
 
 /**
  * En bassin 50m : Nx25m → Nx50m « 25m à bloc + 25m relâché » (même nb de reps, fini au mur).
+ * Éducatifs flèche / grand chien : simple doublement 25→50 (pas de sprint + relâché).
  * Ne touche pas aux « 25m A · 25m B » déjà structurés dans une longueur de 50.
  */
 function adaptLineRepsForPool50(line) {
   if (!line) return line;
   let t = line;
+  const isEducatifGlisse = /flèche|grand\s*chien/i.test(t);
+  if (isEducatifGlisse) {
+    t = t.replace(/(\d+)\s*x\s*\(\s*(\d+)\s*x\s*25\s*m\s*\)/gi, (_m, a, b) => `${a}x(${b}x50m)`);
+    // 8x25m flèche → 8x50m flèche ; laisse « 6x50m : 25m A · 25m B » intact
+    t = t.replace(/(\d+)\s*x\s*25\s*m/gi, (_m, n) => `${n}x50m`);
+    return t;
+  }
   t = t.replace(/(\d+)\s*x\s*\(\s*(\d+)\s*x\s*25\s*m\s*\)/gi, (_m, a, b) =>
     `${a}x(${b}x50m : 25m à bloc + 25m relâché)`
   );
@@ -544,23 +584,35 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const isTest = objectifKey === "test";
 
   // Départ Z1 — jamais jambes si le focus technique est déjà jambes
-  const departPool = techniqueFocusKey === "technique_jambes"
-    ? DEPARTS_SEMAINE
-    : [...DEPARTS_SEMAINE, ...DEPARTS_AVEC_JAMBES];
+  // Découverte : départs simples (pas de godilles)
+  let departPool;
+  if (isBeginner) {
+    departPool = DEPARTS_SEMAINE.filter((fn) => !/godille|jambes/i.test(fn().text));
+    if (!departPool.length) departPool = DEPARTS_SEMAINE;
+  } else if (techniqueFocusKey === "technique_jambes") {
+    departPool = DEPARTS_SEMAINE;
+  } else {
+    departPool = [...DEPARTS_SEMAINE, ...DEPARTS_AVEC_JAMBES];
+  }
   const depart = scaleDepartBlock(pick(departPool, "depart")(), isTest ? Math.min(mult, 0.85) : mult);
   lignes.push(depart.text);
 
   // Technique rotative — adapter Nx25m si bassin 50
-  const techBlock = TECHNIQUE[techniqueFocusKey];
+  // Découverte : flèche / grand chien (FOCUS_CYCLE_DECOUVERTE)
+  const techKey = (isBeginner && TECHNIQUE[techniqueFocusKey]) ? techniqueFocusKey
+    : (isBeginner ? "technique_fleche" : techniqueFocusKey);
+  const techBlock = TECHNIQUE[techKey] || TECHNIQUE.technique_fleche;
   const techPicked = adaptTechBlockForPool(
-    pick(techBlock.drills, "tech_semaine_"+techniqueFocusKey),
+    pick(techBlock.drills, "tech_semaine_"+techKey),
     bassin,
   );
-  const materielPool = (techniqueFocusKey === "technique_roulis" || techniqueFocusKey === "technique_chiens")
-    ? MATERIEL_ROULIS
-    : techniqueFocusKey === "technique_jambes"
-      ? [""] // matériel déjà dans les lignes (planche / palmes)
-      : MATERIEL;
+  const materielPool = isBeginner
+    ? MATERIEL_DECOUVERTE
+    : (techKey === "technique_roulis" || techKey === "technique_chiens")
+      ? MATERIEL_ROULIS
+      : techKey === "technique_jambes"
+        ? [""]
+        : MATERIEL;
   const materiel = pick(materielPool, "materiel");
   lignes.push(`-${techPicked.distance}m ${techBlock.label.toLowerCase()}${materiel}`);
   techPicked.lines.forEach(l => lignes.push("  " + l));
@@ -628,10 +680,10 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
 export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine, ref100Str, _ref400Str, typeSemaine, prevDistance, sessionRoles = null, opts = {}) {
   const ref100Seconds = parseTime(ref100Str);
   const bassin = normalizePool(opts.pool);
-  const focusCycle = FOCUS_CYCLE;
+  const simplifyWording = opts.simplifyWording ?? null;
+  const focusCycle = simplifyWording ? FOCUS_CYCLE_DECOUVERTE : FOCUS_CYCLE;
   const volumeTier = typeSemaine === "allegee" ? "allegee" : typeSemaine === "test" ? "test" : typeSemaine === "reference" ? "reference" : "normale";
   const volMult = opts.volMult ?? null;
-  const simplifyWording = opts.simplifyWording ?? null;
   const { target, refTotal } = computeWeekTarget(niveauKey, typeSemaine, prevDistance);
   const weekScale = Math.max(0.55, Math.min(1.45, target / (refTotal || target)));
 
