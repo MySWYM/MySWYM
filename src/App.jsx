@@ -3513,7 +3513,7 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 33; // v33 = blocs technique lisibles (1 n° = 1 bloc)
+const PLAN_VERSION = 34; // v34 = matos cohérent (pas de titre aléatoire / pas pull+palmes)
 // true : overwrite TOUS les plans au chargement. Remettre false après le bump.
 const FORCE_PLAN_REGEN = true;
 

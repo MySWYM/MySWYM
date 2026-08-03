@@ -33,6 +33,7 @@
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
+- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -114,6 +115,7 @@
 | 2026-08-03 | Force regen v31 | Demande Arthur : bump `PLAN_VERSION` 31 + `FORCE_PLAN_REGEN=true` pour re-forcer tous les plans (déjà en v30). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-03 | Blocs technique UI | Tirets + points numérotés séparément = illisible. 1 numéro = 1 bloc (titre + sous-séries). Préfixes `-`/`·` masqués. Générateur : `400m … :` + lignes indentées. `PLAN_VERSION` 33. | ✅ |
 | 2026-08-03 | UX séances Performance | Lignes Arthur `A · B · C` (ex. Symétrie pull) → expand en sous-séries verticales à l’affichage + store. Migration SQL symétrie lisible. | ✅ |
+| 2026-08-03 | Matos cohérent | Plus de matos aléatoire sur le titre de bloc. Interdit pull-buoy+palmes. Matos dans la ligne d’exo ; Découverte garde palmes+tuba au titre. `PLAN_VERSION` 34. | ✅ |
 | 2026-08-03 | Banque `session_templates` | Table Supabase + seed 18 archétypes confirmé (ex-`OW_BASE_SESSIONS`). Mémoire / CMS coach ; le générateur JS reste la source runtime. Migration `20260803153000_session_templates.sql`. | ✅ |
 | 2026-08-03 | Gold descend/DPS | 1ère séance `coach_approved` : structure concurrente réécrite format Arthur (2300m, D…). Migration `20260803154500_session_template_descend_dps.sql`. | ✅ |
 | 2026-08-03 | Gold pyramide pull | 2e gold : 600/pull/jambes/pull/600 (3300m). Migration `20260803155000_session_template_pyramide_pull.sql`. | ✅ |
@@ -151,6 +153,7 @@
 
 1. **BNSSA** : oublier le volet sauvetage (sortie bassin, enchaînement, chrono 100 m examen).
 2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = **flèche + grand chien** (+ palmes/tuba) seulement — pas de catch-up/roulis/virages. **Ne pas demander de T100.**
+2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes**.
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.

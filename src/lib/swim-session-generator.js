@@ -57,7 +57,7 @@ const TECHNIQUE = {
     block(400, ["· 8x25m un bras (l'autre tendu devant), focus rotation R15''", "· 4x50m roulis marqué, respiration tardive R20''"]),
     block(400, ["· 6x50m roulis + glisse prolongée R20''", "· 4x25m pull-buoy rotation complète épaules-hanches"]),
     block(400, ["· 8x25m « 6 battements par roulis » R15''", "· 4x50m roulis contrôlé, regard fixe vers le fond R20''"]),
-    block(400, ["· 6x50m roulis avec pull-buoy + palmes, focus appui R20''", "· 4x25m nage complète, garder l'amplitude de roulis"]),
+    block(400, ["· 6x50m roulis avec pull-buoy, focus appui R20''", "· 4x25m nage complète, garder l'amplitude de roulis"]),
     block(200, ["· 4x50 palmes : 25m bras droit devant / gauche cuisse ; 25m inversé — respiration latérale"]),
     block(400, ["· 8x50m le moins de mouvements possible/25m — focus position, efficacité de traction R20''"]),
     block(200, ["· 8x25m palmes : 1x crawl sous l'eau · 1x godille pieds en avant sur le dos R15''"]),
@@ -340,10 +340,7 @@ const FOCUS_CYCLE_DECOUVERTE = [
   "technique_grand_chien",
 ];
 
-const MATERIEL = ["", " palmes", " palmes + tubas", " plaquettes", " palmes + plaquettes"];
-/** Roulis / chiens : jamais de plaquettes — uniquement palmes (consigne Arthur). */
-const MATERIEL_ROULIS = [" palmes", " palmes + tubas", " palmes"];
-/** Découverte : palmes + tuba frontal pour flottaison et respiration simplifiée. */
+/** Découverte : palmes + tuba frontal sur le titre (flottaison / respiration). Autres niveaux : matos uniquement dans les lignes d'exo. */
 const MATERIEL_DECOUVERTE = [" palmes + tuba frontal", " palmes + tuba frontal"];
 const RESPIRATIONS = ["bilatérale 3T", "libre", "bilatérale alternée"];
 
@@ -606,14 +603,9 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
     pick(techBlock.drills, "tech_semaine_"+techKey),
     bassin,
   );
-  const materielPool = isBeginner
-    ? MATERIEL_DECOUVERTE
-    : (techKey === "technique_roulis" || techKey === "technique_chiens")
-      ? MATERIEL_ROULIS
-      : techKey === "technique_jambes"
-        ? [""]
-        : MATERIEL;
-  const materiel = pick(materielPool, "materiel");
+  // Matos : uniquement dans les lignes d'exo (jamais collé au hasard sur le titre — incohérent).
+  // Exception Découverte : palmes + tuba frontal sur le titre (consigne niveau).
+  const materiel = isBeginner ? pick(MATERIEL_DECOUVERTE, "materiel") : "";
   lignes.push(`-${techPicked.distance}m ${techBlock.label.toLowerCase()}${materiel} :`);
   techPicked.lines.forEach(l => {
     const clean = String(l).trim().replace(/^[·\-\s]+/, "");
