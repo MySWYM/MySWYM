@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
@@ -2105,17 +2106,18 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
         </div>
 
-        {avatarMenuOpen && (
+        {avatarMenuOpen && createPortal(
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Photo de profil"
             onClick={() => setAvatarMenuOpen(false)}
             style={{
-              position: "fixed", inset: 0, zIndex: 80,
+              position: "fixed", inset: 0, zIndex: 400,
               background: "rgba(15, 23, 42, 0.45)",
               display: "flex", alignItems: "flex-end", justifyContent: "center",
-              padding: "16px 16px calc(16px + var(--safe-bottom))",
+              padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+              boxSizing: "border-box",
             }}
           >
             <div
@@ -2170,7 +2172,8 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
                 Annuler
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Name — tappable pour éditer */}
