@@ -45,7 +45,7 @@ import {
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
-  Sun, Moon,
+  Sun, Moon, Camera, Trash2,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -1913,6 +1913,8 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   });
   const [editingName, setEditingName] = useState(false);
   const [nameInput,   setNameInput]   = useState(firstName);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
 
   // Resync depuis user_metadata quand l'objet user arrive ou change
@@ -1929,7 +1931,8 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
       try {
         const cached = localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
         if (cached) setAvatarUrl(cached);
-      } catch {}
+        else setAvatarUrl(null);
+      } catch { setAvatarUrl(null); }
     }
   }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url]);
 
@@ -1971,8 +1974,10 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     if (!file || !user) return;
     // Reset input pour permettre de re-sélectionner le même fichier
     e.target.value = "";
+    setAvatarMenuOpen(false);
 
     const previousUrl = avatarUrl;
+    setAvatarBusy(true);
 
     // Aperçu immédiat local
     const reader = new FileReader();
@@ -2012,6 +2017,33 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
     } catch (err) {
       setAvatarUrl(previousUrl || null);
       setMsg({ type: "err", text: err?.message || "Impossible d'enregistrer la photo de profil" });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user || avatarBusy) return;
+    setAvatarBusy(true);
+    setAvatarMenuOpen(false);
+    const previousUrl = avatarUrl;
+    setAvatarUrl(null);
+    try {
+      try {
+        localStorage.removeItem(avatarStorageKey);
+        localStorage.removeItem("myswym_avatar");
+      } catch {}
+      // Supprime les variantes éventuelles (jpg/png/webp)
+      const paths = ["jpg", "png", "webp"].map((ext) => `${user.id}/avatar.${ext}`);
+      await supabase.storage.from("avatars").remove(paths);
+      const { data: updated, error: metaErr } = await supabase.auth.updateUser({ data: { avatar_url: "" } });
+      if (metaErr) throw metaErr;
+      if (updated?.user && onUserUpdate) onUserUpdate(updated.user);
+    } catch (err) {
+      setAvatarUrl(previousUrl || null);
+      setMsg({ type: "err", text: err?.message || "Impossible de supprimer la photo" });
+    } finally {
+      setAvatarBusy(false);
     }
   };
 
@@ -2034,12 +2066,20 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
       <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
       <div style={{ padding: "48px 0 24px", textAlign: "center" }}>
-        {/* Avatar — tappable pour changer la photo */}
+        {/* Avatar — menu Ajouter / Modifier / Supprimer */}
         <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "block", minWidth: 44, minHeight: 44 }}
+            onClick={() => {
+              if (avatarBusy) return;
+              if (!avatarUrl) {
+                fileInputRef.current?.click();
+                return;
+              }
+              setAvatarMenuOpen(true);
+            }}
+            aria-label={avatarUrl ? "Gérer la photo de profil" : "Ajouter une photo de profil"}
+            style={{ border: "none", background: "none", cursor: avatarBusy ? "wait" : "pointer", padding: 0, display: "block", minWidth: 44, minHeight: 44, opacity: avatarBusy ? 0.7 : 1 }}
           >
             <div style={{
               width: 90, height: 90, borderRadius: "50%",
@@ -2053,18 +2093,85 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
                 : <span style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>{initials}</span>
               }
             </div>
-            {/* Camera badge */}
             <div style={{
               position: "absolute", bottom: 2, right: 2,
               width: 26, height: 26, borderRadius: "50%",
               background: G.blue, border: "2.5px solid #fff",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <User size={12} color="#fff" />
+              <Camera size={12} color="#fff" />
             </div>
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
         </div>
+
+        {avatarMenuOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo de profil"
+            onClick={() => setAvatarMenuOpen(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 80,
+              background: "rgba(15, 23, 42, 0.45)",
+              display: "flex", alignItems: "flex-end", justifyContent: "center",
+              padding: "16px 16px calc(16px + var(--safe-bottom))",
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%", maxWidth: 420, background: G.surface, borderRadius: 20,
+                border: `1px solid ${G.greyLight}`, overflow: "hidden",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.18)",
+              }}
+            >
+              <div style={{ padding: "16px 18px 10px", textAlign: "left" }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Photo de profil</div>
+                <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>Choisis une action</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 12,
+                  padding: "14px 18px", background: "none", border: "none", borderTop: `1px solid ${G.greyLight}`,
+                  cursor: "pointer", textAlign: "left", minHeight: 52,
+                }}
+              >
+                <Camera size={18} color={G.blue} />
+                <span style={{ fontSize: 15, fontWeight: 600, color: G.ink }}>
+                  {avatarUrl ? "Modifier la photo" : "Ajouter une photo"}
+                </span>
+              </button>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleAvatarRemove}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 12,
+                    padding: "14px 18px", background: "none", border: "none", borderTop: `1px solid ${G.greyLight}`,
+                    cursor: "pointer", textAlign: "left", minHeight: 52,
+                  }}
+                >
+                  <Trash2 size={18} color={G.coral} />
+                  <span style={{ fontSize: 15, fontWeight: 600, color: G.coral }}>Supprimer la photo</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAvatarMenuOpen(false)}
+                style={{
+                  width: "100%", padding: "14px 18px", background: G.greyXLight, border: "none",
+                  borderTop: `1px solid ${G.greyLight}`, cursor: "pointer",
+                  fontSize: 15, fontWeight: 700, color: G.grey, minHeight: 52,
+                }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Name — tappable pour éditer */}
         {editingName ? (
@@ -5199,7 +5306,7 @@ const calcSessionDistance = (details = []) => {
 // Eau libre & triathlon : priorité crawl/dos — pas les blocs perf « 4 nages » lourds en brasse
 const isOpenWaterGoal = (g) => g?.startsWith("open_water") || g?.startsWith("eau_libre");
 const isTriathlonGoal = (g) => g?.startsWith("triathlon");
-const usePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
+const shouldUsePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
 
 // Banque confirmé (ex-OW_BASE_SESSIONS) : src/lib/swim-session-generator.js — branchée via swim-plan-bridge.
 
@@ -5369,7 +5476,7 @@ const SESSION_TEMPLATES = {
     }
 
     // ── PERFORMANCE / EXPERT : endurance + 4 nages (piscine polyvalente uniquement) ──
-    if (isAdv && usePoolIMBlock(goal)) {
+    if (isAdv && shouldUsePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
       const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
       const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
@@ -5813,7 +5920,7 @@ const SESSION_TEMPLATES = {
     }
 
     // ── PERFORMANCE / EXPERT : seuil + 4 nages (piscine polyvalente uniquement) ──
-    if (isAdv && usePoolIMBlock(goal)) {
+    if (isAdv && shouldUsePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
       const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
       const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
@@ -6226,7 +6333,7 @@ const SESSION_TEMPLATES = {
     }
 
     // ── PERFORMANCE / EXPERT : vitesse + 4 nages (piscine polyvalente uniquement) ──
-    if (isAdv && usePoolIMBlock(goal)) {
+    if (isAdv && shouldUsePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 5;
       const WARM = 500, COOL = 200, avail = dist - WARM - COOL;
       const echu = `200m crawl + 100m dos + 100m brasse + 4×25m papillon — 20" récup`;
@@ -6657,7 +6764,7 @@ const SESSION_TEMPLATES = {
     }
 
     // ── INTERMÉDIAIRE (+ perf eau libre / triathlon : crawl, pas blocs 4 nages brasse) ──
-    if (!isAdv || !usePoolIMBlock(goal)) {
+    if (!isAdv || !shouldUsePoolIMBlock(goal)) {
       const v = rot(7);
       return {
         type: "TECHNIQUE",
@@ -6744,7 +6851,7 @@ const SESSION_TEMPLATES = {
     }
 
     // ── PERF eau libre / triathlon : technique crawl & sighting ───────────
-    if (isAdv && !usePoolIMBlock(goal)) {
+    if (isAdv && !shouldUsePoolIMBlock(goal)) {
       const v = rot(6);
       return {
         type: "TECHNIQUE",
@@ -7015,7 +7122,7 @@ const SESSION_TEMPLATES = {
     }
 
     // ── PERFORMANCE / EXPERT : récup active + 4 nages (piscine polyvalente) ──
-    if (!isBeg && (level === "performance" || level === "advanced") && usePoolIMBlock(goal)) {
+    if (!isBeg && (level === "performance" || level === "advanced") && shouldUsePoolIMBlock(goal)) {
       const vp = (Math.floor(weekIdx / 10) * 3 + (weekIdx % 10)) % 3;
       return {
         type: "RÉCUPÉRATION",
