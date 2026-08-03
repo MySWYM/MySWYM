@@ -42,6 +42,7 @@
 - **Difficulté** : zones qui montent par mésocycle (Z1–Z2 foncier → Z3–Z4 spécifique).
 - **Semaines test** (`phase: "test"`) : chronos 100/200/400 m pour mesurer l’évolution — 1 à 2 selon la durée du plan (après base / après développement).
 - **Affûtage** : 1 semaine dès 6 sem. de plan, **2 semaines** dès 10 sem. Volume ↓, touches vitesse, puis semaine compétition.
+- **Semaine de compétition** (dernière avant l’event) : **toujours easy** — **1 séance** si fréquence ≤3×/sem, **2 séances** si >3. Volume très bas, séances courtes (~20–25 min), rappels de vitesse **≤12,5 m**, phrase : « Ne t’inquiète pas : si tu as suivi le plan, le travail est fait. »
 - Progression « Nager & Progresser » (12 sem.) : base → **test** → développement → **test** → peak → bilan.
 
 ### Objectifs spécifiques
@@ -107,6 +108,7 @@
 | 2026-08-03 | Découverte flèche/chien | Éducatifs Découverte = **flèche** + **grand chien** uniquement (+ palmes / tuba frontal). Cycle dédié `FOCUS_CYCLE_DECOUVERTE`. Prompt `docs/prompt-autre-ia.md`. `PLAN_VERSION` 27 + force regen. | ✅ |
 | 2026-08-03 | Force regen Découverte v28 | Plans déjà en v27 : bump `PLAN_VERSION` 28. Force overwrite **uniquement** niveau découverte/beginner (autres = merge progression). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-03 | Découverte sans T100 | Ne plus demander le temps au 100 m en onboarding / profil pour niveau découverte (souvent incapables d’enchaîner 100 m). Skip step pace Premium + hide carte évolution / champ T100. | ✅ |
+| 2026-08-03 | Semaine compétition easy | Dernière semaine avant event : 1 séance (≤3×/sem) ou 2 (>3), volume bas, touches vitesse ≤12,5 m, phrase rassurance. Affûtage inchangé. `PLAN_VERSION` 30 + force regen. | ✅ |
 | 2026-08-03 | Banque `session_templates` | Table Supabase + seed 18 archétypes confirmé (ex-`OW_BASE_SESSIONS`). Mémoire / CMS coach ; le générateur JS reste la source runtime. Migration `20260803153000_session_templates.sql`. | ✅ |
 | 2026-08-03 | Gold descend/DPS | 1ère séance `coach_approved` : structure concurrente réécrite format Arthur (2300m, D…). Migration `20260803154500_session_template_descend_dps.sql`. | ✅ |
 | 2026-08-03 | Gold pyramide pull | 2e gold : 600/pull/jambes/pull/600 (3300m). Migration `20260803155000_session_template_pyramide_pull.sql`. | ✅ |
@@ -127,6 +129,8 @@
 | 2026-08-03 | Gold volume 4 nages | 17e gold : couples pap/dos/brasse (3400m), mixte. Migration `20260803170500_session_template_volume_4nages.sql`. | ✅ |
 | 2026-08-03 | Arthur tri S3–S4 | 6 séances coaché triathlon (construction volume + 4N + seuil intro + bricks run). Migration `20260803171500_session_templates_arthur_tri_s3_s4.sql`. | ✅ |
 | 2026-08-03 | Arthur OW S6–S7 | 6 séances coaché eau libre (volume 5900m + décharge 4200m). Migration `20260803172000_session_templates_arthur_ow_s6_s7.sql`. | ✅ |
+| 2026-08-03 | Banque live + wire | `session_templates` en prod (18 seed + 29 gold). App charge la banque ; confirmé eau_libre/mixte → Arthur gold, sinon JS. | ✅ |
+| 2026-08-03 | Force regen v29 | Demande Arthur : `PLAN_VERSION` 29 + `FORCE_PLAN_REGEN=true` — overwrite **tous** les plans (progression écrasée) pour appliquer la banque. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-03 | Profil goûts client | Retours séance/hebdo → scores EMA (`user-taste.js`) persistés `user_taste_profile` + tables `session_feedback` / `week_feedback`. Générateur biaisé (volume, intensité, éducatifs, focus). Soft caps — périodisation COSD prioritaire. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
@@ -159,9 +163,9 @@
 Table `session_templates` — templates coach au format Arthur (`details` + `blocks` départ/technique/corps/RAC).
 
 - **V1** : 18 séances confirmé seedées (`source=js_ow_base`, `quality=seed`). Lecture publique RLS (`active=true`).
-- **Runtime** : l’app génère encore via `OW_BASE_SESSIONS` / générateur combinatoire — pas encore de lecture DB dans `generatePlan`.
+- **Runtime** : confirmé eau_libre/mixte charge la banque Arthur gold via `session-templates-store.js` (fallback `OW_BASE_SESSIONS` si cache vide). Endurance confirmé reste JS.
 - **Alimentation** : Arthur envoie des séances (Excel / texte) → insert/update en base (`source=arthur_excel` ou `coach_approved`, `quality=gold`).
-- **Suite** : brancher le moteur sur la banque ; table `programming_rules` / `coach_rules` pour les règles COSD.
+- **Suite** : scaling volume DB par niveau ; `programming_rules` ; sync historique migrations CLI.
 
 ## Pistes produit (pas encore codées)
 

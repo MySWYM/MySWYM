@@ -10,6 +10,8 @@ import {
   buildConfirmeArchetypeSession,
   usesConfirmeArchetypeBank,
 } from "./swim-session-generator.js";
+import { tasteToGeneratorHints, biasRolesForTaste } from "./user-taste.js";
+import { pickArthurBankSession } from "./session-templates-store.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -177,6 +179,66 @@ function zoneLabel(details, role, beginnerFriendly = false) {
   return cues[zone] || zone;
 }
 
+/** Fréquence semaine compétition : 1 séance si ≤3×/sem, 2 si >3. */
+export function competitionSessionCount(freq) {
+  return (freq || 3) <= 3 ? 1 : 2;
+}
+
+const COMPETITION_TIP =
+  "Dernière semaine avant l'événement : séances courtes, volume bas, juste quelques rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.";
+
+/**
+ * Séances ultra-légères J-7 → event : fraîcheur + touches vitesse ≤12,5 m.
+ * Pas de volume, pas de seuil — activation neuromusculaire seulement.
+ */
+export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel, beginnerFriendly = false) {
+  const n = Math.max(1, Math.min(2, nbSeances));
+  const easy = beginnerFriendly ? "(facile)" : "(Z1)";
+  const fast = beginnerFriendly ? "(rapide, frais)" : "(Z4 — touché court)";
+  const repos = beginnerFriendly ? "repos 30s" : "R30''";
+
+  const variants = [
+    {
+      details: [
+        `-200m crawl souple ${easy}`,
+        `-8×12,5m accélération ${fast} — ${repos} entre chaque`,
+        `  · Départ poussée mur, 2–3 coups forts, laisse glisser — qualité absolue`,
+        `-100m crawl très souple ${easy}`,
+        `→ Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.`,
+      ],
+      distance: 400,
+      duration: 25,
+    },
+    {
+      details: [
+        `-150m crawl / dos souple ${easy}`,
+        `-6×12,5m accélération ${fast} — ${repos}`,
+        `  · Juste le feeling de vitesse — tu t'arrêtes avant de fatiguer`,
+        `-100m nage libre détendue ${easy}`,
+        `→ Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.`,
+      ],
+      distance: 325,
+      duration: 20,
+    },
+  ];
+
+  return Array.from({ length: n }, (_, si) => {
+    const v = variants[si % variants.length];
+    // Arrondir distance affichée au multiple de 25 (12,5 × 2 = 25)
+    const dist = Math.round(v.distance / 25) * 25;
+    return {
+      type: si === 0 && n > 1 ? "VITESSE" : "ENDURANCE",
+      title: `${focusLabel} S${weekNumber}.${si + 1}`,
+      intensity: beginnerFriendly ? "Facile + touches rapides" : "Z1 + touches Z4 (12,5 m)",
+      details: v.details,
+      distance: `${dist}m`,
+      duration: v.duration,
+      completed: false,
+      skipped: null,
+    };
+  });
+}
+
 function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false) {
   const details = sessionTextToDetails(res.text);
   const total = res.total;
@@ -220,12 +282,16 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
   // Allures @mm:ss = Premium only — référence unique T100 (jamais T400)
   const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
   const ref400 = ""; // legacy arg générateur — ignoré
-  // Wording simplifié uniquement découverte (pas régulier) — générateur, pas école
-  const simplifyWording = profile.level === "découverte" || profile.level === "beginner";
+  // Wording simplifié : découverte OU clarté demandée via retours (« incompréhensible »)
+  const tasteHints = tasteToGeneratorHints(profile.taste);
+  const simplifyWording =
+    profile.level === "découverte" || profile.level === "beginner" || tasteHints.forceSimplify;
   const beginnerFriendly = simplifyWording;
   // volumeAdj = feedback hebdo cumulé (easy/hard), plafonné dans adjustPlan — [0.70, 1.30]
+  // + léger volumeMul goûts (±8 %) si retours tags trop long / trop court
   const feedbackAdj = Math.min(1.3, Math.max(0.7, Number(profile.volumeAdj) || 1));
-  const volMult = volumeMultFromProfileLevel(profile.level, profile.category) * feedbackAdj;
+  const volMult =
+    volumeMultFromProfileLevel(profile.level, profile.category) * feedbackAdj * tasteHints.volumeMul;
   const pool = profile.pool === 25 ? 25 : 50;
 
   let prevWeekDistance = 0;
@@ -243,12 +309,39 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     const wiInPhase = weekIndexInPhase(phaseList, wi);
     const focusLabel = phase.focus || PHASE_MAP[phase.phase] || "Séance";
     const typeSemaine = weekTypeForIndex(phase.phase, wi);
-    const roles = cosdRolesForWeek(phase.phase, wiInPhase, freq, profilObj);
+    const isCompetition = phase.phase === "competition";
+    const weekFreq = isCompetition ? competitionSessionCount(freq) : freq;
+    const roles = biasRolesForTaste(
+      cosdRolesForWeek(phase.phase, wiInPhase, weekFreq, profilObj),
+      tasteHints,
+    );
+
+    // Semaine compétition : séances dédiées (1 ou 2), ultra-courtes — pas la banque / générateur normal
+    if (isCompetition) {
+      const sessions = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly);
+      prevWeekDistance = sessions.reduce((a, s) => a + (parseInt(s.distance, 10) || 0), 0);
+      return {
+        number: wi + 1,
+        focus: focusLabel,
+        tip: COMPETITION_TIP,
+        feedback: null,
+        isBilan: phase.isBilan ?? false,
+        isTest: phase.isTest ?? false,
+        sessions,
+      };
+    }
 
     if (useConfirmeBank) {
-      const sessions = Array.from({ length: freq }, (_, si) =>
-        buildConfirmeArchetypeSession(wi * 3 + si, pool, bankLevel, bankOpts),
-      );
+      // Banque Supabase Arthur (gold coaché) si chargée — sinon OW_BASE_SESSIONS JS
+      const sessions = Array.from({ length: weekFreq }, (_, si) => {
+        const archeIdx = wi * 3 + si;
+        const fromDb = pickArthurBankSession(profilObj, archeIdx);
+        if (fromDb) return fromDb;
+        return buildConfirmeArchetypeSession(archeIdx, pool, bankLevel, {
+          ...bankOpts,
+          tasteHints,
+        });
+      });
       prevWeekDistance = sessions.reduce((a, s) => a + (parseInt(s.distance, 10) || 0), 0);
       return {
         number: wi + 1,
@@ -265,14 +358,14 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       niveauKey,
       profilObj,
       phaseKey,
-      freq,
+      weekFreq,
       wi + 1,
       ref100,
       ref400,
       typeSemaine,
       prevWeekDistance,
       roles,
-      { volMult, simplifyWording, pool },
+      { volMult, simplifyWording, pool, tasteHints },
     );
     prevWeekDistance = weekData.totalDistance;
 
@@ -290,4 +383,4 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
   });
 }
 
-export { mapNiveau, mapObjectifProfil, cosdRolesForWeek };
+export { mapNiveau, mapObjectifProfil, cosdRolesForWeek, COMPETITION_TIP };

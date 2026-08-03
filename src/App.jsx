@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator } from "./lib/swim-plan-bridge.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP } from "./lib/swim-plan-bridge.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -3236,8 +3236,8 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 28; // v28 = force regen séances Découverte (flèche + grand chien)
-// Force overwrite Découverte/beginner uniquement (voir migration). Remettre false au prochain bump.
+const PLAN_VERSION = 30; // v30 = semaine compétition easy (1–2 séances, 12,5 m)
+// Force overwrite TOUS les plans au chargement. Remettre false au prochain bump.
 const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [
@@ -4422,7 +4422,7 @@ const COACH_MESSAGES = {
     "On allège. C'est le moment où beaucoup veulent en faire plus — fais l'inverse. La fraîcheur au départ vaut plus que 3 séances de plus.",
   ],
   competition: [
-    "Semaine de compétition. Reste calme, fais confiance à ton travail. La préparation est terminée — il ne reste plus qu'à exécuter.",
+    "Semaine de compétition — reste frais, séances courtes. Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
   ],
   test: [
     "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Pas de forçage — un chrono propre pour mesurer si tu progresses vraiment.",
@@ -6937,7 +6937,7 @@ const TIPS = {
   vitesse:     "Récupération complète entre chaque sprint. Sans ça, tu travailles l'endurance, pas la vitesse. Qualité absolue > quantité.",
   volume:      "Semaine de charge maximale. Mange +15 % de glucides, vise 8 h de sommeil — c'est pendant la récupération que le corps s'adapte.",
   affutage:    "Réduis le volume de 40 % mais maintiens 2–3 accélérations par séance pour garder la réactivité musculaire.",
-  competition: "Dernière semaine : nage légère, visualise chaque virage et chaque poussée. Ton entraînement est fait — fais confiance au travail accompli.",
+  competition: "Dernière semaine avant l'événement : 1–2 séances courtes, volume bas, rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
   test:        "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
 };
 
@@ -6949,7 +6949,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["endurance"], 2: ["endurance","technique"],    3: ["endurance","endurance","technique"],    4: ["endurance","seuil","technique","récupération"],   5: ["endurance","seuil","technique","récupération","endurance"] },
     peak:        { 1: ["endurance"], 2: ["endurance","vitesse"],      3: ["endurance","vitesse","technique"],      4: ["endurance","vitesse","technique","récupération"],  5: ["endurance","vitesse","technique","récupération","endurance"] },
     taper:       { 1: ["récupération"], 2: ["endurance","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["endurance","seuil","récupération"], 4: ["endurance","seuil","technique","récupération"], 5: ["endurance","seuil","technique","récupération","endurance"] },
   },
   // Régulier = alias de beginner
@@ -6958,7 +6958,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["seuil"],    2: ["technique","endurance"], 3: ["technique","seuil","endurance"],     4: ["technique","seuil","endurance","technique"],        5: ["technique","seuil","endurance","technique","récupération"] },
     peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
     taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   // Sportif = alias de intermediate
@@ -6967,7 +6967,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","endurance"],     4: ["technique","seuil","endurance","technique"],        5: ["technique","seuil","endurance","technique","récupération"] },
     peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
     taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   // Performance = alias de advanced
@@ -6976,7 +6976,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["seuil"],     2: ["endurance","seuil"],     3: ["endurance","seuil","technique"],     4: ["endurance","seuil","vitesse","technique"],          5: ["endurance","seuil","vitesse","technique","endurance"] },
     peak:        { 1: ["seuil"],     2: ["seuil","vitesse"],        3: ["endurance","seuil","vitesse"],       4: ["endurance","seuil","vitesse","seuil"],              5: ["endurance","seuil","vitesse","seuil","récupération"] },
     taper:       { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["seuil","endurance"], 3: ["seuil","vitesse","récupération"], 4: ["endurance","seuil","vitesse","récupération"], 5: ["endurance","seuil","vitesse","récupération","endurance"] },
   },
   beginner: {
@@ -6984,7 +6984,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","technique","endurance"], 4: ["technique","technique","endurance","récupération"], 5: ["technique","technique","technique","endurance","récupération"] },
     peak:        { 1: ["technique"], 2: ["technique","endurance"], 3: ["technique","endurance","technique"], 4: ["technique","technique","endurance","récupération"], 5: ["technique","technique","endurance","technique","récupération"] },
     taper:       { 1: ["technique"], 2: ["technique","récupération"], 3: ["technique","technique","récupération"], 4: ["technique","technique","récupération","récupération"], 5: ["technique","technique","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["technique","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","technique"] },
   },
   intermediate: {
@@ -6992,7 +6992,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","endurance"],     4: ["technique","seuil","endurance","technique"],        5: ["technique","seuil","endurance","technique","récupération"] },
     peak:        { 1: ["seuil"],    2: ["technique","seuil"],     3: ["technique","seuil","vitesse"],       4: ["technique","seuil","vitesse","endurance"],          5: ["technique","seuil","vitesse","endurance","récupération"] },
     taper:       { 1: ["endurance"], 2: ["technique","récupération"], 3: ["technique","endurance","récupération"], 4: ["technique","endurance","récupération","récupération"], 5: ["technique","endurance","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["technique","récupération","récupération"], 4: ["technique","récupération","récupération","récupération"], 5: ["technique","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["endurance","seuil"], 3: ["technique","seuil","récupération"], 4: ["technique","seuil","endurance","récupération"], 5: ["technique","seuil","endurance","récupération","endurance"] },
   },
   advanced: {
@@ -7000,7 +7000,7 @@ const PHASE_PATTERNS = {
     development: { 1: ["seuil"],     2: ["endurance","seuil"],     3: ["endurance","seuil","technique"],     4: ["endurance","seuil","vitesse","technique"],          5: ["endurance","seuil","vitesse","technique","endurance"] },
     peak:        { 1: ["seuil"],     2: ["seuil","vitesse"],        3: ["endurance","seuil","vitesse"],       4: ["endurance","seuil","vitesse","seuil"],              5: ["endurance","seuil","vitesse","seuil","récupération"] },
     taper:       { 1: ["endurance"], 2: ["endurance","récupération"], 3: ["endurance","technique","récupération"], 4: ["endurance","technique","récupération","récupération"], 5: ["endurance","technique","récupération","récupération","endurance"] },
-    competition: { 1: ["récupération"], 2: ["récupération","récupération"], 3: ["endurance","récupération","récupération"], 4: ["endurance","récupération","récupération","récupération"], 5: ["endurance","récupération","récupération","récupération","récupération"] },
+    competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
     test:        { 1: ["seuil"], 2: ["seuil","endurance"], 3: ["seuil","vitesse","récupération"], 4: ["endurance","seuil","vitesse","récupération"], 5: ["endurance","seuil","vitesse","récupération","endurance"] },
   },
 };
@@ -7021,7 +7021,7 @@ const BNSSA_PATTERNS = {
   development: { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["endurance", "bnssa", "bnssa"],           4: ["endurance", "bnssa", "bnssa", "bnssa"],                      5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
   peak:        { 1: ["bnssa"],     2: ["bnssa", "bnssa"],       3: ["bnssa", "bnssa", "bnssa"],               4: ["endurance", "bnssa", "bnssa", "bnssa"],                      5: ["endurance", "seuil", "bnssa", "bnssa", "récupération"] },
   taper:       { 1: ["bnssa"],     2: ["endurance", "bnssa"],  3: ["endurance", "bnssa", "récupération"],    4: ["endurance", "bnssa", "récupération", "récupération"],       5: ["endurance", "bnssa", "récupération", "récupération", "endurance"] },
-  competition: { 1: ["récupération"], 2: ["récupération", "récupération"], 3: ["endurance", "récupération", "récupération"], 4: ["endurance", "récupération", "récupération", "récupération"], 5: ["endurance", "récupération", "récupération", "récupération", "récupération"] },
+  competition: { 1: ["récupération"], 2: ["récupération"], 3: ["récupération"], 4: ["récupération","récupération"], 5: ["récupération","récupération"] },
   test:        { 1: ["bnssa"], 2: ["bnssa", "endurance"], 3: ["bnssa", "endurance", "récupération"], 4: ["bnssa", "bnssa", "endurance", "récupération"], 5: ["bnssa", "bnssa", "endurance", "récupération", "bnssa"] },
 };
 
@@ -7194,7 +7194,9 @@ const computePlanTotalWeeks = (profile, referenceTime = Date.now()) => {
 };
 
 const generatePlan = async (profile, isPremium = false, referenceTime = Date.now(), { skipDelay = false } = {}) => {
+  const templatesP = loadSessionTemplates(supabase);
   if (!skipDelay) await new Promise(r => setTimeout(r, 1800));
+  await templatesP;
   const { level, sessionsPerWeek: freq, pool, goal } = profile;
 
   // Active les paces personnalisées pour toute la génération du plan
@@ -7219,6 +7221,20 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
                  : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
   const f = Math.min(isPremium ? freq : Math.min(freq ?? FREE_FREQ_LIMIT, FREE_FREQ_LIMIT), 5);
   const buildWeeks = (phases) => phases.map((phase, wi) => {
+    // Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume ultra-bas
+    if (phase.phase === "competition") {
+      const n = competitionSessionCount(f);
+      const isBeg = level === "découverte" || level === "beginner";
+      return {
+        number: wi + 1,
+        focus: phase.focus,
+        tip: COMPETITION_TIP,
+        feedback: null,
+        isBilan: phase.isBilan ?? false,
+        isTest: phase.isTest ?? false,
+        sessions: buildCompetitionSessions(pool, n, wi + 1, phase.focus, isBeg),
+      };
+    }
     const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
     return {
       number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false, isTest: phase.isTest ?? false,
@@ -7571,6 +7587,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Banque séances Supabase (lecture publique) — avant / pendant generatePlan
+  useEffect(() => {
+    loadSessionTemplates(supabase);
+  }, []);
+
   async function loadUserData(userId, userIsPremium = false) {
     const enforce = (p) => (!userIsPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
 
@@ -7869,8 +7890,8 @@ export default function App() {
 
 
   // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
-  // FORCE_PLAN_REGEN = true uniquement pour un bump volontaire (ex. v14) ; sinon mergePreservingProgress.
-  // v28 : force full overwrite uniquement pour les plans Découverte (éducatifs flèche/chien).
+  // FORCE_PLAN_REGEN = true uniquement pour un bump volontaire ; sinon mergePreservingProgress.
+  // v30 : force full overwrite (semaine compétition allégée 1–2 séances).
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
@@ -7888,9 +7909,7 @@ export default function App() {
         originalStartDate || Date.now(),
         { skipDelay: true },
       );
-      const lvl = entry.profile?.level;
-      const forceDecouverte = FORCE_PLAN_REGEN && (lvl === "découverte" || lvl === "beginner");
-      const weeks = forceDecouverte
+      const weeks = FORCE_PLAN_REGEN
         ? generated.weeks
         : mergePreservingProgress(p.weeks ?? [], generated.weeks);
       return {

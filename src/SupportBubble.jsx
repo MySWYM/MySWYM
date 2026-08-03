@@ -136,7 +136,7 @@ const FAQ_RULES = [
   {
     keys: ["affûtage", "affutage", "taper", "semaine test", "chrono", "décharge", "decharge"],
     answer:
-      "Décharges ~toutes les 4 semaines. Semaines test : chronos 100/200/400 pour mesurer l'évolution. Affûtage avant l'échéance (1 sem. dès 6 sem. de plan, 2 dès 10) : volume ↓, touches vitesse, puis semaine compétition.",
+      "Décharges ~toutes les 4 semaines. Semaines test : chronos 100/200/400 pour mesurer l'évolution. Affûtage avant l'échéance (1 sem. dès 6 sem. de plan, 2 dès 10) : volume ↓, touches vitesse. Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume très bas, rappels ≤12,5 m — le travail est déjà fait.",
   },
   {
     keys: ["bassin", "25 m", "25m", "50 m", "50m", "longueur"],
