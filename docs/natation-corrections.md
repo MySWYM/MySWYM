@@ -15,6 +15,7 @@
   - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : BNSSA, BPJEPS, tests pompiers uniquement.
 - **Pas de LLM** pour générer les séances : logique déterministe uniquement.
 - Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m). Moteur coach : `profile.pool` passé via `opts.pool` ; pas de séries `Nx25m` en bassin 50 (variantes 50m / adaptation technique).
+- **Blocs technique** : 1 numéro UI = 1 bloc. Titre `400m éducatif + jambes :` + sous-séries indentées (pas de tirets/points numérotés séparément). Affichage regroupe header + `·` enfants.
 - Chaque séance structurée : **échauffement** + **retour calme** (sauf séances eau libre spécifiques).
 - Premium : intervalles en `D…` (départ) + allure cible si `pace100` renseigné. Gratuit : `R…` (récup simple) **sans** tags `@mm:ss` d'allure.
 - Allures cibles / step onboarding « Tes allures cibles » / vidéos Instagram sous séance : **Premium only**.
@@ -110,6 +111,7 @@
 | 2026-08-03 | Découverte sans T100 | Ne plus demander le temps au 100 m en onboarding / profil pour niveau découverte (souvent incapables d’enchaîner 100 m). Skip step pace Premium + hide carte évolution / champ T100. | ✅ |
 | 2026-08-03 | Semaine compétition easy | Dernière semaine avant event : 1 séance (≤3×/sem) ou 2 (>3), volume bas, touches vitesse ≤12,5 m, phrase rassurance. Affûtage inchangé. `PLAN_VERSION` 30 + force regen. | ✅ |
 | 2026-08-03 | Force regen v31 | Demande Arthur : bump `PLAN_VERSION` 31 + `FORCE_PLAN_REGEN=true` pour re-forcer tous les plans (déjà en v30). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-03 | Blocs technique UI | Tirets + points numérotés séparément = illisible. 1 numéro = 1 bloc (titre + sous-séries). Préfixes `-`/`·` masqués. Générateur : `400m … :` + lignes indentées. `PLAN_VERSION` 33. | ✅ |
 | 2026-08-03 | Banque `session_templates` | Table Supabase + seed 18 archétypes confirmé (ex-`OW_BASE_SESSIONS`). Mémoire / CMS coach ; le générateur JS reste la source runtime. Migration `20260803153000_session_templates.sql`. | ✅ |
 | 2026-08-03 | Gold descend/DPS | 1ère séance `coach_approved` : structure concurrente réécrite format Arthur (2300m, D…). Migration `20260803154500_session_template_descend_dps.sql`. | ✅ |
 | 2026-08-03 | Gold pyramide pull | 2e gold : 600/pull/jambes/pull/600 (3300m). Migration `20260803155000_session_template_pyramide_pull.sql`. | ✅ |

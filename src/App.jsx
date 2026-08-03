@@ -661,6 +661,63 @@ const isSessionResolved = (s) => s.completed || !!s.skipped;
 const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
 const INSTAGRAM_MYSWYM = "https://www.instagram.com/myswym.app/";
 
+/** Enlève le préfixe coach `-` / `·` pour l'affichage. */
+const stripDetailPrefix = (raw) => String(raw || "").trim().replace(/^[-–—·]\s*/, "");
+
+/**
+ * Classe une ligne de détail :
+ * - header : total de bloc (« 400m éducatif + jambes »)
+ * - sub : série du bloc (« 4x50m … »)
+ * - work : série autonome
+ */
+const classifyDetailLine = (raw) => {
+  const full = String(raw || "");
+  const trimmed = full.trim();
+  if (!trimmed) return "empty";
+  const body = stripDetailPrefix(trimmed);
+  // Sous-série : préfixe · ou ligne indentée (sans tiret de bloc)
+  const isSubPrefix = /^[·]/.test(trimmed) || (/^\s/.test(full) && !/^[-–—]/.test(trimmed));
+  if (isSubPrefix) return "sub";
+  const isNx = /^\d+\s*[x×]\s*\d+/i.test(body) || /^\d+\s*[x×]\s*\(/i.test(body);
+  // Titre de bloc : « 400m éducatif… » (pas une série NxXm)
+  if (/^\d+\s*m\b/i.test(body) && !isNx) return "header";
+  return "work";
+};
+
+/** Regroupe header + sous-séries en blocs logiques (1 numéro = 1 bloc coach). */
+const groupSessionDetails = (details = []) => {
+  const groups = [];
+  let i = 0;
+  while (i < details.length) {
+    const raw = details[i];
+    const kind = classifyDetailLine(raw);
+    if (kind === "empty") { i += 1; continue; }
+    if (kind === "header") {
+      const children = [];
+      i += 1;
+      while (i < details.length && classifyDetailLine(details[i]) === "sub") {
+        children.push(details[i]);
+        i += 1;
+      }
+      groups.push({ type: "block", header: raw, children });
+      continue;
+    }
+    if (kind === "sub") {
+      groups.push({ type: "work", lines: [raw] });
+      i += 1;
+      continue;
+    }
+    const lines = [raw];
+    i += 1;
+    while (i < details.length && classifyDetailLine(details[i]) === "work") {
+      lines.push(details[i]);
+      i += 1;
+    }
+    groups.push({ type: "work", lines });
+  }
+  return groups;
+};
+
 /** Texte plat d'une séance — WhatsApp / description Strava */
 const formatSessionPlainText = (session) => {
   const lines = [
@@ -669,8 +726,11 @@ const formatSessionPlainText = (session) => {
   if (session.intensity) lines.push(String(session.intensity));
   lines.push("");
   (session.details || []).forEach((d) => {
-    const t = String(d).trim();
-    if (t) lines.push(t);
+    const kind = classifyDetailLine(d);
+    const t = stripDetailPrefix(d).replace(/\s*:\s*$/, "");
+    if (!t) return;
+    if (kind === "sub") lines.push(`  ${t}`);
+    else lines.push(t);
   });
   lines.push("", "— MySWYM");
   return lines.join("\n");
@@ -3407,7 +3467,7 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 32; // v32 = force regen
+const PLAN_VERSION = 33; // v33 = blocs technique lisibles (1 n° = 1 bloc)
 // true : overwrite TOUS les plans au chargement. Remettre false après le bump.
 const FORCE_PLAN_REGEN = true;
 
@@ -3841,7 +3901,7 @@ const parseIntensity = (raw) => {
 };
 
 const parseSessionDetail = (raw) => {
-  const text = String(raw || "").trim();
+  const text = stripDetailPrefix(raw);
   if (!text) return null;
 
   let kind = "work";
@@ -3857,6 +3917,9 @@ const parseSessionDetail = (raw) => {
     label = "Retour au calme";
     body = text.replace(/^retour(\s+au\s+calme)?\s*:\s*/i, "");
   }
+
+  // Enlève le « : » final d'un titre de bloc (« 400m éducatif + jambes : »)
+  body = body.replace(/\s*:\s*$/, "");
 
   const chunks = body.split(/\s*[—–]\s*/).map(s => s.trim()).filter(Boolean);
   let main = chunks[0] || body;
@@ -3943,10 +4006,11 @@ const RichText = ({ text }) => {
   );
 };
 
-const SessionBlock = ({ detail, index, workIndex, accent }) => {
+const SessionBlock = ({ detail, index, workIndex, accent, children = null }) => {
   const parsed = parseSessionDetail(detail);
   if (!parsed) return null;
   const isSection = parsed.kind === "warm" || parsed.kind === "cool";
+  const childLines = Array.isArray(children) ? children : [];
 
   if (isSection) {
     return (
@@ -3993,7 +4057,7 @@ const SessionBlock = ({ detail, index, workIndex, accent }) => {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             {parsed.main && (
-              <div style={{ fontSize: 14, fontWeight: 600, color: G.ink, lineHeight: 1.35 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, lineHeight: 1.35 }}>
                 <RichText text={parsed.main} />
               </div>
             )}
@@ -4007,8 +4071,25 @@ const SessionBlock = ({ detail, index, workIndex, accent }) => {
                 ))}
               </div>
             )}
+            {/* Sous-séries du même bloc (ex. éducatif + jambes) — pas de tiret/point ni de n° */}
+            {childLines.length > 0 && (
+              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                {childLines.map((child, ci) => {
+                  const cp = parseSessionDetail(child);
+                  if (!cp?.main) return null;
+                  return (
+                    <div key={ci} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: G.inkLight, lineHeight: 1.4, flex: 1 }}>
+                        <RichText text={cp.main} />
+                      </div>
+                      <RestPill value={cp.rest} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          <RestPill value={parsed.rest} />
+          {childLines.length === 0 && <RestPill value={parsed.rest} />}
         </div>
         {parsed.cues.map((c, i) => (
           <div key={i} style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, marginTop: 5 }}>
@@ -4032,7 +4113,12 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   const [copied, setCopied] = useState(false);
   const intensity = parseIntensity(session.intensity);
   const details = session.details || [];
-  const blockCount = details.length;
+  const detailGroups = groupSessionDetails(details);
+  const blockCount = detailGroups.reduce((n, g) => {
+    if (g.type === "block") return n + 1;
+    if (g.type === "work") return n + g.lines.length;
+    return n;
+  }, 0);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -4076,8 +4162,6 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   };
 
   const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
-
-  let workCounter = 0;
 
   return (
     <div style={{
@@ -4258,43 +4342,60 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                 </p>
               )}
               {(() => {
-                const parsedAll = details.map(d => ({ raw: d, parsed: parseSessionDetail(d) }));
                 const nodes = [];
-                let i = 0;
-                while (i < parsedAll.length) {
-                  const { raw, parsed } = parsedAll[i];
-                  if (!parsed) { i += 1; continue; }
-                  if (parsed.kind !== "work") {
+                let workCounterLocal = 0;
+                detailGroups.forEach((g, gi) => {
+                  if (g.type === "block") {
+                    workCounterLocal += 1;
                     nodes.push(
-                      <SessionBlock key={i} detail={raw} index={0} workIndex={0} accent={{ bg: tm.bg, color: tm.color }} />
-                    );
-                    i += 1;
-                    continue;
-                  }
-                  // Groupe les séries principales dans une seule carte
-                  const group = [];
-                  while (i < parsedAll.length && parsedAll[i].parsed?.kind === "work") {
-                    workCounter += 1;
-                    group.push({ raw: parsedAll[i].raw, workIndex: workCounter, key: i });
-                    i += 1;
-                  }
-                  nodes.push(
-                    <div key={`g-${group[0].key}`} style={{
-                      background: G.surface, borderRadius: 14, padding: "4px 12px",
-                      border: `1px solid ${G.greyLight}`,
-                    }}>
-                      {group.map((g, gi) => (
+                      <div key={`b-${gi}`} style={{
+                        background: G.surface, borderRadius: 14, padding: "4px 12px",
+                        border: `1px solid ${G.greyLight}`,
+                      }}>
                         <SessionBlock
-                          key={g.key}
-                          detail={g.raw}
-                          index={gi}
-                          workIndex={g.workIndex}
+                          detail={g.header}
+                          index={0}
+                          workIndex={workCounterLocal}
                           accent={{ bg: tm.bg, color: tm.color }}
+                          children={g.children}
                         />
-                      ))}
-                    </div>
-                  );
-                }
+                      </div>
+                    );
+                    return;
+                  }
+                  // works : une carte par série (ou regroupées déjà)
+                  const group = [];
+                  g.lines.forEach((raw, li) => {
+                    const parsed = parseSessionDetail(raw);
+                    if (!parsed) return;
+                    if (parsed.kind !== "work") {
+                      nodes.push(
+                        <SessionBlock key={`s-${gi}-${li}`} detail={raw} index={0} workIndex={0} accent={{ bg: tm.bg, color: tm.color }} />
+                      );
+                      return;
+                    }
+                    workCounterLocal += 1;
+                    group.push({ raw, workIndex: workCounterLocal, key: `${gi}-${li}` });
+                  });
+                  if (group.length) {
+                    nodes.push(
+                      <div key={`g-${gi}`} style={{
+                        background: G.surface, borderRadius: 14, padding: "4px 12px",
+                        border: `1px solid ${G.greyLight}`,
+                      }}>
+                        {group.map((item, ii) => (
+                          <SessionBlock
+                            key={item.key}
+                            detail={item.raw}
+                            index={ii}
+                            workIndex={item.workIndex}
+                            accent={{ bg: tm.bg, color: tm.color }}
+                          />
+                        ))}
+                      </div>
+                    );
+                  }
+                });
                 return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{nodes}</div>;
               })()}
               <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
@@ -5289,7 +5390,13 @@ const snap = (d, P) => Math.max(P, Math.round(d / P) * P);
 // Calcule la vraie distance totale d'une séance en lisant ses détails
 const calcSessionDistance = (details = []) => {
   let total = 0;
-  for (const line of details) {
+  for (let i = 0; i < details.length; i++) {
+    const line = details[i];
+    // Titre de bloc (« 400m éducatif ») : la distance est dans les sous-séries — ne pas compter 2×
+    if (classifyDetailLine(line) === "header") {
+      const hasSubs = i + 1 < details.length && classifyDetailLine(details[i + 1]) === "sub";
+      if (hasSubs) continue;
+    }
     let rest = line;
     // 1. N×Xm (ex : "8×50m", "4×25m")
     rest = rest.replace(/(\d+)\s*[×x]\s*(\d+)\s*m/g, (_, n, x) => {

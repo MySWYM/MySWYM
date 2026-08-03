@@ -614,8 +614,11 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
         ? [""]
         : MATERIEL;
   const materiel = pick(materielPool, "materiel");
-  lignes.push(`-${techPicked.distance}m ${techBlock.label.toLowerCase()}${materiel}`);
-  techPicked.lines.forEach(l => lignes.push("  " + l));
+  lignes.push(`-${techPicked.distance}m ${techBlock.label.toLowerCase()}${materiel} :`);
+  techPicked.lines.forEach(l => {
+    const clean = String(l).trim().replace(/^[·\-\s]+/, "");
+    lignes.push(`  · ${clean}`);
+  });
 
   const zone = forcedZone || pick(phase.zones, "zone_"+indexSeance);
   let principalDist, principalLines;
@@ -638,7 +641,10 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
       bassin,
     );
     principalDist = mainPicked.distance;
-    principalLines = [`-${principalDist}m ${mainTech.label.toLowerCase()}`, ...mainPicked.lines.map(l => "  " + l)];
+    principalLines = [
+      `-${principalDist}m ${mainTech.label.toLowerCase()} :`,
+      ...mainPicked.lines.map(l => `  · ${String(l).trim().replace(/^[·\-\s]+/, "")}`),
+    ];
   } else if (isTest) {
     const r = pick(CORPS_PHYSIO.test, "physio_test")();
     const tag = paceTag(ref100Seconds, ref400Seconds, zone === "Z4" ? "Z4" : "Z3", r.repDist);
