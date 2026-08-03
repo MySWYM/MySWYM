@@ -3,6 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator } from "./lib/swim-plan-bridge.js";
 import {
+  blankTaste,
+  normalizeTaste,
+  applySessionFeedbackToTaste,
+  applyWeekFeedbackToTaste,
+  mergeTasteProfiles,
+} from "./lib/user-taste.js";
+import {
   appZoneMultForT100,
   calcDistanceProjection,
   maxPaceGainFromT100,
@@ -868,7 +875,7 @@ const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { s
     try {
       const phaseList = phaseListForAdjust(profile, plan);
       const fresh = buildCoachPlanWeeks(
-        { ...profile, volumeAdj: nextAdj },
+        { ...profile, volumeAdj: nextAdj, taste: plan.taste || profile.taste },
         phaseList,
         premium,
         TIPS,
@@ -1056,6 +1063,9 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
   // Rendements décroissants : gain plafonné selon le T100 de départ
   const maxGain = maxPaceGainFromT100(pace100);
   const history = Array.isArray(profile?.paceHistory) ? profile.paceHistory : [];
+
+  // Découverte : pas de T100 (souvent incapables d'enchaîner 100 m)
+  if (profile?.level === "découverte" || profile?.level === "beginner") return null;
 
   if (!isPremium) {
     return (
@@ -1348,9 +1358,10 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
   const [pace100, setPace100] = useState(profile?.pace100 ?? null);
   const [paceRaw, setPaceRaw] = useState(profile?.pace100 ? secToDisplay(profile.pace100) : "");
   const [changed, setChanged] = useState(false);
+  const isDecouverteLevel = profile?.level === "découverte" || profile?.level === "beginner";
 
   const freqChanged = freq    !== (profile?.sessionsPerWeek ?? 2);
-  const paceChanged = pace100 !== (profile?.pace100 ?? null);
+  const paceChanged = !isDecouverteLevel && pace100 !== (profile?.pace100 ?? null);
   const hasChange   = freqChanged || paceChanged || changed;
 
   // Quand Strava remonte une meilleure allure, on l'affiche si aucune saisie manuelle
@@ -1407,6 +1418,8 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             })}
           </div>
 
+          {!isDecouverteLevel && (
+            <>
           <div style={{ fontSize: 12, fontWeight: 700, color: G.greyMid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
             Temps 100 m (T100)
           </div>
@@ -1430,6 +1443,8 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
           <div style={{ fontSize: 11, color: G.greyMid, marginBottom: 16 }}>
             Départ dans l&apos;eau (pas de plongeon) — adapte les allures de tes séances
           </div>
+            </>
+          )}
         </button>
 
         <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44 }}>
@@ -1462,7 +1477,9 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
         })}
       </div>
 
-      {/* Allure 100m */}
+      {/* Allure 100m — pas en Découverte (souvent incapables d'enchaîner 100 m) */}
+      {!isDecouverteLevel && (
+        <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Temps 100 m (T100)
@@ -1506,9 +1523,11 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
           ? <><Gauge size={11} color={G.blue} /> Départ dans l&apos;eau — les allures seront recalculées sur ce T100</>
           : "Optionnel — test 100 m départ dans l'eau (pas de plongeon)"}
       </div>
+        </>
+      )}
 
       {hasChange && (
-        <button onClick={() => { onSave(freq, pace100); setChanged(false); }} style={{
+        <button onClick={() => { onSave(freq, isDecouverteLevel ? null : pace100); setChanged(false); }} style={{
           width: "100%", padding: "13px", borderRadius: 12, background: G.blue, border: "none",
           color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -7299,6 +7318,14 @@ export default function App() {
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
   const [sessionFeedbackTarget, setSessionFeedbackTarget] = useState(null);
+  /** Goûts compte (EMA retours) — miroir aussi sur plan.taste pour offline / régénération */
+  const [tasteProfile, setTasteProfile] = useState(() => {
+    try {
+      const anon = localStorage.getItem("myswym_anon_taste");
+      if (anon) return normalizeTaste(JSON.parse(anon));
+    } catch {}
+    return blankTaste();
+  });
   const [shareSession, setShareSession] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -7490,10 +7517,12 @@ export default function App() {
     const needsMetadataRepair = storedWeeks > 0 && storedWeeks < expectedWeeks;
     if (!needsLegacyRepair && !needsMoreWeeks && !needsMetadataRepair) return;
     setScreen("loading");
-    generatePlan(aprof, true, originalStartDate).then(newPlan => {
+    const taste = ap.taste || tasteProfile;
+    generatePlan({ ...aprof, taste }, true, originalStartDate).then(newPlan => {
       const mergedWeeks = mergePreservingProgress(ap.weeks ?? [], newPlan.weeks);
       const planWithDate = {
         ...newPlan,
+        taste,
         weeks: mergedWeeks,
         previewWeeks: [],
         ...(originalStartDate ? { startDate: originalStartDate } : {}),
@@ -7501,7 +7530,7 @@ export default function App() {
       setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
       setScreen("app"); setActiveTab("home");
     });
-  }, [isPremium, activePlanEntry, activePlanId]);
+  }, [isPremium, activePlanEntry, activePlanId, tasteProfile]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -7535,7 +7564,7 @@ export default function App() {
         setAuthLoading(false);
       } else {
         plansHydratedRef.current = false;
-        setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setAuthLoading(false);
+        setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setTasteProfile(blankTaste()); setAuthLoading(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -7543,6 +7572,43 @@ export default function App() {
 
   async function loadUserData(userId, userIsPremium = false) {
     const enforce = (p) => (!userIsPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+
+    // Goûts compte (Supabase) — fallback localStorage + migration anon
+    let loadedTaste = blankTaste();
+    let anonTaste = blankTaste();
+    try {
+      const anonRaw = localStorage.getItem("myswym_anon_taste");
+      if (anonRaw) anonTaste = normalizeTaste(JSON.parse(anonRaw));
+    } catch {}
+    try {
+      const { data: tasteRow } = await supabase
+        .from("user_taste_profile")
+        .select("scores")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (tasteRow?.scores) loadedTaste = normalizeTaste(tasteRow.scores);
+      else {
+        const raw = localStorage.getItem(`myswym_taste_${userId}`);
+        if (raw) loadedTaste = normalizeTaste(JSON.parse(raw));
+      }
+    } catch {
+      try {
+        const raw = localStorage.getItem(`myswym_taste_${userId}`);
+        if (raw) loadedTaste = normalizeTaste(JSON.parse(raw));
+      } catch {}
+    }
+    loadedTaste = mergeTasteProfiles(loadedTaste, anonTaste);
+    setTasteProfile(loadedTaste);
+    if (loadedTaste.sampleCount > 0) {
+      try { localStorage.setItem(`myswym_taste_${userId}`, JSON.stringify(loadedTaste)); } catch {}
+      supabase.from("user_taste_profile").upsert({
+        user_id: userId,
+        scores: loadedTaste,
+        updated_at: new Date().toISOString(),
+      }).then(() => {
+        try { localStorage.removeItem("myswym_anon_taste"); } catch {}
+      });
+    }
 
     // Lit le plan anonyme à migrer (créé par l'utilisateur avant qu'il ne se connecte)
     let anonPlans = [];
@@ -7814,7 +7880,13 @@ export default function App() {
       const p = entry.plan;
       const originalStartDate = p.startDate ?? entry.startDate ?? null;
       const premium = !!(entry.plan?.isPremium || isPremium);
-      const generated = await generatePlan(entry.profile, premium, originalStartDate || Date.now(), { skipDelay: true });
+      const taste = p.taste || tasteProfile;
+      const generated = await generatePlan(
+        { ...entry.profile, taste },
+        premium,
+        originalStartDate || Date.now(),
+        { skipDelay: true },
+      );
       const lvl = entry.profile?.level;
       const forceDecouverte = FORCE_PLAN_REGEN && (lvl === "découverte" || lvl === "beginner");
       const weeks = forceDecouverte
@@ -7824,6 +7896,7 @@ export default function App() {
         id: entry.id,
         updated: {
           ...generated,
+          taste,
           weeks,
           startDate: originalStartDate || generated.startDate,
           version: PLAN_VERSION,
@@ -7854,12 +7927,17 @@ export default function App() {
   const handleGenerate = async () => {
     setScreen("loading"); setError(null);
     try {
-      const genProfile = !isPremium && profile.sessionsPerWeek > FREE_FREQ_LIMIT
-        ? { ...profile, sessionsPerWeek: FREE_FREQ_LIMIT }
-        : profile;
+      let genProfile = !isPremium && profile.sessionsPerWeek > FREE_FREQ_LIMIT
+        ? { ...profile, sessionsPerWeek: FREE_FREQ_LIMIT, taste: tasteProfile }
+        : { ...profile, taste: tasteProfile };
+      // Découverte : jamais de T100 (souvent incapables d'enchaîner 100 m)
+      if (genProfile.level === "découverte" || genProfile.level === "beginner") {
+        genProfile = { ...genProfile, pace100: null };
+      }
       const p  = await generatePlan(genProfile, isPremium);
       const id = `plan_${Date.now()}`;
       let entryProfile = { ...genProfile };
+      delete entryProfile.taste; // goûts = compte (plan.taste + user_taste_profile), pas le profil onboarding
       if (entryProfile.pace100) {
         entryProfile = appendPaceHistory(entryProfile, {
           pace100: entryProfile.pace100,
@@ -7867,7 +7945,7 @@ export default function App() {
           source: "onboarding",
         });
       }
-      const entry = { id, profile: entryProfile, plan: p, startDate: Date.now() };
+      const entry = { id, profile: entryProfile, plan: { ...p, taste: tasteProfile }, startDate: Date.now() };
       if (addingPlan) {
         setPlans(prev => [...prev, entry]);
         setAddingPlan(false);
@@ -7949,6 +8027,22 @@ export default function App() {
     if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
   };
 
+  const persistTaste = (nextTaste, userId = user?.id) => {
+    const normalized = normalizeTaste(nextTaste);
+    setTasteProfile(normalized);
+    if (userId) {
+      try { localStorage.setItem(`myswym_taste_${userId}`, JSON.stringify(normalized)); } catch {}
+      supabase.from("user_taste_profile").upsert({
+        user_id: userId,
+        scores: normalized,
+        updated_at: new Date().toISOString(),
+      }).then(() => {});
+    } else {
+      try { localStorage.setItem("myswym_anon_taste", JSON.stringify(normalized)); } catch {}
+    }
+    return normalized;
+  };
+
   const handleSessionFeedback = ({ rating, tags, comment }) => {
     if (!sessionFeedbackTarget) return;
     const { weekIndex, sessionIndex, promptWeekAfter } = sessionFeedbackTarget;
@@ -7956,12 +8050,56 @@ export default function App() {
     const isFirstFeedback = !prevSession?.feedback;
     const shouldNudge = isPremium && isFirstFeedback && (rating === "easy" || rating === "hard");
 
+    const nextTaste = applySessionFeedbackToTaste(tasteProfile, {
+      rating,
+      tags,
+      comment,
+      sessionType: prevSession?.type ?? null,
+    });
+    persistTaste(nextTaste);
+
+    // Régénère aussi si tags goûts (trop long / éducatifs…) même sans easy/hard — Premium only, semaines futures
+    const tasteDriven =
+      isPremium &&
+      Array.isArray(tags) &&
+      tags.some((t) => ["trop long", "trop court", "trop intensif", "éducatifs top", "incompréhensible"].includes(t));
+
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
 
-      let base = e.plan;
+      let base = { ...e.plan, taste: nextTaste };
       if (shouldNudge) {
-        base = adjustPlan(e.plan, weekIndex, rating, e.profile, isPremium, { sessionNudge: true });
+        base = adjustPlan(
+          { ...e.plan, taste: nextTaste },
+          weekIndex,
+          rating,
+          { ...e.profile, taste: nextTaste },
+          isPremium,
+          { sessionNudge: true },
+        );
+        base = { ...base, taste: nextTaste };
+      } else if (tasteDriven && shouldUseCoachGenerator(e.profile?.goal)) {
+        // Applique goûts sans toucher volumeAdj (rating ok / tags seuls)
+        try {
+          const phaseList = phaseListForAdjust(e.profile, e.plan);
+          const fresh = buildCoachPlanWeeks(
+            { ...e.profile, volumeAdj: e.plan.volumeAdj ?? 1, taste: nextTaste },
+            phaseList,
+            isPremium,
+            TIPS,
+            FREE_FREQ_LIMIT,
+          );
+          base = {
+            ...e.plan,
+            taste: nextTaste,
+            weeks: e.plan.weeks.map((w, i) => {
+              if (i <= weekIndex || shouldPreserveWeek(w)) return w;
+              return fresh[i] ?? w;
+            }),
+          };
+        } catch {
+          base = { ...e.plan, taste: nextTaste };
+        }
       }
 
       const feedback = {
@@ -7975,6 +8113,7 @@ export default function App() {
         ...e,
         plan: {
           ...base,
+          taste: nextTaste,
           weeks: base.weeks.map((w, wi) => wi !== weekIndex ? w : {
             ...w,
             sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, feedback }),
@@ -8000,10 +8139,10 @@ export default function App() {
       }).then(() => {});
     }
 
-    if (!isPremium && (rating === "easy" || rating === "hard")) {
-      showToast("Retour enregistré. Premium affine le volume des prochaines séances.", 5500);
-    } else if (shouldNudge) {
-      showToast("Volume des prochaines séances légèrement ajusté.", 4000);
+    if (!isPremium && (rating === "easy" || rating === "hard" || tasteDriven)) {
+      showToast("Retour enregistré. Premium affine volume et style des prochaines séances.", 5500);
+    } else if (shouldNudge || tasteDriven) {
+      showToast("Prochaines séances adaptées à tes goûts.", 4000);
     }
 
     setSessionFeedbackTarget(null);
@@ -8016,11 +8155,22 @@ export default function App() {
 
   const handleFeedback = ({ rating, motivation, pain, comment }) => {
     if (feedbackWeek === null) return;
+    const nextTaste = applyWeekFeedbackToTaste(tasteProfile, { rating, comment });
+    persistTaste(nextTaste);
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
-      const base = isPremium ? adjustPlan(e.plan, feedbackWeek, rating, e.profile, isPremium) : e.plan;
+      const base = isPremium
+        ? adjustPlan(
+            { ...e.plan, taste: nextTaste },
+            feedbackWeek,
+            rating,
+            { ...e.profile, taste: nextTaste },
+            isPremium,
+          )
+        : { ...e.plan, taste: nextTaste };
       const withSatisfaction = {
         ...base,
+        taste: nextTaste,
         weeks: base.weeks.map((w, i) => i !== feedbackWeek ? w : {
           ...w,
           feedback: rating,
@@ -8042,7 +8192,7 @@ export default function App() {
       }).then(() => {});
     }
     if (!isPremium) {
-      showToast("Retour enregistré. Premium ajuste le volume des prochaines séances.", 5500);
+      showToast("Retour enregistré. Premium ajuste volume et style des prochaines séances.", 5500);
     }
     setFeedbackWeek(null);
   };
@@ -8086,13 +8236,14 @@ export default function App() {
       });
     }
     setScreen("loading");
-    generatePlan(newProfile, isPremium).then(newPlan => {
+    const taste = activePlanEntry.plan?.taste || tasteProfile;
+    generatePlan({ ...newProfile, taste }, isPremium).then(newPlan => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
       // Semaines entièrement validées → on garde l'ancienne semaine telle quelle
       // (même nombre de séances, même contenu, même historique)
       // Semaines non validées → on prend la nouvelle semaine générée avec la nouvelle fréquence
       const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
-      const planWithDate = { ...newPlan, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
+      const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
       setPlans(prev => prev.map(e => e.id !== activePlanId ? e : { ...e, profile: newProfile, plan: planWithDate }));
       setScreen("app"); setActiveTab("plan");
     });
@@ -8291,7 +8442,9 @@ export default function App() {
               const isProgression = profile.category === "progression";
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
-              const hasPaceStep = isPremium && !isDiplome;
+              // Découverte : pas de T100 — souvent incapables d'enchaîner 100 m
+              const isDecouverteLevel = profile.level === "découverte" || profile.level === "beginner";
+              const hasPaceStep = isPremium && !isDiplome && !isDecouverteLevel;
               // Découverte disponible sur tous les programmes (triathlon, eau libre, etc.)
               const disabledLevels = [];
               // Calcul total steps
@@ -8337,7 +8490,11 @@ export default function App() {
                       pool={profile.pool} onPoolChange={v => update("pool", v)}
                       total={totalSteps}
                       disabledLevels={disabledLevels}
-                      onNext={() => setStep(stepAfter3)}
+                      onNext={() => {
+                        const lvl = profile.level;
+                        if (lvl === "découverte" || lvl === "beginner") update("pace100", null);
+                        setStep(stepAfter3);
+                      }}
                       onBack={() => isProgression ? setStep(1) : setStep(2)} />
                   )}
 

@@ -30,7 +30,7 @@
 - **Bloc milieu** : privilégier **jambes** et nage appliquée. **Grand/petit chien** = rare (≈1 séance sur 8), pas dominant. Trop d’éducatifs fait fuir.
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
-- **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance.
+- **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -63,6 +63,7 @@
 - Après changement structurel des plans : incrémenter `PLAN_VERSION` pour régénérer les plans obsolètes.
 - Feedback hebdo (`easy` / `ok` / `hard`) : ajuste le **volume** des semaines futures vierges (`adjustPlan` + `volumeAdj` plafonné). Coach = régénération générateur (details = total) ; jamais une semaine déjà commencée.
 - Feedback **par séance** (`session.feedback` : rating + tags + comment) : sheet après « séance faite » ; miroir table `session_feedback`. Premium : micro-`adjustPlan(..., { sessionNudge: true })` au **premier** retour only (±3 %) — le hebdo reste le levier principal. Ne pas poser `week.feedback` depuis un nudge sessionnel.
+- **Profil de goûts** (`user_taste_profile` + `src/lib/user-taste.js`) : chaque retour (séance + hebdo) met à jour un score EMA par compte (volume, intensité, éducatifs, clarté, types, keywords/couleurs/styles). Alimente le générateur (volume ±8 %, rôles COSD, focus technique, wording). Persistance Supabase + localStorage ; migration anon → compte à la connexion. Ne jamais écraser une semaine commencée.
 
 ---
 
@@ -105,6 +106,28 @@
 | 2026-08-02 | Feedback par séance | Sheet après « séance faite » : rating easy/ok/hard + tags + commentaire. Stocké dans `session.feedback` + table `session_feedback`. Premium : micro-nudge `volumeAdj` ×1.03/×0.97 au premier retour (hebdo reste le levier ±12 %). | ✅ |
 | 2026-08-03 | Découverte flèche/chien | Éducatifs Découverte = **flèche** + **grand chien** uniquement (+ palmes / tuba frontal). Cycle dédié `FOCUS_CYCLE_DECOUVERTE`. Prompt `docs/prompt-autre-ia.md`. `PLAN_VERSION` 27 + force regen. | ✅ |
 | 2026-08-03 | Force regen Découverte v28 | Plans déjà en v27 : bump `PLAN_VERSION` 28. Force overwrite **uniquement** niveau découverte/beginner (autres = merge progression). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-03 | Découverte sans T100 | Ne plus demander le temps au 100 m en onboarding / profil pour niveau découverte (souvent incapables d’enchaîner 100 m). Skip step pace Premium + hide carte évolution / champ T100. | ✅ |
+| 2026-08-03 | Banque `session_templates` | Table Supabase + seed 18 archétypes confirmé (ex-`OW_BASE_SESSIONS`). Mémoire / CMS coach ; le générateur JS reste la source runtime. Migration `20260803153000_session_templates.sql`. | ✅ |
+| 2026-08-03 | Gold descend/DPS | 1ère séance `coach_approved` : structure concurrente réécrite format Arthur (2300m, D…). Migration `20260803154500_session_template_descend_dps.sql`. | ✅ |
+| 2026-08-03 | Gold pyramide pull | 2e gold : 600/pull/jambes/pull/600 (3300m). Migration `20260803155000_session_template_pyramide_pull.sql`. | ✅ |
+| 2026-08-03 | Gold qualité 4 nages | 3e gold : descend + IM + pap/dos/brasse/crawl (2000m), taguée mixte uniquement. Migration `20260803155500_session_template_qualite_4nages.sql`. | ✅ |
+| 2026-08-03 | Gold échelle 300-200-100 | 4e gold : échelle ×2 + CD miroir (2700m), ok eau_libre. Migration `20260803160000_session_template_echelle_300.sql`. | ✅ |
+| 2026-08-03 | Gold volume 150 pull | 5e gold : 12×150 pull→mix→free + drill 3 points (3000m). Migration `20260803160500_session_template_volume_150.sql`. | ✅ |
+| 2026-08-03 | Gold IM build | 6e gold : qualité 4 nages / build (2400m), mixte only. Migration `20260803161000_session_template_im_build.sql`. | ✅ |
+| 2026-08-03 | Gold symétrie pull | 7e gold : miroir kick/free/pull (3000m). Migration `20260803161500_session_template_symetrie_pull.sql`. | ✅ |
+| 2026-08-03 | Gold best average | 8e gold : 4×50 best average + 200 ×3 (2200m). Migration `20260803162000_session_template_best_average.sql`. | ✅ |
+| 2026-08-03 | Gold 10×100 BA | 9e gold : 10×100 best average + WU neg-split (3000m). Migration `20260803162500_session_template_10x100_ba.sql`. | ✅ |
+| 2026-08-03 | Gold finger trail | 10e gold : traînée doigts + 8×100 dégressif (1700m). Migration `20260803163000_session_template_finger_trail.sql`. | ✅ |
+| 2026-08-03 | Gold 200/pull/godilles | 11e gold : 200+pull+kick ×2, Catch Scull→godilles (2200m). Migration `20260803163500_session_template_200_pull_godilles.sql`. | ✅ |
+| 2026-08-03 | Gold échelle effort | 12e gold : 200→50 %effort ×2 (2200m). Migration `20260803164000_session_template_echelle_effort.sql`. | ✅ |
+| 2026-08-03 | Gold pyramide 400 | 13e gold : pyramide symétrique 400 (3600m). Migration `20260803164500_session_template_pyramide_400.sql`. | ✅ |
+| 2026-08-03 | Gold race pace choice | 14e gold : allure course au choix + IM (3000m), mixte. Migration `20260803165000_session_template_race_pace_choice.sql`. | ✅ |
+| 2026-08-03 | Gold pyramide 4 nages | 15e gold : Fly↔Free miroir (2100m + RAC ajouté). Migration `20260803165500_session_template_pyramide_4nages.sql`. | ✅ |
+| 2026-08-03 | Gold palmes+plaquettes | 16e gold : 200/pull/50s matériel ×2 (2600m). Migration `20260803170000_session_template_palmes_plaquettes.sql`. | ✅ |
+| 2026-08-03 | Gold volume 4 nages | 17e gold : couples pap/dos/brasse (3400m), mixte. Migration `20260803170500_session_template_volume_4nages.sql`. | ✅ |
+| 2026-08-03 | Arthur tri S3–S4 | 6 séances coaché triathlon (construction volume + 4N + seuil intro + bricks run). Migration `20260803171500_session_templates_arthur_tri_s3_s4.sql`. | ✅ |
+| 2026-08-03 | Arthur OW S6–S7 | 6 séances coaché eau libre (volume 5900m + décharge 4200m). Migration `20260803172000_session_templates_arthur_ow_s6_s7.sql`. | ✅ |
+| 2026-08-03 | Profil goûts client | Retours séance/hebdo → scores EMA (`user-taste.js`) persistés `user_taste_profile` + tables `session_feedback` / `week_feedback`. Générateur biaisé (volume, intensité, éducatifs, focus). Soft caps — périodisation COSD prioritaire. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -118,7 +141,7 @@
 ## Erreurs récurrentes à ne **pas** refaire
 
 1. **BNSSA** : oublier le volet sauvetage (sortie bassin, enchaînement, chrono 100 m examen).
-2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = **flèche + grand chien** (+ palmes/tuba) seulement — pas de catch-up/roulis/virages.
+2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = **flèche + grand chien** (+ palmes/tuba) seulement — pas de catch-up/roulis/virages. **Ne pas demander de T100.**
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.
@@ -131,6 +154,16 @@
 
 ---
 
+## Banque de séances (Supabase)
+
+Table `session_templates` — templates coach au format Arthur (`details` + `blocks` départ/technique/corps/RAC).
+
+- **V1** : 18 séances confirmé seedées (`source=js_ow_base`, `quality=seed`). Lecture publique RLS (`active=true`).
+- **Runtime** : l’app génère encore via `OW_BASE_SESSIONS` / générateur combinatoire — pas encore de lecture DB dans `generatePlan`.
+- **Alimentation** : Arthur envoie des séances (Excel / texte) → insert/update en base (`source=arthur_excel` ou `coach_approved`, `quality=gold`).
+- **Suite** : brancher le moteur sur la banque ; table `programming_rules` / `coach_rules` pour les règles COSD.
+
 ## Pistes produit (pas encore codées)
 
-- Table `coach_rules` en base + application dans `generatePlan` (mémoire globale app).
+- Brancher `generatePlan` / banque confirmé sur `session_templates` (fallback JS).
+- Table `programming_rules` (`coach_rules`) + application dans `generatePlan`.
