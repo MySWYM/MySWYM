@@ -3216,9 +3216,8 @@ const BadgeToast = ({ badgeId }) => {
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 27; // v27 = Découverte : éducatifs flèche + grand chien (palmes + tuba)
-// Force regen pour appliquer le contenu Découverte aux plans existants.
-// Remettre à false dès le prochain bump.
+const PLAN_VERSION = 28; // v28 = force regen séances Découverte (flèche + grand chien)
+// Force overwrite Découverte/beginner uniquement (voir migration). Remettre false au prochain bump.
 const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [
@@ -7804,6 +7803,7 @@ export default function App() {
 
   // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
   // FORCE_PLAN_REGEN = true uniquement pour un bump volontaire (ex. v14) ; sinon mergePreservingProgress.
+  // v28 : force full overwrite uniquement pour les plans Découverte (éducatifs flèche/chien).
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
@@ -7815,7 +7815,9 @@ export default function App() {
       const originalStartDate = p.startDate ?? entry.startDate ?? null;
       const premium = !!(entry.plan?.isPremium || isPremium);
       const generated = await generatePlan(entry.profile, premium, originalStartDate || Date.now(), { skipDelay: true });
-      const weeks = FORCE_PLAN_REGEN
+      const lvl = entry.profile?.level;
+      const forceDecouverte = FORCE_PLAN_REGEN && (lvl === "découverte" || lvl === "beginner");
+      const weeks = forceDecouverte
         ? generated.weeks
         : mergePreservingProgress(p.weeks ?? [], generated.weeks);
       return {

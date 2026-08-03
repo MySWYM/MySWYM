@@ -104,6 +104,7 @@
 | 2026-06-29 | Eau libre 5k/10k S1–S3 | Banque `OW_BASE_SESSIONS` (9 archétypes signature coach) en phase base semaines 1–3 : éducatifs lents → Z2 nage appliquée → sensation/RAC. Scaling régulier/sportif/perf. `OPEN_WATER_PATTERNS`. `PLAN_VERSION` → 12 | ✅ |
 | 2026-08-02 | Feedback par séance | Sheet après « séance faite » : rating easy/ok/hard + tags + commentaire. Stocké dans `session.feedback` + table `session_feedback`. Premium : micro-nudge `volumeAdj` ×1.03/×0.97 au premier retour (hebdo reste le levier ±12 %). | ✅ |
 | 2026-08-03 | Découverte flèche/chien | Éducatifs Découverte = **flèche** + **grand chien** uniquement (+ palmes / tuba frontal). Cycle dédié `FOCUS_CYCLE_DECOUVERTE`. Prompt `docs/prompt-autre-ia.md`. `PLAN_VERSION` 27 + force regen. | ✅ |
+| 2026-08-03 | Force regen Découverte v28 | Plans déjà en v27 : bump `PLAN_VERSION` 28. Force overwrite **uniquement** niveau découverte/beginner (autres = merge progression). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
