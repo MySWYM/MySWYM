@@ -71,7 +71,9 @@ export function getArthurGoldTemplates(objectif) {
 }
 
 export function templateToMySwymSession(t) {
-  const details = Array.isArray(t.details) ? t.details : [];
+  const rawDetails = Array.isArray(t.details) ? t.details : [];
+  // Même découpe que l'UI : lignes Arthur « A · B · C » → header + sous-séries
+  const details = expandArthurDetailsForUi(rawDetails);
   const dist = t.base_distance_m || 0;
   return {
     type: t.type || "ENDURANCE",
@@ -84,6 +86,40 @@ export function templateToMySwymSession(t) {
     skipped: null,
     templateSlug: t.slug || undefined,
   };
+}
+
+/** Découpe lignes compactes Arthur pour affichage (mirroir App.jsx). */
+function expandArthurDetailsForUi(details = []) {
+  const setRe = /^(?:\d+\s*[x×]\s*\d+\s*m|\d+\s*m)\b/i;
+  const meters = (part) => {
+    let m = String(part).match(/(\d+)\s*[x×]\s*(\d+)\s*m/i);
+    if (m) return parseInt(m[1], 10) * parseInt(m[2], 10);
+    m = String(part).match(/(\d+)\s*m\b/i);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  const out = [];
+  for (const raw of details) {
+    const full = String(raw ?? "");
+    const text = full.trim();
+    if (!text) continue;
+    if (/^[·]/.test(text) || (/^\s/.test(full) && !/^[-–—]/.test(text))) {
+      out.push(full.startsWith("  ") ? full : `  ${text}`);
+      continue;
+    }
+    const emParts = text.replace(/^[-–—]\s*/, "").split(/\s*[—–]\s*/).map((s) => s.trim()).filter(Boolean);
+    const swimMain = emParts[0] || text.replace(/^[-–—]\s*/, "");
+    const cues = emParts.slice(1);
+    const parts = swimMain.split(/\s*·\s*/).map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2 && parts.every((p) => setRe.test(p))) {
+      const total = parts.reduce((a, p) => a + meters(p), 0);
+      const cueStr = cues.join(" — ");
+      out.push(total > 0 ? `-${total}m${cueStr ? ` — ${cueStr}` : ""} :` : `-Série :`);
+      parts.forEach((p) => out.push(`  · ${p}`));
+    } else {
+      out.push(text);
+    }
+  }
+  return out;
 }
 
 /**

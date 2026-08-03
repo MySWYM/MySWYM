@@ -718,6 +718,52 @@ const groupSessionDetails = (details = []) => {
   return groups;
 };
 
+/** Une partie « 6×50m crawl D1'10" » ou « 100m jambes D2'30" ». */
+const SWIM_SET_PART_RE = /^(?:\d+\s*[x×]\s*\d+\s*m|\d+\s*m)\b/i;
+
+const estimateSetPartMeters = (part) => {
+  const t = String(part);
+  let m = t.match(/(\d+)\s*[x×]\s*(\d+)\s*m/i);
+  if (m) return parseInt(m[1], 10) * parseInt(m[2], 10);
+  m = t.match(/(\d+)\s*m\b/i);
+  return m ? parseInt(m[1], 10) : 0;
+};
+
+/**
+ * Découpe les lignes Arthur compactes « A · B · C — Z2 » en titre + sous-séries.
+ * Fix UX Performance / banque gold : plus de mur de texte sur une ligne.
+ */
+const expandCompoundDetailLines = (details = []) => {
+  const out = [];
+  for (const raw of details) {
+    const full = String(raw ?? "");
+    const text = full.trim();
+    if (!text) continue;
+
+    // Déjà une sous-série indentée / ·
+    if (/^[·]/.test(text) || (/^\s/.test(full) && !/^[-–—]/.test(text))) {
+      out.push(full.startsWith("  ") ? full : `  ${text}`);
+      continue;
+    }
+
+    const emParts = text.replace(/^[-–—]\s*/, "").split(/\s*[—–]\s*/).map((s) => s.trim()).filter(Boolean);
+    const swimMain = emParts[0] || text.replace(/^[-–—]\s*/, "");
+    const cues = emParts.slice(1);
+    const parts = swimMain.split(/\s*·\s*/).map((s) => s.trim()).filter(Boolean);
+    const allSets = parts.length >= 2 && parts.every((p) => SWIM_SET_PART_RE.test(p));
+
+    if (allSets) {
+      const total = parts.reduce((a, p) => a + estimateSetPartMeters(p), 0);
+      const cueStr = cues.join(" — ");
+      out.push(total > 0 ? `-${total}m${cueStr ? ` — ${cueStr}` : ""} :` : `-Série${cueStr ? ` — ${cueStr}` : ""} :`);
+      parts.forEach((p) => out.push(`  · ${p}`));
+    } else {
+      out.push(text);
+    }
+  }
+  return out;
+};
+
 /** Texte plat d'une séance — WhatsApp / description Strava */
 const formatSessionPlainText = (session) => {
   const lines = [
@@ -725,7 +771,7 @@ const formatSessionPlainText = (session) => {
   ];
   if (session.intensity) lines.push(String(session.intensity));
   lines.push("");
-  (session.details || []).forEach((d) => {
+  expandCompoundDetailLines(session.details || []).forEach((d) => {
     const kind = classifyDetailLine(d);
     const t = stripDetailPrefix(d).replace(/\s*:\s*$/, "");
     if (!t) return;
@@ -3942,10 +3988,13 @@ const parseSessionDetail = (raw) => {
   }
 
   // Séries progressives "1 lent · 2 ↗ · 3 ↗ · 4 rapide" → chips
+  // (pas les enchaînements Arthur « 100m · 2×100m · 300m » — gérés via expandCompoundDetailLines)
   let steps = null;
   const stepSource = main.includes(":") ? main.slice(main.indexOf(":") + 1).trim() : main;
   const stepSplit = stepSource.split(/\s*·\s*/).map(s => s.trim()).filter(Boolean);
-  if (stepSplit.length >= 3 && stepSplit.every(s => /^\d/.test(s) && s.length <= 22)) {
+  const isProgressiveChip = (s) =>
+    s.length <= 14 && /^\d/.test(s) && !/\d+\s*m\b/i.test(s) && !/\d+\s*[x×]/i.test(s);
+  if (stepSplit.length >= 3 && stepSplit.every(isProgressiveChip)) {
     steps = stepSplit;
     main = main.includes(":") ? main.slice(0, main.indexOf(":")).trim() : null;
   }
@@ -4112,7 +4161,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [copied, setCopied] = useState(false);
   const intensity = parseIntensity(session.intensity);
-  const details = session.details || [];
+  const details = expandCompoundDetailLines(session.details || []);
   const detailGroups = groupSessionDetails(details);
   const blockCount = detailGroups.reduce((n, g) => {
     if (g.type === "block") return n + 1;
