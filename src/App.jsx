@@ -3126,7 +3126,7 @@ const SettingsDrawer = ({
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Gestion de l&apos;abonnement</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Votre essai est terminé · gardez vos outils coach"}</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai 7 jours · carte requise · puis 4,99€/mois"}</div>
             </div>
           </div>
           {isPremium ? (
@@ -3135,7 +3135,7 @@ const SettingsDrawer = ({
             </button>
           ) : (
             <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
-              Continuer avec Premium
+              Essai 7 jours — carte requise
             </button>
           )}
           {isPremium && <ReferralShareCard />}
@@ -4359,11 +4359,37 @@ const BadgeToast = ({ badgeId }) => {
 // ── ACCÈS (UI remnants — l’accès générateur passe par Stripe trial/paid) ──
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
+const FREE_LOOP_SESSION_CAP = 8;
+const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 37; // v37 = boucle Nager & Progresser (+ migration)
-// false après la passe de migration — true re-force tous les plans à chaque session
-const FORCE_PLAN_REGEN = false;
+const PLAN_VERSION = 38; // v38 = refresh accès post-essai carte + sync comptes
+// true = 1 passe de régénération forcée par session (remettre false après la vague)
+const FORCE_PLAN_REGEN = true;
+/** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
+const ACCESS_CLIENT_EPOCH = 2;
+const ACCESS_EPOCH_KEY = (userId) => `myswym_access_epoch_${userId}`;
+
+const stampPlansAccess = (arr, userIsPremium) =>
+  (arr || []).map((e) => (
+    e?.plan
+      ? { ...e, plan: { ...e.plan, isPremium: !!userIsPremium } }
+      : e
+  ));
+
+const readAccessEpoch = (userId) => {
+  try {
+    const raw = localStorage.getItem(ACCESS_EPOCH_KEY(userId));
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const writeAccessEpoch = (userId, epoch = ACCESS_CLIENT_EPOCH) => {
+  try { localStorage.setItem(ACCESS_EPOCH_KEY(userId), String(epoch)); } catch { /* ignore */ }
+};
 
 const stashPendingOnboarding = (payload) => {
   try {
@@ -4394,9 +4420,9 @@ const clearPendingOnboarding = () => {
 };
 
 const FREE_TIER_LINES = [
-  "Historique et séances déjà générées",
+  "Aperçu du plan (squelette)",
   "Profil et stats de base",
-  "Lecture seule sans nouvel abo",
+  "Séances verrouillées sans essai",
 ];
 
 const countCompletedSessions = (p) =>
@@ -4449,21 +4475,21 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
       </div>
     );
   }
-  const totalWeeks = plan?.totalRealWeeks ?? plan?.weeks?.length ?? FREE_WEEKS_LIMIT;
-  const shownWeeks = Math.min(FREE_WEEKS_LIMIT, plan?.weeks?.length ?? FREE_WEEKS_LIMIT);
+  const totalWeeks = plan?.totalRealWeeks ?? plan?.weeks?.length ?? 0;
   return (
     <div style={{ background: G.surface, borderRadius: 16, padding: "16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Ton abonnement</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Gratuit</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Essai requis</div>
           <div style={{ fontSize: 12, color: G.grey, marginTop: 4 }}>
-            {shownWeeks} semaine{shownWeeks > 1 ? "s" : ""} accessibles
-            {totalWeeks > shownWeeks ? ` sur ${totalWeeks} prévues` : ""}
+            {totalWeeks > 0
+              ? `Plan prêt · ${totalWeeks} semaine${totalWeeks > 1 ? "s" : ""} · séances verrouillées`
+              : "Active l’essai 7 jours (carte requise) pour débloquer"}
           </div>
         </div>
         <button onClick={onUpgrade} style={{ padding: "9px 14px", borderRadius: 10, border: "none", background: G.blue, color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-          Voir Premium
+          Essai 7j
         </button>
       </div>
       <PlanTierComparison compact />
@@ -4811,10 +4837,10 @@ const PremiumBanner = ({ onUpgrade }) => (
   <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #355da3 0%, #8eb3ff 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>Votre essai Premium est terminé</div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Continue à 4,99€/mois sans engagement pour garder ton coach.</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>Débloque ton plan Premium</div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Essai 7 jours · carte requise · puis 4,99€/mois sans engagement</div>
     </div>
-    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Reprendre</button>
+    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Essai</button>
   </div>
 );
 
@@ -6400,7 +6426,7 @@ const PlanSelector = ({
                 }}
               >
                 {isPremium ? <Plus size={14} /> : <Lock size={12} />}
-                {isPremium ? "Ajouter un plan" : "Débloquer Premium"}
+                {isPremium ? "Ajouter un plan" : "Essai 7 jours"}
               </button>
             </div>
           </div>
@@ -9309,7 +9335,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
                  : (goal === "bnssa" || goal === "tests_pompiers" || goal === "caepmns") ? BNSSA_PATTERNS
                  : isOpenWaterGoal(goal) ? (OPEN_WATER_PATTERNS[levelKey] || OPEN_WATER_PATTERNS.sportif)
                  : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
-  const f = Math.min(isPremium ? freq : Math.min(freq ?? FREE_FREQ_LIMIT, FREE_FREQ_LIMIT), 5);
+  const f = Math.min(freq || 3, 5);
   const buildWeeks = (phases) => phases.map((phase, wi) => {
     // Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume ultra-bas
     if (phase.phase === "competition") {
@@ -9824,10 +9850,15 @@ export default function App() {
       });
     }
     const finalize = (existing, existingActive) => {
-      let merged = dedupePlans(existing || []);
+      let merged = stampPlansAccess(dedupePlans(existing || []), userIsPremium);
       let active = existingActive || null;
       if (!active && merged.length > 0) active = merged[0].id;
       if (active && !merged.some(e => e.id === active)) active = merged[0]?.id ?? null;
+      // Gratuit : un seul plan actif exposé (les autres restent en base pour un futur Premium)
+      if (!userIsPremium && merged.length > 1 && active) {
+        const preferred = merged.find((e) => e.id === active) || merged[0];
+        active = preferred.id;
+      }
       if (merged.length > 0) {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
@@ -10296,7 +10327,14 @@ export default function App() {
         });
       }
       const entryTaste = taste || tasteProfile;
-      const entry = { id, profile: entryProfile, plan: { ...p, taste: entryTaste }, startDate: Date.now() };
+      const livePremium = !!(user && checkIsPremium(user));
+      // Aperçu avant paiement = contenu généré, mais flag isPremium = accès live (anti-voleur)
+      const entry = {
+        id,
+        profile: entryProfile,
+        plan: { ...p, taste: entryTaste, isPremium: livePremium },
+        startDate: Date.now(),
+      };
       // Toujours partir de l'état React (pas d'un localStorage éventuellement périmé)
       const nextPlans = addingPlanFlag
         ? [...plans.filter((e) => e.id !== id), entry]
@@ -11008,7 +11046,7 @@ export default function App() {
         setUser(u);
         const premium = checkIsPremium(u);
         setIsPremium(premium);
-        showToast(premium ? "Premium activé ✓" : "Statut gratuit confirmé", 5000);
+        showToast(premium ? "Premium activé ✓" : "Pas d’abonnement actif", 5000);
         if (premium) closeUpgrade();
       }
     } catch {
