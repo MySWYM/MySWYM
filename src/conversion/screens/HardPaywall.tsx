@@ -13,7 +13,7 @@ interface Props {
 
 export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }: Props) {
   const remaining = Math.max(0, totalWeeks - weekReached + 1)
-  const { annual } = tokens.pricing
+  const { monthly, annual } = tokens.pricing
 
   return (
     <div className="cv:mx-auto cv:flex cv:min-h-dvh cv:w-full cv:max-w-lg cv:flex-col cv:px-5 cv:pt-[max(32px,env(safe-area-inset-top))] cv:pb-[max(24px,env(safe-area-inset-bottom))]">
@@ -29,18 +29,19 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
           Votre essai Premium est terminé.
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          Tu gardes ton historique, ton profil et tes séances existantes. Pour relancer ta progression, débloque à nouveau le coach, les analyses et les adaptations automatiques.
+          Tu gardes ton historique et tes séances. Pour relancer ta progression : {monthly.label}/mois sans engagement
+          {remaining > 0 ? ` · encore ${remaining} semaine${remaining > 1 ? 's' : ''} de plan à débloquer` : ''}.
         </motion.p>
 
         <motion.div variants={fadeUp} className="cv:mt-8 cv:rounded-cv-lg cv:bg-cv-ink cv:p-5 cv:text-white">
           <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.1em] cv:text-white/50">
-            Premium
+            Premium mensuel
           </p>
           <p className="cv-display cv:mt-2 cv:text-[36px] cv:leading-none">
-            {annual.perMonth}
+            {monthly.label}
             <span className="cv:text-[16px] cv:font-cv-body cv:font-medium cv:text-white/60"> / mois</span>
           </p>
-          <p className="cv:mt-1 cv:text-[13px] cv:text-white/55">facturé {annual.label}{annual.period} · pas de remboursement</p>
+          <p className="cv:mt-1 cv:text-[13px] cv:text-white/55">sans engagement · annule quand tu veux</p>
 
           <ul className="cv:mt-5 cv:space-y-2.5">
             {PREMIUM_FEATURES.map((f) => (
@@ -53,11 +54,11 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
         </motion.div>
 
         <div className="cv:mt-auto cv:space-y-3 cv:pt-10">
-          <Button fullWidth variant="premium" onClick={() => onSubscribe('annual')}>
-            Continuer en annuel
+          <Button fullWidth variant="premium" onClick={() => onSubscribe('monthly')}>
+            Continuer — {monthly.label}/mois
           </Button>
-          <Button fullWidth variant="secondary" onClick={() => onSubscribe('monthly')}>
-            Mensuel — {tokens.pricing.monthly.label} · sans engagement
+          <Button fullWidth variant="secondary" onClick={() => onSubscribe('annual')}>
+            Annuel — {annual.label} · pas de remboursement
           </Button>
           {onRestore ? (
             <button

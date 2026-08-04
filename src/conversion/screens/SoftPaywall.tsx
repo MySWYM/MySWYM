@@ -13,19 +13,19 @@ interface Props {
 const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: string }> = {
   after_first_session: {
     title: 'Analyse terminée.',
-    subtitle: 'Débloque tes conseils personnalisés et garde ton coach actif après ton essai Premium.',
+    subtitle: 'Essai 7 jours avec carte, puis 4,99 €/mois sans engagement. Annule avant la fin = 0 €.',
   },
   streak: {
     title: 'Ta progression est prête.',
-    subtitle: 'Reste accompagné avec un programme qui s’adapte à tes retours et à ta fatigue.',
+    subtitle: 'Garde ton coach : essai 7 jours avec carte, puis 4,99 €/mois.',
   },
   week_unlock: {
     title: 'Tes prochaines recommandations sont prêtes.',
-    subtitle: 'Débloque l’analyse complète, les ajustements automatiques et le suivi avancé.',
+    subtitle: 'Débloque l’analyse complète avec l’essai Premium 7 jours (carte requise).',
   },
   generic: {
     title: 'Garde ton coach personnel.',
-    subtitle: 'Le Premium te donne un programme adaptatif, une analyse intelligente et un vrai suivi dans la durée.',
+    subtitle: 'Essai 7 jours · carte requise · puis 4,99 €/mois. Annule avant la fin = 0 €.',
   },
 }
 
@@ -58,14 +58,14 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
           title="Mensuel"
           price={monthly.label}
           period="/ mois · essai 7j · carte"
+          badge="Recommandé"
+          highlight
           onClick={() => onSubscribe('monthly')}
         />
         <PlanCard
           title="Annuel"
           price={annual.label}
           period="/ an · pas de remboursement"
-          badge="Populaire"
-          highlight
           onClick={() => onSubscribe('annual')}
         />
       </div>
@@ -87,7 +87,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
         onClick={onClose}
         className="cv:mt-3 cv:w-full cv:py-3 cv:text-center cv:text-[13px] cv:font-medium cv:text-cv-ink-secondary cv:cursor-pointer"
       >
-        Rester en lecture seule
+        Plus tard
       </button>
     </Sheet>
   )
@@ -118,13 +118,13 @@ function PlanCard({
       ].join(' ')}
     >
       {badge ? (
-        <span className="cv:absolute cv:-top-2 cv:right-2 cv:rounded-cv-full cv:bg-cv-blue cv:px-2 cv:py-0.5 cv:text-[9px] cv:font-bold cv:uppercase cv:tracking-wide cv:text-white">
+        <span className="cv:absolute cv:-top-2 cv:right-2 cv:rounded-full cv:bg-cv-blue cv:px-2 cv:py-0.5 cv:text-[10px] cv:font-bold cv:text-white">
           {badge}
         </span>
       ) : null}
-      <p className="cv:text-[12px] cv:font-semibold cv:text-cv-ink-secondary">{title}</p>
-      <p className="cv-display cv:mt-1 cv:text-[22px] cv:text-cv-ink">{price}</p>
-      <p className="cv:text-[11px] cv:text-cv-ink-tertiary">{period}</p>
+      <div className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-wide cv:text-cv-ink-tertiary">{title}</div>
+      <div className="cv:mt-1 cv:text-[20px] cv:font-bold cv:text-cv-ink">{price}</div>
+      <div className="cv:mt-0.5 cv:text-[11px] cv:text-cv-ink-secondary">{period}</div>
     </button>
   )
 }

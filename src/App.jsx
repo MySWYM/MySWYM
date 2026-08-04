@@ -4277,31 +4277,28 @@ const clearPendingOnboarding = () => {
 };
 
 const FREE_TIER_LINES = [
-  "4 premières semaines du plan",
-  "Jusqu'à 3 séances par semaine",
-  "Tous les objectifs (triathlon, BNSSA, eau libre…)",
-  "Retours hebdo sans ajustement auto",
-  "Intervalles en récupération (R…)",
+  "Historique et séances déjà générées",
+  "Profil et stats de base",
+  "Lecture seule sans nouvel abo",
 ];
 
 const countCompletedSessions = (p) =>
   (p?.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0);
 
 const PREMIUM_TIER_LINES = [
+  "Essai 7 jours · carte requise · puis 4,99€/mois",
   "Plan complet jusqu'à ton événement",
   "Jusqu'à 5 séances par semaine",
   "Allures cibles par zone (à la seconde)",
-  "Courbe d'évolution des temps (profil)",
-  "Copier la séance (WhatsApp / Strava)",
+  "Adaptation après chaque séance",
   "Vidéos techniques Instagram",
-  "Départs avec allure cible (D…)",
   "Plusieurs projets · modifier fréquence et allure",
 ];
 
 const PlanTierComparison = ({ compact = false }) => (
   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 8 : 10, marginBottom: compact ? 0 : 20 }}>
     <div style={{ border: `1px solid ${G.greyLight}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.surface }}>
-      <div style={{ fontSize: 10, fontWeight: 800, color: G.grey, letterSpacing: "0.08em", marginBottom: 8 }}>GRATUIT</div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: G.grey, letterSpacing: "0.08em", marginBottom: 8 }}>SANS ABO</div>
       {FREE_TIER_LINES.map((line, i) => (
         <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < FREE_TIER_LINES.length - 1 ? 6 : 0 }}>
           <Check size={11} color={G.greyMid} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -4450,7 +4447,7 @@ const ReferralShareCard = () => {
 const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState(weeksBlocked ? "monthly" : softContext ? "monthly" : "monthly");
+  const [period, setPeriod] = useState("monthly");
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -4460,6 +4457,24 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 
   const hasReferral = Boolean(resolveReferralCode(user));
   const showTrialOffer = trialEligible && period === "monthly";
+  const isAnnual = period === "annual";
+  const trialEnded = softContext === "trial_expired" || !!weeksBlocked;
+
+  const headline = softContext === "after_first_session"
+    ? "Analyse terminée"
+    : softContext === "trial_required"
+      ? "Active ton essai Premium"
+      : trialEnded
+        ? "Reprendre Premium"
+        : "MySWYM Premium";
+
+  const subtitle = softContext === "after_first_session"
+    ? <>Tes premières données sont exploitables.<br /><strong style={{ color: G.ink }}>Essai 7 jours avec carte, puis 4,99€/mois sans engagement.</strong></>
+    : softContext === "trial_required"
+      ? <>Pour générer ton plan : essai 7 jours avec carte.<br /><strong style={{ color: G.ink }}>Annule avant la fin = 0€ · puis 4,99€/mois.</strong></>
+      : trialEnded
+        ? <>Ton essai est terminé.<br /><strong style={{ color: G.ink }}>Continue à 4,99€/mois sans engagement, ou choisis l’annuel.</strong></>
+        : <>Essai 7 jours avec carte, puis 4,99€/mois.<br />Annule avant la fin de l’essai = 0€.</>;
 
   const callFunction = async (fnName, body) => {
     const { data: refreshData } = await supabase.auth.refreshSession();
@@ -4476,9 +4491,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   const handleCheckout = async () => {
     setLoading(true); setErr(null);
     try {
-      const priceId = period === "biennial" ? PRICE_BIENNIAL
-        : period === "annual" ? PRICE_ANNUAL
-        : PRICE_MONTHLY;
+      const priceId = isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY;
       const referralCode = resolveReferralCode(user);
       trackEvent("checkout_started", {
         source: "upgrade_modal",
@@ -4495,17 +4508,13 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
     } catch (e) { setErr(e.message || "Erreur."); setLoading(false); }
   };
 
-  const isAnnual = period === "annual";
-  const isBiennial = period === "biennial";
-  const ctaLabel = isBiennial
-    ? "Démarrer — 29,99€ / 2 ans"
-    : isAnnual
-      ? "Démarrer — 39,99€/an"
-      : showTrialOffer
-        ? "Essai 7 jours — puis 4,99€/mois"
-        : hasReferral
-          ? "Démarrer — −20% parrainage"
-          : "Démarrer — 4,99€/mois";
+  const ctaLabel = isAnnual
+    ? "Démarrer — 39,99€/an"
+    : showTrialOffer
+      ? "Essai 7 jours — puis 4,99€/mois"
+      : hasReferral
+        ? "Démarrer — −20% parrainage"
+        : "Démarrer — 4,99€/mois";
 
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -4516,48 +4525,26 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
             <Zap size={26} color={G.white} />
           </div>
           <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
-            {softContext === "after_first_session" ? "Analyse terminée" : "MySWYM Premium"}
+            {headline}
           </h3>
-          {softContext === "after_first_session"
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Tes premières données sont déjà exploitables.<br /><strong style={{ color: G.ink }}>Garde ton coach avec l’essai 7 jours (carte requise), puis 4,99€/mois sans engagement.</strong></p>
-            : weeksBlocked
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Votre essai Premium est terminé.<br /><strong style={{ color: G.ink }}>Continue avec ton coach personnalisé — 4,99€/mois sans engagement.</strong></p>
-            : <p style={{ color: G.grey, fontSize: 14 }}>Essai 7 jours avec carte, puis 4,99€/mois. Annule avant la fin de l’essai = 0€.</p>}
+          <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
         </div>
 
-        {/* Offre 2 ans — conservee si besoin marketing */}
-        <button onClick={() => setPeriod("biennial")} style={{
-          width: "100%", padding: "16px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left",
-          border: `2px solid ${isBiennial ? G.blue : G.greyLight}`,
-          background: isBiennial ? G.ink : G.surface,
-          marginBottom: 10, position: "relative", overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute", top: 10, right: 10,
-            background: "#22C55E", color: G.white,
-            fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-          }}>{weeksBlocked ? "OFFRE FIN D’ESSAI" : "−50% · 2 ANS"}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: isBiennial ? "rgba(255,255,255,0.55)" : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ENGAGEMENT 24 MOIS</div>
-          <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.3)" : G.greyMid, textDecoration: "line-through", marginBottom: 2 }}>59,98€</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 800, color: isBiennial ? G.inverse : G.ink }}>29,99€</div>
-            <div style={{ fontSize: 12, color: isBiennial ? "rgba(255,255,255,0.5)" : G.greyMid }}>/ 2 ans</div>
-          </div>
-          <div style={{ fontSize: 11, color: isBiennial ? "rgba(255,255,255,0.45)" : G.greyMid, marginTop: 6 }}>
-            Soit ~1,25€/mois · non résiliable avant la fin de période
-          </div>
-        </button>
-
-        {/* Cards mensuel / annuel */}
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          {/* Mensuel */}
-          <button onClick={() => setPeriod("monthly")} style={{
+          <button type="button" onClick={() => setPeriod("monthly")} style={{
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "monthly" ? G.blue : G.greyLight}`,
             background: period === "monthly" ? G.blueLight : G.surface,
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
-            {hasReferral && (
+            {showTrialOffer && (
+              <div style={{
+                position: "absolute", top: 8, right: 8,
+                background: G.blue, color: G.white,
+                fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
+              }}>ESSAI 7J</div>
+            )}
+            {hasReferral && !showTrialOffer && (
               <div style={{
                 position: "absolute", top: 8, right: 8,
                 background: "#22C55E", color: G.white,
@@ -4569,8 +4556,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
             <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois · sans engagement</div>
           </button>
 
-          {/* Annuel */}
-          <button onClick={() => setPeriod("annual")} style={{
+          <button type="button" onClick={() => setPeriod("annual")} style={{
             flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
             background: period === "annual" ? G.blueLight : G.surface,
@@ -4578,7 +4564,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>39,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · ~3,33€/mois</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · pas de remboursement</div>
           </button>
         </div>
 
@@ -4586,14 +4572,6 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", lineHeight: 1.4, textAlign: "center" }}>
               7 jours offerts · carte requise · annule avant la fin = 0€
-            </span>
-          </div>
-        )}
-
-        {isBiennial && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
-              Engagement 24 mois · 29,99€ facturés une fois · accès jusqu’à la fin de période
             </span>
           </div>
         )}
@@ -4620,7 +4598,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-            Débloqué avec Premium
+            Inclus avec Premium
           </div>
           {PREMIUM_TIER_LINES.map((line, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: i < PREMIUM_TIER_LINES.length - 1 ? 8 : 0 }}>
@@ -4634,7 +4612,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
-        <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
+        <button type="button" onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
           Plus tard
         </button>
       </div>
@@ -4649,11 +4627,11 @@ const PremiumTeaser = ({ onUpgrade }) => (
         <Lock size={20} color="rgba(255,255,255,0.6)" />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>La suite t'attend</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Débloque ton programme complet</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>Active ton essai Premium</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>7 jours avec carte · puis 4,99€/mois</div>
       </div>
-      <button onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
-        Voir
+      <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
+        Essai
       </button>
     </div>
   </div>
@@ -4664,9 +4642,9 @@ const PremiumBanner = ({ onUpgrade }) => (
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>Votre essai Premium est terminé</div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Conservez votre coach personnel, vos analyses et les adaptations intelligentes.</div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Continue à 4,99€/mois sans engagement pour garder ton coach.</div>
     </div>
-    <button onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>S'abonner</button>
+    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Reprendre</button>
   </div>
 );
 
@@ -4700,8 +4678,8 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
         {extra > 0 && (
           <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 14 }}>+ {extra} autre{extra > 1 ? "s" : ""} semaine{extra > 1 ? "s" : ""} ensuite</p>
         )}
-        <button onClick={onUpgrade} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px rgba(53,93,163,0.28)" }}>
-          Voir mes recommandations
+        <button type="button" onClick={onUpgrade} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px rgba(53,93,163,0.28)" }}>
+          Essai 7 jours — carte requise
         </button>
       </div>
     </div>
@@ -5707,20 +5685,19 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
       {reason === "weekly" ? (
         <>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
-            2 séances cette semaine
+            Limite atteinte
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
-            En gratuit, tu génères jusqu&apos;à 2 nouvelles séances par semaine. Reviens la semaine prochaine, ou débloque Premium pour nager sans limite.
+            Pour générer de nouvelles séances, active Premium : essai 7 jours avec carte, puis 4,99€/mois sans engagement.
           </p>
         </>
       ) : (
         <>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
-            Bravo !
+            Continue avec Premium
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
-            Tu as terminé tes 8 premières séances et commencé à construire une vraie routine.
-            Pour continuer à progresser avec des séances personnalisées, débloque MySWYM Premium.
+            Pour de nouvelles séances personnalisées : essai 7 jours avec carte (0€ pendant l’essai), puis 4,99€/mois. Annule avant la fin = 0€.
           </p>
           <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
             {[
@@ -5737,7 +5714,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
           </ul>
         </>
       )}
-      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>Débloquer Premium</Btn>
+      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>Essai 7 jours — carte requise</Btn>
       {onClose && (
         <button type="button" onClick={onClose} style={{
           width: "100%", border: "none", background: "transparent", color: G.grey,
