@@ -3,11 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   ACCESS_STATUS,
   buildExpiredState,
-  buildTrialState,
+  buildSubscriptionStateFromStripe,
   getAccessState,
-  isoFromUnixSeconds,
   persistAccessState,
-  stripEntitlementFromUserMeta,
   type AccessStateRow,
   type AuthUser,
 } from "../_shared/access-state.ts";
@@ -19,6 +17,9 @@ const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5175",
+  "http://127.0.0.1:5175",
   "http://localhost:4173",
 ].filter(Boolean);
 
@@ -55,34 +56,6 @@ async function findActiveSubscription(customerId: string) {
   return subs.data.find(s => ACTIVE_STATUSES.has(s.status)) ?? null;
 }
 
-function buildSubscriptionState(
-  userId: string,
-  current: AccessStateRow | null,
-  customerId: string | null,
-  sub: Stripe.Subscription,
-): AccessStateRow {
-  const subscriptionEndsAt = isoFromUnixSeconds(sub.current_period_end ?? null);
-  const subscriptionStartedAt = isoFromUnixSeconds(sub.start_date ?? null);
-  const cancelAtPeriodEnd = sub.cancel_at_period_end === true;
-  const accessStatus = sub.status === "trialing"
-    ? ACCESS_STATUS.trial
-    : cancelAtPeriodEnd
-      ? ACCESS_STATUS.canceled
-      : ACCESS_STATUS.active;
-
-  return {
-    user_id: userId,
-    access_status: accessStatus,
-    trial_started_at: current?.trial_started_at ?? null,
-    trial_ends_at: current?.trial_ends_at ?? null,
-    trial_used: current?.trial_used ?? false,
-    subscription_started_at: subscriptionStartedAt,
-    subscription_ends_at: subscriptionEndsAt,
-    cancel_at_period_end: cancelAtPeriodEnd,
-    stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
-  };
-}
-
 Deno.serve(async (req) => {
   const reqOrigin = req.headers.get("origin");
   const cors = corsHeaders(reqOrigin);
@@ -115,30 +88,19 @@ Deno.serve(async (req) => {
     const currentState = await getAccessState(supabaseAdmin, user.id);
     let nextState: AccessStateRow;
 
+    // Plus d'essai gratuit sans carte : Premium uniquement via abo Stripe (trialing / active).
     if (customerId) {
       const sub = await findActiveSubscription(customerId);
       if (sub) {
-        nextState = buildSubscriptionState(user.id, currentState, customerId, sub);
-      } else if (currentState?.trial_used) {
-        nextState = buildExpiredState(user.id, {
-          ...currentState,
-          stripe_customer_id: customerId ?? currentState.stripe_customer_id,
-        });
+        nextState = buildSubscriptionStateFromStripe(user.id, currentState, customerId, sub);
       } else {
-        nextState = buildTrialState(user.id, {
+        nextState = buildExpiredState(user.id, {
           ...currentState,
           stripe_customer_id: customerId ?? currentState?.stripe_customer_id ?? null,
         });
       }
-    } else if (currentState?.trial_used) {
-      const trialStillActive = currentState.access_status === ACCESS_STATUS.trial
-        && currentState.trial_ends_at
-        && Date.parse(currentState.trial_ends_at) > Date.now();
-      nextState = trialStillActive
-        ? currentState
-        : buildExpiredState(user.id, currentState);
     } else {
-      nextState = buildTrialState(user.id, currentState);
+      nextState = buildExpiredState(user.id, currentState);
     }
 
     const persisted = await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);

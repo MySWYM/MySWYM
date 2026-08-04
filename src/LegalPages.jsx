@@ -111,7 +111,7 @@ export function PolitiqueConfidentialitePage() {
 
       <H>2. Données collectées</H>
       <Ul items={[
-        "Identifiants de compte : adresse e-mail, mot de passe (hashé par le prestataire d’auth), métadonnées de profil (prénom, avatar).",
+        "Identifiants de compte : adresse e-mail, mot de passe (hashé par le prestataire d’auth) ou connexion via Google / Apple, métadonnées de profil (prénom, avatar).",
         "Données sportives et plans : objectif, niveau, fréquence, bassin, allures, progression des séances, historiques locaux et synchronisés.",
         "Paiement & abonnement : identifiants Stripe (customer / subscription), statut Premium — MySWYM ne stocke pas les numéros de carte.",
         "Parrainage : code filleul (?ref=) et code parrain Premium le cas échéant.",
@@ -130,7 +130,8 @@ export function PolitiqueConfidentialitePage() {
 
       <H>4. Destinataires / sous-traitants</H>
       <Ul items={[
-        "Supabase — authentification, base de données, stockage d’avatars.",
+        "Supabase — authentification (email, Google, Apple), base de données, stockage d’avatars.",
+        "Google / Apple — uniquement si vous choisissez de vous connecter via leur compte (identité et e-mail transmis à Supabase).",
         "Stripe — paiement et portail abonnement.",
         "Vercel — hébergement et diffusion du site.",
         "Strava — uniquement si vous connectez votre compte Strava.",
@@ -242,7 +243,7 @@ export function CgvPage() {
     <LegalLayout title="CGV" subtitle={`Conditions générales de vente — offre Premium ${tradeName}`}>
       <P>
         Les présentes CGV s’appliquent aux abonnements Premium souscrits sur {site}.
-        Le freemium (période gratuite limitée) n’est pas une vente ; les CGU s’appliquent.
+        L’accès au générateur de plan nécessite un abonnement (essai Stripe inclus) ; un compte sans abonnement reste en lecture seule.
       </P>
 
       <H>1. Prestataire</H>
@@ -250,9 +251,10 @@ export function CgvPage() {
 
       <H>2. Offres Premium</H>
       <Ul items={[
-        "Mensuel : 4,99 € TTC / mois — sans engagement ; reconduction tacite ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — offre prépayée. Pas de remboursement une fois l’accès Premium ouvert, hors cas légaux (ex. droit de rétractation encore ouvert, défaut du prestataire). L’offre et l’absence de remboursement sont clairement indiquées avant paiement.",
-        "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée à engagement de durée. Non résiliable avant la fin de la période engagée, sauf cas légaux (ex. droit de rétractation dans les délais, défaut du prestataire). L’offre et l’engagement sont clairement indiqués avant paiement.",
+        "Essai 7 jours (mensuel) : carte bancaire requise via Stripe Checkout ; 0 € pendant l’essai ; résiliation pendant l’essai = aucun prélèvement. Une seule fois par compte.",
+        "Mensuel : 4,99 € TTC / mois après l’essai — sans engagement ; reconduction tacite ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
+        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — offre prépayée (sans essai sur ce tunnel). Pas de remboursement une fois facturé, hors cas légaux (ex. droit de rétractation encore ouvert, défaut du prestataire).",
+        "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée à engagement de durée. Non résiliable avant la fin de la période engagée, sauf cas légaux.",
       ]} />
       <P>
         Les prix affichés sont en euros. Le détail des fonctionnalités Premium figure sur la page Tarifs et dans l’application.
@@ -268,9 +270,10 @@ export function CgvPage() {
 
       <H>4. Renouvellement et résiliation</H>
       <P>
-        L’abonnement mensuel se renouvelle automatiquement sauf résiliation avant la date de renouvellement via « Gérer mon abonnement »
-        (portail Stripe) ou en contactant le support. L’offre annuelle est un prépaiement de 12 mois : pas de remboursement au prorata une fois l’accès ouvert
-        (hors cas légaux) ; elle peut se reconduire à l’échéance selon les conditions affichées au checkout, sauf résiliation avant renouvellement.
+        Pendant l’essai 7 jours, la résiliation via « Gérer mon abonnement » (portail Stripe) empêche le premier prélèvement.
+        L’abonnement mensuel se renouvelle ensuite automatiquement sauf résiliation avant renouvellement.
+        L’offre annuelle est un prépaiement de 12 mois : pas de remboursement au prorata une fois facturée (hors cas légaux) ;
+        elle peut se reconduire à l’échéance selon les conditions affichées au checkout, sauf résiliation avant renouvellement.
         L’offre biennale couvre 24 mois prépayés selon les conditions de l’offre.
       </P>
 

@@ -19,12 +19,12 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `Chaque nouveau compte bénéficie de ${TRIAL_DAYS} jours d'essai Premium, sans carte. Ensuite : mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Le gratuit conserve l'historique et les séances existantes. Détails sur la page Tarifs.`,
+      `Pour accéder à ton plan : questionnaire, compte, puis essai Premium ${TRIAL_DAYS} jours avec carte (0€ pendant l'essai). Ensuite mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Annule pendant l'essai = 0€. Sans abo : historique en lecture seule. Détails sur la page Tarifs.`,
   },
   {
     keys: ["annul", "résili", "resili", "stop", "désabon", "desabon", "rembours"],
     answer:
-      "Mensuel 4,99€ : sans engagement, tu annules depuis l'espace client Stripe et tu gardes l'accès jusqu'à la fin de la période payée. Annuel 39,99€ : prépaiement, pas de remboursement une fois l'accès Premium ouvert (hors cas légaux).",
+      "Pendant l'essai 7 jours : annule depuis l'espace client Stripe → pas de prélèvement. Ensuite, mensuel 4,99€ sans engagement (accès jusqu'à la fin de période payée). Annuel 39,99€ : prépaiement, pas de remboursement une fois facturé (hors cas légaux).",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],

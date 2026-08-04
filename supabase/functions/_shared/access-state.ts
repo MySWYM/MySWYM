@@ -167,3 +167,45 @@ export function buildExpiredState(userId: string, current?: Partial<AccessStateR
     stripe_customer_id: current?.stripe_customer_id ?? null,
   } satisfies AccessStateRow;
 }
+
+/** Mappe un abonnement Stripe (active / trialing / cancel_at_period_end) vers user_access_state. */
+export function buildSubscriptionStateFromStripe(
+  userId: string,
+  current: AccessStateRow | null | undefined,
+  customerId: string | null,
+  sub: {
+    status: string;
+    trial_end?: number | null;
+    start_date?: number | null;
+    current_period_end?: number | null;
+    cancel_at_period_end?: boolean;
+  },
+): AccessStateRow {
+  const cancelAtPeriodEnd = sub.cancel_at_period_end === true;
+  const isTrialing = sub.status === "trialing";
+  const trialEndsAt = isoFromUnixSeconds(sub.trial_end ?? null)
+    ?? (isTrialing ? current?.trial_ends_at ?? null : current?.trial_ends_at ?? null);
+  const trialStartedAt = isTrialing
+    ? (current?.trial_started_at ?? isoFromUnixSeconds(sub.start_date ?? null) ?? nowIso())
+    : (current?.trial_started_at ?? null);
+  const subscriptionEndsAt = isoFromUnixSeconds(sub.current_period_end ?? null);
+  const subscriptionStartedAt = isoFromUnixSeconds(sub.start_date ?? null);
+
+  const accessStatus = isTrialing
+    ? ACCESS_STATUS.trial
+    : cancelAtPeriodEnd
+      ? ACCESS_STATUS.canceled
+      : ACCESS_STATUS.active;
+
+  return {
+    user_id: userId,
+    access_status: accessStatus,
+    trial_started_at: trialStartedAt,
+    trial_ends_at: trialEndsAt,
+    trial_used: Boolean(current?.trial_used || isTrialing || sub.trial_end),
+    subscription_started_at: subscriptionStartedAt,
+    subscription_ends_at: subscriptionEndsAt,
+    cancel_at_period_end: cancelAtPeriodEnd,
+    stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
+  };
+}

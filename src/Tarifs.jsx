@@ -237,8 +237,8 @@ export default function TarifsPage() {
 
   const monthlyHighlights = [
     "Acces Premium complet.",
-    "4,99€/mois · sans engagement.",
-    "Ideal pour prolonger ton coach apres l'essai de 7 jours.",
+    "Essai 7 jours · carte requise · puis 4,99€/mois.",
+    "Sans engagement — annule pendant l'essai = 0€.",
   ];
 
   const comparisonRows = [
@@ -284,11 +284,11 @@ export default function TarifsPage() {
   const faqItems = [
     {
       q: "Puis-je annuler a tout moment ?",
-      a: "Oui pour le mensuel (4,99€/mois, sans engagement) : tu arretes depuis ton espace client et tu gardes l'acces jusqu'a la fin de la periode payee. L'annuel (39,99€) est un prepaiement : pas de remboursement une fois l'acces Premium ouvert, hors cas legaux.",
+      a: "Pendant l'essai 7 jours (carte requise) : oui, tu annules depuis Stripe et tu n'es pas preleve. Ensuite le mensuel (4,99€) reste sans engagement. L'annuel (39,99€) est un prepaiement : pas de remboursement une fois facture, hors cas legaux.",
     },
     {
       q: "Puis-je commencer gratuitement ?",
-      a: "Oui. Chaque nouveau compte demarre avec 7 jours d'essai Premium pour decouvrir toute la valeur de MySWYM.",
+      a: "Tu demarres par le questionnaire et un compte, puis un essai Premium de 7 jours avec carte (0€ pendant l'essai). Sans abo apres, tu gardes l'historique en lecture seule — pas de generation de nouveau plan.",
     },
     {
       q: "Que se passe-t-il si j'arrete mon abonnement ?",
@@ -418,12 +418,33 @@ export default function TarifsPage() {
                     backdropFilter: "blur(10px)",
                   }}
                 >
-                  Commencer gratuitement
+                  Essai 7 jours
+                </Link>
+                <Link
+                  to="/inscription"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 50,
+                    padding: "14px 22px",
+                    borderRadius: 16,
+                    textDecoration: "none",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    color: C.white,
+                    background: "rgba(255,255,255,0.08)",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    fontFamily: FONT,
+                    backdropFilter: "blur(10px)",
+                  }}
+                >
+                  Creer mon compte
                 </Link>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {[
-                  "Sans carte bancaire pour demarrer",
+                  "Essai 7 jours · carte requise",
                   "Mensuel sans engagement",
                   `Économise ${annualSavings}€ avec l'annuel`,
                 ].map((item) => (
@@ -619,7 +640,7 @@ export default function TarifsPage() {
                 fontFamily: FONT,
               }}
             >
-              Commencer gratuitement
+              Creer mon compte
             </Link>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
               {freeHighlights.map((item) => (
@@ -739,7 +760,7 @@ export default function TarifsPage() {
               </span>
             </div>
             <div style={{ marginTop: 6, color: C.secondary, fontSize: 14, lineHeight: 1.55, fontFamily: FONT }}>
-              Toute la puissance du Premium, sans engagement — tu arretes quand tu veux.
+              Essai 7 jours avec carte, puis 4,99€/mois sans engagement.
             </div>
             <button
               type="button"
@@ -1039,7 +1060,7 @@ export default function TarifsPage() {
                 Tu peux commencer sans risque.
               </h2>
               <p style={{ margin: 0, color: C.secondary, fontSize: 15, lineHeight: 1.65, fontFamily: FONT, maxWidth: 640 }}>
-                Decouvre MySWYM gratuitement, passe Premium quand tu veux, choisis le
+                Decouvre MySWYM avec l'essai 7 jours (carte requise), choisis le
                 mensuel si tu veux de la flexibilite ou l'annuel si tu veux la meilleure
                 valeur sur la duree.
               </p>
@@ -1223,7 +1244,7 @@ export default function TarifsPage() {
                 fontFamily: FONT,
               }}
             >
-              Commencer gratuitement
+              Creer mon compte
             </Link>
           </div>
         </div>

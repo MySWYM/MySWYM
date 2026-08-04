@@ -46,9 +46,10 @@ export const tokens = {
     freeFreqMax: 5,
     softPaywallAfterSessions: 1,
     hardPaywallAtWeek: 0,
+    trialRequiresCard: true,
   },
   pricing: {
-    monthly: { label: '4,99 €', period: '/ mois' },
+    monthly: { label: '4,99 €', period: '/ mois', trialNote: '7 jours offerts · carte requise' },
     annual: { label: '39,99 €', period: '/ an', perMonth: '3,33 €' },
     biennial: { label: '29,99 €', period: '/ 2 ans' },
   },

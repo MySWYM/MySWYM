@@ -1,5 +1,5 @@
 import { Check, Sparkles, X } from 'lucide-react'
-import { FREE_FEATURES, PREMIUM_FEATURES, tokens } from '../tokens'
+import { PREMIUM_FEATURES, tokens } from '../tokens'
 import { Button } from '../ui/Button'
 import { Sheet } from '../ui/Sheet'
 
@@ -57,7 +57,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
         <PlanCard
           title="Mensuel"
           price={monthly.label}
-          period="/ mois · sans engagement"
+          period="/ mois · essai 7j · carte"
           onClick={() => onSubscribe('monthly')}
         />
         <PlanCard
@@ -79,15 +79,15 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
         ))}
       </ul>
 
-      <Button fullWidth variant="premium" className="cv:mt-6" onClick={() => onSubscribe('annual')}>
-        Continuer avec Premium — {annual.perMonth}/mois
+      <Button fullWidth variant="premium" className="cv:mt-6" onClick={() => onSubscribe('monthly')}>
+        Essai 7 jours — puis {monthly.label}/mois
       </Button>
       <button
         type="button"
         onClick={onClose}
         className="cv:mt-3 cv:w-full cv:py-3 cv:text-center cv:text-[13px] cv:font-medium cv:text-cv-ink-secondary cv:cursor-pointer"
       >
-        Rester sur la version gratuite ({FREE_FEATURES[0]})
+        Rester en lecture seule
       </button>
     </Sheet>
   )

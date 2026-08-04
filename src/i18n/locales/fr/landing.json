@@ -7,7 +7,7 @@
     "titleAccent": "personnalisé en 2 minutes",
     "subtitle": "Objectif course, distance ou remise en forme — adapté à ton niveau, ta fréquence et la date de ton événement.",
     "cta": "Démarrer mon essai Premium",
-    "freeNote": "Essai Premium 7 jours · Sans carte bancaire"
+    "freeNote": "Essai 7 jours · carte requise · puis 4,99€/mois"
   },
   "why": {
     "label": "POURQUOI MYSWYM",
@@ -71,10 +71,10 @@
     "label": "TARIFS",
     "titleLine1": "Découvre la valeur.",
     "titleLine2": "Garde ton coach ensuite.",
-    "subtitle": "7 jours d'essai Premium pour tout tester. Ensuite, garde l'entraînement qui s'adapte à toi.",
-    "freeTitle": "Gratuit",
+    "subtitle": "Questionnaire, compte, puis essai Premium 7 jours avec carte. Ensuite 4,99€/mois sans engagement — ou annuel 39,99€.",
+    "freeTitle": "Après essai",
     "freePrice": "0€",
-    "freeMeta": "Après essai · sans abonnement",
+    "freeMeta": "Sans abo · lecture seule",
     "freeCta": "Créer mon compte",
     "freeF1": "Historique conservé",
     "freeF2": "Statistiques de base",
@@ -83,9 +83,9 @@
     "recommended": "RECOMMANDÉ",
     "subTitle": "Premium",
     "perMonth": "/mois",
-    "orAnnual": "ou {{price}}/an via Stripe · pour garder ton coach toute l'année",
-    "unlockCta": "Garder mon coach Premium",
-    "orMonthly": "Ou mensuel à {{price}}/mois",
+    "orAnnual": "ou {{price}}/an · pas de remboursement",
+    "unlockCta": "Essai 7 jours — carte requise",
+    "orMonthly": "Ou mensuel à {{price}}/mois (essai 7j inclus)",
     "premF1": "Coach personnel et programme adaptatif",
     "premF2": "Analyses complètes et recommandations",
     "premF3": "Prévision des chronos et gestion fatigue",
@@ -103,14 +103,14 @@
     "q2": "Puis-je changer mon objectif en cours de route ?",
     "a2": "Oui. Depuis le profil, tu peux relancer l'onboarding pour un nouvel objectif et régénérer un plan. Avec Premium, tu peux aussi gérer plusieurs plans en parallèle.",
     "q3": "Comment fonctionne l'abonnement ?",
-    "a3": "Chaque nouveau compte bénéficie d'un essai Premium de 7 jours. Ensuite : mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Paiement sécurisé via Stripe.",
+    "a3": "Après le questionnaire et la création de compte, tu actives un essai Premium de 7 jours avec carte (0€ pendant l'essai). Puis 4,99€/mois sans engagement, ou annuel 39,99€ (pas de remboursement). Annule pendant l'essai = 0€. Paiement via Stripe.",
     "q4": "Puis-je annuler à tout moment ?",
-    "a4": "Oui pour le mensuel (4,99€, sans engagement) : tu annules depuis ton espace client et tu gardes l'accès jusqu'à la fin de la période payée. L'annuel (39,99€) est un prépaiement sans remboursement une fois l'accès ouvert, hors cas légaux."
+    "a4": "Pendant l'essai 7 jours : oui, tu annules depuis l'espace client Stripe et tu n'es pas prélevé. Ensuite, le mensuel (4,99€) reste sans engagement. L'annuel (39,99€) est un prépaiement sans remboursement une fois facturé, hors cas légaux."
   },
   "finalCta": {
     "titleLine1": "Atteins ton objectif",
     "titleLine2": "avec un plan clair",
-    "subtitle": "Crée ton compte, active ton essai Premium 7 jours et découvre un vrai coach natation.",
+    "subtitle": "Questionnaire, compte, essai 7 jours avec carte — puis ton coach natation.",
     "cta": "Démarrer mon essai Premium"
   },
   "mock": {

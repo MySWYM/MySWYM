@@ -1,5 +1,6 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getAccessState } from "../_shared/access-state.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -28,6 +29,9 @@ const ALLOWED_ORIGINS = [
   "https://myswym.app",
   "https://www.myswym.app",
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5175",
+  "http://127.0.0.1:5175",
   "http://localhost:4173",
 ].filter(Boolean);
 
@@ -176,9 +180,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Essai 7j uniquement sur le mensuel, une seule fois (carte obligatoire).
+    let trialAlreadyUsed = sourceUser.app_metadata?.trial_used === true;
+    try {
+      const accessRow = await getAccessState(supabaseAdmin, user.id);
+      if (accessRow?.trial_used === true) trialAlreadyUsed = true;
+    } catch (accessErr) {
+      console.warn("[create-checkout] access state read failed, using app_metadata:", accessErr);
+    }
+    const grantTrial = price === PRICE_MONTHLY && !trialAlreadyUsed;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
+      payment_method_collection: "always",
       line_items: [{ price, quantity: 1 }],
       success_url: `${appPath}?payment=success`,
       cancel_url: `${appPath}?payment=cancel`,
@@ -189,8 +204,10 @@ Deno.serve(async (req) => {
         supabase_user_id: user.id,
         ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
         ...(referredByUserId ? { referred_by: referredByUserId } : {}),
+        ...(grantTrial ? { trial_days: "7" } : {}),
       },
       subscription_data: {
+        ...(grantTrial ? { trial_period_days: 7 } : {}),
         metadata: {
           supabase_user_id: user.id,
           ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
@@ -209,6 +226,7 @@ Deno.serve(async (req) => {
       properties: {
         price_id: price,
         has_referral: !!couponId || !!referredByUserId,
+        trial_granted: grantTrial,
       },
       created_at: new Date().toISOString(),
     });

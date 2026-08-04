@@ -3135,6 +3135,82 @@ const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "
   );
 };
 
+const GoogleMark = () => (
+  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+  </svg>
+);
+
+const AppleMark = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+    <path d="M16.365 1.43c0 1.14-.42 2.2-1.18 3.01-.79.84-2.1 1.49-3.23 1.4-.15-1.1.44-2.27 1.16-3.02.8-.84 2.2-1.45 3.25-1.39zM20.8 17.33c-.56 1.28-.83 1.85-1.55 2.98-1 1.55-2.41 3.48-4.16 3.5-1.55.02-1.95-1.01-4.06-1-2.1.01-2.55 1.02-4.1 1.04-1.74.02-3.07-1.75-4.08-3.29C.74 17.6-.6 12.7 1.5 9.4c1.05-1.63 2.72-2.66 4.32-2.66 1.7 0 2.77 1.01 4.18 1.01 1.36 0 2.19-1.02 4.2-1.02 1.5 0 3.09.82 4.14 2.23-3.64 2-3.05 7.2.46 8.37z" />
+  </svg>
+);
+
+const authOAuthRedirect = () => `${window.location.origin}/app`;
+
+const SocialAuthButtons = ({ disabled, onError, intent = "login" }) => {
+  const [busy, setBusy] = useState(null);
+
+  const startOAuth = async (provider) => {
+    if (disabled || busy) return;
+    setBusy(provider);
+    onError?.(null);
+    try {
+      try { sessionStorage.setItem("myswym_oauth_intent", intent); } catch { /* ignore */ }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: authOAuthRedirect(),
+          queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
+        },
+      });
+      if (error) throw error;
+      // Redirect en cours — on laisse busy actif
+    } catch (e) {
+      setBusy(null);
+      const raw = e.message || "";
+      const friendly = /not enabled|Unsupported provider/i.test(raw)
+        ? "Cette connexion n’est pas encore activée. Réessaie avec email, ou reviens dans un instant."
+        : (raw || "Connexion sociale impossible.");
+      onError?.(friendly);
+    }
+  };
+
+  const btnBase = {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+    width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
+    fontFamily: "'Lexend', sans-serif", cursor: disabled || busy ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <button
+        type="button"
+        disabled={!!disabled || !!busy}
+        onClick={() => startOAuth("google")}
+        style={{ ...btnBase, background: G.surface, color: G.ink, border: `1.5px solid ${G.greyLight}` }}
+      >
+        <GoogleMark />
+        {busy === "google" ? "Redirection…" : "Continuer avec Google"}
+      </button>
+      <button
+        type="button"
+        disabled={!!disabled || !!busy}
+        onClick={() => startOAuth("apple")}
+        style={{ ...btnBase, background: G.ink, color: G.inverse, border: `1.5px solid ${G.ink}` }}
+      >
+        <AppleMark />
+        {busy === "apple" ? "Redirection…" : "Continuer avec Apple"}
+      </button>
+    </div>
+  );
+};
+
 const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   const [password, setPassword] = useState("");
   const [confirm,  setConfirm]  = useState("");
@@ -3237,10 +3313,10 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
     reset:    "Mot de passe oublié",
   };
   const subtitleMap = {
-    password: "Connecte-toi avec ton mot de passe.",
+    password: "Connecte-toi avec Google, Apple ou ton email.",
     register: referralCode
       ? `Code parrain ${referralCode} — −20% sur ta 1ère facture Premium.`
-      : "Choisis un mot de passe pour ton compte.",
+      : "Crée ton compte avec Google, Apple ou un email.",
     reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
   };
   const ctaMap = {
@@ -3275,6 +3351,21 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
 
         {error   && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
+
+        {(mode === "password" || mode === "register") && (
+          <>
+            <SocialAuthButtons
+              disabled={loading}
+              intent={mode === "register" ? "signup" : "login"}
+              onError={(msg) => { setSuccess(null); setError(msg); }}
+            />
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
+              <div style={{ flex: 1, height: 1, background: G.greyLight }} />
+              <span style={{ fontSize: 12, color: G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>ou</span>
+              <div style={{ flex: 1, height: 1, background: G.greyLight }} />
+            </div>
+          </>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
           <input type="email" placeholder="Ton email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={authInpStyle} />
@@ -4145,16 +4236,45 @@ const BadgeToast = ({ badgeId }) => {
   );
 };
 
-// ── FREEMIUM ──────────────────────────────────────────────────────────────
+// ── ACCÈS / FREEMIUM (remnants UI — l’accès générateur passe par Stripe trial/paid) ──
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
-/** Mode Nager & Progresser (boucle séance) — gratuit */
+/** Mode Nager & Progresser (boucle séance) — plafond hors Premium */
 const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
+const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
 const PLAN_VERSION = 37; // v37 = boucle Nager & Progresser (+ migration legacy)
 // false après la passe de migration — true re-force tous les plans à chaque session
 const FORCE_PLAN_REGEN = false;
+
+const stashPendingOnboarding = (payload) => {
+  try {
+    localStorage.setItem(PENDING_ONBOARDING_KEY, JSON.stringify({
+      ...payload,
+      at: Date.now(),
+    }));
+  } catch { /* ignore */ }
+};
+
+const readPendingOnboarding = () => {
+  try {
+    const raw = localStorage.getItem(PENDING_ONBOARDING_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data?.at && Date.now() - data.at > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(PENDING_ONBOARDING_KEY);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const clearPendingOnboarding = () => {
+  try { localStorage.removeItem(PENDING_ONBOARDING_KEY); } catch { /* ignore */ }
+};
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
@@ -4327,10 +4447,10 @@ const ReferralShareCard = () => {
   );
 };
 
-const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
+const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState(weeksBlocked ? "biennial" : softContext ? "annual" : "annual");
+  const [period, setPeriod] = useState(weeksBlocked ? "monthly" : softContext ? "monthly" : "monthly");
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -4339,6 +4459,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
   }, []);
 
   const hasReferral = Boolean(resolveReferralCode(user));
+  const showTrialOffer = trialEligible && period === "monthly";
 
   const callFunction = async (fnName, body) => {
     const { data: refreshData } = await supabase.auth.refreshSession();
@@ -4359,6 +4480,11 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
         : period === "annual" ? PRICE_ANNUAL
         : PRICE_MONTHLY;
       const referralCode = resolveReferralCode(user);
+      trackEvent("checkout_started", {
+        source: "upgrade_modal",
+        price_id: priceId,
+        soft_context: softContext || null,
+      }, { essential: true });
       const json = await callFunction("create-checkout", {
         origin: window.location.origin,
         priceId,
@@ -4375,9 +4501,11 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
     ? "Démarrer — 29,99€ / 2 ans"
     : isAnnual
       ? "Démarrer — 39,99€/an"
-      : hasReferral
-        ? "Démarrer — −20% parrainage"
-        : "Démarrer — 4,99€/mois";
+      : showTrialOffer
+        ? "Essai 7 jours — puis 4,99€/mois"
+        : hasReferral
+          ? "Démarrer — −20% parrainage"
+          : "Démarrer — 4,99€/mois";
 
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -4391,10 +4519,10 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
             {softContext === "after_first_session" ? "Analyse terminée" : "MySWYM Premium"}
           </h3>
           {softContext === "after_first_session"
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Tes premières données sont déjà exploitables.<br /><strong style={{ color: G.ink }}>Débloque maintenant tes conseils personnalisés, ton suivi avancé et les adaptations automatiques.</strong></p>
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Tes premières données sont déjà exploitables.<br /><strong style={{ color: G.ink }}>Garde ton coach avec l’essai 7 jours (carte requise), puis 4,99€/mois sans engagement.</strong></p>
             : weeksBlocked
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Votre essai Premium est terminé.<br /><strong style={{ color: G.ink }}>Continue avec ton coach personnalisé et garde une progression pilotée séance après séance.</strong></p>
-            : <p style={{ color: G.grey, fontSize: 14 }}>Un vrai coach personnel, des analyses utiles et une progression qui s'adapte à toi.</p>}
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Votre essai Premium est terminé.<br /><strong style={{ color: G.ink }}>Continue avec ton coach personnalisé — 4,99€/mois sans engagement.</strong></p>
+            : <p style={{ color: G.grey, fontSize: 14 }}>Essai 7 jours avec carte, puis 4,99€/mois. Annule avant la fin de l’essai = 0€.</p>}
         </div>
 
         {/* Offre 2 ans — conservee si besoin marketing */}
@@ -4454,6 +4582,14 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
           </button>
         </div>
 
+        {showTrialOffer && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", lineHeight: 1.4, textAlign: "center" }}>
+              7 jours offerts · carte requise · annule avant la fin = 0€
+            </span>
+          </div>
+        )}
+
         {isBiennial && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
@@ -4499,7 +4635,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
         <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
-          {softContext === "after_first_session" ? "Continuer sans activer Premium" : "Fermer"}
+          Plus tard
         </button>
       </div>
     </div>
@@ -9104,6 +9240,8 @@ export default function App() {
   const forceRegenDoneRef = useRef(false);
   /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
+  /** Reprise questionnaire → checkout / génération après auth ou Stripe (évite stale closures). */
+  const resumePendingRef = useRef(async () => false);
 
   // Valeurs dérivées du plan actif
   const accessState = getAccessState(user);
@@ -9217,10 +9355,16 @@ export default function App() {
       const premium = checkIsPremium(u);
       setIsPremium(premium);
       if (premium) closeUpgrade();
+      return premium;
     };
 
     const syncAndApply = () => syncSubscriptionFromStripe()
-      .then(u => applyUser(u))
+      .then(async (u) => {
+        const premium = applyUser(u);
+        if (payment === "success" && premium && readPendingOnboarding()) {
+          await resumePendingRef.current(u);
+        }
+      })
       .catch(() => supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user)));
 
     if (payment === "success" || payment === "portal") {
@@ -9229,7 +9373,7 @@ export default function App() {
       }
       syncAndApply();
       if (payment === "success") {
-        showToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.", 8000);
+        showToast("Essai activé… Génération de ton plan si besoin.", 8000);
       }
       const retry = (ms) => setTimeout(syncAndApply, ms);
       const t1 = retry(2000);
@@ -9345,7 +9489,7 @@ export default function App() {
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
           syncSubscriptionFromStripe()
-            .then((synced) => {
+            .then(async (synced) => {
               if (!synced) return;
               setUser(synced);
               const premium = checkIsPremium(synced);
@@ -9357,6 +9501,10 @@ export default function App() {
                 }, { essential: true });
               }
               if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
+              // Après inscription/connexion depuis le questionnaire → Checkout essai (pas au simple reload)
+              if (event === "SIGNED_IN" && readPendingOnboarding()) {
+                await resumePendingRef.current(synced);
+              }
             })
             .catch(() => {});
         }
@@ -9809,17 +9957,63 @@ export default function App() {
 
   const handleGenerate = async () => {
     if (!user) {
+      stashPendingOnboarding({ profile, addingPlan, tasteProfile });
       trackEvent("signup_started", { source: "plan_generation_gate" }, { essential: true });
       openAuth("register");
       return;
     }
     if (!canGenerateProgram) {
-      openUpgrade("trial_expired");
+      stashPendingOnboarding({ profile, addingPlan, tasteProfile });
+      trackEvent("checkout_started", {
+        source: "plan_generation_gate",
+        price_id: PRICE_MONTHLY,
+      }, { essential: true });
+      await startMonthlyCheckout();
       return;
     }
+    await generatePlanFromProfile(profile, { addingPlanFlag: addingPlan, taste: tasteProfile });
+  };
+
+  const startMonthlyCheckout = async () => {
+    showToast("Redirection vers l'essai 7 jours (carte requise)…");
+    try {
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      const session = refreshData?.session;
+      if (!session) {
+        openAuth("register");
+        return;
+      }
+      const referralCode = resolveReferralCode(session.user);
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          origin: window.location.origin,
+          priceId: PRICE_MONTHLY,
+          ...(referralCode ? { referralCode } : {}),
+        }),
+      });
+      const json = await res.json();
+      if (json.url) {
+        window.location.href = json.url;
+        return;
+      }
+      showToast(json.error || "Impossible d'ouvrir le paiement.", 8000);
+      openUpgrade("trial_required");
+    } catch {
+      showToast("Erreur réseau. Réessaie.", 8000);
+      openUpgrade("trial_required");
+    }
+  };
+
+  const generatePlanFromProfile = async (sourceProfile, { addingPlanFlag = false, taste = null } = {}) => {
     setScreen("loading"); setError(null);
     try {
-      let genProfile = { ...profile, taste: tasteProfile };
+      let genProfile = { ...sourceProfile, taste: taste || tasteProfile };
       if (isProgressionGoal(genProfile.goal) || genProfile.category === "progression") {
         genProfile = { ...genProfile, sessionsPerWeek: genProfile.sessionsPerWeek || 1 };
       }
@@ -9843,8 +10037,9 @@ export default function App() {
           source: "onboarding",
         });
       }
-      const entry = { id, profile: entryProfile, plan: { ...p, taste: tasteProfile }, startDate: Date.now() };
-      if (addingPlan) {
+      const entryTaste = taste || tasteProfile;
+      const entry = { id, profile: entryProfile, plan: { ...p, taste: entryTaste }, startDate: Date.now() };
+      if (addingPlanFlag) {
         setPlans(prev => [...prev, entry]);
         setAddingPlan(false);
       } else {
@@ -9852,13 +10047,31 @@ export default function App() {
       }
       setActivePlanId(id);
       setScreen("app"); setActiveTab("home");
-      // Pas de paywall auto ici : valeur d’abord, soft paywall après la 1ʳᵉ séance.
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
       setScreen("onboarding");
-      setStep(profile.category === "progression" ? 3 : 5);
+      setStep(sourceProfile.category === "progression" ? 3 : 5);
     }
   };
+
+  const resumePendingOnboarding = async (u) => {
+    const pending = readPendingOnboarding();
+    if (!pending?.profile) return false;
+    if (!checkIsPremium(u)) {
+      await startMonthlyCheckout();
+      return true;
+    }
+    clearPendingOnboarding();
+    if (pending.tasteProfile) setTasteProfile(normalizeTaste(pending.tasteProfile));
+    setProfile(pending.profile);
+    if (pending.addingPlan) setAddingPlan(true);
+    await generatePlanFromProfile(pending.profile, {
+      addingPlanFlag: !!pending.addingPlan,
+      taste: pending.tasteProfile ? normalizeTaste(pending.tasteProfile) : tasteProfile,
+    });
+    return true;
+  };
+  resumePendingRef.current = resumePendingOnboarding;
 
   const advanceProgressionLoop = (entryPlan, entryProfile, archivedSession) => {
     const history = [...(entryPlan.history || []), {
@@ -10663,8 +10876,7 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div className="myswym-app">
-        {/* Bandeau persistant pour les utilisateurs anonymes : nudge vers la création de compte
-            sans bloquer l'usage de l'app. Le plan est déjà sauvegardé localement. */}
+        {/* Compte sans plan : nudge inscription (génération = essai Stripe avec carte). */}
         {!user && plans.length > 0 && (
           <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
@@ -10732,7 +10944,14 @@ export default function App() {
             onClose={() => setLoopPaywall(null)}
           />
         )}
-        {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={null} />}
+        {showUpgrade && (
+          <UpgradeModal
+            onClose={closeUpgrade}
+            softContext={upgradeSoftContext}
+            weeksBlocked={null}
+            trialEligible={!accessState.trialUsed}
+          />
+        )}
         {deletePlanId && (
           <ConfirmSheet
             title="Supprimer ce plan ?"

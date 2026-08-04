@@ -1055,25 +1055,25 @@ function Pricing() {
                 <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6, fontFamily: FONT }}>{t("pricing.perMonth")}</span>
               </div>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 22, fontFamily: FONT }}>
-                {t("pricing.orAnnual", { price: PRICE_ANNUAL_LABEL })}
+                Essai 7 jours · carte requise · puis {PRICE_MONTHLY_LABEL}/mois
               </div>
 
               <PrimaryCta
-                onClick={() => handlePremium(PRICE_ANNUAL)}
+                onClick={() => handlePremium(PRICE_MONTHLY)}
                 style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
               >
                 {t("pricing.unlockCta")}
               </PrimaryCta>
               <button
                 type="button"
-                onClick={() => handlePremium(PRICE_MONTHLY)}
+                onClick={() => handlePremium(PRICE_ANNUAL)}
                 style={{
                   background: "transparent", border: "1px solid rgba(255,255,255,0.2)",
                   color: "rgba(255,255,255,0.7)", fontSize: 13, fontFamily: FONT,
                   padding: "10px", borderRadius: 12, cursor: "pointer", marginBottom: 22,
                 }}
               >
-                {t("pricing.orMonthly", { price: PRICE_MONTHLY_LABEL })}
+                {t("pricing.orAnnual", { price: PRICE_ANNUAL_LABEL })}
               </button>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: "auto" }}>
