@@ -846,10 +846,20 @@ const dedupePlans = (plans) => {
 // de fréquence 2×→3× (même nb de séances validées) est écrasé par l'ancien plan au refresh.
 // Si les timestamps sont égaux : préférer la fréquence / le volume planifié du côté base
 // déjà choisi ; ne prendre `other` que s'il a strictement plus de séances validées.
+const planCreatedAt = (id) => {
+  const m = String(id || "").match(/^plan_(\d+)$/);
+  return m ? Number(m[1]) : 0;
+};
+
+// Fusion local + remote : union des plans non tombstonés.
+// Suppression intentionnelle = présent dans deletedIds, OU id absent du côté
+// le plus récent alors que le plan est plus vieux que ce snapshot.
+// Pour un même id des deux côtés : garde la version avec le plus de progression.
 const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, localUpdatedAt = 0, remoteUpdatedAt = 0, currentActive = null, deletedIds = null) => {
   const localIsNewer = (localUpdatedAt || 0) >= (remoteUpdatedAt || 0);
   const base = localIsNewer ? (localPlans || []) : (remotePlans || []);
   const other = localIsNewer ? (remotePlans || []) : (localPlans || []);
+  const newerTs = localIsNewer ? (localUpdatedAt || 0) : (remoteUpdatedAt || 0);
   const byId = new Map();
   for (const e of base) {
     if (deletedIds?.has(e.id)) continue;
@@ -859,7 +869,11 @@ const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, loca
     if (deletedIds?.has(e.id)) continue;
     const existing = byId.get(e.id);
     if (!existing) {
-      // Plan créé sur l'autre appareil (ex. hors-ligne) — pas une suppression
+      const created = planCreatedAt(e.id);
+      // Présent seulement sur le côté plus ancien + créé avant le snapshot récent
+      // → suppression sur l'autre appareil (ne pas ressusciter).
+      // Créé après le snapshot → création concurrente / hors-ligne à garder.
+      if (created > 0 && newerTs > 0 && created <= newerTs) continue;
       byId.set(e.id, e);
       continue;
     }
@@ -874,6 +888,95 @@ const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, loca
   }
   const updatedAt = new Date(Math.max(localUpdatedAt || 0, remoteUpdatedAt || 0) || Date.now()).toISOString();
   return { plans: merged, active, updatedAt };
+};
+
+const deletedPlansStorageKey = (userId) => `myswym_deleted_plans_${userId}`;
+
+const readDeletedPlanIds = (userId) => {
+  try {
+    const raw = localStorage.getItem(deletedPlansStorageKey(userId));
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+};
+
+const writeDeletedPlanIds = (userId, ids) => {
+  try {
+    const list = [...(ids || [])];
+    if (list.length === 0) localStorage.removeItem(deletedPlansStorageKey(userId));
+    else localStorage.setItem(deletedPlansStorageKey(userId), JSON.stringify(list));
+  } catch { /* ignore */ }
+};
+
+/** Persistance compte : union local∪remote (sauf tombstones), puis upsert Supabase. */
+const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds = null) => {
+  const now = new Date().toISOString();
+  const tombstones = deletedIds instanceof Set ? new Set(deletedIds) : readDeletedPlanIds(userId);
+  let remotePlans = [];
+  let remoteActive = null;
+  let remoteTime = 0;
+  try {
+    const { data } = await supabase
+      .from("user_plans")
+      .select("plans_json, active_plan_id, updated_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (Array.isArray(data?.plans_json)) remotePlans = data.plans_json;
+    remoteActive = data?.active_plan_id || null;
+    remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
+  } catch { /* offline / network */ }
+
+  let localTime = Date.now();
+  try {
+    const ts = localStorage.getItem(`myswym_plans_updated_${userId}`);
+    if (ts) localTime = Math.max(new Date(ts).getTime() || 0, localTime);
+  } catch { /* ignore */ }
+
+  const { plans: merged, active } = mergePlanLists(
+    localPlans || [],
+    remotePlans,
+    activePlanId,
+    remoteActive,
+    localTime,
+    remoteTime,
+    activePlanId,
+    tombstones,
+  );
+
+  try {
+    localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(merged));
+    if (active) localStorage.setItem(`myswym_active_${userId}`, active);
+    else localStorage.removeItem(`myswym_active_${userId}`);
+    localStorage.setItem(`myswym_plans_updated_${userId}`, now);
+  } catch { /* ignore */ }
+
+  if (merged.length === 0) {
+    const { error } = await supabase.from("user_plans").delete().eq("user_id", userId);
+    if (!error) writeDeletedPlanIds(userId, new Set());
+    return { plans: [], active: null, error: error || null };
+  }
+
+  const activeEntry = merged.find((e) => e.id === active) ?? merged[0];
+  const { error } = await supabase.from("user_plans").upsert({
+    user_id: userId,
+    plans_json: merged,
+    active_plan_id: active,
+    profile: activeEntry?.profile ?? null,
+    plan: activeEntry?.plan ?? null,
+    updated_at: now,
+  }, { onConflict: "user_id" });
+
+  if (error) {
+    if (import.meta.env.DEV) console.warn("[plans] upsert failed", error.message);
+    writeDeletedPlanIds(userId, tombstones);
+    return { plans: merged, active, error };
+  }
+
+  writeDeletedPlanIds(userId, new Set());
+  return { plans: merged, active, error: null };
 };
 
 const computeStats = (plan) => {
@@ -4253,15 +4356,12 @@ const BadgeToast = ({ badgeId }) => {
   );
 };
 
-// ── ACCÈS / FREEMIUM (remnants UI — l’accès générateur passe par Stripe trial/paid) ──
+// ── ACCÈS (UI remnants — l’accès générateur passe par Stripe trial/paid) ──
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
-/** Mode Nager & Progresser (boucle séance) — plafond hors Premium */
-const FREE_LOOP_SESSION_CAP = 8;
-const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 37; // v37 = boucle Nager & Progresser (+ migration legacy)
+const PLAN_VERSION = 37; // v37 = boucle Nager & Progresser (+ migration)
 // false après la passe de migration — true re-force tous les plans à chaque session
 const FORCE_PLAN_REGEN = false;
 
@@ -5854,9 +5954,6 @@ const ProgressionLoopView = ({
   const session = plan?.weeks?.[0]?.sessions?.[0];
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
-  const used = plan?.freeSessionsUsed ?? (plan?.history?.length || 0);
-  const wkKey = isoWeekKey();
-  const weekCount = plan?.weekGenKey === wkKey ? (plan?.weekGenCount || 0) : 0;
   const objectives = session?.objectives || [];
   const tm = session ? (TYPE_META[session.type] || TYPE_META.ENDURANCE) : null;
 
@@ -5894,8 +5991,8 @@ const ProgressionLoopView = ({
                 Séance du jour
               </span>
               {!isPremium && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: G.blue }}>
-                  {Math.min(used, FREE_LOOP_SESSION_CAP)}/{FREE_LOOP_SESSION_CAP} gratuites
+                <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Lock size={11} /> Essai requis
                 </span>
               )}
               {isPremium && stats.totalSessions > 0 && (
@@ -6024,17 +6121,15 @@ const ProgressionLoopView = ({
           </div>
         )}
 
-        {resolved && plan.loopBlocked && !isPremium && (
+        {!isPremium && (
           <div style={{
             background: G.blueLight, borderRadius: 16, padding: "16px", marginBottom: 14,
             border: `1px solid rgba(53,93,163,0.15)`,
           }}>
             <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
-              {plan.loopBlocked === "weekly"
-                ? "Tu as utilisé tes 2 séances gratuites de la semaine. Reviens la semaine prochaine, ou continue sans limite avec Premium."
-                : "Tu as terminé tes 8 séances gratuites. Débloque Premium pour continuer avec ton coach."}
+              Active ton essai 7 jours (carte requise) pour débloquer ta séance et continuer avec ton coach. Annule avant la fin = 0€.
             </p>
-            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>Débloquer Premium</Btn>
+            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>Essai 7 jours — carte requise</Btn>
           </div>
         )}
 
@@ -6060,12 +6155,7 @@ const ProgressionLoopView = ({
           </button>
           {!isPremium && (
             <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.45, textAlign: "center" }}>
-              Régénérez votre séance autant de fois que vous le souhaitez avec Premium.
-            </p>
-          )}
-          {!isPremium && weekCount > 0 && (
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 4px 0", textAlign: "center" }}>
-              {weekCount}/{FREE_LOOP_WEEKLY_CAP} nouvelles séances cette semaine
+              Régénération illimitée avec l’essai Premium (carte requise).
             </p>
           )}
         </div>
@@ -9693,6 +9783,7 @@ export default function App() {
 
   async function loadUserData(userId, userIsPremium = false) {
     const enforce = (p) => p;
+    deletedPlanIdsRef.current = readDeletedPlanIds(userId);
 
     // Goûts compte (Supabase) — fallback localStorage du compte uniquement
     let loadedTaste = blankTaste();
@@ -9792,7 +9883,9 @@ export default function App() {
 
     let chosenPlans = null, chosenActive = null, chosenUpdatedIso = null;
     if (localPlans || remotePlans) {
-      const merged = mergePlanLists(localPlans, remotePlans, localActive, remoteActive, localUpdatedAt, remoteUpdatedAt);
+      const merged = mergePlanLists(
+        localPlans, remotePlans, localActive, remoteActive, localUpdatedAt, remoteUpdatedAt, null, deletedPlanIdsRef.current
+      );
       chosenPlans = merged.plans;
       chosenActive = merged.active;
       chosenUpdatedIso = merged.updatedAt;
@@ -9801,6 +9894,17 @@ export default function App() {
     if (chosenPlans?.length) {
       const enforced = enforceAll(chosenPlans);
       cachePlans(enforced, chosenActive, chosenUpdatedIso);
+      // Re-pousse vers Supabase si le cache local avait des plans absents du remote
+      const remoteIds = new Set((remotePlans || []).map((e) => e.id));
+      const localHadExtra = enforced.some((e) => !remoteIds.has(e.id));
+      if (localHadExtra || !remotePlans?.length) {
+        persistAccountPlans(userId, enforced, chosenActive, deletedPlanIdsRef.current).then(({ plans: synced, active }) => {
+          if (synced?.length && (synced.length !== enforced.length || active !== chosenActive)) {
+            setPlans(synced);
+            setActivePlanId(active);
+          }
+        }).catch(() => {});
+      }
       if (finalize(enforced, chosenActive)) return;
     }
 
@@ -9890,85 +9994,22 @@ export default function App() {
     if (!user || plans.length === 0 || !plansHydratedRef.current) return;
     const saveGen = ++plansSaveGenRef.current;
     const save = async () => {
-      const now = new Date().toISOString();
-      let toSave = plans;
-      let activeToSave = activePlanId;
-      try {
-        const { data } = await supabase.from("user_plans")
-          .select("plans_json, active_plan_id, updated_at")
-          .eq("user_id", user.id).single();
-        // Un save plus récent a démarré (ex. passage 2×→3×) → abandonner celui-ci
-        if (saveGen !== plansSaveGenRef.current) return;
-        if (Array.isArray(data?.plans_json) && data.plans_json.length > 0) {
-          const remoteTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
-          const localTs = localStorage.getItem(`myswym_plans_updated_${user.id}`);
-          const localTime = localTs ? new Date(localTs).getTime() : 0;
-          // Si le cache local est plus récent (ex. freq 2×→3× juste écrite), ne pas
-          // re-fusionner avec un remote périmé — ça peut réécrire l'ancien plan.
-          if (localTime > remoteTime) {
-            toSave = plans;
-            activeToSave = activePlanId;
-          } else {
-            const { plans: merged, active } = mergePlanLists(
-              plans, data.plans_json, activePlanId, data.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
-            );
-            const missingOnDevice = merged.some(m => !plans.find(p => p.id === m.id));
-            if (missingOnDevice) {
-              if (saveGen !== plansSaveGenRef.current) return;
-              setPlans(merged);
-              setActivePlanId(active);
-              return;
-            }
-            toSave = merged;
-            activeToSave = active;
-          }
-        }
-      } catch {}
+      const snapshot = plans;
+      const activeSnap = activePlanId;
+      const { plans: merged, active, error } = await persistAccountPlans(
+        user.id, snapshot, activeSnap, deletedPlanIdsRef.current
+      );
       if (saveGen !== plansSaveGenRef.current) return;
-      try {
-        localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(toSave));
-        localStorage.setItem(`myswym_active_${user.id}`, activeToSave);
-        localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
-      } catch {}
-      const activeEntry = toSave.find(e => e.id === activeToSave) ?? toSave[0];
-      // Dernière barrière avant l'écriture remote (évite qu'un upsert 2× parte après un 3×)
-      if (saveGen !== plansSaveGenRef.current) return;
-      const { error } = await supabase.from("user_plans").upsert({
-        user_id:        user.id,
-        plans_json:     toSave,
-        active_plan_id: activeToSave,
-        profile:        activeEntry?.profile ?? null,
-        plan:           activeEntry?.plan    ?? null,
-        updated_at:     now,
-      }, { onConflict: "user_id" });
-      // Si un save plus récent a démarré pendant l'upsert, une écriture stale a pu
-      // atterrir : on re-pousse immédiatement le cache local (source de vérité UI).
-      if (saveGen !== plansSaveGenRef.current) {
-        try {
-          const raw = localStorage.getItem(`myswym_plans_${user.id}`);
-          const activeId = localStorage.getItem(`myswym_active_${user.id}`);
-          const ts = localStorage.getItem(`myswym_plans_updated_${user.id}`) || new Date().toISOString();
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              const entry = parsed.find(e => e.id === activeId) ?? parsed[0];
-              await supabase.from("user_plans").upsert({
-                user_id:        user.id,
-                plans_json:     parsed,
-                active_plan_id: activeId || parsed[0].id,
-                profile:        entry?.profile ?? null,
-                plan:           entry?.plan ?? null,
-                updated_at:     ts,
-              }, { onConflict: "user_id" });
-            }
-          }
-        } catch {}
+      if (error) {
+        if (import.meta.env.DEV) console.warn("[plans] autosave failed", error.message);
         return;
       }
-      if (error) return;
-      // Les suppressions sont bien persistées : on peut oublier les tombstones
-      for (const id of [...deletedPlanIdsRef.current]) {
-        if (!toSave.some(e => e.id === id)) deletedPlanIdsRef.current.delete(id);
+      deletedPlanIdsRef.current = new Set();
+      const mergedIds = merged.map((e) => e.id).sort().join(",");
+      const currentIds = snapshot.map((e) => e.id).sort().join(",");
+      if (mergedIds !== currentIds || active !== activeSnap) {
+        setPlans(merged);
+        setActivePlanId(active);
       }
     };
     save();
@@ -10256,35 +10297,32 @@ export default function App() {
       }
       const entryTaste = taste || tasteProfile;
       const entry = { id, profile: entryProfile, plan: { ...p, taste: entryTaste }, startDate: Date.now() };
-      if (addingPlanFlag) {
-        setPlans(prev => [...prev, entry]);
-        setAddingPlan(false);
-      } else {
-        setPlans([entry]);
-      }
+      // Toujours partir de l'état React (pas d'un localStorage éventuellement périmé)
+      const nextPlans = addingPlanFlag
+        ? [...plans.filter((e) => e.id !== id), entry]
+        : [entry];
+      setPlans(nextPlans);
+      if (addingPlanFlag) setAddingPlan(false);
       setActivePlanId(id);
       plansHydratedRef.current = true;
-      // Persistance immédiate avant Stripe / reload (évite reset questionnaire)
+      // Persistance immédiate compte (cross-device) avant Stripe / reload
       if (user?.id) {
         try {
           const now = new Date().toISOString();
-          let nextPlans = [entry];
-          if (addingPlanFlag) {
-            const raw = localStorage.getItem(`myswym_plans_${user.id}`);
-            const prev = raw ? JSON.parse(raw) : [];
-            nextPlans = Array.isArray(prev) ? [...prev.filter((p) => p.id !== id), entry] : [entry];
-          }
           localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
           localStorage.setItem(`myswym_active_${user.id}`, id);
           localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
-          supabase.from("user_plans").upsert({
-            user_id: user.id,
-            plans_json: nextPlans,
-            active_plan_id: id,
-            profile: entry.profile,
-            plan: entry.plan,
-            updated_at: now,
-          }, { onConflict: "user_id" }).then(() => {});
+          const { plans: synced, active, error } = await persistAccountPlans(
+            user.id, nextPlans, id, deletedPlanIdsRef.current
+          );
+          if (error && import.meta.env.DEV) console.warn("[plans] create persist failed", error.message);
+          if (synced?.length) {
+            deletedPlanIdsRef.current = new Set();
+            if (synced.length !== nextPlans.length || active !== id) {
+              setPlans(synced);
+              setActivePlanId(active || id);
+            }
+          }
         } catch {}
       }
       // Sortie définitive du questionnaire — même si le paiement est abandonné plus tard
@@ -10414,7 +10452,7 @@ export default function App() {
         skipped: resolvedStatus === "done" ? null : (resolvedStatus === "missed" ? "missed" : "not_done"),
       };
 
-      // Soft paywall classique après 1ʳᵉ séance (hors écran 8 séances)
+      // Soft paywall après 1ʳᵉ séance
       if (resolvedStatus === "done" && !isPremium) {
         const prevDone = (active.plan.history || []).filter((s) => s.completed).length;
         if (prevDone === 0) trackEvent("first_session_completed", { plan_type: "loop" }, { essential: true });
@@ -10839,15 +10877,7 @@ export default function App() {
           const raw = localStorage.getItem(`myswym_plans_${user.id}`);
           const parsed = raw ? JSON.parse(raw) : null;
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const activeEntry = parsed.find(e => e.id === planIdToUpdate) ?? parsed[0];
-            await supabase.from("user_plans").upsert({
-              user_id:        user.id,
-              plans_json:     parsed,
-              active_plan_id: planIdToUpdate,
-              profile:        activeEntry?.profile ?? null,
-              plan:           activeEntry?.plan ?? null,
-              updated_at:     now,
-            }, { onConflict: "user_id" });
+            await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current);
           }
         } catch {}
       }
@@ -10885,9 +10915,10 @@ export default function App() {
     const remaining = plans.filter(e => e.id !== id);
     const nextActive = activePlanId === id ? remaining[0].id : activePlanId;
     deletedPlanIdsRef.current.add(id);
+    if (user?.id) writeDeletedPlanIds(user.id, deletedPlanIdsRef.current);
     setPlans(remaining);
     if (activePlanId === id) setActivePlanId(nextActive);
-    // Persiste immédiatement pour que la fusion ne ressuscite pas le plan
+    // Persiste immédiatement sur le compte (évite résurrection cross-device)
     if (user) {
       const now = new Date().toISOString();
       try {
@@ -10895,6 +10926,13 @@ export default function App() {
         localStorage.setItem(`myswym_active_${user.id}`, nextActive);
         localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
       } catch {}
+      plansSaveGenRef.current += 1;
+      persistAccountPlans(user.id, remaining, nextActive, deletedPlanIdsRef.current)
+        .then(({ error }) => {
+          if (!error) deletedPlanIdsRef.current = new Set();
+          else if (import.meta.env.DEV) console.warn("[plans] delete persist failed", error.message);
+        })
+        .catch(() => {});
     }
   };
 
@@ -10903,7 +10941,10 @@ export default function App() {
       // Supprime uniquement le plan actif, garde les autres
       const removedId = activePlanId;
       const remaining = plans.filter(e => e.id !== activePlanId);
-      if (removedId) deletedPlanIdsRef.current.add(removedId);
+      if (removedId) {
+        deletedPlanIdsRef.current.add(removedId);
+        if (user?.id) writeDeletedPlanIds(user.id, deletedPlanIdsRef.current);
+      }
       setPlans(remaining);
       setActivePlanId(remaining[0].id);
       if (user) {
@@ -10913,6 +10954,12 @@ export default function App() {
           localStorage.setItem(`myswym_active_${user.id}`, remaining[0].id);
           localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
         } catch {}
+        plansSaveGenRef.current += 1;
+        persistAccountPlans(user.id, remaining, remaining[0].id, deletedPlanIdsRef.current)
+          .then(({ error }) => {
+            if (!error) deletedPlanIdsRef.current = new Set();
+          })
+          .catch(() => {});
       }
     } else {
       // Dernier plan — reset complet
@@ -10922,6 +10969,9 @@ export default function App() {
         localStorage.removeItem(`myswym_plans_updated_${user.id}`);
         localStorage.removeItem(`myswym_profile_${user.id}`);
         localStorage.removeItem(`myswym_plan_${user.id}`);
+        writeDeletedPlanIds(user.id, new Set());
+        deletedPlanIdsRef.current = new Set();
+        plansSaveGenRef.current += 1;
         supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {});
       }
       setPlans([]); setActivePlanId(null);
