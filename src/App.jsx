@@ -42,6 +42,7 @@ import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import { useTranslation } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
@@ -6971,6 +6972,8 @@ const Dashboard = ({
         />
 
         <HomeBadgesSection plan={plan} />
+
+        <HomeBlogCarousel />
       </div>
     </div>
   );
