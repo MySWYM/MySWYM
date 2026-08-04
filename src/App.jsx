@@ -2588,7 +2588,7 @@ const StravaSection = ({
   );
 };
 
-const ProfileTab = ({ plan, profile, user, onUserUpdate }) => {
+const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange }) => {
   const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
   const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
@@ -2742,9 +2742,14 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate }) => {
 
   return (
     <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
+      <AppTopBar
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+      />
       <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
-      <div style={{ padding: "48px 0 24px", textAlign: "center" }}>
+      <div style={{ padding: "28px 0 24px", textAlign: "center" }}>
         {/* Avatar — menu Ajouter / Modifier / Supprimer */}
         <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
           <button
@@ -3167,6 +3172,83 @@ const SettingsDrawer = ({
       </div>
     </div>,
     document.body
+  );
+};
+
+/** Barre haute commune (logo + paramètres) — Accueil / Programme / Profil */
+const AppTopBar = ({ user, onOpenMenu, onAvatarClick }) => {
+  const avatarUrl = user?.user_metadata?.avatar_url
+    || (() => {
+      try {
+        if (user?.id) {
+          return localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
+        }
+        return localStorage.getItem("myswym_avatar");
+      } catch { return null; }
+    })();
+  const firstName = user?.user_metadata?.firstname
+    || (() => {
+      try {
+        if (user?.id) {
+          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
+        }
+        return localStorage.getItem("myswym_firstname");
+      } catch { return null; }
+    })()
+    || user?.user_metadata?.full_name?.split(" ")[0]
+    || user?.email?.split("@")[0]
+    || "Nageur";
+  const initials = firstName.slice(0, 2).toUpperCase();
+
+  return (
+    <header style={{
+      position: "sticky", top: 0, zIndex: 40,
+      background: G.glass, backdropFilter: "blur(16px)",
+      WebkitBackdropFilter: "blur(16px)",
+      borderBottom: `1px solid ${G.greyLight}`,
+      boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
+      paddingTop: "var(--safe-top)",
+    }}>
+      <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {onAvatarClick ? (
+            <button type="button" onClick={onAvatarClick} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}`, flexShrink: 0 }}>
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span style={{ fontSize: 12, fontWeight: 800, color: G.blue }}>{initials}</span>
+                }
+              </div>
+            </button>
+          ) : null}
+          <BrandLogo variant="wordmark" height={22} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <a
+            href="/accueil"
+            style={{
+              textDecoration: "none",
+              border: `1px solid ${G.greyLight}`,
+              color: G.grey,
+              fontSize: 12,
+              fontWeight: 700,
+              borderRadius: 8,
+              padding: "10px 12px",
+              lineHeight: 1,
+              background: G.surface,
+              minHeight: 44,
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            Accueil
+          </a>
+          <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
+            <Settings size={20} color={G.grey} />
+          </button>
+        </div>
+      </div>
+    </header>
   );
 };
 
@@ -5977,6 +6059,9 @@ const ProgressionLoopView = ({
   onEditFeedback,
   showHistory = true,
   embed = false,
+  user,
+  onOpenMenu,
+  onTabChange,
 }) => {
   const session = plan?.weeks?.[0]?.sessions?.[0];
   const resolved = session ? isSessionResolved(session) : true;
@@ -5986,9 +6071,18 @@ const ProgressionLoopView = ({
 
   if (!session) {
     return (
-      <div className="app-shell" style={{ paddingTop: 24 }}>
-        <p style={{ color: G.grey }}>Aucune séance. Régénère ton programme.</p>
-        <ResetConfirmButton onReset={onReset} variant="card" />
+      <div style={{ paddingBottom: embed ? 16 : "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: embed ? 0 : "100dvh" }}>
+        {!embed && (
+          <AppTopBar
+            user={user}
+            onOpenMenu={onOpenMenu}
+            onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+          />
+        )}
+        <div className="app-shell" style={{ paddingTop: 24 }}>
+          <p style={{ color: G.grey }}>Aucune séance. Régénère ton programme.</p>
+          <ResetConfirmButton onReset={onReset} variant="card" />
+        </div>
       </div>
     );
   }
@@ -5999,12 +6093,16 @@ const ProgressionLoopView = ({
       minHeight: embed ? 0 : "100dvh",
     }}>
       {!embed && (
+        <AppTopBar
+          user={user}
+          onOpenMenu={onOpenMenu}
+          onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+        />
+      )}
+      {!embed && (
         <div style={{
-          position: "sticky", top: 0, zIndex: 30,
-          background: "rgba(248,249,252,0.96)", backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
+          background: G.bg,
           borderBottom: `1px solid rgba(142,179,255,0.10)`,
-          paddingTop: "var(--safe-top)",
         }}>
           <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>
@@ -6439,7 +6537,7 @@ const PlanSelector = ({
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram }) => {
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram, user, onOpenMenu, onTabChange }) => {
   if (plan?.isSessionLoop) {
     return (
       <ProgressionLoopView
@@ -6457,6 +6555,9 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
         onReset={onReset}
         onShare={onShare}
         onEditFeedback={onEditFeedback}
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onTabChange={onTabChange}
       />
     );
   }
@@ -6469,13 +6570,16 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
                  || "Mon plan";
   return (
     <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-      {/* ── Header sticky ── */}
+      <AppTopBar
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+      />
+
+      {/* ── Sous-header programme ── */}
       <div style={{
-        position: "sticky", top: 0, zIndex: 30,
-        background: "rgba(248,249,252,0.96)", backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
+        background: G.bg,
         borderBottom: `1px solid rgba(142,179,255,0.10)`,
-        paddingTop: "var(--safe-top)",
       }}>
         <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
@@ -6811,16 +6915,6 @@ const Dashboard = ({
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
 
-  // Avatar / name
-  const avatarUrl = user?.user_metadata?.avatar_url
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
-        }
-        return localStorage.getItem("myswym_avatar");
-      } catch { return null; }
-    })();
   const firstName = user?.user_metadata?.firstname
     || (() => {
       try {
@@ -6833,60 +6927,17 @@ const Dashboard = ({
     || user?.user_metadata?.full_name?.split(" ")[0]
     || user?.email?.split("@")[0]
     || "Nageur";
-  const initials = firstName.slice(0, 2).toUpperCase();
 
   const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
 
   return (
     <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", background: "transparent", minHeight: "100dvh" }}>
 
-      {/* ── Top App Bar ── */}
-      <header style={{
-        position: "sticky", top: 0, zIndex: 40,
-        background: G.glass, backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderBottom: `1px solid ${G.greyLight}`,
-        boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
-        paddingTop: "var(--safe-top)",
-      }}>
-        <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button type="button" onClick={() => onTabChange("profile")} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}`, flexShrink: 0 }}>
-                {avatarUrl
-                  ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span style={{ fontSize: 12, fontWeight: 800, color: G.blue }}>{initials}</span>
-                }
-              </div>
-            </button>
-            <BrandLogo variant="wordmark" height={22} />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <a
-              href="/accueil"
-              style={{
-                textDecoration: "none",
-                border: `1px solid ${G.greyLight}`,
-                color: G.grey,
-                fontSize: 12,
-                fontWeight: 700,
-                borderRadius: 8,
-                padding: "10px 12px",
-                lineHeight: 1,
-                background: G.surface,
-                minHeight: 44,
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
-              Accueil
-            </a>
-            <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
-              <Settings size={20} color={G.grey} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppTopBar
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onAvatarClick={() => onTabChange("profile")}
+      />
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
 
@@ -11280,8 +11331,8 @@ export default function App() {
           </div>
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={() => openUpgrade()} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
