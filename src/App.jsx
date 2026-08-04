@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP } from "./lib/swim-plan-bridge.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey } from "./lib/swim-plan-bridge.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -479,7 +479,7 @@ const GOALS = [
 
 // Catégories onboarding (step 1)
 const CATEGORIES = [
-  { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Tous niveaux · Progresser à ton rythme" },
+  { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Séance du jour · Progresser à ton rythme" },
   { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "XS · S · M · L · XXL" },
   { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "500 m · 1 km · 2,5 km · 5 km · 10 km · 25 km" },
   { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS · CAEPMNS" },
@@ -863,6 +863,39 @@ const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, loca
 const computeStats = (plan) => {
   if (!plan?.weeks) return { totalSessions: 0, totalMeters: 0, streak: 0, perfectWeeks: 0, speedSessions: 0, techniqueSessions: 0, planTotal: 0, weeklyData: [] };
   let totalSessions = 0, totalMeters = 0, currentStreak = 0, maxStreak = 0, perfectWeeks = 0, speedSessions = 0, techniqueSessions = 0;
+  // Boucle progression : stats depuis l'historique + séance courante
+  if (plan.isSessionLoop) {
+    const hist = plan.history || [];
+    hist.forEach((s) => {
+      if (s.completed) {
+        totalSessions++;
+        totalMeters += parseInt(s.distance, 10) || 0;
+        currentStreak++;
+        maxStreak = Math.max(maxStreak, currentStreak);
+        if (s.type === "VITESSE") speedSessions++;
+        if (s.type === "TECHNIQUE") techniqueSessions++;
+      } else {
+        currentStreak = 0;
+      }
+    });
+    const cur = plan.weeks?.[0]?.sessions?.[0];
+    if (cur?.completed) {
+      totalSessions++;
+      totalMeters += parseInt(cur.distance, 10) || 0;
+      currentStreak++;
+      maxStreak = Math.max(maxStreak, currentStreak);
+    }
+    return {
+      totalSessions,
+      totalMeters,
+      streak: maxStreak,
+      perfectWeeks: 0,
+      speedSessions,
+      techniqueSessions,
+      planTotal: Math.max(totalSessions + (cur && !isSessionResolved(cur) ? 1 : 0), 1),
+      weeklyData: [],
+    };
+  }
   const planTotal = plan.weeks.reduce((a, w) => a + w.sessions.length, 0);
   const weeklyData = plan.weeks.map(w => ({
     label: `S${w.number}`,
@@ -970,6 +1003,14 @@ const phaseListForAdjust = (profile, plan) => {
  * Ne touche jamais une semaine déjà commencée (completed/skipped/feedback).
  */
 const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { sessionNudge = false } = {}) => {
+  if (plan?.isSessionLoop) {
+    const step = sessionNudge
+      ? (rating === "easy" ? VOLUME_ADJ_SESSION_EASY : rating === "hard" ? VOLUME_ADJ_SESSION_HARD : 1)
+      : (rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1);
+    const prevAdj = plan.volumeAdj ?? 1;
+    const nextAdj = step === 1 ? prevAdj : clampVolumeAdj(prevAdj * step);
+    return { ...plan, volumeAdj: nextAdj };
+  }
   const step = sessionNudge
     ? (rating === "easy" ? VOLUME_ADJ_SESSION_EASY : rating === "hard" ? VOLUME_ADJ_SESSION_HARD : 1)
     : (rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1);
@@ -3021,8 +3062,7 @@ const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, tota
   </div>
 );
 
-// ── STEP 4 : TEMPS AU 100m (T100) — Premium ─────────────────────────────
-// Helper partagé : parse "m:ss" ou "mm:ss" en secondes
+// ── Helpers temps /100 m (T100) ───────────────────────────────────────────
 function parsePaceInput(raw, maxSecs = 9 * 60) {
   const digits = raw.replace(/\D/g, "").slice(0, 4);
   if (digits.length < 3) return { val: null, err: "" };
@@ -3048,11 +3088,16 @@ function secToDisplay(secs) {
 }
 
 // Composant input pace réutilisable
-function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minSec = 30, maxSec = 9 * 60 }) {
+function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minSec = 30, maxSec = 9 * 60, disabled = false }) {
   const [raw, setRaw] = useState(value ? secToDisplay(value) : "");
   const [err, setErr] = useState("");
 
+  useEffect(() => {
+    setRaw(value ? secToDisplay(value) : "");
+  }, [value]);
+
   const handle = (input) => {
+    if (disabled) return;
     const digits = input.replace(/\D/g, "").slice(0, maxLen);
     const formatted = fmtDigits(input, maxLen);
     setRaw(formatted);
@@ -3065,104 +3110,36 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
 
   return (
     <div style={{ marginBottom: 4 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{label}</span>
-        <span style={{ fontSize: 12, color: G.grey }}>{hint}</span>
-      </div>
+      {(label || hint) && (
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{label}</span>
+          <span style={{ fontSize: 12, color: G.grey }}>{hint}</span>
+        </div>
+      )}
       <input
         type="text" inputMode="numeric"
         placeholder={placeholder}
         value={raw}
+        disabled={disabled}
         onChange={e => handle(e.target.value)}
         style={{
           width: "100%", boxSizing: "border-box",
           padding: "16px 14px", fontSize: 24,
           fontFamily: "'Lexend', sans-serif", fontWeight: 700,
           textAlign: "center", letterSpacing: "0.06em",
-          border: `2px solid ${err ? "#FF3B30" : value ? G.blue : G.greyLight}`,
-          borderRadius: 14, outline: "none", background: G.surface, color: G.ink,
+          border: `2px solid ${err ? "#FF3B30" : value && !disabled ? G.blue : G.greyLight}`,
+          borderRadius: 14, outline: "none",
+          background: disabled ? G.greyXLight : G.surface,
+          color: disabled ? G.greyMid : G.ink,
           transition: "border-color 0.2s",
+          cursor: disabled ? "not-allowed" : "text",
+          opacity: disabled ? 0.85 : 1,
         }}
       />
       {err && <p style={{ color: "#FF3B30", fontSize: 12, marginTop: 4 }}>{err}</p>}
     </div>
   );
 }
-
-const Step_Pace = ({ value, onChange, onNext, onSkip, onBack, total = 6 }) => {
-  const zoneMult = appZoneMultForT100(value);
-  const ZONES = [
-    { label: "Endurance",  key: "easy",      color: "#34C759" },
-    { label: "Seuil",      key: "threshold", color: "#FF9F0A" },
-    { label: "Sprint",     key: "sprint",    color: "#FF3B30" },
-  ];
-
-  const fmtZone = (secs) => `${Math.floor(secs/60)}'${String(Math.round(secs%60)).padStart(2,'0')}"/100m`;
-
-  return (
-    <div className="fade-up">
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Étape 4 sur {total}</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        Ton temps sur 100 m
-      </h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 12, lineHeight: 1.5 }}>
-        Un seul test de référence (T100) suffit. On en déduit tes zones d&apos;intensité pour chaque séance.
-      </p>
-
-      <div style={{
-        background: G.blueLight, borderRadius: 14, padding: "12px 14px", marginBottom: 18,
-        border: `1px solid ${G.blueMid}55`,
-      }}>
-        <p style={{ fontSize: 13, color: G.blueDeep, lineHeight: 1.5, margin: 0, fontWeight: 600 }}>
-          Comment faire le test : nage 100 m crawl à fond en départ dans l&apos;eau (pas de plongeon depuis le plot). Chronomètre dès la poussée au mur.
-        </p>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-        <PaceInput
-          label="100 m crawl (T100)"
-          hint="ex : 1:45"
-          placeholder="1:45"
-          value={value}
-          onChange={onChange}
-          maxLen={3}
-          minSec={45}
-          maxSec={5 * 60}
-        />
-      </div>
-
-      {value && (
-        <div style={{ background: G.greyXLight, borderRadius: 14, padding: "14px 16px", marginBottom: 20 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>
-            Tes zones d&apos;intensité
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {ZONES.map((z, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: G.ink, flex: 1 }}>{z.label}</span>
-                <span style={{ fontFamily: "'Lexend', sans-serif", fontSize: 14, fontWeight: 700, color: z.color }}>
-                  {fmtZone(Math.round(value * zoneMult[z.key]))}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: 11, color: G.greyMid, marginTop: 10, marginBottom: 0, lineHeight: 1.4 }}>
-            Plus ton T100 est rapide, plus les allures de zone sont un peu plus tolérantes (moins dures).
-          </p>
-        </div>
-      )}
-
-      <Btn variant="blue" onClick={onNext} disabled={!value}>Utiliser ce temps</Btn>
-      <button onClick={onSkip} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 12, color: G.grey, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
-        Je ne connais pas mon temps
-      </button>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 8, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>
-        Retour
-      </button>
-    </div>
-  );
-};
 
 const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => (
   <div className="fade-up">
@@ -3586,9 +3563,12 @@ const BadgeToast = ({ badgeId }) => {
 // ── FREEMIUM ──────────────────────────────────────────────────────────────
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
+/** Mode Nager & Progresser (boucle séance) — gratuit */
+const FREE_LOOP_SESSION_CAP = 8;
+const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 34; // v34 = matos cohérent (pas de titre aléatoire / pas pull+palmes)
-// true : overwrite TOUS les plans au chargement. Remettre false après le bump.
+const PLAN_VERSION = 37; // v37 = force regen TOUS les plans (onboarding déjà créés → boucle)
+// true : overwrite TOUS les plans au chargement (même version déjà à jour). Remettre false après le bump.
 const FORCE_PLAN_REGEN = true;
 
 const FREE_TIER_LINES = [
@@ -4225,7 +4205,7 @@ const SessionBlock = ({ detail, index, workIndex, accent, children = null }) => 
 };
 
 // ── SESSION CARD ──────────────────────────────────────────────────────────
-const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback, defaultExpanded = false, isPremium = false, onUpgrade }) => {
+const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback, defaultExpanded = false, isPremium = false, onUpgrade, hideCheckbox = false }) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
@@ -4347,6 +4327,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0, position: "relative" }}>
+              {!hideCheckbox && (
               <button
                 type="button"
                 onClick={handleCheckboxClick}
@@ -4364,7 +4345,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                 {skipped === "missed" && <RotateCcw size={15} color={G.white} />}
                 {skipped === "not_done" && <X size={15} color={G.white} />}
               </button>
-              {showMenu && (
+              )}
+              {!hideCheckbox && showMenu && (
                 <div
                   onClick={e => e.stopPropagation()}
                   style={{
@@ -4988,8 +4970,322 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
   );
 };
 
+// ── MODE BOUCLE « Nager & Progresser » ─────────────────────────────────────
+const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
+  <div style={{
+    position: "fixed", inset: 0, zIndex: 200, background: "rgba(15,23,42,0.55)",
+    display: "flex", alignItems: "flex-end", justifyContent: "center",
+  }}>
+    <div style={{
+      width: "100%", maxWidth: 440, background: G.surface, borderRadius: "24px 24px 0 0",
+      padding: "28px 22px calc(28px + var(--safe-bottom))",
+      boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+    }}>
+      {reason === "weekly" ? (
+        <>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
+            2 séances cette semaine
+          </h2>
+          <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
+            En gratuit, tu génères jusqu&apos;à 2 nouvelles séances par semaine. Reviens la semaine prochaine, ou débloque Premium pour nager sans limite.
+          </p>
+        </>
+      ) : (
+        <>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
+            Bravo !
+          </h2>
+          <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
+            Tu as terminé tes 8 premières séances et commencé à construire une vraie routine.
+            Pour continuer à progresser avec des séances personnalisées, débloque MySWYM Premium.
+          </p>
+          <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            {[
+              "Génération illimitée",
+              "Régénération des séances",
+              "Progression personnalisée",
+              "Historique complet",
+              "Nouvelles fonctionnalités à venir",
+            ].map((line) => (
+              <li key={line} style={{ fontSize: 13, fontWeight: 600, color: G.ink, display: "flex", alignItems: "center", gap: 8 }}>
+                <Check size={14} color={G.mint} /> {line}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>Débloquer Premium</Btn>
+      {onClose && (
+        <button type="button" onClick={onClose} style={{
+          width: "100%", border: "none", background: "transparent", color: G.grey,
+          fontSize: 13, fontWeight: 600, padding: 12, cursor: "pointer",
+        }}>
+          Plus tard
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+const ProgressionLoopView = ({
+  plan,
+  profile,
+  isPremium,
+  onComplete,
+  onRegenerate,
+  onUpgrade,
+  onReset,
+  onShare,
+  onEditFeedback,
+  showHistory = true,
+  embed = false,
+}) => {
+  const session = plan?.weeks?.[0]?.sessions?.[0];
+  const resolved = session ? isSessionResolved(session) : true;
+  const stats = computeStats(plan);
+  const used = plan?.freeSessionsUsed ?? (plan?.history?.length || 0);
+  const wkKey = isoWeekKey();
+  const weekCount = plan?.weekGenKey === wkKey ? (plan?.weekGenCount || 0) : 0;
+  const objectives = session?.objectives || [];
+  const tm = session ? (TYPE_META[session.type] || TYPE_META.ENDURANCE) : null;
+
+  if (!session) {
+    return (
+      <div className="app-shell" style={{ paddingTop: 24 }}>
+        <p style={{ color: G.grey }}>Aucune séance. Régénère ton programme.</p>
+        <ResetConfirmButton onReset={onReset} variant="card" />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      paddingBottom: embed ? 16 : "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
+      minHeight: embed ? 0 : "100dvh",
+    }}>
+      {!embed && (
+        <div style={{
+          position: "sticky", top: 0, zIndex: 30,
+          background: "rgba(248,249,252,0.96)", backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderBottom: `1px solid rgba(142,179,255,0.10)`,
+          paddingTop: "var(--safe-top)",
+        }}>
+          <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>
+              Nager &amp; Progresser
+            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              <span style={{
+                fontSize: 12, fontWeight: 600, color: G.inkLight,
+                background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
+              }}>
+                Séance du jour
+              </span>
+              {!isPremium && (
+                <span style={{ fontSize: 12, fontWeight: 600, color: G.blue }}>
+                  {Math.min(used, FREE_LOOP_SESSION_CAP)}/{FREE_LOOP_SESSION_CAP} gratuites
+                </span>
+              )}
+              {isPremium && stats.totalSessions > 0 && (
+                <span style={{ fontSize: 12, fontWeight: 600, color: G.mint }}>
+                  {stats.totalSessions} séance{stats.totalSessions > 1 ? "s" : ""} · {(stats.totalMeters / 1000).toFixed(1)} km
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
+        {!isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="card" />}
+
+        {/* Meta séance */}
+        <div style={{
+          background: G.surface, borderRadius: 20, padding: "16px 18px", marginBottom: 12,
+          border: `1px solid ${G.greyLight}`,
+          boxShadow: "0 2px 12px rgba(142,179,255,0.08)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              {resolved ? "Séance en cours de validation…" : "À nager aujourd'hui"}
+            </span>
+            {tm && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, color: tm.color, background: tm.bg,
+                padding: "4px 9px", borderRadius: 8,
+              }}>{session.type}</span>
+            )}
+          </div>
+          <div style={{
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontSize: 26, fontWeight: 700, color: G.ink, lineHeight: 1.15, marginBottom: 12,
+          }}>
+            {session.title}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: objectives.length ? 14 : 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: G.blue, background: G.blueLight, padding: "6px 12px", borderRadius: 10 }}>
+              {session.distance}
+            </span>
+            <span style={{
+              fontSize: 13, fontWeight: 600, color: G.grey, background: G.greyXLight,
+              padding: "6px 12px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 5,
+            }}>
+              <Timer size={13} /> {formatDuration(session.duration)}
+            </span>
+          </div>
+          {objectives.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>
+                Objectifs techniques
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {objectives.map((obj) => (
+                  <div key={obj} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: G.ink, fontWeight: 600 }}>
+                    <Target size={14} color={G.blue} />
+                    {obj}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Détail séance (lecture seule via SessionCard, actions custom en dessous) */}
+        <div style={{ marginBottom: 14, pointerEvents: resolved ? "none" : "auto" }}>
+          <SessionCard
+            session={session}
+            weekIndex={0}
+            sessionIndex={0}
+            onComplete={() => {}}
+            onShare={onShare}
+            onEditFeedback={onEditFeedback}
+            defaultExpanded
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+            hideCheckbox
+          />
+        </div>
+
+        {!resolved && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+            <Btn variant="blue" onClick={() => onComplete("done")} style={{ width: "100%" }}>
+              Terminer la séance
+            </Btn>
+            <button
+              type="button"
+              onClick={() => onComplete("not_done")}
+              style={{
+                width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
+                border: `1.5px solid ${G.greyLight}`, background: G.surface,
+                color: G.grey, fontSize: 14, fontWeight: 700,
+              }}
+            >
+              L'abandonner
+            </button>
+          </div>
+        )}
+
+        {resolved && plan.loopBlocked && !isPremium && (
+          <div style={{
+            background: G.blueLight, borderRadius: 16, padding: "16px", marginBottom: 14,
+            border: `1px solid rgba(53,93,163,0.15)`,
+          }}>
+            <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
+              {plan.loopBlocked === "weekly"
+                ? "Tu as utilisé tes 2 séances gratuites de la semaine. Reviens la semaine prochaine, ou continue sans limite avec Premium."
+                : "Tu as terminé tes 8 séances gratuites. Débloque Premium pour continuer avec ton coach."}
+            </p>
+            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>Débloquer Premium</Btn>
+          </div>
+        )}
+
+        {/* Régénérer */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            disabled={!isPremium || resolved}
+            onClick={() => isPremium && !resolved && onRegenerate?.()}
+            style={{
+              width: "100%", padding: "13px 16px", borderRadius: 14, fontSize: 14, fontWeight: 700,
+              border: `1.5px solid ${isPremium && !resolved ? G.blue : G.greyLight}`,
+              background: isPremium && !resolved ? G.blueLight : G.greyXLight,
+              color: isPremium && !resolved ? G.blue : G.greyMid,
+              cursor: isPremium && !resolved ? "pointer" : "not-allowed",
+              opacity: isPremium && !resolved ? 1 : 0.7,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}
+          >
+            {!isPremium && <Lock size={14} />}
+            <RotateCcw size={14} />
+            Régénérer la séance
+          </button>
+          {!isPremium && (
+            <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.45, textAlign: "center" }}>
+              Régénérez votre séance autant de fois que vous le souhaitez avec Premium.
+            </p>
+          )}
+          {!isPremium && weekCount > 0 && (
+            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 4px 0", textAlign: "center" }}>
+              {weekCount}/{FREE_LOOP_WEEKLY_CAP} nouvelles séances cette semaine
+            </p>
+          )}
+        </div>
+
+        {/* Historique Premium */}
+        {showHistory && isPremium && (plan.history?.length > 0) && (
+          <div style={{
+            background: G.surface, borderRadius: 18, padding: "16px",
+            border: `1px solid ${G.greyLight}`, marginBottom: 12,
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 12 }}>
+              Historique
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[...(plan.history || [])].slice(-12).reverse().map((s, i) => (
+                <div key={`${s.title}-${i}`} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                  padding: "8px 0", borderBottom: i < Math.min(11, plan.history.length - 1) ? `1px solid ${G.greyXLight}` : "none",
+                }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s.title}
+                    </div>
+                    <div style={{ fontSize: 11, color: G.greyMid }}>
+                      {s.distance} · {s.completed ? "Terminée" : "Abandonnée"}
+                    </div>
+                  </div>
+                  {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.greyMid} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="subtle" />}
+      </div>
+    </div>
+  );
+};
+
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan }) => {
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop }) => {
+  if (plan?.isSessionLoop) {
+    return (
+      <ProgressionLoopView
+        plan={plan}
+        profile={profile}
+        isPremium={isPremium}
+        onComplete={(status) => onComplete(0, 0, status)}
+        onRegenerate={onRegenerateLoop}
+        onUpgrade={onUpgrade}
+        onReset={onReset}
+        onShare={onShare}
+        onEditFeedback={onEditFeedback}
+      />
+    );
+  }
+
   // Premium : plan complet débloqué
   // Free    : les 4 premières semaines visibles tout de suite ; le reste = Premium
   const unlocked = isPremium
@@ -5189,9 +5485,207 @@ const HomeBadgesSection = ({ plan }) => {
   );
 };
 
+// ── Carte T100 — levier conversion Premium (accueil) ───────────────────────
+const PACE_BENEFITS = [
+  "Séances plus personnalisées",
+  "Allures plus précises",
+  "Progression plus rapide",
+  "Intensités adaptées à ton niveau",
+];
+
+const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
+  const [val, setVal] = useState(pace100 || null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setVal(pace100 || null);
+    setSaved(false);
+  }, [pace100]);
+
+  const hasChange = val !== (pace100 || null);
+  const canSave = isPremium && !!val && hasChange && !saving;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      await Promise.resolve(onSave?.(val));
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fade-up" style={{
+      background: G.surface,
+      borderRadius: 24,
+      padding: "22px 20px",
+      marginBottom: 16,
+      border: `1px solid ${G.greyLight}`,
+      boxShadow: "0 1px 2px rgba(25,28,30,0.03), 0 12px 32px rgba(53,93,163,0.08)",
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: 16, flexShrink: 0,
+          background: `linear-gradient(145deg, ${G.blueLight} 0%, ${G.surface} 100%)`,
+          border: `1px solid ${G.blueMid}44`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Timer size={22} color={G.blue} strokeWidth={2.2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{
+            fontFamily: "'Lexend', sans-serif",
+            fontSize: 18, fontWeight: 800, color: G.ink,
+            margin: "0 0 6px", lineHeight: 1.25, letterSpacing: "-0.02em",
+          }}>
+            Améliore la précision de tes séances
+          </h2>
+          <p style={{ fontSize: 14, color: G.grey, margin: 0, lineHeight: 1.5 }}>
+            Entre ton meilleur temps sur 100&nbsp;m pour permettre à MySWYM de créer des séances encore plus adaptées à ton niveau et à tes objectifs.
+          </p>
+        </div>
+      </div>
+
+      <ul style={{ listStyle: "none", margin: "0 0 18px", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        {PACE_BENEFITS.map((b) => (
+          <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: 600, color: G.inkLight }}>
+            <span style={{
+              width: 20, height: 20, borderRadius: 7, flexShrink: 0,
+              background: G.mintLight, display: "inline-flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Check size={12} color={G.mint} strokeWidth={3} />
+            </span>
+            {b}
+          </li>
+        ))}
+      </ul>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>Meilleur temps 100 m</span>
+          <span style={{ fontSize: 12, color: G.grey, display: "inline-flex", alignItems: "center", gap: 5 }}>
+            {!isPremium && <Lock size={12} color={G.greyMid} />}
+            ex : 1:45
+          </span>
+        </div>
+        {isPremium ? (
+          <PaceInput
+            placeholder="1:45"
+            value={val}
+            onChange={(v) => { setVal(v); setSaved(false); }}
+            maxLen={3}
+            minSec={45}
+            maxSec={5 * 60}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={onUpgrade}
+            aria-label="Débloquer le temps au 100 m avec Premium"
+            style={{
+              display: "block", width: "100%", boxSizing: "border-box",
+              padding: "16px 14px", fontSize: 24,
+              fontFamily: "'Lexend', sans-serif", fontWeight: 700,
+              textAlign: "center", letterSpacing: "0.06em",
+              border: `2px solid ${G.greyLight}`,
+              borderRadius: 14, outline: "none",
+              background: G.greyXLight, color: G.greyMid,
+              cursor: "pointer", opacity: 0.9,
+            }}
+          >
+            1:45
+          </button>
+        )}
+      </div>
+
+      {isPremium ? (
+        <>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 14, border: "none",
+              minHeight: 48,
+              cursor: canSave ? "pointer" : "not-allowed",
+              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
+              color: saved || canSave ? G.white : G.greyMid,
+              fontWeight: 700, fontSize: 15,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              transition: "background 0.2s",
+            }}
+          >
+            {saved ? <><Check size={16} /> Enregistré</> : saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+          {saved && (
+            <p style={{
+              margin: "14px 0 0", fontSize: 13, fontWeight: 600, color: G.mint,
+              lineHeight: 1.45, textAlign: "center",
+            }}>
+              ✅ Ton niveau est enregistré. Tes prochaines séances seront encore plus personnalisées.
+            </p>
+          )}
+          {!saved && pace100 && !hasChange && (
+            <p style={{
+              margin: "12px 0 0", fontSize: 12, color: G.grey, textAlign: "center", lineHeight: 1.4,
+            }}>
+              Niveau actif : {secToDisplay(pace100)} /100&nbsp;m — tu peux le mettre à jour à tout moment.
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={onUpgrade}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 14, border: "none",
+              minHeight: 48, cursor: "pointer",
+              background: G.greyXLight, color: G.greyMid,
+              fontWeight: 700, fontSize: 15,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              opacity: 0.9,
+            }}
+          >
+            <Lock size={14} color={G.greyMid} />
+            Enregistrer
+          </button>
+          <p style={{
+            margin: "16px 0 12px", fontSize: 13, color: G.inkLight, lineHeight: 1.5, textAlign: "center",
+          }}>
+            Débloque cette fonctionnalité avec MySWYM Premium pour obtenir des séances adaptées à ton véritable niveau.
+          </p>
+          <button
+            type="button"
+            onClick={onUpgrade}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 14, border: "none",
+              minHeight: 48, cursor: "pointer",
+              background: G.blue, color: G.white,
+              fontWeight: 700, fontSize: 15,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              boxShadow: "0 4px 16px rgba(53,93,163,0.22)",
+            }}
+          >
+            <Zap size={15} color={G.white} />
+            Passer à Premium
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
+const Dashboard = ({
+  plan, profile, onTabChange, onSignOut, user,
+  isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate,
+}) => {
   const stats = computeStats(plan);
+  const isLoop = !!plan?.isSessionLoop;
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
   const nextSession = currentWeek?.sessions.find(s => !isSessionResolved(s));
@@ -5226,7 +5720,7 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
     || "Nageur";
   const initials = firstName.slice(0, 2).toUpperCase();
 
-  const planFinished = stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
+  const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
 
   return (
     <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", background: "transparent", minHeight: "100dvh" }}>
@@ -5293,6 +5787,53 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
           );
         })()}
 
+        {/* ── T100 : précision des séances (levier Premium) ── */}
+        <PacePersonalizationCard
+          pace100={profile?.pace100}
+          isPremium={isPremium}
+          onSave={onPaceUpdate}
+          onUpgrade={onUpgrade}
+        />
+
+        {/* ── Mode boucle Nager & Progresser ── */}
+        {isLoop ? (
+          <>
+            {isPremium && stats.totalSessions > 0 && (
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14,
+              }}>
+                {[
+                  { label: "Séances", value: String(stats.totalSessions) },
+                  { label: "Distance", value: `${(stats.totalMeters / 1000).toFixed(1)} km` },
+                  { label: "Série", value: String(stats.streak) },
+                ].map((c) => (
+                  <div key={c.label} style={{
+                    background: G.surface, borderRadius: 14, padding: "12px 10px",
+                    border: `1px solid ${G.greyLight}`, textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>{c.value}</div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: G.grey, marginTop: 2 }}>{c.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <ProgressionLoopView
+              plan={plan}
+              profile={profile}
+              isPremium={isPremium}
+              onComplete={(status) => onComplete?.(0, 0, status)}
+              onRegenerate={onRegenerateLoop}
+              onUpgrade={onUpgrade}
+              onReset={onReset}
+              onShare={onShare}
+              onEditFeedback={onEditFeedback}
+              showHistory={false}
+              embed
+            />
+            <HomeBadgesSection plan={plan} />
+          </>
+        ) : (
+        <>
         {/* ── Plan finished banner ── */}
         {planFinished && (
           <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
@@ -5383,6 +5924,8 @@ const Dashboard = ({ plan, profile, onTabChange, onSignOut, user }) => {
 
         {/* ── Badges (débloqués + grisés) ── */}
         <HomeBadgesSection plan={plan} />
+        </>
+        )}
       </div>
     </div>
   );
@@ -7708,17 +8251,42 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   _isPremium = !!isPremium;
   const wellness = isWellnessGoal(goal);
   const progression = isProgressionGoal(goal);
+
+  // ── Mode boucle « Nager & Progresser » : une seule séance, pas de plan multi-semaines
+  if (progression) {
+    const cursor = 0;
+    const wkKey = isoWeekKey(new Date(referenceTime));
+    const { week } = buildProgressionLoopSession(
+      { ...profile, sessionsPerWeek: 1 },
+      cursor,
+      isPremium,
+    );
+    return {
+      weeks: [week],
+      previewWeeks: [],
+      totalRealWeeks: 1,
+      isPremium,
+      isProgression: true,
+      isSessionLoop: true,
+      sessionCursor: cursor,
+      freeSessionsUsed: isPremium ? 0 : 1,
+      weekGenKey: wkKey,
+      weekGenCount: isPremium ? 0 : 1,
+      history: [],
+      startDate: Date.now(),
+      version: PLAN_VERSION,
+    };
+  }
+
   const rawWeeks = computePlanTotalWeeks(profile, referenceTime);
 
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.régulier;
-  const progressionPhaseList = progression ? buildProgressionPhases() : null;
-  const phaseList = progression ? progressionPhaseList.slice(0, rawWeeks) : wellness ? buildWellnessPhases(rawWeeks) : buildPlanPhases(rawWeeks);
+  const phaseList = wellness ? buildWellnessPhases(rawWeeks) : buildPlanPhases(rawWeeks);
   // Résolution du levelKey pour les patterns : priorité aux nouveaux niveaux, fallback anciens
   const levelKey = (PHASE_PATTERNS[level] ? level : (level === "advanced" ? "performance" : level === "beginner" ? "régulier" : level === "intermediate" ? "sportif" : "régulier"));
-  // PROGRESSION_PATTERNS et WELLNESS_PATTERNS sont indexés par "beginner"/"intermediate"/"advanced"
+  // WELLNESS_PATTERNS sont indexés par "beginner"/"intermediate"/"advanced"
   const progLvlKey = getLvlIndex(level) >= 3 ? "advanced" : getLvlIndex(level) >= 2 ? "intermediate" : "beginner";
-  const patterns = progression ? (PROGRESSION_PATTERNS[progLvlKey] || PROGRESSION_PATTERNS.intermediate)
-                 : wellness   ? (WELLNESS_PATTERNS[progLvlKey] || WELLNESS_PATTERNS.intermediate)
+  const patterns = wellness   ? (WELLNESS_PATTERNS[progLvlKey] || WELLNESS_PATTERNS.intermediate)
                  : (goal === "bnssa" || goal === "tests_pompiers" || goal === "caepmns") ? BNSSA_PATTERNS
                  : isOpenWaterGoal(goal) ? (OPEN_WATER_PATTERNS[levelKey] || OPEN_WATER_PATTERNS.sportif)
                  : (PHASE_PATTERNS[levelKey] || PHASE_PATTERNS.régulier);
@@ -7767,7 +8335,33 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
     : buildWeeks(phaseList);
   const weeks = isPremium ? allWeeks : allWeeks.slice(0, FREE_MAX_WEEKS);
   const previewWeeks = isPremium || rawWeeks <= FREE_MAX_WEEKS ? [] : allWeeks.slice(FREE_MAX_WEEKS, FREE_MAX_WEEKS + 3);
-  return { weeks, previewWeeks, totalRealWeeks: rawWeeks, isPremium, isProgression: progression, startDate: Date.now(), version: PLAN_VERSION };
+  return { weeks, previewWeeks, totalRealWeeks: rawWeeks, isPremium, isProgression: false, isSessionLoop: false, startDate: Date.now(), version: PLAN_VERSION };
+};
+
+/** Peut-on générer une nouvelle séance (boucle gratuit) ? */
+const loopCanGenerateNext = (plan, premium) => {
+  if (premium) return { ok: true };
+  const used = plan.freeSessionsUsed ?? 0;
+  if (used >= FREE_LOOP_SESSION_CAP) return { ok: false, reason: "cap" };
+  const wk = isoWeekKey();
+  const weekCount = plan.weekGenKey === wk ? (plan.weekGenCount || 0) : 0;
+  if (weekCount >= FREE_LOOP_WEEKLY_CAP) return { ok: false, reason: "weekly" };
+  return { ok: true };
+};
+
+/** Applique compteurs freemium après une génération de séance boucle. */
+const withLoopGenerationCounters = (plan, premium) => {
+  if (premium) {
+    return { ...plan, weekGenKey: isoWeekKey(), weekGenCount: plan.weekGenCount || 0 };
+  }
+  const wk = isoWeekKey();
+  const prevCount = plan.weekGenKey === wk ? (plan.weekGenCount || 0) : 0;
+  return {
+    ...plan,
+    freeSessionsUsed: (plan.freeSessionsUsed || 0) + 1,
+    weekGenKey: wk,
+    weekGenCount: prevCount + 1,
+  };
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
@@ -7781,6 +8375,7 @@ export default function App() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
+  const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const [theme, setTheme] = useState(() => {
     try {
       return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || getStoredTheme());
@@ -7854,6 +8449,8 @@ export default function App() {
   const prevBadgesRef = useRef([]);
   const plansHydratedRef = useRef(false);
   const deletedPlanIdsRef = useRef(new Set());
+  /** Une seule passe FORCE_PLAN_REGEN par session (évite une boucle infinie). */
+  const forceRegenDoneRef = useRef(false);
   /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
 
@@ -8099,7 +8696,7 @@ export default function App() {
   }, []);
 
   async function loadUserData(userId, userIsPremium = false) {
-    const enforce = (p) => (!userIsPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+    const enforce = (p) => (!userIsPremium && p?.weeks && !p.isSessionLoop) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
 
     // Goûts compte (Supabase) — fallback localStorage + migration anon
     let loadedTaste = blankTaste();
@@ -8109,13 +8706,18 @@ export default function App() {
       if (anonRaw) anonTaste = normalizeTaste(JSON.parse(anonRaw));
     } catch {}
     try {
-      const { data: tasteRow } = await supabase
+      const { data: tasteRow, error: tasteErr } = await supabase
         .from("user_taste_profile")
         .select("scores")
         .eq("user_id", userId)
         .maybeSingle();
-      if (tasteRow?.scores) loadedTaste = normalizeTaste(tasteRow.scores);
-      else {
+      if (tasteErr) {
+        if (import.meta.env.DEV) console.warn("[taste] load failed, using localStorage", tasteErr.message);
+        const raw = localStorage.getItem(`myswym_taste_${userId}`);
+        if (raw) loadedTaste = normalizeTaste(JSON.parse(raw));
+      } else if (tasteRow?.scores) {
+        loadedTaste = normalizeTaste(tasteRow.scores);
+      } else {
         const raw = localStorage.getItem(`myswym_taste_${userId}`);
         if (raw) loadedTaste = normalizeTaste(JSON.parse(raw));
       }
@@ -8133,7 +8735,11 @@ export default function App() {
         user_id: userId,
         scores: loadedTaste,
         updated_at: new Date().toISOString(),
-      }).then(() => {
+      }).then(({ error }) => {
+        if (error) {
+          if (import.meta.env.DEV) console.warn("[taste] upsert failed (local kept)", error.message);
+          return;
+        }
         try { localStorage.removeItem("myswym_anon_taste"); } catch {}
       });
     }
@@ -8404,7 +9010,7 @@ export default function App() {
         const remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
         if (!localPlans.length && !remotePlans.length) return;
 
-        const enforce = (p) => (!isPremium && p?.weeks) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+        const enforce = (p) => (!isPremium && p?.weeks && !p.isSessionLoop) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
         const { plans: merged, active, updatedAt } = mergePlanLists(
           localPlans, remotePlans, localActive, data?.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
         );
@@ -8438,12 +9044,21 @@ export default function App() {
 
 
   // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
-  // FORCE_PLAN_REGEN = true uniquement pour un bump volontaire ; sinon mergePreservingProgress.
-  // v31 : force full overwrite tous plans (re-trigger après v30).
+  // FORCE_PLAN_REGEN = true : overwrite TOUS les plans déjà créés (1 fois / session), même version à jour.
+  // Aussi : progression legacy (12 sem.) → boucle séance si !isSessionLoop.
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
-    const needsUpdate = plans.filter(e => e.plan && (e.plan.version ?? 0) < PLAN_VERSION);
+    const forceAll = FORCE_PLAN_REGEN && !forceRegenDoneRef.current;
+    const needsUpdate = plans.filter((e) => {
+      if (!e.plan) return false;
+      if (forceAll) return true;
+      if ((e.plan.version ?? 0) < PLAN_VERSION) return true;
+      // Ancien plan « Nager & Progresser » multi-semaines → boucle
+      if (isProgressionGoal(e.profile?.goal) && !e.plan.isSessionLoop) return true;
+      return false;
+    });
     if (needsUpdate.length === 0) return;
+    if (forceAll) forceRegenDoneRef.current = true;
 
     let cancelled = false;
     Promise.all(needsUpdate.map(async entry => {
@@ -8457,28 +9072,95 @@ export default function App() {
         originalStartDate || Date.now(),
         { skipDelay: true },
       );
-      const weeks = FORCE_PLAN_REGEN
+      const forceOverwrite =
+        FORCE_PLAN_REGEN &&
+        (generated.isSessionLoop || isProgressionGoal(entry.profile?.goal) || p.isProgression || p.isSessionLoop);
+      const weeks = forceOverwrite
         ? generated.weeks
         : mergePreservingProgress(p.weeks ?? [], generated.weeks);
+      // Force boucle : conserve historique / compteurs freemium si déjà en session loop
+      const updated = {
+        ...generated,
+        taste,
+        weeks,
+        startDate: originalStartDate || generated.startDate,
+        version: PLAN_VERSION,
+      };
+      if (generated.isSessionLoop && p.isSessionLoop) {
+        const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
+        const { week } = buildProgressionLoopSession(
+          { ...entry.profile, sessionsPerWeek: 1, taste, volumeAdj: p.volumeAdj },
+          cursor,
+          premium,
+        );
+        updated.history = p.history || [];
+        updated.freeSessionsUsed = p.freeSessionsUsed ?? generated.freeSessionsUsed;
+        updated.weekGenKey = p.weekGenKey ?? generated.weekGenKey;
+        updated.weekGenCount = p.weekGenCount ?? generated.weekGenCount;
+        updated.sessionCursor = cursor;
+        updated.volumeAdj = p.volumeAdj ?? 1;
+        updated.weeks = [week];
+        updated.loopBlocked = p.loopBlocked ?? null;
+      } else if (generated.isSessionLoop && !p.isSessionLoop) {
+        // Legacy 12 sem. → boucle : reset compteurs, nouvelle 1ʳᵉ séance
+        updated.history = [];
+        updated.sessionCursor = 0;
+        updated.freeSessionsUsed = premium ? 0 : 1;
+        updated.weekGenKey = isoWeekKey();
+        updated.weekGenCount = premium ? 0 : 1;
+      }
       return {
         id: entry.id,
-        updated: {
-          ...generated,
-          taste,
-          weeks,
-          startDate: originalStartDate || generated.startDate,
-          version: PLAN_VERSION,
-        },
+        updated,
       };
     })).then(results => {
-      if (cancelled) return;
+      if (cancelled) {
+        if (forceAll) forceRegenDoneRef.current = false;
+        return;
+      }
       setPlans(prev => prev.map(e => {
         const r = results.find(x => x.id === e.id);
         return r ? { ...e, plan: r.updated, startDate: r.updated.startDate ?? e.startDate } : e;
       }));
+    }).catch(() => {
+      if (forceAll) forceRegenDoneRef.current = false;
     });
     return () => { cancelled = true; };
   }, [user?.id, screen, isPremium, plans.length]);
+
+  // Boucle progression : déblocage auto (Premium ou nouvelle semaine calendaire)
+  useEffect(() => {
+    if (screen !== "app" || !plan?.isSessionLoop || !plan.loopBlocked) return;
+    const gate = loopCanGenerateNext(plan, isPremium);
+    if (!gate.ok && !isPremium) return;
+    const cur = plan.weeks?.[0]?.sessions?.[0];
+    if (cur && !isSessionResolved(cur)) return;
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry) return;
+    const archived = cur || (plan.history || []).slice(-1)[0];
+    if (!archived) return;
+    // Si déjà dans history (cas blocked), ne pas re-archiver
+    const alreadyInHist = (plan.history || []).some(
+      (s) => s.archivedAt && s.title === archived.title && s.distance === archived.distance,
+    );
+    const hist = alreadyInHist ? (plan.history || []) : [...(plan.history || []), { ...archived, archivedAt: new Date().toISOString() }];
+    const nextCursor = (plan.sessionCursor ?? 0) + 1;
+    const { week } = buildProgressionLoopSession(
+      { ...entry.profile, sessionsPerWeek: 1, taste: plan.taste || tasteProfile, volumeAdj: plan.volumeAdj },
+      nextCursor,
+      isPremium,
+    );
+    let next = {
+      ...plan,
+      history: hist,
+      sessionCursor: nextCursor,
+      weeks: [week],
+      loopBlocked: null,
+    };
+    next = withLoopGenerationCounters(next, isPremium);
+    setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: next } : e)));
+    setLoopPaywall(null);
+  }, [screen, isPremium, plan?.loopBlocked, plan?.weekGenKey, activePlanId]);
 
   useEffect(() => {
     if (!plan) return;
@@ -8498,6 +9180,9 @@ export default function App() {
       let genProfile = !isPremium && profile.sessionsPerWeek > FREE_FREQ_LIMIT
         ? { ...profile, sessionsPerWeek: FREE_FREQ_LIMIT, taste: tasteProfile }
         : { ...profile, taste: tasteProfile };
+      if (isProgressionGoal(genProfile.goal) || genProfile.category === "progression") {
+        genProfile = { ...genProfile, sessionsPerWeek: genProfile.sessionsPerWeek || 1 };
+      }
       // Découverte : jamais de T100 (souvent incapables d'enchaîner 100 m)
       if (genProfile.level === "découverte" || genProfile.level === "beginner") {
         genProfile = { ...genProfile, pace100: null };
@@ -8525,16 +9210,134 @@ export default function App() {
       // Pas de paywall auto ici : valeur d’abord, soft paywall après la 1ʳᵉ séance.
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
-      setScreen("onboarding"); setStep(5);
+      setScreen("onboarding");
+      setStep(profile.category === "progression" ? 3 : 5);
     }
+  };
+
+  const advanceProgressionLoop = (entryPlan, entryProfile, archivedSession) => {
+    const history = [...(entryPlan.history || []), {
+      ...archivedSession,
+      archivedAt: new Date().toISOString(),
+    }];
+    const base = { ...entryPlan, history };
+    const gate = loopCanGenerateNext(base, isPremium);
+    if (!gate.ok) {
+      setLoopPaywall(gate.reason);
+      // Garde la séance résolue visible — pas de nouvelle génération
+      return { ...base, weeks: entryPlan.weeks, loopBlocked: gate.reason };
+    }
+    const nextCursor = (entryPlan.sessionCursor ?? 0) + 1;
+    const { week } = buildProgressionLoopSession(
+      { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
+      nextCursor,
+      isPremium,
+    );
+    let next = {
+      ...base,
+      sessionCursor: nextCursor,
+      weeks: [week],
+      loopBlocked: null,
+    };
+    next = withLoopGenerationCounters(next, isPremium);
+    return next;
+  };
+
+  const finishLoopSessionAndAdvance = (archivedSession) => {
+    setPlans((prev) => prev.map((entry) => {
+      if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
+      const markedPlan = {
+        ...entry.plan,
+        weeks: [{
+          ...entry.plan.weeks[0],
+          sessions: [{ ...archivedSession }],
+        }],
+      };
+      return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
+    }));
+  };
+
+  const handleRegenerateLoopSession = () => {
+    if (!isPremium) return;
+    setPlans((prev) => prev.map((entry) => {
+      if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
+      const cur = entry.plan.weeks?.[0]?.sessions?.[0];
+      if (!cur || isSessionResolved(cur)) return entry;
+      // Nouveau seed sans archiver — cursor bump pour variété
+      const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
+      const { week } = buildProgressionLoopSession(
+        { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+        nextCursor,
+        true,
+      );
+      return {
+        ...entry,
+        plan: {
+          ...entry.plan,
+          sessionCursor: nextCursor,
+          weeks: [week],
+        },
+      };
+    }));
+    setToast("Nouvelle séance générée");
+    setTimeout(() => setToast(null), 2200);
   };
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
     const resolvedStatus = status || "done";
+    const active = plans.find((e) => e.id === activePlanId);
+
+    // ── Boucle Nager & Progresser ──
+    if (active?.plan?.isSessionLoop && resolvedStatus !== "reset") {
+      const cur = active.plan.weeks?.[0]?.sessions?.[0];
+      if (!cur || isSessionResolved(cur)) return;
+
+      const archived = {
+        ...cur,
+        completed: resolvedStatus === "done",
+        skipped: resolvedStatus === "done" ? null : (resolvedStatus === "missed" ? "missed" : "not_done"),
+      };
+
+      // Soft paywall classique après 1ʳᵉ séance (hors écran 8 séances)
+      if (resolvedStatus === "done" && !isPremium) {
+        const prevDone = (active.plan.history || []).filter((s) => s.completed).length;
+        if (prevDone === 0) {
+          try {
+            if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
+          } catch {
+            setSoftPaywallPending(true);
+          }
+        }
+      }
+
+      // Marque résolue tout de suite (verrouille)
+      setPlans((prev) => prev.map((entry) => {
+        if (entry.id !== activePlanId) return entry;
+        return {
+          ...entry,
+          plan: {
+            ...entry.plan,
+            weeks: [{
+              ...entry.plan.weeks[0],
+              sessions: [{ ...archived }],
+            }],
+          },
+        };
+      }));
+
+      if (resolvedStatus === "done") {
+        // Feedback d'abord — avance à la fermeture du sheet
+        setSessionFeedbackTarget({ weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived });
+      } else {
+        finishLoopSessionAndAdvance(archived);
+      }
+      return;
+    }
+
     if (resolvedStatus === "done" && !isPremium) {
-      const active = plans.find((e) => e.id === activePlanId);
-      const prevDone = countCompletedSessions(active?.plan);
-      const alreadyDone = active?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex]?.completed;
+      const activeClassic = plans.find((e) => e.id === activePlanId);
+      const prevDone = countCompletedSessions(activeClassic?.plan);
+      const alreadyDone = activeClassic?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex]?.completed;
       if (!alreadyDone && prevDone === 0) {
         try {
           if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
@@ -8592,6 +9395,10 @@ export default function App() {
   const closeSessionFeedbackSheet = () => {
     const target = sessionFeedbackTarget;
     setSessionFeedbackTarget(null);
+    if (target?.loopMode && target.archived) {
+      finishLoopSessionAndAdvance(target.archived);
+      return;
+    }
     if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
   };
 
@@ -8604,7 +9411,9 @@ export default function App() {
         user_id: userId,
         scores: normalized,
         updated_at: new Date().toISOString(),
-      }).then(() => {});
+      }).then(({ error }) => {
+        if (error && import.meta.env.DEV) console.warn("[taste] persist failed (local kept)", error.message);
+      });
     } else {
       try { localStorage.setItem("myswym_anon_taste", JSON.stringify(normalized)); } catch {}
     }
@@ -8613,8 +9422,8 @@ export default function App() {
 
   const handleSessionFeedback = ({ rating, tags, comment }) => {
     if (!sessionFeedbackTarget) return;
-    const { weekIndex, sessionIndex, promptWeekAfter } = sessionFeedbackTarget;
-    const prevSession = plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+    const { weekIndex, sessionIndex, promptWeekAfter, loopMode, archived } = sessionFeedbackTarget;
+    const prevSession = archived || plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
     const isFirstFeedback = !prevSession?.feedback;
     const shouldNudge = isPremium && isFirstFeedback && (rating === "easy" || rating === "hard");
 
@@ -8625,6 +9434,53 @@ export default function App() {
       sessionType: prevSession?.type ?? null,
     });
     persistTaste(nextTaste);
+
+    const feedback = {
+      rating,
+      tags: Array.isArray(tags) ? tags : [],
+      comment: comment || null,
+      at: new Date().toISOString(),
+    };
+
+    // Boucle progression : feedback sur la séance archivée, puis avance
+    if (loopMode) {
+      const archivedWithFb = { ...(archived || prevSession), feedback };
+      let volumeAdj = plan?.volumeAdj ?? 1;
+      if (shouldNudge) {
+        const step = rating === "easy" ? 1.03 : rating === "hard" ? 0.97 : 1;
+        volumeAdj = Math.min(1.3, Math.max(0.7, volumeAdj * step));
+      }
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        const markedPlan = {
+          ...e.plan,
+          taste: nextTaste,
+          volumeAdj,
+          weeks: [{
+            ...e.plan.weeks[0],
+            sessions: [{ ...archivedWithFb }],
+          }],
+        };
+        return { ...e, plan: advanceProgressionLoop(markedPlan, { ...e.profile, taste: nextTaste }, archivedWithFb) };
+      }));
+      setSessionFeedbackTarget(null);
+      if (user) {
+        supabase.from("session_feedback").insert({
+          user_id: user.id,
+          plan_id: activePlanId,
+          week_number: 0,
+          session_index: 0,
+          session_type: archivedWithFb?.type ?? null,
+          session_title: archivedWithFb?.title ?? null,
+          rating,
+          tags: feedback.tags,
+          comment: feedback.comment,
+          created_at: new Date().toISOString(),
+        }).then(() => {});
+      }
+      if (shouldNudge) showToast("Prochaines séances adaptées à tes goûts.", 4000);
+      return;
+    }
 
     // Régénère aussi si tags goûts (trop long / éducatifs…) même sans easy/hard — Premium only, semaines futures
     const tasteDriven =
@@ -8646,7 +9502,7 @@ export default function App() {
           { sessionNudge: true },
         );
         base = { ...base, taste: nextTaste };
-      } else if (tasteDriven && shouldUseCoachGenerator(e.profile?.goal)) {
+      } else if (tasteDriven && shouldUseCoachGenerator(e.profile?.goal) && !e.plan?.isSessionLoop) {
         // Applique goûts sans toucher volumeAdj (rating ok / tags seuls)
         try {
           const phaseList = phaseListForAdjust(e.profile, e.plan);
@@ -8669,13 +9525,6 @@ export default function App() {
           base = { ...e.plan, taste: nextTaste };
         }
       }
-
-      const feedback = {
-        rating,
-        tags: Array.isArray(tags) ? tags : [],
-        comment: comment || null,
-        at: new Date().toISOString(),
-      };
 
       return {
         ...e,
@@ -8766,24 +9615,51 @@ export default function App() {
   };
 
   const handlePaceUpdate = (newPace100) => {
-    setPlans(prev => prev.map(e => {
-      if (e.id !== activePlanId) return e;
-      const week = getCurrentWeekNumber(e.plan);
-      const next = {
-        ...e.profile,
-        pace100: newPace100,
-      };
-      // Ne plus stocker / utiliser pace400
-      delete next.pace400;
-      return {
-        ...e,
-        profile: appendPaceHistory(next, {
-          pace100: newPace100,
-          week,
-          source: "manual",
-        }),
-      };
-    }));
+    if (!activePlanEntry) return;
+    const week = getCurrentWeekNumber(activePlanEntry.plan);
+    let nextProfile = {
+      ...activePlanEntry.profile,
+      pace100: newPace100,
+    };
+    delete nextProfile.pace400;
+    nextProfile = appendPaceHistory(nextProfile, {
+      pace100: newPace100,
+      week,
+      source: "manual",
+    });
+
+    setPlans(prev => prev.map(e => (e.id !== activePlanId ? e : { ...e, profile: nextProfile })));
+
+    // Applique les allures aux semaines non entamées (plans classiques Premium)
+    if (!isPremium || activePlanEntry.plan?.isSessionLoop) return Promise.resolve();
+
+    const oldWeeks = activePlanEntry.plan?.weeks ?? [];
+    const taste = activePlanEntry.plan?.taste || tasteProfile;
+    const planIdToUpdate = activePlanId;
+    const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? Date.now();
+
+    return generatePlan({ ...nextProfile, taste }, true, originalStartDate, { skipDelay: true }).then((newPlan) => {
+      const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+      setPlans(prev => prev.map(e => {
+        if (e.id !== planIdToUpdate) return e;
+        return {
+          ...e,
+          profile: nextProfile,
+          plan: {
+            ...newPlan,
+            taste,
+            weeks: mergedWeeks,
+            ...(e.plan?.startDate ? { startDate: e.plan.startDate } : {}),
+            history: e.plan?.history,
+            freeSessionsUsed: e.plan?.freeSessionsUsed,
+            weekGenKey: e.plan?.weekGenKey,
+            weekGenCount: e.plan?.weekGenCount,
+            sessionCursor: e.plan?.sessionCursor,
+            loopBlocked: e.plan?.loopBlocked,
+          },
+        };
+      }));
+    }).catch(() => { /* profil déjà sauvé */ });
   };
 
   const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
@@ -9045,25 +9921,21 @@ export default function App() {
               </div>
             </div>
             {(() => {
-              // Flux :
-              //   progression : 1 → 3 (niveau) → [4 pace?] → 5 (fréq) — pas de date
-              //   triathlon/eau_libre : 1 → 2 (sous-obj) → 3 (niveau) → [4 pace?] → 5 (fréq) → 6 (date)
+              // Flux (T100 retiré de l'onboarding → carte Premium sur l'accueil) :
+              //   progression : 1 → 3 (niveau) → generate — pas de date ni fréquence
+              //   triathlon/eau_libre : 1 → 2 (sous-obj) → 3 (niveau) → 5 (fréq) → 6 (date)
               //   diplome : 1 → 2 (BNSSA/BPJEPS) → 5 (fréq) → 6 (date) — pas de niveau
               const isProgression = profile.category === "progression";
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
-              // Découverte : pas de T100 — souvent incapables d'enchaîner 100 m
-              const isDecouverteLevel = profile.level === "découverte" || profile.level === "beginner";
-              const hasPaceStep = isPremium && !isDiplome && !isDecouverteLevel;
-              // Découverte disponible sur tous les programmes (triathlon, eau libre, etc.)
               const disabledLevels = [];
-              // Calcul total steps
-              const baseSteps = noDate ? 3 : isDiplome ? 4 : 4;
-              const totalSteps = baseSteps + (hasPaceStep ? 1 : 0);
-              // Après step 3 (niveau) → pace ou fréquence
-              const stepAfter3 = hasPaceStep ? 4 : 5;
-              // Retour depuis fréquence → pace ou niveau ou sous-obj
-              const stepBefore5 = isDiplome ? 2 : hasPaceStep ? 4 : 3;
+              const totalSteps = isProgression ? 2 : isDiplome ? 4 : 4;
+              const stepAfter3 = isProgression ? "generate" : 5;
+              const stepBefore5 = isDiplome ? 2 : 3;
+              const goGenerateProgression = () => {
+                setProfile((p) => ({ ...p, sessionsPerWeek: p.sessionsPerWeek || 1 }));
+                handleGenerate();
+              };
               return (
                 <>
                   {step > 1 && <Progress step={step - 1} total={totalSteps} />}
@@ -9073,10 +9945,10 @@ export default function App() {
                     <Step1_Category onSelect={cat => {
                       if (cat === "progression") {
                         // Pas de sous-objectif — on va directement au niveau
-                        setProfile(p => ({ ...p, category: cat, goal: "progression" }));
+                        setProfile(p => ({ ...p, category: cat, goal: "progression", sessionsPerWeek: 1, pace100: null }));
                         setStep(3);
                       } else {
-                        setProfile(p => ({ ...p, category: cat, goal: "" }));
+                        setProfile(p => ({ ...p, category: cat, goal: "", pace100: null }));
                         setStep(2);
                       }
                     }} />
@@ -9101,25 +9973,15 @@ export default function App() {
                       total={totalSteps}
                       disabledLevels={disabledLevels}
                       onNext={() => {
-                        const lvl = profile.level;
-                        if (lvl === "découverte" || lvl === "beginner") update("pace100", null);
-                        setStep(stepAfter3);
+                        update("pace100", null);
+                        if (stepAfter3 === "generate") goGenerateProgression();
+                        else setStep(stepAfter3);
                       }}
                       onBack={() => isProgression ? setStep(1) : setStep(2)} />
                   )}
 
-                  {step === 4 && hasPaceStep && (
-                    <Step_Pace
-                      value={profile.pace100}
-                      onChange={v => update("pace100", v)}
-                      total={totalSteps}
-                      onNext={() => setStep(5)}
-                      onSkip={() => { update("pace100", null); setStep(5); }}
-                      onBack={() => setStep(3)} />
-                  )}
-
-                  {step === 5 && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={noDate ? handleGenerate : () => setStep(6)} onBack={() => setStep(stepBefore5)} isLast={noDate} isPremium={isPremium} onUpgrade={() => openUpgrade()} />
+                  {step === 5 && !isProgression && (
+                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={() => setStep(6)} onBack={() => setStep(stepBefore5)} isLast={false} isPremium={isPremium} onUpgrade={() => openUpgrade()} />
                   )}
 
                   {step === 6 && !noDate && (
@@ -9153,8 +10015,8 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={() => openUpgrade()} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => openUpgrade()} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} onUserUpdate={setUser} theme={theme} onToggleTheme={handleToggleTheme} />}
 
         <Footer aboveBottomNav />
@@ -9162,7 +10024,8 @@ export default function App() {
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
 
         {sessionFeedbackTarget !== null && (() => {
-          const s = plan?.weeks?.[sessionFeedbackTarget.weekIndex]?.sessions?.[sessionFeedbackTarget.sessionIndex];
+          const s = sessionFeedbackTarget.archived
+            || plan?.weeks?.[sessionFeedbackTarget.weekIndex]?.sessions?.[sessionFeedbackTarget.sessionIndex];
           return (
             <SessionFeedbackSheet
               key={`${sessionFeedbackTarget.weekIndex}-${sessionFeedbackTarget.sessionIndex}-${s?.feedback?.at || "new"}`}
@@ -9182,7 +10045,14 @@ export default function App() {
             {toast}
           </div>
         )}
-        {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={upgradeSoftContext ? null : (plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null)} />}
+        {loopPaywall && (
+          <LoopPaywallScreen
+            reason={loopPaywall}
+            onUpgrade={() => { setLoopPaywall(null); openUpgrade(); }}
+            onClose={() => setLoopPaywall(null)}
+          />
+        )}
+        {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={upgradeSoftContext || plan?.isSessionLoop ? null : (plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null)} />}
         {deletePlanId && (
           <ConfirmSheet
             title="Supprimer ce plan ?"

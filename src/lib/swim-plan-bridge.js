@@ -383,4 +383,126 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
   });
 }
 
+/**
+ * Rotation des rôles pour le mode « Nager & Progresser » (boucle séance unique).
+ * Premières séances (cursor < 3) forcées faciles — sensation « envie de revenir demain ».
+ */
+const LOOP_VARIANTS = [
+  { id: "technique", focus: "Technique & sensations", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Respiration fluide", "Sensations de glisse"] },
+  { id: "endurance", focus: "Endurance confortable", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Allure régulière", "Respiration toutes les 3 tractions"] },
+  { id: "jambes", focus: "Jambes & gainage", role: { objectif: "technique_jambes", zone: "Z1" }, objectives: ["Battements efficaces", "Gainage du bassin"] },
+  { id: "respiration", focus: "Respiration bilatérale", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Respiration des deux côtés", "Rythme calme"] },
+  { id: "vitesse", focus: "Touches de vitesse", role: { objectif: "vitesse", zone: "Z4" }, objectives: ["Accélérations courtes", "Récupération complète"] },
+  { id: "pull", focus: "Pull & traction", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Traction longue", "Sensations de bras"] },
+  { id: "sensations", focus: "Sensations & fluidité", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Nage détendue", "Écoute du corps"] },
+  { id: "mixte", focus: "Séance mixte", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Variété d'allures", "Plaisir de nager"] },
+  { id: "defi", focus: "Mini défi", role: { objectif: "endurance", zone: "Z3" }, objectives: ["Tenir l'effort", "Constante des temps"] },
+  { id: "roulis", focus: "Roulis & alignement", role: { objectif: "technique_roulis", zone: "Z1" }, objectives: ["Rotation du corps", "Alignement tête-bassin"] },
+];
+
+const LOOP_EASY_VARIANTS = [
+  { id: "easy_tech", focus: "Première séance — douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+  { id: "easy_sens", focus: "Sensations faciles", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Respiration calme", "Plaisir dans l'eau"] },
+  { id: "easy_tech2", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
+];
+
+/**
+ * Génère une seule séance pour le mode boucle « Nager & Progresser ».
+ * @param {object} profile
+ * @param {number} cursor — index de variété (0 = 1ʳᵉ séance)
+ * @param {boolean} isPremium
+ * @returns {{ session: object, focus: string, week: object }}
+ */
+export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false) {
+  const c = Math.max(0, Number(cursor) || 0);
+  const easyPhase = c < 3;
+  const variant = easyPhase
+    ? LOOP_EASY_VARIANTS[c % LOOP_EASY_VARIANTS.length]
+    : LOOP_VARIANTS[(c - 3) % LOOP_VARIANTS.length];
+
+  const niveauKey = mapNiveau(profile);
+  const profilObj = mapObjectifProfil(profile);
+  const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
+  const tasteHints = tasteToGeneratorHints(profile.taste);
+  const simplifyWording =
+    profile.level === "découverte" || profile.level === "beginner" || tasteHints.forceSimplify || easyPhase;
+  const beginnerFriendly = simplifyWording;
+  const feedbackAdj = Math.min(1.3, Math.max(0.7, Number(profile.volumeAdj) || 1));
+  // Premières séances : volume réduit pour rester motivant
+  const easyVol = easyPhase ? 0.72 : 1;
+  const volMult =
+    volumeMultFromProfileLevel(profile.level, profile.category) * feedbackAdj * tasteHints.volumeMul * easyVol;
+  const pool = profile.pool === 25 ? 25 : 50;
+  const phaseKey = easyPhase ? "foncier" : (c % 5 === 0 ? "developpement" : "foncier");
+  const typeSemaine = easyPhase ? "allegee" : "normale";
+  const roles = biasRolesForTaste([variant.role], tasteHints);
+  const role = roles[0] || variant.role;
+  const focusLabel = variant.focus;
+  const weekNum = c + 1;
+
+  const useConfirmeBank = usesConfirmeArchetypeBank(niveauKey, profilObj) && !easyPhase;
+  const bankOpts = { isPremium: !!isPremium, pace100: profile.pace100 ?? null };
+  const bankLevel =
+    profile.level === "advanced" || profile.level === "performance"
+      ? profile.level
+      : "performance";
+
+  let session;
+  if (useConfirmeBank) {
+    const fromDb = pickArthurBankSession(profilObj, c);
+    session = fromDb
+      || buildConfirmeArchetypeSession(c, pool, bankLevel, { ...bankOpts, tasteHints });
+    session = {
+      ...session,
+      completed: false,
+      skipped: null,
+      objectives: variant.objectives,
+      loopVariant: variant.id,
+    };
+  } else {
+    const weekData = genererSemaineSessions(
+      niveauKey,
+      profilObj,
+      phaseKey,
+      1,
+      weekNum,
+      ref100,
+      "",
+      typeSemaine,
+      0,
+      roles,
+      { volMult, simplifyWording, pool, tasteHints },
+    );
+    const raw = weekData.sessions[0];
+    session = {
+      ...toMySwymSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly),
+      title: focusLabel,
+      objectives: variant.objectives,
+      loopVariant: variant.id,
+    };
+  }
+
+  const week = {
+    number: 1,
+    focus: focusLabel,
+    tip: null,
+    feedback: null,
+    isBilan: false,
+    isTest: false,
+    sessions: [session],
+  };
+
+  return { session, focus: focusLabel, week };
+}
+
+/** Clé ISO semaine (ex. 2026-W32) pour plafonner les générations gratuites. */
+export function isoWeekKey(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
 export { mapNiveau, mapObjectifProfil, cosdRolesForWeek, COMPETITION_TIP };
