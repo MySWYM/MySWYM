@@ -80,7 +80,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
             <motion.div variants={fadeUp} className="cv:mt-8 cv:space-y-3">
               <MetaRow icon={<Target size={18} />} label="Objectif" value={goalLabel} />
               <MetaRow icon={<Waves size={18} />} label="Niveau" value={levelLabel} />
-              <MetaRow icon={<CalendarDays size={18} />} label="Accès gratuit" value="4 premières semaines" />
+              <MetaRow icon={<CalendarDays size={18} />} label="Essai Premium" value="7 jours · carte requise" />
             </motion.div>
 
             {/* Mini timeline — value before paywall */}
@@ -90,7 +90,6 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
               </p>
               <div className="cv:mt-4 cv:flex cv:items-end cv:gap-1.5 cv:h-16">
                 {Array.from({ length: Math.min(12, totalWeeks) }, (_, i) => {
-                  const free = i < 4
                   const h = 28 + ((i * 17) % 36)
                   return (
                     <div
@@ -98,9 +97,10 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
                       className="cv:flex-1 cv:rounded-t-md"
                       style={{
                         height: h,
-                        background: free ? '#355da3' : 'rgba(53,93,163,0.18)',
+                        background: '#355da3',
+                        opacity: 0.35 + (i / Math.min(12, totalWeeks)) * 0.65,
                       }}
-                      title={free ? `Semaine ${i + 1}` : `Semaine ${i + 1} · Premium`}
+                      title={`Semaine ${i + 1}`}
                     />
                   )
                 })}
