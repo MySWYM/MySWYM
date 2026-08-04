@@ -371,9 +371,9 @@ export default function TarifsPage() {
                   fontFamily: FONT,
                 }}
               >
-                La version gratuite te fait decouvrir MySWYM. Le Premium te donne un
-                plan beaucoup plus utile si tu veux progresser serieusement, suivre
-                precisement tes performances et rester regulier.
+                Découvre MySWYM avec l’essai 7 jours (carte requise). Le Premium te donne un
+                plan complet pour progresser sérieusement, suivre
+                précisément tes performances et rester régulier.
               </p>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
                 <button
@@ -889,14 +889,14 @@ export default function TarifsPage() {
                 color: C.ink,
               }}
             >
-              La version gratuite te fait decouvrir.
+              L’essai 7 jours te fait découvrir.
               <br />
               Le Premium te fait progresser.
             </h2>
             <p style={{ margin: 0, color: C.secondary, fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 760, marginInline: "auto" }}>
-              La comparaison doit etre evidente: la version gratuite est une bonne entree
-              dans l'app, mais le Premium devient vite le choix logique si tu veux un vrai
-              suivi, un plan durable et des donnees utiles pour t'ameliorer.
+              La comparaison doit être évidente : l’essai (carte requise) ouvre tout Premium pendant 7 jours,
+              puis le mensuel ou l’annuel devient le choix logique pour un vrai
+              suivi, un plan durable et des données utiles pour t’améliorer.
             </p>
           </div>
 
@@ -1074,9 +1074,9 @@ export default function TarifsPage() {
               }}
             >
               {[
-                "Demarrage gratuit",
-                "Paiement securise",
-                "Donnees conservees",
+                "Essai 7 jours · carte",
+                "Paiement sécurisé",
+                "Données conservées",
               ].map((item) => (
                 <div
                   key={item}
@@ -1203,9 +1203,8 @@ export default function TarifsPage() {
             Garde Premium pour aller plus loin.
           </h2>
           <p style={{ margin: "0 auto 24px", color: "rgba(255,255,255,0.68)", fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 620 }}>
-            Si tu veux simplement decouvrir l'application, le gratuit suffit. Si tu veux
-            vraiment progresser avec un plan personnalise et un vrai suivi, le Premium est
-            le choix naturel.
+            Active l’essai 7 jours (carte requise) pour découvrir MySWYM. Pour
+            vraiment progresser avec un plan personnalisé et un vrai suivi, garde Premium ensuite.
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12 }}>
             <button

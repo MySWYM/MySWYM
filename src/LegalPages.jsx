@@ -194,10 +194,12 @@ export function CguPage() {
         "Un compte = une personne physique ; le partage d’accès Premium à des tiers non autorisés est interdit.",
       ]} />
 
-      <H>3. Offre freemium</H>
+      <H>3. Accès et essai Premium</H>
       <P>
-        La version gratuite donne accès à une partie du plan (notamment les premières semaines selon les règles produit en vigueur).
-        Certaines fonctionnalités (plans longs, multi-plans, allures cibles avancées, etc.) sont réservées à l’offre Premium (voir CGV et page Tarifs).
+        L’accès au générateur de plan et au contenu des séances nécessite un abonnement Premium
+        (essai Stripe de 7 jours avec carte bancaire requis, puis mensuel ou annuel selon l’offre choisie).
+        Sans abonnement actif, l’aperçu du plan peut rester visible en lecture limitée (squelette),
+        sans accès aux exercices ni à la génération de nouveaux programmes. Détails : CGV et page Tarifs.
       </P>
 
       <H>4. Responsabilité sportive et santé</H>

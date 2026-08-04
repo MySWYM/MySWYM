@@ -26,10 +26,10 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
         </motion.div>
 
         <motion.h1 variants={fadeUp} className="cv-display cv:mt-6 cv:text-[34px] cv:leading-[1.05] cv:text-cv-ink">
-          Votre essai Premium est terminé.
+          Active ton essai Premium
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          Tu gardes ton historique et tes séances. Pour relancer ta progression : {monthly.label}/mois sans engagement
+          Essai 7 jours avec carte requise, puis {monthly.label}/mois sans engagement
           {remaining > 0 ? ` · encore ${remaining} semaine${remaining > 1 ? 's' : ''} de plan à débloquer` : ''}.
         </motion.p>
 

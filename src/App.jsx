@@ -1151,7 +1151,7 @@ const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { s
         phaseList,
         premium,
         TIPS,
-        FREE_FREQ_LIMIT,
+        5,
       );
       nextWeeks = weeksWithFeedback.map((w, i) => {
         if (i <= weekIndex || shouldPreserveWeek(w)) return w;
@@ -9854,7 +9854,7 @@ export default function App() {
       let active = existingActive || null;
       if (!active && merged.length > 0) active = merged[0].id;
       if (active && !merged.some(e => e.id === active)) active = merged[0]?.id ?? null;
-      // Gratuit : un seul plan actif exposé (les autres restent en base pour un futur Premium)
+      // Sans Premium : un seul plan actif exposé (les autres restent en base)
       if (!userIsPremium && merged.length > 1 && active) {
         const preferred = merged.find((e) => e.id === active) || merged[0];
         active = preferred.id;
@@ -10705,7 +10705,7 @@ export default function App() {
             phaseList,
             isPremium,
             TIPS,
-            FREE_FREQ_LIMIT,
+            5,
           );
           base = {
             ...e.plan,

@@ -107,7 +107,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
               </div>
               <div className="cv:mt-3 cv:flex cv:justify-between cv:text-[11px] cv:text-cv-ink-tertiary">
                 <span>S1 — base</span>
-                <span>S4 — gratuit</span>
+                <span>Essai 7j</span>
                 <span>Suite · Premium</span>
               </div>
             </motion.div>
