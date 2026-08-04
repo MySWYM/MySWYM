@@ -3297,6 +3297,80 @@ const SESSION_SMILEY_OPTS = [
   { id: "hard", Face: FaceTired, label: "Trop dur",    color: "#FF3B30", bg: "#FFF0EF" },
 ];
 
+const ConfirmSheet = ({
+  title,
+  message,
+  confirmLabel = "Supprimer",
+  cancelLabel = "Annuler",
+  destructive = true,
+  onConfirm,
+  onCancel,
+}) => (
+  <div
+    className="sheet-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-sheet-title"
+    onClick={(e) => e.target === e.currentTarget && onCancel()}
+  >
+    <div
+      className="sheet-panel scale-in"
+      style={{
+        background: G.surface,
+        borderRadius: "28px 28px 0 0",
+        padding: "24px 20px",
+        paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+      }}
+    >
+      <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+      <div style={{
+        width: 52, height: 52, borderRadius: 16,
+        background: destructive ? G.coralLight : G.blueLight,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        margin: "0 auto 16px",
+      }}>
+        <Trash2 size={22} color={destructive ? G.coral : G.blue} />
+      </div>
+      <h3
+        id="confirm-sheet-title"
+        style={{
+          fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800,
+          color: G.ink, textAlign: "center", marginBottom: 8,
+        }}
+      >
+        {title}
+      </h3>
+      <p style={{ color: G.grey, fontSize: 14, textAlign: "center", lineHeight: 1.5, marginBottom: 24 }}>
+        {message}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <button
+          type="button"
+          onClick={onConfirm}
+          style={{
+            width: "100%", padding: "14px 16px", borderRadius: 14, border: "none",
+            background: destructive ? G.coral : G.blue, color: "#fff",
+            fontSize: 15, fontWeight: 700, cursor: "pointer", minHeight: 48,
+          }}
+        >
+          {confirmLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            width: "100%", padding: "14px 16px", borderRadius: 14,
+            border: `1.5px solid ${G.greyLight}`, background: G.surface,
+            color: G.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", minHeight: 48,
+          }}
+        >
+          {cancelLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
   const [selected, setSelected] = useState(null);
 
@@ -7761,6 +7835,7 @@ export default function App() {
     return null;
   });
   const [addingPlan, setAddingPlan] = useState(false);
+  const [deletePlanId, setDeletePlanId] = useState(null);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
   const [sessionFeedbackTarget, setSessionFeedbackTarget] = useState(null);
@@ -8793,7 +8868,13 @@ export default function App() {
 
   const handleDeletePlan = (id) => {
     if (plans.length <= 1) return; // bouton caché si 1 seul plan, mais sécurité
-    if (!window.confirm("Supprimer ce plan ? Cette action est définitive.")) return;
+    setDeletePlanId(id);
+  };
+
+  const confirmDeletePlan = () => {
+    const id = deletePlanId;
+    setDeletePlanId(null);
+    if (!id || plans.length <= 1) return;
     const remaining = plans.filter(e => e.id !== id);
     const nextActive = activePlanId === id ? remaining[0].id : activePlanId;
     deletedPlanIdsRef.current.add(id);
@@ -9102,6 +9183,15 @@ export default function App() {
           </div>
         )}
         {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={upgradeSoftContext ? null : (plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null)} />}
+        {deletePlanId && (
+          <ConfirmSheet
+            title="Supprimer ce plan ?"
+            message="Cette action est définitive. Ton historique et ta progression sur ce plan seront perdus."
+            confirmLabel="Supprimer le plan"
+            onConfirm={confirmDeletePlan}
+            onCancel={() => setDeletePlanId(null)}
+          />
+        )}
       </div>
     </>
   );
