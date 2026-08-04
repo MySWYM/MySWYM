@@ -21,7 +21,37 @@ const PHASES = {
 };
 
 function roundTo(n, step){ return Math.round(n/step)*step; }
-function block(distance, lines){ return { distance, lines: Array.isArray(lines) ? lines : [lines] }; }
+
+/** Distance approximative d'un bloc (lignes · NxXm / Ax(BxCm) / NxXm sans espace). */
+function estimateLinesDistance(lines) {
+  let total = 0;
+  for (const raw of lines) {
+    let t = String(raw);
+    t = t.replace(/(\d+)\s*x\s*\(\s*(\d+)\s*x\s*(\d+)\s*m/gi, (_m, a, b, d) => {
+      total += parseInt(a, 10) * parseInt(b, 10) * parseInt(d, 10);
+      return "";
+    });
+    t = t.replace(/(\d+)\s*[x×]\s*(\d+)\s*m/gi, (_m, n, d) => {
+      total += parseInt(n, 10) * parseInt(d, 10);
+      return "";
+    });
+    // « 4x50 : … » / « 8x50 : » sans m explicite
+    t.replace(/(\d+)\s*[x×]\s*(\d+)(?!\s*m)\s*:/gi, (_m, n, d) => {
+      total += parseInt(n, 10) * parseInt(d, 10);
+      return "";
+    });
+  }
+  return total;
+}
+
+/** Bloc technique : distance = somme des lignes, toujours multiple de 25 m (bassin). */
+function block(distance, lines){
+  const arr = Array.isArray(lines) ? lines : [lines];
+  const fromLines = estimateLinesDistance(arr);
+  const raw = fromLines > 0 ? fromLines : (distance || 0);
+  const dist = Math.max(25, roundTo(raw, 25));
+  return { distance: dist, lines: arr };
+}
 
 /* ---- Échauffements : fonction(w, resp) -> {distance, lines} ---- */
 const ECHAUFFEMENTS = [
@@ -143,16 +173,16 @@ const TECHNIQUE = {
     block(400, ["· 4x100m : 50m focus alignement + 50m nage complète R20''"]),
   ]},
   technique_virages: { label:"Virages culbute", drills:[
-    block(470, ["· 8x15m culbute sans mur (rotation seule) R20''", "· 6x25m approche + virage, mains fixes hauteur hanches R20''", "· 4x50m avec virage au mur, sortie propulsée"]),
-    block(470, ["· 6x25m virage + 5m de coulée R20''", "· 8x15m rotation seule, focus mains basses fixes", "· 4x50m enchaînement 2 virages par longueur"]),
-    block(350, ["· 10x15m culbute isolée R15''", "· 4x50m virage + accélération sortie de mur R25''"]),
-    block(270, ["· 8x15m rotation seule, compter 1-2 pour la rotation autour des épaules R20''", "· 6x25m virage complet, focus mains qui ne remontent pas R20''"]),
+    block(550, ["· 8x25m culbute sans mur (rotation seule) R20''", "· 6x25m approche + virage, mains fixes hauteur hanches R20''", "· 4x50m avec virage au mur, sortie propulsée"]),
+    block(550, ["· 6x25m virage + coulée R20''", "· 8x25m rotation seule, focus mains basses fixes", "· 4x50m enchaînement 2 virages par longueur"]),
+    block(350, ["· 10x25m culbute isolée R15''", "· 4x50m virage + accélération sortie de mur R25''"]),
+    block(350, ["· 8x25m rotation seule, compter 1-2 pour la rotation autour des épaules R20''", "· 6x25m virage complet, focus mains qui ne remontent pas R20''"]),
     block(350, ["· 6x25m approche à vitesse réelle + virage R20''", "· 4x50m 2 longueurs avec virage, sortie en 5 coups de jambes"]),
-    block(350, ["· 8x15m culbute, focus position groupée R20''", "· 4x50m avec virage, sortie rapide"]),
-    block(400, ["· 6x25m approche + virage, mains basses R20''", "· 6x25m sortie de virage en 5 coups de jambes R15''"]),
-    block(300, ["· 10x15m rotation seule, apnée courte R15''", "· 4x50m virage complet enchaîné"]),
-    block(350, ["· 6x25m virage + 5m coulée R20''", "· 4x50m 2 virages par longueur, allure contrôlée"]),
-    block(270, ["· 8x15m culbute sans mur, compter la rotation R20''", "· 6x25m virage réel, mains fixes"]),
+    block(350, ["· 8x25m culbute, focus position groupée R20''", "· 4x50m avec virage, sortie rapide"]),
+    block(350, ["· 6x25m approche + virage, mains basses R20''", "· 6x25m sortie de virage en 5 coups de jambes R15''"]),
+    block(350, ["· 10x25m rotation seule, apnée courte R15''", "· 4x50m virage complet enchaîné"]),
+    block(350, ["· 6x25m virage + coulée R20''", "· 4x50m 2 virages par longueur, allure contrôlée"]),
+    block(350, ["· 8x25m culbute sans mur, compter la rotation R20''", "· 6x25m virage réel, mains fixes"]),
     block(400, ["· 4x100m avec 2 virages par répétition, sortie propulsée R20''"]),
   ]}
 };
@@ -470,29 +500,12 @@ function adaptLineRepsForPool50(line) {
   return t;
 }
 
-/** Distance approximative d'un bloc technique (lignes · NxXm / Ax(BxCm)). */
-function estimateLinesDistance(lines) {
-  let total = 0;
-  for (const raw of lines) {
-    let t = String(raw);
-    t = t.replace(/(\d+)\s*x\s*\(\s*(\d+)\s*x\s*(\d+)\s*m/gi, (_m, a, b, d) => {
-      total += parseInt(a, 10) * parseInt(b, 10) * parseInt(d, 10);
-      return "";
-    });
-    t.replace(/(\d+)\s*x\s*(\d+)\s*m/gi, (_m, n, d) => {
-      total += parseInt(n, 10) * parseInt(d, 10);
-      return "";
-    });
-  }
-  return total;
-}
-
 /** Adapte un bloc technique au bassin 50 — distance = somme réelle des reps adaptées. */
 function adaptTechBlockForPool(blk, pool) {
   if (pool !== 50 || !blk) return blk;
   const lines = blk.lines.map(adaptLineRepsForPool50);
   const dist = estimateLinesDistance(lines);
-  return { distance: dist > 0 ? dist : blk.distance, lines };
+  return { distance: dist > 0 ? Math.max(25, roundTo(dist, 25)) : blk.distance, lines };
 }
 
 /**
@@ -653,14 +666,15 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   }
   lignes.push(...principalLines);
 
-  // Fin RAC — scale légère
+  // Fin RAC — scale légère ; total toujours multiple du bassin (25 ou 50)
   const subtotal = depart.distance + techPicked.distance + principalDist;
   const finBase = volumeTier === "allegee" || volumeTier === "test" ? 150 : 200;
   const finTarget = Math.max(100, roundTo(finBase * Math.min(1.2, Math.max(0.6, mult)), 50));
-  const totalArrondi = roundTo(subtotal + finTarget, 100);
-  const finReal = Math.max(100, totalArrondi - subtotal);
-  const finClean = Math.min(400, Math.max(100, roundTo(finReal, 50)));
-  const totalFinal = subtotal + finClean;
+  const quantum = bassin === 50 ? 50 : 25;
+  const totalArrondi = roundTo(subtotal + finTarget, Math.max(100, quantum));
+  const finReal = Math.max(quantum * 2, totalArrondi - subtotal);
+  const finClean = Math.min(400, Math.max(100, roundTo(finReal, quantum)));
+  const totalFinal = roundTo(subtotal + finClean, quantum);
   lignes.push(pick(FINS_SEMAINE, "fin")(finClean));
 
   // Départ / fin : (Zx) → (Zx @…) si Premium + T100 ; corps déjà taggé via paceTag

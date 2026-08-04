@@ -4654,7 +4654,7 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 38; // v38 = refresh accès post-essai carte + sync comptes
+const PLAN_VERSION = 39; // v39 = distances blocs toujours ×25 (plus de 320m)
 // true = 1 passe de régénération forcée par session (remettre false après la vague)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */

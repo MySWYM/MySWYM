@@ -14,7 +14,7 @@
   - **Moteur coaching** (`src/lib/swim-session-generator.js` + `swim-plan-bridge.js`) : triathlon, eau libre, progression, bien-être, compétition maître. Structure **départ (godilles Z1) → technique rotative → corps physio (Z1–Z4) → fin RAC**, règle **+10 %** hebdo.
   - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : BNSSA, BPJEPS, tests pompiers uniquement.
 - **Pas de LLM** pour générer les séances : logique déterministe uniquement.
-- Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m). Moteur coach : `profile.pool` passé via `opts.pool` ; pas de séries `Nx25m` en bassin 50 (variantes 50m / adaptation technique).
+- Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m). Totaux annoncés en **XX00 / XX25 / XX50 / XX75** (pas de 320 m etc.). `block()` recalcule depuis les lignes + arrondi ×25. Moteur coach : `profile.pool` passé via `opts.pool` ; pas de séries `Nx25m` en bassin 50 (variantes 50m / adaptation technique).
 - **Blocs technique** : 1 numéro UI = 1 bloc. Titre `400m éducatif + jambes :` + sous-séries indentées (pas de tirets/points numérotés séparément). Affichage regroupe header + `·` enfants.
 - **Séances Performance / banque Arthur** : lignes compactes `A · B · C — Z2` découpées automatiquement en sous-séries verticales (`expandCompoundDetailLines`) — pas de mur de texte.
 - Chaque séance structurée : **échauffement** + **retour calme** (sauf séances eau libre spécifiques).
@@ -77,6 +77,7 @@
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
 | 2026-08-04 | Questionnaire | Ajout champs communs tous programmes : âge, poids, taille, blessure, fréquence (y compris progression), style crawl/4 nages, nage préférée | ✅ |
+| 2026-08-04 | Distances × bassin | Plus de totaux impossibles (ex. 320m). `block()` = somme des lignes + arrondi ×25. Virages 15m → 25m. `PLAN_VERSION` 39. | ✅ |
 | 2026-08-04 | Nager & Progresser | Mode boucle séance unique (`isSessionLoop`) : plus de plan 12 sem., plus de question fréquence. Freemium 8 séances + 2/sem. `PLAN_VERSION` → 35 | ✅ |
 | 2026-05-16 | Mémoire initiale | Création de ce fichier + règles Cursor pour éviter de répéter les erreurs | ✅ |
 | 2026-05-16 | Eau libre + Performance | Ne pas utiliser le bloc perf « 4 nages » (brasse) : `usePoolIMBlock` = false pour OW/triathlon. Séances crawl/sighting. 4 nages léger OK (1 tour IM, peu de brasse). `PLAN_VERSION` → 10 | ✅ |
@@ -160,7 +161,7 @@
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.
-6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`). **Feedback hebdo** : ne jamais patcher seul `s.distance` sans `details`/`duration` — régénérer ou scale cohérent.
+6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`). Totaux **multiples de 25** (bassin 25) / **50** (bassin 50) — jamais 320 m. **Feedback hebdo** : ne jamais patcher seul `s.distance` sans `details`/`duration` — régénérer ou scale cohérent.
 7. **Sportif / Performance** : mêmes volumes et mêmes intitulés — doit rester différencié.
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance. Sur débutant : expliquer les éducatifs (grand/petit chien) plutôt que le terme seul.
 9. **Éducatifs** : ne pas saturer les séances de grand/petit chien — privilégier **jambes** et nage. MySWYM = générateur, pas école. **Jamais** deux blocs jambes d’affilée (ex. 400m jambes + 8x50 jambes) — éducatif puis jambes.

@@ -206,26 +206,26 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
         `-100m crawl très souple ${easy}`,
         `→ Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.`,
       ],
-      distance: 400,
+      distance: 400, // 200 + 100 + 100
       duration: 25,
     },
     {
       details: [
-        `-150m crawl / dos souple ${easy}`,
-        `-6×12,5m accélération ${fast} — ${repos}`,
+        `-200m crawl / dos souple ${easy}`,
+        `-8×12,5m accélération ${fast} — ${repos}`,
         `  · Juste le feeling de vitesse — tu t'arrêtes avant de fatiguer`,
         `-100m nage libre détendue ${easy}`,
         `→ Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.`,
       ],
-      distance: 325,
+      distance: 400,
       duration: 20,
     },
   ];
 
   return Array.from({ length: n }, (_, si) => {
     const v = variants[si % variants.length];
-    // Arrondir distance affichée au multiple de 25 (12,5 × 2 = 25)
-    const dist = Math.round(v.distance / 25) * 25;
+    // Toujours multiple de 50 (annonce XX00 / XX50)
+    const dist = Math.max(50, Math.round(v.distance / 50) * 50);
     return {
       type: si === 0 && n > 1 ? "VITESSE" : "ENDURANCE",
       title: `${focusLabel} S${weekNumber}.${si + 1}`,
