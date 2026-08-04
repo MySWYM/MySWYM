@@ -8,7 +8,8 @@
     "blog": "Blog",
     "contact": "Contact",
     "login": "Se connecter",
-    "cta": "Créer mon plan",
+    "cta": "Commencer gratuitement",
+    "ctaShort": "Commencer",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu"
   },
