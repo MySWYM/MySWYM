@@ -1,5 +1,6 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import { LEGAL_ENTITY } from "./lib/legal-entity.js";
 
 const C = {
   bg: "#f8f9fc",
@@ -9,21 +10,6 @@ const C = {
   border: "rgba(53,93,163,0.12)",
   accent: "#8eb3ff",
   accentText: "#154388",
-};
-
-/** Identité éditeur — compléter SIRET + adresse siège pour conformité LCEN totale. */
-export const LEGAL_ENTITY = {
-  tradeName: "MySWYM",
-  publisher: "Arthur Noel",
-  legalForm: "Entrepreneur individuel",
-  email: "contact@myswym.app",
-  supportEmail: "support@myswym.app",
-  site: "https://myswym.app",
-  // Remplir dès que dispo (obligatoire pour un site commercial FR) :
-  siret: "",
-  address: "",
-  vatNumber: "Non assujetti à la TVA / ou numéro à communiquer sur facture Stripe",
-  lastUpdated: "18 juillet 2026",
 };
 
 const host = {
@@ -264,8 +250,8 @@ export function CgvPage() {
 
       <H>2. Offres Premium</H>
       <Ul items={[
-        "Mensuel : 4,99 € TTC / mois — reconduction tacite ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Annuel : 29,99 € TTC / an (soit environ 2,50 € / mois) — reconduction tacite annuelle ; mêmes règles de résiliation via le portail.",
+        "Mensuel : 4,99 € TTC / mois — sans engagement ; reconduction tacite ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
+        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — offre prépayée. Pas de remboursement une fois l’accès Premium ouvert, hors cas légaux (ex. droit de rétractation encore ouvert, défaut du prestataire). L’offre et l’absence de remboursement sont clairement indiquées avant paiement.",
         "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée à engagement de durée. Non résiliable avant la fin de la période engagée, sauf cas légaux (ex. droit de rétractation dans les délais, défaut du prestataire). L’offre et l’engagement sont clairement indiqués avant paiement.",
       ]} />
       <P>
@@ -282,8 +268,10 @@ export function CgvPage() {
 
       <H>4. Renouvellement et résiliation</H>
       <P>
-        Les abonnements mensuel et annuel se renouvellent automatiquement sauf résiliation avant la date de renouvellement via « Gérer mon abonnement »
-        (portail Stripe) ou en contactant le support. L’offre biennale couvre 24 mois prépayés selon les conditions de l’offre.
+        L’abonnement mensuel se renouvelle automatiquement sauf résiliation avant la date de renouvellement via « Gérer mon abonnement »
+        (portail Stripe) ou en contactant le support. L’offre annuelle est un prépaiement de 12 mois : pas de remboursement au prorata une fois l’accès ouvert
+        (hors cas légaux) ; elle peut se reconduire à l’échéance selon les conditions affichées au checkout, sauf résiliation avant renouvellement.
+        L’offre biennale couvre 24 mois prépayés selon les conditions de l’offre.
       </P>
 
       <H>5. Droit de rétractation (14 jours)</H>

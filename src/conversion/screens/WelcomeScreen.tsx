@@ -57,7 +57,7 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
             </Button>
           ) : null}
           <p className="cv:text-center cv:text-[12px] cv:text-cv-ink-tertiary">
-            Gratuit pendant 4 semaines · Sans carte bancaire
+            Essai Premium 7 jours · Sans carte bancaire
           </p>
         </motion.div>
       </motion.div>

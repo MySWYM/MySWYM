@@ -202,6 +202,17 @@ Deno.serve(async (req) => {
         : { customer_email: user.email }),
     });
 
+    await supabaseAdmin.from("conversion_events").insert({
+      user_id: user.id,
+      event_name: "checkout_session_created",
+      path: "/create-checkout",
+      properties: {
+        price_id: price,
+        has_referral: !!couponId || !!referredByUserId,
+      },
+      created_at: new Date().toISOString(),
+    });
+
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });

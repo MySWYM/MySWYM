@@ -11,13 +11,8 @@ interface Props {
   onRestore?: () => void
 }
 
-/**
- * Hard paywall — shown when accessing week 5+.
- * Honest framing: free chapter done, next chapter needs Premium.
- * No fake scarcity timers.
- */
 export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }: Props) {
-  const remaining = Math.max(0, totalWeeks - 4)
+  const remaining = Math.max(0, totalWeeks - weekReached + 1)
   const { annual } = tokens.pricing
 
   return (
@@ -31,10 +26,10 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
         </motion.div>
 
         <motion.h1 variants={fadeUp} className="cv-display cv:mt-6 cv:text-[34px] cv:leading-[1.05] cv:text-cv-ink">
-          Chapitre gratuit terminé.
+          Votre essai Premium est terminé.
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          Tu as validé {weekReached - 1} semaines. Il reste {remaining} semaines jusqu’à ton objectif — calibrées, progressives, prêtes.
+          Tu gardes ton historique, ton profil et tes séances existantes. Pour relancer ta progression, débloque à nouveau le coach, les analyses et les adaptations automatiques.
         </motion.p>
 
         <motion.div variants={fadeUp} className="cv:mt-8 cv:rounded-cv-lg cv:bg-cv-ink cv:p-5 cv:text-white">
@@ -45,7 +40,7 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
             {annual.perMonth}
             <span className="cv:text-[16px] cv:font-cv-body cv:font-medium cv:text-white/60"> / mois</span>
           </p>
-          <p className="cv:mt-1 cv:text-[13px] cv:text-white/55">facturé {annual.label}{annual.period}</p>
+          <p className="cv:mt-1 cv:text-[13px] cv:text-white/55">facturé {annual.label}{annual.period} · pas de remboursement</p>
 
           <ul className="cv:mt-5 cv:space-y-2.5">
             {PREMIUM_FEATURES.map((f) => (
@@ -59,10 +54,10 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
 
         <div className="cv:mt-auto cv:space-y-3 cv:pt-10">
           <Button fullWidth variant="premium" onClick={() => onSubscribe('annual')}>
-            Débloquer mon plan
+            Continuer en annuel
           </Button>
           <Button fullWidth variant="secondary" onClick={() => onSubscribe('monthly')}>
-            Mensuel — {tokens.pricing.monthly.label}
+            Mensuel — {tokens.pricing.monthly.label} · sans engagement
           </Button>
           {onRestore ? (
             <button

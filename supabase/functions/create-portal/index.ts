@@ -1,9 +1,15 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ACCESS_STATUS,
+  buildExpiredState,
+  getAccessState,
+  persistAccessState,
+  stripEntitlementFromUserMeta,
+  type AuthUser,
+} from "../_shared/access-state.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
-
-const ENTITLEMENT_KEYS = ["subscription", "subscription_end", "cancel_at_period_end", "stripe_customer_id"] as const;
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
@@ -21,12 +27,6 @@ function corsHeaders(reqOrigin: string | null) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
-}
-
-function stripEntitlementFromUserMeta(meta: Record<string, unknown> | undefined) {
-  const next = { ...(meta ?? {}) };
-  for (const key of ENTITLEMENT_KEYS) delete next[key];
-  return next;
 }
 
 Deno.serve(async (req) => {
@@ -101,16 +101,12 @@ Deno.serve(async (req) => {
     } catch (stripeErr: unknown) {
       const code = (stripeErr as { code?: string })?.code;
       if (code === "resource_missing") {
-        await supabaseAdmin.auth.admin.updateUserById(user.id, {
-          app_metadata: {
-            ...(sourceUser.app_metadata ?? {}),
-            stripe_customer_id: null,
-            subscription: "free",
-            subscription_end: null,
-            cancel_at_period_end: false,
-          },
-          user_metadata: stripEntitlementFromUserMeta(sourceUser.user_metadata),
+        const currentState = await getAccessState(supabaseAdmin, user.id);
+        const nextState = buildExpiredState(user.id, {
+          ...currentState,
+          stripe_customer_id: null,
         });
+        await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);
         throw new Error("Lien Stripe périmé — ton compte a été réinitialisé. Contacte support@myswym.app si le problème persiste.");
       }
       throw stripeErr;

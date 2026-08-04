@@ -205,7 +205,7 @@ export function ConversionFlow() {
                   className="cv:w-full cv:text-center cv:text-[12px] cv:font-medium cv:text-cv-blue cv:cursor-pointer"
                   onClick={() => setStep('hard_paywall')}
                 >
-                  Simuler mur semaine 5
+                  Simuler fin d'essai
                 </button>
               </div>
             </div>

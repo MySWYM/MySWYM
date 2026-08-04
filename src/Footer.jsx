@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { resetCookieConsent } from "./CookieBanner.jsx";
+import { resetCookieConsent } from "./lib/cookie-consent.js";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 
@@ -32,7 +32,7 @@ export default function Footer({ aboveBottomNav = false }) {
     [t("footer.home"), "/accueil"],
     [t("footer.why"), "/accueil#pourquoi"],
     [t("footer.how"), "/comment-ca-marche"],
-    [t("footer.pricing"), "/accueil#pricing"],
+    [t("footer.pricing"), "/tarifs"],
     [t("footer.faq"), "/accueil#faq"],
     [t("footer.blog"), "/blog"],
     [t("footer.contact"), "/contact"],

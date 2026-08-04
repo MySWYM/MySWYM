@@ -4,7 +4,7 @@ import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
 const SUPPORT_EMAIL = "contact@myswym.app";
 const MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Question MySWYM")}`;
 const FONT = "'Lexend', sans-serif";
-const FREE_WEEKS = 4;
+const TRIAL_DAYS = 7;
 
 const QUICK_PROMPTS = [
   "C'est gratuit ?",
@@ -19,12 +19,12 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `Les ${FREE_WEEKS} premières semaines sont offertes, sans carte. Premium débloque le plan complet (jusqu'à 52 semaines), les multi-plans, les allures cibles (@mm:ss) et les départs chronométrés (D…). Détails sur la page Tarifs.`,
+      `Chaque nouveau compte bénéficie de ${TRIAL_DAYS} jours d'essai Premium, sans carte. Ensuite : mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Le gratuit conserve l'historique et les séances existantes. Détails sur la page Tarifs.`,
   },
   {
-    keys: ["annul", "résili", "resili", "stop", "désabon", "desabon"],
+    keys: ["annul", "résili", "resili", "stop", "désabon", "desabon", "rembours"],
     answer:
-      "L'offre mensuelle s'annule à tout moment depuis l'espace client Stripe : l'accès reste actif jusqu'à la fin de la période payée. L'offre annuelle est un prépaiement, clairement indiqué au checkout.",
+      "Mensuel 4,99€ : sans engagement, tu annules depuis l'espace client Stripe et tu gardes l'accès jusqu'à la fin de la période payée. Annuel 39,99€ : prépaiement, pas de remboursement une fois l'accès Premium ouvert (hors cas légaux).",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],

@@ -1,32 +1,19 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ACCESS_STATUS,
+  buildExpiredState,
+  getAccessState,
+  isoFromUnixSeconds,
+  persistAccessState,
+  stripEntitlementFromUserMeta,
+  type AccessStateRow,
+  type AuthUser,
+} from "../_shared/access-state.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
-/** Entitlement keys — never trusted from user_metadata (client-writable). */
-const ENTITLEMENT_KEYS = [
-  "subscription",
-  "subscription_end",
-  "cancel_at_period_end",
-  "stripe_customer_id",
-  "referral_code",
-  "referral_rewarded",
-] as const;
-
 const REFERRAL_CREDIT_CENTS = 499; // 4,99 €
-
-type AuthUser = {
-  id: string;
-  email?: string;
-  user_metadata?: Record<string, unknown>;
-  app_metadata?: Record<string, unknown>;
-};
-
-function stripEntitlementFromUserMeta(meta: Record<string, unknown> | undefined) {
-  const next = { ...(meta ?? {}) };
-  for (const key of ENTITLEMENT_KEYS) delete next[key];
-  return next;
-}
 
 function getStripeCustomerId(user: AuthUser): string | undefined {
   return (user.app_metadata?.stripe_customer_id ?? user.user_metadata?.stripe_customer_id) as string | undefined;
@@ -63,6 +50,34 @@ async function setEntitlement(
     // Neutralise toute falsification côté client
     user_metadata: stripEntitlementFromUserMeta(user.user_metadata),
   });
+}
+
+function buildSubscriptionState(
+  userId: string,
+  current: AccessStateRow | null,
+  customerId: string | null,
+  sub: Stripe.Subscription,
+): AccessStateRow {
+  const subscriptionEndsAt = isoFromUnixSeconds(sub.current_period_end ?? null);
+  const subscriptionStartedAt = isoFromUnixSeconds(sub.start_date ?? null);
+  const cancelAtPeriodEnd = sub.cancel_at_period_end === true;
+  const accessStatus = sub.status === "trialing"
+    ? ACCESS_STATUS.trial
+    : cancelAtPeriodEnd
+      ? ACCESS_STATUS.canceled
+      : ACCESS_STATUS.active;
+
+  return {
+    user_id: userId,
+    access_status: accessStatus,
+    trial_started_at: current?.trial_started_at ?? null,
+    trial_ends_at: current?.trial_ends_at ?? null,
+    trial_used: current?.trial_used ?? false,
+    subscription_started_at: subscriptionStartedAt,
+    subscription_ends_at: subscriptionEndsAt,
+    cancel_at_period_end: cancelAtPeriodEnd,
+    stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
+  };
 }
 
 async function creditReferrer(
@@ -164,18 +179,35 @@ Deno.serve(async (req) => {
     if (userId) {
       const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (user) {
-        let subscriptionEnd: number | null = null;
+        let nextState: AccessStateRow | null = null;
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
-          subscriptionEnd = sub.current_period_end ?? null;
+          const currentState = await getAccessState(supabaseAdmin, userId);
+          nextState = buildSubscriptionState(userId, currentState, customerId ?? null, sub);
         }
 
-        await setEntitlement(supabaseAdmin, user, {
-          subscription: "premium",
-          stripe_customer_id: customerId,
-          subscription_end: subscriptionEnd,
-          cancel_at_period_end: false,
-        });
+        if (nextState) {
+          await persistAccessState(supabaseAdmin, user as AuthUser, nextState);
+          await supabaseAdmin.from("conversion_events").insert({
+            user_id: user.id,
+            event_name: "payment_succeeded",
+            path: "/stripe-webhook",
+            properties: {
+              source: "stripe_webhook",
+              subscription_status: nextState.access_status,
+              subscription_ends_at: nextState.subscription_ends_at,
+            },
+            created_at: new Date().toISOString(),
+          });
+        } else {
+          await setEntitlement(supabaseAdmin, user as AuthUser, {
+            subscription: "premium",
+            subscription_status: ACCESS_STATUS.active,
+            stripe_customer_id: customerId,
+            subscription_end: null,
+            cancel_at_period_end: false,
+          });
+        }
 
         // Recharge user après setEntitlement pour avoir app_metadata à jour
         const { data: { user: fresh } } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -200,21 +232,12 @@ Deno.serve(async (req) => {
   if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
     const sub = event.data?.object;
     const customerId = sub?.customer;
-    const status = sub?.status;
-    const cancelAtPeriodEnd = sub?.cancel_at_period_end === true;
-    const subscriptionEnd: number | null = sub?.current_period_end ?? null;
-
-    // Reste premium tant que le statut est actif (même si annulation prévue en fin de période)
-    const isPremium = status === "active" || status === "trialing";
 
     const user = await findUserByCustomerId(customerId);
     if (user) {
-      await setEntitlement(supabaseAdmin, user, {
-        subscription: isPremium ? "premium" : "free",
-        stripe_customer_id: customerId,
-        subscription_end: isPremium ? subscriptionEnd : null,
-        cancel_at_period_end: cancelAtPeriodEnd,
-      });
+      const currentState = await getAccessState(supabaseAdmin, user.id);
+      const nextState = buildSubscriptionState(user.id, currentState, customerId ?? null, sub as Stripe.Subscription);
+      await persistAccessState(supabaseAdmin, user, nextState);
     }
   }
 
@@ -225,12 +248,13 @@ Deno.serve(async (req) => {
 
     const user = await findUserByCustomerId(customerId);
     if (user) {
-      await setEntitlement(supabaseAdmin, user, {
-        subscription: "free",
-        stripe_customer_id: customerId,
-        subscription_end: null,
-        cancel_at_period_end: false,
+      const currentState = await getAccessState(supabaseAdmin, user.id);
+      const nextState = buildExpiredState(user.id, {
+        ...currentState,
+        stripe_customer_id: customerId ?? currentState?.stripe_customer_id ?? null,
+        subscription_ends_at: isoFromUnixSeconds(sub?.current_period_end ?? null),
       });
+      await persistAccessState(supabaseAdmin, user, nextState);
     }
   }
 

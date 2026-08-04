@@ -41,16 +41,15 @@ export const tokens = {
     caption: { size: 11, line: 1.35, weight: 600 },
   },
   freemium: {
-    /** Habit formation window — Duolingo/Runna pattern */
-    freeWeeks: 4,
-    /** Allow real training habit (was 2 — too crippling) */
-    freeFreqMax: 3,
+    trialDays: 7,
+    freeWeeks: 0,
+    freeFreqMax: 5,
     softPaywallAfterSessions: 1,
-    hardPaywallAtWeek: 5,
+    hardPaywallAtWeek: 0,
   },
   pricing: {
     monthly: { label: '4,99 €', period: '/ mois' },
-    annual: { label: '29,99 €', period: '/ an', perMonth: '2,50 €' },
+    annual: { label: '39,99 €', period: '/ an', perMonth: '3,33 €' },
     biennial: { label: '29,99 €', period: '/ 2 ans' },
   },
 } as const
@@ -84,16 +83,16 @@ export const LEVELS: { id: LevelId; title: string; subtitle: string }[] = [
 ]
 
 export const FREE_FEATURES = [
-  '4 semaines de plan personnalisé',
-  'Jusqu’à 3 séances / semaine',
-  'Suivi, badges et séries',
-  'Retours après chaque séance',
+  'Historique conservé',
+  'Quelques statistiques',
+  'Consultation des séances existantes',
+  'Fonctionnalités de base',
 ] as const
 
 export const PREMIUM_FEATURES = [
-  'Plan complet jusqu’à ton événement',
-  'Jusqu’à 5 séances / semaine',
-  'Allures cibles à la seconde (D…)',
-  'Ajustement auto selon tes retours',
-  'Multi-plans · partage · vidéos technique',
+  'Coach personnel et programme adaptatif',
+  'Analyses complètes et recommandations',
+  'Prévision des chronos et gestion fatigue',
+  'Strava, badges, défis et stats avancées',
+  'Toutes les futures nouveautés Premium incluses',
 ] as const

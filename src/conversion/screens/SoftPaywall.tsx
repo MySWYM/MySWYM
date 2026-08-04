@@ -12,20 +12,20 @@ interface Props {
 
 const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: string }> = {
   after_first_session: {
-    title: 'Belle première séance.',
-    subtitle: 'Tu as déjà le rythme. Premium garde ce momentum jusqu’au jour J — sans coupure à la semaine 5.',
+    title: 'Analyse terminée.',
+    subtitle: 'Débloque tes conseils personnalisés et garde ton coach actif après ton essai Premium.',
   },
   streak: {
-    title: 'Ta série grandit.',
-    subtitle: 'Les nageurs qui passent Premium gardent leur streak 2× plus longtemps. Continue sans mur.',
+    title: 'Ta progression est prête.',
+    subtitle: 'Reste accompagné avec un programme qui s’adapte à tes retours et à ta fatigue.',
   },
   week_unlock: {
-    title: 'La suite t’attend.',
-    subtitle: 'Semaines 5+ calibrées pour ton événement. Débloque le plan complet quand tu es prêt.',
+    title: 'Tes prochaines recommandations sont prêtes.',
+    subtitle: 'Débloque l’analyse complète, les ajustements automatiques et le suivi avancé.',
   },
   generic: {
-    title: 'Passe en Premium',
-    subtitle: 'Le même coach, jusqu’au bout — allures, multi-plans, ajustements auto.',
+    title: 'Garde ton coach personnel.',
+    subtitle: 'Le Premium te donne un programme adaptatif, une analyse intelligente et un vrai suivi dans la durée.',
   },
 }
 
@@ -57,13 +57,13 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
         <PlanCard
           title="Mensuel"
           price={monthly.label}
-          period={monthly.period}
+          period="/ mois · sans engagement"
           onClick={() => onSubscribe('monthly')}
         />
         <PlanCard
           title="Annuel"
           price={annual.label}
-          period={annual.period}
+          period="/ an · pas de remboursement"
           badge="Populaire"
           highlight
           onClick={() => onSubscribe('annual')}
@@ -80,14 +80,14 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
       </ul>
 
       <Button fullWidth variant="premium" className="cv:mt-6" onClick={() => onSubscribe('annual')}>
-        Essayer Premium — {annual.perMonth}/mois
+        Continuer avec Premium — {annual.perMonth}/mois
       </Button>
       <button
         type="button"
         onClick={onClose}
         className="cv:mt-3 cv:w-full cv:py-3 cv:text-center cv:text-[13px] cv:font-medium cv:text-cv-ink-secondary cv:cursor-pointer"
       >
-        Continuer en gratuit ({FREE_FEATURES[0]})
+        Rester sur la version gratuite ({FREE_FEATURES[0]})
       </button>
     </Sheet>
   )

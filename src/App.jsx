@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
+import { ACCESS_STATUS, getAccessState } from "./lib/access.js";
+import { trackEvent } from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey } from "./lib/swim-plan-bridge.js";
 import {
@@ -46,6 +48,7 @@ import {
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
+  Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
   Sun, Moon, Camera, Trash2,
 } from "lucide-react";
 
@@ -511,6 +514,28 @@ const SUB_GOALS = {
 
 const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
 const isProgressionGoal = (goalId) => goalId === "progression" || goalId?.startsWith("prog_");
+const capitalizeLabel = (value = "") => value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
+const pluralizeSessions = (count) => `${count} séance${count > 1 ? "s" : ""}`;
+const getPlanPrimaryLabel = (entry) => {
+  const goalLabel = GOALS.find((g) => g.id === entry?.profile?.goal)?.label;
+  if (goalLabel) return goalLabel;
+  return CATEGORIES.find((c) => c.id === entry?.profile?.category)?.label || "Plan";
+};
+const getPlanSecondaryLabel = (entry) => {
+  const profile = entry?.profile || {};
+  const meta = [];
+  if (isProgressionGoal(profile.goal) || profile.category === "progression") {
+    if (profile.level) meta.push(capitalizeLabel(profile.level));
+    meta.push(profile.sessionsPerWeek ? pluralizeSessions(profile.sessionsPerWeek) : "Mode libre");
+    return meta.join(" · ");
+  }
+  if (profile.sessionsPerWeek) meta.push(`${profile.sessionsPerWeek}×/sem`);
+  if (profile.eventDate) {
+    const days = Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000));
+    meta.push(`J−${days}`);
+  }
+  return meta.join(" · ");
+};
 
 // 4 niveaux mesurables — auto-évaluation physique + logique
 const LEVELS = [
@@ -587,16 +612,7 @@ const BADGE_DEFS = [
 
 // Premium = app_metadata uniquement (écrit par service role / Stripe).
 // user_metadata est falsifiable par le client → jamais utilisé pour l'accès.
-const checkIsPremium = (user) => {
-  const meta = user?.app_metadata;
-  if (meta?.subscription !== "premium") return false;
-  if (meta?.subscription_end != null) {
-    const endMs = Number(meta.subscription_end) * 1000;
-    if (!Number.isFinite(endMs)) return false; // date invalide → refuser l'accès
-    return endMs > Date.now();
-  }
-  return true; // legacy : premium actif sans date de fin (sync Stripe la renseignera)
-};
+const checkIsPremium = (user) => getAccessState(user).hasPremiumAccess;
 
 const syncSubscriptionFromStripe = async () => {
   const { data: refreshData } = await supabase.auth.refreshSession();
@@ -1231,7 +1247,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           Courbe de progression de tes chronos sur les semaines d’entraînement — réservé aux membres Premium.
         </p>
         <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Zap size={14} color={G.blue} /> Passer en Premium
+          <Zap size={14} color={G.blue} /> Voir mon analyse complète
         </button>
       </div>
     );
@@ -1609,7 +1625,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
         </button>
 
         <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44 }}>
-          <Zap size={14} color={G.blue} /> Passer en Premium
+          <Zap size={14} color={G.blue} /> Débloquer mon coach personnel
         </button>
       </div>
     );
@@ -1727,13 +1743,363 @@ const fmtPace = (sec) => {
   return `${m}:${String(s).padStart(2, "0")}/100m`;
 };
 
-const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSession, onBestPace }) => {
+const fmtSpeedKmh = (metersPerSecond) => {
+  if (!metersPerSecond) return "—";
+  return `${(metersPerSecond * 3.6).toFixed(1)} km/h`;
+};
+
+const formatActivityLongDate = (iso) => {
+  if (!iso) return "—";
+  const date = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const parseSessionDistanceValue = (distanceLabel) => {
+  if (!distanceLabel) return null;
+  const raw = String(distanceLabel).trim().toLowerCase();
+  if (raw.includes("km")) {
+    const km = Number(raw.replace(",", ".").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(km) ? Math.round(km * 1000) : null;
+  }
+  const meters = Number(raw.replace(/[^0-9]/g, ""));
+  return Number.isFinite(meters) && meters > 0 ? meters : null;
+};
+
+const inferSwimFocus = (pace100Ref, activityPace, durationSec, distanceMeters) => {
+  if (pace100Ref && activityPace) {
+    const mult = appZoneMultForT100(pace100Ref);
+    if (activityPace <= pace100Ref * ((mult.sprint ?? 0.95) + 0.05)) {
+      return { key: "VITESSE", label: "vitesse", explanation: "Allure très rapide par rapport à ton T100" };
+    }
+    if (activityPace <= pace100Ref * ((mult.threshold ?? 1.08) + 0.08)) {
+      return { key: "SEUIL", label: "seuil", explanation: "Allure soutenue, proche d'un travail au seuil" };
+    }
+    if (activityPace <= pace100Ref * ((mult.easy ?? 1.35) + 0.08)) {
+      return { key: "ENDURANCE", label: "endurance", explanation: "Allure contrôlée, utile pour construire l'endurance" };
+    }
+    return { key: "RÉCUPÉRATION", label: "récupération", explanation: "Allure très relâchée, proche d'une séance facile" };
+  }
+
+  if ((distanceMeters || 0) >= 2500 || (durationSec || 0) >= 45 * 60) {
+    return { key: "ENDURANCE", label: "endurance", explanation: "Volume assez long, orienté endurance" };
+  }
+  if ((durationSec || 0) <= 20 * 60) {
+    return { key: "VITESSE", label: "vitesse", explanation: "Format court, souvent orienté qualité ou intensité" };
+  }
+  return { key: "SEUIL", label: "seuil", explanation: "Charge intermédiaire, entre endurance active et seuil" };
+};
+
+const buildPremiumActivityAnalysis = ({ activity, detail, currentSessionRef, profile }) => {
+  const planned = currentSessionRef?.session || null;
+  const actualDistance = Number(detail?.distance || activity.distance) || 0;
+  const actualDuration = Number(detail?.moving_time || activity.duration) || 0;
+  const actualPace = Number(activity.pace) || null;
+  const focus = inferSwimFocus(profile?.pace100 || null, actualPace, actualDuration, actualDistance);
+
+  if (!planned) {
+    return {
+      title: `Tu as surtout travaillé l'${focus.label}`,
+      verdict: "Analyse disponible, mais sans séance de référence à comparer.",
+      chips: [
+        { label: "Focus détecté", value: focus.label },
+      ],
+      summary: focus.explanation,
+    };
+  }
+
+  const plannedType = planned.type || "ENDURANCE";
+  const plannedDistance = parseSessionDistanceValue(planned.distance);
+  const distanceGap = plannedDistance ? Math.abs(actualDistance - plannedDistance) / plannedDistance : null;
+  const typeMatch = plannedType === focus.key || (plannedType === "RÉCUPÉRATION" && focus.key === "ENDURANCE");
+  const distanceMatch = distanceGap == null ? true : distanceGap <= 0.2;
+
+  let verdict = "Partiellement conforme à la séance prévue";
+  if (typeMatch && distanceMatch) verdict = "Très cohérent avec la séance prévue";
+  else if (!typeMatch && !distanceMatch) verdict = "Plutôt éloigné de la séance prévue";
+
+  return {
+    title: `Tu as surtout travaillé l'${focus.label}`,
+    verdict,
+    chips: [
+      { label: "Prévu", value: (plannedType || "ENDURANCE").toLowerCase() },
+      { label: "Réalisé", value: focus.label },
+      { label: "Volume", value: plannedDistance ? `${Math.round((actualDistance / plannedDistance) * 100)}%` : fmtDist(actualDistance) },
+    ],
+    summary: `${focus.explanation}. ${planned.title ? `La prochaine séance prévue est "${planned.title}".` : "La séance prévue sert ici de référence de comparaison."}`,
+  };
+};
+
+const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, onUpgrade, profile }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [detailPayload, setDetailPayload] = useState(null);
+
+  useEffect(() => {
+    if (!activity?.strava_activity_id) return;
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Session expirée");
+
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-activity-detail`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`,
+              "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ activityId: activity.strava_activity_id }),
+          }
+        );
+        const json = await res.json();
+        if (!res.ok || json.error) throw new Error(json.error || "Impossible de charger le détail");
+        if (!cancelled) setDetailPayload(json);
+      } catch (e) {
+        if (!cancelled) setError(e.message || "Impossible de charger le détail Strava");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [activity?.strava_activity_id]);
+
+  if (!activity) return null;
+
+  const detail = detailPayload?.detail || null;
+  const streams = detailPayload?.streams || {};
+  const raw = detail || activity.raw_data || {};
+  const cadenceValue = raw.average_cadence
+    ? `${Number(raw.average_cadence).toFixed(1)} / min`
+    : raw.average_temp
+      ? `${Number(raw.average_temp).toFixed(1)}°C`
+      : null;
+
+  const metricCards = [
+    { label: "Distance", value: fmtDist(detail?.distance || activity.distance), color: G.blue, bg: G.blueLight },
+    { label: "Temps", value: fmtDur(detail?.moving_time || activity.duration), color: G.mint, bg: G.mintLight },
+    { label: "Allure", value: fmtPace(activity.pace) || "—", color: G.coral, bg: G.coralLight },
+    { label: "Vitesse moy.", value: fmtSpeedKmh(raw.average_speed), color: G.water, bg: G.waterLight },
+    { label: "Vitesse max", value: fmtSpeedKmh(raw.max_speed), color: G.gold, bg: G.goldLight },
+    { label: "FC moy.", value: raw.average_heartrate || activity.heart_rate ? `${Math.round(raw.average_heartrate || activity.heart_rate)} bpm` : "—", color: G.ink, bg: G.greyXLight },
+    { label: "Calories", value: activity.calories ? `${Math.round(activity.calories)} kcal` : "—", color: G.blue, bg: G.blueLight },
+    { label: raw.average_cadence ? "Cadence" : "Type", value: cadenceValue || STRAVA_ACTIVITY_META[activity.activity_type]?.label || activity.activity_type || "Activité", color: G.mint, bg: G.mintLight },
+  ];
+
+  const extraRows = [
+    { label: "Temps écoulé", value: raw.elapsed_time ? fmtDur(raw.elapsed_time) : null },
+    { label: "Sport", value: raw.sport_type || null },
+    { label: "Appareil", value: raw.device_name || null },
+    { label: "Date", value: formatActivityLongDate(activity.activity_date) },
+  ].filter((row) => row.value);
+
+  const streamCards = [
+    {
+      key: "heartrate",
+      label: "Fréquence cardiaque",
+      unit: "bpm",
+      color: G.coral,
+      values: Array.isArray(streams?.heartrate?.data) ? streams.heartrate.data : [],
+      formatValue: (v) => `${Math.round(v)} bpm`,
+    },
+    {
+      key: "velocity_smooth",
+      label: "Vitesse",
+      unit: "km/h",
+      color: G.blue,
+      values: Array.isArray(streams?.velocity_smooth?.data) ? streams.velocity_smooth.data.map((v) => Number(v) * 3.6) : [],
+      formatValue: (v) => `${Number(v).toFixed(1)} km/h`,
+    },
+    {
+      key: "cadence",
+      label: "Cadence / coups de bras",
+      unit: "/min",
+      color: G.mint,
+      values: Array.isArray(streams?.cadence?.data) ? streams.cadence.data : [],
+      formatValue: (v) => `${Number(v).toFixed(1)} / min`,
+    },
+  ].filter((item) => item.values.length > 1);
+  const premiumAnalysis = buildPremiumActivityAnalysis({ activity, detail, currentSessionRef, profile });
+
+  const renderStreamChart = (values, color) => {
+    const width = 300;
+    const height = 90;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const points = values.map((value, index) => {
+      const x = (index / Math.max(1, values.length - 1)) * width;
+      const y = height - (((value - min) / Math.max(1, max - min || 1)) * (height - 12) + 6);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+
+    return (
+      <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ display: "block" }} aria-hidden="true">
+        {[0.25, 0.5, 0.75].map((f, i) => (
+          <line key={i} x1={width * f} y1={0} x2={width * f} y2={height} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
+        ))}
+        <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  };
+
+  return createPortal(
+    <div
+      className="sheet-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Détail activité Strava"
+    >
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "24px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: G.blue, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              Activité Strava
+            </div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15, margin: "0 0 6px" }}>
+              {activity.title || "Séance"}
+            </h3>
+            <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
+              {formatActivityLongDate(activity.activity_date)}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fermer" style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          {metricCards.map((card) => (
+            <div key={card.label} style={{ background: card.bg, borderRadius: 16, padding: "14px 12px", border: `1px solid ${G.greyLight}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: card.color, marginBottom: 6 }}>{card.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: G.ink, lineHeight: 1.15 }}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: G.greyXLight, borderRadius: 18, padding: "16px 14px", marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Détails synchronisés</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {extraRows.map((row) => (
+              <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ fontSize: 12, color: G.grey }}>{row.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, textAlign: "right" }}>{row.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {isPremium ? (
+          <div style={{ background: `linear-gradient(135deg, ${G.blueLight}, ${G.surface})`, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 12, background: G.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Zap size={16} color={G.blue} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Analyse Premium MySWYM</div>
+                <div style={{ fontSize: 12, color: G.grey }}>{premiumAnalysis.verdict}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: G.ink, marginBottom: 10 }}>{premiumAnalysis.title}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              {premiumAnalysis.chips.map((chip) => (
+                <span key={chip.label} style={{ fontSize: 11, fontWeight: 700, color: G.blue, background: G.surface, border: `1px solid ${G.greyLight}`, borderRadius: 999, padding: "6px 10px" }}>
+                  {chip.label} : {chip.value}
+                </span>
+              ))}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.5 }}>{premiumAnalysis.summary}</p>
+          </div>
+        ) : (
+          <div style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 8 }}>Analyse Premium MySWYM</div>
+            <p style={{ margin: "0 0 12px", fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
+              Débloque l&apos;analyse automatique de ta séance pour comprendre ce que tu as travaillé et si cela correspond à la séance prévue.
+            </p>
+            <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "12px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontWeight: 700, cursor: "pointer" }}>
+              Voir mes recommandations
+            </button>
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}`, fontSize: 13, color: G.grey }}>
+            Chargement des détails avancés Strava…
+          </div>
+        ) : error ? (
+          <div style={{ background: "#FFE8E8", borderRadius: 18, padding: "16px 14px", color: "#CC0000", fontSize: 13 }}>
+            {error}
+          </div>
+        ) : streamCards.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {streamCards.map((stream) => {
+              const avg = stream.values.reduce((sum, value) => sum + Number(value || 0), 0) / stream.values.length;
+              return (
+                <div key={stream.key} style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}` }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>{stream.label}</div>
+                    <div style={{ fontSize: 12, color: stream.color, fontWeight: 700 }}>{stream.formatValue(avg)}</div>
+                  </div>
+                  <div style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 10px 6px" }}>
+                    {renderStreamChart(stream.values, stream.color)}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: G.greyMid }}>Début</span>
+                      <span style={{ fontSize: 10, color: G.greyMid }}>Temps</span>
+                      <span style={{ fontSize: 10, color: G.greyMid }}>Fin</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}` }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 8 }}>Analyse</div>
+            <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
+              Aucun stream détaillé n&apos;a été renvoyé par Strava pour cette activité. Si ta montre partage la fréquence cardiaque, la vitesse ou la cadence pour cette nage, elles apparaîtront ici automatiquement.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+const StravaSection = ({
+  user,
+  onPaceUpdate,
+  currentPace100,
+  plan,
+  profile,
+  onValidateSession,
+  onBestPace,
+  showProgramActions = true,
+  showDetails = true,
+  isPremium = false,
+  onUpgrade,
+}) => {
   const [connected,     setConnected]     = useState(null); // null = chargement
   const [athlete,       setAthlete]       = useState(null);
   const [activities,    setActivities]    = useState([]);
   const [syncing,       setSyncing]       = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [msg,           setMsg]           = useState(null);
+  const [selectedActivity, setSelectedActivity] = useState(null);
 
   // client_id est public (pas un secret) — fallback hardcodé si l'env n'est pas chargé
   const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
@@ -1763,7 +2129,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   const loadActivities = async () => {
     const { data } = await supabase
       .from("strava_activities")
-      .select("strava_activity_id, activity_type, title, distance, duration, pace, activity_date")
+      .select("strava_activity_id, activity_type, title, distance, duration, pace, calories, heart_rate, activity_date, raw_data")
       .eq("user_id", user.id)
       .in("activity_type", ["Swim", "OpenWaterSwim"])
       .order("activity_date", { ascending: false })
@@ -1870,6 +2236,10 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
   })();
 
   const canValidate = todaySwim && currentSessionRef && !isSessionResolved(currentSessionRef.session);
+  const latestVisibleSwim = activities[0] || null;
+  const latestPremiumAnalysis = latestVisibleSwim
+    ? buildPremiumActivityAnalysis({ activity: latestVisibleSwim, detail: null, currentSessionRef, profile })
+    : null;
 
   // Pendant le chargement on affiche le bouton "Connecter" (état optimiste)
   // il sera remplacé par l'état réel dès que checkConnection() répond
@@ -1924,8 +2294,22 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
         </button>
       ) : (
         <>
+          {!showDetails && (
+            <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>Compte connecte</div>
+                <div style={{ fontSize: 11, color: G.grey }}>
+                  {athlete?.firstname ? `${athlete.firstname}${athlete.lastname ? ` ${athlete.lastname}` : ""}` : "Strava relie a ton compte"}
+                </div>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.mint, background: G.mintLight, padding: "6px 10px", borderRadius: 999 }}>
+                Connecte
+              </div>
+            </div>
+          )}
+
           {/* Volume hebdo natation */}
-          {weeklySwimM > 0 && (
+          {showDetails && weeklySwimM > 0 && (
             <div style={{ background: G.blueLight, borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
               <Waves size={16} color={G.blue} />
               <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}>
@@ -1935,7 +2319,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
           )}
 
           {/* ── Valider séance depuis Strava ─────────────────────── */}
-          {canValidate && (
+          {showDetails && showProgramActions && canValidate && (
             <div style={{ background: "linear-gradient(135deg,#EEF3FF,#E0F7FA)", borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Waves size={18} color="#fff" />
@@ -1954,7 +2338,7 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
           )}
 
           {/* ── Meilleur temps 100m depuis Strava ────────────────── */}
-          {bestPace && (
+          {showDetails && bestPace && (
             <div style={{ background: hasBetterPace ? G.goldLight : G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: hasBetterPace ? G.gold : G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Trophy size={18} color={hasBetterPace ? "#fff" : G.greyMid} />
@@ -1981,8 +2365,63 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
             </div>
           )}
 
+          {showDetails && latestVisibleSwim && latestPremiumAnalysis && (
+            isPremium ? (
+              <button
+                type="button"
+                onClick={() => setSelectedActivity(latestVisibleSwim)}
+                style={{
+                  width: "100%", textAlign: "left", cursor: "pointer",
+                  background: `linear-gradient(135deg, ${G.blueLight}, ${G.surface})`,
+                  borderRadius: 16, padding: "14px", marginBottom: 12,
+                  border: `1px solid ${G.greyLight}`,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 12, background: G.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Zap size={16} color={G.blue} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Analyse de la dernière séance</div>
+                      <div style={{ fontSize: 12, color: G.grey }}>Premium MySWYM x Strava</div>
+                    </div>
+                  </div>
+                  <Eye size={16} color={G.greyMid} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 6 }}>{latestPremiumAnalysis.title}</div>
+                <div style={{ fontSize: 12, color: G.grey, marginBottom: 8 }}>{latestPremiumAnalysis.verdict}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {latestPremiumAnalysis.chips.map((chip) => (
+                    <span key={chip.label} style={{ fontSize: 11, fontWeight: 700, color: G.blue, background: G.surface, border: `1px solid ${G.greyLight}`, borderRadius: 999, padding: "5px 9px" }}>
+                      {chip.label} : {chip.value}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            ) : (
+              <div style={{
+                background: G.greyXLight, borderRadius: 16, padding: "14px", marginBottom: 12,
+                border: `1px solid ${G.greyLight}`, opacity: 0.85,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 12, background: G.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Lock size={15} color={G.greyMid} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Analyse de la dernière séance</div>
+                    <div style={{ fontSize: 12, color: G.grey }}>Réservé aux abonnés Premium</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
+                  Débloque un résumé automatique de ta dernière séance Strava pour comprendre ce que tu as travaillé et si cela correspond à ton plan.
+                </div>
+              </div>
+            )
+          )}
+
           {/* Liste des activités */}
-          {activities.length === 0 ? (
+          {showDetails && (activities.length === 0 ? (
             <div style={{ fontSize: 13, color: G.grey, textAlign: "center", padding: "16px 0" }}>
               Aucune activité — clique sur "Synchroniser".
             </div>
@@ -1992,9 +2431,11 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
                 const meta = STRAVA_ACTIVITY_META[a.activity_type] ?? { label: a.activity_type ?? "Activité", color: G.grey, bg: G.greyXLight, Icon: Activity };
                 const { Icon: AIcon, color, bg, label } = meta;
                 return (
-                  <div
+                  <button
                     key={a.strava_activity_id}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < activities.length - 1 ? `1px solid ${G.greyLight}` : "none" }}
+                    type="button"
+                    onClick={() => setSelectedActivity(a)}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 0", border: "none", background: "none", borderBottom: i < activities.length - 1 ? `1px solid ${G.greyLight}` : "none", cursor: "pointer", textAlign: "left" }}
                   >
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <AIcon size={16} color={color} />
@@ -2012,11 +2453,14 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
                       <div style={{ fontSize: 11, color: G.grey }}>{fmtDur(a.duration)}</div>
                       {a.pace && <div style={{ fontSize: 11, color }}>{fmtPace(a.pace)}</div>}
                     </div>
-                  </div>
+                    <div style={{ width: 32, height: 32, borderRadius: 10, background: G.greyXLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Eye size={16} color={G.greyMid} />
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          )}
+          ))}
 
           {/* Déconnexion */}
           <button
@@ -2028,19 +2472,22 @@ const StravaSection = ({ user, onPaceUpdate, currentPace100, plan, onValidateSes
           </button>
         </>
       )}
+          <StravaActivityModal
+            activity={selectedActivity}
+            onClose={() => setSelectedActivity(null)}
+            currentSessionRef={currentSessionRef}
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+            profile={profile}
+          />
     </div>
   );
 };
 
-const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpgrade, onRefreshStatus, onPaceUpdate, onUpdateProgram, onValidateSession, onUserUpdate, theme = "light", onToggleTheme }) => {
-  const { t: ts } = useTranslation("settings");
-  const [password,      setPassword]      = useState("");
-  const [saving,        setSaving]        = useState(false);
-  const [msg,           setMsg]           = useState(null);
-  const [stravaBestPace, setStravaBestPace] = useState(null);
-
+const ProfileTab = ({ plan, profile, user, onUserUpdate }) => {
   const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
   const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
+  const [msg, setMsg] = useState(null);
 
   // Avatar + firstName — Supabase user_metadata en priorité, localStorage en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => {
@@ -2086,20 +2533,6 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
 
   const stats  = computeStats(plan);
   const earned = checkBadges(stats);
-
-  const inp = { width: "100%", padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none", boxSizing: "border-box" };
-
-  const save = async () => {
-    if (!password) return;
-    setSaving(true); setMsg(null);
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      setMsg({ type: "ok", text: "Mot de passe mis à jour" });
-      setPassword("");
-    } catch (e) { setMsg({ type: "err", text: e.message }); }
-    finally { setSaving(false); }
-  };
 
   const saveName = () => {
     const v = nameInput.trim();
@@ -2198,16 +2631,10 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
   const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
   const initials = displayName.slice(0, 2).toUpperCase();
   const levelLabel = LEVELS.find(l => l.id === profile?.level)?.label || profile?.level || "Nageur";
-
-  // Badge gradient by index
-  const badgeGradients = [
-    `linear-gradient(135deg,${G.blueMid},${G.blue})`,
-    "linear-gradient(135deg,#FBBF24,#F59E0B)",
-    "linear-gradient(135deg,#a78bfa,#7C3AED)",
-    "linear-gradient(135deg,#34d399,#00C48C)",
-    "linear-gradient(135deg,#fb923c,#FF4757)",
-    "linear-gradient(135deg,#60a5fa,#3b82f6)",
-  ];
+  const goalLabel = GOALS.find(g => g.id === profile?.goal)?.label
+    || CATEGORIES.find(c => c.id === profile?.category)?.label
+    || "Mon objectif";
+  const freqLabel = FREQUENCIES.find(f => f.id === profile?.sessionsPerWeek)?.label || `${profile?.sessionsPerWeek || 1} séance${(profile?.sessionsPerWeek || 1) > 1 ? "s" : ""} / semaine`;
 
   return (
     <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
@@ -2355,11 +2782,18 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
       </div>
 
       <div>
+        {msg && (
+          <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 12 }}>
+            {msg.text}
+          </div>
+        )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
           {[
             { Icon: Waves, value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés", color: G.blue, bg: G.blueLight },
             { Icon: Check, value: stats.totalSessions, label: "Séances", color: G.mint, bg: G.mintLight },
+            { Icon: Flame, value: stats.streak, label: "Série", color: G.coral, bg: G.coralLight },
+            { Icon: Trophy, value: earned.length, label: "Badges", color: G.gold, bg: G.goldLight },
           ].map(({ Icon, value, label, color, bg }, i) => (
             <div key={i} style={{ background: G.surface, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -2373,47 +2807,158 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
           ))}
         </div>
 
-        {/* ── Évolution des temps (Premium) ── */}
-        <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
-
-        {/* ── Modifier le programme ── */}
-        <UpdateProgramCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} onSave={onUpdateProgram} stravaBestPace={stravaBestPace} />
-
-        {/* ── Langue ── */}
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>{ts("language.section")}</div>
-          <div style={{
-            background: G.surface, borderRadius: 16, padding: "14px 16px",
-            border: `1px solid ${G.greyLight}`, marginBottom: 10,
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>
-                {ts("language.title")}
-              </div>
-              <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.35 }}>
-                {ts("language.hint")}
-              </div>
+        <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 14, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Target size={18} color={G.blue} />
             </div>
-            <LanguageSwitcher variant="settings" />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Mon objectif</div>
+              <div style={{ fontSize: 12, color: G.grey }}>Ton cap personnel dans l&apos;application</div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { label: "Objectif", value: goalLabel },
+              { label: "Niveau", value: levelLabel },
+              { label: "Rythme", value: profile?.category === "progression" ? "Mode libre" : freqLabel },
+              { label: "Bassin", value: `${profile?.pool || 25} m` },
+            ].map((item) => (
+              <div key={item.label} style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 12px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, lineHeight: 1.35 }}>{item.value}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Apparence ── */}
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>{ts("appearance.section")}</div>
-          <div style={{
-            background: G.surface, borderRadius: 16, padding: "14px 16px",
-            border: `1px solid ${G.greyLight}`, marginBottom: 10,
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>
-                {theme === "dark" ? ts("appearance.dark") : ts("appearance.light")}
+        <div style={{ marginBottom: 24 }}>
+          <HomeBadgesSection plan={plan} />
+        </div>
+      </div>
+      </AppShell>
+    </div>
+  );
+};
+
+const SettingsDrawer = ({
+  open,
+  onClose,
+  user,
+  theme,
+  onToggleTheme,
+  isPremium,
+  onUpgrade,
+  onPortal,
+  onRefreshStatus,
+  onGoProfile,
+  onOpenAuth,
+  onSignOut,
+  plan,
+  profile,
+  onPaceUpdate,
+  onValidateSession,
+}) => {
+  const { t: ts } = useTranslation("settings");
+  if (!open) return null;
+
+  const menuRow = {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "14px 0",
+    background: "none",
+    border: "none",
+    borderBottom: `1px solid ${G.greyLight}`,
+    cursor: "pointer",
+    color: G.ink,
+    textAlign: "left",
+  };
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Menu principal"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: "fixed", inset: 0, zIndex: 500,
+        background: "rgba(15, 23, 42, 0.38)",
+        display: "flex", justifyContent: "flex-end",
+      }}
+    >
+      <div style={{
+        width: "min(420px, 92vw)", height: "100%",
+        background: G.surface, borderLeft: `1px solid ${G.greyLight}`,
+        boxShadow: "-12px 0 40px rgba(0,0,0,0.18)",
+        overflowY: "auto",
+        padding: "calc(var(--safe-top) + 18px) 18px calc(var(--safe-bottom) + 28px)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Menu</div>
+            <div style={{ fontSize: 13, color: G.grey }}>Navigation, compte et réglages</div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer le menu"
+            style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ background: G.greyXLight, borderRadius: 20, padding: "8px 16px", marginBottom: 16 }}>
+          <button type="button" onClick={() => { onGoProfile?.(); onClose(); }} style={menuRow}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <User size={18} color={G.blue} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Mon profil</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Infos personnelles, stats, badges</div>
               </div>
-              <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.35 }}>
-                {theme === "dark" ? ts("appearance.darkHint") : ts("appearance.lightHint")}
+            </div>
+            <ChevronRight size={18} color={G.greyMid} />
+          </button>
+          <div style={{ ...menuRow, cursor: "default" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Bell size={18} color={G.gold} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Notifications</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Bientôt disponible</div>
               </div>
+            </div>
+            <Shield size={16} color={G.greyMid} />
+          </div>
+          <button type="button" onClick={onRefreshStatus} style={{ ...menuRow, borderBottom: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <RotateCcw size={18} color={G.mint} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Restaurer les achats</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Resynchroniser le statut Premium</div>
+              </div>
+            </div>
+            <ChevronRight size={18} color={G.greyMid} />
+          </button>
+        </div>
+
+        <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey, marginBottom: 12 }}>
+            Paramètres
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{ts("language.title")}</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{ts("language.hint")}</div>
+            </div>
+            <LanguageSwitcher variant="settings" />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{theme === "dark" ? ts("appearance.dark") : ts("appearance.light")}</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{theme === "dark" ? ts("appearance.darkHint") : ts("appearance.lightHint")}</div>
             </div>
             <button
               type="button"
@@ -2425,93 +2970,99 @@ const ProfileTab = ({ plan, profile, user, isPremium, onSignOut, onPortal, onUpg
                 flexShrink: 0, width: 64, height: 36, borderRadius: 999,
                 border: "none", cursor: "pointer", padding: 3,
                 background: theme === "dark" ? "#1e293b" : "#fde68a",
-                position: "relative",
-                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.12)",
-                transition: "background 0.25s ease",
-                WebkitTapHighlightColor: "transparent",
-                minWidth: 64, minHeight: 36,
+                position: "relative", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.12)",
               }}
             >
-              <span style={{
-                position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
-                opacity: theme === "dark" ? 0.35 : 1, transition: "opacity 0.2s",
-                display: "flex",
-              }}>
+              <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", opacity: theme === "dark" ? 0.35 : 1, display: "flex" }}>
                 <Sun size={14} color={theme === "dark" ? "#94a3b8" : "#b45309"} strokeWidth={2.4} />
               </span>
-              <span style={{
-                position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-                opacity: theme === "dark" ? 1 : 0.35, transition: "opacity 0.2s",
-                display: "flex",
-              }}>
+              <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", opacity: theme === "dark" ? 1 : 0.35, display: "flex" }}>
                 <Moon size={14} color={theme === "dark" ? "#e2e8f0" : "#94a3b8"} strokeWidth={2.4} />
               </span>
               <span style={{
-                position: "absolute", top: 3,
-                left: theme === "dark" ? 31 : 3,
-                width: 30, height: 30, borderRadius: "50%",
-                background: G.white,
+                position: "absolute", top: 3, left: theme === "dark" ? 31 : 3,
+                width: 30, height: 30, borderRadius: "50%", background: G.white,
                 boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
                 transition: "left 0.25s cubic-bezier(.4,.0,.2,1)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                {theme === "dark"
-                  ? <Moon size={15} color="#334155" strokeWidth={2.4} />
-                  : <Sun size={15} color="#d97706" strokeWidth={2.4} />
-                }
+                {theme === "dark" ? <Moon size={15} color="#334155" strokeWidth={2.4} /> : <Sun size={15} color="#d97706" strokeWidth={2.4} />}
               </span>
             </button>
           </div>
         </div>
 
-        {/* ── 4. Compte ── */}
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12, marginTop: 8 }}>{ts("account.section")}</div>
-
-          {/* Premium / abonnement — premier car le plus important */}
-          <div style={{ marginBottom: 10 }}>
-            {isPremium ? (
-              <button onClick={onPortal} style={{ width: "100%", padding: "15px", borderRadius: 14, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54 }}>
-                <Zap size={17} color={G.blue} /> Gérer mon abonnement
-              </button>
-            ) : (
-              <button onClick={onUpgrade} style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 54, boxShadow: "0 6px 20px rgba(53,93,163,0.30)" }}>
-                <Zap size={17} color={G.gold} /> Passer en Premium
-              </button>
-            )}
-            {onRefreshStatus && (
-              <button onClick={onRefreshStatus} style={{ width: "100%", marginTop: 8, padding: "10px", borderRadius: 12, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                Actualiser le statut (déjà payé ?)
-              </button>
-            )}
-            {isPremium && <ReferralShareCard />}
-          </div>
-
-          {/* Email + mdp groupés */}
-          <div style={{ background: G.surface, borderRadius: 16, overflow: "hidden", border: `1px solid ${G.greyLight}`, marginBottom: 10 }}>
-            <div style={{ padding: "13px 16px", borderBottom: `1px solid ${G.greyXLight}` }}>
-              <div style={{ fontSize: 11, color: G.grey }}>Email</div>
-              <div style={{ fontSize: 14, color: G.ink, fontWeight: 500 }}>{user?.email}</div>
+        <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Link2 size={17} color={G.blue} />
             </div>
-            <div style={{ padding: "13px 16px" }}>
-              <input style={{ ...inp, marginBottom: 8 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nouveau mot de passe" onKeyDown={e => e.key === "Enter" && save()} />
-              {msg && <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 8, padding: "7px 12px", marginBottom: 8, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 12 }}>{msg.text}</div>}
-              <Btn onClick={save} disabled={saving || !password} variant="blue">{saving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Connexions</div>
+              <div style={{ fontSize: 12, color: G.grey }}>Strava et services liés</div>
             </div>
           </div>
+          <StravaSection
+            user={user}
+            plan={plan}
+            profile={profile}
+            currentPace100={profile?.pace100}
+            onPaceUpdate={onPaceUpdate}
+            onValidateSession={onValidateSession}
+            showProgramActions={false}
+            showDetails={false}
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+          />
+        </div>
 
-          {/* Strava inline */}
-          <StravaSection user={user} plan={plan} currentPace100={profile?.pace100} onPaceUpdate={onPaceUpdate} onValidateSession={onValidateSession} onBestPace={setStravaBestPace} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, marginTop: 10 }}>
-            <button onClick={onSignOut} style={{ width: "100%", padding: "14px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: "none", color: G.grey, fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 50 }}>
-              <LogOut size={16} color={G.grey} /> Se déconnecter
+        <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: G.goldLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CreditCard size={17} color={G.gold} />
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Gestion de l&apos;abonnement</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Votre essai est terminé · gardez vos outils coach"}</div>
+            </div>
+          </div>
+          {isPremium ? (
+            <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 14, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
+              Gérer mon abonnement
             </button>
-          </div>
+          ) : (
+            <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
+              Continuer avec Premium
+            </button>
+          )}
+          {isPremium && <ReferralShareCard />}
+        </div>
+
+        <div style={{ background: G.greyXLight, borderRadius: 20, padding: "8px 16px" }}>
+          <button type="button" onClick={() => { onClose(); onOpenAuth?.("password"); }} style={menuRow}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Shield size={18} color={G.blue} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Changer de compte</div>
+                <div style={{ fontSize: 12, color: G.grey }}>{user?.email || "Se connecter avec un autre compte"}</div>
+              </div>
+            </div>
+            <ChevronRight size={18} color={G.greyMid} />
+          </button>
+          <button type="button" onClick={onSignOut} style={{ ...menuRow, borderBottom: "none", color: G.coral }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <LogOut size={18} color={G.coral} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Déconnexion</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Fermer la session actuelle</div>
+              </div>
+            </div>
+            <ChevronRight size={18} color={G.greyMid} />
+          </button>
         </div>
       </div>
-      </AppShell>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -2552,6 +3103,38 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
 
+const authInpStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none", boxSizing: "border-box" };
+
+const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "current-password" }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <input
+        type={visible ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        onKeyDown={e => e.key === "Enter" && onEnter?.()}
+        autoComplete={autoComplete}
+        style={{ ...authInpStyle, paddingRight: 48 }}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible(v => !v)}
+        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        style={{
+          position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+          background: "none", border: "none", padding: 4, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: G.greyMid, lineHeight: 0,
+        }}
+      >
+        {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
+      </button>
+    </div>
+  );
+};
+
 const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   const [password, setPassword] = useState("");
   const [confirm,  setConfirm]  = useState("");
@@ -2570,8 +3153,6 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     finally { setLoading(false); }
   };
 
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none" };
-
   return (
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
@@ -2584,8 +3165,8 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
         {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-          <input type="password" placeholder="Nouveau mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
-          <input type="password" placeholder="Confirmer le mot de passe" value={confirm} onChange={e => setConfirm(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+          <PasswordInput placeholder="Nouveau mot de passe" value={password} onChange={e => setPassword(e.target.value)} onEnter={handle} autoComplete="new-password" />
+          <PasswordInput placeholder="Confirmer le mot de passe" value={confirm} onChange={e => setConfirm(e.target.value)} onEnter={handle} autoComplete="new-password" />
         </div>
         <Btn onClick={handle} disabled={loading || !password || !confirm} variant="blue">
           {loading ? "…" : "Enregistrer le mot de passe"}
@@ -2650,8 +3231,6 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
     finally { setLoading(false); }
   };
 
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none" };
-
   const titleMap = {
     password: "Connexion",
     register: "Créer un compte",
@@ -2698,9 +3277,15 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
-          <input type="email" placeholder="Ton email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+          <input type="email" placeholder="Ton email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={authInpStyle} />
           {(mode === "password" || mode === "register") && (
-            <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={inp} />
+            <PasswordInput
+              placeholder="Mot de passe"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onEnter={handle}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+            />
           )}
         </div>
 
@@ -3145,14 +3730,14 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
   <div className="fade-up">
     <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Séances par semaine</h2>
     <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-      Gratuit jusqu’à {FREE_FREQ_LIMIT}×. Au-delà, Premium débloque la charge complète.
+      Ton essai Premium donne accès à toute la charge d'entraînement dès le départ.
     </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
       {FREQUENCIES.map(f => {
-        const locked = !isPremium && f.id > FREE_FREQ_LIMIT;
+        const locked = false;
         const isActive = value === f.id;
         return (
-          <button key={f.id} onClick={() => locked ? onUpgrade?.() : onChange(f.id)} style={{
+          <button key={f.id} onClick={() => onChange(f.id)} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "18px 20px", borderRadius: 16,
             border: `2px solid ${isActive ? G.blue : locked ? G.greyLight : G.greyLight}`,
@@ -3567,9 +4152,9 @@ const FREE_FREQ_LIMIT = 3;
 const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
-const PLAN_VERSION = 37; // v37 = force regen TOUS les plans (onboarding déjà créés → boucle)
-// true : overwrite TOUS les plans au chargement (même version déjà à jour). Remettre false après le bump.
-const FORCE_PLAN_REGEN = true;
+const PLAN_VERSION = 37; // v37 = boucle Nager & Progresser (+ migration legacy)
+// false après la passe de migration — true re-force tous les plans à chaque session
+const FORCE_PLAN_REGEN = false;
 
 const FREE_TIER_LINES = [
   "4 premières semaines du plan",
@@ -3789,7 +4374,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
   const ctaLabel = isBiennial
     ? "Démarrer — 29,99€ / 2 ans"
     : isAnnual
-      ? "Démarrer — 29,99€/an"
+      ? "Démarrer — 39,99€/an"
       : hasReferral
         ? "Démarrer — −20% parrainage"
         : "Démarrer — 4,99€/mois";
@@ -3803,16 +4388,16 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
             <Zap size={26} color={G.white} />
           </div>
           <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
-            {softContext === "after_first_session" ? "Belle première séance" : "MySWYM Premium"}
+            {softContext === "after_first_session" ? "Analyse terminée" : "MySWYM Premium"}
           </h3>
           {softContext === "after_first_session"
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Tu as déjà le rythme. Premium garde ce momentum jusqu’au jour J — sans coupure à la semaine 5.<br /><span style={{ color: G.greyMid, fontSize: 13 }}>Tu peux continuer en gratuit, sans pression.</span></p>
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Tes premières données sont déjà exploitables.<br /><strong style={{ color: G.ink }}>Débloque maintenant tes conseils personnalisés, ton suivi avancé et les adaptations automatiques.</strong></p>
             : weeksBlocked
-            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Ton mois gratuit est terminé.<br /><strong style={{ color: G.ink }}>Offre spéciale : Premium 2 ans à −50%.</strong></p>
-            : <p style={{ color: G.grey, fontSize: 14 }}>Entraîne-toi sans limites.</p>}
+            ? <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>Votre essai Premium est terminé.<br /><strong style={{ color: G.ink }}>Continue avec ton coach personnalisé et garde une progression pilotée séance après séance.</strong></p>
+            : <p style={{ color: G.grey, fontSize: 14 }}>Un vrai coach personnel, des analyses utiles et une progression qui s'adapte à toi.</p>}
         </div>
 
-        {/* Offre 2 ans — mise en avant (promo unlock après 4 semaines) */}
+        {/* Offre 2 ans — conservee si besoin marketing */}
         <button onClick={() => setPeriod("biennial")} style={{
           width: "100%", padding: "16px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left",
           border: `2px solid ${isBiennial ? G.blue : G.greyLight}`,
@@ -3853,7 +4438,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
             )}
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois · sans engagement</div>
           </button>
 
           {/* Annuel */}
@@ -3864,8 +4449,8 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>29,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · ~2,50€/mois</div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>39,99€</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · ~3,33€/mois</div>
           </button>
         </div>
 
@@ -3878,8 +4463,10 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
         )}
 
         {isAnnual && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>6 mois offerts vs mensuel plein tarif</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
+              39,99€ facturés une fois · pas de remboursement · ~3,33€/mois
+            </span>
           </div>
         )}
 
@@ -3912,7 +4499,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null }) => {
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
         <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
-          {softContext === "after_first_session" ? "Continuer en gratuit — 4 semaines" : "Continuer en gratuit"}
+          {softContext === "after_first_session" ? "Continuer sans activer Premium" : "Fermer"}
         </button>
       </div>
     </div>
@@ -3936,14 +4523,14 @@ const PremiumTeaser = ({ onUpgrade }) => (
   </div>
 );
 
-const PremiumBanner = ({ weeksTotal, weeksShown, onUpgrade }) => (
+const PremiumBanner = ({ onUpgrade }) => (
   <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #355da3 0%, #8eb3ff 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>+{weeksTotal - weeksShown} semaines bloquées</div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Plan complet · départs D… · ajustement auto</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>Votre essai Premium est terminé</div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Conservez votre coach personnel, vos analyses et les adaptations intelligentes.</div>
     </div>
-    <button onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Voir</button>
+    <button onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>S'abonner</button>
   </div>
 );
 
@@ -3978,7 +4565,7 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
           <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 14 }}>+ {extra} autre{extra > 1 ? "s" : ""} semaine{extra > 1 ? "s" : ""} ensuite</p>
         )}
         <button onClick={onUpgrade} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px rgba(53,93,163,0.28)" }}>
-          Débloquer avec Premium
+          Voir mes recommandations
         </button>
       </div>
     </div>
@@ -4507,8 +5094,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                 <button
                   type="button"
                   onClick={handleCopy}
-                  title={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
-                  aria-label={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
+                  title={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
+                  aria-label={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
                   style={{
                     flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
                     background: copied ? G.mint : isPremium ? G.surface : G.greyXLight,
@@ -4558,8 +5145,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                 <button
                   type="button"
                   onClick={() => onUpgrade?.()}
-                  title="Passe Premium pour accéder aux vidéos techniques"
-                  aria-label="Passe Premium pour accéder aux vidéos techniques"
+                  title="Débloque Premium pour accéder aux vidéos techniques"
+                  aria-label="Débloque Premium pour accéder aux vidéos techniques"
                   style={{
                     display: "flex", width: "100%", marginTop: 12, padding: "10px 12px",
                     borderRadius: 12, border: `1px solid ${G.greyLight}`, background: G.greyXLight,
@@ -4592,8 +5179,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
           <button
             type="button"
             onClick={handleCopy}
-            title={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
-            aria-label={isPremium ? "Copier la séance" : "Passe Premium pour copier la séance"}
+            title={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
+            aria-label={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
             style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
             {copied
@@ -5030,8 +5617,13 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
 const ProgressionLoopView = ({
   plan,
   profile,
+  plans,
+  activePlanId,
   isPremium,
   onComplete,
+  onSwitchPlan,
+  onAddPlan,
+  onDeletePlan,
   onRegenerate,
   onUpgrade,
   onReset,
@@ -5093,6 +5685,16 @@ const ProgressionLoopView = ({
                 </span>
               )}
             </div>
+          </div>
+          <div className="app-shell" style={{ paddingBottom: 12 }}>
+            <PlanSelector
+              plans={plans}
+              activePlanId={activePlanId}
+              isPremium={isPremium}
+              onSwitchPlan={onSwitchPlan}
+              onAddPlan={onAddPlan}
+              onDeletePlan={onDeletePlan}
+            />
           </div>
         </div>
       )}
@@ -5268,15 +5870,235 @@ const ProgressionLoopView = ({
   );
 };
 
+const PlanSelector = ({
+  plans,
+  activePlanId,
+  isPremium,
+  onSwitchPlan,
+  onAddPlan,
+  onDeletePlan,
+}) => {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({ top: 88, left: 16, width: 320 });
+  const planList = plans || [];
+  const activeEntry = planList.find((entry) => entry.id === activePlanId) || planList[0] || null;
+  const visiblePlans = isPremium
+    ? planList
+    : activeEntry
+      ? [activeEntry]
+      : planList.slice(0, 1);
+  const primary = getPlanPrimaryLabel(activeEntry);
+  const secondary = getPlanSecondaryLabel(activeEntry);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const updatePosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const left = Math.max(16, Math.min(rect.left, window.innerWidth - 16 - rect.width));
+      const width = Math.min(rect.width, window.innerWidth - 32);
+      setMenuStyle({ top: rect.bottom + 10, left, width });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  if (!planList.length) return null;
+
+  const closeMenu = () => setOpen(false);
+  const handleSelect = (id) => {
+    onSwitchPlan(id);
+    closeMenu();
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%",
+          minHeight: 56,
+          padding: "12px 16px",
+          borderRadius: 18,
+          cursor: "pointer",
+          border: `1.5px solid ${open ? G.blue : G.greyLight}`,
+          background: open ? G.blueLight : G.surface,
+          color: G.ink,
+          boxShadow: open ? "0 10px 24px rgba(53,93,163,0.10)" : "0 2px 10px rgba(25,28,30,0.04)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          textAlign: "left",
+          marginBottom: 12,
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+            Plan actif
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: open ? G.blueDeep : G.ink, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {primary}
+          </div>
+          {secondary && (
+            <div style={{ fontSize: 12, fontWeight: 600, color: open ? G.blue : G.grey, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {secondary}
+            </div>
+          )}
+        </div>
+        {open ? <ChevronUp size={18} color={G.blue} /> : <ChevronDown size={18} color={G.greyMid} />}
+      </button>
+      {open && createPortal(
+        <>
+          <button
+            type="button"
+            aria-label="Fermer le sélecteur de plan"
+            onClick={closeMenu}
+            style={{
+              position: "fixed",
+              inset: 0,
+              border: "none",
+              background: "rgba(12,14,18,0.42)",
+              zIndex: 79,
+              cursor: "pointer",
+            }}
+          />
+          <div style={{
+            position: "fixed",
+            top: menuStyle.top,
+            left: menuStyle.left,
+            width: menuStyle.width,
+            maxWidth: "calc(100vw - 32px)",
+            background: G.surface,
+            border: `1px solid ${G.greyLight}`,
+            borderRadius: 20,
+            boxShadow: "0 24px 60px rgba(12,14,18,0.20)",
+            zIndex: 80,
+            overflow: "hidden",
+          }}>
+            <div style={{ padding: "10px 10px 6px" }}>
+              {visiblePlans.map((entry) => {
+                const isActive = entry.id === activePlanId;
+                const itemPrimary = getPlanPrimaryLabel(entry);
+                const itemSecondary = getPlanSecondaryLabel(entry);
+                return (
+                  <div key={entry.id} style={{
+                    display: "flex",
+                    alignItems: "stretch",
+                    borderRadius: 16,
+                    border: `1px solid ${isActive ? `${G.blue}33` : "transparent"}`,
+                    background: isActive ? G.blueLight : "transparent",
+                    marginBottom: 6,
+                    overflow: "hidden",
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(entry.id)}
+                      style={{
+                        flex: 1,
+                        minHeight: 56,
+                        padding: "12px 14px",
+                        border: "none",
+                        background: "none",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 800, color: isActive ? G.blueDeep : G.ink, lineHeight: 1.15 }}>
+                        {itemPrimary}
+                      </div>
+                      {itemSecondary && (
+                        <div style={{ fontSize: 11, fontWeight: 600, color: isActive ? G.blue : G.grey, marginTop: 4 }}>
+                          {itemSecondary}
+                        </div>
+                      )}
+                    </button>
+                    {isPremium && visiblePlans.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeletePlan(entry.id);
+                          closeMenu();
+                        }}
+                        aria-label={`Supprimer ${itemPrimary}`}
+                        style={{
+                          width: 42,
+                          border: "none",
+                          borderLeft: `1px solid ${isActive ? `${G.blue}22` : G.greyLight}`,
+                          background: "none",
+                          color: isActive ? G.blue : G.greyMid,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ padding: "4px 10px 10px", borderTop: `1px solid ${G.greyXLight}` }}>
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  onAddPlan();
+                }}
+                style={{
+                  width: "100%",
+                  minHeight: 48,
+                  borderRadius: 14,
+                  cursor: "pointer",
+                  border: `1.5px dashed ${isPremium ? G.greyLight : `${G.gold}66`}`,
+                  background: isPremium ? "transparent" : G.goldLight,
+                  color: isPremium ? G.grey : G.gold,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                {isPremium ? <Plus size={14} /> : <Lock size={12} />}
+                {isPremium ? "Ajouter un plan" : "Débloquer Premium"}
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  );
+};
+
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop }) => {
+const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram }) => {
   if (plan?.isSessionLoop) {
     return (
       <ProgressionLoopView
         plan={plan}
         profile={profile}
+        plans={plans}
+        activePlanId={activePlanId}
         isPremium={isPremium}
         onComplete={(status) => onComplete(0, 0, status)}
+        onSwitchPlan={onSwitchPlan}
+        onAddPlan={onAddPlan}
+        onDeletePlan={onDeletePlan}
         onRegenerate={onRegenerateLoop}
         onUpgrade={onUpgrade}
         onReset={onReset}
@@ -5286,22 +6108,12 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
     );
   }
 
-  // Premium : plan complet débloqué
-  // Free    : les 4 premières semaines visibles tout de suite ; le reste = Premium
-  const unlocked = isPremium
-    ? plan.weeks.length
-    : Math.min(FREE_WEEKS_LIMIT, plan.weeks.length);
-
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
 
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
                  || "Mon plan";
-  const blockedWeeks = !isPremium && plan.totalRealWeeks > FREE_WEEKS_LIMIT
-    ? plan.totalRealWeeks - FREE_WEEKS_LIMIT
-    : 0;
-
   return (
     <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
       {/* ── Header sticky ── */}
@@ -5321,7 +6133,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
               fontSize: 12, fontWeight: 600, color: G.inkLight,
               background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
             }}>
-              Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{isPremium ? plan.weeks.length : Math.min(plan.weeks.length, plan.totalRealWeeks ?? plan.weeks.length)}
+              Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{plan.weeks.length}
             </span>
             {currentWeekIndex >= 0 && currentWeek?.focus && (
               <span style={{ fontSize: 12, color: G.blue, fontWeight: 600 }}>{currentWeek.focus}</span>
@@ -5329,79 +6141,38 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
           </div>
         </div>
         {/* Plan switcher */}
-        {plans && plans.length > 0 && (
-          <div className="h-scroll" style={{ paddingBottom: 12 }}>
-            {plans.map(entry => {
-              const isActive = entry.id === activePlanId;
-              const lbl = GOALS.find(g => g.id === entry.profile.goal)?.label
-                       || CATEGORIES.find(c => c.id === entry.profile.category)?.label
-                       || "Plan";
-              const days = entry.profile.eventDate
-                ? Math.max(0, Math.ceil((new Date(entry.profile.eventDate) - new Date()) / 86400000))
-                : null;
-              return (
-                <div key={entry.id} style={{
-                  flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 100,
-                  border: `1.5px solid ${isActive ? G.blue : G.greyLight}`,
-                  background: isActive ? G.blueLight : G.surface,
-                  transition: "all 0.15s", overflow: "hidden",
-                }}>
-                  <button onClick={() => onSwitchPlan(entry.id)} style={{
-                    padding: "8px 12px 8px 14px", cursor: "pointer",
-                    background: "none", border: "none",
-                    color: isActive ? G.blue : G.grey,
-                    fontSize: 13, fontWeight: 700, whiteSpace: "nowrap",
-                    minHeight: 44,
-                  }}>
-                    {lbl}{days !== null ? ` · J−${days}` : ""}
-                  </button>
-                  {plans.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onDeletePlan(entry.id); }}
-                      aria-label="Supprimer ce plan"
-                      style={{
-                      padding: "8px 12px 8px 4px", cursor: "pointer",
-                      background: "none", border: "none",
-                      color: isActive ? G.blue : G.greyMid,
-                      fontSize: 16, lineHeight: 1, display: "flex", alignItems: "center", minHeight: 44,
-                    }}>×</button>
-                  )}
-                </div>
-              );
-            })}
-            <button onClick={onAddPlan} style={{
-              flexShrink: 0, padding: "8px 14px", borderRadius: 100, cursor: "pointer",
-              border: `1.5px dashed ${isPremium ? G.greyLight : G.gold + "66"}`,
-              background: isPremium ? "transparent" : G.goldLight,
-              color: isPremium ? G.greyMid : G.gold, fontSize: 13, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", minHeight: 44,
-            }}>
-              {isPremium ? <Plus size={13} /> : <Lock size={12} />}
-              {isPremium ? "Ajouter" : "Premium"}
-            </button>
-          </div>
-        )}
+        <div className="app-shell" style={{ paddingBottom: 12 }}>
+          <PlanSelector
+            plans={plans}
+            activePlanId={activePlanId}
+            isPremium={isPremium}
+            onSwitchPlan={onSwitchPlan}
+            onAddPlan={onAddPlan}
+            onDeletePlan={onDeletePlan}
+          />
+        </div>
       </div>
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
 
-        {/* Free : changer d'objectif bien visible au-dessus du plan */}
         {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
 
-        {/* Semaines débloquées */}
-        {plan.weeks.slice(0, unlocked).map((week, i) => (
+        <UpdateProgramCard
+          profile={profile}
+          isPremium={isPremium}
+          onUpgrade={onUpgrade}
+          onSave={onUpdateProgram}
+          stravaBestPace={null}
+        />
+
+        {plan.weeks.map((week, i) => (
           <div key={i}>
             <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} />
           </div>
         ))}
 
-        {/* Free : paywall au-delà des 4 premières semaines */}
-        {!isPremium && blockedWeeks > 0 && (
-          <PremiumBanner weeksTotal={plan.totalRealWeeks} weeksShown={FREE_WEEKS_LIMIT} onUpgrade={onUpgrade} />
-        )}
+        {!isPremium && <PremiumBanner onUpgrade={onUpgrade} />}
 
-        {/* Premium : lien discret en bas (ils peuvent aussi ajouter un plan) */}
         {isPremium && <ResetConfirmButton onReset={onReset} variant="subtle" />}
       </div>
     </div>
@@ -5682,19 +6453,10 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
 const Dashboard = ({
   plan, profile, onTabChange, onSignOut, user,
-  isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate,
+  isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
 }) => {
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
-  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
-  const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
-  const nextSession = currentWeek?.sessions.find(s => !isSessionResolved(s));
-
-  // Weekly progress
-  const weekPlanned  = currentWeek?.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
-  const weekDone     = currentWeek?.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0) ?? 0;
-  const weekSessions = currentWeek?.sessions.filter(isSessionResolved).length ?? 0;
-  const weekTotal    = currentWeek?.sessions.length ?? 0;
 
   // Avatar / name
   const avatarUrl = user?.user_metadata?.avatar_url
@@ -5766,7 +6528,7 @@ const Dashboard = ({
             >
               Accueil
             </a>
-            <button type="button" onClick={() => onTabChange("profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
+            <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
               <Settings size={20} color={G.grey} />
             </button>
           </div>
@@ -5795,137 +6557,68 @@ const Dashboard = ({
           onUpgrade={onUpgrade}
         />
 
-        {/* ── Mode boucle Nager & Progresser ── */}
-        {isLoop ? (
-          <>
-            {isPremium && stats.totalSessions > 0 && (
-              <div style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14,
-              }}>
-                {[
-                  { label: "Séances", value: String(stats.totalSessions) },
-                  { label: "Distance", value: `${(stats.totalMeters / 1000).toFixed(1)} km` },
-                  { label: "Série", value: String(stats.streak) },
-                ].map((c) => (
-                  <div key={c.label} style={{
-                    background: G.surface, borderRadius: 14, padding: "12px 10px",
-                    border: `1px solid ${G.greyLight}`, textAlign: "center",
-                  }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>{c.value}</div>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: G.grey, marginTop: 2 }}>{c.label}</div>
-                  </div>
-                ))}
+        <div style={{
+          background: `linear-gradient(135deg, ${G.surface} 0%, ${G.blueLight} 100%)`,
+          borderRadius: 24,
+          padding: "20px 18px",
+          marginBottom: 16,
+          border: `1px solid ${G.greyLight}`,
+          boxShadow: "0 12px 30px rgba(53,93,163,0.08)",
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.blue, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+                Dashboard natation
               </div>
-            )}
-            <ProgressionLoopView
-              plan={plan}
-              profile={profile}
-              isPremium={isPremium}
-              onComplete={(status) => onComplete?.(0, 0, status)}
-              onRegenerate={onRegenerateLoop}
-              onUpgrade={onUpgrade}
-              onReset={onReset}
-              onShare={onShare}
-              onEditFeedback={onEditFeedback}
-              showHistory={false}
-              embed
-            />
-            <HomeBadgesSection plan={plan} />
-          </>
-        ) : (
-        <>
-        {/* ── Plan finished banner ── */}
-        {planFinished && (
+            </div>
+            <div style={{ minWidth: 56, height: 56, borderRadius: 18, background: G.surface, border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <BarChart2 size={24} color={G.blue} />
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {[
+              { label: "Distance", value: `${(stats.totalMeters / 1000).toFixed(1)} km`, Icon: Waves, color: G.blue, bg: G.blueLight },
+              { label: "Séances", value: String(stats.totalSessions), Icon: Check, color: G.mint, bg: G.mintLight },
+              { label: "Série", value: String(stats.streak), Icon: Flame, color: G.coral, bg: G.coralLight },
+              { label: "Progression", value: `${checkBadges(stats).length}/${BADGE_DEFS.length}`, Icon: Trophy, color: G.gold, bg: G.goldLight },
+            ].map((item) => (
+              <div key={item.label} style={{ background: G.surface, borderRadius: 16, padding: "14px 12px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <item.Icon size={18} color={item.color} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{item.value}</div>
+                  <div style={{ fontSize: 11, color: G.grey, marginTop: 3 }}>{item.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {!isLoop && planFinished && (
           <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
             {plan.isProgression
               ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Plan terminé</h2><p style={{ color: G.grey, fontSize: 13 }}>Programme complété à 100 %.</p></>
+              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
             }
           </div>
         )}
 
-        {/* ── Prochaine séance — card principale ── */}
-        {nextSession ? (
-          <button onClick={() => onTabChange("plan")} style={{
-            width: "100%", textAlign: "left", cursor: "pointer",
-            background: G.surface, borderRadius: 20, padding: "18px", marginBottom: 12,
-            border: `1px solid ${G.greyLight}`,
-            boxShadow: "0 1px 3px rgba(25,28,30,0.04), 0 10px 28px rgba(53,93,163,0.07)",
-            display: "block",
-          }}>
-            {(() => {
-              const tm = TYPE_META[nextSession.type] || TYPE_META.ENDURANCE;
-              const intensity = parseIntensity(nextSession.intensity);
-              return (
-                <>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Prochaine séance</span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 800, color: tm.color, background: tm.bg,
-                      padding: "4px 9px", borderRadius: 8, letterSpacing: "0.04em",
-                    }}>{nextSession.type}</span>
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{nextSession.title}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: intensity.cue ? 10 : 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: G.blue, background: G.blueLight, padding: "5px 10px", borderRadius: 8 }}>{nextSession.distance}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, background: G.greyXLight, padding: "5px 10px", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      <Timer size={12} color={G.greyMid} />
-                      {formatDuration(nextSession.duration)}
-                    </span>
-                    {intensity.zone && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: G.inkLight, border: `1px solid ${G.greyLight}`, padding: "5px 10px", borderRadius: 8 }}>{intensity.zone}</span>
-                    )}
-                  </div>
-                  {intensity.cue && (
-                    <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: 0 }}>{intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}</p>
-                  )}
-                  <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 6, color: G.blue, fontSize: 13, fontWeight: 700 }}>
-                    Voir le plan <ArrowRight size={14} color={G.blue} />
-                  </div>
-                </>
-              );
-            })()}
-          </button>
-        ) : !planFinished && (
-          <div style={{ background: G.surface, borderRadius: 20, padding: "20px 18px", marginBottom: 12, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
-            <Trophy size={28} color={G.gold} style={{ margin: "0 auto 8px" }} />
-            <p style={{ color: G.grey, fontSize: 14, fontWeight: 600 }}>Toutes les séances sont terminées !</p>
-          </div>
-        )}
+        <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
 
-        {/* ── Semaine en cours ── */}
-        <div style={{
-          background: G.surface, borderRadius: 20, padding: "18px",
-          boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
-          border: `1px solid ${G.greyLight}`,
-          marginBottom: 12,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cette semaine</div>
-            <span style={{ fontSize: 13, fontWeight: 800, color: G.blue, fontVariantNumeric: "tabular-nums" }}>{weekSessions}/{weekTotal}</span>
-          </div>
-          <div style={{ height: 6, borderRadius: 6, background: G.greyLight, overflow: "hidden", marginBottom: 12 }}>
-            <div style={{
-              width: `${weekTotal > 0 ? Math.round((weekSessions / weekTotal) * 100) : 0}%`,
-              height: "100%", borderRadius: 6, background: G.blue, transition: "width 0.4s ease",
-            }} />
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: G.inkLight, background: G.greyXLight, padding: "5px 10px", borderRadius: 8 }}>
-              {weekSessions} / {weekTotal} séances
-            </span>
-            {weekPlanned > 0 && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: G.inkLight, background: G.greyXLight, padding: "5px 10px", borderRadius: 8 }}>
-                {weekDone > 0 ? weekDone.toLocaleString("fr") : "0"} / {weekPlanned >= 1000 ? `${(weekPlanned / 1000).toFixed(1)} km` : `${weekPlanned} m`}
-              </span>
-            )}
-          </div>
-        </div>
+        <StravaSection
+          user={user}
+          plan={plan}
+          profile={profile}
+          currentPace100={profile?.pace100}
+          onPaceUpdate={onPaceUpdate}
+          onValidateSession={onValidateSession}
+          showProgramActions={false}
+          isPremium={isPremium}
+          onUpgrade={onUpgrade}
+        />
 
-        {/* ── Badges (débloqués + grisés) ── */}
         <HomeBadgesSection plan={plan} />
-        </>
-        )}
       </div>
     </div>
   );
@@ -8331,22 +9024,15 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
     };
   });
   const allWeeks = shouldUseCoachGenerator(goal)
-    ? buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, FREE_FREQ_LIMIT)
+    ? buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, 5)
     : buildWeeks(phaseList);
-  const weeks = isPremium ? allWeeks : allWeeks.slice(0, FREE_MAX_WEEKS);
-  const previewWeeks = isPremium || rawWeeks <= FREE_MAX_WEEKS ? [] : allWeeks.slice(FREE_MAX_WEEKS, FREE_MAX_WEEKS + 3);
-  return { weeks, previewWeeks, totalRealWeeks: rawWeeks, isPremium, isProgression: false, isSessionLoop: false, startDate: Date.now(), version: PLAN_VERSION };
+  return { weeks: allWeeks, previewWeeks: [], totalRealWeeks: rawWeeks, isPremium, isProgression: false, isSessionLoop: false, startDate: Date.now(), version: PLAN_VERSION };
 };
 
 /** Peut-on générer une nouvelle séance (boucle gratuit) ? */
 const loopCanGenerateNext = (plan, premium) => {
   if (premium) return { ok: true };
-  const used = plan.freeSessionsUsed ?? 0;
-  if (used >= FREE_LOOP_SESSION_CAP) return { ok: false, reason: "cap" };
-  const wk = isoWeekKey();
-  const weekCount = plan.weekGenKey === wk ? (plan.weekGenCount || 0) : 0;
-  if (weekCount >= FREE_LOOP_WEEKLY_CAP) return { ok: false, reason: "weekly" };
-  return { ok: true };
+  return { ok: false, reason: "expired" };
 };
 
 /** Applique compteurs freemium après une génération de séance boucle. */
@@ -8389,62 +9075,27 @@ export default function App() {
   const locationRef = useRef(location);
   locationRef.current = location;
   const authOpenedFromUrlRef = useRef(false);
-  // Hydratation initiale : si un plan anonyme existe en local, on saute l'onboarding et on l'affiche directement.
   const [screen, setScreen] = useState(() => {
     if (isAuthPath(window.location.pathname)) return "auth";
-    try {
-      const raw = localStorage.getItem("myswym_anon_plans");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return "app";
-      }
-    } catch {}
     return "onboarding";
   });
   const [activeTab, setActiveTab] = useState("home");
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
   const [profile, setProfile] = useState(BLANK_PROFILE);
-  // Multi-plan — hydratés depuis localStorage anonyme si présent (utilisateur pas encore connecté)
-  const [plans, setPlans] = useState(() => {
-    try {
-      const raw = localStorage.getItem("myswym_anon_plans");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {}
-    return [];
-  });
-  const [activePlanId, setActivePlanId] = useState(() => {
-    try {
-      const raw = localStorage.getItem("myswym_anon_plans");
-      const active = localStorage.getItem("myswym_anon_active");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return active || parsed[0].id;
-        }
-      }
-    } catch {}
-    return null;
-  });
+  const [plans, setPlans] = useState([]);
+  const [activePlanId, setActivePlanId] = useState(null);
   const [addingPlan, setAddingPlan] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState(null);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
   const [sessionFeedbackTarget, setSessionFeedbackTarget] = useState(null);
   /** Goûts compte (EMA retours) — miroir aussi sur plan.taste pour offline / régénération */
-  const [tasteProfile, setTasteProfile] = useState(() => {
-    try {
-      const anon = localStorage.getItem("myswym_anon_taste");
-      if (anon) return normalizeTaste(JSON.parse(anon));
-    } catch {}
-    return blankTaste();
-  });
+  const [tasteProfile, setTasteProfile] = useState(() => blankTaste());
   const [shareSession, setShareSession] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const showToast = (msg, duration = 5000) => { setToast(msg); setTimeout(() => setToast(null), duration); };
   const prevBadgesRef = useRef([]);
   const plansHydratedRef = useRef(false);
@@ -8455,6 +9106,10 @@ export default function App() {
   const plansSaveGenRef = useRef(0);
 
   // Valeurs dérivées du plan actif
+  const accessState = getAccessState(user);
+  const canGenerateProgram = !!user && accessState.canGenerateProgram;
+  const canUpdateProgram = !!user && accessState.canUpdateProgram;
+  const canUseMultiPlan = !!user && accessState.canUseMultiPlan;
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
@@ -8496,6 +9151,10 @@ export default function App() {
   };
 
   const openUpgrade = (softContext = null) => {
+    trackEvent("paywall_shown", {
+      context: softContext || "generic",
+      access_status: accessState.status,
+    });
     setUpgradeSoftContext(softContext);
     setShowUpgrade(true);
   };
@@ -8539,6 +9198,7 @@ export default function App() {
   };
 
   const handleAuthSuccess = (u) => {
+    trackEvent(location.pathname === "/inscription" ? "signup_completed" : "login_completed", {}, { essential: true });
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
@@ -8564,6 +9224,9 @@ export default function App() {
       .catch(() => supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user)));
 
     if (payment === "success" || payment === "portal") {
+      if (payment === "success") {
+        trackEvent("checkout_returned_success", {}, { essential: true });
+      }
       syncAndApply();
       if (payment === "success") {
         showToast("Activation en cours… Si ça tarde, clique sur « Actualiser le statut » dans Profil.", 8000);
@@ -8577,6 +9240,9 @@ export default function App() {
       return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
     }
 
+    if (payment === "cancel") {
+      trackEvent("checkout_abandoned", {}, { essential: true });
+    }
     supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
   }, []);
 
@@ -8612,10 +9278,10 @@ export default function App() {
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         showToast(`Strava connecté${json.athlete ? ` — Bonjour ${json.athlete}` : ""} · Synchronisation en cours…`, 6000);
-        setActiveTab("profile");
+        setActiveTab("home");
       } catch (e) {
         showToast(`Erreur Strava : ${e.message}`, 8000);
-        setActiveTab("profile");
+        setActiveTab("home");
       }
     };
 
@@ -8625,32 +9291,41 @@ export default function App() {
   }, []);
 
   // Régénère le plan actif quand le premium est débloqué et que le plan était tronqué
+  // (plans multi-semaines uniquement — la boucle Nager & Progresser a toujours 1 semaine)
   useEffect(() => {
-    if (!isPremium || !activePlanEntry) return;
+    if (!activePlanEntry) return;
     const { plan: ap, profile: aprof } = activePlanEntry;
     if (!aprof?.goal || !ap?.weeks) return;
+    if (ap.isSessionLoop || ap.isProgression || isProgressionGoal(aprof.goal)) return;
     const originalStartDate = ap.startDate ?? activePlanEntry.startDate ?? Date.now();
     const expectedWeeks = computePlanTotalWeeks(aprof, originalStartDate);
     const storedWeeks = ap.totalRealWeeks ?? 0;
-    const needsLegacyRepair = ap.weeks.length <= FREE_WEEKS_LIMIT && expectedWeeks > ap.weeks.length;
+    const needsLegacyRepair = expectedWeeks > ap.weeks.length;
     const needsMoreWeeks = Math.max(storedWeeks, expectedWeeks) > ap.weeks.length;
     const needsMetadataRepair = storedWeeks > 0 && storedWeeks < expectedWeeks;
     if (!needsLegacyRepair && !needsMoreWeeks && !needsMetadataRepair) return;
+    let cancelled = false;
     setScreen("loading");
     const taste = ap.taste || tasteProfile;
-    generatePlan({ ...aprof, taste }, true, originalStartDate).then(newPlan => {
-      const mergedWeeks = mergePreservingProgress(ap.weeks ?? [], newPlan.weeks);
-      const planWithDate = {
-        ...newPlan,
-        taste,
-        weeks: mergedWeeks,
-        previewWeeks: [],
-        ...(originalStartDate ? { startDate: originalStartDate } : {}),
-      };
-      setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
-      setScreen("app"); setActiveTab("home");
-    });
-  }, [isPremium, activePlanEntry, activePlanId, tasteProfile]);
+    generatePlan({ ...aprof, taste }, true, originalStartDate)
+      .then(newPlan => {
+        if (cancelled) return;
+        const mergedWeeks = mergePreservingProgress(ap.weeks ?? [], newPlan.weeks);
+        const planWithDate = {
+          ...newPlan,
+          taste,
+          weeks: mergedWeeks,
+          previewWeeks: [],
+          ...(originalStartDate ? { startDate: originalStartDate } : {}),
+        };
+        setPlans(prev => prev.map(e => e.id === activePlanId ? { ...e, plan: planWithDate } : e));
+        setScreen("app"); setActiveTab("home");
+      })
+      .catch(() => {
+        if (!cancelled) setScreen("app");
+      });
+    return () => { cancelled = true; };
+  }, [activePlanId, tasteProfile, plan?.isSessionLoop, plan?.weeks?.length, plan?.totalRealWeeks]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -8675,6 +9350,12 @@ export default function App() {
               setUser(synced);
               const premium = checkIsPremium(synced);
               setIsPremium(premium);
+              const syncedAccess = getAccessState(synced);
+              if (syncedAccess.status === ACCESS_STATUS.TRIAL) {
+                trackEvent("trial_started", {
+                  trial_ends_at: syncedAccess.trialEndsAt,
+                }, { essential: true });
+              }
               if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
             })
             .catch(() => {});
@@ -8696,15 +9377,10 @@ export default function App() {
   }, []);
 
   async function loadUserData(userId, userIsPremium = false) {
-    const enforce = (p) => (!userIsPremium && p?.weeks && !p.isSessionLoop) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+    const enforce = (p) => p;
 
-    // Goûts compte (Supabase) — fallback localStorage + migration anon
+    // Goûts compte (Supabase) — fallback localStorage du compte uniquement
     let loadedTaste = blankTaste();
-    let anonTaste = blankTaste();
-    try {
-      const anonRaw = localStorage.getItem("myswym_anon_taste");
-      if (anonRaw) anonTaste = normalizeTaste(JSON.parse(anonRaw));
-    } catch {}
     try {
       const { data: tasteRow, error: tasteErr } = await supabase
         .from("user_taste_profile")
@@ -8727,7 +9403,6 @@ export default function App() {
         if (raw) loadedTaste = normalizeTaste(JSON.parse(raw));
       } catch {}
     }
-    loadedTaste = mergeTasteProfiles(loadedTaste, anonTaste);
     setTasteProfile(loadedTaste);
     if (loadedTaste.sampleCount > 0) {
       try { localStorage.setItem(`myswym_taste_${userId}`, JSON.stringify(loadedTaste)); } catch {}
@@ -8740,39 +9415,13 @@ export default function App() {
           if (import.meta.env.DEV) console.warn("[taste] upsert failed (local kept)", error.message);
           return;
         }
-        try { localStorage.removeItem("myswym_anon_taste"); } catch {}
       });
     }
-
-    // Lit le plan anonyme à migrer (créé par l'utilisateur avant qu'il ne se connecte)
-    let anonPlans = [];
-    let anonActive = null;
-    try {
-      const anonRaw = localStorage.getItem("myswym_anon_plans");
-      if (anonRaw) {
-        const parsed = JSON.parse(anonRaw);
-        if (Array.isArray(parsed) && parsed.length > 0) anonPlans = parsed;
-      }
-      anonActive = localStorage.getItem("myswym_anon_active");
-    } catch {}
-
-    // Merge le plan anon avec les plans existants (dédupliqué par empreinte profil)
-    // puis nettoie la clé anonyme une fois la migration faite.
     const finalize = (existing, existingActive) => {
       let merged = dedupePlans(existing || []);
       let active = existingActive || null;
-      if (anonPlans.length > 0) {
-        const fps = new Set(merged.map(planFingerprint));
-        const toAdd = anonPlans.filter(e => !fps.has(planFingerprint(e)));
-        merged = dedupePlans([...merged, ...toAdd]);
-        if (!active && anonActive) active = anonActive;
-        if (!active && merged.length > 0) active = merged[0].id;
-        if (active && !merged.some(e => e.id === active)) active = merged[0]?.id ?? null;
-        try {
-          localStorage.removeItem("myswym_anon_plans");
-          localStorage.removeItem("myswym_anon_active");
-        } catch {}
-      }
+      if (!active && merged.length > 0) active = merged[0].id;
+      if (active && !merged.some(e => e.id === active)) active = merged[0]?.id ?? null;
       if (merged.length > 0) {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
@@ -8851,8 +9500,7 @@ export default function App() {
       }
     } catch {}
 
-    // 4. Aucun plan existant — si on a un plan anonyme, on le promeut comme plan principal
-    // Sinon, on bascule sur l'onboarding pour qu'il puisse créer son premier plan.
+    // 4. Aucun plan existant — onboarding d'un nouveau compte ou compte sans programme
     if (!finalize([], null)) {
       plansHydratedRef.current = true;
       setScreen("onboarding");
@@ -8883,21 +9531,6 @@ export default function App() {
     const interval = setInterval(check, 5 * 60 * 1000);
     return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
   }, [user?.id]);
-
-  // Persistance anonyme : tant qu'il n'y a pas d'utilisateur, on sauvegarde les plans localement
-  // pour qu'ils survivent au refresh. Au login, ils sont migrés vers la clé user (cf. loadUserData).
-  useEffect(() => {
-    if (user) return;
-    try {
-      if (plans.length > 0) {
-        localStorage.setItem("myswym_anon_plans", JSON.stringify(plans));
-        if (activePlanId) localStorage.setItem("myswym_anon_active", activePlanId);
-      } else {
-        localStorage.removeItem("myswym_anon_plans");
-        localStorage.removeItem("myswym_anon_active");
-      }
-    } catch {}
-  }, [plans, activePlanId, user]);
 
   useEffect(() => {
     if (!user || plans.length === 0 || !plansHydratedRef.current) return;
@@ -9010,7 +9643,7 @@ export default function App() {
         const remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
         if (!localPlans.length && !remotePlans.length) return;
 
-        const enforce = (p) => (!isPremium && p?.weeks && !p.isSessionLoop) ? { ...p, weeks: p.weeks.slice(0, FREE_WEEKS_LIMIT) } : p;
+        const enforce = (p) => p;
         const { plans: merged, active, updatedAt } = mergePlanLists(
           localPlans, remotePlans, localActive, data?.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
         );
@@ -9175,11 +9808,18 @@ export default function App() {
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
   const handleGenerate = async () => {
+    if (!user) {
+      trackEvent("signup_started", { source: "plan_generation_gate" }, { essential: true });
+      openAuth("register");
+      return;
+    }
+    if (!canGenerateProgram) {
+      openUpgrade("trial_expired");
+      return;
+    }
     setScreen("loading"); setError(null);
     try {
-      let genProfile = !isPremium && profile.sessionsPerWeek > FREE_FREQ_LIMIT
-        ? { ...profile, sessionsPerWeek: FREE_FREQ_LIMIT, taste: tasteProfile }
-        : { ...profile, taste: tasteProfile };
+      let genProfile = { ...profile, taste: tasteProfile };
       if (isProgressionGoal(genProfile.goal) || genProfile.category === "progression") {
         genProfile = { ...genProfile, sessionsPerWeek: genProfile.sessionsPerWeek || 1 };
       }
@@ -9187,7 +9827,12 @@ export default function App() {
       if (genProfile.level === "découverte" || genProfile.level === "beginner") {
         genProfile = { ...genProfile, pace100: null };
       }
-      const p  = await generatePlan(genProfile, isPremium);
+      const p  = await generatePlan(genProfile, true);
+      trackEvent("plan_generated", {
+        goal: genProfile.goal,
+        level: genProfile.level,
+        sessions_per_week: genProfile.sessionsPerWeek,
+      }, { essential: true });
       const id = `plan_${Date.now()}`;
       let entryProfile = { ...genProfile };
       delete entryProfile.taste; // goûts = compte (plan.taste + user_taste_profile), pas le profil onboarding
@@ -9258,7 +9903,10 @@ export default function App() {
   };
 
   const handleRegenerateLoopSession = () => {
-    if (!isPremium) return;
+    if (!canUpdateProgram) {
+      openUpgrade("trial_expired");
+      return;
+    }
     setPlans((prev) => prev.map((entry) => {
       if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
       const cur = entry.plan.weeks?.[0]?.sessions?.[0];
@@ -9301,6 +9949,8 @@ export default function App() {
       // Soft paywall classique après 1ʳᵉ séance (hors écran 8 séances)
       if (resolvedStatus === "done" && !isPremium) {
         const prevDone = (active.plan.history || []).filter((s) => s.completed).length;
+        if (prevDone === 0) trackEvent("first_session_completed", { plan_type: "loop" }, { essential: true });
+        if (prevDone === 1) trackEvent("second_session_completed", { plan_type: "loop" }, { essential: true });
         if (prevDone === 0) {
           try {
             if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
@@ -9338,6 +9988,8 @@ export default function App() {
       const activeClassic = plans.find((e) => e.id === activePlanId);
       const prevDone = countCompletedSessions(activeClassic?.plan);
       const alreadyDone = activeClassic?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex]?.completed;
+      if (!alreadyDone && prevDone === 0) trackEvent("first_session_completed", { plan_type: "classic" }, { essential: true });
+      if (!alreadyDone && prevDone === 1) trackEvent("second_session_completed", { plan_type: "classic" }, { essential: true });
       if (!alreadyDone && prevDone === 0) {
         try {
           if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
@@ -9414,8 +10066,6 @@ export default function App() {
       }).then(({ error }) => {
         if (error && import.meta.env.DEV) console.warn("[taste] persist failed (local kept)", error.message);
       });
-    } else {
-      try { localStorage.setItem("myswym_anon_taste", JSON.stringify(normalized)); } catch {}
     }
     return normalized;
   };
@@ -9616,6 +10266,10 @@ export default function App() {
 
   const handlePaceUpdate = (newPace100) => {
     if (!activePlanEntry) return;
+    if (!canUpdateProgram) {
+      openUpgrade("trial_expired");
+      return Promise.resolve();
+    }
     const week = getCurrentWeekNumber(activePlanEntry.plan);
     let nextProfile = {
       ...activePlanEntry.profile,
@@ -9631,7 +10285,7 @@ export default function App() {
     setPlans(prev => prev.map(e => (e.id !== activePlanId ? e : { ...e, profile: nextProfile })));
 
     // Applique les allures aux semaines non entamées (plans classiques Premium)
-    if (!isPremium || activePlanEntry.plan?.isSessionLoop) return Promise.resolve();
+    if (!canUpdateProgram || activePlanEntry.plan?.isSessionLoop) return Promise.resolve();
 
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
     const taste = activePlanEntry.plan?.taste || tasteProfile;
@@ -9664,6 +10318,10 @@ export default function App() {
 
   const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
     if (!activePlanEntry) return;
+    if (!canUpdateProgram) {
+      openUpgrade("trial_expired");
+      return;
+    }
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
     const week = getCurrentWeekNumber(activePlanEntry.plan);
     let newProfile = {
@@ -9730,7 +10388,8 @@ export default function App() {
   };
 
   const handleAddPlan = () => {
-    if (!isPremium) { openUpgrade(); return; }
+    if (!user) { openAuth("register"); return; }
+    if (!canUseMultiPlan) { openUpgrade("trial_expired"); return; }
     setAddingPlan(true);
     setProfile(BLANK_PROFILE);
     setStep(1);
@@ -9738,8 +10397,12 @@ export default function App() {
   };
 
   const handleSwitchPlan = (id) => {
+    if (!canUseMultiPlan && id !== activePlanId) {
+      openUpgrade("trial_expired");
+      return;
+    }
     setActivePlanId(id);
-    setActiveTab("home");
+    setActiveTab("plan");
   };
 
   const handleDeletePlan = (id) => {
@@ -9886,9 +10549,8 @@ export default function App() {
     </>
   );
 
-  // L'AuthScreen ne s'affiche plus que si l'utilisateur le demande explicitement
-  // (clic sur "Se connecter" / "Sauvegarde ton plan"). L'onboarding et la dashboard sont
-  // accessibles sans compte ; le plan est persisté localement via la clé "myswym_anon_*".
+  // L'AuthScreen s'affiche quand l'utilisateur le demande explicitement
+  // ou quand l'app doit rattacher le programme et l'essai Premium à un compte.
   if (screen === "auth") return (
     <>
       <style>{css}</style><FontLoader />
@@ -10015,13 +10677,31 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={() => openUpgrade()} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} isPremium={isPremium} onSignOut={handleSignOut} onPortal={handlePortal} onUpgrade={() => openUpgrade()} onRefreshStatus={handleRefreshStatus} onPaceUpdate={handlePaceUpdate} onUpdateProgram={handleUpdateProgram} onValidateSession={handleComplete} onUserUpdate={setUser} theme={theme} onToggleTheme={handleToggleTheme} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={() => openUpgrade()} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
+        <SettingsDrawer
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          user={user}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          isPremium={isPremium}
+          onUpgrade={() => openUpgrade()}
+          onPortal={handlePortal}
+          onRefreshStatus={handleRefreshStatus}
+          onGoProfile={() => setActiveTab("profile")}
+          onOpenAuth={openAuth}
+          onSignOut={handleSignOut}
+          plan={plan}
+          profile={activeProfile}
+          onPaceUpdate={handlePaceUpdate}
+          onValidateSession={handleComplete}
+        />
 
         {sessionFeedbackTarget !== null && (() => {
           const s = sessionFeedbackTarget.archived
@@ -10052,7 +10732,7 @@ export default function App() {
             onClose={() => setLoopPaywall(null)}
           />
         )}
-        {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={upgradeSoftContext || plan?.isSessionLoop ? null : (plan?.totalRealWeeks > FREE_WEEKS_LIMIT ? plan.totalRealWeeks : null)} />}
+        {showUpgrade && <UpgradeModal onClose={closeUpgrade} softContext={upgradeSoftContext} weeksBlocked={null} />}
         {deletePlanId && (
           <ConfirmSheet
             title="Supprimer ce plan ?"

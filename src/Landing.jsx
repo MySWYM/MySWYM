@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "./supabase.js";
+import { trackEvent } from "./lib/analytics.js";
 import {
   Waves, Target, Calendar, Gauge, Clock, ArrowRight, Check, ChevronDown,
   Zap, Shield, Layers, Timer, Dumbbell,
@@ -36,14 +37,14 @@ const C = {
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
-const CTA_HREF = "/"; // onboarding App.jsx
+const CTA_HREF = "/inscription";
 const FREE_WEEKS = 4; // FREE_WEEKS_LIMIT dans App.jsx
 
 // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx / Tarifs.jsx
 const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
 const PRICE_ANNUAL = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
 const PRICE_MONTHLY_LABEL = "4,99€";
-const PRICE_ANNUAL_LABEL = "29,99€";
+const PRICE_ANNUAL_LABEL = "39,99€";
 
 function FontLoader() {
   useEffect(() => {
@@ -938,10 +939,12 @@ function Pricing() {
         const ref = new URLSearchParams(window.location.search).get("ref");
         if (ref?.trim()) localStorage.setItem("myswym_ref", ref.trim().toUpperCase());
       } catch { /* ignore */ }
+      trackEvent("signup_started", { source: "landing_pricing" }, { essential: true });
       window.location.href = "/inscription";
       return;
     }
     try {
+      trackEvent("checkout_started", { source: "landing_pricing", price_id: priceId }, { essential: true });
       let referralCode;
       try {
         referralCode = (session.user?.user_metadata?.referred_by
@@ -1238,7 +1241,6 @@ export default function Landing() {
       <HowItWorks />
       <SessionPreview />
       <Trust />
-      <Pricing />
       {/* Reviews : section commentée — activer dès les premiers avis réels */}
       <FAQ />
       <FinalCTA />

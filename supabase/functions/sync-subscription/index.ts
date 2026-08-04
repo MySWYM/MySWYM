@@ -1,11 +1,20 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ACCESS_STATUS,
+  buildExpiredState,
+  buildTrialState,
+  getAccessState,
+  isoFromUnixSeconds,
+  persistAccessState,
+  stripEntitlementFromUserMeta,
+  type AccessStateRow,
+  type AuthUser,
+} from "../_shared/access-state.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
-
-const ENTITLEMENT_KEYS = ["subscription", "subscription_end", "cancel_at_period_end", "stripe_customer_id"] as const;
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
@@ -25,18 +34,7 @@ function corsHeaders(reqOrigin: string | null) {
   };
 }
 
-function stripEntitlementFromUserMeta(meta: Record<string, unknown> | undefined) {
-  const next = { ...(meta ?? {}) };
-  for (const key of ENTITLEMENT_KEYS) delete next[key];
-  return next;
-}
-
-async function resolveCustomerId(user: {
-  id: string;
-  email?: string;
-  user_metadata?: Record<string, unknown>;
-  app_metadata?: Record<string, unknown>;
-}) {
+async function resolveCustomerId(user: AuthUser) {
   const stored = (user.app_metadata?.stripe_customer_id ?? user.user_metadata?.stripe_customer_id) as string | undefined;
   if (stored) {
     try {
@@ -55,6 +53,34 @@ async function resolveCustomerId(user: {
 async function findActiveSubscription(customerId: string) {
   const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
   return subs.data.find(s => ACTIVE_STATUSES.has(s.status)) ?? null;
+}
+
+function buildSubscriptionState(
+  userId: string,
+  current: AccessStateRow | null,
+  customerId: string | null,
+  sub: Stripe.Subscription,
+): AccessStateRow {
+  const subscriptionEndsAt = isoFromUnixSeconds(sub.current_period_end ?? null);
+  const subscriptionStartedAt = isoFromUnixSeconds(sub.start_date ?? null);
+  const cancelAtPeriodEnd = sub.cancel_at_period_end === true;
+  const accessStatus = sub.status === "trialing"
+    ? ACCESS_STATUS.trial
+    : cancelAtPeriodEnd
+      ? ACCESS_STATUS.canceled
+      : ACCESS_STATUS.active;
+
+  return {
+    user_id: userId,
+    access_status: accessStatus,
+    trial_started_at: current?.trial_started_at ?? null,
+    trial_ends_at: current?.trial_ends_at ?? null,
+    trial_used: current?.trial_used ?? false,
+    subscription_started_at: subscriptionStartedAt,
+    subscription_ends_at: subscriptionEndsAt,
+    cancel_at_period_end: cancelAtPeriodEnd,
+    stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -86,35 +112,49 @@ Deno.serve(async (req) => {
     const sourceUser = adminUser ?? user;
 
     const customerId = await resolveCustomerId(sourceUser);
-    let isPremium = false;
-    let subscriptionEnd: number | null = null;
-    let cancelAtPeriodEnd = false;
+    const currentState = await getAccessState(supabaseAdmin, user.id);
+    let nextState: AccessStateRow;
 
     if (customerId) {
       const sub = await findActiveSubscription(customerId);
       if (sub) {
-        isPremium = true;
-        subscriptionEnd = sub.current_period_end ?? null;
-        cancelAtPeriodEnd = sub.cancel_at_period_end === true;
+        nextState = buildSubscriptionState(user.id, currentState, customerId, sub);
+      } else if (currentState?.trial_used) {
+        nextState = buildExpiredState(user.id, {
+          ...currentState,
+          stripe_customer_id: customerId ?? currentState.stripe_customer_id,
+        });
+      } else {
+        nextState = buildTrialState(user.id, {
+          ...currentState,
+          stripe_customer_id: customerId ?? currentState?.stripe_customer_id ?? null,
+        });
       }
+    } else if (currentState?.trial_used) {
+      const trialStillActive = currentState.access_status === ACCESS_STATUS.trial
+        && currentState.trial_ends_at
+        && Date.parse(currentState.trial_ends_at) > Date.now();
+      nextState = trialStillActive
+        ? currentState
+        : buildExpiredState(user.id, currentState);
+    } else {
+      nextState = buildTrialState(user.id, currentState);
     }
 
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      app_metadata: {
-        ...(sourceUser.app_metadata ?? {}),
-        subscription: isPremium ? "premium" : "free",
-        stripe_customer_id: customerId ?? sourceUser.app_metadata?.stripe_customer_id ?? null,
-        subscription_end: isPremium ? subscriptionEnd : null,
-        cancel_at_period_end: isPremium ? cancelAtPeriodEnd : false,
-      },
-      user_metadata: stripEntitlementFromUserMeta(sourceUser.user_metadata),
-    });
+    const persisted = await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);
+    const entitled = persisted.access_status === ACCESS_STATUS.trial
+      || persisted.access_status === ACCESS_STATUS.active
+      || (persisted.access_status === ACCESS_STATUS.canceled
+        && !!persisted.subscription_ends_at
+        && Date.parse(persisted.subscription_ends_at) > Date.now());
 
     return new Response(JSON.stringify({
-      isPremium,
-      subscription: isPremium ? "premium" : "free",
-      subscription_end: subscriptionEnd,
-      stripe_customer_id: customerId,
+      isPremium: entitled,
+      subscription: entitled ? "premium" : "free",
+      subscription_status: persisted.access_status,
+      subscription_end: persisted.subscription_ends_at,
+      trial_ends_at: persisted.trial_ends_at,
+      stripe_customer_id: persisted.stripe_customer_id,
     }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
