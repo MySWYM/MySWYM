@@ -5003,6 +5003,10 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
 
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
+    if (!isPremium) {
+      onUpgrade?.();
+      return;
+    }
     if (resolved) {
       onComplete(weekIndex, sessionIndex, "reset");
       setShowMenu(false);
@@ -5036,40 +5040,51 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   };
 
   const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
+  const locked = !isPremium;
+  const skeletonBars = Math.min(Math.max(blockCount || 3, 3), 5);
 
   return (
     <div style={{
-      background: resolved ? G.greyXLight : G.surface,
+      background: resolved || locked ? G.greyXLight : G.surface,
       borderRadius: 24,
-      border: `1px solid ${resolved ? G.greyLight : "rgba(53,93,163,0.10)"}`,
-      opacity: resolved ? 0.78 : 1,
+      border: `1px solid ${resolved || locked ? G.greyLight : "rgba(53,93,163,0.10)"}`,
+      opacity: resolved ? 0.78 : locked ? 0.92 : 1,
       transition: "opacity 0.25s, box-shadow 0.25s",
-      boxShadow: resolved ? "none" : "0 2px 12px rgba(142,179,255,0.10), 0 8px 32px rgba(53,93,163,0.06)",
+      boxShadow: resolved || locked ? "none" : "0 2px 12px rgba(142,179,255,0.10), 0 8px 32px rgba(53,93,163,0.06)",
       overflow: "hidden",
       position: "relative",
     }}>
-      {!resolved && (
+      {!resolved && !locked && (
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
           background: tm.color, borderRadius: "3px 0 0 3px",
         }} />
       )}
+      {locked && (
+        <div style={{
+          position: "absolute", top: 12, right: 12, zIndex: 2,
+          width: 28, height: 28, borderRadius: 10,
+          background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Lock size={13} color={G.greyMid} />
+        </div>
+      )}
 
-      {/* Header */}
+      {/* Header — squelette toujours visible (titre / type / distance) */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px 14px 18px" }}>
         <button
-          onClick={() => setShowTooltip(v => !v)}
+          onClick={() => !locked && setShowTooltip(v => !v)}
           aria-label={`Type ${session.type}`}
           style={{
             width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-            background: resolved ? G.greyLight : tm.bg,
-            border: "none", cursor: "pointer",
+            background: resolved || locked ? G.greyLight : tm.bg,
+            border: "none", cursor: locked ? "default" : "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
             position: "relative",
           }}
         >
-          <tm.Icon size={18} color={resolved ? G.greyMid : tm.color} />
-          {showTooltip && tm.tooltip && (
+          <tm.Icon size={18} color={resolved || locked ? G.greyMid : tm.color} />
+          {!locked && showTooltip && tm.tooltip && (
             <div
               onClick={e => { e.stopPropagation(); setShowTooltip(false); }}
               style={{
@@ -5087,9 +5102,9 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: resolved ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, color: resolved ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
+            <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -5102,22 +5117,23 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
               <button
                 type="button"
                 onClick={handleCheckboxClick}
-                aria-label={resolved ? "Réinitialiser la séance" : "Marquer la séance"}
+                aria-label={locked ? "Débloque Premium pour marquer la séance" : resolved ? "Réinitialiser la séance" : "Marquer la séance"}
                 style={{
                   width: 44, height: 44, borderRadius: "50%",
-                  border: `2px solid ${checkboxColor}`,
-                  background: resolved ? checkboxColor : "transparent",
+                  border: `2px solid ${locked ? G.greyLight : checkboxColor}`,
+                  background: locked ? G.greyXLight : (resolved ? checkboxColor : "transparent"),
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
                   flexShrink: 0,
                 }}
               >
-                {done && <Check size={16} color={G.white} />}
-                {skipped === "missed" && <RotateCcw size={15} color={G.white} />}
-                {skipped === "not_done" && <X size={15} color={G.white} />}
+                {locked && <Lock size={14} color={G.greyMid} />}
+                {!locked && done && <Check size={16} color={G.white} />}
+                {!locked && skipped === "missed" && <RotateCcw size={15} color={G.white} />}
+                {!locked && skipped === "not_done" && <X size={15} color={G.white} />}
               </button>
               )}
-              {!hideCheckbox && showMenu && (
+              {!hideCheckbox && !locked && showMenu && (
                 <div
                   onClick={e => e.stopPropagation()}
                   style={{
@@ -5152,11 +5168,10 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
             </div>
           </div>
 
-          {/* Meta chips — clean, no middle dots */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             <span style={{
-              fontSize: 11, fontWeight: 700, color: resolved ? G.greyMid : tm.color,
-              background: resolved ? G.greyLight : tm.bg, padding: "4px 9px", borderRadius: 8,
+              fontSize: 11, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color,
+              background: resolved || locked ? G.greyLight : tm.bg, padding: "4px 9px", borderRadius: 8,
             }}>{session.distance}</span>
             <span style={{
               fontSize: 11, fontWeight: 600, color: G.grey, background: G.greyXLight,
@@ -5165,19 +5180,19 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
               <Timer size={11} color={G.greyMid} />
               {formatDuration(session.duration)}
             </span>
-            {intensity.zone && (
+            {!locked && intensity.zone && (
               <span style={{
                 fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.surface,
                 border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
               }}>{intensity.zone}</span>
             )}
           </div>
-          {intensity.cue && !expanded && (
+          {!locked && intensity.cue && !expanded && (
             <p style={{ fontSize: 12, color: G.grey, marginTop: 8, lineHeight: 1.4, marginBottom: 0 }}>
               {intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}
             </p>
           )}
-          {done && onEditFeedback && (
+          {!locked && done && onEditFeedback && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onEditFeedback(weekIndex, sessionIndex); }}
@@ -5193,9 +5208,53 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
         </div>
       </div>
 
-      {/* Workout blocks */}
-      {blockCount > 0 && (
+      {/* Exercices : contenu réel Premium / squelette gris verrouillé sinon */}
+      {(blockCount > 0 || locked) && (
         <>
+          {locked ? (
+            <button
+              type="button"
+              onClick={() => onUpgrade?.()}
+              aria-label="Débloque Premium pour voir les exercices"
+              style={{
+                width: "100%", padding: "14px 16px 16px",
+                background: "#f0f1f4",
+                border: "none", borderTop: `1px solid ${G.greyLight}`,
+                cursor: "pointer", textAlign: "left",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: G.greyMid, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Lock size={13} color={G.greyMid} />
+                  {blockCount > 0 ? `${blockCount} bloc${blockCount > 1 ? "s" : ""} verrouillés` : "Séance verrouillée"}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: G.blue }}>Voir</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {Array.from({ length: skeletonBars }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: i === 0 || i === skeletonBars - 1 ? 36 : 48,
+                      borderRadius: 12,
+                      background: i % 2 === 0 ? "#d8dbe2" : "#e4e6eb",
+                      width: `${88 - (i % 3) * 12}%`,
+                    }}
+                  />
+                ))}
+              </div>
+              <div style={{
+                marginTop: 14, padding: "10px 12px", borderRadius: 12,
+                background: G.surface, border: `1px solid ${G.greyLight}`,
+                fontSize: 12, fontWeight: 700, color: G.inkLight,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}>
+                <Lock size={12} color={G.greyMid} />
+                Active l’essai pour accéder à la séance
+              </div>
+            </button>
+          ) : (
+            <>
           <button
             type="button"
             onClick={() => setExpanded(v => !v)}
@@ -5239,7 +5298,6 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                     );
                     return;
                   }
-                  // works : une carte par série (ou regroupées déjà)
                   const group = [];
                   g.lines.forEach((raw, li) => {
                     const parsed = parseSessionDetail(raw);
@@ -5278,23 +5336,21 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                 <button
                   type="button"
                   onClick={handleCopy}
-                  title={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
-                  aria-label={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
+                  title="Copier la séance"
+                  aria-label="Copier la séance"
                   style={{
                     flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
-                    background: copied ? G.mint : isPremium ? G.surface : G.greyXLight,
+                    background: copied ? G.mint : G.surface,
                     border: `1px solid ${copied ? G.mint : G.greyLight}`,
                     fontSize: 12, fontWeight: 600,
-                    color: copied ? G.white : isPremium ? G.inkLight : G.grey,
+                    color: copied ? G.white : G.inkLight,
                     cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   }}
                 >
                   {copied
                     ? <><CheckCheck size={13} color="#fff" /> Copié</>
-                    : isPremium
-                      ? <><Copy size={13} color={G.grey} /> Copier la séance</>
-                      : <><Lock size={13} color={G.grey} /> Copier la séance</>}
+                    : <><Copy size={13} color={G.grey} /> Copier la séance</>}
                 </button>
                 {done && onShare && (
                   <button onClick={() => onShare(session)} style={{
@@ -5307,41 +5363,21 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
                   </button>
                 )}
               </div>
-              {isPremium && (
-                <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
-                  Colle le texte dans WhatsApp ou la description Strava.
-                </p>
-              )}
-              {isPremium ? (
-                <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "12px 4px 0" }}>
-                  Un terme ou un éducatif pas clair ?{" "}
-                  <a
-                    href={INSTAGRAM_MYSWYM}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
-                  >
-                    Vidéos sur Instagram
-                  </a>
-                  {" "}— Premium.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onUpgrade?.()}
-                  title="Débloque Premium pour accéder aux vidéos techniques"
-                  aria-label="Débloque Premium pour accéder aux vidéos techniques"
-                  style={{
-                    display: "flex", width: "100%", marginTop: 12, padding: "10px 12px",
-                    borderRadius: 12, border: `1px solid ${G.greyLight}`, background: G.greyXLight,
-                    fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
-                    alignItems: "center", justifyContent: "center", gap: 6,
-                  }}
+              <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
+                Colle le texte dans WhatsApp ou la description Strava.
+              </p>
+              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "12px 4px 0" }}>
+                Un terme ou un éducatif pas clair ?{" "}
+                <a
+                  href={INSTAGRAM_MYSWYM}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
                 >
-                  <Lock size={13} color={G.grey} />
-                  Vidéo technique
-                </button>
-              )}
+                  Vidéos sur Instagram
+                </a>
+                {" "}— Premium.
+              </p>
               <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "8px 4px 0" }}>
                 Vocabulaire ?{" "}
                 <a
@@ -5356,22 +5392,22 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
               </p>
             </div>
           )}
+            </>
+          )}
         </>
       )}
-      {blockCount === 0 && (
+      {!locked && blockCount === 0 && (
         <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
           <button
             type="button"
             onClick={handleCopy}
-            title={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
-            aria-label={isPremium ? "Copier la séance" : "Débloque Premium pour copier la séance"}
+            title="Copier la séance"
+            aria-label="Copier la séance"
             style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
             {copied
               ? <><CheckCheck size={12} /> Copié</>
-              : isPremium
-                ? <><Copy size={12} /> Copier la séance</>
-                : <><Lock size={12} /> Copier la séance</>}
+              : <><Copy size={12} /> Copier la séance</>}
           </button>
           {done && onShare && (
             <button onClick={() => onShare(session)} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -5920,24 +5956,35 @@ const ProgressionLoopView = ({
             </span>
           </div>
           {objectives.length > 0 && (
-            <div>
+            <div style={{ filter: isPremium ? "none" : "grayscale(1)", opacity: isPremium ? 1 : 0.75 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>
                 Objectifs techniques
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {objectives.map((obj) => (
-                  <div key={obj} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: G.ink, fontWeight: 600 }}>
-                    <Target size={14} color={G.blue} />
-                    {obj}
-                  </div>
-                ))}
-              </div>
+              {isPremium ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {objectives.map((obj) => (
+                    <div key={obj} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: G.ink, fontWeight: 600 }}>
+                      <Target size={14} color={G.blue} />
+                      {obj}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <button type="button" onClick={() => onUpgrade?.()} style={{ width: "100%", border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, padding: 0, textAlign: "left" }}>
+                  {[0.92, 0.78, 0.64].slice(0, Math.min(objectives.length, 3)).map((w, i) => (
+                    <div key={i} style={{ height: 14, borderRadius: 7, background: G.greyLight, width: `${w * 100}%` }} />
+                  ))}
+                  <span style={{ fontSize: 12, fontWeight: 700, color: G.greyMid, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Lock size={12} /> Objectifs verrouillés
+                  </span>
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {/* Détail séance (lecture seule via SessionCard, actions custom en dessous) */}
-        <div style={{ marginBottom: 14, pointerEvents: resolved ? "none" : "auto" }}>
+        <div style={{ marginBottom: 14, pointerEvents: resolved && isPremium ? "none" : "auto" }}>
           <SessionCard
             session={session}
             weekIndex={0}
@@ -5954,20 +6001,26 @@ const ProgressionLoopView = ({
 
         {!resolved && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-            <Btn variant="blue" onClick={() => onComplete("done")} style={{ width: "100%" }}>
-              Terminer la séance
-            </Btn>
-            <button
-              type="button"
-              onClick={() => onComplete("not_done")}
-              style={{
-                width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
-                border: `1.5px solid ${G.greyLight}`, background: G.surface,
-                color: G.grey, fontSize: 14, fontWeight: 700,
-              }}
+            <Btn
+              variant="blue"
+              onClick={() => (isPremium ? onComplete("done") : onUpgrade?.())}
+              style={{ width: "100%" }}
             >
-              L'abandonner
-            </button>
+              {isPremium ? "Terminer la séance" : "Activer l’essai pour nager"}
+            </Btn>
+            {isPremium && (
+              <button
+                type="button"
+                onClick={() => onComplete("not_done")}
+                style={{
+                  width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
+                  border: `1.5px solid ${G.greyLight}`, background: G.surface,
+                  color: G.grey, fontSize: 14, fontWeight: 700,
+                }}
+              >
+                L'abandonner
+              </button>
+            )}
           </div>
         )}
 
@@ -10344,6 +10397,10 @@ export default function App() {
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
     const resolvedStatus = status || "done";
+    if (!isPremium && resolvedStatus !== "reset") {
+      openUpgrade("trial_required");
+      return;
+    }
     const active = plans.find((e) => e.id === activePlanId);
 
     // ── Boucle Nager & Progresser ──
