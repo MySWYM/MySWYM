@@ -111,7 +111,7 @@ export function PolitiqueConfidentialitePage() {
 
       <H>2. Données collectées</H>
       <Ul items={[
-        "Identifiants de compte : adresse e-mail, mot de passe (hashé par le prestataire d’auth) ou connexion via Google / Apple, métadonnées de profil (prénom, avatar).",
+        "Identifiants de compte : adresse e-mail, mot de passe (hashé par le prestataire d’auth) ou connexion via Google (Apple à venir), métadonnées de profil (prénom, avatar).",
         "Données sportives et plans : objectif, niveau, fréquence, bassin, allures, progression des séances, historiques locaux et synchronisés.",
         "Paiement & abonnement : identifiants Stripe (customer / subscription), statut Premium — MySWYM ne stocke pas les numéros de carte.",
         "Parrainage : code filleul (?ref=) et code parrain Premium le cas échéant.",
@@ -130,8 +130,8 @@ export function PolitiqueConfidentialitePage() {
 
       <H>4. Destinataires / sous-traitants</H>
       <Ul items={[
-        "Supabase — authentification (email, Google, Apple), base de données, stockage d’avatars.",
-        "Google / Apple — uniquement si vous choisissez de vous connecter via leur compte (identité et e-mail transmis à Supabase).",
+        "Supabase — authentification (email, Google ; Apple à venir), base de données, stockage d’avatars.",
+        "Google (et Apple, une fois activé) — uniquement si vous choisissez de vous connecter via leur compte (identité et e-mail transmis à Supabase).",
         "Stripe — paiement et portail abonnement.",
         "Vercel — hébergement et diffusion du site.",
         "Strava — uniquement si vous connectez votre compte Strava.",

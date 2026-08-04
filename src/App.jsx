@@ -3200,12 +3200,29 @@ const SocialAuthButtons = ({ disabled, onError, intent = "login" }) => {
       </button>
       <button
         type="button"
-        disabled={!!disabled || !!busy}
-        onClick={() => startOAuth("apple")}
-        style={{ ...btnBase, background: G.ink, color: G.inverse, border: `1.5px solid ${G.ink}` }}
+        disabled
+        aria-disabled="true"
+        title="Bientôt disponible"
+        style={{
+          ...btnBase,
+          background: G.ink,
+          color: G.inverse,
+          border: `1.5px solid ${G.ink}`,
+          opacity: 0.45,
+          cursor: "not-allowed",
+          position: "relative",
+        }}
       >
         <AppleMark />
-        {busy === "apple" ? "Redirection…" : "Continuer avec Apple"}
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          Continuer avec Apple
+          <span style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+            padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.18)", color: G.inverse,
+          }}>
+            À venir
+          </span>
+        </span>
       </button>
     </div>
   );
@@ -3313,10 +3330,10 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
     reset:    "Mot de passe oublié",
   };
   const subtitleMap = {
-    password: "Connecte-toi avec Google, Apple ou ton email.",
+    password: "Connecte-toi avec Google ou ton email.",
     register: referralCode
       ? `Code parrain ${referralCode} — −20% sur ta 1ère facture Premium.`
-      : "Crée ton compte avec Google, Apple ou un email.",
+      : "Crée ton compte avec Google ou un email.",
     reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
   };
   const ctaMap = {
@@ -4440,6 +4457,59 @@ const ReferralShareCard = () => {
           </button>
         </>
       )}
+    </div>
+  );
+};
+
+const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
+  const goal = GOALS.find((g) => g.id === profile?.goal);
+  const weeks = plan?.totalRealWeeks || plan?.weeks?.length || 0;
+  const freq = profile?.sessionsPerWeek || 0;
+  const firstSession = plan?.weeks?.[0]?.sessions?.[0];
+  const isLoop = !!plan?.isSessionLoop || !!plan?.isProgression;
+
+  return (
+    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onDismiss?.()}>
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Check size={26} color={G.white} />
+          </div>
+          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
+            Ton plan est prêt
+          </h3>
+          <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
+            Voici ton chemin. Active l’essai 7 jours (carte requise) pour le débloquer — annule avant la fin = 0€.
+          </p>
+        </div>
+
+        <div style={{ background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 8 }}>{goal?.label || "Objectif"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: G.grey }}>
+            {!isLoop && weeks > 0 && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{weeks} semaines</span>}
+            {freq > 0 && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{freq}× / semaine</span>}
+            {profile?.level && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{profile.level}</span>}
+            {profile?.pool && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{profile.pool} m</span>}
+          </div>
+          {firstSession?.title && (
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${G.greyLight}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Aperçu 1ʳᵉ séance</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{firstSession.title}</div>
+              {firstSession.distance != null && (
+                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 4 }}>{firstSession.distance} m</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Btn variant="blue" onClick={onContinue} disabled={loading}>
+          {loading ? "Redirection…" : "Essai 7 jours — carte requise"}
+        </Btn>
+        <button type="button" onClick={onDismiss} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
+          Voir l’aperçu sans activer
+        </button>
+      </div>
     </div>
   );
 };
@@ -9173,6 +9243,8 @@ export default function App() {
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
+  const [showPlanReady, setShowPlanReady] = useState(false);
+  const [planReadyLoading, setPlanReadyLoading] = useState(false);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const [theme, setTheme] = useState(() => {
@@ -9183,6 +9255,7 @@ export default function App() {
     }
   });
   const forceAuthRef = useRef(false);
+  const checkoutAbandonedRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
   const locationRef = useRef(location);
@@ -9242,6 +9315,7 @@ export default function App() {
   }, []);
 
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
+  // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const legacyAuth = params.get("auth");
@@ -9254,11 +9328,18 @@ export default function App() {
       return;
     }
     if (isAuthPath(location.pathname)) {
+      // Déjà connecté → sortir de /connexion (évite quiz collé sous l’URL auth)
+      if (user) {
+        forceAuthRef.current = false;
+        authOpenedFromUrlRef.current = false;
+        navigate("/", { replace: true });
+        return;
+      }
       authOpenedFromUrlRef.current = true;
       forceAuthRef.current = true;
       setScreen("auth");
     }
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, user]);
 
   const openAuth = (mode = "password") => {
     forceAuthRef.current = true;
@@ -9338,8 +9419,14 @@ export default function App() {
     const syncAndApply = () => syncSubscriptionFromStripe()
       .then(async (u) => {
         const premium = applyUser(u);
-        if (payment === "success" && premium && readPendingOnboarding()) {
-          await resumePendingRef.current(u);
+        if (payment === "success" && premium) {
+          setShowPlanReady(false);
+          // Legacy / race : si un pending quiz reste, générer. Sinon le plan aperçu est déjà là.
+          if (readPendingOnboarding()) {
+            await resumePendingRef.current(u);
+          } else {
+            clearPendingOnboarding();
+          }
         }
       })
       .catch(() => supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user)));
@@ -9350,7 +9437,7 @@ export default function App() {
       }
       syncAndApply();
       if (payment === "success") {
-        showToast("Essai activé… Génération de ton plan si besoin.", 8000);
+        showToast("Essai activé — ton plan est débloqué.", 8000);
       }
       const retry = (ms) => setTimeout(syncAndApply, ms);
       const t1 = retry(2000);
@@ -9363,6 +9450,12 @@ export default function App() {
 
     if (payment === "cancel") {
       trackEvent("checkout_abandoned", {}, { essential: true });
+      // Sortie définitive du tunnel paiement — plus de pending / plus de re-checkout auto
+      clearPendingOnboarding();
+      checkoutAbandonedRef.current = true;
+      showToast("Pas de souci — tu peux activer l’essai quand tu veux.", 8000);
+      setShowPlanReady(true);
+      openUpgrade("trial_required");
     }
     supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
   }, []);
@@ -9461,7 +9554,15 @@ export default function App() {
       setUser(u);
       setIsPremium(checkIsPremium(u));
       if (u) {
-        forceAuthRef.current = false;
+        // Si on est sur /connexion alors qu’une session existe, renvoyer à l’app
+        // (ne jamais laisser loadUserData coller le quiz sous l’URL auth).
+        if (isAuthPath(locationRef.current.pathname)) {
+          forceAuthRef.current = false;
+          authOpenedFromUrlRef.current = false;
+          navigate("/", { replace: true });
+        } else {
+          forceAuthRef.current = false;
+        }
         loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
@@ -9478,8 +9579,12 @@ export default function App() {
                 }, { essential: true });
               }
               if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
-              // Après inscription/connexion depuis le questionnaire → Checkout essai (pas au simple reload)
-              if (event === "SIGNED_IN" && readPendingOnboarding()) {
+              // Quiz stashed → générer l’aperçu (SIGNED_IN et reload avec pending)
+              if (
+                (event === "SIGNED_IN" || event === "INITIAL_SESSION")
+                && readPendingOnboarding()
+                && !checkoutAbandonedRef.current
+              ) {
                 await resumePendingRef.current(synced);
               }
             })
@@ -9625,9 +9730,39 @@ export default function App() {
       }
     } catch {}
 
-    // 4. Aucun plan existant — onboarding d'un nouveau compte ou compte sans programme
+    // 4. Aucun plan existant — reprendre le pending (quiz) plutôt que reset éternel à l’étape 1
     if (!finalize([], null)) {
       plansHydratedRef.current = true;
+      // Race : resumePending a pu écrire le plan pendant ce load
+      try {
+        const raw = localStorage.getItem(`myswym_plans_${userId}`);
+        const activeId = localStorage.getItem(`myswym_active_${userId}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            if (finalize(enforceAll(parsed), activeId)) return;
+          }
+        }
+      } catch {}
+
+      // /connexion|/inscription gagne toujours — ne jamais écraser AuthScreen
+      if (isAuthPath(locationRef.current.pathname) || forceAuthRef.current) {
+        setScreen("auth");
+        return;
+      }
+
+      const pending = readPendingOnboarding();
+      if (pending?.profile && !checkoutAbandonedRef.current) {
+        // SIGNED_IN appellera resumePending ; évite setStep(1) pendant ce temps
+        setScreen("loading");
+        return;
+      }
+
+      // Abandon paiement ou compte sans plan : questionnaire OK, mais pending mort
+      if (checkoutAbandonedRef.current) {
+        checkoutAbandonedRef.current = false;
+        clearPendingOnboarding();
+      }
       setScreen("onboarding");
       setStep(1);
     }
@@ -9939,28 +10074,36 @@ export default function App() {
       openAuth("register");
       return;
     }
-    if (!canGenerateProgram) {
-      stashPendingOnboarding({ profile, addingPlan, tasteProfile });
-      trackEvent("checkout_started", {
-        source: "plan_generation_gate",
-        price_id: PRICE_MONTHLY,
-      }, { essential: true });
-      await startMonthlyCheckout();
+    // Nouveau plan supplémentaire = Premium uniquement
+    if (addingPlan && !canGenerateProgram) {
+      openUpgrade("trial_required");
       return;
     }
-    await generatePlanFromProfile(profile, { addingPlanFlag: addingPlan, taste: tasteProfile });
+    // Option B : aperçu d’abord, Stripe ensuite (évite boucle questionnaire si abandon)
+    const openPaywallAfter = !canGenerateProgram;
+    await generatePlanFromProfile(profile, {
+      addingPlanFlag: addingPlan,
+      taste: tasteProfile,
+      openPaywallAfter,
+    });
   };
 
   const startMonthlyCheckout = async () => {
+    setPlanReadyLoading(true);
     showToast("Redirection vers l'essai 7 jours (carte requise)…");
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
       const session = refreshData?.session;
       if (!session) {
+        setPlanReadyLoading(false);
         openAuth("register");
         return;
       }
       const referralCode = resolveReferralCode(session.user);
+      trackEvent("checkout_started", {
+        source: "plan_ready_sheet",
+        price_id: PRICE_MONTHLY,
+      }, { essential: true });
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
         headers: {
@@ -9979,15 +10122,17 @@ export default function App() {
         window.location.href = json.url;
         return;
       }
+      setPlanReadyLoading(false);
       showToast(json.error || "Impossible d'ouvrir le paiement.", 8000);
       openUpgrade("trial_required");
     } catch {
+      setPlanReadyLoading(false);
       showToast("Erreur réseau. Réessaie.", 8000);
       openUpgrade("trial_required");
     }
   };
 
-  const generatePlanFromProfile = async (sourceProfile, { addingPlanFlag = false, taste = null } = {}) => {
+  const generatePlanFromProfile = async (sourceProfile, { addingPlanFlag = false, taste = null, openPaywallAfter = false } = {}) => {
     setScreen("loading"); setError(null);
     try {
       let genProfile = { ...sourceProfile, taste: taste || tasteProfile };
@@ -10003,6 +10148,7 @@ export default function App() {
         goal: genProfile.goal,
         level: genProfile.level,
         sessions_per_week: genProfile.sessionsPerWeek,
+        preview: openPaywallAfter,
       }, { essential: true });
       const id = `plan_${Date.now()}`;
       let entryProfile = { ...genProfile };
@@ -10023,7 +10169,36 @@ export default function App() {
         setPlans([entry]);
       }
       setActivePlanId(id);
+      plansHydratedRef.current = true;
+      // Persistance immédiate avant Stripe / reload (évite reset questionnaire)
+      if (user?.id) {
+        try {
+          const now = new Date().toISOString();
+          let nextPlans = [entry];
+          if (addingPlanFlag) {
+            const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+            const prev = raw ? JSON.parse(raw) : [];
+            nextPlans = Array.isArray(prev) ? [...prev.filter((p) => p.id !== id), entry] : [entry];
+          }
+          localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+          localStorage.setItem(`myswym_active_${user.id}`, id);
+          localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+          supabase.from("user_plans").upsert({
+            user_id: user.id,
+            plans_json: nextPlans,
+            active_plan_id: id,
+            profile: entry.profile,
+            plan: entry.plan,
+            updated_at: now,
+          }, { onConflict: "user_id" }).then(() => {});
+        } catch {}
+      }
+      // Sortie définitive du questionnaire — même si le paiement est abandonné plus tard
+      clearPendingOnboarding();
       setScreen("app"); setActiveTab("home");
+      if (openPaywallAfter) {
+        setShowPlanReady(true);
+      }
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
       setScreen("onboarding");
@@ -10034,17 +10209,22 @@ export default function App() {
   const resumePendingOnboarding = async (u) => {
     const pending = readPendingOnboarding();
     if (!pending?.profile) return false;
-    if (!checkIsPremium(u)) {
-      await startMonthlyCheckout();
-      return true;
-    }
+    // Clear tôt : évite boucle questionnaire / checkout si abandon Stripe
     clearPendingOnboarding();
     if (pending.tasteProfile) setTasteProfile(normalizeTaste(pending.tasteProfile));
     setProfile(pending.profile);
     if (pending.addingPlan) setAddingPlan(true);
+    const needsPaywall = !checkIsPremium(u);
+    // addingPlan sans Premium → upgrade modal (pas de preview gratuit multi-plans)
+    if (pending.addingPlan && needsPaywall) {
+      openUpgrade("trial_required");
+      setScreen("app");
+      return true;
+    }
     await generatePlanFromProfile(pending.profile, {
       addingPlanFlag: !!pending.addingPlan,
       taste: pending.tasteProfile ? normalizeTaste(pending.tasteProfile) : tasteProfile,
+      openPaywallAfter: needsPaywall && !pending.addingPlan,
     });
     return true;
   };
@@ -10772,6 +10952,42 @@ export default function App() {
                 <BrandLogo variant="wordmark" height={22} />
               </div>
             </div>
+            {user && (
+              <div style={{
+                marginBottom: 20, padding: "12px 14px", borderRadius: 14,
+                background: G.blueLight, border: `1px solid ${G.greyLight}`,
+                display: "flex", flexDirection: "column", gap: 10,
+              }}>
+                <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.4 }}>
+                  Connecté · <span style={{ color: G.ink, fontWeight: 600 }}>{user.email}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {!isPremium && (
+                    <button
+                      type="button"
+                      onClick={() => openUpgrade("trial_required")}
+                      style={{
+                        flex: 1, minWidth: 120, padding: "10px 12px", borderRadius: 10, border: "none",
+                        background: G.ink, color: G.inverse, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      }}
+                    >
+                      Activer l’essai
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    style={{
+                      flex: 1, minWidth: 120, padding: "10px 12px", borderRadius: 10,
+                      border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink,
+                      fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              </div>
+            )}
             {(() => {
               // Flux (T100 retiré de l'onboarding → carte Premium sur l'accueil) :
               //   progression : 1 → 3 (niveau) → generate — pas de date ni fréquence
@@ -10845,6 +11061,14 @@ export default function App() {
           </div>
         </div>
       </div>
+      {showUpgrade && (
+        <UpgradeModal
+          onClose={closeUpgrade}
+          softContext={upgradeSoftContext}
+          weeksBlocked={null}
+          trialEligible={!accessState.trialUsed}
+        />
+      )}
       <Footer />
     </>
   );
@@ -10919,6 +11143,15 @@ export default function App() {
             reason={loopPaywall}
             onUpgrade={() => { setLoopPaywall(null); openUpgrade(); }}
             onClose={() => setLoopPaywall(null)}
+          />
+        )}
+        {showPlanReady && !isPremium && plan && (
+          <PlanReadySheet
+            plan={plan}
+            profile={activeProfile || profile}
+            loading={planReadyLoading}
+            onContinue={startMonthlyCheckout}
+            onDismiss={() => setShowPlanReady(false)}
           />
         )}
         {showUpgrade && (

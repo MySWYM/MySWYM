@@ -222,10 +222,10 @@ export default function TarifsPage() {
   const PRICE_ANNUAL_LABEL = "39,99€";
   const annualSavings = (4.99 * 12 - 39.99).toFixed(2).replace(".", ",");
 
-  const freeHighlights = [
-    "Historique et profil conserves meme apres l'essai.",
-    "Consultation des seances deja generees.",
-    "Statistiques de base et fonctionnalites essentielles.",
+  const trialHighlights = [
+    "Acces Premium complet pendant 7 jours.",
+    "Carte requise · annule avant la fin = 0€.",
+    "Puis 4,99€/mois sans engagement.",
   ];
 
   const annualHighlights = [
@@ -242,20 +242,20 @@ export default function TarifsPage() {
   ];
 
   const comparisonRows = [
-    ["Generation de programme", "Non apres l'essai", "Oui, a tout moment"],
+    ["Generation de programme", "Pendant l'essai", "Oui, a tout moment"],
     ["Consultation des seances existantes", "Oui", "Oui"],
     ["Historique", "Oui", "Oui"],
-    ["Statistiques", "Quelques stats", "Statistiques avancees"],
-    ["Coach personnel", false, true],
-    ["Programme adaptatif", false, true],
-    ["Analyses completes", false, true],
-    ["Prediction des chronos", false, true],
-    ["Gestion automatique de la fatigue", false, true],
-    ["Adaptation apres chaque seance", false, true],
-    ["Bibliotheque complete", false, true],
-    ["Defis et badges", "Base", "Complet"],
-    ["Synchronisation Strava", "Base", "Complete"],
-    ["Nouveautes futures", false, true],
+    ["Statistiques", "Completes pendant l'essai", "Statistiques avancees"],
+    ["Coach personnel", true, true],
+    ["Programme adaptatif", true, true],
+    ["Analyses completes", true, true],
+    ["Prediction des chronos", true, true],
+    ["Gestion automatique de la fatigue", true, true],
+    ["Adaptation apres chaque seance", true, true],
+    ["Bibliotheque complete", true, true],
+    ["Defis et badges", "Complet pendant l'essai", "Complet"],
+    ["Synchronisation Strava", "Complete pendant l'essai", "Complete"],
+    ["Nouveautes futures", true, true],
   ];
 
   const premiumBenefits = [
@@ -612,16 +612,16 @@ export default function TarifsPage() {
             }}
           >
             <div style={{ fontSize: 12, color: C.secondary, fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
-              GRATUIT
+              ESSAI
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8 }}>
-              Ideal pour decouvrir
+              7 jours Premium
             </div>
             <div style={{ fontSize: 54, lineHeight: 1, color: C.ink, fontWeight: 800, fontFamily: FONT_DISPLAY, marginTop: 16 }}>
-                0€
+                7j
             </div>
             <div style={{ marginTop: 6, color: C.secondary, fontSize: 14, fontFamily: FONT }}>
-              Tu explores l'app librement avant de t'engager.
+              Carte requise · puis 4,99€/mois · annule = 0€
             </div>
             <Link
               to="/inscription"
@@ -640,10 +640,10 @@ export default function TarifsPage() {
                 fontFamily: FONT,
               }}
             >
-              Creer mon compte
+              Demarrer l'essai
             </Link>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
-              {freeHighlights.map((item) => (
+              {trialHighlights.map((item) => (
                 <CheckItem key={item}>{item}</CheckItem>
               ))}
             </div>
@@ -833,7 +833,7 @@ export default function TarifsPage() {
               Fonctionnalite
             </div>
             <div style={{ color: C.secondary, fontSize: 13, fontWeight: 800, fontFamily: FONT }}>
-              Gratuit
+              Essai / apres
             </div>
             <div style={{ color: C.primaryDeep, fontSize: 13, fontWeight: 800, fontFamily: FONT }}>
               Premium
@@ -841,10 +841,10 @@ export default function TarifsPage() {
           </div>
 
           {[
-            ["Génération de programme", "Non après l'essai", "Oui"],
-            ["Coach et adaptation", "Non", "Oui"],
-            ["Stats et historique", "Quelques stats", "Complet"],
-            ["Strava", "Base", "Exploitation complète"],
+            ["Génération de programme", "Oui pendant l'essai", "Oui"],
+            ["Coach et adaptation", "Oui pendant l'essai", "Oui"],
+            ["Stats et historique", "Complet pendant l'essai", "Complet"],
+            ["Strava", "Complet pendant l'essai", "Complet"],
           ].map(([label, freeValue, premiumValue], index) => (
             <div
               key={label}
@@ -923,7 +923,7 @@ export default function TarifsPage() {
                 Fonctionnalite
               </div>
               <div style={{ color: C.secondary, fontWeight: 800, fontSize: isMobile ? 13 : 15, fontFamily: FONT }}>
-                Gratuit
+                Essai
               </div>
               <div style={{ color: C.primaryDeep, fontWeight: 800, fontSize: isMobile ? 13 : 15, fontFamily: FONT }}>
                 Premium
