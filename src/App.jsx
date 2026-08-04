@@ -9453,9 +9453,14 @@ export default function App() {
       // Sortie définitive du tunnel paiement — plus de pending / plus de re-checkout auto
       clearPendingOnboarding();
       checkoutAbandonedRef.current = true;
+      setAuthLoading(false);
       showToast("Pas de souci — tu peux activer l’essai quand tu veux.", 8000);
+      // Aperçu déjà généré → sheet. Sinon questionnaire + modal (jamais Loading bloqué).
       setShowPlanReady(true);
       openUpgrade("trial_required");
+      if (!(isAuthPath(locationRef.current.pathname) || forceAuthRef.current)) {
+        setScreen((prev) => (prev === "loading" || prev === "auth" ? "onboarding" : prev));
+      }
     }
     supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
   }, []);
@@ -9568,27 +9573,42 @@ export default function App() {
         if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
           syncSubscriptionFromStripe()
             .then(async (synced) => {
-              if (!synced) return;
-              setUser(synced);
-              const premium = checkIsPremium(synced);
-              setIsPremium(premium);
-              const syncedAccess = getAccessState(synced);
-              if (syncedAccess.status === ACCESS_STATUS.TRIAL) {
-                trackEvent("trial_started", {
-                  trial_ends_at: syncedAccess.trialEndsAt,
-                }, { essential: true });
+              const effective = synced || u;
+              if (!effective) return;
+              if (synced) {
+                setUser(synced);
+                const premium = checkIsPremium(synced);
+                setIsPremium(premium);
+                const syncedAccess = getAccessState(synced);
+                if (syncedAccess.status === ACCESS_STATUS.TRIAL) {
+                  trackEvent("trial_started", {
+                    trial_ends_at: syncedAccess.trialEndsAt,
+                  }, { essential: true });
+                }
+                if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
               }
-              if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
-              // Quiz stashed → générer l’aperçu (SIGNED_IN et reload avec pending)
+              // Quiz stashed → générer l’aperçu (même si sync a partiellement échoué)
               if (
                 (event === "SIGNED_IN" || event === "INITIAL_SESSION")
                 && readPendingOnboarding()
                 && !checkoutAbandonedRef.current
               ) {
-                await resumePendingRef.current(synced);
+                await resumePendingRef.current(effective);
               }
             })
-            .catch(() => {});
+            .catch(async () => {
+              // Sync KO : ne jamais laisser un pending coller l’UI sur Loading
+              if (readPendingOnboarding() && !checkoutAbandonedRef.current) {
+                try { await resumePendingRef.current(u); }
+                catch {
+                  clearPendingOnboarding();
+                  if (!(isAuthPath(locationRef.current.pathname) || forceAuthRef.current)) {
+                    setScreen("onboarding");
+                    setStep(1);
+                  }
+                }
+              }
+            });
         }
       } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) {
         setScreen("auth");
@@ -9600,6 +9620,18 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Filet : ne jamais rester bloqué sur le spinner Waves si auth ne répond pas
+  useEffect(() => {
+    if (!authLoading) return undefined;
+    const t = setTimeout(() => {
+      setAuthLoading(false);
+      if (isAuthPath(locationRef.current.pathname) || forceAuthRef.current) {
+        setScreen("auth");
+      }
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [authLoading]);
 
   // Banque séances Supabase (lecture publique) — avant / pendant generatePlan
   useEffect(() => {
@@ -9753,9 +9785,18 @@ export default function App() {
 
       const pending = readPendingOnboarding();
       if (pending?.profile && !checkoutAbandonedRef.current) {
-        // SIGNED_IN appellera resumePending ; évite setStep(1) pendant ce temps
+        // Reprendre ICI (source unique) — ne pas attendre sync-subscription
+        // sinon sync KO / hang = spinner Loading éternel.
         setScreen("loading");
-        return;
+        try {
+          const { data } = await supabase.auth.getUser();
+          const u = data?.user;
+          if (u) {
+            const ok = await resumePendingRef.current(u);
+            if (ok) return;
+          }
+        } catch { /* fall through */ }
+        clearPendingOnboarding();
       }
 
       // Abandon paiement ou compte sans plan : questionnaire OK, mais pending mort
