@@ -46,7 +46,8 @@
 - **Semaines test** (`phase: "test"`) : chronos 100/200/400 m pour mesurer l’évolution — 1 à 2 selon la durée du plan (après base / après développement).
 - **Affûtage** : 1 semaine dès 6 sem. de plan, **2 semaines** dès 10 sem. Volume ↓, touches vitesse, puis semaine compétition.
 - **Semaine de compétition** (dernière avant l’event) : **toujours easy** — **1 séance** si fréquence ≤3×/sem, **2 séances** si >3. Volume très bas, séances courtes (~20–25 min), rappels de vitesse **≤12,5 m**, phrase : « Ne t’inquiète pas : si tu as suivi le plan, le travail est fait. »
-- **« Nager & Progresser »** : **plus de plan multi-semaines**. Mode boucle (`isSessionLoop`) : une seule séance à la fois (`buildProgressionLoopSession`), validation Terminer/Abandonner → nouvelle génération. Pas de question « séances par semaine ». Freemium : **8 séances** au total + **2 nouvelles / semaine** calendaire ; Régénérer = Premium. Premières séances (cursor &lt; 3) forcées faciles.
+- **« Nager & Progresser »** : **plus de plan multi-semaines**. Mode boucle (`isSessionLoop`) : une seule séance à la fois (`buildProgressionLoopSession`), validation Terminer/Abandonner → nouvelle génération. Questionnaire : **fréquence demandée** (comme les autres programmes) pour le profil ; la boucle génère toujours 1 séance à la fois. Freemium : **8 séances** au total + **2 nouvelles / semaine** calendaire ; Régénérer = Premium. Premières séances (cursor &lt; 3) forcées faciles.
+- **Questionnaire commun** (tous programmes) : âge, poids (kg), taille (cm), blessure (aucune / oui + note), séances/semaine, style préféré (crawl / 4 nages), nage préférée (papillon / dos / brasse / crawl). Stockés dans `entry.profile` ; affichés sur l’onglet Profil.
 
 ### Objectifs spécifiques
 
@@ -75,6 +76,7 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-04 | Questionnaire | Ajout champs communs tous programmes : âge, poids, taille, blessure, fréquence (y compris progression), style crawl/4 nages, nage préférée | ✅ |
 | 2026-08-04 | Nager & Progresser | Mode boucle séance unique (`isSessionLoop`) : plus de plan 12 sem., plus de question fréquence. Freemium 8 séances + 2/sem. `PLAN_VERSION` → 35 | ✅ |
 | 2026-05-16 | Mémoire initiale | Création de ce fichier + règles Cursor pour éviter de répéter les erreurs | ✅ |
 | 2026-05-16 | Eau libre + Performance | Ne pas utiliser le bloc perf « 4 nages » (brasse) : `usePoolIMBlock` = false pour OW/triathlon. Séances crawl/sighting. 4 nages léger OK (1 tour IM, peu de brasse). `PLAN_VERSION` → 10 | ✅ |

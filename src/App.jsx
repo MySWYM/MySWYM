@@ -595,6 +595,23 @@ const FREQUENCIES = [
 
 const POOLS = [{ id: 25, label: "25 m" }, { id: 50, label: "50 m" }];
 
+/** Style d'entraînement préféré (crawl focus vs 4 nages) */
+const SWIM_STYLES = [
+  { id: "crawl", label: "Crawl", desc: "Je préfère nager surtout en crawl" },
+  { id: "4_nages", label: "4 nages", desc: "Je veux varier papillon, dos, brasse et crawl" },
+];
+
+/** Nage préférée (stroke) */
+const PREFERRED_STROKES = [
+  { id: "crawl", label: "Crawl" },
+  { id: "dos", label: "Dos" },
+  { id: "brasse", label: "Brasse" },
+  { id: "papillon", label: "Papillon" },
+];
+
+const STROKE_LABELS = Object.fromEntries(PREFERRED_STROKES.map((s) => [s.id, s.label]));
+const STYLE_LABELS = Object.fromEntries(SWIM_STYLES.map((s) => [s.id, s.label]));
+
 const BADGE_DEFS = [
   { id: "first_session", label: "Premier plongeon",   desc: "1re séance complétée",                icon: Droplets, color: G.water },
   { id: "km1",           label: "1 km nagé",          desc: "1 000 m au compteur",                  icon: Ruler,    color: G.blue },
@@ -2930,9 +2947,20 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             {[
               { label: "Objectif", value: goalLabel },
               { label: "Niveau", value: levelLabel },
-              { label: "Rythme", value: profile?.category === "progression" ? "Mode libre" : freqLabel },
+              { label: "Rythme", value: freqLabel },
               { label: "Bassin", value: `${profile?.pool || 25} m` },
-            ].map((item) => (
+              profile?.age ? { label: "Âge", value: `${profile.age} ans` } : null,
+              profile?.weightKg ? { label: "Poids", value: `${profile.weightKg} kg` } : null,
+              profile?.heightCm ? { label: "Taille", value: `${profile.heightCm} cm` } : null,
+              profile?.injuryStatus ? {
+                label: "Blessure",
+                value: profile.injuryStatus === "aucune"
+                  ? "Aucune"
+                  : (profile.injuryNote?.trim() || "Oui"),
+              } : null,
+              profile?.swimStyle ? { label: "Style", value: STYLE_LABELS[profile.swimStyle] || profile.swimStyle } : null,
+              profile?.preferredStroke ? { label: "Nage préf.", value: STROKE_LABELS[profile.preferredStroke] || profile.preferredStroke } : null,
+            ].filter(Boolean).map((item) => (
               <div key={item.label} style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 12px" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, lineHeight: 1.35 }}>{item.value}</div>
@@ -4058,6 +4086,186 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
     <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
   </div>
 );
+
+const onboardingNumInp = {
+  width: "100%",
+  padding: "14px 16px",
+  borderRadius: 12,
+  border: `1.5px solid ${G.greyLight}`,
+  fontSize: 18,
+  fontFamily: "'Lexend', sans-serif",
+  fontWeight: 700,
+  color: G.ink,
+  background: G.surface,
+  outline: "none",
+  textAlign: "center",
+  boxSizing: "border-box",
+};
+
+/** Âge · poids · taille — commun à tous les programmes */
+const StepPhysique = ({ age, weightKg, heightCm, onChange, onNext, onBack }) => {
+  const ageN = parseInt(age, 10);
+  const wN = parseFloat(String(weightKg).replace(",", "."));
+  const hN = parseInt(heightCm, 10);
+  const ageOk = Number.isFinite(ageN) && ageN >= 10 && ageN <= 90;
+  const weightOk = Number.isFinite(wN) && wN >= 30 && wN <= 250;
+  const heightOk = Number.isFinite(hN) && hN >= 100 && hN <= 230;
+  const canNext = ageOk && weightOk && heightOk;
+
+  return (
+    <div className="fade-up">
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Ton profil</h2>
+      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
+        Âge, poids et taille — pour mieux adapter ton plan.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+        {[
+          { key: "age", label: "Âge", value: age, placeholder: "ex : 28", suffix: "ans", inputMode: "numeric" },
+          { key: "weightKg", label: "Poids", value: weightKg, placeholder: "ex : 72", suffix: "kg", inputMode: "decimal" },
+          { key: "heightCm", label: "Taille", value: heightCm, placeholder: "ex : 175", suffix: "cm", inputMode: "numeric" },
+        ].map((f) => (
+          <div key={f.key} style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}` }}>
+            <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+              {f.label} ({f.suffix})
+            </label>
+            <input
+              type="number"
+              inputMode={f.inputMode}
+              value={f.value}
+              onChange={(e) => onChange(f.key, e.target.value)}
+              placeholder={f.placeholder}
+              style={onboardingNumInp}
+            />
+          </div>
+        ))}
+      </div>
+      <Btn onClick={onNext} disabled={!canNext}>Continuer</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
+
+/** Blessure — commun à tous les programmes */
+const StepInjury = ({ injuryStatus, injuryNote, onChangeStatus, onChangeNote, onNext, onBack }) => {
+  const canNext = injuryStatus === "aucune" || (injuryStatus === "oui" && true);
+  return (
+    <div className="fade-up">
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Blessure ?</h2>
+      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
+        On adaptera les consignes si tu as une gêne ou une blessure en cours.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        {[
+          { id: "aucune", label: "Aucune blessure", desc: "Je nage sans gêne particulière" },
+          { id: "oui", label: "Oui, j'ai une blessure / gêne", desc: "Épaule, genou, dos…" },
+        ].map((opt) => {
+          const active = injuryStatus === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => onChangeStatus(opt.id)}
+              style={{
+                padding: "16px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
+                border: `2px solid ${active ? G.blue : G.greyLight}`,
+                background: active ? G.blueLight : G.surface,
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.blue : G.ink }}>{opt.label}</div>
+              <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{opt.desc}</div>
+            </button>
+          );
+        })}
+      </div>
+      {injuryStatus === "oui" && (
+        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}`, marginBottom: 20 }}>
+          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+            Précise (optionnel)
+          </label>
+          <input
+            type="text"
+            value={injuryNote || ""}
+            onChange={(e) => onChangeNote(e.target.value)}
+            placeholder="ex : épaule droite, genou…"
+            style={{
+              ...onboardingNumInp,
+              textAlign: "left",
+              fontSize: 15,
+              fontWeight: 600,
+            }}
+          />
+        </div>
+      )}
+      <Btn onClick={onNext} disabled={!canNext}>Continuer</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
+
+/** Nages préférées — style (crawl / 4 nages) + nage favorite */
+const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStroke, onNext, onBack, isLast = false }) => {
+  const canNext = !!swimStyle && !!preferredStroke;
+  return (
+    <div className="fade-up">
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Tes nages</h2>
+      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
+        Dis-nous ce que tu préfères — on orientera tes séances.
+      </p>
+
+      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+        Style préféré
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
+        {SWIM_STYLES.map((s) => {
+          const active = swimStyle === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onChangeStyle(s.id)}
+              style={{
+                padding: "16px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
+                border: `2px solid ${active ? G.blue : G.greyLight}`,
+                background: active ? G.blue : G.surface,
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.white : G.ink }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: active ? "rgba(255,255,255,0.75)" : G.grey, marginTop: 2 }}>{s.desc}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+        Nage préférée
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+        {PREFERRED_STROKES.map((s) => {
+          const active = preferredStroke === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onChangeStroke(s.id)}
+              style={{
+                padding: "16px 14px", borderRadius: 14, cursor: "pointer",
+                border: `2px solid ${active ? G.blue : G.greyLight}`,
+                background: active ? G.blueLight : G.surface,
+                fontSize: 15, fontWeight: 700,
+                color: active ? G.blue : G.ink,
+              }}
+            >
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <Btn onClick={onNext} disabled={!canNext}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
 
 // ── LOADING ───────────────────────────────────────────────────────────────
 const Loading = () => (
@@ -9457,7 +9665,24 @@ const withLoopGenerationCounters = (plan, premium) => {
 };
 
 // ── APP ───────────────────────────────────────────────────────────────────
-const BLANK_PROFILE = { category: "", goal: "", eventDate: "", level: "", pool: 50, sessionsPerWeek: null, weightCurrent: "", weightGoal: "", pace100: null };
+const BLANK_PROFILE = {
+  category: "",
+  goal: "",
+  eventDate: "",
+  level: "",
+  pool: 50,
+  sessionsPerWeek: null,
+  weightCurrent: "",
+  weightGoal: "",
+  pace100: null,
+  age: "",
+  weightKg: "",
+  heightCm: "",
+  injuryStatus: null, // "aucune" | "oui"
+  injuryNote: "",
+  swimStyle: null, // "crawl" | "4_nages"
+  preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
+};
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -10368,6 +10593,10 @@ export default function App() {
         goal: genProfile.goal,
         level: genProfile.level,
         sessions_per_week: genProfile.sessionsPerWeek,
+        age: genProfile.age || null,
+        swim_style: genProfile.swimStyle || null,
+        preferred_stroke: genProfile.preferredStroke || null,
+        has_injury: genProfile.injuryStatus === "oui",
         preview: openPaywallAfter,
       }, { essential: true });
       const id = `plan_${Date.now()}`;
@@ -11229,31 +11458,30 @@ export default function App() {
               </div>
             )}
             {(() => {
-              // Flux (T100 retiré de l'onboarding → carte Premium sur l'accueil) :
-              //   progression : 1 → 3 (niveau) → generate — pas de date ni fréquence
-              //   triathlon/eau_libre : 1 → 2 (sous-obj) → 3 (niveau) → 5 (fréq) → 6 (date)
-              //   diplome : 1 → 2 (BNSSA/BPJEPS) → 5 (fréq) → 6 (date) — pas de niveau
+              // Flux :
+              //   progression : 1 → 3 (niveau) → 5 (fréq) → 7 (physique) → 8 (blessure) → 9 (nages) → generate
+              //   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 9 → 6 (date) → generate
+              //   diplome : 1 → 2 → 5 → 7 → 8 → 9 → 6 (date) — pas de niveau
               const isProgression = profile.category === "progression";
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
               const disabledLevels = [];
-              const totalSteps = isProgression ? 2 : isDiplome ? 4 : 4;
-              const stepAfter3 = isProgression ? "generate" : 5;
+              const totalSteps = isProgression ? 5 : isDiplome ? 6 : 7;
               const stepBefore5 = isDiplome ? 2 : 3;
-              const goGenerateProgression = () => {
-                setProfile((p) => ({ ...p, sessionsPerWeek: p.sessionsPerWeek || 1 }));
-                handleGenerate();
-              };
+              const progressStep = (() => {
+                if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 9: 5 })[step] || 1;
+                if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 9: 5, 6: 6 })[step] || 1;
+                return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 9: 6, 6: 7 })[step] || 1;
+              })();
               return (
                 <>
-                  {step > 1 && <Progress step={step - 1} total={totalSteps} />}
+                  {step > 1 && <Progress step={progressStep} total={totalSteps} />}
                   {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>{error}</div>}
 
                   {step === 1 && (
                     <Step1_Category onSelect={cat => {
                       if (cat === "progression") {
-                        // Pas de sous-objectif — on va directement au niveau
-                        setProfile(p => ({ ...p, category: cat, goal: "progression", sessionsPerWeek: 1, pace100: null }));
+                        setProfile(p => ({ ...p, category: cat, goal: "progression", pace100: null }));
                         setStep(3);
                       } else {
                         setProfile(p => ({ ...p, category: cat, goal: "", pace100: null }));
@@ -11267,7 +11495,6 @@ export default function App() {
                       category={profile.category}
                       onSelect={goalId => {
                         update("goal", goalId);
-                        // Diplôme saute le step niveau — niveau par défaut = sportif
                         if (isDiplome) { update("level", "sportif"); setStep(5); }
                         else setStep(3);
                       }}
@@ -11282,18 +11509,63 @@ export default function App() {
                       disabledLevels={disabledLevels}
                       onNext={() => {
                         update("pace100", null);
-                        if (stepAfter3 === "generate") goGenerateProgression();
-                        else setStep(stepAfter3);
+                        setStep(5);
                       }}
                       onBack={() => isProgression ? setStep(1) : setStep(2)} />
                   )}
 
-                  {step === 5 && !isProgression && (
-                    <Step4_Frequency value={profile.sessionsPerWeek} onChange={v => update("sessionsPerWeek", v)} total={totalSteps} onNext={() => setStep(6)} onBack={() => setStep(stepBefore5)} isLast={false} isPremium={isPremium} onUpgrade={() => openUpgrade()} />
+                  {step === 5 && (
+                    <Step4_Frequency
+                      value={profile.sessionsPerWeek}
+                      onChange={v => update("sessionsPerWeek", v)}
+                      total={totalSteps}
+                      onNext={() => setStep(7)}
+                      onBack={() => setStep(stepBefore5)}
+                      isLast={false}
+                      isPremium={isPremium}
+                      onUpgrade={() => openUpgrade()}
+                    />
+                  )}
+
+                  {step === 7 && (
+                    <StepPhysique
+                      age={profile.age}
+                      weightKg={profile.weightKg}
+                      heightCm={profile.heightCm}
+                      onChange={(key, val) => update(key, val)}
+                      onNext={() => setStep(8)}
+                      onBack={() => setStep(5)}
+                    />
+                  )}
+
+                  {step === 8 && (
+                    <StepInjury
+                      injuryStatus={profile.injuryStatus}
+                      injuryNote={profile.injuryNote}
+                      onChangeStatus={(v) => {
+                        update("injuryStatus", v);
+                        if (v === "aucune") update("injuryNote", "");
+                      }}
+                      onChangeNote={(v) => update("injuryNote", v)}
+                      onNext={() => setStep(9)}
+                      onBack={() => setStep(7)}
+                    />
+                  )}
+
+                  {step === 9 && (
+                    <StepSwimPrefs
+                      swimStyle={profile.swimStyle}
+                      preferredStroke={profile.preferredStroke}
+                      onChangeStyle={(v) => update("swimStyle", v)}
+                      onChangeStroke={(v) => update("preferredStroke", v)}
+                      onNext={() => (noDate ? handleGenerate() : setStep(6))}
+                      onBack={() => setStep(8)}
+                      isLast={noDate}
+                    />
                   )}
 
                   {step === 6 && !noDate && (
-                    <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(5)} />
+                    <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(9)} />
                   )}
                 </>
               );
