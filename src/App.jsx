@@ -10025,6 +10025,8 @@ export default function App() {
         loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          // Welcome email une fois (après confirm / OAuth) — fire-and-forget
+          supabase.functions.invoke("welcome-email").catch(() => {});
           syncSubscriptionFromStripe()
             .then(async (synced) => {
               const effective = synced || u;
