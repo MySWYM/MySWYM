@@ -11,10 +11,63 @@ import {
   type AccessStateRow,
   type AuthUser,
 } from "../_shared/access-state.ts";
+import { sendEmailViaHttp } from "../_shared/email-http.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
 const REFERRAL_CREDIT_CENTS = 499; // 4,99 €
+
+const PRICE_MONTHLY = Deno.env.get("STRIPE_PRICE_MONTHLY") ?? "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
+const PRICE_ANNUAL = Deno.env.get("STRIPE_PRICE_ANNUAL") ?? "price_1TudyVAS4mfgF2TwHiSo3Vrg";
+const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
+
+function planLabelFromPriceId(priceId: string | undefined): string {
+  if (!priceId) return "Premium";
+  if (priceId === PRICE_BIENNIAL) return "Premium — 29,99 € / 2 ans";
+  if (priceId === PRICE_ANNUAL) return "Premium — 39,99 € / an";
+  if (priceId === PRICE_MONTHLY) return "Premium — 4,99 € / mois";
+  return "Premium";
+}
+
+function planLabelFromSubscription(sub: Stripe.Subscription): string {
+  const priceId = sub.items?.data?.[0]?.price?.id;
+  const nick = sub.items?.data?.[0]?.price?.nickname;
+  if (nick && typeof nick === "string" && nick.trim()) return nick.trim();
+  return planLabelFromPriceId(priceId);
+}
+
+function firstNameFromUser(user: AuthUser): string | undefined {
+  const meta = user.user_metadata ?? {};
+  const fromMeta =
+    (typeof meta.first_name === "string" && meta.first_name) ||
+    (typeof meta.firstName === "string" && meta.firstName) ||
+    (typeof meta.full_name === "string" && meta.full_name.split(" ")[0]);
+  const trimmed = fromMeta?.trim();
+  return trimmed || undefined;
+}
+
+async function sendSubscriptionConfirmation(
+  user: AuthUser,
+  planLabel: string,
+) {
+  if (!user.email) {
+    console.warn("[stripe-webhook] skip confirmation email: no user email");
+    return;
+  }
+  const appUrl = (Deno.env.get("APP_URL") || "https://myswym.app").replace(/\/$/, "");
+  const result = await sendEmailViaHttp("subscription_confirmation", {
+    to: user.email,
+    planLabel,
+    manageUrl: `${appUrl}/app`,
+    firstName: firstNameFromUser(user),
+    userId: user.id,
+  });
+  if (!result.ok) {
+    console.error("[stripe-webhook] confirmation email failed:", result.error);
+  } else {
+    console.log("[stripe-webhook] confirmation email sent:", result.id);
+  }
+}
 
 function getStripeCustomerId(user: AuthUser): string | undefined {
   return (user.app_metadata?.stripe_customer_id ?? user.user_metadata?.stripe_customer_id) as string | undefined;
@@ -162,8 +215,10 @@ Deno.serve(async (req) => {
       const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (user) {
         let nextState: AccessStateRow | null = null;
+        let planLabel = "Premium";
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          planLabel = planLabelFromSubscription(sub);
           const currentState = await getAccessState(supabaseAdmin, userId);
           nextState = buildSubscriptionState(userId, currentState, customerId ?? null, sub);
         }
@@ -189,6 +244,13 @@ Deno.serve(async (req) => {
             subscription_end: null,
             cancel_at_period_end: false,
           });
+        }
+
+        // Email de confirmation (ne bloque pas le webhook si Resend échoue)
+        try {
+          await sendSubscriptionConfirmation(user as AuthUser, planLabel);
+        } catch (mailErr) {
+          console.error("[stripe-webhook] confirmation email error:", mailErr);
         }
 
         // Recharge user après setEntitlement pour avoir app_metadata à jour

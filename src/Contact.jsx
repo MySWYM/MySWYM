@@ -41,18 +41,46 @@ export default function ContactPage() {
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | sending | ok | error
+  const [errorMsg, setErrorMsg] = useState("");
+  const [sentTo, setSentTo] = useState("");
   const isMobile = useIsMobile();
 
-  const sendMailto = (e) => {
+  const sendContact = async (e) => {
     e.preventDefault();
-    const body = [
-      `Nom : ${name.trim()}`,
-      `Email : ${email.trim()}`,
-      "",
-      message.trim(),
-    ].join("\n");
-    const mailto = `mailto:contact@myswym.app?subject=${encodeURIComponent(subject.trim() || "Contact MySWYM")}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+    if (status === "sending") return;
+    setStatus("sending");
+    setErrorMsg("");
+    const payload = {
+      name: name.trim(),
+      email: email.trim(),
+      subject: subject.trim(),
+      message: message.trim(),
+      company: "", // honeypot
+    };
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Envoi impossible");
+      }
+      setSentTo(payload.email);
+      setStatus("ok");
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(
+        err?.message ||
+          "Envoi impossible. Réessaie ou écris à contact@myswym.app.",
+      );
+    }
   };
 
   return (
@@ -69,7 +97,7 @@ export default function ContactPage() {
               Nous sommes à votre écoute !
             </h1>
             <p style={{ color: C.secondary, fontSize: isMobile ? 16 : 18, lineHeight: 1.65, marginTop: 14, maxWidth: 560 }}>
-              Une suggestion d'amélioration ? Une question ? Écris-nous — ton message s’ouvre dans ton appli mail (rien n’est stocké sur nos serveurs via ce formulaire).
+              Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrjours ouvrés).
             </p>
             <p style={{ color: C.secondary, fontSize: 14, marginTop: 10 }}>
               Direct : <a href="mailto:contact@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>contact@myswym.app</a>
@@ -121,43 +149,87 @@ export default function ContactPage() {
           <section style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 24, boxShadow: "0 8px 24px rgba(142,179,255,0.18)" }}>
             <h2 style={{ margin: 0, color: C.ink, fontFamily: FONT_DISPLAY, fontSize: isMobile ? 34 : 42, fontWeight: 800, lineHeight: 1.05, textTransform: "uppercase", letterSpacing: "0" }}>Parlons de votre entraînement</h2>
             <p style={{ color: C.secondary, fontSize: 16, lineHeight: 1.6, marginTop: 12 }}>
-              Remplis le formulaire : ton client mail s’ouvre avec le message prêt à envoyer.
+              Remplis le formulaire — ton message arrive directement dans notre boîte.
             </p>
 
-            <form
-              onSubmit={sendMailto}
-              style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}
-            >
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(180px, 1fr))", gap: 10 }}>
-                <Field label="Nom complet *" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} required />
-                <Field label="Email *" type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            {status === "ok" ? (
+              <div style={{ marginTop: 18, padding: 16, borderRadius: 14, background: "#e6f8f1", color: "#0f5c40", fontSize: 15, lineHeight: 1.55, fontWeight: 600 }}>
+                Message envoyé. On te répond sous 24–48 h sur {sentTo || "ton email"}.
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatus("idle");
+                    setSentTo("");
+                  }}
+                  style={{
+                    display: "block",
+                    marginTop: 12,
+                    border: "none",
+                    background: "none",
+                    color: C.accentText,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    padding: 0,
+                    fontFamily: FONT,
+                    fontSize: 14,
+                  }}
+                >
+                  Envoyer un autre message
+                </button>
               </div>
-              <Field label="Objet du message *" placeholder="Sujet" value={subject} onChange={(e) => setSubject(e.target.value)} required />
-              <Field label="Message *" as="textarea" placeholder="Explique-nous ton contexte ou ta question." value={message} onChange={(e) => setMessage(e.target.value)} required />
-
-              <p style={{ margin: 0, color: C.secondary, fontSize: 13, lineHeight: 1.55 }}>
-                Aucune donnée n’est enregistrée sur nos serveurs via ce formulaire. L’envoi passe par ton adresse e-mail.
-              </p>
-
-              <button
-                type="submit"
-                style={{
-                  marginTop: 2,
-                  border: "none",
-                  borderRadius: 999,
-                  background: C.accent,
-                  color: C.accentText,
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  fontFamily: FONT,
-                  fontSize: 16,
-                  padding: "13px 18px",
-                  minHeight: 46,
-                }}
+            ) : (
+              <form
+                onSubmit={sendContact}
+                style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}
               >
-                Ouvrir mon e-mail
-              </button>
-            </form>
+                {/* Honeypot — hidden from humans */}
+                <input
+                  type="text"
+                  name="company"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  style={{ position: "absolute", left: "-9999px", height: 0, width: 0, opacity: 0 }}
+                />
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(180px, 1fr))", gap: 10 }}>
+                  <Field label="Nom complet *" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} required disabled={status === "sending"} />
+                  <Field label="Email *" type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={status === "sending"} />
+                </div>
+                <Field label="Objet du message *" placeholder="Sujet" value={subject} onChange={(e) => setSubject(e.target.value)} required disabled={status === "sending"} />
+                <Field label="Message *" as="textarea" placeholder="Explique-nous ton contexte ou ta question." value={message} onChange={(e) => setMessage(e.target.value)} required disabled={status === "sending"} />
+
+                {status === "error" && (
+                  <p style={{ margin: 0, color: "#b42318", fontSize: 13, lineHeight: 1.55, fontWeight: 600 }}>
+                    {errorMsg}
+                  </p>
+                )}
+
+                <p style={{ margin: 0, color: C.secondary, fontSize: 13, lineHeight: 1.55 }}>
+                  Ton message est envoyé à contact@myswym.app. On ne le stocke pas dans l’app.
+                </p>
+
+                <button
+                  type="submit"
+                  disabled={status === "sending"}
+                  style={{
+                    marginTop: 2,
+                    border: "none",
+                    borderRadius: 999,
+                    background: C.accent,
+                    color: C.accentText,
+                    cursor: status === "sending" ? "default" : "pointer",
+                    fontWeight: 700,
+                    fontFamily: FONT,
+                    fontSize: 16,
+                    padding: "13px 18px",
+                    minHeight: 46,
+                    opacity: status === "sending" ? 0.7 : 1,
+                  }}
+                >
+                  {status === "sending" ? "Envoi…" : "Envoyer"}
+                </button>
+              </form>
+            )}
           </section>
         </div>
       </main>

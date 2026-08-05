@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
 
 const SUPPORT_EMAIL = "contact@myswym.app";
-const MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Question MySWYM")}`;
 const FONT = "'Lexend', sans-serif";
 const TRIAL_DAYS = 7;
 
@@ -386,7 +385,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                   Question sur une séance, suggestion ou souci technique — l'équipe répond sous 24–48 h ouvrjours ouvrés) à {SUPPORT_EMAIL}.
                 </p>
                 <a
-                  href={MAILTO}
+                  href="/contact"
                   onClick={close}
                   style={{
                     display: "flex",
@@ -405,7 +404,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                   }}
                 >
                   <Mail size={18} color="#fff" />
-                  Ouvrir l'e-mail
+                  Écrire via le formulaire
                 </a>
               </>
             )}
