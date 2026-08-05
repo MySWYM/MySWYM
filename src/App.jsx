@@ -19,6 +19,7 @@ import {
   maxPaceGainFromT100,
   projectedPaceAtWeek,
 } from "./lib/swim-pace.js";
+import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
 
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
@@ -1916,21 +1917,38 @@ const inferSwimFocus = (pace100Ref, activityPace, durationSec, distanceMeters) =
   return { key: "SEUIL", label: "seuil", explanation: "Charge intermédiaire, entre endurance active et seuil" };
 };
 
+const getStravaVenueLabel = (activity) => {
+  const type = activity?.activity_type || activity?.raw_data?.type || activity?.raw_data?.sport_type;
+  if (type === "OpenWaterSwim") return "eau libre";
+  if (type === "Swim") return "piscine";
+  return null;
+};
+
 const buildPremiumActivityAnalysis = ({ activity, detail, currentSessionRef, profile }) => {
   const planned = currentSessionRef?.session || null;
   const actualDistance = Number(detail?.distance || activity.distance) || 0;
   const actualDuration = Number(detail?.moving_time || activity.duration) || 0;
   const actualPace = Number(activity.pace) || null;
   const focus = inferSwimFocus(profile?.pace100 || null, actualPace, actualDuration, actualDistance);
+  const venue = getStravaVenueLabel(activity);
+  const venueTitle = venue === "eau libre"
+    ? `Séance eau libre · travail d'${focus.label}`
+    : venue === "piscine"
+      ? `Séance piscine · travail d'${focus.label}`
+      : `Tu as surtout travaillé l'${focus.label}`;
+  const venueChip = venue ? { label: "Lieu", value: venue } : null;
 
   if (!planned) {
     return {
-      title: `Tu as surtout travaillé l'${focus.label}`,
+      title: venueTitle,
       verdict: "Analyse disponible, mais sans séance de référence à comparer.",
       chips: [
+        ...(venueChip ? [venueChip] : []),
         { label: "Focus détecté", value: focus.label },
       ],
-      summary: focus.explanation,
+      summary: venue
+        ? `${focus.explanation}. Activité Strava détectée en ${venue}.`
+        : focus.explanation,
     };
   }
 
@@ -1945,14 +1963,15 @@ const buildPremiumActivityAnalysis = ({ activity, detail, currentSessionRef, pro
   else if (!typeMatch && !distanceMatch) verdict = "Plutôt éloigné de la séance prévue";
 
   return {
-    title: `Tu as surtout travaillé l'${focus.label}`,
+    title: venueTitle,
     verdict,
     chips: [
+      ...(venueChip ? [venueChip] : []),
       { label: "Prévu", value: (plannedType || "ENDURANCE").toLowerCase() },
       { label: "Réalisé", value: focus.label },
       { label: "Volume", value: plannedDistance ? `${Math.round((actualDistance / plannedDistance) * 100)}%` : fmtDist(actualDistance) },
     ],
-    summary: `${focus.explanation}. ${planned.title ? `La prochaine séance prévue est "${planned.title}".` : "La séance prévue sert ici de référence de comparaison."}`,
+    summary: `${focus.explanation}${venue ? ` · séance en ${venue}` : ""}. ${planned.title ? `La prochaine séance prévue est "${planned.title}".` : "La séance prévue sert ici de référence de comparaison."}`,
   };
 };
 
@@ -2003,11 +2022,13 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
   const detail = detailPayload?.detail || null;
   const streams = detailPayload?.streams || {};
   const raw = detail || activity.raw_data || {};
+  const venueLabel = getStravaVenueLabel(activity)
+    || STRAVA_ACTIVITY_META[activity.activity_type]?.label
+    || activity.activity_type
+    || "Activité";
   const cadenceValue = raw.average_cadence
     ? `${Number(raw.average_cadence).toFixed(1)} / min`
-    : raw.average_temp
-      ? `${Number(raw.average_temp).toFixed(1)}°C`
-      : null;
+    : null;
 
   const metricCards = [
     { label: "Distance", value: fmtDist(detail?.distance || activity.distance), color: G.blue, bg: G.blueLight },
@@ -2016,8 +2037,8 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
     { label: "Vitesse moy.", value: fmtSpeedKmh(raw.average_speed), color: G.water, bg: G.waterLight },
     { label: "Vitesse max", value: fmtSpeedKmh(raw.max_speed), color: G.gold, bg: G.goldLight },
     { label: "FC moy.", value: raw.average_heartrate || activity.heart_rate ? `${Math.round(raw.average_heartrate || activity.heart_rate)} bpm` : "—", color: G.ink, bg: G.greyXLight },
-    { label: "Calories", value: activity.calories ? `${Math.round(activity.calories)} kcal` : "—", color: G.blue, bg: G.blueLight },
-    { label: raw.average_cadence ? "Cadence" : "Type", value: cadenceValue || STRAVA_ACTIVITY_META[activity.activity_type]?.label || activity.activity_type || "Activité", color: G.mint, bg: G.mintLight },
+    { label: "Lieu", value: venueLabel, color: G.blue, bg: G.blueLight },
+    { label: cadenceValue ? "Cadence" : "Calories", value: cadenceValue || (activity.calories ? `${Math.round(activity.calories)} kcal` : "—"), color: G.mint, bg: G.mintLight },
   ];
 
   const extraRows = [
@@ -3172,7 +3193,19 @@ const SettingsDrawer = ({
               Essai 7 jours — carte requise
             </button>
           )}
-          {isPremium && <ReferralShareCard />}
+          {isPremium ? (
+            <ReferralShareCard />
+          ) : (
+            <div style={{
+              marginTop: 10, padding: 14, borderRadius: 14,
+              border: `1px dashed ${G.greyLight}`, background: G.greyXLight,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Parrainage Premium</div>
+              <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.45 }}>
+                Une fois Premium, invite un ami (−20% pour lui, 4,99 € de crédit pour toi).
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ background: G.greyXLight, borderRadius: 20, padding: "8px 16px" }}>
@@ -4465,7 +4498,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
         </p>
         {!isPremium && (
           <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 28, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
-            Premium : ajustement automatique si c'était trop facile ou trop dur.
+            Aperçu coach : trop dur → volume −12 % la semaine suivante. Débloque l’essai pour appliquer.
           </p>
         )}
 
@@ -4542,7 +4575,7 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
         </p>
         {!isPremium && (
           <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 20, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
-            Premium : micro-ajustement auto si trop facile ou trop dur.
+            Aperçu coach : 1er retour « trop dur » → micro −3 % volume. Débloque l’essai pour appliquer.
           </p>
         )}
 
@@ -4647,12 +4680,14 @@ const BadgeToast = ({ badgeId }) => {
   );
 };
 
-// ── ACCÈS (UI remnants — l’accès générateur passe par Stripe trial/paid) ──
+// ── ACCÈS ──────────────────────────────────────────────────────────────────
+// Modèle live = trial-first (aperçu squelette → essai Stripe 7j → Premium).
+// FREE_* ci-dessous : remnants / helpers legacy — ne gate plus l’UX (voir access.js).
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
-const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1";
+const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
 const PLAN_VERSION = 39; // v39 = distances blocs toujours ×25 (plus de 320m)
 // true = 1 passe de régénération forcée par session (remettre false après la vague)
@@ -4721,12 +4756,10 @@ const countCompletedSessions = (p) =>
 
 const PREMIUM_TIER_LINES = [
   "Essai 7 jours · carte requise · puis 4,99€/mois",
-  "Plan complet jusqu'à ton événement",
-  "Jusqu'à 5 séances par semaine",
-  "Allures cibles par zone (à la seconde)",
-  "Adaptation après chaque séance",
-  "Vidéos techniques Instagram",
-  "Plusieurs projets · modifier fréquence et allure",
+  "Séances complètes + allures à la seconde (T100)",
+  "Adaptation coach après feedback séance / semaine",
+  "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
+  "Projection d’allures · multi-plans · vidéos technique",
 ];
 
 const PlanTierComparison = ({ compact = false }) => (
@@ -4884,6 +4917,7 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
   const freq = profile?.sessionsPerWeek || 0;
   const firstSession = plan?.weeks?.[0]?.sessions?.[0];
   const isLoop = !!plan?.isSessionLoop || !!plan?.isProgression;
+  const insights = buildPlanReadyInsights(plan, profile);
 
   return (
     <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onDismiss?.()}>
@@ -4894,14 +4928,14 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
             <Check size={26} color={G.white} />
           </div>
           <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
-            Ton plan est prêt
+            {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-            Voici ton chemin. Active l’essai 7 jours (carte requise) pour le débloquer — annule avant la fin = 0€.
+            Débloque les séances et l’adaptation coach — essai 7 jours (carte requise). Annule avant la fin = 0€.
           </p>
         </div>
 
-        <div style={{ background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+        <div style={{ background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 16, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 8 }}>{goal?.label || "Objectif"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: G.grey }}>
             {!isLoop && weeks > 0 && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{weeks} semaines</span>}
@@ -4920,8 +4954,31 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
           )}
         </div>
 
+        {insights.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+              Ce que ton coach a déjà calibré
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {insights.map((insight) => (
+                <div
+                  key={insight.id}
+                  style={{
+                    display: "flex", alignItems: "flex-start", gap: 10,
+                    background: G.surface, border: `1px solid ${G.greyLight}`,
+                    borderRadius: 12, padding: "10px 12px",
+                  }}
+                >
+                  <Check size={14} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4, fontWeight: 600 }}>{insight.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Btn variant="blue" onClick={onContinue} disabled={loading}>
-          {loading ? "Redirection…" : "Essai 7 jours — carte requise"}
+          {loading ? "Redirection…" : "Essai 7 jours — débloquer mon coach"}
         </Btn>
         <button type="button" onClick={onDismiss} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
           Voir l’aperçu sans activer
@@ -4931,7 +4988,48 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
   );
 };
 
-const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true }) => {
+const CancelSurveySheet = ({ onChoose, onSkip }) => {
+  const reasons = [
+    { id: "price", label: "Trop cher" },
+    { id: "pause", label: "Pause / pas le temps" },
+    { id: "hard", label: "Trop dur / pas adapté" },
+    { id: "other", label: "Autre" },
+  ];
+  return (
+    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+        <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8, textAlign: "center" }}>
+          Avant de partir
+        </h3>
+        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+          Une raison rapide (optionnel) — ça nous aide à améliorer MySWYM.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {reasons.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => onChoose(r.id)}
+              style={{
+                width: "100%", padding: "14px 16px", borderRadius: 14,
+                border: `1.5px solid ${G.greyLight}`, background: G.surface,
+                color: G.ink, fontWeight: 600, fontSize: 14, cursor: "pointer", textAlign: "left",
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={onSkip} style={{ width: "100%", padding: 12, border: "none", background: "none", color: G.grey, fontSize: 13, cursor: "pointer" }}>
+          Continuer vers Stripe
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true, planWeeks = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const [period, setPeriod] = useState("monthly");
@@ -4946,22 +5044,13 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   const showTrialOffer = trialEligible && period === "monthly";
   const isAnnual = period === "annual";
   const trialEnded = softContext === "trial_expired" || !!weeksBlocked;
-
-  const headline = softContext === "after_first_session"
-    ? "Analyse terminée"
-    : softContext === "trial_required"
-      ? "Active ton essai Premium"
-      : trialEnded
-        ? "Reprendre Premium"
-        : "MySWYM Premium";
-
-  const subtitle = softContext === "after_first_session"
-    ? <>Tes premières données sont exploitables.<br /><strong style={{ color: G.ink }}>Essai 7 jours avec carte, puis 4,99€/mois sans engagement.</strong></>
-    : softContext === "trial_required"
-      ? <>Pour générer ton plan : essai 7 jours avec carte.<br /><strong style={{ color: G.ink }}>Annule avant la fin = 0€ · puis 4,99€/mois.</strong></>
-      : trialEnded
-        ? <>Ton essai est terminé.<br /><strong style={{ color: G.ink }}>Continue à 4,99€/mois sans engagement, ou choisis l’annuel.</strong></>
-        : <>Essai 7 jours avec carte, puis 4,99€/mois.<br />Annule avant la fin de l’essai = 0€.</>;
+  const resolvedContext = trialEnded && softContext !== "trial_expired" ? "trial_expired" : softContext;
+  const copy = getUpgradeCopy(resolvedContext, {
+    weeks: planWeeks || 0,
+    trialEligible,
+  });
+  const headline = copy.headline;
+  const subtitle = copy.subtitle;
 
   const callFunction = async (fnName, body) => {
     const { data: refreshData } = await supabase.auth.refreshSession();
@@ -5021,6 +5110,9 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
             {headline}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
+          <p style={{ color: G.greyMid, fontSize: 12, marginTop: 10, lineHeight: 1.4 }}>
+            Déjà utilisé par des nageurs bassin & eau libre · 4,99 €/mois · annulation en 2 clics
+          </p>
         </div>
 
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
@@ -5114,14 +5206,14 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 };
 
 const PremiumTeaser = ({ onUpgrade }) => (
-  <div style={{ margin: "8px 0 12px", borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
+  <div style={{ margin: "0 0 16px", borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
     <div style={{ background: G.ink, padding: "24px 22px", display: "flex", alignItems: "center", gap: 16 }}>
       <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Lock size={20} color="rgba(255,255,255,0.6)" />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>Active ton essai Premium</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>7 jours avec carte · puis 4,99€/mois</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>Ton coach a préparé tes séances</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Essai 7 jours · adaptation + allures · puis 4,99€/mois</div>
       </div>
       <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
         Essai
@@ -5130,12 +5222,14 @@ const PremiumTeaser = ({ onUpgrade }) => (
   </div>
 );
 
-const PremiumBanner = ({ onUpgrade }) => (
+const PremiumBanner = ({ onUpgrade, weeks = 0 }) => (
   <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #355da3 0%, #8eb3ff 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>Débloque ton plan Premium</div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Essai 7 jours · carte requise · puis 4,99€/mois sans engagement</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>
+        {weeks > 4 ? `Débloque tes ${weeks} semaines de coaching` : "Débloque ton coach personnel"}
+      </div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Séances · allures · adaptation feedback · essai 7 jours</div>
     </div>
     <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Essai</button>
   </div>
@@ -5427,7 +5521,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
     if (!isPremium) {
-      onUpgrade?.();
+      onUpgrade?.("session_locked");
       return;
     }
     if (resolved) {
@@ -5441,7 +5535,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   const handleCopy = async (e) => {
     e.stopPropagation();
     if (!isPremium) {
-      onUpgrade?.();
+      onUpgrade?.("session_locked");
       return;
     }
     const text = formatSessionPlainText(session);
@@ -5637,7 +5731,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
           {locked ? (
             <button
               type="button"
-              onClick={() => onUpgrade?.()}
+              onClick={() => onUpgrade?.("session_locked")}
               aria-label="Débloque Premium pour voir les exercices"
               style={{
                 width: "100%", padding: "14px 16px 16px",
@@ -6826,6 +6920,21 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
 
+        {!isPremium && (
+          <PremiumBanner
+            onUpgrade={onUpgrade}
+            weeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
+          />
+        )}
+
+        {isPremium && (
+          <CoachCard
+            plan={plan}
+            profile={profile}
+            currentWeekIndex={currentWeekIndex >= 0 ? currentWeekIndex : 0}
+          />
+        )}
+
         {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
 
         <UpdateProgramCard
@@ -6841,8 +6950,6 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
             <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} />
           </div>
         ))}
-
-        {!isPremium && <PremiumBanner onUpgrade={onUpgrade} />}
 
         {isPremium && <ResetConfirmButton onReset={onReset} variant="subtle" />}
       </div>
@@ -7166,6 +7273,18 @@ const Dashboard = ({
             </div>
           );
         })()}
+
+        {isPremium && plan?.weeks?.length > 0 && (
+          <CoachCard
+            plan={plan}
+            profile={profile}
+            currentWeekIndex={Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))}
+          />
+        )}
+
+        {!isPremium && plan?.weeks?.length > 0 && (
+          <PremiumTeaser onUpgrade={onUpgrade} />
+        )}
 
         {/* ── T100 : précision des séances (levier Premium) ── */}
         <PacePersonalizationCard
@@ -9700,6 +9819,7 @@ export default function App() {
   const [showPlanReady, setShowPlanReady] = useState(false);
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
+  const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const [theme, setTheme] = useState(() => {
     try {
@@ -10769,6 +10889,19 @@ export default function App() {
       openUpgrade("trial_required");
       return;
     }
+
+    if (resolvedStatus === "done" && user) {
+      try {
+        const dayKey = `myswym_session_evt_${new Date().toISOString().slice(0, 10)}`;
+        if (!sessionStorage.getItem(dayKey)) {
+          sessionStorage.setItem(dayKey, "1");
+          supabase.functions.invoke("marketing-event", {
+            body: { event: "session.completed", sessionTitle: "" },
+          }).catch(() => {});
+        }
+      } catch { /* ignore */ }
+    }
+
     const active = plans.find((e) => e.id === activePlanId);
 
     // ── Boucle Nager & Progresser ──
@@ -11347,6 +11480,14 @@ export default function App() {
   };
 
   const handlePortal = async () => {
+    setCancelSurveyOpen(true);
+  };
+
+  const proceedToStripePortal = async (cancelReason = null) => {
+    setCancelSurveyOpen(false);
+    if (cancelReason) {
+      trackEvent("cancel_survey", { reason: cancelReason }, { essential: true });
+    }
     showToast("Redirection vers Stripe…");
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
@@ -11357,7 +11498,7 @@ export default function App() {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
-        body: JSON.stringify({ origin: window.location.origin }),
+        body: JSON.stringify({ origin: window.location.origin, cancelReason }),
       });
       const json = await res.json();
       if (json.url) { window.location.href = json.url; return; }
@@ -11366,6 +11507,8 @@ export default function App() {
       showToast("Erreur réseau. Réessaie.");
     }
   };
+
+  const skipCancelSurvey = () => proceedToStripePortal(null);
 
   const goal  = GOALS.find(g => g.id === activeProfile.goal);
   const stats = plan ? computeStats(plan) : null;
@@ -11587,6 +11730,7 @@ export default function App() {
           onClose={closeUpgrade}
           softContext={upgradeSoftContext}
           weeksBlocked={null}
+          planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
           trialEligible={!accessState.trialUsed}
         />
       )}
@@ -11611,8 +11755,22 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={() => openUpgrade()} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={() => openUpgrade()} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
+        {user && isPremium && accessState.status === "trial" && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 2 && (
+          <div style={{ background: "#EFF6FF", borderBottom: "1px solid #BFDBFE", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: "#1E40AF" }}>
+              <span style={{ flex: 1, lineHeight: 1.35 }}>
+                {accessState.trialDaysLeft === 1
+                  ? "Dernier jour d’essai — annule avant minuit = 0 €, ou continue à 4,99 €/mois."
+                  : `Plus que ${accessState.trialDaysLeft} jours d’essai Premium.`}
+              </span>
+              <button type="button" onClick={handlePortal} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                Gérer
+              </button>
+            </div>
+          </div>
+        )}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
         <Footer aboveBottomNav />
@@ -11636,6 +11794,13 @@ export default function App() {
           onPaceUpdate={handlePaceUpdate}
           onValidateSession={handleComplete}
         />
+
+        {cancelSurveyOpen && (
+          <CancelSurveySheet
+            onChoose={(reason) => proceedToStripePortal(reason)}
+            onSkip={skipCancelSurvey}
+          />
+        )}
 
         {sessionFeedbackTarget !== null && (() => {
           const s = sessionFeedbackTarget.archived
@@ -11680,6 +11845,7 @@ export default function App() {
             onClose={closeUpgrade}
             softContext={upgradeSoftContext}
             weeksBlocked={null}
+            planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
             trialEligible={!accessState.trialUsed}
           />
         )}

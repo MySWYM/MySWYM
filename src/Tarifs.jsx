@@ -235,8 +235,8 @@ export default function TarifsPage() {
 
   const annualHighlights = [
     "Coach personnel et programme adaptatif jusqu'au jour J.",
-    "Analyses completes, recommandations et suivi avance.",
-    "Strava, badges, defis et adaptation continue apres chaque seance.",
+    "Allures T100, projection et adaptation apres feedback.",
+    "Strava, badges, multi-plans et suivi semaine apres semaine.",
     "39,99€/an · pas de remboursement (hors cas legaux).",
   ];
 
@@ -248,19 +248,18 @@ export default function TarifsPage() {
 
   const comparisonRows = [
     ["Generation de programme", "Pendant l'essai", "Oui, a tout moment"],
-    ["Consultation des seances existantes", "Oui", "Oui"],
-    ["Historique", "Oui", "Oui"],
-    ["Statistiques", "Completes pendant l'essai", "Statistiques avancees"],
-    ["Coach personnel", true, true],
-    ["Programme adaptatif", true, true],
-    ["Analyses completes", true, true],
-    ["Prediction des chronos", true, true],
-    ["Gestion automatique de la fatigue", true, true],
-    ["Adaptation apres chaque seance", true, true],
-    ["Bibliotheque complete", true, true],
-    ["Defis et badges", "Complet pendant l'essai", "Complet"],
-    ["Synchronisation Strava", "Complete pendant l'essai", "Complete"],
-    ["Nouveautes futures", true, true],
+    ["Consultation des seances (detail)", "Apercu squelette", "Oui"],
+    ["Historique", "Lecture seule apres expiration", "Oui"],
+    ["Statistiques", "Basiques", "Completes + projection allures"],
+    ["Messages coach (Arthur)", false, true],
+    ["Programme adaptatif (feedback)", false, true],
+    ["Allures cibles T100", false, true],
+    ["Prediction des chronos", "Apercu verrouille", true],
+    ["Adaptation apres chaque seance", false, true],
+    ["Multi-plans + modifier le programme", false, true],
+    ["Defis et badges", "Badges", "Badges"],
+    ["Synchronisation Strava", true, true],
+    ["Nouveautes futures", "Selon abo", true],
   ];
 
   const premiumBenefits = [

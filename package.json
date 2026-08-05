@@ -10,12 +10,14 @@
     "preview": "vite preview",
     "test:pace": "node src/lib/swim-pace.test.js",
     "email": "email dev --dir api/_lib/emails",
-    "email:test": "node scripts/send-test-email.mjs"
+    "email:test": "node scripts/send-test-email.mjs",
+    "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
     "@supabase/supabase-js": "^2.104.0",
+    "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.43.0",
     "i18next": "^26.3.6",
     "lucide-react": "^1.8.0",

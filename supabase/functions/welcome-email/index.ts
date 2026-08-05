@@ -4,6 +4,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
+import { sendResendEvent } from "../_shared/resend-events.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
@@ -108,6 +109,16 @@ Deno.serve(async (req) => {
         welcome_email_sent: true,
       },
     });
+
+    // Démarre l’automation Resend nurture (J+3 si pas d’abo)
+    try {
+      await sendResendEvent("user.signed_up", source.email!, {
+        firstName: firstName || "Salut",
+        userId: source.id,
+      });
+    } catch (evErr) {
+      console.error("[welcome-email] resend event error:", evErr);
+    }
 
     console.log("[welcome-email] sent:", result.id, "→", source.id.slice(0, 8));
     return new Response(JSON.stringify({ ok: true, id: result.id }), {

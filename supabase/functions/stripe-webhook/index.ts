@@ -12,6 +12,7 @@ import {
   type AuthUser,
 } from "../_shared/access-state.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
+import { sendResendEvent } from "../_shared/resend-events.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -253,6 +254,26 @@ Deno.serve(async (req) => {
           console.error("[stripe-webhook] confirmation email error:", mailErr);
         }
 
+        // Stoppe le nurture Resend (wait_for_event subscription.started)
+        try {
+          if (user.email) {
+            await sendResendEvent("subscription.started", user.email, {
+              firstName: firstNameFromUser(user as AuthUser) || "Salut",
+              userId: user.id,
+              planLabel,
+            });
+            if (nextState?.access_status === ACCESS_STATUS.trial) {
+              await sendResendEvent("trial.started", user.email, {
+                firstName: firstNameFromUser(user as AuthUser) || "Salut",
+                userId: user.id,
+                trialEndsAt: nextState.trial_ends_at ?? "",
+              });
+            }
+          }
+        } catch (evErr) {
+          console.error("[stripe-webhook] subscription/trial event error:", evErr);
+        }
+
         // Recharge user après setEntitlement pour avoir app_metadata à jour
         const { data: { user: fresh } } = await supabaseAdmin.auth.admin.getUserById(userId);
         const filleul = (fresh ?? user) as AuthUser;
@@ -282,6 +303,25 @@ Deno.serve(async (req) => {
       const currentState = await getAccessState(supabaseAdmin, user.id);
       const nextState = buildSubscriptionState(user.id, currentState, customerId ?? null, sub as Stripe.Subscription);
       await persistAccessState(supabaseAdmin, user, nextState);
+
+      // Annulation demandée (fin de période) → automation Resend
+      const prev = (event.data as { previous_attributes?: { cancel_at_period_end?: boolean } })
+        ?.previous_attributes;
+      if (
+        event.type === "customer.subscription.updated" &&
+        sub?.cancel_at_period_end === true &&
+        prev?.cancel_at_period_end === false &&
+        user.email
+      ) {
+        try {
+          await sendResendEvent("subscription.canceled", user.email, {
+            firstName: firstNameFromUser(user) || "Salut",
+            userId: user.id,
+          });
+        } catch (evErr) {
+          console.error("[stripe-webhook] subscription.canceled event error:", evErr);
+        }
+      }
     }
   }
 
@@ -299,6 +339,18 @@ Deno.serve(async (req) => {
         subscription_ends_at: isoFromUnixSeconds(sub?.current_period_end ?? null),
       });
       await persistAccessState(supabaseAdmin, user, nextState);
+
+      // Si annulation immédiate (pas déjà passée par cancel_at_period_end)
+      if (user.email && !sub?.cancel_at_period_end) {
+        try {
+          await sendResendEvent("subscription.canceled", user.email, {
+            firstName: firstNameFromUser(user) || "Salut",
+            userId: user.id,
+          });
+        } catch (evErr) {
+          console.error("[stripe-webhook] subscription.canceled (deleted) event error:", evErr);
+        }
+      }
     }
   }
 

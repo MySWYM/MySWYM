@@ -15,6 +15,7 @@ const KINDS = [
   "workout_reminder",
   "newsletter",
   "contact",
+  "reactivation",
 ] as const;
 
 type EmailKind = (typeof KINDS)[number];
@@ -219,6 +220,25 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
             p(`<strong style="color:#191c1e">Message :</strong>`) +
             `<p style="color:#434751;font-size:15px;line-height:24px;white-space:pre-wrap;margin:0 0 12px">${escapeHtml(message)}</p>` +
             p(`Réponds directement à cet e-mail pour écrire à ${escapeHtml(email)}.`),
+        ),
+      };
+    }
+    case "reactivation": {
+      const to = str("to");
+      const firstName = str("firstName");
+      const ctaUrl = str("ctaUrl") || "https://myswym.app/app";
+      if (!to.includes("@")) return { error: "payload.to must be an email" };
+      const who = firstName ? `${escapeHtml(firstName)}, t` : "T";
+      return {
+        to,
+        subject: "Ton plan MySWYM t’attend",
+        category: "reactivation",
+        html: layout(
+          "Ton plan continue quand tu veux",
+          p(`${who}on plan MySWYM est toujours là — séances structurées, progression claire, sans te perdre.`) +
+            p("Premium débloque le programme complet, le multi-plans et les départs chronométrés. Essai 7 jours avec carte, puis 4,99 € / mois — tu peux annuler quand tu veux.") +
+            p("Un clic et tu reprends exactement où tu en étais."),
+          { label: "Reprendre mon plan", url: ctaUrl },
         ),
       };
     }

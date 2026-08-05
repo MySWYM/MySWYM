@@ -38,7 +38,6 @@ const C = {
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
 const CTA_HREF = "/inscription";
-const FREE_WEEKS = 4; // FREE_WEEKS_LIMIT dans App.jsx
 
 // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx / Tarifs.jsx
 const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
@@ -528,7 +527,7 @@ function Hero() {
             </PrimaryCta>
           </div>
           <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontFamily: FONT }}>
-            {t("hero.freeNote", { weeks: FREE_WEEKS })}
+            {t("hero.freeNote")}
           </p>
         </div>
 
@@ -972,7 +971,7 @@ function Pricing() {
   };
 
   const freeFeatures = [
-    t("pricing.freeF1", { weeks: FREE_WEEKS }),
+    t("pricing.freeF1"),
     t("pricing.freeF2"),
     t("pricing.freeF3"),
     t("pricing.freeF4"),
@@ -997,7 +996,7 @@ function Pricing() {
             {t("pricing.titleLine1")}<br />{t("pricing.titleLine2")}
           </h2>
           <p style={{ color: C.secondary, fontSize: 16, fontFamily: FONT }}>
-            {t("pricing.subtitle", { weeks: FREE_WEEKS })}
+            {t("pricing.subtitle")}
           </p>
         </FadeIn>
 
@@ -1015,7 +1014,7 @@ function Pricing() {
               <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>{t("pricing.freeTitle")}</div>
               <div style={{ fontSize: 40, fontFamily: FONT, fontWeight: 800, color: C.ink, margin: "12px 0 4px" }}>{t("pricing.freePrice")}</div>
               <div style={{ color: C.secondary, fontSize: 13, marginBottom: 22, fontFamily: FONT }}>
-                {t("pricing.freeMeta", { weeks: FREE_WEEKS })}
+                {t("pricing.freeMeta")}
               </div>
               <a href={CTA_HREF} style={{
                 display: "block", textAlign: "center",
@@ -1109,7 +1108,7 @@ function FAQ() {
   const items = [
     { q: t("faq.q1"), a: t("faq.a1") },
     { q: t("faq.q2"), a: t("faq.a2") },
-    { q: t("faq.q3"), a: t("faq.a3", { weeks: FREE_WEEKS }) },
+    { q: t("faq.q3"), a: t("faq.a3") },
     { q: t("faq.q4"), a: t("faq.a4") },
   ];
 
@@ -1192,7 +1191,7 @@ function FinalCTA() {
             {t("finalCta.titleLine1")}<br />{t("finalCta.titleLine2")}
           </h2>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.65, marginBottom: 28, fontFamily: FONT }}>
-            {t("finalCta.subtitle", { weeks: FREE_WEEKS })}
+            {t("finalCta.subtitle")}
           </p>
           <PrimaryCta>
             {t("finalCta.cta")} <ArrowRight size={18} />

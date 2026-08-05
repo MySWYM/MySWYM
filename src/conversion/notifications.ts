@@ -59,9 +59,9 @@ export const RETENTION_NOTIFICATIONS: NotificationTemplate[] = [
   },
   {
     id: 'soft_premium',
-    title: 'Ton plan continue après S4',
-    body: 'Tu as {pct}% du chemin. Premium ouvre les {remaining} semaines restantes.',
-    when: 'Fin semaine 3 ou 4, une fois / user',
+    title: 'Plus que {days} jour{s} d’essai',
+    body: 'Ton plan continue après l’essai — Premium à 4,99 € / mois, sans engagement.',
+    when: 'Essai J-2 / J-1, une fois / user',
     why: 'Conversion au pic de valeur perçue',
   },
   {

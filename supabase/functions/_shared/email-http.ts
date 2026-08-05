@@ -11,7 +11,8 @@ export type EmailHttpKind =
   | "subscription_confirmation"
   | "workout_reminder"
   | "newsletter"
-  | "contact";
+  | "contact"
+  | "reactivation";
 
 
 export type EmailHttpResult =

@@ -60,7 +60,7 @@ const FAQ_RULES = [
   {
     keys: ["allure", "t100", "temps 100", "pace", "@", "mm:ss", "chron"],
     answer:
-      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau) — plus de T400. Premium affiche @mm:ss à côté des zones. Gratuit : zones seules, sans tags d'allure. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
+      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau) — plus de T400. Premium affiche @mm:ss à côté des zones. Sans abo : aperçu squelette, sans tags d'allure. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
   },
   {
     keys: ["d…", "d...", "r…", "r...", "d ou r", "départ chron", "depart chron", "repos ", "intervalle fixe", "chronométré", "chronometre"],

@@ -62,3 +62,27 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/delete-account/deno.json"
 entrypoint = "./functions/delete-account/index.ts"
+
+[functions.reactivate-nonpayers]
+enabled = true
+verify_jwt = false
+import_map = "./functions/reactivate-nonpayers/deno.json"
+entrypoint = "./functions/reactivate-nonpayers/index.ts"
+
+[functions.welcome-email]
+enabled = true
+verify_jwt = true
+import_map = "./functions/welcome-email/deno.json"
+entrypoint = "./functions/welcome-email/index.ts"
+
+[functions.marketing-cron]
+enabled = true
+verify_jwt = false
+import_map = "./functions/marketing-cron/deno.json"
+entrypoint = "./functions/marketing-cron/index.ts"
+
+[functions.marketing-event]
+enabled = true
+verify_jwt = true
+import_map = "./functions/marketing-event/deno.json"
+entrypoint = "./functions/marketing-event/index.ts"

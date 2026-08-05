@@ -1,0 +1,35 @@
+# Filet essai Premium J-1 → event Resend trial.ending_soon
+# Secrets GitHub : SUPABASE_URL, INTERNAL_EMAIL_SECRET
+name: Marketing cron (trial J-1)
+
+on:
+  schedule:
+    # Tous les jours à 09:00 UTC (~11:00 Paris hiver / 10:00 été)
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (ne marque pas les users / n’envoie pas)"
+        type: boolean
+        default: true
+
+jobs:
+  trial-ending:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call marketing-cron
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          INTERNAL_EMAIL_SECRET: ${{ secrets.INTERNAL_EMAIL_SECRET }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$INTERNAL_EMAIL_SECRET" ]; then
+            echo "Missing SUPABASE_URL or INTERNAL_EMAIL_SECRET secrets"
+            exit 1
+          fi
+          BODY=$(jq -n --argjson dry "$DRY_RUN" '{dry_run: $dry, limit: 100}')
+          curl -sS -X POST "${SUPABASE_URL}/functions/v1/marketing-cron" \
+            -H "Content-Type: application/json" \
+            -H "x-myswym-email-secret: ${INTERNAL_EMAIL_SECRET}" \
+            -d "$BODY" | tee /tmp/cron-out.json
+          jq -e '.ok == true' /tmp/cron-out.json

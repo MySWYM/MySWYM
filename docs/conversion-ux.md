@@ -6,76 +6,92 @@ Module code : `src/conversion/`
 
 ---
 
-## Nouveau flow (vs actuel)
+## Modèle live (août 2026) — trial-first
 
 ```
-Welcome (valeur émotionnelle)
-  → Objectif
-  → Niveau + bassin
-  → Fréquence (jusqu’à 3× gratuit, 4–5× signal Premium sans bloquer)
-  → Plan Reveal (aha moment — timeline S1–S4 vs suite)
-  → Première séance (détail complet)
-  → Accueil habit (streak, ring, prochaine séance)
-  → [après 1ère séance] Soft paywall dismissible
-  → … semaines 1–4 …
-  → Hard paywall honnête à la semaine 5
+Onboarding (questionnaire)
+  → Génération du plan (contenu premium-mode)
+  → PlanReadySheet (insights coach + CTA essai)
+  → Stripe essai 7 jours (carte requise)
+  → OU dismiss → aperçu squelette / UpgradeModal contextuel
 ```
 
-**Changement clé vs aujourd’hui :** ne plus ouvrir `UpgradeModal` 1,2 s après la génération du plan.
+**Sans abo :** squelette (titre / type / distance), pas de validation de séance.  
+**Essai / Premium :** séances complètes, allures, `adjustPlan`, multi-plans, coach card.
+
+Entitlements : `src/lib/access.js` (`subscription_status` trial/active/canceled/expired).  
+Insights paywall : `src/lib/coach-insights.js`.
+
+### Pricing
+
+| Offre | Prix |
+|-------|------|
+| Essai | 7 jours · carte requise · 0€ si annulation avant fin |
+| Mensuel | 4,99€ / mois |
+| Annuel | 39,99€ / an · pas de remboursement |
+
+### Paywalls contextuels (`UpgradeModal` softContext)
+
+| Context | Moment |
+|---------|--------|
+| `trial_required` | Génération / action bloquée |
+| `session_locked` | Clic séance / checkbox / détails |
+| `trial_expired` | Fin d’essai |
+| `after_first_session` | Legacy soft (inatteignable sans Premium pour compléter) |
+| `feedback_adjust` / `analysis` | Prévus pour teasers feedback / stats |
 
 ---
 
-## Décisions freemium
+## Prototype `/prototype/conversion`
 
-| Paramètre | Recommandation | Raison |
-|-----------|----------------|--------|
-| Semaines gratuites | **4** | Habitude ~21 j ; 4 semaines = un « chapitre » |
-| Fréquence gratuite | **3×** (pas 2) | 2× handicape le loop ; 3× = vrai entraînement |
-| Soft paywall | Après **1ère séance validée** | Valeur ressentie |
-| Hard paywall | Accès **semaine 5+** | Frontière claire, pas de dark pattern |
-| Fréquence 4–5× à l’onboarding | Sélectionnable, plan généré, exécution free plafonnée à 3 | Transparence Runna-like |
-
-### Gratuit
-
-- 4 semaines personnalisées
-- Jusqu’à 3 séances / semaine
-- Suivi, badges, séries, retours
-- Intervalles en `R…`
-
-### Premium
-
-- Plan jusqu’à l’événement
-- 4–5× / semaine
-- Allures `D…` + T100
-- Ajustement auto feedback
-- Multi-plans, copie, vidéos IG, courbe allures
+Tokens alignés trial-first (`freeWeeks: 0`, `hardPaywallAtWeek: 0`).  
+Écrans Soft/Hard paywall, celebration, habit home — **pas** le shell production (`App.jsx`).
 
 ---
 
-## Design tokens
+## Décisions (obsolète → remplacé)
+
+| Ancien freemium | Live |
+|-----------------|------|
+| 4 semaines gratuites | 0 semaine utilisable sans essai |
+| Soft après 1ʳᵉ séance | PlanReady + skeleton lock |
+| Hard gate semaine 5 | Supprimé |
+| Freq free ≤ 3 | 1–5 sélectionnables ; exécution = Premium |
+
+Constantes `FREE_WEEKS_LIMIT` / `FREE_FREQ_LIMIT` dans `App.jsx` = remnants, ne gate plus l’UX.
+
+---
+
+## Design tokens (prototype)
 
 Voir `tokens.ts` + `conversion.css`.
 
 - Fond `#f5f7fb` · Ink `#0f1419` · Blue `#355da3`
 - Display **Barlow Condensed** · Body **Lexend**
-- Spacing 4 / 8 / 16 / 24 / 32 / 48
-- Radius 10 / 14 / 20 / 28
-- Motion : ease `[0.22,1,0.36,1]`, springs snappy/soft, `prefers-reduced-motion`
-
-Préfixe Tailwind : `cv:` (n’impacte pas les styles legacy d’`App.jsx`).
-
----
-
-## Notifications
-
-Banque dans `notifications.ts` (reminder, streak protect, week complete, comeback, milestone, soft premium, race countdown).
+- Préfixe Tailwind : `cv:`
 
 ---
 
 ## Intégration progressive
 
 1. ~~Tester le prototype `/prototype/conversion`~~
-2. ✅ Remplacé l’ouverture auto du paywall post-génération dans `App.jsx`
-3. ✅ `FREE_FREQ_LIMIT` 2 → 3
-4. ✅ Soft paywall après 1ʳᵉ séance (`myswym_soft_paywall_v1`, copy `after_first_session`)
-5. Brancher célébration post-séance dédiée (optionnel) + hard paywall semaine 5 UX
+2. ✅ Remplacé l’ouverture auto du paywall post-génération
+3. ✅ Soft paywall legacy (code présent, flux live = trial)
+4. ✅ **Trial-first** : PlanReadySheet + skeleton lock + access.js
+5. ✅ Insights coach pré-checkout + CoachCard monté (Premium)
+6. ✅ Paywalls contextuels (`getUpgradeCopy`)
+7. ✅ Emails essai J1/J3/J6 (`scripts/setup-resend-automations-v3-trial-drip.mjs` → `npm run email:setup-trial-drip`)
+8. ✅ Cron J-1 (`marketing-cron` + `.github/workflows/marketing-cron.yml`)
+9. ⬜ Fatigue score + calendrier intelligent (P1)
+
+### Timeline emails essai
+
+| Jour | Trigger | Contenu |
+|------|---------|---------|
+| J0 | Stripe checkout | Confirmation abo + event `trial.started` |
+| J+1 | Resend automation | Coche 1ʳᵉ séance + feedback |
+| J+3 | Resend automation | Adaptation coach / ressenti |
+| J+6 | Resend automation | Soft convert (garde ton coach) |
+| J-1 | `marketing-cron` → `trial.ending_soon` | Urgence « demain fin d’essai » |
+
+Si l’utilisateur annule pendant le délai → `subscription.canceled` stoppe le drip (timeout only).

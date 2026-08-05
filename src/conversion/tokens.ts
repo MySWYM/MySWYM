@@ -92,8 +92,8 @@ export const FREE_FEATURES = [
 
 export const PREMIUM_FEATURES = [
   'Coach personnel et programme adaptatif',
-  'Analyses complètes et recommandations',
-  'Prévision des chronos et gestion fatigue',
-  'Strava, badges, défis et stats avancées',
+  'Allures T100 et projection de progression',
+  'Adaptation après chaque feedback',
+  'Strava, badges, multi-plans et stats',
   'Toutes les futures nouveautés Premium incluses',
 ] as const
