@@ -4976,6 +4976,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   };
 
   const handleCheckout = async () => {
+    if (loading) return;
     setLoading(true); setErr(null);
     try {
       const priceId = isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY;
@@ -4991,6 +4992,11 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         ...(referralCode ? { referralCode } : {}),
       });
       if (json.url) { window.location.href = json.url; return; }
+      if (json.alreadySubscribed) {
+        setErr(json.error || "Tu as déjà un abonnement en cours.");
+        setLoading(false);
+        return;
+      }
       throw new Error(json.error || "Lien de paiement introuvable");
     } catch (e) { setErr(e.message || "Erreur."); setLoading(false); }
   };
@@ -10534,6 +10540,7 @@ export default function App() {
   };
 
   const startMonthlyCheckout = async () => {
+    if (planReadyLoading) return;
     setPlanReadyLoading(true);
     showToast("Redirection vers l'essai 7 jours (carte requise)…");
     try {
@@ -10569,7 +10576,7 @@ export default function App() {
       }
       setPlanReadyLoading(false);
       showToast(json.error || "Impossible d'ouvrir le paiement.", 8000);
-      openUpgrade("trial_required");
+      if (!json.alreadySubscribed) openUpgrade("trial_required");
     } catch {
       setPlanReadyLoading(false);
       showToast("Erreur réseau. Réessaie.", 8000);

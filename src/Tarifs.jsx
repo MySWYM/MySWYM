@@ -159,6 +159,7 @@ function CompactTableValue({ value, premium = false }) {
 export default function TarifsPage() {
   const isMobile = useIsMobile();
   const [openFaq, setOpenFaq] = useState(0);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
 
   useEffect(() => {
     document.title = "Tarifs MySWYM";
@@ -166,6 +167,7 @@ export default function TarifsPage() {
   }, []);
 
   const handlePremium = async (priceId) => {
+    if (checkoutBusy) return;
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -180,6 +182,7 @@ export default function TarifsPage() {
       window.location.href = "/inscription";
       return;
     }
+    setCheckoutBusy(true);
     try {
       trackEvent("checkout_started", { source: "pricing_page", price_id: priceId }, { essential: true });
       let referralCode;
@@ -211,8 +214,10 @@ export default function TarifsPage() {
         return;
       }
       alert(data.error || "Impossible d'ouvrir le paiement. Reessaie.");
+      setCheckoutBusy(false);
     } catch {
       alert("Impossible d'ouvrir le paiement. Reessaie.");
+      setCheckoutBusy(false);
     }
   };
 

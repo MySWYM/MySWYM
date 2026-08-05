@@ -24,6 +24,8 @@ const ALLOWED_PRICE_IDS = new Set([
   "price_1TPKQfAVxucD4jHaUDssY5cs",
 ].filter(Boolean));
 
+const BLOCKING_SUB_STATUSES = new Set(["active", "trialing", "past_due", "unpaid"]);
+
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
   "https://myswym.app",
@@ -102,6 +104,56 @@ async function findUserByReferralCode(
   return null;
 }
 
+async function resolveCustomerId(user: AuthUser): Promise<string | undefined> {
+  const stored = (user.app_metadata?.stripe_customer_id
+    ?? user.user_metadata?.stripe_customer_id) as string | undefined;
+  if (stored) {
+    try {
+      const c = await stripe.customers.retrieve(stored);
+      if (!(c as { deleted?: boolean }).deleted) return stored;
+    } catch {
+      // ID périmé — recherche par email
+    }
+  }
+  if (!user.email) return undefined;
+  const list = await stripe.customers.list({ email: user.email, limit: 10 });
+  const match = list.data.find((c) => !(c as { deleted?: boolean }).deleted);
+  return match?.id;
+}
+
+async function findBlockingSubscription(customerId: string) {
+  const subs = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 30,
+  });
+  return subs.data.find((s) => BLOCKING_SUB_STATUSES.has(s.status)) ?? null;
+}
+
+/** Cherche un abo bloquant sur tous les customers Stripe liés à l'email. */
+async function findBlockingSubscriptionForEmail(email: string) {
+  const list = await stripe.customers.list({ email, limit: 10 });
+  for (const c of list.data) {
+    if ((c as { deleted?: boolean }).deleted) continue;
+    const sub = await findBlockingSubscription(c.id);
+    if (sub) return { customerId: c.id, subscription: sub };
+  }
+  return null;
+}
+
+async function findOpenCheckoutSession(customerId: string) {
+  const sessions = await stripe.checkout.sessions.list({
+    customer: customerId,
+    limit: 10,
+  });
+  return sessions.data.find((s) =>
+    s.status === "open"
+    && s.mode === "subscription"
+    && typeof s.url === "string"
+    && s.url.length > 0
+  ) ?? null;
+}
+
 Deno.serve(async (req) => {
   const reqOrigin = req.headers.get("origin");
   const cors = corsHeaders(reqOrigin);
@@ -148,16 +200,53 @@ Deno.serve(async (req) => {
 
     const appPath = `${origin}/app`;
 
-    const existingCustomerId = (sourceUser.app_metadata?.stripe_customer_id
-      ?? sourceUser.user_metadata?.stripe_customer_id) as string | undefined;
+    let validCustomerId = await resolveCustomerId(sourceUser);
 
-    let validCustomerId: string | undefined;
-    if (existingCustomerId) {
-      try {
-        const c = await stripe.customers.retrieve(existingCustomerId);
-        if (!(c as { deleted?: boolean }).deleted) validCustomerId = existingCustomerId;
-      } catch {
-        // ID invalide / autre mode Stripe → nouveau checkout avec email
+    // Anti-doublon : refuse un 2e abo si un trial/active existe déjà (même email / customer).
+    let blockingSub = validCustomerId
+      ? await findBlockingSubscription(validCustomerId)
+      : null;
+    if (!blockingSub && sourceUser.email) {
+      const byEmail = await findBlockingSubscriptionForEmail(sourceUser.email);
+      if (byEmail) {
+        validCustomerId = byEmail.customerId;
+        blockingSub = byEmail.subscription;
+      }
+    }
+    if (blockingSub) {
+      console.warn("[create-checkout] blocked duplicate", {
+        userId: user.id,
+        customerId: validCustomerId,
+        subscriptionId: blockingSub.id,
+        status: blockingSub.status,
+      });
+      return new Response(JSON.stringify({
+        error: blockingSub.status === "trialing"
+          ? "Tu as déjà un essai en cours. Gère ton abonnement depuis ton compte."
+          : "Tu as déjà un abonnement actif. Gère-le depuis ton compte.",
+        alreadySubscribed: true,
+        subscriptionStatus: blockingSub.status,
+        subscriptionId: blockingSub.id,
+      }), {
+        status: 409,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    // Réutilise une session Checkout encore ouverte (anti multi-clics).
+    if (validCustomerId) {
+      const openSession = await findOpenCheckoutSession(validCustomerId);
+      if (openSession?.url) {
+        await supabaseAdmin.from("conversion_events").insert({
+          user_id: user.id,
+          event_name: "checkout_session_reused",
+          path: "/create-checkout",
+          properties: { session_id: openSession.id, price_id: price },
+          created_at: new Date().toISOString(),
+        });
+        return new Response(JSON.stringify({ url: openSession.url, reused: true }), {
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
       }
     }
 
@@ -190,6 +279,9 @@ Deno.serve(async (req) => {
     }
     const grantTrial = price === PRICE_MONTHLY && !trialAlreadyUsed;
 
+    // Fenêtre 2 min : double-clic / refresh ne créent pas 2 sessions Stripe.
+    const idempotencyKey = `checkout:${user.id}:${price}:${Math.floor(Date.now() / 120_000)}`;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
@@ -217,6 +309,8 @@ Deno.serve(async (req) => {
       ...(validCustomerId
         ? { customer: validCustomerId }
         : { customer_email: user.email }),
+    }, {
+      idempotencyKey,
     });
 
     await supabaseAdmin.from("conversion_events").insert({
@@ -227,6 +321,7 @@ Deno.serve(async (req) => {
         price_id: price,
         has_referral: !!couponId || !!referredByUserId,
         trial_granted: grantTrial,
+        session_id: session.id,
       },
       created_at: new Date().toISOString(),
     });
