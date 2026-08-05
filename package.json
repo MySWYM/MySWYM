@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:pace": "node src/lib/swim-pace.test.js",
-    "email": "email dev --dir src/emails",
+    "email": "email dev --dir api/_lib/emails",
     "email:test": "node scripts/send-test-email.mjs"
   },
   "dependencies": {

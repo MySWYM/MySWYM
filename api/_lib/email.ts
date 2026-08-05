@@ -16,13 +16,13 @@ import type {
   WelcomeEmailInput,
   WorkoutReminderEmailInput,
 } from "./email-types";
-import { WelcomeEmail } from "../emails/welcome";
-import { VerificationEmail } from "../emails/verification";
-import { ResetPasswordEmail } from "../emails/reset-password";
-import { SubscriptionConfirmationEmail } from "../emails/subscription-confirmation";
-import { WorkoutReminderEmail } from "../emails/workout-reminder";
-import { NewsletterEmail } from "../emails/newsletter";
-import { ContactNotificationEmail } from "../emails/contact-notification";
+import { WelcomeEmail } from "./emails/welcome";
+import { VerificationEmail } from "./emails/verification";
+import { ResetPasswordEmail } from "./emails/reset-password";
+import { SubscriptionConfirmationEmail } from "./emails/subscription-confirmation";
+import { WorkoutReminderEmail } from "./emails/workout-reminder";
+import { NewsletterEmail } from "./emails/newsletter";
+import { ContactNotificationEmail } from "./emails/contact-notification";
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");

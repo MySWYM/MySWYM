@@ -3,7 +3,7 @@
  * Sends to contact@ via Resend; reply-to = visitor email.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { sendContactEmail } from "../src/lib/email";
+import { sendContactEmail } from "../_lib/email";
 
 const MAX_NAME = 120;
 const MAX_SUBJECT = 200;
