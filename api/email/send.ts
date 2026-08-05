@@ -6,8 +6,8 @@
  * Server-only — used by Edge Functions / internal tools. Not for the Vite client.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { sendEmail } from "../src/lib/email";
-import type { EmailKind, EmailPayloadByKind } from "../src/lib/email-types";
+import { sendEmail } from "../../src/lib/email";
+import type { EmailKind, EmailPayloadByKind } from "../../src/lib/email-types";
 
 const KINDS: EmailKind[] = [
   "welcome",
