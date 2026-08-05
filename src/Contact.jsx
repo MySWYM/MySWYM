@@ -100,9 +100,7 @@ export default function ContactPage() {
               Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrjours ouvrés).
             </p>
             <p style={{ color: C.secondary, fontSize: 14, marginTop: 10 }}>
-              Direct : <a href="mailto:contact@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>contact@myswym.app</a>
-              {" · "}
-              <a href="mailto:support@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>support@myswym.app</a>
+              Direct : <a href="mailto:support@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>support@myswym.app</a>
             </p>
 
             <div style={{ marginTop: isMobile ? 24 : 34, background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 22, boxShadow: "0 2px 12px rgba(142,179,255,0.10)" }}>
