@@ -16,6 +16,7 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
     "@supabase/supabase-js": "^2.104.0",
+    "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.43.0",
     "i18next": "^26.3.6",
     "lucide-react": "^1.8.0",
