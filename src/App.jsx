@@ -2654,6 +2654,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
+  const badgesSectionRef = useRef(null);
 
   // Resync depuis user_metadata quand l'objet user arrive ou change
   useEffect(() => {
@@ -2676,6 +2677,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
 
   const stats  = computeStats(plan);
   const earned = checkBadges(stats);
+  const handleScrollToBadges = () => badgesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const saveName = () => {
     const v = nameInput.trim();
@@ -2912,16 +2914,63 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => { setNameInput(displayName); setEditingName(true); }}
-            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
-          >
-            <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
-            <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Settings size={11} color={G.blue} />
-            </div>
-          </button>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <button
+              type="button"
+              onClick={() => { setNameInput(displayName); setEditingName(true); }}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, padding: 8, minHeight: 44 }}
+            >
+              <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
+              <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Settings size={11} color={G.blue} />
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleScrollToBadges}
+              aria-label={`Voir mes badges (${earned.length})`}
+              title="Voir mes badges"
+              style={{
+                position: "relative",
+                width: 36,
+                height: 36,
+                borderRadius: 12,
+                border: `1px solid ${G.greyLight}`,
+                background: G.surface,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              <Bell size={16} color={earned.length ? G.gold : G.grey} />
+              <span
+                style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  minWidth: 18,
+                  height: 18,
+                  padding: "0 5px",
+                  borderRadius: 999,
+                  background: earned.length ? G.gold : G.greyLight,
+                  color: earned.length ? G.white : G.grey,
+                  border: `2px solid ${G.surface}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                {earned.length}
+              </span>
+            </button>
+          </div>
         )}
         <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
           {levelLabel}
@@ -2991,7 +3040,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
           </div>
         </div>
 
-        <div style={{ marginBottom: 24 }}>
+        <div ref={badgesSectionRef} style={{ marginBottom: 24 }}>
           <HomeBadgesSection plan={plan} />
         </div>
       </div>
