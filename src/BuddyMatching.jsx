@@ -302,7 +302,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
     if (!user?.id) return;
     if (discoverable && !form.consent_whatsapp) {
       setConsentError(true);
-      setMsg({ type: "err", text: "Tu dois cocher l'acceptation avant de publier ton numéro." });
+      setMsg({ type: "err", text: "Accepte la publication de ton numéro pour rendre ton profil visible." });
       return;
     }
     setSaving(true);
