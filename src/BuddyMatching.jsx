@@ -747,7 +747,20 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                       setForm((f) => ({ ...f, consent_whatsapp: checked }));
                       if (checked) setConsentError(false);
                     }}
-                    style={{ marginTop: 2, width: 18, height: 18, accentColor: G.blue, flexShrink: 0 }}
+                    style={{
+                      marginTop: 2,
+                      width: 20,
+                      height: 20,
+                      flexShrink: 0,
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      border: "2px solid #111827",
+                      borderRadius: 0,
+                      background: form.consent_whatsapp
+                        ? `center / 12px 12px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E"), ${G.blue}`
+                        : "#FFFFFF",
+                      cursor: "pointer",
+                    }}
                   />
                   <span style={{ fontSize: 12, color: consentError ? G.coral : G.grey, lineHeight: 1.55 }}>
                     J&apos;accepte de publier mon numéro WhatsApp pour être contacté par d&apos;autres membres lorsque mon profil est actif. J&apos;ai lu les{" "}
