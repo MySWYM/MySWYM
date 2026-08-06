@@ -39,6 +39,73 @@ export const BUDDY_LEVELS = [
   { id: "performance", label: "Performance" },
 ];
 
+/** Jours de la semaine (ordre calendaire FR, lundi → dimanche). */
+export const BUDDY_DAYS = [
+  { id: "mon", short: "Lun", label: "Lundi" },
+  { id: "tue", short: "Mar", label: "Mardi" },
+  { id: "wed", short: "Mer", label: "Mercredi" },
+  { id: "thu", short: "Jeu", label: "Jeudi" },
+  { id: "fri", short: "Ven", label: "Vendredi" },
+  { id: "sat", short: "Sam", label: "Samedi" },
+  { id: "sun", short: "Dim", label: "Dimanche" },
+];
+
+/** Créneaux larges type journée. */
+export const BUDDY_TIME_SLOTS = [
+  { id: "morning", label: "Matin", hint: "6h–12h" },
+  { id: "midday", label: "Midi", hint: "12h–14h" },
+  { id: "afternoon", label: "Après-midi", hint: "14h–18h" },
+  { id: "evening", label: "Soir", hint: "18h–22h" },
+];
+
+const ALLOWED_DAY_IDS = new Set(BUDDY_DAYS.map((d) => d.id));
+const ALLOWED_SLOT_IDS = new Set(BUDDY_TIME_SLOTS.map((s) => s.id));
+
+export function normalizeIdList(value, allowed) {
+  const raw = Array.isArray(value) ? value : [];
+  return [...new Set(raw.filter((id) => allowed.has(id)))];
+}
+
+export function normalizeAvailabilityDays(value) {
+  const order = BUDDY_DAYS.map((d) => d.id);
+  const set = new Set(normalizeIdList(value, ALLOWED_DAY_IDS));
+  return order.filter((id) => set.has(id));
+}
+
+export function normalizeAvailabilitySlots(value) {
+  const order = BUDDY_TIME_SLOTS.map((s) => s.id);
+  const set = new Set(normalizeIdList(value, ALLOWED_SLOT_IDS));
+  return order.filter((id) => set.has(id));
+}
+
+export function toggleIdInList(selected, id, allowed) {
+  const current = normalizeIdList(selected, allowed);
+  if (current.includes(id)) return current.filter((x) => x !== id);
+  return [...current, id];
+}
+
+export function toggleAvailabilityDay(selected, id) {
+  return normalizeAvailabilityDays(toggleIdInList(selected, id, ALLOWED_DAY_IDS));
+}
+
+export function toggleAvailabilitySlot(selected, id) {
+  return normalizeAvailabilitySlots(toggleIdInList(selected, id, ALLOWED_SLOT_IDS));
+}
+
+/** Libellé lisible : "Lun, Mer · Matin, Soir" */
+export function formatAvailabilityLabel(days, slots) {
+  const dayPart = normalizeAvailabilityDays(days)
+    .map((id) => BUDDY_DAYS.find((d) => d.id === id)?.short)
+    .filter(Boolean)
+    .join(", ");
+  const slotPart = normalizeAvailabilitySlots(slots)
+    .map((id) => BUDDY_TIME_SLOTS.find((s) => s.id === id)?.label)
+    .filter(Boolean)
+    .join(", ");
+  if (dayPart && slotPart) return `${dayPart} · ${slotPart}`;
+  return dayPart || slotPart || "";
+}
+
 const BUDDY_SELECT = [
   "user_id",
   "display_name",
@@ -46,6 +113,8 @@ const BUDDY_SELECT = [
   "level",
   "goal_category",
   "outing_types",
+  "availability_days",
+  "availability_slots",
   "availability",
   "bio",
   "whatsapp_e164",
@@ -115,7 +184,8 @@ export function defaultBuddyForm(user, trainingProfile) {
     level: trainingProfile?.level || "régulier",
     goal_category: goalCategoryFromProfile(trainingProfile),
     outing_types: trainingProfile?.category === "eau_libre" ? ["open_water"] : ["training"],
-    availability: "",
+    availability_days: [],
+    availability_slots: [],
     bio: "",
     whatsapp_e164: "",
     is_discoverable: false,
@@ -166,6 +236,10 @@ export async function upsertBuddyProfile(userId, form) {
     }
   }
 
+  const availabilityDays = normalizeAvailabilityDays(form.availability_days);
+  const availabilitySlots = normalizeAvailabilitySlots(form.availability_slots);
+  const availabilityLabel = formatAvailabilityLabel(availabilityDays, availabilitySlots);
+
   const row = {
     user_id: userId,
     display_name: (form.display_name || "Nageur").trim().slice(0, 80),
@@ -173,7 +247,9 @@ export async function upsertBuddyProfile(userId, form) {
     level: form.level || null,
     goal_category: form.goal_category || "eau_libre",
     outing_types: normalizeOutingTypes(form.outing_types),
-    availability: (form.availability || "").trim().slice(0, 200) || null,
+    availability_days: availabilityDays,
+    availability_slots: availabilitySlots,
+    availability: availabilityLabel || null,
     bio: (form.bio || "").trim().slice(0, 400) || null,
     whatsapp_e164: whatsapp,
     is_discoverable: !!form.is_discoverable,

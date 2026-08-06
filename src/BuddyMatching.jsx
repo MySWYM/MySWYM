@@ -6,20 +6,27 @@ import {
 import BrandLogo from "./BrandLogo.jsx";
 import { trackEvent } from "./lib/analytics.js";
 import {
+  BUDDY_DAYS,
   BUDDY_GOAL_CATEGORIES,
   BUDDY_LEVELS,
   BUDDY_OUTING_TYPES,
+  BUDDY_TIME_SLOTS,
   buildWhatsAppLink,
   defaultBuddyForm,
   disableBuddyProfile,
   fetchDiscoverableBuddies,
   fetchOwnBuddyProfile,
+  formatAvailabilityLabel,
   formatWhatsAppDisplay,
   labelForGoalCategory,
   labelForLevel,
   labelsForOutingTypes,
+  normalizeAvailabilityDays,
+  normalizeAvailabilitySlots,
   normalizeOutingTypes,
   normalizeWhatsAppE164,
+  toggleAvailabilityDay,
+  toggleAvailabilitySlot,
   toggleOutingType,
   upsertBuddyProfile,
 } from "./lib/buddy-profiles.js";
@@ -141,12 +148,17 @@ function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
         </div>
       </div>
 
-      {buddy.availability && (
-        <div style={{ fontSize: 13, color: G.ink, marginBottom: 8, lineHeight: 1.45 }}>
-          <strong style={{ color: G.grey, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>Dispo · </strong>
-          {buddy.availability}
-        </div>
-      )}
+      {(() => {
+        const avail = formatAvailabilityLabel(buddy.availability_days, buddy.availability_slots)
+          || buddy.availability;
+        if (!avail) return null;
+        return (
+          <div style={{ fontSize: 13, color: G.ink, marginBottom: 8, lineHeight: 1.45 }}>
+            <strong style={{ color: G.grey, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>Dispo · </strong>
+            {avail}
+          </div>
+        );
+      })()}
       {buddy.bio && (
         <p style={{ fontSize: 13, color: G.grey, margin: "0 0 12px", lineHeight: 1.5 }}>{buddy.bio}</p>
       )}
@@ -262,7 +274,8 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
         level: data.level || profile?.level || "régulier",
         goal_category: data.goal_category || "eau_libre",
         outing_types: normalizeOutingTypes(data.outing_types),
-        availability: data.availability || "",
+        availability_days: normalizeAvailabilityDays(data.availability_days),
+        availability_slots: normalizeAvailabilitySlots(data.availability_slots),
         bio: data.bio || "",
         whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : "",
         is_discoverable: data.is_discoverable,
@@ -522,8 +535,106 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
               </div>
 
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Disponibilités</label>
-                <input value={form.availability} onChange={(e) => setForm((f) => ({ ...f, availability: e.target.value }))} placeholder="Ex. Dimanche matin, mercredi 18h…" style={inp} maxLength={200} />
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Disponibilités</label>
+                <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 14 }}>Choisis les jours et créneaux où tu peux nager</div>
+
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>Jours</div>
+                <div
+                  role="group"
+                  aria-label="Jours disponibles"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: 6,
+                    marginBottom: 16,
+                  }}
+                >
+                  {BUDDY_DAYS.map((d) => {
+                    const active = (form.availability_days || []).includes(d.id);
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        aria-pressed={active}
+                        aria-label={d.label}
+                        title={d.label}
+                        onClick={() => setForm((f) => ({
+                          ...f,
+                          availability_days: toggleAvailabilityDay(f.availability_days, d.id),
+                        }))}
+                        style={{
+                          aspectRatio: "1",
+                          minHeight: 44,
+                          borderRadius: 12,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blue : G.greyXLight,
+                          color: active ? G.white : G.grey,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          fontFamily: "'Lexend', sans-serif",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {d.short}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>Créneaux</div>
+                <div
+                  role="group"
+                  aria-label="Créneaux horaires"
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
+                >
+                  {BUDDY_TIME_SLOTS.map((s) => {
+                    const active = (form.availability_slots || []).includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setForm((f) => ({
+                          ...f,
+                          availability_slots: toggleAvailabilitySlot(f.availability_slots, s.id),
+                        }))}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 14,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blueLight : G.surface,
+                          color: active ? G.blueDeep : G.grey,
+                          cursor: "pointer",
+                          fontFamily: "'Lexend', sans-serif",
+                          textAlign: "left",
+                          minHeight: 56,
+                        }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div>
+                        <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, marginTop: 2 }}>{s.hint}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {formatAvailabilityLabel(form.availability_days, form.availability_slots) ? (
+                  <div style={{
+                    marginTop: 12,
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    background: G.waterLight,
+                    color: G.blueDeep,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    lineHeight: 1.4,
+                  }}>
+                    {formatAvailabilityLabel(form.availability_days, form.availability_slots)}
+                  </div>
+                ) : null}
               </div>
 
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
