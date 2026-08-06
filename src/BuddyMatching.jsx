@@ -721,8 +721,20 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     onChange={(e) => setForm((f) => ({ ...f, consent_whatsapp: e.target.checked }))}
                     style={{ marginTop: 3, width: 18, height: 18, accentColor: G.blue }}
                   />
-                  <span style={{ fontSize: 12, color: G.grey, lineHeight: 1.5 }}>
-                    J&apos;accepte que mon numéro WhatsApp soit visible par les membres MySWYM connectés lorsque mon profil est actif. Les sorties se font sous ma responsabilité.
+                  <span style={{ fontSize: 12, color: G.grey, lineHeight: 1.55 }}>
+                    J&apos;accepte de publier mon numéro WhatsApp pour être contacté par d&apos;autres membres lorsque mon profil est actif. J&apos;ai lu les{" "}
+                    <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
+                      mentions légales
+                    </a>
+                    , la{" "}
+                    <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
+                      politique de confidentialité
+                    </a>
+                    {" "}et les{" "}
+                    <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
+                      CGU
+                    </a>
+                    .
                   </span>
                 </label>
               </div>
@@ -770,8 +782,8 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                 )}
               </div>
 
-              <p style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.5, margin: "0 0 8px", textAlign: "center" }}>
-                MySWYM facilite la mise en relation. Vérifie météo, niveau et consignes de sécurité avant chaque sortie eau libre.
+              <p style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.55, margin: "0 0 8px", textAlign: "center" }}>
+                MySWYM facilite uniquement la mise en relation entre utilisateurs. Les échanges, rendez-vous, déplacements et sorties se font sous la seule responsabilité des personnes concernées. MySWYM et son éditeur déclinent toute responsabilité en cas d&apos;incident, accident, litige, dommage ou conséquence directe ou indirecte liée à une prise de contact ou à une sortie organisée via l&apos;application. Vérifie toujours météo, sécurité, niveau et matériel.
               </p>
             </div>
           )
