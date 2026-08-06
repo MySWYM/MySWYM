@@ -643,6 +643,14 @@ const NOTIFICATION_KIND_META = {
 const GLOBAL_NOTIFICATION_FEED = [];
 
 const notificationsStorageKey = (userId) => `myswym_notifications_seen_${userId || "anon"}`;
+const normalizeSeenNotificationMap = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, seenAt]) => [String(key), parseNotificationTime(seenAt, 0)])
+      .filter(([, seenAt]) => Number.isFinite(seenAt) && seenAt > 0)
+  );
+};
 
 const parseNotificationTime = (value, fallback = Date.now()) => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -655,20 +663,27 @@ const parseNotificationTime = (value, fallback = Date.now()) => {
   return fallback;
 };
 
-const readSeenNotifications = (userId) => {
+const readSeenNotifications = (userOrId) => {
+  const userId = typeof userOrId === "string" || userOrId == null ? userOrId : userOrId.id;
+  const serverSeen = typeof userOrId === "object" && userOrId ? normalizeSeenNotificationMap(userOrId.user_metadata?.notifications_seen) : {};
   try {
     const raw = localStorage.getItem(notificationsStorageKey(userId));
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return { ...serverSeen, ...normalizeSeenNotificationMap(parsed) };
   } catch {
-    return {};
+    return serverSeen;
   }
 };
 
-const writeSeenNotifications = (userId, seenMap) => {
+const writeSeenNotifications = (userOrId, seenMap) => {
+  const userId = typeof userOrId === "string" || userOrId == null ? userOrId : userOrId.id;
+  const normalized = normalizeSeenNotificationMap(seenMap);
   try {
-    localStorage.setItem(notificationsStorageKey(userId), JSON.stringify(seenMap));
+    localStorage.setItem(notificationsStorageKey(userId), JSON.stringify(normalized));
   } catch {}
+  if (typeof userOrId === "object" && userOrId?.id) {
+    supabase.auth.updateUser({ data: { notifications_seen: normalized } }).catch(() => {});
+  }
 };
 
 const formatNotificationDate = (value) => {
@@ -3426,32 +3441,32 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
   const notificationItems = buildInAppNotifications({ user, plan });
-  const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user?.id || null));
+  const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user));
   const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
 
   useEffect(() => {
-    setSeenMap(readSeenNotifications(user?.id || null));
-  }, [user?.id]);
+    setSeenMap(readSeenNotifications(user));
+  }, [user?.id, user?.user_metadata?.notifications_seen]);
 
   useEffect(() => {
-    const existing = readSeenNotifications(user?.id || null);
+    const existing = readSeenNotifications(user);
     if (Object.keys(existing).length > 0) return;
     const bootstrapSeen = {};
     notificationItems.forEach((item) => {
       if (item.type === "badge") bootstrapSeen[item.id] = Date.now();
     });
     if (Object.keys(bootstrapSeen).length > 0) {
-      writeSeenNotifications(user?.id || null, bootstrapSeen);
+      writeSeenNotifications(user, bootstrapSeen);
       setSeenMap(bootstrapSeen);
     }
-  }, [user?.id, notificationItems]);
+  }, [user, notificationItems]);
 
   const markNotificationsAsRead = (items = notificationItems) => {
     if (!items.length) return;
-    const next = { ...readSeenNotifications(user?.id || null) };
+    const next = { ...readSeenNotifications(user) };
     const stamp = Date.now();
     items.forEach((item) => { next[item.id] = stamp; });
-    writeSeenNotifications(user?.id || null, next);
+    writeSeenNotifications(user, next);
     setSeenMap(next);
   };
 
@@ -11004,9 +11019,17 @@ export default function App() {
     const current = checkBadges(stats);
     const prev    = prevBadgesRef.current;
     const newOnes = current.filter(b => !prev.includes(b));
-    if (newOnes.length > 0 && prev.length > 0) { setNewBadgeId(newOnes[0]); setTimeout(() => setNewBadgeId(null), 3200); }
+    const unseenBadges = newOnes.filter((badgeId) => !readSeenNotifications(user)[`badge:${badgeId}`]);
+    if (unseenBadges.length > 0 && prev.length > 0) {
+      const nextSeen = { ...readSeenNotifications(user) };
+      const stamp = Date.now();
+      unseenBadges.forEach((badgeId) => { nextSeen[`badge:${badgeId}`] = stamp; });
+      writeSeenNotifications(user, nextSeen);
+      setNewBadgeId(unseenBadges[0]);
+      setTimeout(() => setNewBadgeId(null), 3200);
+    }
     prevBadgesRef.current = current;
-  }, [activePlanId, plan]);
+  }, [activePlanId, plan, user]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
