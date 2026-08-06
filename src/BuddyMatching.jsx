@@ -493,26 +493,6 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                       {formatRadiusLabel(form.radius_km)}
                     </div>
                   </div>
-                  <div
-                    style={{
-                      position: "relative",
-                      height: 6,
-                      borderRadius: 999,
-                      background: G.greyXLight,
-                      overflow: "hidden",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${(Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15)) / (BUDDY_RADIUS_OPTIONS.length - 1)) * 100}%`,
-                        height: "100%",
-                        borderRadius: 999,
-                        background: `linear-gradient(90deg, ${G.blueMid}, ${G.blue})`,
-                        transition: "width 0.2s ease",
-                      }}
-                    />
-                  </div>
                   <input
                     type="range"
                     min="0"
@@ -523,7 +503,16 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                       const next = BUDDY_RADIUS_OPTIONS[Number(e.target.value)] || 15;
                       setForm((f) => ({ ...f, radius_km: next }));
                     }}
-                    style={{ width: "100%", accentColor: G.blue, cursor: "pointer", marginTop: -2 }}
+                    style={{
+                      width: "100%",
+                      cursor: "pointer",
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      height: 8,
+                      borderRadius: 999,
+                      outline: "none",
+                      background: `linear-gradient(90deg, ${G.blue} 0%, ${G.blue} ${(Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15)) / (BUDDY_RADIUS_OPTIONS.length - 1)) * 100}%, ${G.greyXLight} ${(Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15)) / (BUDDY_RADIUS_OPTIONS.length - 1)) * 100}%, ${G.greyXLight} 100%)`,
+                    }}
                     aria-label="Périmètre de déplacement toléré"
                   />
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 6, fontSize: 11, color: G.greyMid }}>
