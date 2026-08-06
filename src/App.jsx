@@ -2654,7 +2654,6 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
-  const badgesSectionRef = useRef(null);
 
   // Resync depuis user_metadata quand l'objet user arrive ou change
   useEffect(() => {
@@ -2677,7 +2676,6 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
 
   const stats  = computeStats(plan);
   const earned = checkBadges(stats);
-  const handleScrollToBadges = () => badgesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const saveName = () => {
     const v = nameInput.trim();
@@ -2787,6 +2785,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
         user={user}
         onOpenMenu={onOpenMenu}
         onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+        plan={plan}
       />
       <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
@@ -2914,63 +2913,16 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
           </div>
         ) : (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <button
-              type="button"
-              onClick={() => { setNameInput(displayName); setEditingName(true); }}
-              style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, padding: 8, minHeight: 44 }}
-            >
-              <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
-              <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Settings size={11} color={G.blue} />
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleScrollToBadges}
-              aria-label={`Voir mes badges (${earned.length})`}
-              title="Voir mes badges"
-              style={{
-                position: "relative",
-                width: 36,
-                height: 36,
-                borderRadius: 12,
-                border: `1px solid ${G.greyLight}`,
-                background: G.surface,
-                boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >
-              <Bell size={16} color={earned.length ? G.gold : G.grey} />
-              <span
-                style={{
-                  position: "absolute",
-                  top: -4,
-                  right: -4,
-                  minWidth: 18,
-                  height: 18,
-                  padding: "0 5px",
-                  borderRadius: 999,
-                  background: earned.length ? G.gold : G.greyLight,
-                  color: earned.length ? G.white : G.grey,
-                  border: `2px solid ${G.surface}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                }}
-              >
-                {earned.length}
-              </span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => { setNameInput(displayName); setEditingName(true); }}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
+            <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Settings size={11} color={G.blue} />
+            </div>
+          </button>
         )}
         <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
           {levelLabel}
@@ -3040,7 +2992,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
           </div>
         </div>
 
-        <div ref={badgesSectionRef} style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24 }}>
           <HomeBadgesSection plan={plan} />
         </div>
       </div>
@@ -3298,7 +3250,7 @@ const SettingsDrawer = ({
 };
 
 /** Barre haute commune (logo + paramètres) — Accueil / Programme / Profil */
-const AppTopBar = ({ user, onOpenMenu, onAvatarClick }) => {
+const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
   const avatarUrl = user?.user_metadata?.avatar_url
     || (() => {
       try {
@@ -3321,6 +3273,23 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick }) => {
     || user?.email?.split("@")[0]
     || "Nageur";
   const initials = firstName.slice(0, 2).toUpperCase();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+  const earnedBadgeIds = checkBadges(computeStats(plan));
+  const earnedBadges = BADGE_DEFS.filter((badge) => earnedBadgeIds.includes(badge.id));
+
+  useEffect(() => {
+    if (!notifOpen) return undefined;
+    const handlePointerDown = (event) => {
+      if (!notifRef.current?.contains(event.target)) setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [notifOpen]);
 
   return (
     <header style={{
@@ -3365,6 +3334,101 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick }) => {
           >
             Accueil
           </a>
+          <div ref={notifRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setNotifOpen((open) => !open)}
+              aria-label={`Ouvrir les notifications badges (${earnedBadges.length})`}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent", position: "relative" }}
+            >
+              <Bell size={20} color={earnedBadges.length ? G.gold : G.grey} />
+              <span
+                style={{
+                  position: "absolute",
+                  top: 7,
+                  right: 6,
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 4px",
+                  borderRadius: 999,
+                  background: earnedBadges.length ? G.coral : G.greyLight,
+                  color: earnedBadges.length ? G.white : G.grey,
+                  border: `2px solid ${G.glass}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 9,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                {earnedBadges.length}
+              </span>
+            </button>
+
+            {notifOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 10px)",
+                  right: -4,
+                  width: 288,
+                  maxWidth: "calc(100vw - 24px)",
+                  background: G.surface,
+                  border: `1px solid ${G.greyLight}`,
+                  borderRadius: 18,
+                  boxShadow: "0 18px 40px rgba(0,0,0,0.12)",
+                  padding: 14,
+                  zIndex: 60,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Notifications</div>
+                    <div style={{ fontSize: 11, color: G.grey }}>
+                      {earnedBadges.length ? `${earnedBadges.length} badge${earnedBadges.length > 1 ? "s" : ""} débloqué${earnedBadges.length > 1 ? "s" : ""}` : "Aucun badge débloqué pour l'instant"}
+                    </div>
+                  </div>
+                  <div style={{ width: 32, height: 32, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Bell size={16} color={G.blue} />
+                  </div>
+                </div>
+
+                {earnedBadges.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {earnedBadges.slice(0, 3).map((badge) => {
+                      const Icon = badge.icon;
+                      return (
+                        <div
+                          key={badge.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            background: G.greyXLight,
+                            borderRadius: 14,
+                            padding: "10px 12px",
+                          }}
+                        >
+                          <div style={{ width: 36, height: 36, borderRadius: 12, background: badge.color, color: G.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon size={16} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: G.ink }}>{badge.label}</div>
+                            <div style={{ fontSize: 11, color: G.grey }}>{badge.desc}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 14px", fontSize: 12, color: G.grey }}>
+                    Termine des séances pour debloquer tes premiers badges.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
             <Settings size={20} color={G.grey} />
           </button>
@@ -6485,6 +6549,7 @@ const ProgressionLoopView = ({
             user={user}
             onOpenMenu={onOpenMenu}
             onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+            plan={plan}
           />
         )}
         <div className="app-shell" style={{ paddingTop: 24 }}>
@@ -6505,6 +6570,7 @@ const ProgressionLoopView = ({
           user={user}
           onOpenMenu={onOpenMenu}
           onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+          plan={plan}
         />
       )}
       {!embed && (
@@ -6982,6 +7048,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
         user={user}
         onOpenMenu={onOpenMenu}
         onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+        plan={plan}
       />
 
       {/* ── Sous-header programme ── */}
@@ -7358,6 +7425,7 @@ const Dashboard = ({
         user={user}
         onOpenMenu={onOpenMenu}
         onAvatarClick={() => onTabChange("profile")}
+        plan={plan}
       />
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
