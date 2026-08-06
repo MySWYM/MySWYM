@@ -58,6 +58,8 @@ export const BUDDY_TIME_SLOTS = [
   { id: "evening", label: "Soir", hint: "18h–22h" },
 ];
 
+export const BUDDY_RADIUS_OPTIONS = [5, 10, 15, 25, 40, 60, 100];
+
 const ALLOWED_DAY_IDS = new Set(BUDDY_DAYS.map((d) => d.id));
 const ALLOWED_SLOT_IDS = new Set(BUDDY_TIME_SLOTS.map((s) => s.id));
 
@@ -110,6 +112,7 @@ const BUDDY_SELECT = [
   "user_id",
   "display_name",
   "city",
+  "radius_km",
   "level",
   "goal_category",
   "outing_types",
@@ -181,6 +184,7 @@ export function defaultBuddyForm(user, trainingProfile) {
   return {
     display_name: displayName,
     city: "",
+    radius_km: 15,
     level: trainingProfile?.level || "régulier",
     goal_category: goalCategoryFromProfile(trainingProfile),
     outing_types: trainingProfile?.category === "eau_libre" ? ["open_water"] : ["training"],
@@ -239,11 +243,14 @@ export async function upsertBuddyProfile(userId, form) {
   const availabilityDays = normalizeAvailabilityDays(form.availability_days);
   const availabilitySlots = normalizeAvailabilitySlots(form.availability_slots);
   const availabilityLabel = formatAvailabilityLabel(availabilityDays, availabilitySlots);
+  const radius = Number(form.radius_km);
+  const radiusKm = BUDDY_RADIUS_OPTIONS.includes(radius) ? radius : 15;
 
   const row = {
     user_id: userId,
     display_name: (form.display_name || "Nageur").trim().slice(0, 80),
     city: (form.city || "").trim().slice(0, 120),
+    radius_km: radiusKm,
     level: form.level || null,
     goal_category: form.goal_category || "eau_libre",
     outing_types: normalizeOutingTypes(form.outing_types),

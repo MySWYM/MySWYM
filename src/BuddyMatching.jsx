@@ -10,6 +10,7 @@ import {
   BUDDY_GOAL_CATEGORIES,
   BUDDY_LEVELS,
   BUDDY_OUTING_TYPES,
+  BUDDY_RADIUS_OPTIONS,
   BUDDY_TIME_SLOTS,
   buildWhatsAppLink,
   defaultBuddyForm,
@@ -129,6 +130,9 @@ function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: G.grey, marginBottom: 6 }}>
             <MapPin size={13} />
             <span>{buddy.city}</span>
+          </div>
+          <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 6 }}>
+            Jusqu'à {buddy.radius_km || 15} km de trajet
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: G.waterLight, color: G.water }}>
@@ -271,6 +275,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
       setForm({
         display_name: data.display_name,
         city: data.city || "",
+        radius_km: data.radius_km || 15,
         level: data.level || profile?.level || "régulier",
         goal_category: data.goal_category || "eau_libre",
         outing_types: normalizeOutingTypes(data.outing_types),
@@ -480,6 +485,56 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Ville / zone *</label>
                 <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Ex. Annecy, Lyon, Arcachon…" style={inp} maxLength={120} />
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em" }}>Périmètre de déplacement</label>
+                    <div style={{ padding: "6px 10px", borderRadius: 999, background: G.blueLight, color: G.blueDeep, fontSize: 12, fontWeight: 800 }}>
+                      {form.radius_km || 15} km
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max={String(BUDDY_RADIUS_OPTIONS.length - 1)}
+                    step="1"
+                    value={Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15))}
+                    onChange={(e) => {
+                      const next = BUDDY_RADIUS_OPTIONS[Number(e.target.value)] || 15;
+                      setForm((f) => ({ ...f, radius_km: next }));
+                    }}
+                    style={{ width: "100%", accentColor: G.blue, cursor: "pointer" }}
+                    aria-label="Périmètre de déplacement toléré"
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 6, fontSize: 11, color: G.greyMid }}>
+                    <span>Proche</span>
+                    <span>Flexible</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                    {BUDDY_RADIUS_OPTIONS.map((km) => {
+                      const active = (form.radius_km || 15) === km;
+                      return (
+                        <button
+                          key={km}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, radius_km: km }))}
+                          style={{
+                            padding: "6px 10px",
+                            borderRadius: 999,
+                            border: `1px solid ${active ? G.blue : G.greyLight}`,
+                            background: active ? G.blueLight : G.surface,
+                            color: active ? G.blueDeep : G.grey,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            fontFamily: "'Lexend', sans-serif",
+                          }}
+                        >
+                          {km} km
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
