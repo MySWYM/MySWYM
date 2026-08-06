@@ -44,6 +44,7 @@ import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
+import BuddyMatching from "./BuddyMatching.jsx";
 import { useTranslation } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
@@ -51,7 +52,7 @@ import {
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
-  Sun, Moon, Camera, Trash2,
+  Sun, Moon, Camera, Trash2, Users,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -3010,6 +3011,7 @@ const SettingsDrawer = ({
   onPortal,
   onRefreshStatus,
   onGoProfile,
+  onGoBuddies,
   onOpenAuth,
   onSignOut,
   plan,
@@ -3076,6 +3078,16 @@ const SettingsDrawer = ({
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>Mon profil</div>
                 <div style={{ fontSize: 12, color: G.grey }}>Infos personnelles, stats, badges</div>
+              </div>
+            </div>
+            <ChevronRight size={18} color={G.greyMid} />
+          </button>
+          <button type="button" onClick={() => { onGoBuddies?.(); onClose(); }} style={menuRow}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Users size={18} color={G.water} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Binômes eau libre</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Trouver un partenaire · WhatsApp</div>
               </div>
             </div>
             <ChevronRight size={18} color={G.greyMid} />
@@ -3317,6 +3329,7 @@ const BottomNav = ({ active, onChange, newBadge }) => {
   const tabs = [
     { id: "home",    Icon: Home,      label: "Accueil" },
     { id: "plan",    Icon: Calendar,  label: "Programme" },
+    { id: "buddies", Icon: Users,     label: "Binômes" },
     { id: "profile", Icon: User,      label: "Profil" },
   ];
   return (
@@ -3398,6 +3411,44 @@ const AppleMark = () => (
 );
 
 const authOAuthRedirect = () => `${window.location.origin}/app`;
+
+/** Welcome mail (email + Google OAuth) — retry si session pas encore prête. */
+async function ensureWelcomeEmail(user, { attempts = 3 } = {}) {
+  if (!user?.id || !user?.email) return { ok: false, skipped: true, reason: "no_user" };
+  if (user.app_metadata?.welcome_email_sent === true) {
+    return { ok: true, skipped: true };
+  }
+  let lastError = null;
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 600 * i));
+    try {
+      // Laisse le JWT se stabiliser après redirect OAuth
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      const session = refreshData?.session;
+      if (!session?.access_token) {
+        lastError = "no_session";
+        continue;
+      }
+      const fresh = session.user ?? user;
+      if (fresh.app_metadata?.welcome_email_sent === true) {
+        return { ok: true, skipped: true };
+      }
+      const { data, error } = await supabase.functions.invoke("welcome-email");
+      if (error) {
+        lastError = error.message || String(error);
+        console.warn("[welcome-email] invoke failed:", lastError, `(try ${i + 1}/${attempts})`);
+        continue;
+      }
+      if (data?.ok || data?.skipped) return { ok: true, ...(data || {}) };
+      lastError = data?.error || "unknown";
+      console.warn("[welcome-email] bad response:", lastError, `(try ${i + 1}/${attempts})`);
+    } catch (e) {
+      lastError = e?.message || String(e);
+      console.warn("[welcome-email] unexpected:", lastError, `(try ${i + 1}/${attempts})`);
+    }
+  }
+  return { ok: false, error: lastError };
+}
 
 const SocialAuthButtons = ({ disabled, onError, intent = "login" }) => {
   const [busy, setBusy] = useState(null);
@@ -9830,6 +9881,7 @@ export default function App() {
   });
   const forceAuthRef = useRef(false);
   const checkoutAbandonedRef = useRef(false);
+  const welcomeEmailInFlightRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const locationRef = useRef(location);
@@ -10145,8 +10197,16 @@ export default function App() {
         loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-          // Welcome email une fois (après confirm / OAuth) — fire-and-forget
-          supabase.functions.invoke("welcome-email").catch(() => {});
+          // Welcome email (email + Google) — retry OAuth-safe, pas de catch silencieux
+          if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
+            welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)
+              .then((res) => {
+                if (!res.ok && !res.skipped) {
+                  console.error("[welcome-email] abandoned after retries:", res.error);
+                }
+              })
+              .finally(() => { welcomeEmailInFlightRef.current = null; });
+          }
           syncSubscriptionFromStripe()
             .then(async (synced) => {
               const effective = synced || u;
@@ -11772,6 +11832,7 @@ export default function App() {
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
+        {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav />
@@ -11787,6 +11848,7 @@ export default function App() {
           onPortal={handlePortal}
           onRefreshStatus={handleRefreshStatus}
           onGoProfile={() => setActiveTab("profile")}
+          onGoBuddies={() => setActiveTab("buddies")}
           onOpenAuth={openAuth}
           onSignOut={handleSignOut}
           plan={plan}
