@@ -9,10 +9,28 @@ export const BUDDY_GOAL_CATEGORIES = [
 
 export const BUDDY_OUTING_TYPES = [
   { id: "open_water", label: "Sortie eau libre" },
-  { id: "training", label: "Entraînement" },
+  { id: "training", label: "Entraînement piscine" },
   { id: "safety", label: "Accompagnement sécurité" },
   { id: "discovery", label: "Découverte eau libre" },
 ];
+
+const ALLOWED_OUTING_IDS = new Set(BUDDY_OUTING_TYPES.map((o) => o.id));
+
+/** Normalise un ou plusieurs types de sortie vers un tableau unique non vide. */
+export function normalizeOutingTypes(value, fallback = ["open_water"]) {
+  const raw = Array.isArray(value) ? value : (value ? [value] : []);
+  const unique = [...new Set(raw.filter((id) => ALLOWED_OUTING_IDS.has(id)))];
+  return unique.length ? unique : [...fallback];
+}
+
+export function toggleOutingType(selected, id) {
+  const current = normalizeOutingTypes(selected, []);
+  if (current.includes(id)) {
+    const next = current.filter((x) => x !== id);
+    return next.length ? next : current; // au moins 1
+  }
+  return normalizeOutingTypes([...current, id]);
+}
 
 export const BUDDY_LEVELS = [
   { id: "découverte", label: "Découverte" },
@@ -27,7 +45,7 @@ const BUDDY_SELECT = [
   "city",
   "level",
   "goal_category",
-  "outing_type",
+  "outing_types",
   "availability",
   "bio",
   "whatsapp_e164",
@@ -96,7 +114,7 @@ export function defaultBuddyForm(user, trainingProfile) {
     city: "",
     level: trainingProfile?.level || "régulier",
     goal_category: goalCategoryFromProfile(trainingProfile),
-    outing_type: trainingProfile?.category === "eau_libre" ? "open_water" : "training",
+    outing_types: trainingProfile?.category === "eau_libre" ? ["open_water"] : ["training"],
     availability: "",
     bio: "",
     whatsapp_e164: "",
@@ -154,7 +172,7 @@ export async function upsertBuddyProfile(userId, form) {
     city: (form.city || "").trim().slice(0, 120),
     level: form.level || null,
     goal_category: form.goal_category || "eau_libre",
-    outing_type: form.outing_type || "open_water",
+    outing_types: normalizeOutingTypes(form.outing_types),
     availability: (form.availability || "").trim().slice(0, 200) || null,
     bio: (form.bio || "").trim().slice(0, 400) || null,
     whatsapp_e164: whatsapp,
@@ -194,6 +212,10 @@ export function labelForGoalCategory(id) {
 
 export function labelForOutingType(id) {
   return BUDDY_OUTING_TYPES.find((o) => o.id === id)?.label || id;
+}
+
+export function labelsForOutingTypes(value) {
+  return normalizeOutingTypes(value).map(labelForOutingType);
 }
 
 export function labelForLevel(id) {

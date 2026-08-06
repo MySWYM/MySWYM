@@ -17,8 +17,10 @@ import {
   formatWhatsAppDisplay,
   labelForGoalCategory,
   labelForLevel,
-  labelForOutingType,
+  labelsForOutingTypes,
+  normalizeOutingTypes,
   normalizeWhatsAppE164,
+  toggleOutingType,
   upsertBuddyProfile,
 } from "./lib/buddy-profiles.js";
 
@@ -81,7 +83,8 @@ function FilterChip({ active, label, onClick }) {
 }
 
 function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
-  const outingLabel = labelForOutingType(buddy.outing_type);
+  const outingLabels = labelsForOutingTypes(buddy.outing_types);
+  const outingLabel = outingLabels.join(", ");
   const waLink = canContact
     ? buildWhatsAppLink(buddy.whatsapp_e164, {
         senderName,
@@ -129,9 +132,11 @@ function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
                 {labelForLevel(buddy.level)}
               </span>
             )}
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: G.greyXLight, color: G.grey }}>
-              {outingLabel}
-            </span>
+            {outingLabels.map((label) => (
+              <span key={label} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: G.greyXLight, color: G.grey }}>
+                {label}
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -256,7 +261,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
         city: data.city || "",
         level: data.level || profile?.level || "régulier",
         goal_category: data.goal_category || "eau_libre",
-        outing_type: data.outing_type || "open_water",
+        outing_types: normalizeOutingTypes(data.outing_types),
         availability: data.availability || "",
         bio: data.bio || "",
         whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : "",
@@ -474,11 +479,36 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
               </div>
 
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Type de sortie</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {BUDDY_OUTING_TYPES.map((o) => (
-                    <FilterChip key={o.id} active={form.outing_type === o.id} label={o.label} onClick={() => setForm((f) => ({ ...f, outing_type: o.id }))} />
-                  ))}
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Type de sortie</label>
+                <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 10 }}>Plusieurs choix possibles</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {BUDDY_OUTING_TYPES.map((o) => {
+                    const active = (form.outing_types || []).includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, outing_types: toggleOutingType(f.outing_types, o.id) }))}
+                        aria-pressed={active}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 14,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blueLight : G.surface,
+                          color: active ? G.blueDeep : G.grey,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: "'Lexend', sans-serif",
+                          textAlign: "left",
+                          lineHeight: 1.3,
+                          minHeight: 48,
+                        }}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
