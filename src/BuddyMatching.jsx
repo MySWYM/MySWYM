@@ -725,7 +725,14 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                 />
               </div>
 
-              <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
+              <div
+                style={{
+                  background: form.consent_whatsapp ? G.surface : "#FFF5F5",
+                  borderRadius: 20,
+                  padding: 16,
+                  border: `1.5px solid ${form.consent_whatsapp ? G.greyLight : "#F5B7B7"}`,
+                }}
+              >
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>WhatsApp *</label>
                 <input
                   type="tel"
@@ -740,10 +747,9 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     type="checkbox"
                     checked={form.consent_whatsapp}
                     onChange={(e) => setForm((f) => ({ ...f, consent_whatsapp: e.target.checked }))}
-                    style={{ marginTop: 3, width: 18, height: 18, accentColor: G.blue }}
+                    style={{ marginTop: 2, width: 18, height: 18, accentColor: G.blue, flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 12, color: G.grey, lineHeight: 1.55 }}>
-                    <strong style={{ color: G.ink }}>Obligatoire.</strong>{" "}
+                  <span style={{ fontSize: 12, color: form.consent_whatsapp ? G.grey : G.coral, lineHeight: 1.55 }}>
                     J&apos;accepte de publier mon numéro WhatsApp pour être contacté par d&apos;autres membres lorsque mon profil est actif. J&apos;ai lu les{" "}
                     <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
                       mentions légales
@@ -756,7 +762,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
                       CGU
                     </a>
-                    .
+                    . <span style={{ color: G.coral, fontWeight: 800 }}>*</span>
                   </span>
                 </label>
               </div>
