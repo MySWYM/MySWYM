@@ -245,6 +245,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
   const [loadingForm, setLoadingForm] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [consentError, setConsentError] = useState(false);
   const [cityFilter, setCityFilter] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [goalFilter, setGoalFilter] = useState("");
@@ -299,8 +300,14 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
 
   const handleSave = async (discoverable) => {
     if (!user?.id) return;
+    if (discoverable && !form.consent_whatsapp) {
+      setConsentError(true);
+      setMsg({ type: "err", text: "Tu dois cocher l'acceptation avant de publier ton numéro." });
+      return;
+    }
     setSaving(true);
     setMsg(null);
+    setConsentError(false);
     const payload = { ...form, is_discoverable: discoverable, consent_whatsapp: discoverable ? form.consent_whatsapp : false };
     const { data, error } = await upsertBuddyProfile(user.id, payload);
     if (error) {
@@ -716,10 +723,10 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
 
               <div
                 style={{
-                  background: form.consent_whatsapp ? G.surface : "#FFF5F5",
+                  background: consentError ? "#FFF5F5" : G.surface,
                   borderRadius: 20,
                   padding: 16,
-                  border: `1.5px solid ${form.consent_whatsapp ? G.greyLight : "#F5B7B7"}`,
+                  border: `1.5px solid ${consentError ? "#F5B7B7" : G.greyLight}`,
                 }}
               >
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>WhatsApp *</label>
@@ -735,10 +742,14 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                   <input
                     type="checkbox"
                     checked={form.consent_whatsapp}
-                    onChange={(e) => setForm((f) => ({ ...f, consent_whatsapp: e.target.checked }))}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((f) => ({ ...f, consent_whatsapp: checked }));
+                      if (checked) setConsentError(false);
+                    }}
                     style={{ marginTop: 2, width: 18, height: 18, accentColor: G.blue, flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 12, color: form.consent_whatsapp ? G.grey : G.coral, lineHeight: 1.55 }}>
+                  <span style={{ fontSize: 12, color: consentError ? G.coral : G.grey, lineHeight: 1.55 }}>
                     J&apos;accepte de publier mon numéro WhatsApp pour être contacté par d&apos;autres membres lorsque mon profil est actif. J&apos;ai lu les{" "}
                     <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
                       mentions légales
@@ -754,6 +765,11 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     . <span style={{ color: G.coral, fontWeight: 800 }}>*</span>
                   </span>
                 </label>
+                {consentError && (
+                  <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: G.coral }}>
+                    Coche cette case pour publier ton numéro.
+                  </div>
+                )}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
