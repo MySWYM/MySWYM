@@ -58,7 +58,13 @@ export const BUDDY_TIME_SLOTS = [
   { id: "evening", label: "Soir", hint: "18h–22h" },
 ];
 
-export const BUDDY_RADIUS_OPTIONS = [5, 10, 15, 25, 40, 60, 100];
+export const BUDDY_RADIUS_OPTIONS = [5, 10, 15, 25, 40, 60, 999];
+
+export function formatRadiusLabel(value) {
+  const radius = Number(value);
+  if (radius >= 999) return "Aucune limite";
+  return `${radius || 15} km`;
+}
 
 const ALLOWED_DAY_IDS = new Set(BUDDY_DAYS.map((d) => d.id));
 const ALLOWED_SLOT_IDS = new Set(BUDDY_TIME_SLOTS.map((s) => s.id));

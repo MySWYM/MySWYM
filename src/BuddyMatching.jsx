@@ -18,6 +18,7 @@ import {
   fetchDiscoverableBuddies,
   fetchOwnBuddyProfile,
   formatAvailabilityLabel,
+  formatRadiusLabel,
   formatWhatsAppDisplay,
   labelForGoalCategory,
   labelForLevel,
@@ -132,7 +133,7 @@ function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
             <span>{buddy.city}</span>
           </div>
           <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 6 }}>
-            Jusqu'à {buddy.radius_km || 15} km de trajet
+            {buddy.radius_km >= 999 ? "Déplacement sans limite" : `Jusqu'à ${buddy.radius_km || 15} km de trajet`}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: G.waterLight, color: G.water }}>
@@ -489,8 +490,28 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em" }}>Périmètre de déplacement</label>
                     <div style={{ padding: "6px 10px", borderRadius: 999, background: G.blueLight, color: G.blueDeep, fontSize: 12, fontWeight: 800 }}>
-                      {form.radius_km || 15} km
+                      {formatRadiusLabel(form.radius_km)}
                     </div>
+                  </div>
+                  <div
+                    style={{
+                      position: "relative",
+                      height: 6,
+                      borderRadius: 999,
+                      background: G.greyXLight,
+                      overflow: "hidden",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${(Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15)) / (BUDDY_RADIUS_OPTIONS.length - 1)) * 100}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: `linear-gradient(90deg, ${G.blueMid}, ${G.blue})`,
+                        transition: "width 0.2s ease",
+                      }}
+                    />
                   </div>
                   <input
                     type="range"
@@ -502,7 +523,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                       const next = BUDDY_RADIUS_OPTIONS[Number(e.target.value)] || 15;
                       setForm((f) => ({ ...f, radius_km: next }));
                     }}
-                    style={{ width: "100%", accentColor: G.blue, cursor: "pointer" }}
+                    style={{ width: "100%", accentColor: G.blue, cursor: "pointer", marginTop: -2 }}
                     aria-label="Périmètre de déplacement toléré"
                   />
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 6, fontSize: 11, color: G.greyMid }}>
@@ -529,7 +550,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                             fontFamily: "'Lexend', sans-serif",
                           }}
                         >
-                          {km} km
+                          {formatRadiusLabel(km)}
                         </button>
                       );
                     })}
@@ -722,6 +743,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     style={{ marginTop: 3, width: 18, height: 18, accentColor: G.blue }}
                   />
                   <span style={{ fontSize: 12, color: G.grey, lineHeight: 1.55 }}>
+                    <strong style={{ color: G.ink }}>Obligatoire.</strong>{" "}
                     J&apos;accepte de publier mon numéro WhatsApp pour être contacté par d&apos;autres membres lorsque mon profil est actif. J&apos;ai lu les{" "}
                     <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
                       mentions légales
