@@ -628,6 +628,156 @@ const BADGE_DEFS = [
   { id: "finisher",      label: "Finisher",           desc: "Plan d'entraînement 100 % bouclé",     icon: Trophy,   color: G.gold },
 ];
 
+const DAY_MS = 86400000;
+const NOTIFICATION_KIND_META = {
+  billing:    { Icon: CreditCard, color: G.blue,   bg: G.blueLight },
+  security:   { Icon: Shield,     color: G.coral,  bg: G.coralLight },
+  promo:      { Icon: Star,       color: G.gold,   bg: G.goldLight },
+  newsletter: { Icon: BookOpen,   color: G.purple, bg: G.purpleLight },
+  buddy:      { Icon: Users,      color: G.water,  bg: G.waterLight },
+  badge:      { Icon: Trophy,     color: G.gold,   bg: G.goldLight },
+  update:     { Icon: Bell,       color: G.blue,   bg: G.blueLight },
+};
+
+// Feed manuel pour grandes actus / promos / newsletters. Il suffit d'ajouter une entrée.
+const GLOBAL_NOTIFICATION_FEED = [];
+
+const notificationsStorageKey = (userId) => `myswym_notifications_seen_${userId || "anon"}`;
+
+const parseNotificationTime = (value, fallback = Date.now()) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && value.trim() !== "") return numeric > 1e12 ? numeric : numeric * 1000;
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const readSeenNotifications = (userId) => {
+  try {
+    const raw = localStorage.getItem(notificationsStorageKey(userId));
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeSeenNotifications = (userId, seenMap) => {
+  try {
+    localStorage.setItem(notificationsStorageKey(userId), JSON.stringify(seenMap));
+  } catch {}
+};
+
+const formatNotificationDate = (value) => {
+  const time = parseNotificationTime(value, 0);
+  if (!time) return "";
+  return new Date(time).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+};
+
+const notificationAudienceMatches = (audience, accessState) => {
+  switch (audience) {
+    case "trial": return accessState.status === ACCESS_STATUS.TRIAL;
+    case "premium": return accessState.hasPremiumAccess;
+    case "expired": return accessState.status === ACCESS_STATUS.EXPIRED;
+    default: return true;
+  }
+};
+
+const buildAccessNotifications = (user, accessState) => {
+  if (!user) return [];
+  const items = [];
+  if (accessState.status === ACCESS_STATUS.TRIAL && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 3) {
+    items.push({
+      id: `trial-ending:${accessState.trialEndsAt || accessState.trialDaysLeft}`,
+      type: "billing",
+      title: accessState.trialDaysLeft === 1 ? "Dernier jour d'essai" : `Essai Premium : ${accessState.trialDaysLeft} jours restants`,
+      body: accessState.trialDaysLeft === 1
+        ? "Ton essai se termine aujourd'hui. Si tu gardes Premium, tes plans complets restent actifs."
+        : "Ton essai Premium arrive a sa fin. Pense a verifier ton abonnement avant la coupure.",
+      createdAt: (accessState.accessEndsMs || Date.now()) - (accessState.trialDaysLeft * DAY_MS),
+    });
+  }
+  if (accessState.cancelAtPeriodEnd && accessState.subscriptionEndsAt) {
+    items.push({
+      id: `subscription-cancel:${accessState.subscriptionEndsAt}`,
+      type: "billing",
+      title: "Abonnement bientot coupe",
+      body: `Ton Premium restera actif jusqu'au ${formatNotificationDate(accessState.subscriptionEndsAt)} puis sera coupe sauf reactivation.`,
+      createdAt: parseNotificationTime(accessState.subscriptionEndsAt),
+    });
+  }
+  if (accessState.status === ACCESS_STATUS.EXPIRED) {
+    items.push({
+      id: `subscription-expired:${accessState.subscriptionEndsAt || accessState.trialEndsAt || "expired"}`,
+      type: "security",
+      title: "Acces Premium interrompu",
+      body: "Ton acces Premium n'est plus actif. Si c'est une erreur ou un souci de compte, restaure les achats dans le menu.",
+      createdAt: parseNotificationTime(accessState.subscriptionEndsAt || accessState.trialEndsAt, Date.now()),
+    });
+  }
+
+  const rawInbox = user?.app_metadata?.notifications || user?.app_metadata?.notification_inbox || [];
+  const external = Array.isArray(rawInbox) ? rawInbox : [];
+  external.forEach((entry, index) => {
+    if (!entry || typeof entry !== "object") return;
+    if (!entry.title || !entry.body) return;
+    items.push({
+      id: String(entry.id || `server:${index}:${entry.title}`),
+      type: Object.prototype.hasOwnProperty.call(NOTIFICATION_KIND_META, entry.type) ? entry.type : "update",
+      title: String(entry.title),
+      body: String(entry.body),
+      createdAt: parseNotificationTime(entry.createdAt || entry.created_at || entry.publishedAt || entry.published_at, Date.now() - index),
+    });
+  });
+
+  GLOBAL_NOTIFICATION_FEED.forEach((entry, index) => {
+    if (!entry?.id || !entry?.title || !entry?.body) return;
+    if (!notificationAudienceMatches(entry.audience, accessState)) return;
+    const startsAt = parseNotificationTime(entry.startsAt || entry.starts_at, 0);
+    const endsAt = parseNotificationTime(entry.endsAt || entry.ends_at, Number.MAX_SAFE_INTEGER);
+    const now = Date.now();
+    if (startsAt && startsAt > now) return;
+    if (endsAt && endsAt < now) return;
+    items.push({
+      id: `global:${entry.id}`,
+      type: Object.prototype.hasOwnProperty.call(NOTIFICATION_KIND_META, entry.type) ? entry.type : "update",
+      title: String(entry.title),
+      body: String(entry.body),
+      createdAt: startsAt || (now - index),
+    });
+  });
+
+  return items;
+};
+
+const buildBadgeNotifications = (plan) => {
+  const earnedIds = checkBadges(computeStats(plan));
+  return BADGE_DEFS
+    .filter((badge) => earnedIds.includes(badge.id))
+    .map((badge, index) => ({
+      id: `badge:${badge.id}`,
+      type: "badge",
+      title: `Badge obtenu : ${badge.label}`,
+      body: badge.desc,
+      createdAt: index + 1,
+      accentColor: badge.color,
+      accentIcon: badge.icon,
+    }));
+};
+
+const buildInAppNotifications = ({ user, plan }) => {
+  const accessState = getAccessState(user);
+  const byId = new Map();
+  [...buildAccessNotifications(user, accessState), ...buildBadgeNotifications(plan)].forEach((item) => {
+    if (!item?.id) return;
+    byId.set(item.id, item);
+  });
+  return [...byId.values()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+};
+
 // ── UTILS ─────────────────────────────────────────────────────────────────
 
 // Premium = app_metadata uniquement (écrit par service role / Stripe).
@@ -3098,7 +3248,7 @@ const SettingsDrawer = ({
               <Bell size={18} color={G.gold} />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>Notifications</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Bientôt disponible</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Badges, abonnement, actus et alertes dans le header</div>
               </div>
             </div>
             <Shield size={16} color={G.greyMid} />
@@ -3275,8 +3425,41 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
   const initials = firstName.slice(0, 2).toUpperCase();
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
-  const earnedBadgeIds = checkBadges(computeStats(plan));
-  const earnedBadges = BADGE_DEFS.filter((badge) => earnedBadgeIds.includes(badge.id));
+  const notificationItems = buildInAppNotifications({ user, plan });
+  const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user?.id || null));
+  const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
+
+  useEffect(() => {
+    setSeenMap(readSeenNotifications(user?.id || null));
+  }, [user?.id]);
+
+  useEffect(() => {
+    const existing = readSeenNotifications(user?.id || null);
+    if (Object.keys(existing).length > 0) return;
+    const bootstrapSeen = {};
+    notificationItems.forEach((item) => {
+      if (item.type === "badge") bootstrapSeen[item.id] = Date.now();
+    });
+    if (Object.keys(bootstrapSeen).length > 0) {
+      writeSeenNotifications(user?.id || null, bootstrapSeen);
+      setSeenMap(bootstrapSeen);
+    }
+  }, [user?.id, notificationItems]);
+
+  const markNotificationsAsRead = (items = notificationItems) => {
+    if (!items.length) return;
+    const next = { ...readSeenNotifications(user?.id || null) };
+    const stamp = Date.now();
+    items.forEach((item) => { next[item.id] = stamp; });
+    writeSeenNotifications(user?.id || null, next);
+    setSeenMap(next);
+  };
+
+  const handleToggleNotifications = () => {
+    const next = !notifOpen;
+    setNotifOpen(next);
+    if (next) markNotificationsAsRead();
+  };
 
   useEffect(() => {
     if (!notifOpen) return undefined;
@@ -3337,33 +3520,35 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
           <div ref={notifRef} style={{ position: "relative" }}>
             <button
               type="button"
-              onClick={() => setNotifOpen((open) => !open)}
-              aria-label={`Ouvrir les notifications badges (${earnedBadges.length})`}
+              onClick={handleToggleNotifications}
+              aria-label={`Ouvrir les notifications (${unreadCount} non lues)`}
               style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent", position: "relative" }}
             >
-              <Bell size={20} color={earnedBadges.length ? G.gold : G.grey} />
-              <span
-                style={{
-                  position: "absolute",
-                  top: 7,
-                  right: 6,
-                  minWidth: 16,
-                  height: 16,
-                  padding: "0 4px",
-                  borderRadius: 999,
-                  background: earnedBadges.length ? G.coral : G.greyLight,
-                  color: earnedBadges.length ? G.white : G.grey,
-                  border: `2px solid ${G.glass}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 9,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                }}
-              >
-                {earnedBadges.length}
-              </span>
+              <Bell size={20} color={unreadCount ? G.gold : G.grey} />
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 7,
+                    right: 6,
+                    minWidth: 16,
+                    height: 16,
+                    padding: "0 4px",
+                    borderRadius: 999,
+                    background: G.coral,
+                    color: G.white,
+                    border: `2px solid ${G.glass}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 9,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                  }}
+                >
+                  {Math.min(unreadCount, 9)}
+                </span>
+              )}
             </button>
 
             {notifOpen && (
@@ -3372,7 +3557,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
                   position: "absolute",
                   top: "calc(100% + 10px)",
                   right: -4,
-                  width: 288,
+                  width: 320,
                   maxWidth: "calc(100vw - 24px)",
                   background: G.surface,
                   border: `1px solid ${G.greyLight}`,
@@ -3386,36 +3571,44 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Notifications</div>
                     <div style={{ fontSize: 11, color: G.grey }}>
-                      {earnedBadges.length ? `${earnedBadges.length} badge${earnedBadges.length > 1 ? "s" : ""} débloqué${earnedBadges.length > 1 ? "s" : ""}` : "Aucun badge débloqué pour l'instant"}
+                      {notificationItems.length
+                        ? `${notificationItems.length} notification${notificationItems.length > 1 ? "s" : ""} dans ton centre`
+                        : "Aucune notification pour l'instant"}
                     </div>
                   </div>
-                  <div style={{ width: 32, height: 32, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 12, background: unreadCount ? G.goldLight : G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Bell size={16} color={G.blue} />
                   </div>
                 </div>
 
-                {earnedBadges.length ? (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {earnedBadges.slice(0, 3).map((badge) => {
-                      const Icon = badge.icon;
+                {notificationItems.length ? (
+                  <div style={{ display: "grid", gap: 8, maxHeight: "min(60vh, 420px)", overflowY: "auto", paddingRight: 2 }}>
+                    {notificationItems.map((item) => {
+                      const kindMeta = NOTIFICATION_KIND_META[item.type] || NOTIFICATION_KIND_META.update;
+                      const Icon = item.accentIcon || kindMeta.Icon;
+                      const bg = item.type === "badge" ? `${item.accentColor}22` : kindMeta.bg;
+                      const color = item.accentColor || kindMeta.color;
                       return (
                         <div
-                          key={badge.id}
+                          key={item.id}
                           style={{
                             display: "flex",
-                            alignItems: "center",
+                            alignItems: "flex-start",
                             gap: 10,
                             background: G.greyXLight,
                             borderRadius: 14,
                             padding: "10px 12px",
                           }}
                         >
-                          <div style={{ width: 36, height: 36, borderRadius: 12, background: badge.color, color: G.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 12, background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                             <Icon size={16} />
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: G.ink }}>{badge.label}</div>
-                            <div style={{ fontSize: 11, color: G.grey }}>{badge.desc}</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: G.ink, marginBottom: 2 }}>{item.title}</div>
+                            <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.45 }}>{item.body}</div>
+                            <div style={{ fontSize: 10, color: G.greyMid, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                              {formatNotificationDate(item.createdAt)}
+                            </div>
                           </div>
                         </div>
                       );
@@ -3423,7 +3616,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
                   </div>
                 ) : (
                   <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 14px", fontSize: 12, color: G.grey }}>
-                    Termine des séances pour debloquer tes premiers badges.
+                    Ici tu verras les badges, alertes d'abonnement, promos, newsletters, binomes et grosses mises a jour.
                   </div>
                 )}
               </div>
