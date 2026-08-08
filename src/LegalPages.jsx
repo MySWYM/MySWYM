@@ -331,8 +331,9 @@ export function PolitiqueCookiesPage() {
         "Polices Google Fonts chargées depuis les serveurs Google (peut entraîner un transfert technique d’adresse IP).",
       ]} />
       <P>
-        <strong style={{ color: C.ink }}>Mesure d’audience :</strong> aucun outil d’analytics tiers (type Google Analytics / Plausible) n’est activé à ce jour.
-        Si un tel outil est introduit, il ne sera déposé qu’après votre consentement via la bannière, et cette page sera mise à jour.
+        <strong style={{ color: C.ink }}>Mesure d’audience :</strong> PostHog (analytics produit) peut être activé
+        uniquement après acceptation via la bannière cookies. Aucune donnée sensible (email, notes, contenu complet
+        de séance) n’est envoyée comme propriété d’événement. Tu peux refuser les cookies non essentiels.
       </P>
 
       <H>3. Gestion de votre choix</H>

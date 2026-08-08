@@ -76,6 +76,9 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-08 | Composeur Sportif D | `sportif` actif dans `SESSION_COMPOSER_ENABLED_LEVELS`. Polarisation A/B/C, Z3/Z4 contrôlés, allures T100 Premium only, tests, Arthur scale réel des séries (OW/tri), formats descending/race_pace. Performance non activé. | ✅ |
+| 2026-08-08 | Régulier refinement | setFormat (repeated/progressive/pyramid/block/alternating/continuous/broken/mixed) ; repos variable `restSecFor` ; patterns reprise (sensations→intensité légère) ; equipmentUsage none/optional/meaningful ; sessionSpecificity (4N stroke_focus vs race_specific) ; wording Découverte godille→formulation utilisateur. Sportif/Perf non activés. | ✅ |
+| 2026-08-08 | Objectif reprendre | `mapGoalToObjectifV1` : `goal=reprendre` passait derrière `category=progression` → semaine Régulier avec QUALITÉ. Objectifs explicites (reprendre, OW, triathlon…) avant le fallback progression. | ✅ |
 | 2026-08-04 | Questionnaire | Ajout champs communs tous programmes : âge, poids, taille, blessure, fréquence (y compris progression), style crawl/4 nages, nage préférée | ✅ |
 | 2026-08-04 | Distances × bassin | Plus de totaux impossibles (ex. 320m). `block()` = somme des lignes + arrondi ×25. Virages 15m → 25m. `PLAN_VERSION` 39. | ✅ |
 | 2026-08-04 | Nager & Progresser | Mode boucle séance unique (`isSessionLoop`) : plus de plan 12 sem., plus de question fréquence. Freemium 8 séances + 2/sem. `PLAN_VERSION` → 35 | ✅ |
@@ -142,7 +145,23 @@
 | 2026-08-03 | Arthur OW S6–S7 | 6 séances coaché eau libre (volume 5900m + décharge 4200m). Migration `20260803172000_session_templates_arthur_ow_s6_s7.sql`. | ✅ |
 | 2026-08-03 | Banque live + wire | `session_templates` en prod (18 seed + 29 gold). App charge la banque ; confirmé eau_libre/mixte → Arthur gold, sinon JS. | ✅ |
 | 2026-08-03 | Force regen v29 | Demande Arthur : `PLAN_VERSION` 29 + `FORCE_PLAN_REGEN=true` — overwrite **tous** les plans (progression écrasée) pour appliquer la banque. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-08 | Moteur sportif V1 | Module `src/lib/sports-engine/` : SportProfile, volume multi-leviers, familles, portes, adaptation feedback, matériel onboarding, patterns Arthur scalés. Pont `swim-plan-bridge`. Doc `docs/sports-engine-v1.md`. `PLAN_VERSION` 40, `FORCE_PLAN_REGEN=false`. | ✅ |
+| 2026-08-08 | Composeur séances B | `session-composer` + inventaire 97 drills. Découverte first : volume←séries, hard constraints, seed déterministe, fallback `COMPOSER_FALLBACK` DEV. Régulier/Sportif non branchés. Pas de FORCE_PLAN_REGEN. | ✅ |
+| 2026-08-08 | Découverte sport refine | Pas de long continu par défaut (max 50m corps) ; technique alternée ; repos seulement sur séries répétées ; intention pédagogique « Aujourd'hui : … » ; split 20/27/40/13. Tests sportifs ajoutés. | ✅ |
+| 2026-08-08 | Gold + strokeFocus | Intentions Gold (réf. non hardcodées), `strokeFocus` crawl/mixte/4n, papillon adapté si non maîtrisé, volume soft ≤ durée/capacité. Régulier non activé. | ✅ |
+| 2026-08-08 | Composeur Régulier C | Même `session-composer` : Régulier actif. Semaine A/B/C (1 qualité max), séries structurées, intents Gold Régulier, papillon maîtrisé requis. Sportif/Perf inchangés. | ✅ |
 | 2026-08-03 | Profil goûts client | Retours séance/hebdo → scores EMA (`user-taste.js`) persistés `user_taste_profile` + tables `session_feedback` / `week_feedback`. Générateur biaisé (volume, intensité, éducatifs, focus). Soft caps — périodisation COSD prioritaire. | ✅ |
+| 2026-08-08 | RaceTarget chaîne | Contrat `RaceTarget → RaceGap → QualityToDevelop → WeekRoles` documenté + implémenté **Sportif + course_piscine** seulement. Pas d’invention de cible/gap. Fallback rôles existants si `insufficient_data`. Performance non ouvert. | ✅ |
+| 2026-08-08 | Sportif pré-Perf | Course piscine : C = aérobie + touches allure (pas 2× Z3). Vitesse : blocs `preparation`/`quality`/`consolidation`. `maxContinuous` stroke-aware (4N ≠ crawl). Affichage compact progressive/descending (`displayLines`). Fixtures Arthur Gold test + scaling réel lignes. Performance non activé. | ✅ |
+| 2026-08-08 | Étape F Performance | `PerformanceStrategy` + `performanceWeekRoles` ; réutilise Race* ; composeur Performance ; Arthur OW/tri ; horizon sans taper complet ; pas « plus de Z4 ». | ✅ |
+| 2026-08-08 | Étape G Taper/Race | `taper-load` : phases TAPER/RACE, modèle de charge (pas × uniforme), race week J-x, Race Day hors volume, stub post-race. Intensité courte conservée. | ✅ |
+| 2026-08-08 | Étape H Feedback | Boucle FeedbackSignal → Capacity EMA → WeeklyAdaptation (1 levier). Pain=PROTECT ; taper bloque +vol ; missed sans rattrapage double. | ✅ |
+| 2026-08-08 | Étape I Orchestration | Phase effective par weekStart ; volume final unique ; H rebranché ; trainingDistance ; pain→intent ; taste après roles ; engineWhy réel. | ✅ |
+| 2026-08-08 | Étape J2 Quality Gate | Hard constraints taper/pain/continuous/reps/4N ; `validateComposedSession` + recomposition ≤3 + minimal safe ; Arthur même gate ; maxReps~12 ; départ/fin Découverte ≤ maxContinuous. Tests Q1–Q15. | ✅ |
+| 2026-08-08 | Étape K Persistance | Tables faits sportifs + RLS ; `sports-persistence` reconstruit `_engineHistory` ; `volumeAdj` = charge, `weekly_adaptations` = historique ; pas de double ×. Moteur inchangé. | ✅ |
+| 2026-08-08 | Force regen v41 | Demande Arthur : `PLAN_VERSION` 41 + `FORCE_PLAN_REGEN=true` — overwrite **tous** les plans (progression écrasée) pour appliquer moteur V1 + QG + K. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-08 | Matériel questionnaire | Étape matos **tous niveaux** ; Découverte = presets simples (IDs normalisés) ; `equipment: []` si aucun (plus de `null` silencieux) ; persist `sport_profiles` + édition Profil ; `equipmentUsed` ; QG `material_missing`. Pas de 2e système. | ✅ |
+| 2026-08-08 | Force regen v42 live | Demande Arthur : `PLAN_VERSION` 42 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme moteur V1 + matos normalisé. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -161,12 +180,19 @@
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.
-6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste (vérifier avec `calcSessionDistance`). Totaux **multiples de 25** (bassin 25) / **50** (bassin 50) — jamais 320 m. **Feedback hebdo** : ne jamais patcher seul `s.distance` sans `details`/`duration` — régénérer ou scale cohérent.
+6. **Distance** : séance qui annonce 2000 m mais détail qui ne tombe pas juste. Source de vérité composeur = **`volumeFromSets`** (séries), recoupée avec `calcDetailsDistance` — pas la cible seule. Totaux **multiples de 25** (bassin 25) / **50** (bassin 50) — jamais 320 m. **Feedback hebdo** : ne jamais patcher seul `s.distance` sans `details`/`duration` — régénérer ou scale cohérent.
 7. **Sportif / Performance** : mêmes volumes et mêmes intitulés — doit rester différencié.
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance. Sur débutant : expliquer les éducatifs (grand/petit chien) plutôt que le terme seul.
 9. **Éducatifs** : ne pas saturer les séances de grand/petit chien — privilégier **jambes** et nage. MySWYM = générateur, pas école. **Jamais** deux blocs jambes d’affilée (ex. 400m jambes + 8x50 jambes) — éducatif puis jambes.
 10. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement. **Exception** : force regen explicite demandée par Arthur (ex. v14, aucun user actif).
 12. **Nager & Progresser** : ne pas regenerer un plan multi-semaines ni demander la fréquence — c’est une **boucle séance unique** (Terminer/Abandonner → suivante).
+13. **Sportif course piscine** : ne pas mettre B **et** C en Z3 par défaut — polarisation (beaucoup d’aérobie, une qualité). C = Z1/Z2 + touches allure ; peak peut être plus soutenu.
+14. **Sportif vitesse** : ne pas « remplir » en Z2 sans intention — architecture préparation → qualité → consolidation (`blockRole`).
+15. **Continu 4N** : ne pas appliquer le `maxContinuous` crawl au 4N — distances continues stroke-aware ; 25/50/100 si capacité faible.
+16. **Arthur tests** : ne jamais valider la banque si `ready=false` / 0 templates — charger des fixtures Gold ; ne jamais scaler en ne touchant que `session.distance`.
+17. **Taper Performance** : pas de coefficient uniforme ×0.5 ; pas « uniquement nage facile » ; pas de gros test / nouvelle technique / nouveau matos à J-3 ; suivre les **absolus** de zone (`absoluteMetersByZone`) pas seulement les % ; Race Day ≠ volume entraînement.
+18. **Feedback / adaptation** : un seul `too_easy` ≠ +10 % ; un seul `hard` ≠ crash ; `pain` = sécurité immédiate ; ne jamais doubler une séance manquée ; ne pas abandonner QualityToDevelop parce que la charge était trop haute.
+19. **Composeur Quality Gate (J2)** : une séance techniquement valide peut être sportivement absurde — toujours passer `validateComposedSession`. Interdit : Découverte continu > `maxContinuous` (y compris départ/fin) ; pain + Z3/Z4 ; race_week 2800m / gros Z3 ; `33×50` ; `NxM` rest=0 hors continuous ; 4N titre sans multi-nages. Sous-volume > séance incohérente. Arthur ne contourne pas le gate.
 
 ---
 
@@ -175,11 +201,12 @@
 Table `session_templates` — templates coach au format Arthur (`details` + `blocks` départ/technique/corps/RAC).
 
 - **V1** : 18 séances confirmé seedées (`source=js_ow_base`, `quality=seed`). Lecture publique RLS (`active=true`).
-- **Runtime** : confirmé eau_libre/mixte charge la banque Arthur gold via `session-templates-store.js` (fallback `OW_BASE_SESSIONS` si cache vide). Endurance confirmé reste JS.
+- **Runtime** : moteur V1 (`sports-engine`) orchestre volume/familles ; **Découverte** → `session-composer` (fallback legacy si échec) ; confirmé eau_libre/mixte → patterns Arthur scalés (`pickArthurBankSession`) ; sinon générateur blocs. Diplômes inchangés.
 - **Alimentation** : Arthur envoie des séances (Excel / texte) → insert/update en base (`source=arthur_excel` ou `coach_approved`, `quality=gold`).
-- **Suite** : scaling volume DB par niveau ; `programming_rules` ; sync historique migrations CLI.
+- **Suite** : scaling distances *dans* les lignes Arthur ; table `session_patterns` si besoin ; mode reprise UI.
 
 ## Pistes produit (pas encore codées)
 
-- Brancher `generatePlan` / banque confirmé sur `session_templates` (fallback JS).
-- Table `programming_rules` (`coach_rules`) + application dans `generatePlan`.
+- Affiner scaling distances dans les lignes Arthur (pas seulement distance annoncée).
+- Table `session_patterns` dédiée si métadonnées patterns dépassent `session_templates`.
+- Mode reprise UI explicite après interruption longue.

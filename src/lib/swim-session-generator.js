@@ -1125,4 +1125,19 @@ export function usesConfirmeArchetypeBank(niveauKey, profilObj) {
   return niveauOk && objOk;
 }
 
-export { genererSeanceDeSemaine, TECHNIQUE, PHASES, NIVEAUX, volumeMultFromProfileLevel, VOL_BY_NIVEAU_KEY, OW_BASE_SESSIONS };
+export {
+  genererSeanceDeSemaine,
+  TECHNIQUE,
+  CORPS_PHYSIO,
+  DEPARTS_SEMAINE,
+  DEPARTS_AVEC_JAMBES,
+  FINS_SEMAINE,
+  FOCUS_CYCLE,
+  FOCUS_CYCLE_DECOUVERTE,
+  estimateLinesDistance,
+  PHASES,
+  NIVEAUX,
+  volumeMultFromProfileLevel,
+  VOL_BY_NIVEAU_KEY,
+  OW_BASE_SESSIONS,
+};

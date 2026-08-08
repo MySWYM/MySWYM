@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "./supabase.js";
-import { trackEvent } from "./lib/analytics.js";
+import { track, trackEvent } from "./lib/analytics.js";
 import {
   Waves, Target, Calendar, Gauge, Clock, ArrowRight, Check, ChevronDown,
   Zap, Shield, Layers, Timer, Dumbbell,
@@ -526,9 +526,34 @@ function Hero() {
               {t("hero.cta")} <ArrowRight size={16} />
             </PrimaryCta>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontFamily: FONT }}>
+          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontFamily: FONT, marginBottom: 28 }}>
             {t("hero.freeNote")}
           </p>
+
+          {/* Preuve produit — mécanique type palmarès mymoto, faits MySWYM */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: isMobile ? 8 : 16,
+            maxWidth: isMobile ? "100%" : 420,
+            margin: isMobile ? "0 auto" : 0,
+            borderTop: "1px solid rgba(255,255,255,0.12)",
+            paddingTop: 20,
+          }}>
+            {[
+              { v: t("hero.proof1Value"), l: t("hero.proof1Label") },
+              { v: t("hero.proof2Value"), l: t("hero.proof2Label") },
+              { v: t("hero.proof3Value"), l: t("hero.proof3Label") },
+            ].map((p) => (
+              <div key={p.l} style={{ textAlign: isMobile ? "center" : "left" }}>
+                <div style={{
+                  fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: isMobile ? 22 : 26,
+                  color: C.accent, lineHeight: 1, textTransform: "uppercase",
+                }}>{p.v}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: FONT, marginTop: 4, lineHeight: 1.3 }}>{p.l}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div style={{
@@ -858,6 +883,139 @@ function SessionPreview() {
   );
 }
 
+// ── Coach / manifeste (inspiration mymoto : voix perso + preuve sociale réelle) ─
+function CoachSection() {
+  const { t } = useTranslation("landing");
+  const isMobile = useIsMobile();
+
+  return (
+    <section id="coach" style={{ background: C.night, padding: "clamp(56px,8vw,96px) 20px" }}>
+      <div style={{
+        maxWidth: 960, margin: "0 auto",
+        display: "grid",
+        gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
+        gap: isMobile ? 32 : 48,
+        alignItems: "center",
+      }}>
+        <FadeIn>
+          <SectionLabel text={t("coach.label")} dark />
+          <p style={{
+            color: C.accent, fontSize: 13, fontWeight: 700, fontFamily: FONT,
+            letterSpacing: "0.04em", margin: "0 0 12px",
+          }}>{t("coach.eyebrow")}</p>
+          <h2 style={{
+            fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
+            fontWeight: 800, color: C.white, margin: "0 0 16px", textTransform: "uppercase", lineHeight: 1.02,
+          }}>
+            {t("coach.titleLine1")}<br />{t("coach.titleLine2")}
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 16, lineHeight: 1.65, margin: "0 0 20px", fontFamily: FONT }}>
+            {t("coach.body")}
+          </p>
+          <a
+            href={t("coach.igHref")}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              background: C.accent, color: C.accentText, fontWeight: 700,
+              fontSize: 15, fontFamily: FONT, padding: "13px 22px",
+              borderRadius: 14, textDecoration: "none", minHeight: 48,
+            }}
+          >
+            {t("coach.igCta")} <ArrowRight size={16} />
+          </a>
+        </FadeIn>
+
+        <FadeIn delay={0.1}>
+          <blockquote style={{
+            margin: 0,
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderLeft: `4px solid ${C.accent}`,
+            borderRadius: 20, padding: isMobile ? "24px 20px" : "32px 28px",
+          }}>
+            <p style={{
+              fontFamily: FONT_DISPLAY, fontSize: "clamp(22px, 3vw, 28px)",
+              fontWeight: 700, color: C.white, lineHeight: 1.25,
+              margin: 0, textTransform: "uppercase",
+            }}>
+              “{t("coach.quote")}”
+            </p>
+          </blockquote>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+// ── Inclus (grille type offres mymoto) ──────────────────────────────────────
+function Includes() {
+  const { t } = useTranslation("landing");
+  const isMobile = useIsMobile();
+  const items = [
+    { title: t("includes.i1Title"), desc: t("includes.i1Desc"), badge: "trial" },
+    { title: t("includes.i2Title"), desc: t("includes.i2Desc"), badge: "trial" },
+    { title: t("includes.i3Title"), desc: t("includes.i3Desc"), badge: "trial" },
+    { title: t("includes.i4Title"), desc: t("includes.i4Desc"), badge: "prem" },
+    { title: t("includes.i5Title"), desc: t("includes.i5Desc"), badge: "prem" },
+    { title: t("includes.i6Title"), desc: t("includes.i6Desc"), badge: "prem" },
+  ];
+
+  return (
+    <section id="inclus" style={{ background: C.bg, padding: "clamp(56px,8vw,96px) 20px" }}>
+      <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
+          <SectionLabel text={t("includes.label")} />
+          <h2 style={{
+            fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
+            fontWeight: 800, color: C.ink, margin: "0 0 12px", textTransform: "uppercase",
+          }}>
+            {t("includes.title")}
+          </h2>
+          <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 480, margin: "0 auto", fontFamily: FONT, lineHeight: 1.6 }}>
+            {t("includes.subtitle")}
+          </p>
+        </FadeIn>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+          gap: 12,
+        }}>
+          {items.map((item, i) => (
+            <FadeIn key={item.title} delay={i * 0.05}>
+              <div style={{
+                background: C.white, border: `1px solid ${C.border}`,
+                borderRadius: 20, padding: "22px 20px", height: "100%",
+                boxShadow: C.shadow, boxSizing: "border-box",
+              }}>
+                <div style={{
+                  display: "inline-flex", marginBottom: 12,
+                  background: item.badge === "prem" ? C.primaryFix : C.bgCard,
+                  color: item.badge === "prem" ? C.primary : C.secondary,
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+                  padding: "4px 10px", borderRadius: 100, fontFamily: FONT,
+                }}>
+                  {item.badge === "prem" ? t("includes.badgePrem") : t("includes.badgeTrial")}
+                </div>
+                <h3 style={{ fontFamily: FONT, fontSize: 16, fontWeight: 700, color: C.ink, margin: "0 0 8px" }}>{item.title}</h3>
+                <p style={{ color: C.inkLight, fontSize: 14, lineHeight: 1.55, margin: 0, fontFamily: FONT }}>{item.desc}</p>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+
+        <FadeIn style={{ textAlign: "center", marginTop: 32 }}>
+          <PrimaryCta>
+            {t("hero.cta")} <ArrowRight size={16} />
+          </PrimaryCta>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
 // ── 5. Confiance / crédibilité ─────────────────────────────────────────────
 function Trust() {
   const { t } = useTranslation("landing");
@@ -926,10 +1084,11 @@ function Trust() {
   );
 }
 
-// ── 6. Tarif / Freemium ────────────────────────────────────────────────────
+// ── 6. Tarif / Freemium (toggle annuel/mensuel façon mymoto) ────────────────
 function Pricing() {
   const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
+  const [billing, setBilling] = useState("annual"); // annual | monthly
 
   const handlePremium = async (priceId) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -939,6 +1098,7 @@ function Pricing() {
         if (ref?.trim()) localStorage.setItem("myswym_ref", ref.trim().toUpperCase());
       } catch { /* ignore */ }
       trackEvent("signup_started", { source: "landing_pricing" }, { essential: true });
+      track("signup_started", { source: "landing_pricing" }, { onceKey: "signup_started:landing_pricing" });
       window.location.href = "/inscription";
       return;
     }
@@ -984,10 +1144,14 @@ function Pricing() {
     t("pricing.premF5"),
   ];
 
+  const isAnnual = billing === "annual";
+  const priceId = isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY;
+  const displayPrice = isAnnual ? "3,33€" : PRICE_MONTHLY_LABEL;
+
   return (
     <section id="pricing" style={{ background: C.bgSoft, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
-        <FadeIn style={{ textAlign: "center", marginBottom: 40 }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 28 }}>
           <SectionLabel text={t("pricing.label")} />
           <h2 style={{
             fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
@@ -995,9 +1159,41 @@ function Pricing() {
           }}>
             {t("pricing.titleLine1")}<br />{t("pricing.titleLine2")}
           </h2>
-          <p style={{ color: C.secondary, fontSize: 16, fontFamily: FONT }}>
+          <p style={{ color: C.secondary, fontSize: 16, fontFamily: FONT, marginBottom: 20 }}>
             {t("pricing.subtitle")}
           </p>
+
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            background: C.white, border: `1.5px solid ${C.border}`,
+            borderRadius: 100, padding: 4, boxShadow: C.shadow,
+          }}>
+            {[
+              { id: "annual", label: t("pricing.billingAnnual") },
+              { id: "monthly", label: t("pricing.billingMonthly") },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setBilling(opt.id)}
+                style={{
+                  border: "none", cursor: "pointer", fontFamily: FONT,
+                  fontWeight: 700, fontSize: 13, padding: "10px 18px",
+                  borderRadius: 100, minHeight: 40,
+                  background: billing === opt.id ? C.ink : "transparent",
+                  color: billing === opt.id ? C.white : C.secondary,
+                  transition: "all 0.2s",
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {isAnnual && (
+            <p style={{ color: C.primary, fontSize: 13, fontWeight: 700, fontFamily: FONT, marginTop: 12 }}>
+              {t("pricing.saveUpTo")}
+            </p>
+          )}
         </FadeIn>
 
         <div style={{
@@ -1048,32 +1244,37 @@ function Pricing() {
                 padding: "4px 14px", borderRadius: 100, letterSpacing: "0.05em", fontFamily: FONT,
               }}>{t("pricing.recommended")}</div>
 
-              <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.white, marginBottom: 4 }}>{t("pricing.subTitle")}</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, margin: "12px 0 4px" }}>
-                <span style={{ fontSize: 40, fontFamily: FONT, fontWeight: 800, color: C.white, lineHeight: 1 }}>{PRICE_MONTHLY_LABEL}</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
+                <div style={{ fontFamily: FONT, fontSize: 22, fontWeight: 800, color: C.white }}>{t("pricing.subTitle")}</div>
+                {isAnnual && (
+                  <div style={{ background: "#22C55E", color: C.white, fontSize: 12, fontWeight: 800, padding: "4px 10px", borderRadius: 8, fontFamily: FONT }}>
+                    {t("pricing.saveBadge")}
+                  </div>
+                )}
+              </div>
+
+              {isAnnual && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 16, color: "rgba(255,255,255,0.3)", textDecoration: "line-through", fontFamily: FONT }}>{PRICE_MONTHLY_LABEL}</span>
+                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: FONT }}>{t("pricing.perMonth")}</span>
+                </div>
+              )}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, margin: "8px 0 4px" }}>
+                <span style={{ fontSize: 40, fontFamily: FONT, fontWeight: 800, color: C.white, lineHeight: 1 }}>{displayPrice}</span>
                 <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, marginBottom: 6, fontFamily: FONT }}>{t("pricing.perMonth")}</span>
               </div>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 22, fontFamily: FONT }}>
-                Essai 7 jours · carte requise · puis {PRICE_MONTHLY_LABEL}/mois
+                {isAnnual
+                  ? t("pricing.billedAnnual", { price: PRICE_ANNUAL_LABEL })
+                  : t("pricing.billedMonthly")}
               </div>
 
               <PrimaryCta
-                onClick={() => handlePremium(PRICE_MONTHLY)}
-                style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
+                onClick={() => handlePremium(priceId)}
+                style={{ width: "100%", marginBottom: 22, boxSizing: "border-box" }}
               >
                 {t("pricing.unlockCta")}
               </PrimaryCta>
-              <button
-                type="button"
-                onClick={() => handlePremium(PRICE_ANNUAL)}
-                style={{
-                  background: "transparent", border: "1px solid rgba(255,255,255,0.2)",
-                  color: "rgba(255,255,255,0.7)", fontSize: 13, fontFamily: FONT,
-                  padding: "10px", borderRadius: 12, cursor: "pointer", marginBottom: 22,
-                }}
-              >
-                {t("pricing.orAnnual", { price: PRICE_ANNUAL_LABEL })}
-              </button>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: "auto" }}>
                 {premiumFeatures.map((f) => (
@@ -1087,7 +1288,10 @@ function Pricing() {
           </FadeIn>
         </div>
 
-        <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: C.outline, fontFamily: FONT }}>
+        <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: C.outline, fontFamily: FONT }}>
+          {t("pricing.compareNote")}
+        </p>
+        <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: C.outline, fontFamily: FONT }}>
           {t("pricing.moreLink")}{" "}
           <a href="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</a>.
         </p>
@@ -1196,6 +1400,12 @@ function FinalCTA() {
           <PrimaryCta>
             {t("finalCta.cta")} <ArrowRight size={18} />
           </PrimaryCta>
+          <p style={{
+            color: "rgba(255,255,255,0.35)", fontSize: 13, fontFamily: FONT,
+            marginTop: 20, fontStyle: "italic",
+          }}>
+            {t("finalCta.signoff")}
+          </p>
         </FadeIn>
       </div>
     </section>
@@ -1205,6 +1415,10 @@ function FinalCTA() {
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Landing() {
   const { t, i18n } = useTranslation("landing");
+
+  useEffect(() => {
+    track("landing_viewed", { source: "accueil" }, { onceKey: "landing_viewed" });
+  }, []);
 
   useEffect(() => {
     document.title = t("meta.title");
@@ -1239,7 +1453,10 @@ export default function Landing() {
       <WhyMyswym />
       <HowItWorks />
       <SessionPreview />
+      <CoachSection />
+      <Includes />
       <Trust />
+      <Pricing />
       {/* Reviews : section commentée — activer dès les premiers avis réels */}
       <FAQ />
       <FinalCTA />

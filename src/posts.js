@@ -463,121 +463,157 @@ Arrête ta montre. Note le temps total si tu veux. Récupère entre les séries 
   {
     slug: "glossaire-natation",
     title: "Glossaire natation : tous les termes de l'app expliqués",
-    description: "NL, CSS, Z2, pull-buoy, coulée, seuil… Tu débutes et tu ne comprends pas la moitié des termes de tes séances ? Ce glossaire t'explique tout, simplement.",
+    description: "RAC, godilles, grand chien, Z2, D1'45\", rattrapé, flèche… Tu débutes et tu ne comprends pas la moitié des termes de tes séances ? Ce glossaire t'explique tout, simplement.",
     category: "Débutants",
-    date: "27 avril 2025",
-    readingTime: "6 min",
+    date: "8 août 2026",
+    readingTime: "8 min",
     coverColor: "#00C48C",
-    intro: "Tu ouvres ton plan d'entraînement et tu lis : \"6×100m NL — D1'45\" — Z2 — pull-buoy en récup\". C'est du chinois ? Normal. La natation a son propre vocabulaire. Ce glossaire regroupe tous les termes que tu croiseras dans MySWYM, expliqués clairement.",
+    intro: "Tu ouvres ton plan et tu lis : \"400m Cr/Dos (Z1) — 8×50 : 25m grand chien · 25m normal — 6×100m D1'45\" (Z3) — 200m RAC\". C'est du chinois ? Normal. La natation a son propre vocabulaire. Ce glossaire regroupe les termes que tu croises dans MySWYM, expliqués clairement.",
     sections: [
       {
         h2: "Les nages et les abréviations",
-        content: `**NL — Nage Libre**
-La nage libre, c'est le crawl. Techniquement, tu peux nager n'importe quel style en "nage libre", mais tout le monde utilise le crawl parce que c'est la nage la plus rapide. Quand tu vois NL, tu nages crawl.
+        content: `**Cr / NL — Crawl / Nage libre**
+Dans MySWYM tu verras surtout **Cr** (crawl). NL = nage libre : techniquement n'importe quel style, mais en pratique c'est du crawl — la nage la plus rapide.
 
 **Dos**
-Le dos crawlé. Tu nages sur le dos, les bras alternés, la tête dans l'eau. Souvent utilisé en retour au calme ou en récupération active entre les séries.
+Dos crawlé : sur le dos, bras alternés. Souvent en départ, récup ou retour au calme.
 
 **Brasse**
-Les deux bras et les deux jambes en simultané, en position frontale. Plus lente que le crawl, souvent utilisée pour les phases de récupération.
+Bras et jambes simultanés, face vers le bas. Plus lente ; utile en récupération.
 
 **4 nages**
-Enchaînement dans l'ordre : papillon → dos → brasse → crawl. Utilisé dans certaines séances techniques.
+Ordre olympique : papillon → dos → brasse → crawl. Présent surtout en séances techniques / bassin (pas le cœur des plans eau libre / triathlon).
 
 **Battements / planche**
-Nage avec une planche tenue à bout de bras, seules les jambes travaillent. L'objectif : travailler le fouet des chevilles et l'alignement du corps.
-
-**Pull-buoy**
-Un flotteur en forme de 8 coincé entre les cuisses. Il soutient les jambes pour que seuls les bras travaillent. Excellent pour sentir la prise d'eau et travailler les appuis sans se fatiguer en bas.`,
+Planche à bout de bras, jambes seules. Objectif : fouet des chevilles et alignement du corps.`,
       },
       {
-        h2: "Les zones d'intensité (Z1 à Z5)",
-        content: `Les zones d'intensité te disent à quelle vitesse nager. Elles sont calculées à partir de ton meilleur 100m.
+        h2: "Le matériel",
+        content: `**Pull-buoy**
+Flotteur en forme de 8 entre les cuisses. Les jambes flottent → tu travailles surtout les bras et la prise d'eau.
 
-**Z1 — Très facile** · Allure récupération. Tu pourrais tenir une conversation. Utilisée en échauffement et retour au calme.
+**Palmes**
+Accélèrent le battement et aident la glisse / le roulis. Souvent associées aux éducatifs.
 
-**Z2 — Endurance** · Allure "longue durée". Tu respires normalement, tu peux tenir des heures. C'est la zone de base de l'entraînement.
+**Plaquettes**
+Plaques sur les mains pour forcer l'appui. Utilisées sur certaines séries (pas sur le roulis : là, palmes uniquement).
 
-**Z3 — Tempo / Seuil bas** · Effort soutenu mais gérable. Tu peux tenir sur 20-30 minutes. Tu commences à te concentrer sur ta respiration.
+**Tuba frontal**
+Tuba devant le visage : tu nages sans tourner la tête pour respirer. Utile en découverte pour sentir la glisse (souvent avec palmes).
 
-**Z4 — Seuil / CSS** · Allure que tu peux tenir sur 1 500m environ. Ça commence à faire mal. C'est la zone la plus importante pour progresser.
+**Planche**
+Pour les séries jambes.
 
-**Z5 — Vitesse max** · Effort maximal sur des courtes distances (25-50m). Tu vas à fond, la récupération est longue entre les répétitions.`,
+À retenir : **jamais pull-buoy + palmes** en même temps — incompatible.`,
       },
       {
-        h2: "La CSS — Vitesse Critique de Nage",
-        content: `**CSS** (Critical Swim Speed) est l'allure-seuil entre ce que tu peux tenir longtemps et ce qui devient vraiment difficile. C'est l'équivalent en natation de la VMA en course à pied.
+        h2: "Les zones d'intensité (Z1 à Z4)",
+        content: `Les zones disent à quelle vitesse nager. Dans MySWYM elles sont calculées à partir de ton **T100** (meilleur temps sur 100 m crawl), pas d'un test 400/200.
 
-Pour la calculer : fais un 400m à fond, récupère 10 minutes, fais un 200m à fond. La CSS = (temps 400m − temps 200m) / 200.
+**Z1 — Très facile** · Récup / départ / fin. Tu pourrais parler. Souvent écrit « facile » au niveau découverte.
 
-**Pourquoi c'est important ?** Parce que c'est l'allure à laquelle tu progresses le plus vite. Travailler régulièrement à ta CSS améliore ta capacité à tenir une allure élevée sur les longues distances.
+**Z2 — Endurance** · Allure longue durée. Base de l'entraînement.
 
-Dans MySWYM, tu renseignes ton meilleur 100m et l'app calcule automatiquement ta CSS et tes zones d'intensité.`,
+**Z3 — Tempo / seuil bas** · Effort soutenu mais régulier. Tu tiens ~20–30 min.
+
+**Z4 — Seuil / qualité** · Allure exigeante (proche de ce que tu tiens sur ~1 500 m). Qualité > volume.
+
+Les tags du type **(Z2 @01:45-01:55)** (Premium) = plage d'allure cible pour 100 m, dérivée de ton T100.`,
       },
       {
-        h2: "Les structures de séance",
-        content: `**Échauffement**
-Les premières longueurs à faible intensité (Z1-Z2). Le corps met 5 à 10 minutes pour trouver son rythme en natation. Ne saute jamais l'échauffement.
+        h2: "T100 et allures",
+        content: `**T100**
+Ton temps de référence sur 100 m crawl (départ dans l'eau). C'est la seule donnée d'allure demandée par MySWYM : l'app en déduit Z1–Z4 et les plages \`@mm:ss\`.
 
-**Corps de séance**
-La partie principale : séries, intensités variées selon l'objectif du jour.
+**CSS (Critical Swim Speed)**
+Concept classique d'allure-seuil (équivalent VMA en course). Tu peux la mesurer avec un 400 m + 200 m à fond, mais **dans l'app on ne te demande pas ce test** : on s'appuie sur le T100 pour rester simple et cohérent avec tes séances.`,
+      },
+      {
+        h2: "La structure d'une séance MySWYM",
+        content: `Chaque séance suit le même ordre coach :
 
-**Retour au calme**
-2 à 4 longueurs très lentes à la fin. Élimine les déchets métaboliques et aide la récupération. Souvent en dos ou en brasse.
+**1. Départ** (~Z1)
+Mise en route : Cr/Dos, godilles, parfois palmes. Pas de sprint.
 
-**Répétitions (reps)**
-Le nombre de fois que tu répètes un effort. "8×100m" = 8 répétitions de 100m.
+**2. Technique**
+Un focus du jour (roulis, rattrapé, jambes, grand chien, flèche…).
+
+**3. Corps**
+Le bloc physio (endurance, seuil, vitesse, eau libre…) selon la phase du plan.
+
+**4. Fin / RAC — Retour Au Calme**
+Nage très facile pour finir. **RAC** = retour au calme. Souvent dos, au choix, ou « le plus lent possible ».
+
+**Répétitions**
+« 8×100m » = 8 fois 100 m.
 
 **Séries**
-Un ensemble de répétitions avec le même objectif. Séparées par une récupération plus longue que les récups entre reps.`,
+Groupe de reps avec le même objectif ; récup plus longue entre séries qu'entre reps.`,
       },
       {
         h2: "Les récupérations",
         content: `**R15" / R30" / R2'**
-La lettre R suivie d'un temps = récupération fixe. Tu arrives au mur, tu attends exactement ce temps, tu repars.
+Récupération fixe : tu touches le mur, tu attends exactement ce temps, tu repars. Au niveau découverte, l'app peut écrire « repos 15 s » à la place.
 
 **D1'45" — Départ toutes les 1'45"**
-Le système professionnel. Tu pars (ou repars) toutes les 1 minute 45 secondes. Si tu nages en 1'30", tu récupères 15 secondes. Si tu nages en 1'38", tu récupères 7 secondes. Le chrono de référence, c'est l'horloge de bassin — pas ta montre. Plus tu vas vite, plus tu récupères. C'est l'outil de progression intégré dans la séance.
+Tu repars toutes les 1 min 45 s (horloge de bassin). Si tu nages en 1'30", tu récupères 15" ; si tu nages en 1'38", tu récupères 7". Plus tu vas vite, plus tu récupères. (Premium : intervalles en \`D…\` ; gratuit : souvent \`R…\`.)
 
 **Récupération active**
-Tu ne t'arrêtes pas complètement entre les efforts — tu nages doucement (souvent pull-buoy ou dos) pour garder le sang qui circule.`,
+Tu continues de nager doucement entre les efforts (dos, pull-buoy…) au lieu de t'arrêter complètement.`,
       },
       {
-        h2: "Les exercices techniques (drills)",
-        content: `**Coulée / Torpedo**
-La position hydrodynamique après un départ ou un virage : bras tendus devant la tête, corps gainé, pieds serrés. Chaque poussée de mur donne 3 à 5 mètres gratuits si tu glisses bien. Un classique des nageurs confirmés que les débutants oublient souvent.
+        h2: "Les éducatifs (exercices techniques)",
+        content: `**Godilles**
+Petits mouvements de mains (scapulling) pour sentir l'appui sur l'eau, souvent en départ ou en fin. Ventral ou dorsal.
 
-**Fist drill**
-Nager les poings fermés. Force à sentir l'avant-bras comme surface de propulsion, pas seulement la main. Excellent pour améliorer la prise d'eau.
+**Flèche**
+Poussée de mur + glisse bras tendus, tête entre les bras — avant de nager. Sensations de glisse (surtout découverte).
 
-**Catch-up drill**
-Attendre que le bras avant soit revenu avant de lancer le suivant. Améliore la coordination et l'allongement.
+**Grand chien**
+Traction large, bras qui restent sous l'eau. Sensations d'appui, rythme lent.
 
-**DPS — Distance Par Stroke (distance par coup de bras)**
-Essayer de faire le plus de distance possible par traction. Force à s'allonger, à glisser, à être efficace plutôt que de mouliner.
+**Petit chien**
+Même idée, amplitude plus courte / plus près du corps. Moins fréquent que le grand chien.
+
+**Rattrapé**
+Le bras avant attend (dans l'axe des épaules) avant que l'autre ne parte. Coordination et allongement — pas « les mains qui se touchent ».
+
+**Roulis**
+Rotation du corps (épaule qui sort de l'eau). Souvent avec palmes, sans plaquettes.
+
+**Coulée**
+Position hydrodynamique après poussée / virage : bras devant, corps gainé. Quelques mètres « gratuits » si tu glisses bien.
+
+**Sighting**
+En eau libre / triathlon : relever brièvement la tête pour viser (bouée, repère) sans casser toute la nage.
 
 **Négatif split**
-Nager la deuxième moitié d'une distance plus vite que la première. Entraîne le contrôle du rythme et évite les départs trop rapides.`,
+Deuxième moitié plus rapide que la première — contrôle du rythme.
+
+**DPS — Distance Par Stroke**
+Maximiser la distance par coup de bras : allongement et efficacité plutôt que moulinage.`,
       },
       {
         h2: "Les termes de la séance type",
-        content: `**"à bloc"** → effort maximal, donne tout
+        content: `**"à bloc"** → effort maximal
 
-**"à l'aise"** → allure confortable, tu ne forces pas
+**"à l'aise" / "facile"** → confortable, tu ne forces pas
 
-**"progressif"** → tu accélères tout au long de la longueur ou de la série
+**"progressif"** → tu accélères sur la longueur ou la série
 
-**"régulier"** → toutes les répétitions au même tempo, pas de départ rapide / arrivée lente
+**"régulier"** → mêmes temps sur toutes les reps
 
-**"à fond de la 3e"** → lâche tout sur la 3e répétition (ex : quand les séries sont en 3 blocs)
+**"souple" / "relâché"** → très facile, récup active
 
-**"fouet des chevilles"** → battement de jambes efficace : souple, rapide, partant de la hanche, pas du genou
+**"à fond de la 3e"** → max sur la 3e rep (souvent dans un bloc en 3)
 
-**"coude haut"** → lors de la traction, garder le coude plus haut que la main pour une meilleure prise d'eau
+**"fouet des chevilles"** → battement souple depuis la hanche, pas du genou
 
-**"rotation des épaules"** → le corps tourne légèrement à chaque bras. La rotation permet une meilleure amplitude et moins de fatigue.
+**"coude haut"** → coude au-dessus de la main pendant la traction
 
-**"torpille gainée"** → corps parfaitement aligné, abdos contractés, pas de déhanchement`,
+**"rotation des épaules"** → le corps tourne à chaque bras (roulis)
+
+**"torpille gainée"** → aligné, abdos contractés, pas de déhanchement`,
       },
     ],
     cta: {

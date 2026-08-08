@@ -3,9 +3,23 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { ACCESS_STATUS, getAccessState } from "./lib/access.js";
-import { trackEvent } from "./lib/analytics.js";
+import {
+  track,
+  trackEvent,
+  identify,
+  reset as resetAnalytics,
+  trackAppOpened,
+  personPropertiesFromProfile,
+  sessionAnalyticsProps,
+} from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey } from "./lib/swim-plan-bridge.js";
+import {
+  decideAdaptAction,
+  normalizeFeedbackRating,
+  missedSessionPolicy,
+} from "./lib/sports-engine/index.js";
+import { createSportsPersistence } from "./lib/sports-persistence/index.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -20,6 +34,9 @@ import {
   projectedPaceAtWeek,
 } from "./lib/swim-pace.js";
 import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
+
+/** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
+const sportsPersistence = createSportsPersistence(supabase);
 
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
@@ -1253,6 +1270,7 @@ const SESSION_FEEDBACK_TAGS = [
   "éducatifs top",
   "trop intensif",
   "j'ai adoré",
+  "douleur / gêne",
 ];
 
 /** Scale les distances dans une ligne de détail (N×Xm, pyramides, Xm) sans double-comptage. */
@@ -1306,33 +1324,72 @@ const phaseListForAdjust = (profile, plan) => {
  * - Legacy / échec regen : scale distance+duration+details
  * Ne touche jamais une semaine déjà commencée (completed/skipped/feedback).
  */
-const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { sessionNudge = false } = {}) => {
+const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { sessionNudge = false, finished = true, skipReason = null, isKeySession = false, weekFeedbacks = null, sessionIntent = null, qualitySession = false, phase = null, taperStage = null } = {}) => {
+  const legacy = normalizeFeedbackRating(rating);
+  const adapt = decideAdaptAction({
+    rating,
+    finished,
+    skipReason,
+    previousSignals: plan._adaptSignals || [],
+    isKeySession,
+    weekFeedbacks,
+    sessionIntent,
+    qualitySession,
+    phase: phase || plan.weeks?.[weekIndex]?.phase || null,
+    taperStage: taperStage || plan._taperStage || null,
+    level: profile?.level || null,
+  });
+  const signals = [...(plan._adaptSignals || []), legacy].slice(-5);
+
   if (plan?.isSessionLoop) {
-    const step = sessionNudge
-      ? (rating === "easy" ? VOLUME_ADJ_SESSION_EASY : rating === "hard" ? VOLUME_ADJ_SESSION_HARD : 1)
-      : (rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1);
+    const step = adapt.observeOnly && !sessionNudge
+      ? 1
+      : (adapt.volumeMul !== 1 ? adapt.volumeMul : (legacy === "easy" ? VOLUME_ADJ_SESSION_EASY : legacy === "hard" ? VOLUME_ADJ_SESSION_HARD : 1));
     const prevAdj = plan.volumeAdj ?? 1;
     const nextAdj = step === 1 ? prevAdj : clampVolumeAdj(prevAdj * step);
-    return { ...plan, volumeAdj: nextAdj };
+    return { ...plan, volumeAdj: nextAdj, _adaptSignals: signals, _lastAdapt: adapt.action };
   }
-  const step = sessionNudge
-    ? (rating === "easy" ? VOLUME_ADJ_SESSION_EASY : rating === "hard" ? VOLUME_ADJ_SESSION_HARD : 1)
-    : (rating === "easy" ? VOLUME_ADJ_EASY : rating === "hard" ? VOLUME_ADJ_HARD : 1);
+
   const prevAdj = plan.volumeAdj ?? 1;
-  const nextAdj = step === 1 ? prevAdj : clampVolumeAdj(prevAdj * step);
-  const applyFactor = prevAdj > 0 ? nextAdj / prevAdj : 1;
+  // Prefer engine mul when not observe-only; session nudge still applies micro-step if observing
+  const effectiveAdj = adapt.observeOnly
+    ? (sessionNudge
+        ? clampVolumeAdj(prevAdj * (legacy === "easy" ? VOLUME_ADJ_SESSION_EASY : legacy === "hard" ? VOLUME_ADJ_SESSION_HARD : 1))
+        : prevAdj)
+    : clampVolumeAdj(prevAdj * adapt.volumeMul);
+  const applyFactor = prevAdj > 0 ? effectiveAdj / prevAdj : 1;
 
   const weeksWithFeedback = plan.weeks.map((w, i) =>
-    (i === weekIndex && !sessionNudge ? { ...w, feedback: rating } : w),
+    (i === weekIndex && !sessionNudge ? { ...w, feedback: legacy } : w),
   );
 
   let nextWeeks = weeksWithFeedback;
 
-  if (applyFactor !== 1 && profile && shouldUseCoachGenerator(profile.goal)) {
+  const engineProfile = profile
+    ? {
+        ...profile,
+        volumeAdj: effectiveAdj,
+        taste: plan.taste || profile.taste,
+        _engineHistory: {
+          hardStreak: signals.filter((s) => s === "hard").length >= 2 ? 2 : (legacy === "hard" ? 1 : 0),
+          easyStreak: legacy === "easy" ? 1 : 0,
+          unfinishedRecent: finished ? 0 : 1,
+          completedSessions: (plan.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0),
+          weeklyAdaptation: adapt.weeklyAdaptation || plan._weeklyAdaptation || null,
+          trend: adapt.trend || plan._adaptTrend || null,
+          painProtection: adapt.safety === "pain" || !!plan._engineHistory?.painProtection,
+          capacityDimensions: plan._capacityDimensions || plan._engineHistory?.capacityDimensions || null,
+          postRaceRecovery: !!plan._engineHistory?.postRaceRecovery,
+          planStartDate: plan.planStartDate || plan._engineHistory?.planStartDate || null,
+        },
+      }
+    : null;
+
+  if (applyFactor !== 1 && engineProfile && shouldUseCoachGenerator(engineProfile.goal)) {
     try {
-      const phaseList = phaseListForAdjust(profile, plan);
+      const phaseList = phaseListForAdjust(engineProfile, plan);
       const fresh = buildCoachPlanWeeks(
-        { ...profile, volumeAdj: nextAdj, taste: plan.taste || profile.taste },
+        engineProfile,
         phaseList,
         premium,
         TIPS,
@@ -1355,7 +1412,21 @@ const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { s
     });
   }
 
-  return { ...plan, volumeAdj: nextAdj, weeks: nextWeeks };
+  return {
+    ...plan,
+    volumeAdj: effectiveAdj,
+    weeks: nextWeeks,
+    _adaptSignals: signals,
+    _lastAdapt: adapt.action,
+    _weeklyAdaptation: adapt.weeklyAdaptation || null,
+    _adaptTrend: adapt.trend || null,
+    _adaptExplain: adapt.devExplain || null,
+    _capacityDimensions: adapt.weeklyAdaptation
+      ? plan._capacityDimensions || null
+      : plan._capacityDimensions || null,
+    // Étape K compat : persister la vue history sur le blob (reload sans tables K)
+    _engineHistory: engineProfile?._engineHistory || plan._engineHistory || null,
+  };
 };
 
 // ── SHARE CARD (Canvas) ────────────────────────────────────────────────────
@@ -2792,10 +2863,18 @@ const StravaSection = ({
   );
 };
 
-const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange }) => {
+const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange }) => {
   const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
   const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
+  const [editingEquipment, setEditingEquipment] = useState(false);
+  const [draftEquipment, setDraftEquipment] = useState(() =>
+    Array.isArray(profile?.equipment) ? [...profile.equipment] : []
+  );
+
+  useEffect(() => {
+    setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+  }, [profile?.equipment]);
 
   // Avatar + firstName — Supabase user_metadata en priorité, localStorage en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => {
@@ -3155,6 +3234,98 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               </div>
             ))}
           </div>
+
+          {onEquipmentChange && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${G.greyLight}` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: G.ink }}>Matériel</div>
+                {!editingEquipment ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+                      setEditingEquipment(true);
+                    }}
+                    style={{ background: "none", border: "none", color: G.blue, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4 }}
+                  >
+                    Modifier
+                  </button>
+                ) : null}
+              </div>
+              {!editingEquipment ? (
+                <div style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45 }}>
+                  {Array.isArray(profile?.equipment) && profile.equipment.length > 0
+                    ? profile.equipment.map((id) => EQUIPMENT_OPTS.find((o) => o.id === id)?.label || id).join(" · ")
+                    : "Aucun"}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                    {EQUIPMENT_OPTS.map((o) => {
+                      const active = draftEquipment.includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => setDraftEquipment((prev) => (
+                            active ? prev.filter((x) => x !== o.id) : [...prev, o.id]
+                          ))}
+                          style={{
+                            padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                            border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                            background: active ? G.blueLight : G.surface,
+                            color: active ? G.blue : G.ink,
+                          }}
+                        >
+                          {active ? "✓ " : ""}{o.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setDraftEquipment([])}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`,
+                        background: G.surface, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
+                      }}
+                    >
+                      Aucun
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingEquipment(false);
+                        setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+                      }}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`,
+                        background: G.surface, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
+                      }}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onEquipmentChange([...draftEquipment]);
+                        setEditingEquipment(false);
+                        setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées." });
+                        setTimeout(() => setMsg(null), 3500);
+                      }}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, border: "none",
+                        background: G.blue, fontSize: 12, fontWeight: 700, color: G.white, cursor: "pointer",
+                      }}
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom: 24 }}>
@@ -3896,6 +4067,11 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
   const [mode, setMode] = useState(initialMode);
   useEffect(() => { setMode(initialMode); }, [initialMode]);
   useEffect(() => { captureReferralFromUrl(); }, []);
+  useEffect(() => {
+    if (mode === "register") {
+      track("signup_started", { source: "auth_screen" }, { onceKey: "signup_started:auth_screen" });
+    }
+  }, [mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -3928,6 +4104,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         });
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error("Un compte existe déjà avec cet email.");
+        track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || email}` });
         setSuccess(referralCode
           ? "Compte créé ! Parrainage enregistré — vérifie ton email, puis connecte-toi."
           : "Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.");
@@ -4607,6 +4784,131 @@ const StepInjury = ({ injuryStatus, injuryNote, onChangeStatus, onChangeNote, on
   );
 };
 
+const EQUIPMENT_OPTS = [
+  { id: "palmes", label: "Palmes" },
+  { id: "tuba", label: "Tuba frontal" },
+  { id: "pull", label: "Pull-buoy" },
+  { id: "planche", label: "Planche" },
+  { id: "plaquettes", label: "Plaquettes" },
+  { id: "elastique", label: "Élastique" },
+];
+
+/** Presets Découverte — wording simple, IDs normalisés derrière. */
+const DECOUVERTE_EQUIPMENT_PRESETS = [
+  { id: "none", label: "Aucun", equipment: [] },
+  { id: "palmes", label: "Palmes", equipment: ["palmes"] },
+  { id: "tuba", label: "Tuba", equipment: ["tuba"] },
+  { id: "palmes_tuba", label: "Palmes + tuba", equipment: ["palmes", "tuba"] },
+  { id: "planche", label: "Planche", equipment: ["planche"] },
+];
+
+function isDecouverteLevel(level) {
+  const l = String(level || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  return l.includes("decouv") || l === "beginner" || l === "debutant";
+}
+
+function discoveryPresetIdFromEquipment(equipment) {
+  if (!Array.isArray(equipment)) return null;
+  const sorted = [...equipment].sort().join(",");
+  const hit = DECOUVERTE_EQUIPMENT_PRESETS.find((p) => [...p.equipment].sort().join(",") === sorted);
+  return hit?.id ?? null;
+}
+
+/** Matériel dispo — filtre les exos du moteur V1 (disponibilité ≠ obligation). */
+const StepEquipment = ({ equipment, onChange, onNext, onBack, level = "" }) => {
+  const decouverte = isDecouverteLevel(level);
+  const selected = Array.isArray(equipment) ? equipment : [];
+  const answered = Array.isArray(equipment); // null = pas encore répondu
+  const presetId = discoveryPresetIdFromEquipment(selected);
+
+  const toggle = (id) => {
+    if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
+    else onChange([...selected, id]);
+  };
+
+  const chooseNone = () => onChange([]);
+
+  const handleNext = () => {
+    // Continuer sans choix = aucun matériel (plus de null = inventaire inconnu)
+    if (!Array.isArray(equipment)) onChange([]);
+    onNext();
+  };
+
+  return (
+    <div className="fade-up">
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+        {decouverte ? "Quel matériel as-tu ?" : "Quel matériel as-tu à disposition ?"}
+      </h2>
+      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
+        {decouverte
+          ? "On adaptera tes exercices à ce que tu as. Ce n’est pas obligatoire à chaque séance."
+          : "Sélection multiple. On ne propose que des exercices compatibles — sans t’imposer tout ton matos à chaque séance."}
+      </p>
+
+      {decouverte ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+          {DECOUVERTE_EQUIPMENT_PRESETS.map((o) => {
+            const active = answered && presetId === o.id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => onChange([...o.equipment])}
+                style={{
+                  padding: "14px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
+                  border: `2px solid ${active ? G.blue : G.greyLight}`,
+                  background: active ? G.blueLight : G.surface,
+                  fontWeight: 700, fontSize: 15, color: G.ink,
+                }}
+              >
+                {active ? "● " : "○ "}{o.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+            {EQUIPMENT_OPTS.map((o) => {
+              const active = selected.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => toggle(o.id)}
+                  style={{
+                    padding: "14px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
+                    border: `2px solid ${active ? G.blue : G.greyLight}`,
+                    background: active ? G.blueLight : G.surface,
+                    fontWeight: 700, fontSize: 15, color: G.ink,
+                  }}
+                >
+                  {active ? "✓ " : ""}{o.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={chooseNone}
+            style={{
+              width: "100%", marginBottom: 12, padding: "12px 18px", borderRadius: 14, cursor: "pointer",
+              border: `2px solid ${answered && selected.length === 0 ? G.blue : G.greyLight}`,
+              background: answered && selected.length === 0 ? G.blueLight : G.surface,
+              fontWeight: 700, fontSize: 14, color: G.ink,
+            }}
+          >
+            {answered && selected.length === 0 ? "✓ " : ""}Aucun
+          </button>
+        </>
+      )}
+
+      <Btn onClick={handleNext}>Continuer</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    </div>
+  );
+};
+
 /** Nages préférées — style (crawl / 4 nages) + nage favorite */
 const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStroke, onNext, onBack, isLast = false }) => {
   const canNext = !!swimStyle && !!preferredStroke;
@@ -4762,8 +5064,9 @@ const SMILEY_OPTS = [
 
 const SESSION_SMILEY_OPTS = [
   { id: "easy", Face: FaceGood,  label: "Trop facile", color: "#00C48C", bg: "#E6FFF6" },
-  { id: "ok",   Face: FaceMid,   label: "Juste bien",  color: "#FF9F0A", bg: "#FFF8EE" },
-  { id: "hard", Face: FaceTired, label: "Trop dur",    color: "#FF3B30", bg: "#FFF0EF" },
+  { id: "ok",   Face: FaceMid,   label: "Bien",        color: "#FF9F0A", bg: "#FFF8EE" },
+  { id: "hard", Face: FaceTired, label: "Difficile",   color: "#FF9F0A", bg: "#FFF8EE" },
+  { id: "too_hard", Face: FaceTired, label: "Trop difficile", color: "#FF3B30", bg: "#FFF0EF" },
 ];
 
 const ConfirmSheet = ({
@@ -5061,8 +5364,8 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 39; // v39 = distances blocs toujours ×25 (plus de 320m)
-// true = 1 passe de régénération forcée par session (remettre false après la vague)
+const PLAN_VERSION = 42; // v42 = matériel questionnaire + moteur V1 + QG + persist K
+// Remettre false au prochain bump (demande Arthur 2026-08-08 : overwrite tous les plans)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
@@ -5865,7 +6168,11 @@ const SessionBlock = ({ detail, index, workIndex, accent, children = null }) => 
 };
 
 // ── SESSION CARD ──────────────────────────────────────────────────────────
-const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback, defaultExpanded = false, isPremium = false, onUpgrade, hideCheckbox = false }) => {
+const SessionCard = ({
+  session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback,
+  defaultExpanded = false, isPremium = false, onUpgrade, hideCheckbox = false,
+  analyticsCtx = null,
+}) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
@@ -5874,6 +6181,8 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [copied, setCopied] = useState(false);
+  const viewedRef = useRef(false);
+  const startedRef = useRef(false);
   const intensity = parseIntensity(session.intensity);
   const details = expandCompoundDetailLines(session.details || []);
   const detailGroups = groupSessionDetails(details);
@@ -5882,6 +6191,42 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
     if (g.type === "work") return n + g.lines.length;
     return n;
   }, 0);
+
+  const sessionOnceBase = analyticsCtx
+    ? `${analyticsCtx.planId || "plan"}:${weekIndex}:${sessionIndex}`
+    : null;
+
+  const emitSessionViewed = () => {
+    if (!analyticsCtx || viewedRef.current) return;
+    viewedRef.current = true;
+    track("session_viewed", sessionAnalyticsProps(analyticsCtx.profile, session, {
+      planWeek: analyticsCtx.planWeek,
+      sessionIndex,
+      phase: analyticsCtx.phase || session?.phase,
+    }), { onceKey: `session_viewed:${sessionOnceBase}` });
+  };
+
+  const emitSessionStarted = () => {
+    if (!analyticsCtx || startedRef.current) return;
+    startedRef.current = true;
+    const props = sessionAnalyticsProps(analyticsCtx.profile, session, {
+      planWeek: analyticsCtx.planWeek,
+      sessionIndex,
+      phase: analyticsCtx.phase || session?.phase,
+    });
+    track("session_started", {
+      level: props.level,
+      objective: props.objective,
+      planWeek: props.planWeek,
+      sessionIndex: props.sessionIndex,
+      volume: props.volume,
+    }, { onceKey: `session_started:${sessionOnceBase}` });
+  };
+
+  useEffect(() => {
+    if (defaultExpanded) emitSessionViewed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -5900,6 +6245,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
       onComplete(weekIndex, sessionIndex, "reset");
       setShowMenu(false);
     } else {
+      emitSessionStarted();
       setShowMenu(v => !v);
     }
   };
@@ -5910,6 +6256,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
       onUpgrade?.("session_locked");
       return;
     }
+    emitSessionStarted();
     const text = formatSessionPlainText(session);
     try {
       await navigator.clipboard.writeText(text);
@@ -6146,7 +6493,13 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
             <>
           <button
             type="button"
-            onClick={() => setExpanded(v => !v)}
+            onClick={() => {
+              setExpanded((v) => {
+                const next = !v;
+                if (next) emitSessionViewed();
+                return next;
+              });
+            }}
             style={{
               width: "100%", padding: "14px 16px", minHeight: 48,
               background: expanded ? "#fafbfc" : "transparent",
@@ -6310,7 +6663,7 @@ const SessionCard = ({ session, weekIndex, sessionIndex, onComplete, onShare, on
 };
 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
-const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade }) => {
+const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade, analyticsCtx = null }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
@@ -6422,6 +6775,11 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
               isPremium={isPremium}
               onUpgrade={onUpgrade}
               defaultExpanded={isCurrentWeek && i === week.sessions.findIndex(x => !isSessionResolved(x))}
+              analyticsCtx={analyticsCtx ? {
+                ...analyticsCtx,
+                planWeek: week?.number ?? weekIndex + 1,
+                phase: week?.phase || s?.phase,
+              } : null}
             />
           ))}
         </div>
@@ -6566,6 +6924,7 @@ const COACH_MESSAGES = {
   base: [
     "Ce mois est fondamental : on construit ta base aérobie. Travaille à basse intensité, respire, prends tes marques. La vitesse viendra plus tard.",
     "La base, c'est le moteur. Chaque séance d'endurance que tu fais aujourd'hui, tu l'encaisseras comme un avantage dans 2 mois. Sois patient.",
+    "La simplicité est la sophistication suprême. — Léonard de Vinci",
   ],
   development: [
     "On monte en charge. Les séances au seuil vont piquer — c'est normal. Reste dans les zones, ne cherche pas à tout donner d'un coup.",
@@ -6900,6 +7259,12 @@ const ProgressionLoopView = ({
             isPremium={isPremium}
             onUpgrade={onUpgrade}
             hideCheckbox
+            analyticsCtx={{
+              planId: activePlanId,
+              profile,
+              planWeek: 1,
+              phase: session?.phase,
+            }}
           />
         </div>
 
@@ -6907,7 +7272,21 @@ const ProgressionLoopView = ({
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <Btn
               variant="blue"
-              onClick={() => (isPremium ? onComplete("done") : onUpgrade?.())}
+              onClick={() => {
+                if (!isPremium) {
+                  onUpgrade?.();
+                  return;
+                }
+                const props = sessionAnalyticsProps(profile, session, { planWeek: 1, sessionIndex: 0 });
+                track("session_started", {
+                  level: props.level,
+                  objective: props.objective,
+                  planWeek: 1,
+                  sessionIndex: 0,
+                  volume: props.volume,
+                }, { onceKey: `session_started:${activePlanId || "loop"}:0:0` });
+                onComplete("done");
+              }}
               style={{ width: "100%" }}
             >
               {isPremium ? "Terminer la séance" : "Activer l’essai pour nager"}
@@ -7322,7 +7701,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
 
         {plan.weeks.map((week, i) => (
           <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} />
+            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} analyticsCtx={{ planId: activePlanId, profile }} />
           </div>
         ))}
 
@@ -10183,6 +10562,8 @@ const BLANK_PROFILE = {
   injuryNote: "",
   swimStyle: null, // "crawl" | "4_nages"
   preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
+  /** null = inventaire inconnu ; [] = aucun matos ; sinon ids sports-engine */
+  equipment: null,
 };
 
 export default function App() {
@@ -10302,6 +10683,13 @@ export default function App() {
       context: softContext || "generic",
       access_status: accessState.status,
     });
+    track("paywall_viewed", {
+      context: softContext || "generic",
+      access_status: accessState.status,
+      level: personPropertiesFromProfile(activeProfile).level,
+      objective: personPropertiesFromProfile(activeProfile).objective,
+      premium: !!isPremium,
+    }, { onceKey: `paywall_viewed:${softContext || "generic"}:${activePlanId || "none"}` });
     setUpgradeSoftContext(softContext);
     setShowUpgrade(true);
   };
@@ -10345,7 +10733,11 @@ export default function App() {
   };
 
   const handleAuthSuccess = (u) => {
-    trackEvent(location.pathname === "/inscription" ? "signup_completed" : "login_completed", {}, { essential: true });
+    const isSignup = location.pathname === "/inscription";
+    trackEvent(isSignup ? "signup_completed" : "login_completed", {}, { essential: true });
+    if (isSignup) {
+      track("signup_completed", {}, { onceKey: `signup_completed:${u?.id || "anon"}` });
+    }
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
@@ -10545,6 +10937,15 @@ export default function App() {
                   trackEvent("trial_started", {
                     trial_ends_at: syncedAccess.trialEndsAt,
                   }, { essential: true });
+                  track("trial_started", {
+                    trial_ends_at: syncedAccess.trialEndsAt,
+                    premium: true,
+                  }, { onceKey: `trial_started:${synced.id}` });
+                }
+                if (syncedAccess.status === ACCESS_STATUS.ACTIVE) {
+                  track("subscription_started", {
+                    premium: true,
+                  }, { onceKey: `subscription_started:${synced.id}` });
                 }
                 if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
               }
@@ -10576,6 +10977,7 @@ export default function App() {
         setAuthLoading(false);
       } else {
         plansHydratedRef.current = false;
+        resetAnalytics();
         setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setTasteProfile(blankTaste()); setAuthLoading(false);
       }
     });
@@ -10593,6 +10995,35 @@ export default function App() {
     }, 8000);
     return () => clearTimeout(t);
   }, [authLoading]);
+
+  // Analytics V1 — app_opened (1× / session navigateur)
+  useEffect(() => {
+    trackAppOpened({ premium: !!isPremium });
+  }, []);
+
+  // Analytics V1 — identify + person props (non sensibles)
+  useEffect(() => {
+    if (!user?.id) return;
+    identify(user.id, personPropertiesFromProfile(activeProfile, { premium: !!isPremium }));
+  }, [user?.id, isPremium, activeProfile?.level, activeProfile?.goal, activeProfile?.sessionsPerWeek, activeProfile?.pool]);
+
+  // Analytics V1 — onboarding_started
+  useEffect(() => {
+    if (screen !== "onboarding" || step !== 1) return;
+    track("onboarding_started", personPropertiesFromProfile(profile), {
+      onceKey: `onboarding_started:${user?.id || "anon"}`,
+    });
+  }, [screen, step, user?.id]);
+
+  // Analytics V1 — plan_viewed
+  useEffect(() => {
+    if (screen !== "app" || !plan || !activePlanId) return;
+    if (activeTab !== "plan" && activeTab !== "home") return;
+    track("plan_viewed", {
+      ...personPropertiesFromProfile(activeProfile, { premium: !!isPremium }),
+      totalWeeks: plan.totalRealWeeks ?? plan.weeks?.length ?? null,
+    }, { onceKey: `plan_viewed:${activePlanId}` });
+  }, [screen, activeTab, activePlanId, plan?.weeks?.length]);
 
   // Banque séances Supabase (lecture publique) — avant / pendant generatePlan
   useEffect(() => {
@@ -10716,19 +11147,45 @@ export default function App() {
 
     if (chosenPlans?.length) {
       const enforced = enforceAll(chosenPlans);
-      cachePlans(enforced, chosenActive, chosenUpdatedIso);
-      // Re-pousse vers Supabase si le cache local avait des plans absents du remote
+      // Étape K : reconstruire _engineHistory depuis les faits Supabase (si migration appliquée)
+      let withFacts = enforced;
+      try {
+        const { ok, facts } = await sportsPersistence.loadSportsFacts(userId, chosenActive);
+        if (ok && facts) {
+          withFacts = enforced.map((e) => ({
+            ...e,
+            profile: sportsPersistence.attachEngineHistoryToProfile(e.profile, e.plan, facts),
+            plan: {
+              ...e.plan,
+              _engineHistory: sportsPersistence.attachEngineHistoryToProfile(e.profile, e.plan, facts)._engineHistory,
+              volumeAdj: e.plan?.volumeAdj ?? 1,
+            },
+          }));
+        } else {
+          // Compat blob : s'assurer que profile porte volumeAdj + history plan
+          withFacts = enforced.map((e) => ({
+            ...e,
+            profile: sportsPersistence.attachEngineHistoryToProfile(e.profile, e.plan, null),
+          }));
+        }
+      } catch {
+        withFacts = enforced.map((e) => ({
+          ...e,
+          profile: sportsPersistence.attachEngineHistoryToProfile(e.profile, e.plan, null),
+        }));
+      }
+      cachePlans(withFacts, chosenActive, chosenUpdatedIso);
       const remoteIds = new Set((remotePlans || []).map((e) => e.id));
-      const localHadExtra = enforced.some((e) => !remoteIds.has(e.id));
+      const localHadExtra = withFacts.some((e) => !remoteIds.has(e.id));
       if (localHadExtra || !remotePlans?.length) {
-        persistAccountPlans(userId, enforced, chosenActive, deletedPlanIdsRef.current).then(({ plans: synced, active }) => {
-          if (synced?.length && (synced.length !== enforced.length || active !== chosenActive)) {
+        persistAccountPlans(userId, withFacts, chosenActive, deletedPlanIdsRef.current).then(({ plans: synced, active }) => {
+          if (synced?.length && (synced.length !== withFacts.length || active !== chosenActive)) {
             setPlans(synced);
             setActivePlanId(active);
           }
         }).catch(() => {});
       }
-      if (finalize(enforced, chosenActive)) return;
+      if (finalize(withFacts, chosenActive)) return;
     }
 
     // 3. Ancien localStorage mono-plan (migration)
@@ -10917,15 +11374,21 @@ export default function App() {
       const originalStartDate = p.startDate ?? entry.startDate ?? null;
       const premium = !!(entry.plan?.isPremium || isPremium);
       const taste = p.taste || tasteProfile;
+      // Matériel : null legacy → [] (aucun) pour que le composeur n'autorise plus tout silencieusement
+      const equipment = Array.isArray(entry.profile?.equipment)
+        ? entry.profile.equipment.filter((e) =>
+            ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
+          )
+        : [];
+      const profileForGen = { ...entry.profile, taste, equipment };
       const generated = await generatePlan(
-        { ...entry.profile, taste },
+        profileForGen,
         premium,
         originalStartDate || Date.now(),
         { skipDelay: true },
       );
-      const forceOverwrite =
-        FORCE_PLAN_REGEN &&
-        (generated.isSessionLoop || isProgressionGoal(entry.profile?.goal) || p.isProgression || p.isSessionLoop);
+      // FORCE_PLAN_REGEN = overwrite total (progression perdue), comme v29/v31.
+      const forceOverwrite = !!FORCE_PLAN_REGEN;
       const weeks = forceOverwrite
         ? generated.weeks
         : mergePreservingProgress(p.weeks ?? [], generated.weeks);
@@ -10940,7 +11403,7 @@ export default function App() {
       if (generated.isSessionLoop && p.isSessionLoop) {
         const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
         const { week } = buildProgressionLoopSession(
-          { ...entry.profile, sessionsPerWeek: 1, taste, volumeAdj: p.volumeAdj },
+          { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj },
           cursor,
           premium,
         );
@@ -10963,6 +11426,7 @@ export default function App() {
       return {
         id: entry.id,
         updated,
+        profilePatch: { equipment },
       };
     })).then(results => {
       if (cancelled) {
@@ -10971,8 +11435,25 @@ export default function App() {
       }
       setPlans(prev => prev.map(e => {
         const r = results.find(x => x.id === e.id);
-        return r ? { ...e, plan: r.updated, startDate: r.updated.startDate ?? e.startDate } : e;
+        if (!r) return e;
+        return {
+          ...e,
+          profile: { ...e.profile, ...r.profilePatch },
+          plan: r.updated,
+          startDate: r.updated.startDate ?? e.startDate,
+        };
       }));
+      // Persiste le matériel normalisé pour les comptes existants
+      if (user?.id) {
+        results.forEach((r) => {
+          const entry = needsUpdate.find((e) => e.id === r.id);
+          if (!entry) return;
+          sportsPersistence.upsertSportProfile(user.id, {
+            ...entry.profile,
+            ...r.profilePatch,
+          }).then(() => {});
+        });
+      }
     }).catch(() => {
       if (forceAll) forceRegenDoneRef.current = false;
     });
@@ -11037,6 +11518,7 @@ export default function App() {
     if (!user) {
       stashPendingOnboarding({ profile, addingPlan, tasteProfile });
       trackEvent("signup_started", { source: "plan_generation_gate" }, { essential: true });
+      track("signup_started", { source: "plan_generation_gate" }, { onceKey: "signup_started:plan_generation_gate" });
       openAuth("register");
       return;
     }
@@ -11110,6 +11592,17 @@ export default function App() {
       if (genProfile.level === "découverte" || genProfile.level === "beginner") {
         genProfile = { ...genProfile, pace100: null };
       }
+      // Matériel : après questionnaire, toujours un tableau ( [] = aucun ). null = legacy uniquement.
+      if (!Array.isArray(genProfile.equipment)) {
+        genProfile = { ...genProfile, equipment: [] };
+      } else {
+        genProfile = {
+          ...genProfile,
+          equipment: genProfile.equipment.filter((e) =>
+            ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
+          ),
+        };
+      }
       const p  = await generatePlan(genProfile, true);
       trackEvent("plan_generated", {
         goal: genProfile.goal,
@@ -11122,6 +11615,19 @@ export default function App() {
         preview: openPaywallAfter,
       }, { essential: true });
       const id = `plan_${Date.now()}`;
+      track("onboarding_completed", personPropertiesFromProfile(genProfile), {
+        onceKey: `onboarding_completed:${user?.id || "anon"}:${genProfile.goal || "goal"}`,
+      });
+      track("plan_created", {
+        ...personPropertiesFromProfile(genProfile),
+        frequency: genProfile.sessionsPerWeek ?? null,
+        duration: genProfile.sessionDuration ?? genProfile.duration ?? null,
+        totalWeeks: p?.totalRealWeeks ?? p?.weeks?.length ?? null,
+        equipmentCount: Array.isArray(genProfile.equipment) ? genProfile.equipment.length : 0,
+        hasEquipment: Array.isArray(genProfile.equipment) && genProfile.equipment.length > 0,
+      }, {
+        onceKey: `plan_created:${id}`,
+      });
       let entryProfile = { ...genProfile };
       delete entryProfile.taste; // goûts = compte (plan.taste + user_taste_profile), pas le profil onboarding
       if (entryProfile.pace100) {
@@ -11159,6 +11665,12 @@ export default function App() {
             user.id, nextPlans, id, deletedPlanIdsRef.current
           );
           if (error && import.meta.env.DEV) console.warn("[plans] create persist failed", error.message);
+          // Étape K — faits sportifs (profil + séances planifiées + race target)
+          sportsPersistence.upsertSportProfile(user.id, entryProfile).then(() => {});
+          sportsPersistence.upsertPlannedSessionsFromPlan(user.id, id, entry.plan).then(() => {});
+          if (entryProfile.raceTarget?.distance) {
+            sportsPersistence.upsertRaceTarget(user.id, entryProfile.raceTarget).then(() => {});
+          }
           if (synced?.length) {
             deletedPlanIdsRef.current = new Set();
             if (synced.length !== nextPlans.length || active !== id) {
@@ -11283,6 +11795,52 @@ export default function App() {
       return;
     }
 
+    const activeForAnalytics = plans.find((e) => e.id === activePlanId);
+    const sessForAnalytics = activeForAnalytics?.plan?.isSessionLoop
+      ? activeForAnalytics?.plan?.weeks?.[0]?.sessions?.[0]
+      : activeForAnalytics?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+    const weekForAnalytics = activeForAnalytics?.plan?.isSessionLoop
+      ? activeForAnalytics?.plan?.weeks?.[0]
+      : activeForAnalytics?.plan?.weeks?.[weekIndex];
+    const analyticsBase = sessionAnalyticsProps(activeForAnalytics?.profile, sessForAnalytics, {
+      planWeek: weekForAnalytics?.number ?? weekIndex + 1,
+      sessionIndex: activeForAnalytics?.plan?.isSessionLoop ? 0 : sessionIndex,
+      phase: weekForAnalytics?.phase || sessForAnalytics?.phase,
+    });
+    const sessOnce = `${activePlanId || "plan"}:${weekIndex}:${sessionIndex}`;
+
+    if (resolvedStatus === "done") {
+      // Funnel: started avant completed si l'utilisateur valide sans copier
+      track("session_started", {
+        level: analyticsBase.level,
+        objective: analyticsBase.objective,
+        planWeek: analyticsBase.planWeek,
+        sessionIndex: analyticsBase.sessionIndex,
+        volume: analyticsBase.volume,
+      }, { onceKey: `session_started:${sessOnce}` });
+      track("session_completed", {
+        level: analyticsBase.level,
+        objective: analyticsBase.objective,
+        planWeek: analyticsBase.planWeek,
+        sessionIndex: analyticsBase.sessionIndex,
+        plannedVolume: analyticsBase.volume,
+        actualDistance: analyticsBase.volume,
+        duration: sessForAnalytics?.duration ?? null,
+        equipmentUsedCount: Array.isArray(sessForAnalytics?.equipmentUsed)
+          ? sessForAnalytics.equipmentUsed.length
+          : (Array.isArray(sessForAnalytics?.equipmentRequired) ? sessForAnalytics.equipmentRequired.length : 0),
+      }, { onceKey: `session_completed:${sessOnce}` });
+    } else if (resolvedStatus === "missed" || resolvedStatus === "not_done") {
+      track("session_missed", {
+        level: analyticsBase.level,
+        objective: analyticsBase.objective,
+        planWeek: analyticsBase.planWeek,
+        sessionIndex: analyticsBase.sessionIndex,
+        volume: analyticsBase.volume,
+        reason: resolvedStatus,
+      }, { onceKey: `session_missed:${sessOnce}:${resolvedStatus}` });
+    }
+
     if (resolvedStatus === "done" && user) {
       try {
         const dayKey = `myswym_session_evt_${new Date().toISOString().slice(0, 10)}`;
@@ -11376,6 +11934,27 @@ export default function App() {
         }),
       };
       const updatedWeek = newPlan.weeks[weekIndex];
+      // Séances manquées : politique moteur V1 (drop / reschedule / recompute)
+      if (resolvedStatus === "missed" || resolvedStatus === "not_done") {
+        const sess = entry.plan.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+        const missedInWeek = (updatedWeek.sessions || []).filter((s) => s.skipped).length;
+        const totalMissed = (newPlan.weeks || []).reduce(
+          (n, w) => n + (w.sessions || []).filter((s) => s.skipped).length,
+          0,
+        );
+        newPlan._missedPolicy = missedSessionPolicy({
+          isKeySession: !!sess?.isKeySession,
+          missedInWeek,
+          totalMissed,
+        });
+        if (newPlan._missedPolicy === "recompute" && isPremium) {
+          newPlan._engineHistory = {
+            ...(newPlan._engineHistory || {}),
+            unfinishedRecent: Math.min(3, totalMissed),
+            hardStreak: 0,
+          };
+        }
+      }
       // Semaine complète hors "done" → bilan hebdo tout de suite.
       // Pour "done", on attend la fermeture du sheet séance.
       if (
@@ -11437,10 +12016,12 @@ export default function App() {
     const { weekIndex, sessionIndex, promptWeekAfter, loopMode, archived } = sessionFeedbackTarget;
     const prevSession = archived || plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
     const isFirstFeedback = !prevSession?.feedback;
-    const shouldNudge = isPremium && isFirstFeedback && (rating === "easy" || rating === "hard");
+    const legacyRating = normalizeFeedbackRating(rating);
+    const hasPainTag = Array.isArray(tags) && tags.some((t) => /douleur|gêne|gene/i.test(t));
+    const shouldNudge = isPremium && isFirstFeedback && (legacyRating === "easy" || legacyRating === "hard" || rating === "too_hard" || hasPainTag);
 
     const nextTaste = applySessionFeedbackToTaste(tasteProfile, {
-      rating,
+      rating: normalizeFeedbackRating(rating),
       tags,
       comment,
       sessionType: prevSession?.type ?? null,
@@ -11453,6 +12034,16 @@ export default function App() {
       comment: comment || null,
       at: new Date().toISOString(),
     };
+
+    track("feedback_submitted", {
+      difficulty: rating,
+      completed: true,
+      level: personPropertiesFromProfile(activeProfile).level,
+      objective: personPropertiesFromProfile(activeProfile).objective,
+      planWeek: (archived || plan?.weeks?.[weekIndex])?.number ?? weekIndex + 1,
+      sessionIntent: prevSession?.intent || prevSession?.sessionIntent || prevSession?.type || null,
+      ...(hasPainTag ? { pain: true } : {}),
+    }, { onceKey: `feedback_submitted:${activePlanId || "plan"}:${weekIndex}:${sessionIndex}:${feedback.at}` });
 
     // Boucle progression : feedback sur la séance archivée, puis avance
     if (loopMode) {
@@ -11477,17 +12068,18 @@ export default function App() {
       }));
       setSessionFeedbackTarget(null);
       if (user) {
-        supabase.from("session_feedback").insert({
-          user_id: user.id,
-          plan_id: activePlanId,
-          week_number: 0,
-          session_index: 0,
-          session_type: archivedWithFb?.type ?? null,
-          session_title: archivedWithFb?.title ?? null,
+        sportsPersistence.insertSessionFeedback(user.id, {
+          planId: activePlanId,
+          weekIndex: 0,
+          sessionIndex: 0,
+          sessionType: archivedWithFb?.type ?? null,
+          sessionTitle: archivedWithFb?.title ?? null,
+          difficulty: rating,
           rating,
+          pain: hasPainTag,
+          completed: true,
           tags: feedback.tags,
           comment: feedback.comment,
-          created_at: new Date().toISOString(),
         }).then(() => {});
       }
       if (shouldNudge) showToast("Prochaines séances adaptées à tes goûts.", 4000);
@@ -11500,26 +12092,61 @@ export default function App() {
       Array.isArray(tags) &&
       tags.some((t) => ["trop long", "trop court", "trop intensif", "éducatifs top", "incompréhensible"].includes(t));
 
+    // Pré-calcule l'entrée active (pour persister adaptation K hors setState)
+    let adaptedForPersist = null;
+    if (shouldNudge && plan) {
+      adaptedForPersist = adjustPlan(
+        { ...plan, taste: nextTaste },
+        weekIndex,
+        rating,
+        {
+          ...activeProfile,
+          taste: nextTaste,
+          painFlag: hasPainTag || activeProfile?.injuryStatus === "oui",
+        },
+        isPremium,
+        {
+          sessionNudge: true,
+          finished: true,
+          skipReason: hasPainTag ? "pain" : null,
+          isKeySession: !!prevSession?.isKeySession,
+        },
+      );
+    }
+
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
 
       let base = { ...e.plan, taste: nextTaste };
       if (shouldNudge) {
-        base = adjustPlan(
+        base = adaptedForPersist || adjustPlan(
           { ...e.plan, taste: nextTaste },
           weekIndex,
           rating,
-          { ...e.profile, taste: nextTaste },
+          {
+            ...e.profile,
+            taste: nextTaste,
+            painFlag: hasPainTag || e.profile?.injuryStatus === "oui",
+          },
           isPremium,
-          { sessionNudge: true },
+          {
+            sessionNudge: true,
+            finished: true,
+            skipReason: hasPainTag ? "pain" : null,
+            isKeySession: !!prevSession?.isKeySession,
+          },
         );
         base = { ...base, taste: nextTaste };
       } else if (tasteDriven && shouldUseCoachGenerator(e.profile?.goal) && !e.plan?.isSessionLoop) {
         // Applique goûts sans toucher volumeAdj (rating ok / tags seuls)
         try {
           const phaseList = phaseListForAdjust(e.profile, e.plan);
-          const fresh = buildCoachPlanWeeks(
+          const engineProfile = sportsPersistence.attachEngineHistoryToProfile(
             { ...e.profile, volumeAdj: e.plan.volumeAdj ?? 1, taste: nextTaste },
+            e.plan,
+          );
+          const fresh = buildCoachPlanWeeks(
+            engineProfile,
             phaseList,
             isPremium,
             TIPS,
@@ -11540,6 +12167,13 @@ export default function App() {
 
       return {
         ...e,
+        profile: sportsPersistence.attachEngineHistoryToProfile(e.profile, {
+          ...base,
+          weeks: base.weeks.map((w, wi) => wi !== weekIndex ? w : {
+            ...w,
+            sessions: w.sessions.map((s, si) => si !== sessionIndex ? s : { ...s, feedback }),
+          }),
+        }),
         plan: {
           ...base,
           taste: nextTaste,
@@ -11551,25 +12185,66 @@ export default function App() {
       };
     }));
 
+    if (user && adaptedForPersist?._weeklyAdaptation) {
+      const wa = adaptedForPersist._weeklyAdaptation;
+      track("adaptation_applied", {
+        action: wa.action || adaptedForPersist._lastAdapt || null,
+        primaryLever: wa.primaryLever || null,
+        magnitude: wa.magnitude || null,
+        confidence: wa.confidence || null,
+        level: personPropertiesFromProfile(activeProfile).level,
+        objective: personPropertiesFromProfile(activeProfile).objective,
+        planWeek: plan?.weeks?.[weekIndex]?.number ?? weekIndex + 1,
+      }, {
+        onceKey: `adaptation_applied:${activePlanId || "plan"}:${weekIndex}:${wa.action || "act"}:${adaptedForPersist.volumeAdj}`,
+      });
+      sportsPersistence.insertWeeklyAdaptation(
+        user.id,
+        activePlanId,
+        weekIndex,
+        adaptedForPersist._weeklyAdaptation,
+        adaptedForPersist.volumeAdj,
+      ).then(() => {});
+      if (adaptedForPersist._capacityDimensions) {
+        sportsPersistence.insertCapacitySnapshot(user.id, {
+          planId: activePlanId,
+          dimensions: adaptedForPersist._capacityDimensions,
+          reason: adaptedForPersist._weeklyAdaptation?.action || "adapt",
+          confidence: adaptedForPersist._weeklyAdaptation?.confidence,
+        }).then(() => {});
+      }
+    }
+
     if (user) {
       const week = plan?.weeks?.[weekIndex];
       const session = week?.sessions?.[sessionIndex];
-      supabase.from("session_feedback").insert({
-        user_id: user.id,
-        plan_id: activePlanId,
-        week_number: week?.number ?? weekIndex + 1,
-        session_index: sessionIndex,
-        session_type: session?.type ?? null,
-        session_title: session?.title ?? null,
+      const hasPain = hasPainTag || false;
+      // Étape K — faits bruts (difficulty 4 niveaux + pain) + miroir legacy rating
+      sportsPersistence.insertSessionFeedback(user.id, {
+        planId: activePlanId,
+        weekIndex: week?.number ?? weekIndex + 1,
+        sessionIndex,
+        sessionType: session?.type ?? null,
+        sessionTitle: session?.title ?? null,
+        difficulty: rating,
         rating,
+        pain: hasPain,
+        completed: true,
         tags: Array.isArray(tags) ? tags : [],
         comment: comment || null,
-        created_at: new Date().toISOString(),
+      }).then(() => {});
+      sportsPersistence.markSessionStatus(user.id, {
+        planId: activePlanId,
+        weekIndex,
+        sessionIndex,
+        status: "completed",
       }).then(() => {});
     }
 
-    if (!isPremium && (rating === "easy" || rating === "hard" || tasteDriven)) {
+    if (!isPremium && (legacyRating === "easy" || legacyRating === "hard" || tasteDriven)) {
       showToast("Retour enregistré. Premium affine volume et style des prochaines séances.", 5500);
+    } else if (hasPainTag) {
+      showToast("Retour noté. En cas de douleur inhabituelle, ne force pas — on allège la suite.", 5500);
     } else if (shouldNudge || tasteDriven) {
       showToast("Prochaines séances adaptées à tes goûts.", 4000);
     }
@@ -11586,6 +12261,7 @@ export default function App() {
     if (feedbackWeek === null) return;
     const nextTaste = applyWeekFeedbackToTaste(tasteProfile, { rating, comment });
     persistTaste(nextTaste);
+    let weekAdapted = null;
     setPlans(prev => prev.map(e => {
       if (e.id !== activePlanId) return e;
       const base = isPremium
@@ -11597,6 +12273,7 @@ export default function App() {
             isPremium,
           )
         : { ...e.plan, taste: nextTaste };
+      if (base?._weeklyAdaptation) weekAdapted = base._weeklyAdaptation;
       const withSatisfaction = {
         ...base,
         taste: nextTaste,
@@ -11608,6 +12285,27 @@ export default function App() {
       };
       return { ...e, plan: withSatisfaction };
     }));
+    if (weekAdapted) {
+      track("adaptation_applied", {
+        action: weekAdapted.action || null,
+        primaryLever: weekAdapted.primaryLever || null,
+        magnitude: weekAdapted.magnitude || null,
+        confidence: weekAdapted.confidence || null,
+        level: personPropertiesFromProfile(activeProfile).level,
+        objective: personPropertiesFromProfile(activeProfile).objective,
+        planWeek: plan?.weeks?.[feedbackWeek]?.number ?? feedbackWeek + 1,
+      }, {
+        onceKey: `adaptation_applied:week:${activePlanId || "plan"}:${feedbackWeek}:${weekAdapted.action || "act"}`,
+      });
+    }
+    track("feedback_submitted", {
+      difficulty: rating,
+      completed: true,
+      level: personPropertiesFromProfile(activeProfile).level,
+      objective: personPropertiesFromProfile(activeProfile).objective,
+      planWeek: plan?.weeks?.[feedbackWeek]?.number ?? feedbackWeek + 1,
+      ...(pain ? { pain: true } : {}),
+    }, { onceKey: `feedback_submitted:week:${activePlanId || "plan"}:${feedbackWeek}` });
     if (user) {
       supabase.from("week_feedback").insert({
         user_id: user.id,
@@ -11676,6 +12374,23 @@ export default function App() {
         };
       }));
     }).catch(() => { /* profil déjà sauvé */ });
+  };
+
+  /** Matériel profil — influence les prochaines générations seulement (pas de regen rétroactive). */
+  const handleEquipmentChange = (nextEquipment) => {
+    const equipment = Array.isArray(nextEquipment)
+      ? nextEquipment.filter((e) =>
+          ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
+        )
+      : [];
+    setPlans((prev) => prev.map((e) => {
+      if (e.id !== activePlanId) return e;
+      return { ...e, profile: { ...e.profile, equipment } };
+    }));
+    if (user?.id) {
+      const nextProfile = { ...activeProfile, equipment };
+      sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
   };
 
   const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
@@ -11836,7 +12551,10 @@ export default function App() {
     }
   };
 
-  const handleSignOut = async () => { await supabase.auth.signOut(); };
+  const handleSignOut = async () => {
+    resetAnalytics();
+    await supabase.auth.signOut();
+  };
 
   // Thème propre à chaque compte (user_metadata + localStorage scopé par userId)
   useEffect(() => {
@@ -12004,19 +12722,19 @@ export default function App() {
             )}
             {(() => {
               // Flux :
-              //   progression : 1 → 3 (niveau) → 5 (fréq) → 7 (physique) → 8 (blessure) → 9 (nages) → generate
-              //   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 9 → 6 (date) → generate
-              //   diplome : 1 → 2 → 5 → 7 → 8 → 9 → 6 (date) — pas de niveau
+              //   progression : 1 → 3 → 5 → 7 → 8 → 10 (matériel) → 9 (nages) → generate
+              //   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 10 → 9 → 6 (date) → generate
+              //   diplome : 1 → 2 → 5 → 7 → 8 → 10 → 9 → 6 — pas de niveau
               const isProgression = profile.category === "progression";
               const isDiplome = profile.category === "diplome";
               const noDate = isProgression;
               const disabledLevels = [];
-              const totalSteps = isProgression ? 5 : isDiplome ? 6 : 7;
+              const totalSteps = isProgression ? 6 : isDiplome ? 7 : 8;
               const stepBefore5 = isDiplome ? 2 : 3;
               const progressStep = (() => {
-                if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 9: 5 })[step] || 1;
-                if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 9: 5, 6: 6 })[step] || 1;
-                return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 9: 6, 6: 7 })[step] || 1;
+                if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6 })[step] || 1;
+                if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 6: 7 })[step] || 1;
+                return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 9: 7, 6: 8 })[step] || 1;
               })();
               return (
                 <>
@@ -12092,8 +12810,18 @@ export default function App() {
                         if (v === "aucune") update("injuryNote", "");
                       }}
                       onChangeNote={(v) => update("injuryNote", v)}
-                      onNext={() => setStep(9)}
+                      onNext={() => setStep(10)}
                       onBack={() => setStep(7)}
+                    />
+                  )}
+
+                  {step === 10 && (
+                    <StepEquipment
+                      equipment={profile.equipment}
+                      level={profile.level}
+                      onChange={(v) => update("equipment", v)}
+                      onNext={() => setStep(9)}
+                      onBack={() => setStep(8)}
                     />
                   )}
 
@@ -12104,7 +12832,7 @@ export default function App() {
                       onChangeStyle={(v) => update("swimStyle", v)}
                       onChangeStroke={(v) => update("preferredStroke", v)}
                       onNext={() => (noDate ? handleGenerate() : setStep(6))}
-                      onBack={() => setStep(8)}
+                      onBack={() => setStep(10)}
                       isLast={noDate}
                     />
                   )}
@@ -12164,7 +12892,7 @@ export default function App() {
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} />}
         {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
         <Footer aboveBottomNav />

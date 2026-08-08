@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "./supabase.js";
-import { trackEvent } from "./lib/analytics.js";
+import { track, trackEvent } from "./lib/analytics.js";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
@@ -179,6 +179,7 @@ export default function TarifsPage() {
         /* ignore */
       }
       trackEvent("signup_started", { source: "pricing_page" }, { essential: true });
+      track("signup_started", { source: "pricing_page" }, { onceKey: "signup_started:pricing_page" });
       window.location.href = "/inscription";
       return;
     }

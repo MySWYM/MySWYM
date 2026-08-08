@@ -2,6 +2,8 @@
  * Cache client des templates `session_templates` (Supabase).
  * Fallback JS si table vide / erreur réseau — generatePlan reste synchrone.
  */
+import { scaleSessionLinesToVolume } from "./sports-engine/arthur-scale.js";
+import { ARTHUR_GOLD_TEST_FIXTURES } from "./sports-engine/arthur-gold-fixtures.js";
 
 let cache = [];
 let loadState = "idle"; // idle | loading | ready | error
@@ -13,6 +15,25 @@ export function getSessionTemplatesCache() {
 
 export function sessionTemplatesReady() {
   return loadState === "ready" && cache.length > 0;
+}
+
+/**
+ * Injecte des templates Arthur Gold de test (runtime tests).
+ * Ne contourne pas la sélection : remplit le même cache que Supabase.
+ * @param {object[]} [templates]
+ */
+export function loadArthurGoldTestFixtures(templates = ARTHUR_GOLD_TEST_FIXTURES) {
+  cache = Array.isArray(templates) ? templates.map((t) => ({ ...t })) : [];
+  loadState = cache.length ? "ready" : "idle";
+  loadPromise = null;
+  return cache;
+}
+
+/** Remet le cache à vide (après tests). */
+export function resetSessionTemplatesCache() {
+  cache = [];
+  loadState = "idle";
+  loadPromise = null;
 }
 
 /**
@@ -123,12 +144,80 @@ function expandArthurDetailsForUi(details = []) {
 }
 
 /**
- * Rotation sur la banque Arthur gold pour un objectif.
- * @returns {object|null} séance MySWYM ou null → fallback JS
+ * Rotation / match pattern Arthur gold.
+ * @param {string} objectif — eau_libre | mixte
+ * @param {number} archeIdx
+ * @param {object} [opts] — { volumeTarget, phase, family, equipment, scaleVolume }
+ * @returns {object|null}
  */
-export function pickArthurBankSession(objectif, archeIdx) {
-  const list = getArthurGoldTemplates(objectif);
+export function pickArthurBankSession(objectif, archeIdx, opts = {}) {
+  let list = getArthurGoldTemplates(objectif);
   if (!list.length) return null;
+
+  // Filtre phase si tags présents
+  if (opts.phase && list.some((t) => Array.isArray(t.phases) && t.phases.length)) {
+    const phased = list.filter(
+      (t) => !t.phases?.length || t.phases.includes(opts.phase) || t.phases.includes(mapPhaseAlias(opts.phase)),
+    );
+    if (phased.length) list = phased;
+  }
+
+  // Filtre famille / role
+  if (opts.family) {
+    const fam = list.filter((t) => {
+      const role = String(t.role || "").toLowerCase();
+      const tags = (t.focus_tags || []).join(" ").toLowerCase();
+      if (opts.family === "seuil") return role.includes("seuil") || tags.includes("seuil") || /Z3/i.test(t.intensity || "");
+      if (opts.family === "vitesse") return role.includes("vitesse") || tags.includes("vitesse") || /Z4/i.test(t.intensity || "");
+      if (opts.family === "technique") return role.includes("technique") || tags.includes("technique");
+      if (opts.family === "recuperation") return role.includes("recup") || tags.includes("recup");
+      return true;
+    });
+    if (fam.length) list = fam;
+  }
+
+  // Filtre matériel
+  if (Array.isArray(opts.equipment)) {
+    const fitted = list.filter((t) => templateFitsEquipment(t, opts.equipment));
+    if (fitted.length) list = fitted;
+  }
+
   const idx = ((archeIdx % list.length) + list.length) % list.length;
-  return templateToMySwymSession(list[idx]);
+  const t = list[idx];
+  let session = templateToMySwymSession(t);
+
+  // Scale volume vers cible (periodization parity)
+  if (opts.scaleVolume && opts.volumeTarget > 0 && t.base_distance_m > 0) {
+    session = scaleSessionToVolume(session, t.base_distance_m, opts.volumeTarget);
+  }
+
+  session.engineWhy = `pattern=${t.slug} · famille=${opts.family || t.role || "—"}`;
+  return session;
 }
+
+function mapPhaseAlias(phase) {
+  if (phase === "foncier") return "base";
+  if (phase === "developpement") return "development";
+  if (phase === "specifique") return "peak";
+  if (phase === "affutage") return "taper";
+  return phase;
+}
+
+function templateFitsEquipment(t, equipment) {
+  const details = Array.isArray(t.details) ? t.details : [];
+  const text = details.join(" ");
+  const needs = [];
+  if (/palmes?/i.test(text)) needs.push("palmes");
+  if (/tuba/i.test(text)) needs.push("tuba");
+  if (/pull/i.test(text)) needs.push("pull");
+  if (/plaquette/i.test(text)) needs.push("plaquettes");
+  if (/planche/i.test(text)) needs.push("planche");
+  if (equipment.length === 0) return needs.length === 0;
+  return needs.every((n) => equipment.includes(n));
+}
+
+/** Scale distances dans les lignes (reps ou distance) — pas seulement le total annoncé. */
+function scaleSessionToVolume(session, baseDist, targetDist) {
+  return scaleSessionLinesToVolume(session, baseDist, targetDist);
+}
+

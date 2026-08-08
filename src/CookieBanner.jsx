@@ -22,6 +22,9 @@ export default function CookieBanner() {
     try {
       localStorage.setItem(COOKIE_CONSENT_KEY, choice);
     } catch { /* ignore */ }
+    try {
+      window.dispatchEvent(new CustomEvent("myswym:cookie-consent-changed", { detail: { choice } }));
+    } catch { /* ignore */ }
     setVisible(false);
   };
 
@@ -49,7 +52,8 @@ export default function CookieBanner() {
     >
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#434751" }}>
         Nous utilisons des cookies et un stockage local <strong>nécessaires</strong> au fonctionnement
-        (session, sécurité, préférences). Aucune mesure d’audience tierce n’est active aujourd’hui.{" "}
+        (session, sécurité, préférences). Avec ton accord, nous mesurons aussi l’usage produit via{" "}
+        <strong>PostHog</strong> (événements anonymisés, sans contenu de séance ni notes personnelles).{" "}
         <Link to="/politique-cookies" style={{ color: "#154388", fontWeight: 700, textDecoration: "none" }}>
           En savoir plus
         </Link>
@@ -85,7 +89,7 @@ export default function CookieBanner() {
             fontWeight: 700,
           }}
         >
-          OK
+          Accepter
         </button>
       </div>
     </div>

@@ -1,8 +1,8 @@
 /**
- * Pont MySWYM ↔ générateur Arthur + programmation COSD (Yann).
+ * Pont MySWYM ↔ générateur Arthur + programmation COSD (Yann) + moteur sportif V1.
  * UI app inchangée — on ne fait que le contenu des séances / semaines.
  *
- * Voir docs/plan-methodology.md
+ * Voir docs/plan-methodology.md et docs/sports-engine-v1.md
  */
 import {
   genererSemaineSessions,
@@ -10,8 +10,34 @@ import {
   buildConfirmeArchetypeSession,
   usesConfirmeArchetypeBank,
 } from "./swim-session-generator.js";
-import { tasteToGeneratorHints, biasRolesForTaste } from "./user-taste.js";
+import { tasteToGeneratorHints } from "./user-taste.js";
 import { pickArthurBankSession } from "./session-templates-store.js";
+import {
+  buildSportProfile,
+  prepareWeekContext,
+  enrichWeekRoles,
+  decouverteWeekRoles,
+  regulierWeekRoles,
+  sportifWeekRoles,
+  performanceWeekRoles,
+  displayIntensity,
+  mapGoalToObjectifV1,
+  objectifV1ToProfilObj,
+  buildSessionBrief,
+  composeSession,
+  isComposerEnabledForLevel,
+  logComposerFallback,
+  arthurFitsTaper,
+  buildRaceDaySession,
+  buildRestDaySession,
+  applyPainSafetyToRoles,
+  biasWeekRolesForTaste,
+  sumTrainingDistance,
+  formatEffectiveEngineWhy,
+  validateArthurCandidate,
+  resolveHardConstraints,
+} from "./sports-engine/index.js";
+import { sessionTemplatesReady } from "./session-templates-store.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -113,9 +139,12 @@ function mapNiveau(profile) {
 
 /** Objectif dominant du profil (oriente le pool de contenus, pas chaque séance) */
 function mapObjectifProfil(profile) {
+  // Moteur V1 : mapping canonique
+  const v1 = mapGoalToObjectifV1(profile);
+  if (v1 !== "autre" && v1 !== "diplome") return objectifV1ToProfilObj(v1);
   const { goal, category } = profile;
   if (goal?.startsWith("open_water") || goal?.startsWith("eau_libre")) return "eau_libre";
-  if (goal === "competition_maitre") return "mixte";
+  if (goal === "competition_maitre" || goal === "course_piscine") return "mixte";
   if (category === "triathlon") return "mixte";
   if (goal === "perte_de_poids" || goal === "reprendre") return "mixte";
   return "endurance";
@@ -154,7 +183,7 @@ function sessionTextToDetails(text) {
   return details;
 }
 
-function zoneLabel(details, role, beginnerFriendly = false) {
+function zoneLabel(details, role, beginnerFriendly = false, uiLevel = null) {
   let zone;
   if (role?.zone) {
     if (role.zone === "Z1") zone = "Z1";
@@ -169,14 +198,10 @@ function zoneLabel(details, role, beginnerFriendly = false) {
     else if (/Z2|confortable/i.test(joined)) zone = "Z1-Z2";
     else zone = "Z1";
   }
-  if (!beginnerFriendly) return zone;
-  const cues = {
-    Z1: "Facile — tu peux parler",
-    "Z1-Z2": "Facile → confortable",
-    "Z1-Z3": "Confortable → soutenu",
-    "Z1-Z4": "Jusqu'à rapide",
-  };
-  return cues[zone] || zone;
+  if (uiLevel || beginnerFriendly) {
+    return displayIntensity(zone, uiLevel || (beginnerFriendly ? "decouverte" : "sportif"), beginnerFriendly);
+  }
+  return zone;
 }
 
 /** Fréquence semaine compétition : 1 séance si ≤3×/sem, 2 si >3. */
@@ -239,7 +264,7 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
   });
 }
 
-function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false) {
+function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false, uiLevel = null) {
   const details = sessionTextToDetails(res.text);
   const total = res.total;
   const isTest = role?.objectif === "test";
@@ -248,13 +273,16 @@ function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginn
     title: isTest
       ? `Test progression S${weekNumber}.${sessionIndex + 1}`
       : `${focusLabel} S${weekNumber}.${sessionIndex + 1}`,
-    intensity: zoneLabel(details, role, beginnerFriendly),
+    intensity: zoneLabel(details, role, beginnerFriendly, uiLevel),
     details,
     distance: `${total}m`,
     duration: Math.max(40, Math.min(90, Math.round(total / 35))),
     completed: false,
     skipped: null,
     isTest: isTest || undefined,
+    family: role?.family,
+    isKeySession: role?.isKeySession || undefined,
+    engineWhy: role?.engineWhy,
   };
 }
 
@@ -269,7 +297,7 @@ function weekIndexInPhase(phaseList, wi) {
 }
 
 /**
- * Construit les semaines : format Arthur + rôles polarisés COSD.
+ * Construit les semaines : format Arthur + rôles polarisés COSD + moteur sportif V1.
  * BNSSA/BPJEPS : ne pas appeler.
  */
 export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFreqLimit = 2) {
@@ -279,47 +307,197 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
   );
   const niveauKey = mapNiveau(profile);
   const profilObj = mapObjectifProfil(profile);
-  // Allures @mm:ss = Premium only — référence unique T100 (jamais T400)
+  const sport = buildSportProfile(profile);
   const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
-  const ref400 = ""; // legacy arg générateur — ignoré
-  // Wording simplifié : découverte OU clarté demandée via retours (« incompréhensible »)
+  const ref400 = "";
   const tasteHints = tasteToGeneratorHints(profile.taste);
   const simplifyWording =
-    profile.level === "découverte" || profile.level === "beginner" || tasteHints.forceSimplify;
+    profile.level === "découverte" ||
+    profile.level === "beginner" ||
+    profile.level === "débutant" ||
+    profile.level === "debutant" ||
+    tasteHints.forceSimplify;
   const beginnerFriendly = simplifyWording;
-  // volumeAdj = feedback hebdo cumulé (easy/hard), plafonné dans adjustPlan — [0.70, 1.30]
-  // + léger volumeMul goûts (±8 %) si retours tags trop long / trop court
-  const feedbackAdj = Math.min(1.3, Math.max(0.7, Number(profile.volumeAdj) || 1));
-  const volMult =
-    volumeMultFromProfileLevel(profile.level, profile.category) * feedbackAdj * tasteHints.volumeMul;
   const pool = profile.pool === 25 ? 25 : 50;
 
   let prevWeekDistance = 0;
-  // Banque confirmé (ex-OW_BASE_SESSIONS) : performance/advanced + eau libre / triathlon / progression
   const useConfirmeBank = usesConfirmeArchetypeBank(niveauKey, profilObj);
   const bankOpts = { isPremium: !!isPremium, pace100: profile.pace100 ?? null };
-  // Level UI cohérent avec owVol (performance/advanced → volume plein)
   const bankLevel =
     profile.level === "advanced" || profile.level === "performance"
       ? profile.level
       : "performance";
 
+  // Étape I : history H complète (pas seulement hardStreak)
+  const hist = profile._engineHistory || {};
+  const planStartDate = profile.planStartDate || hist.planStartDate || new Date();
+  const historyBase = {
+    requestedWeeks: phaseList.length,
+    planStartDate,
+    completedSessions: Number(hist.completedSessions) || 0,
+    hardStreak: Number(hist.hardStreak) || 0,
+    unfinishedRecent: Number(hist.unfinishedRecent) || 0,
+    daysSinceLast: hist.daysSinceLast,
+    easyStreak: Number(hist.easyStreak) || 0,
+    finishedRate: hist.finishedRate,
+    maxContinuousDistance: hist.maxContinuousDistance,
+    level: sport.level,
+    weeklyAdaptation: hist.weeklyAdaptation || profile._weeklyAdaptation || null,
+    postRaceRecovery: !!(hist.postRaceRecovery || profile.postRaceRecovery),
+    painProtection: !!(hist.painProtection || sport.hasPainConstraint),
+    capacityDimensions: hist.capacityDimensions || hist.capacityUpdate?.dimensions || null,
+    capacityUpdate: hist.capacityUpdate || null,
+    trend: hist.trend || null,
+    // volumeAdj = legacy compat ; si weeklyAdaptation présent, orchestration ignore le double
+    volumeAdj: Number(profile.volumeAdj) || 1,
+    tasteVolumeMul: tasteHints.volumeMul || 1,
+  };
+
   return phaseList.map((phase, wi) => {
-    const phaseKey = PHASE_MAP[phase.phase] || "foncier";
     const wiInPhase = weekIndexInPhase(phaseList, wi);
     const focusLabel = phase.focus || PHASE_MAP[phase.phase] || "Séance";
-    const typeSemaine = weekTypeForIndex(phase.phase, wi);
     const isCompetition = phase.phase === "competition";
     const weekFreq = isCompetition ? competitionSessionCount(freq) : freq;
-    const roles = biasRolesForTaste(
-      cosdRolesForWeek(phase.phase, wiInPhase, weekFreq, profilObj),
-      tasteHints,
-    );
 
-    // Semaine compétition : séances dédiées (1 ou 2), ultra-courtes — pas la banque / générateur normal
-    if (isCompetition) {
-      const sessions = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly);
-      prevWeekDistance = sessions.reduce((a, s) => a + (parseInt(s.distance, 10) || 0), 0);
+    const weekCtx = prepareWeekContext(profile, phase, wi, weekFreq, prevWeekDistance, historyBase);
+    const effectivePhase = weekCtx.effectivePhase || phase.phase;
+    const typeSemaine = weekCtx.volumePlan.typeSemaine;
+    const phaseKey = PHASE_MAP[effectivePhase] || weekCtx.phaseKey || "foncier";
+
+    // WeekRoles d'abord (règles sportives), taste ensuite (préférence)
+    let roles;
+    if (sport.level === "decouverte") {
+      roles = decouverteWeekRoles(weekFreq);
+    } else if (sport.level === "regulier") {
+      roles = regulierWeekRoles(weekFreq, {
+        objectifV1: sport.objectifV1,
+        strokeFocus: sport.strokeFocus,
+        resumeMode: !!weekCtx.capacity?.resumeMode || sport.objectifV1 === "reprendre",
+        hasPainConstraint: sport.hasPainConstraint || historyBase.painProtection,
+        weekIndex: wi,
+      });
+    } else if (sport.level === "sportif") {
+      roles = sportifWeekRoles(weekFreq, {
+        objectifV1: sport.objectifV1,
+        strokeFocus: sport.strokeFocus,
+        resumeMode: !!weekCtx.capacity?.resumeMode || sport.objectifV1 === "reprendre",
+        hasPainConstraint: sport.hasPainConstraint || historyBase.painProtection,
+        weekIndex: wi,
+        phase: effectivePhase,
+        typeSemaine: weekCtx.volumePlan.typeSemaine,
+        raceTarget: sport.raceTarget || null,
+        recentBest: sport.recentBest || null,
+        splits: sport.raceSplits || null,
+        pace100: sport.pace100 || null,
+        capacity: weekCtx.capacity || sport.capacity || null,
+      });
+    } else if (sport.level === "performance") {
+      roles = performanceWeekRoles(weekFreq, {
+        objectifV1: sport.objectifV1,
+        strokeFocus: sport.strokeFocus,
+        resumeMode: !!weekCtx.capacity?.resumeMode || sport.objectifV1 === "reprendre",
+        hasPainConstraint: sport.hasPainConstraint || historyBase.painProtection,
+        weekIndex: wi,
+        phase: effectivePhase,
+        effectivePhase,
+        asOf: weekCtx.weekStart,
+        weekStart: weekCtx.weekStart,
+        typeSemaine: weekCtx.volumePlan.typeSemaine,
+        raceTarget: sport.raceTarget || null,
+        competitionDate: sport.raceTarget?.competitionDate || profile.competitionDate || null,
+        currentTimeSec: profile.currentRaceTimeSec || null,
+        recentBest: sport.recentBest || null,
+        splits: sport.raceSplits || null,
+        pace100: sport.pace100 || null,
+        capacity: weekCtx.capacity || sport.capacity || null,
+        limitingStroke: profile.limitingStroke || profile.weakStroke || null,
+        primaryQuality: profile.primaryQuality || null,
+        secondaryQuality: profile.secondaryQuality || null,
+        sessionsPerWeek: weekFreq,
+        freq: weekFreq,
+        taperLoad: weekCtx.taperLoad || null,
+      });
+      // Ne PAS re-multiplier taper sur weekTarget (déjà dans effectiveWeekVolume)
+      if (weekCtx.taperLoad && !roles.taperLoad) {
+        Object.defineProperty(roles, "taperLoad", { value: weekCtx.taperLoad, enumerable: false });
+      }
+    } else {
+      roles = enrichWeekRoles(
+        Array.from({ length: weekFreq }, () => ({ zone: "Z2", family: "endurance" })),
+        {
+          phase: effectivePhase,
+          level: sport.level,
+          objectifV1: sport.objectifV1,
+          hasPainConstraint: sport.hasPainConstraint,
+        },
+      );
+    }
+
+    // Taste après WeekRoles (garde-fous)
+    roles = biasWeekRolesForTaste(roles, tasteHints, {
+      taperBlocked: effectivePhase === "taper" || effectivePhase === "race" || !!weekCtx.effectiveTaperStage,
+      painProtection: !!(sport.hasPainConstraint || historyBase.painProtection),
+      preserveQuality: true,
+    });
+
+    // Douleur : intention complète
+    if (sport.hasPainConstraint || historyBase.painProtection || weekCtx.maxZone === "Z2") {
+      if (sport.hasPainConstraint || historyBase.painProtection) {
+        roles = applyPainSafetyToRoles(roles);
+      } else {
+        roles = roles.map((r) => {
+          if (r.zone === "Z3" || r.zone === "Z4") return { ...r, zone: "Z2", family: "endurance", intent: "endurance" };
+          return r;
+        });
+      }
+    }
+
+    const strategy = roles.performanceStrategy || null;
+    const engineWhy = formatEffectiveEngineWhy({
+      objectifV1: sport.objectifV1,
+      effectivePhase,
+      effectiveTaperStage: weekCtx.effectiveTaperStage || weekCtx.taperLoad?.taperStage,
+      effectiveWeekVolume: weekCtx.volumePlan.weekTarget,
+      primaryQuality: strategy?.primaryQuality || roles[0]?.performancePrimary,
+      secondaryQuality: strategy?.secondaryQuality || roles[0]?.performanceSecondary,
+      adaptation: weekCtx.adaptation || historyBase.weeklyAdaptation,
+      capacity: weekCtx.capacity,
+      raceTarget: sport.raceTarget,
+      volumeTrail: weekCtx.volumePlan.trail,
+      lever: weekCtx.volumePlan.lever,
+    });
+    weekCtx.why = engineWhy;
+
+    if (isCompetition && effectivePhase === "race") {
+      // Prefer race-day representation when date-driven race
+      const sessions = Array.from({ length: weekFreq }, (_, si) => {
+        if (si === 0 && sport.level === "performance") {
+          return buildRaceDaySession({
+            raceTarget: sport.raceTarget,
+            strokeFocus: sport.strokeFocus,
+          });
+        }
+        return buildRestDaySession({ taperRestPreferred: true, taperStage: "race_day" });
+      });
+      // Soft fallback for non-perf competition weeks
+      if (sport.level !== "performance") {
+        const comps = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly);
+        prevWeekDistance = sumTrainingDistance(comps);
+        return {
+          number: wi + 1,
+          focus: focusLabel,
+          tip: COMPETITION_TIP,
+          feedback: null,
+          isBilan: phase.isBilan ?? false,
+          isTest: phase.isTest ?? false,
+          sessions: comps,
+          engineWhy,
+          effectivePhase,
+          progressionLever: weekCtx.volumePlan.lever,
+          volumeTrail: weekCtx.volumePlan.trail,
+        };
+      }
+      prevWeekDistance = sumTrainingDistance(sessions);
       return {
         number: wi + 1,
         focus: focusLabel,
@@ -328,21 +506,68 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
         isBilan: phase.isBilan ?? false,
         isTest: phase.isTest ?? false,
         sessions,
+        engineWhy,
+        effectivePhase,
+        effectiveTaperStage: weekCtx.effectiveTaperStage,
+        taperLoad: weekCtx.taperLoad,
+        performanceStrategy: strategy,
+        progressionLever: weekCtx.volumePlan.lever,
+        volumeTrail: weekCtx.volumePlan.trail,
       };
     }
 
-    if (useConfirmeBank) {
-      // Banque Supabase Arthur (gold coaché) si chargée — sinon OW_BASE_SESSIONS JS
+    if (isCompetition && sport.level !== "performance") {
+      const sessions = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly);
+      prevWeekDistance = sumTrainingDistance(sessions);
+      return {
+        number: wi + 1,
+        focus: focusLabel,
+        tip: COMPETITION_TIP,
+        feedback: null,
+        isBilan: phase.isBilan ?? false,
+        isTest: phase.isTest ?? false,
+        sessions,
+        engineWhy,
+        effectivePhase,
+        progressionLever: weekCtx.volumePlan.lever,
+        volumeTrail: weekCtx.volumePlan.trail,
+      };
+    }
+
+    if (useConfirmeBank && sport.level !== "performance") {
+      const sessionTargets = weekCtx.volumePlan.sessionTargets;
       const sessions = Array.from({ length: weekFreq }, (_, si) => {
         const archeIdx = wi * 3 + si;
-        const fromDb = pickArthurBankSession(profilObj, archeIdx);
-        if (fromDb) return fromDb;
+        const role = roles[si] || roles[0];
+        const volumeTarget = sessionTargets[si] || Math.round(weekCtx.volumePlan.weekTarget / weekFreq);
+        const fromDb = pickArthurBankSession(profilObj, archeIdx, {
+          volumeTarget,
+          phase: effectivePhase,
+          family: role?.family,
+          equipment: sport.equipment,
+          scaleVolume: true,
+        });
+        if (fromDb) {
+          return {
+            ...fromDb,
+            family: role?.family,
+            isKeySession: role?.isKeySession,
+            engineWhy: fromDb.engineWhy || engineWhy,
+            trainingDistance:
+              fromDb.trainingDistance ??
+              (parseInt(String(fromDb.distance || "").replace(/\D/g, ""), 10) || 0),
+            intensity:
+              beginnerFriendly || sport.level === "decouverte" || sport.level === "regulier"
+                ? displayIntensity(fromDb.intensity, sport.level, beginnerFriendly)
+                : fromDb.intensity,
+          };
+        }
         return buildConfirmeArchetypeSession(archeIdx, pool, bankLevel, {
           ...bankOpts,
           tasteHints,
         });
       });
-      prevWeekDistance = sessions.reduce((a, s) => a + (parseInt(s.distance, 10) || 0), 0);
+      prevWeekDistance = sumTrainingDistance(sessions);
       return {
         number: wi + 1,
         focus: focusLabel,
@@ -351,7 +576,209 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
         isBilan: phase.isBilan ?? false,
         isTest: phase.isTest ?? false,
         sessions,
+        engineWhy,
+        effectivePhase,
+        progressionLever: weekCtx.volumePlan.lever,
+        volumeTrail: weekCtx.volumePlan.trail,
       };
+    }
+
+    // Legacy fallback : même charge finale (pas de re-stack volumeAdj×taste)
+    const refWeek = { debutant: 3600, intermediaire: 4800, confirme: 6000, triathlete: 6600 }[niveauKey] || 4800;
+    const engineVolMult =
+      weekCtx.volumePlan.weekTarget > 0
+        ? weekCtx.volumePlan.weekTarget / Math.max(1, refWeek)
+        : 0.15;
+
+    if (isComposerEnabledForLevel(sport.level)) {
+      const composedSessions = [];
+      let composerOk = true;
+      let fallbackMeta = null;
+      sport.isPremium = !!isPremium;
+      if (Number(profile.pace100) > 0) sport.pace100 = Number(profile.pace100);
+
+      for (let si = 0; si < weekFreq; si++) {
+        const role = roles[si] || roles[0] || {};
+        const durationTarget =
+          profile.sessionMinutes ||
+          profile.durationMinutes ||
+          (sport.level === "performance" ? 70 : sport.level === "sportif" ? 60 : sport.level === "regulier" ? 45 : 30);
+        const volumeTarget =
+          weekCtx.volumePlan.sessionTargets[si] ||
+          Math.round(weekCtx.volumePlan.weekTarget / weekFreq);
+
+        let session = null;
+
+        if (sport.level === "performance" && (role.isRaceDay || role.sessionIntent === "race")) {
+          session = buildRaceDaySession({
+            raceTarget: roles.performanceStrategy?.raceAnalysis?.target || sport.raceTarget,
+            raceDistance: sport.raceDistance,
+            strokeFocus: sport.strokeFocus,
+          });
+        } else if (
+          sport.level === "performance" &&
+          (role.isRestDay || role.sessionIntent === "repos" || (role.taperRestPreferred && role.optional))
+        ) {
+          session = buildRestDaySession({
+            taperActivation: !!role.taperActivation,
+            taperRestPreferred: !!role.taperRestPreferred,
+            taperStage: role.taperLoad?.taperStage || weekCtx.effectiveTaperStage,
+          });
+        }
+
+        const arthurEligible =
+          !session &&
+          (sport.level === "sportif" || sport.level === "performance") &&
+          sessionTemplatesReady() &&
+          (sport.objectifV1 === "eau_libre" || sport.objectifV1 === "triathlon") &&
+          (role.qualitySession ||
+            role.sessionSpecificity === "goal_specific" ||
+            role.sessionSpecificity === "race_specific" ||
+            role.sessionIntent === "eau_libre" ||
+            role.sessionIntent === "triathlon");
+        if (arthurEligible) {
+          const arthurObj = sport.objectifV1 === "triathlon" ? "mixte" : "eau_libre";
+          const taperLoad = role.taperLoad || weekCtx.taperLoad || roles.taperLoad;
+          const fromDb = pickArthurBankSession(arthurObj, wi * 3 + si, {
+            volumeTarget,
+            phase: roles.performanceStrategy?.phase || effectivePhase,
+            family: role.family,
+            equipment: sport.equipment,
+            scaleVolume: true,
+          });
+          if (
+            fromDb?.details?.length &&
+            (!taperLoad?.taperStage || arthurFitsTaper(fromDb, taperLoad, volumeTarget))
+          ) {
+            const td =
+              fromDb.volumeFromDetails ||
+              parseInt(String(fromDb.distance || "").replace(/\D/g, ""), 10) ||
+              0;
+            const arthurCandidate = {
+              ...fromDb,
+              family: role.family,
+              isKeySession: role.isKeySession,
+              qualitySession: !!role.qualitySession,
+              engineWhy: fromDb.engineWhy || engineWhy,
+              performanceDevExplain: role.performanceDevExplain || null,
+              trainingDistance: td,
+              composedBy: "arthur-bank",
+              composerWhy: {
+                source: "arthur",
+                intent: role.sessionIntent,
+                level: sport.level,
+                scaleRatio: fromDb.scaleRatio,
+                scaleLever: fromDb.scaleLever,
+                volumeFromDetails: fromDb.volumeFromDetails,
+                performancePrimary: role.performancePrimary || null,
+                taperStage: taperLoad?.taperStage || null,
+                seed: `arthur|${fromDb.templateSlug || "t"}|w${wi}|s${si}`,
+              },
+            };
+            // Étape J2 — Arthur passe le même quality gate que le composeur
+            const arthurBrief = {
+              level: sport.level,
+              objectif: sport.objectifV1,
+              volumeTarget,
+              taperLoad,
+              painProtection: !!(sport.hasPainConstraint || historyBase.painProtection),
+              hasPainConstraint: !!sport.hasPainConstraint,
+              maxIntensityZone: weekCtx.maxZone,
+              strokeFocus: sport.strokeFocus,
+              sessionIntent: role.sessionIntent,
+              raceTarget: sport.raceTarget,
+              equipment: sport.equipment,
+            };
+            const hc = resolveHardConstraints(arthurBrief);
+            const gate = validateArthurCandidate(arthurCandidate, { ...arthurBrief, hardConstraints: hc }, hc);
+            if (gate.valid) {
+              session = {
+                ...arthurCandidate,
+                qualityGate: {
+                  source: "arthur",
+                  constraintsChecked: gate.constraintsChecked,
+                },
+              };
+            }
+            // sinon : fallback composeur ci-dessous
+          }
+        }
+
+        if (!session) {
+          const roleWithStrategy = {
+            ...role,
+            performanceStrategy: roles.performanceStrategy || null,
+            taperLoad: role.taperLoad || weekCtx.taperLoad || null,
+          };
+          const brief = buildSessionBrief({
+            sport,
+            weekCtx: {
+              ...weekCtx,
+              _phaseName: effectivePhase,
+              taperLoad: weekCtx.taperLoad,
+              volumeFinalized: true,
+              taperAppliedUpstream: true,
+            },
+            role: roleWithStrategy,
+            weekIndex: wi,
+            sessionIndex: si,
+            durationTarget,
+            seed: `${sport.level}|${sport.objectifV1}|${effectivePhase}|w${wi}|s${si}|${volumeTarget}|${role.sessionIntent || ""}`,
+          });
+          const result = composeSession(brief);
+          if (!result.ok) {
+            composerOk = false;
+            fallbackMeta = logComposerFallback(result.reason, {
+              level: sport.level,
+              weekIndex: wi,
+              sessionIndex: si,
+              seed: brief.seed,
+            });
+            break;
+          }
+          session = {
+            ...result.session,
+            title: result.session.title || `${focusLabel} S${wi + 1}.${si + 1}`,
+            engineWhy: result.session.engineWhy || engineWhy,
+            performanceDevExplain: role.performanceDevExplain || null,
+            trainingDistance:
+              result.session.trainingDistance ??
+              result.session.volumeFromSets ??
+              0,
+          };
+        }
+        composedSessions.push(session);
+      }
+      if (composerOk && composedSessions.length === weekFreq) {
+        prevWeekDistance = sumTrainingDistance(composedSessions);
+        return {
+          number: wi + 1,
+          focus: focusLabel,
+          tip: TIPS?.[phase.tipKey] ?? (weekCtx.horizon.note || null),
+          feedback: null,
+          isBilan: phase.isBilan ?? false,
+          isTest: phase.isTest ?? false,
+          sessions: composedSessions,
+          engineWhy,
+          effectivePhase,
+          effectiveTaperStage: weekCtx.effectiveTaperStage,
+          daysToComp: weekCtx.daysToComp,
+          raceAnalysis: roles.raceAnalysis || null,
+          performanceStrategy: roles.performanceStrategy || null,
+          taperLoad: weekCtx.taperLoad || roles.taperLoad || null,
+          progressionLever: weekCtx.volumePlan.lever,
+          volumeTrail: weekCtx.volumePlan.trail,
+          composedBy: composedSessions.some((s) => s.composedBy === "arthur-bank")
+            ? "session-composer+arthur"
+            : "session-composer",
+        };
+      }
+      if (!fallbackMeta) {
+        fallbackMeta = logComposerFallback("composeur incomplet", {
+          level: sport.level,
+          weekIndex: wi,
+        });
+      }
     }
 
     const weekData = genererSemaineSessions(
@@ -365,20 +792,41 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       typeSemaine,
       prevWeekDistance,
       roles,
-      { volMult, simplifyWording, pool, tasteHints },
+      { volMult: engineVolMult, simplifyWording, pool, tasteHints },
     );
-    prevWeekDistance = weekData.totalDistance;
+    const legacySessions = weekData.sessions.map((s, si) => {
+      const mapped = toMySwymSession(
+        s,
+        { ...roles[si], engineWhy },
+        wi + 1,
+        si,
+        focusLabel,
+        beginnerFriendly,
+        sport.level,
+      );
+      return {
+        ...mapped,
+        trainingDistance: parseInt(String(mapped.distance || "").replace(/\D/g, ""), 10) || 0,
+      };
+    });
+    prevWeekDistance = sumTrainingDistance(legacySessions);
 
     return {
       number: wi + 1,
       focus: focusLabel,
-      tip: TIPS?.[phase.tipKey] ?? null,
+      tip: TIPS?.[phase.tipKey] ?? (weekCtx.horizon.note || null),
       feedback: null,
       isBilan: phase.isBilan ?? false,
       isTest: phase.isTest ?? false,
-      sessions: weekData.sessions.map((s, si) =>
-        toMySwymSession(s, roles[si], wi + 1, si, focusLabel, beginnerFriendly),
-      ),
+      sessions: legacySessions,
+      engineWhy,
+      effectivePhase,
+      effectiveTaperStage: weekCtx.effectiveTaperStage,
+      progressionLever: weekCtx.volumePlan.lever,
+      volumeTrail: weekCtx.volumePlan.trail,
+      ...(isComposerEnabledForLevel(sport.level)
+        ? { composedBy: "legacy-generator", composerFallback: true }
+        : {}),
     };
   });
 }
