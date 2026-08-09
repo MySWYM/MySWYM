@@ -1,8 +1,10 @@
 /**
  * Estimation capacité interne (ne modifie pas le niveau UI).
  * Étape H : mise à jour progressive depuis FeedbackSignal / tendance.
+ * Readiness V1 : signal d'entrée soft (questionnaire) — jamais prioritaire vs feedback/historique.
  */
 import { normalizeUiLevel } from "./types.js";
+import { estimateReadinessModifier, readinessHistoryWeight } from "./readiness.js";
 
 const LEVEL_BASE = {
   decouverte: 0.35,
@@ -87,20 +89,62 @@ export function estimateCapacity(sportProfile, history = {}) {
   score = Math.min(1, Math.max(0.2, score));
   confidence = Math.min(1, Math.max(0.15, confidence));
 
-  const volumeFactor = 0.5 + score * 0.9;
+  // Readiness questionnaire — entrée soft, fade si historique / feedback réel
+  const readinessMod = estimateReadinessModifier(sportProfile.readinessProfile);
+  const hardFeedback = (Number(history.recentHard) || 0) >= 1;
+  const muteReadiness =
+    !readinessMod ||
+    hardFeedback ||
+    !!(history.painProtection || sportProfile.hasPainConstraint);
+  const readinessW = muteReadiness ? 0 : readinessHistoryWeight(history);
+
+  if (readinessMod && readinessW > 0) {
+    score = Math.min(1, Math.max(0.2, score + readinessMod.scoreDelta * readinessW));
+    confidence = Math.min(1, Math.max(0.15, confidence + readinessMod.confidence * readinessW));
+  }
+
+  let volumeFactor = 0.5 + score * 0.9;
+  if (readinessMod && readinessW > 0) {
+    const mul = 1 + (readinessMod.volumeFactor - 1) * readinessW;
+    volumeFactor *= mul;
+  }
+
   const dimensions = {
     ...blankCapacityDimensions(score),
     ...(dims && typeof dims === "object" ? dims : {}),
   };
 
+  if (readinessMod && readinessW > 0) {
+    if (readinessMod.intensitySoftCap != null) {
+      const cap = readinessMod.intensitySoftCap;
+      const it = Number(dimensions.intensityTolerance);
+      if (Number.isFinite(it)) {
+        dimensions.intensityTolerance = it * (1 - readinessW) + Math.min(it, cap) * readinessW;
+      }
+    }
+    if (readinessMod.technicalBias) {
+      dimensions.technicalConfidence = Math.min(
+        1,
+        (Number(dimensions.technicalConfidence) || 0.3) + 0.06 * readinessW,
+      );
+    }
+  }
+
+  const conservative =
+    confidence < 0.4 ||
+    !!(readinessMod && readinessW > 0.45 && readinessMod.conservative);
+
   return {
     score,
     confidence,
     volumeFactor,
-    conservative: confidence < 0.4,
+    conservative,
     resumeMode: Number.isFinite(daysSince) && daysSince >= 21,
     dimensions,
     confidenceBand: confidenceFromSampleCount(completed, completed >= 3),
+    readiness: readinessMod
+      ? { ...readinessMod, weight: readinessW, applied: readinessW > 0 }
+      : null,
   };
 }
 

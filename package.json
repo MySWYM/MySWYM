@@ -21,7 +21,15 @@
     "test:persist": "node src/lib/sports-persistence/sports-persistence.test.js",
     "test:analytics": "node src/lib/analytics.test.js",
     "test:equipment": "node src/lib/sports-engine/equipment-onboarding.test.js",
-    "test:composer:all": "node src/lib/sports-engine/session-composer.test.js && node src/lib/sports-engine/session-composer-regulier.test.js && node src/lib/sports-engine/session-composer-sportif.test.js && node src/lib/sports-engine/race-quality.test.js && node src/lib/sports-engine/performance-strategy.test.js && node src/lib/sports-engine/taper-load.test.js && node src/lib/sports-engine/feedback-loop.test.js && node src/lib/sports-engine/orchestration.test.js && node src/lib/sports-engine/composer-quality-gate.test.js && node src/lib/sports-engine/equipment-onboarding.test.js",
+    "test:readiness": "node src/lib/sports-engine/readiness.test.js",
+    "test:arthur": "ARTHUR_AI_MOCK=1 tsx api/_lib/arthur-ai/arthur-ai.test.ts",
+    "test:arthur:instagram": "ARTHUR_AI_MOCK=1 INSTAGRAM_MOCK=1 tsx api/_lib/arthur-ai/instagram/instagram.test.ts",
+    "test:arthur:growth": "tsx api/_lib/arthur-ai/growth/growth.test.ts",
+    "test:arthur:conversion": "tsx api/_lib/arthur-ai/conversion/conversion.test.ts",
+    "test:arthur:optimize": "tsx api/_lib/arthur-ai/optimization/optimization.test.ts",
+    "test:arthur:production": "tsx api/_lib/arthur-ai/production/production.test.ts",
+    "test:arthur:shadow": "tsx api/_lib/arthur-ai/shadow/shadow.test.ts",
+    "test:composer:all": "node src/lib/sports-engine/session-composer.test.js && node src/lib/sports-engine/session-composer-regulier.test.js && node src/lib/sports-engine/session-composer-sportif.test.js && node src/lib/sports-engine/race-quality.test.js && node src/lib/sports-engine/performance-strategy.test.js && node src/lib/sports-engine/taper-load.test.js && node src/lib/sports-engine/feedback-loop.test.js && node src/lib/sports-engine/orchestration.test.js && node src/lib/sports-engine/composer-quality-gate.test.js && node src/lib/sports-engine/equipment-onboarding.test.js && node src/lib/sports-engine/readiness.test.js",
     "email": "email dev --dir api/_lib/emails",
     "email:test": "node scripts/send-test-email.mjs",
     "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs"
@@ -34,6 +42,7 @@
     "framer-motion": "^12.43.0",
     "i18next": "^26.3.6",
     "lucide-react": "^1.8.0",
+    "openai": "^7.4.0",
     "posthog-js": "^1.414.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -54,6 +63,7 @@
     "globals": "^17.5.0",
     "react-email": "^6.9.1",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.11",
     "typescript": "~5.8.3",
     "vite": "^8.0.9"
   }

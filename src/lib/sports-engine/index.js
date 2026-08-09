@@ -20,6 +20,15 @@ export {
   blankCapacityDimensions,
   confidenceFromSampleCount,
 } from "./capacity.js";
+export {
+  estimateReadinessModifier,
+  normalizeReadinessProfile,
+  readinessHistoryWeight,
+  ACTIVITY_LEVELS,
+  SWIMMING_RECENCIES,
+  FITNESS_LEVELS,
+  RECOVERY_LEVELS,
+} from "./readiness.js";
 export { resolvePlanHorizon, mapPhaseToGenerator, PHASE_TO_GENERATOR } from "./periodization.js";
 export {
   enrichWeekRoles,

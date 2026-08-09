@@ -155,6 +155,8 @@ export function buildSportProfile(profile = {}, opts = {}) {
       (Array.isArray(profile.strokesMastered) && profile.strokesMastered.includes("papillon")),
     strokesMastered: Array.isArray(profile.strokesMastered) ? profile.strokesMastered : null,
     taste: profile.taste || null,
+    /** Disponibilité actuelle (questionnaire) — null = ancien profil / non renseigné */
+    readinessProfile: profile.readinessProfile || null,
     capacity: opts.capacity || null,
     confidence: opts.capacity?.confidence ?? 0.2,
     // Course piscine — cible explicite uniquement (jamais inventée)
