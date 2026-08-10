@@ -72,7 +72,7 @@ import {
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
-  Sun, Moon, Camera, Trash2, Users,
+  Sun, Moon, Camera, Trash2, Users, ExternalLink,
 } from "lucide-react";
 
 // ── FONTS ─────────────────────────────────────────────────────────────────
@@ -3434,6 +3434,20 @@ const SettingsDrawer = ({
             </div>
             <ChevronRight size={18} color={G.greyMid} />
           </button>
+          <a
+            href="/accueil"
+            onClick={onClose}
+            style={{ ...menuRow, textDecoration: "none" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <ExternalLink size={18} color={G.blue} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>Site mySWYM</div>
+                <div style={{ fontSize: 12, color: G.grey }}>Landing, tarifs, blog et présentation</div>
+              </div>
+            </div>
+            <ChevronRight size={18} color={G.greyMid} />
+          </a>
           <div style={{ ...menuRow, cursor: "default" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Bell size={18} color={G.gold} />
@@ -3674,10 +3688,10 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
       boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
       paddingTop: "var(--safe-top)",
     }}>
-      <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
           {onAvatarClick ? (
-            <button type="button" onClick={onAvatarClick} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent" }}>
+            <button type="button" onClick={onAvatarClick} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent", flexShrink: 0 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}`, flexShrink: 0 }}>
                 {avatarUrl
                   ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -3686,28 +3700,9 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
               </div>
             </button>
           ) : null}
-          <BrandLogo variant="wordmark" height={22} />
+          <BrandLogo variant="wordmark" height={16} style={{ maxWidth: "100%" }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <a
-            href="/accueil"
-            style={{
-              textDecoration: "none",
-              border: `1px solid ${G.greyLight}`,
-              color: G.grey,
-              fontSize: 12,
-              fontWeight: 700,
-              borderRadius: 8,
-              padding: "10px 12px",
-              lineHeight: 1,
-              background: G.surface,
-              minHeight: 44,
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
-            Accueil
-          </a>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <div ref={notifRef} style={{ position: "relative" }}>
             <button
               type="button"

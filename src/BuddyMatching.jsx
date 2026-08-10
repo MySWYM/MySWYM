@@ -227,7 +227,7 @@ function BuddyTopBar({ user, onOpenMenu, onTabChange }) {
               </div>
             </button>
           )}
-          <BrandLogo variant="wordmark" height={22} />
+          <BrandLogo variant="wordmark" height={16} style={{ maxWidth: "100%" }} />
         </div>
         <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44 }}>
           <Settings size={20} color={G.grey} />
