@@ -19,9 +19,11 @@ import ArthurFollowupsAdmin from './ArthurFollowupsAdmin.jsx'
 import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
 import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
 import ArthurShadowAdmin from './ArthurShadowAdmin.jsx'
+import VersionGate from './VersionGate.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    <VersionGate>
     <BrowserRouter>
       <Routes>
         {/* App = racine du site */}
@@ -69,5 +71,6 @@ createRoot(document.getElementById('root')).render(
       <CookieBanner />
       <SpeedInsights />
     </BrowserRouter>
+    </VersionGate>
   </StrictMode>,
 )
