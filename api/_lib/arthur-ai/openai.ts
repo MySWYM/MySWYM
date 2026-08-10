@@ -336,8 +336,7 @@ export function mockStructuredFromUserPayload(
       "Premium : essai 7 jours (carte requise), puis 4,99€/mois sans engagement, ou 39,99€/an. Détails : https://myswym.app/tarifs";
     suggested_action = "continue";
   } else if (intent === "other") {
-    message =
-      "Je suis coach natation MySWYM — hors sujet pour moi. Si tu as une question nage ou entraînement, envoie-la.";
+    message = "";
     suggested_action = "no_reply";
   }
 

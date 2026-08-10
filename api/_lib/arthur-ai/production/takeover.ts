@@ -6,20 +6,18 @@ import { arthurLog } from "../logging.js";
 import { trackAiEvent } from "../tracking.js";
 import { fallbackStructured } from "../intent.js";
 import type { ArthurStructuredOutput, AuthContext } from "../types.js";
+import {
+  HUMAN_HANDOFF_CLIENT_MESSAGE,
+  isLegitimateHandoffDm,
+} from "../shadow/reply-policy.js";
 
-const TAKEOVER_KEYWORDS =
-  /\b(humain|humain[e]?|conseiller|coach humain|parler (à|a) quelqu['’]un|agent|opérateur|operateur|stop arthur|arrêt arthur|arret arthur)\b/i;
-
+/** @deprecated préférer isLegitimateHandoffDm — conservé pour imports existants. */
 export function detectsHumanTakeoverRequest(message: string): boolean {
-  return TAKEOVER_KEYWORDS.test(message || "");
+  return isLegitimateHandoffDm(message);
 }
 
 export function takeoverHoldMessage(): ArthurStructuredOutput {
-  const s = fallbackStructured(
-    "Je te passe un humain de l’équipe MySWYM. " +
-      "Arthur se met en pause sur cette conversation — quelqu’un te répondra dès que possible. " +
-      "Si urgence : contact@myswym.app",
-  );
+  const s = fallbackStructured(HUMAN_HANDOFF_CLIENT_MESSAGE);
   s.suggested_action = "handoff_human";
   s.intent = "support";
   s.lead_temperature = "warm";

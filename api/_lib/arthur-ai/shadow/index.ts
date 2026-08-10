@@ -17,5 +17,7 @@ export {
   containsMyswymLink,
   isOffTopicDm,
   isPricingDm,
+  isLegitimateHandoffDm,
+  HUMAN_HANDOFF_CLIENT_MESSAGE,
   MYSWYM_PRICING,
 } from "./reply-policy.js";

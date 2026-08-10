@@ -273,7 +273,14 @@ export async function processArthurMessage(
     }
   }
 
-  const structured = openaiResult.structured;
+  const structuredRaw = openaiResult.structured;
+  // Instagram Shadow : appliquer la policy AVANT tout startHumanTakeover
+  // (évite handoff fantôme sur kebab / hors-sujet).
+  let structured = structuredRaw;
+  if (auth.channel === "instagram") {
+    const { applyShadowReplyPolicy } = await import("./shadow/reply-policy.js");
+    structured = applyShadowReplyPolicy(structuredRaw, message);
+  }
 
   if (structured.suggested_action === "handoff_human") {
     await startHumanTakeover(admin, {
@@ -311,6 +318,7 @@ export async function processArthurMessage(
     promptName,
     offlineReason,
     skipOptimization: !flags.optimization,
+    skipShadowPolicy: auth.channel === "instagram",
   });
 }
 
@@ -331,10 +339,12 @@ async function finishWithStructured(
     promptName: string;
     offlineReason?: OfflineReason;
     skipOptimization?: boolean;
+    /** Déjà appliqué en amont (évite double pass). */
+    skipShadowPolicy?: boolean;
   },
 ): Promise<ProcessArthurMessageResult> {
   let structured = opts.structured;
-  if (auth.channel === "instagram") {
+  if (auth.channel === "instagram" && !opts.skipShadowPolicy) {
     const { applyShadowReplyPolicy } = await import("./shadow/reply-policy.js");
     structured = applyShadowReplyPolicy(structured, input.message);
   }

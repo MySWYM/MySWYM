@@ -414,6 +414,13 @@ export default function ArthurShadowAdmin() {
                           fontFamily: FONT,
                         }}
                       />
+                    ) : p.recommended_action === "ignore" ||
+                      (!(p.final_message || p.proposed_message || "").trim() &&
+                        p.suggested_action === "no_reply") ? (
+                      <div style={{ color: C.muted, fontStyle: "italic" }}>
+                        Aucune réponse (ignore / no_reply) — rien à approuver ni
+                        envoyer.
+                      </div>
                     ) : (
                       <div style={{ whiteSpace: "pre-wrap" }}>
                         {p.final_message || p.proposed_message}
@@ -422,44 +429,52 @@ export default function ArthurShadowAdmin() {
                   </div>
                   {p.status === "pending" ? (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => review(p.id, "approve")}
-                        style={btn(C.ok)}
-                      >
-                        Approve (sans send)
-                      </button>
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => {
-                          setEditId(p.id);
-                          setEditText(p.proposed_message || "");
-                        }}
-                        style={btn(C.primary)}
-                      >
-                        Éditer
-                      </button>
-                      {editId === p.id ? (
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() =>
-                            review(p.id, "edit_approve", { finalMessage: editText })
-                          }
-                          style={btn(C.deep)}
-                        >
-                          Sauver + approve
-                        </button>
-                      ) : null}
+                      {p.recommended_action === "ignore" ||
+                      (!(p.proposed_message || "").trim() &&
+                        p.suggested_action === "no_reply") ? null : (
+                        <>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => review(p.id, "approve")}
+                            style={btn(C.ok)}
+                          >
+                            Approve (sans send)
+                          </button>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => {
+                              setEditId(p.id);
+                              setEditText(p.proposed_message || "");
+                            }}
+                            style={btn(C.primary)}
+                          >
+                            Éditer
+                          </button>
+                          {editId === p.id ? (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() =>
+                                review(p.id, "edit_approve", {
+                                  finalMessage: editText,
+                                })
+                              }
+                              style={btn(C.deep)}
+                            >
+                              Sauver + approve
+                            </button>
+                          ) : null}
+                        </>
+                      )}
                       <button
                         type="button"
                         disabled={loading}
                         onClick={() => review(p.id, "reject", { notes: "rejected_ui" })}
                         style={btn(C.warn)}
                       >
-                        Reject
+                        {p.recommended_action === "ignore" ? "Archiver" : "Reject"}
                       </button>
                     </div>
                   ) : null}

@@ -10,6 +10,8 @@ import {
   applyShadowReplyPolicy,
   buildOffTopicReplyMessage,
   buildPricingReplyMessage,
+  buildHumanHandoffMessage,
+  isLegitimateHandoffDm,
   isOffTopicDm,
   isPricingDm,
 } from "../shadow/reply-policy.js";
@@ -55,6 +57,10 @@ export function buildOfflineResponse(
     message =
       `Arthur est momentanément indisponible sur ce canal. ` +
       `En attendant : ${APP()} — ou écris à contact@myswym.app.`;
+  } else if (isLegitimateHandoffDm(userMessage)) {
+    message = buildHumanHandoffMessage();
+    suggested_action = "handoff_human";
+    lead_temperature = "warm";
   } else if (isPricingDm(userMessage)) {
     message = buildPricingReplyMessage();
     suggested_action = "continue";
@@ -103,11 +109,13 @@ export function buildOfflineResponse(
   }
 
   const structured = fallbackStructured(message.slice(0, 1000));
-  structured.intent = isOffTopicDm(userMessage)
-    ? "other"
-    : isPricingDm(userMessage)
-      ? "subscription"
-      : intent;
+  structured.intent = isLegitimateHandoffDm(userMessage)
+    ? "support"
+    : isOffTopicDm(userMessage)
+      ? "other"
+      : isPricingDm(userMessage)
+        ? "subscription"
+        : intent;
   structured.lead_temperature = lead_temperature;
   structured.suggested_action = suggested_action;
   structured.extracted_data = {
@@ -115,6 +123,15 @@ export function buildOfflineResponse(
     offline: true,
     offline_reason: opts.reason,
   };
+
+  // Ne pas écraser les messages système (rate limit / budget / canal off)
+  if (
+    opts.reason === "rate_limited" ||
+    opts.reason === "cost_budget_hard" ||
+    opts.reason === "channel_disabled"
+  ) {
+    return structured;
+  }
 
   return applyShadowReplyPolicy(structured, userMessage);
 }

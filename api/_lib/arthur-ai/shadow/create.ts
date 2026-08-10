@@ -72,8 +72,15 @@ export async function createShadowProposal(
       intent: input.result.intent,
       lead_temperature: input.result.lead_temperature,
       lead_status: leadStatus,
-      message: input.inboundMessage,
+      message: input.result.message,
     });
+
+    // ignore / no_reply → brouillon vide (rien à approuver ni envoyer)
+    const proposedMessage =
+      recommended_action === "ignore" ||
+      input.result.suggested_action === "no_reply"
+        ? ""
+        : String(input.result.message || "").slice(0, 4000);
 
     const { data: row, error } = await admin
       .from("ai_shadow_proposals")
@@ -84,7 +91,7 @@ export async function createShadowProposal(
         user_id: input.userId || null,
         channel: "instagram",
         inbound_message: String(input.inboundMessage || "").slice(0, 4000),
-        proposed_message: String(input.result.message || "").slice(0, 4000),
+        proposed_message: proposedMessage,
         intent: input.result.intent,
         lead_temperature: input.result.lead_temperature,
         suggested_action: input.result.suggested_action,
@@ -116,6 +123,7 @@ export async function createShadowProposal(
         metadata: {
           mock: input.result.mock === true,
           tools: (input.result.toolCalls || []).map((t) => t.name),
+          empty_draft: proposedMessage.length === 0,
         },
         updated_at: new Date().toISOString(),
       })

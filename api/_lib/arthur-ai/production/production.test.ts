@@ -78,8 +78,12 @@ test("offline rate limited message", () => {
 
 test("detect human takeover keywords", () => {
   assert.equal(detectsHumanTakeoverRequest("Je veux parler à un humain"), true);
+  assert.equal(detectsHumanTakeoverRequest("Je veux un remboursement"), true);
+  assert.equal(detectsHumanTakeoverRequest("Problème de paiement"), true);
   assert.equal(detectsHumanTakeoverRequest("stop arthur"), true);
   assert.equal(detectsHumanTakeoverRequest("plan triathlon"), false);
+  assert.equal(detectsHumanTakeoverRequest("Kebab ?"), false);
+  assert.equal(detectsHumanTakeoverRequest("Quel est le prix de l’app ?"), false);
 });
 
 test("hasOpenAiApiKey boolean", () => {

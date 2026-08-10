@@ -55,19 +55,18 @@ export function classifyRecommendedAction(input: {
   const status = input.lead_status || "";
   const msg = input.message || "";
 
-  if (action === "handoff_human" || /humain|conseiller/i.test(msg)) {
+  // Handoff uniquement si l’action structurée le demande (pas de regex inbound)
+  if (action === "handoff_human") {
     return "handoff_human";
   }
   if (status === "premium") return "ignore";
   if (
     action === "no_reply" ||
-    (intent === "other" &&
-      !/myswym\.app|\/inscription|\/tarifs/i.test(msg) &&
-      temp === "cold")
+    action === "ignore" ||
+    (intent === "other" && temp === "cold" && !String(msg || "").trim())
   ) {
     return "ignore";
   }
-  // suggest_myswym uniquement si l’action le demande — pas auto sur subscription/prix
   if (action === "suggest_myswym") {
     return "suggest_myswym";
   }
