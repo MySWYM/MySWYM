@@ -3,19 +3,19 @@
  * Séparé pour que le GET Meta Verify reste un bundle léger.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createArthurAdminClient } from "../_lib/arthur-ai/supabase.js";
-import { arthurLog } from "../_lib/arthur-ai/logging.js";
-import { handleInstagramWebhookBody } from "../_lib/arthur-ai/instagram/handler.js";
+import { createArthurAdminClient } from "../supabase.js";
+import { arthurLog } from "../logging.js";
+import { handleInstagramWebhookBody } from "./handler.js";
 import {
   rawBodyFromRequest,
   verifyMetaSignature,
   isMetaSignatureSkipEnabled,
-} from "../_lib/arthur-ai/instagram/parse-webhook.js";
+} from "./parse-webhook.js";
 import {
   buildMockWebhookPayload,
   isInstagramMockMode,
-} from "../_lib/arthur-ai/instagram/mock.js";
-import { hasInstagramCredentials } from "../_lib/arthur-ai/instagram/meta-client.js";
+} from "./mock.js";
+import { hasInstagramCredentials } from "./meta-client.js";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
