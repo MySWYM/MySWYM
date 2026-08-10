@@ -23,14 +23,21 @@ export function collapseSetsToDisplayLinesExact(sets = [], format) {
   const label = sets[0]?.label || "crawl";
   const restSec = sets.find((s) => s.restSec > 0)?.restSec || 20;
 
-  // Progressive / descending → série classique lisible (pas de jargon « progressif »)
+  // Progressive / descending → série classique lisible (conserver cue utile, pas le jargon format)
   if (format === "progressive" || format === "descending") {
     const unit = sets[0]?.distancePerRep || (format === "descending" ? 100 : 50);
+    const rawCue = sets.find((s) => s.cue)?.cue || "";
+    const cue = String(rawCue)
+      .replace(/progressif|descendant|du long vers le court|du facile vers le soutenu|facile vers le soutenu|long vers le court/gi, "")
+      .replace(/\s*[—\-]\s*$/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    const cuePart = cue ? ` ${cue} —` : "";
     if (vol % unit === 0) {
       const reps = vol / unit;
-      return [`-${reps} × ${unit}m ${label} — repos ${restSec}s`];
+      return [`-${reps} × ${unit}m ${label} —${cuePart} repos ${restSec}s`];
     }
-    return [`-${vol}m ${label} — repos ${restSec}s`];
+    return [`-${vol}m ${label} —${cuePart} repos ${restSec}s`];
   }
 
   return null;

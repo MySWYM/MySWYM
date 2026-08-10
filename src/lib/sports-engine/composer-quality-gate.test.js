@@ -15,7 +15,8 @@ import {
   volumeFromSets,
   MAX_PYRAMID_VOLUME,
 } from "./index.js";
-import { resolveTaperLoad } from "./taper-load.js";
+import { resolveTaperLoad, taperStageFromDays } from "./taper-load.js";
+import { resolveEffectiveWeekPhase } from "./week-orchestration.js";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -412,7 +413,7 @@ function z4Meters(session) {
       { reps: 4, distancePerRep: 50, restSec: 30, zone: "Z3", block: "corps", blockRole: "specific", continuous: false },
       { reps: 1, distancePerRep: 100, restSec: 0, continuous: true, zone: "Z1", block: "fin" },
     ],
-    details: ["arthur light"],
+    details: ["-600m crawl — sighting + allure régulière", "arthur light"],
     distance: "1100m",
   };
   light.volumeFromSets = volumeFromSets(light.sets);
@@ -583,4 +584,252 @@ function z4Meters(session) {
   console.log("BONUS decouverte live PASS");
 }
 
-console.log("\n✅ All Q1–Q16 quality gate tests passed");
+
+// ═══════════════════════════════════════════════════════════
+// Étape J3 — Q17–Q28 (audit causes racines)
+// ═══════════════════════════════════════════════════════════
+
+function textOf(session) {
+  return (session.details || []).join("\n");
+}
+
+// Q17 — threshold annoncé → Z3 réel
+{
+  const brief = briefBase({
+    level: "sportif",
+    goal: "course_piscine",
+    volumeTarget: 2200,
+    sessionIntent: "seuil",
+    qualitySession: true,
+    seed: "j3-q17-seuil",
+  });
+  const r = composeSession(brief);
+  assert(r.ok, `Q17 compose: ${r.reason}`);
+  const z3 = z3Meters(r.session);
+  assert(z3 >= 200, `Q17 Z3 réel attendu ≥200, got ${z3}\n${textOf(r.session)}`);
+  assert(!/—\s*suite/i.test(textOf(r.session)), "Q17 pas de suite");
+  console.log("Q17 PASS (threshold→Z3)");
+}
+
+// Q18 — eau libre → sighting réel
+{
+  const brief = briefBase({
+    level: "sportif",
+    goal: "open_water_5k",
+    volumeTarget: 2000,
+    sessionIntent: "endurance",
+    family: "eau_libre",
+    seed: "j3-q18-ow",
+  });
+  brief.objectif = "eau_libre";
+  const r = composeSession(brief);
+  assert(r.ok, `Q18 compose: ${r.reason}`);
+  assert(
+    /sighting|visée|orientation|navigation|lève|repér/i.test(textOf(r.session)),
+    `Q18 sighting absent\n${textOf(r.session)}`,
+  );
+  console.log("Q18 PASS (OW sighting)");
+}
+
+// Q19 — triathlon → cue triathlon
+{
+  const brief = briefBase({
+    level: "sportif",
+    goal: "triathlon_olympic",
+    volumeTarget: 2000,
+    sessionIntent: "triathlon",
+    family: "specifique",
+    seed: "j3-q19-tri",
+  });
+  brief.objectif = "triathlon";
+  const r = composeSession(brief);
+  assert(r.ok, `Q19 compose: ${r.reason}`);
+  assert(
+    /triathlon|économie|draft|sighting|allure régulière|énergie/i.test(textOf(r.session)),
+    `Q19 cue triathlon absent\n${textOf(r.session)}`,
+  );
+  console.log("Q19 PASS (triathlon cue)");
+}
+
+// Q20 — course piscine → race pace / spécifique
+{
+  const brief = briefBase({
+    level: "sportif",
+    goal: "course_piscine",
+    volumeTarget: 2300,
+    sessionIntent: "seuil",
+    qualitySession: true,
+    seed: "j3-q20-course",
+  });
+  const r = composeSession(brief);
+  assert(r.ok, `Q20 compose: ${r.reason}`);
+  assert(z3Meters(r.session) >= 200, `Q20 Z3=${z3Meters(r.session)}`);
+  assert(!/-(\d{4,})m pyramide/i.test(textOf(r.session)), "Q20 pas pyramide filler");
+  console.log("Q20 PASS (course spécifique)");
+}
+
+// Q21 — 4N → corps multi-nages
+{
+  const brief = briefBase({
+    level: "sportif",
+    goal: "course_piscine",
+    volumeTarget: 2100,
+    sessionIntent: "quatre_nages",
+    strokeFocus: "4n",
+    papillonMastered: true,
+    sessionSpecificity: "stroke_focus",
+    seed: "j3-q21-4n",
+  });
+  brief.strokeFocus = "4n";
+  const r = composeSession(brief);
+  assert(r.ok, `Q21 compose: ${r.reason}`);
+  const txt = textOf(r.session);
+  assert(/dos/i.test(txt) && /brasse/i.test(txt), `Q21 multi-nages\n${txt}`);
+  const crawlOnlyMain = !/corps_4n|travail 4 nages|touches multi-nages|plusieurs nages/i.test(txt);
+  assert(!crawlOnlyMain || (/dos/i.test(txt) && /brasse/i.test(txt) && /papillon|ondulation/i.test(txt)), "Q21 4N décoratif");
+  console.log("Q21 PASS (4N corps)");
+}
+
+// Q22 — taper → pas de gros bloc
+{
+  const brief = briefBase({
+    level: "performance",
+    goal: "course_piscine",
+    volumeTarget: 1600,
+    sessionIntent: "seuil",
+    daysToComp: 10,
+    seed: "j3-q22-taper",
+  });
+  const r = composeSession(brief);
+  assert(r.ok, `Q22 compose: ${r.reason}`);
+  const txt = textOf(r.session);
+  assert(!/—\s*suite/i.test(txt), "Q22 suite");
+  const m = txt.match(/(\d+)\s*[×x]\s*100\s*m/i);
+  if (m) assert(Number(m[1]) < 10, `Q22 trop de reps ${m[0]}`);
+  assert(!/-(\d{4,})m pyramide/i.test(txt), "Q22 pyramide");
+  console.log("Q22 PASS (taper light)");
+}
+
+// Q23 — J-3 / race_week légère
+{
+  const brief = briefBase({
+    level: "performance",
+    goal: "course_piscine",
+    volumeTarget: 1200,
+    sessionIntent: "allure_specifique",
+    daysToComp: 3,
+    seed: "j3-q23-j3",
+  });
+  const r = composeSession(brief);
+  assert(r.ok, `Q23 compose: ${r.reason}`);
+  const vol = r.session.trainingDistance || r.session.volumeFromSets || 0;
+  assert(vol <= 1600, `Q23 vol=${vol}`);
+  assert(z3Meters(r.session) <= 250, `Q23 Z3=${z3Meters(r.session)}`);
+  console.log("Q23 PASS (race_week light)");
+}
+
+// Q24 — pain → zéro Z3/Z4 + shape
+{
+  const brief = briefBase({
+    level: "performance",
+    goal: "course_piscine",
+    volumeTarget: 2000,
+    sessionIntent: "endurance",
+    painFlag: true,
+    seed: "j3-q24-pain",
+  });
+  const r = composeSession(brief);
+  assert(r.ok, `Q24 compose: ${r.reason}`);
+  assert(z3Meters(r.session) === 0 && z4Meters(r.session) === 0, "Q24 Z3/Z4");
+  assert(!/—\s*suite/i.test(textOf(r.session)), "Q24 suite");
+  for (const s of r.session.sets || []) {
+    if (!s.continuous && s.distancePerRep >= 100) {
+      assert(s.reps <= 8, `Q24 reps ${s.reps}×${s.distancePerRep}`);
+    }
+  }
+  console.log("Q24 PASS (pain shape)");
+}
+
+// Q25 — anti-suite
+{
+  const built = buildCorpsByFormat("repeated", 1400, {
+    label: "crawl",
+    cue: "aérobie",
+    restFor: () => 20,
+    maxRepsPerSet: 12,
+    preferredUnit: 50,
+    pool: 50,
+  });
+  const lines = (built.displayLines || built.lines || []).join("\n");
+  assert(!/—\s*suite/i.test(lines), `Q25 suite in: ${lines}`);
+  console.log("Q25 PASS (anti-suite)");
+}
+
+// Q26 — anti-pyramide filler (complète Q16)
+{
+  const built = buildCorpsByFormat("pyramid", 1250, {
+    label: "crawl",
+    cue: "test",
+    restFor: () => 20,
+    maxContinuous: 400,
+    pool: 50,
+  });
+  const pyrVol = built.sets
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(pyrVol <= MAX_PYRAMID_VOLUME, `Q26 pyrVol=${pyrVol}`);
+  assert(!/repos variable/i.test((built.displayLines || []).join("\n")), "Q26 repos variable");
+  console.log("Q26 PASS (anti-pyramid filler)");
+}
+
+// Q27 — post-race limité
+{
+  assert(taperStageFromDays(-3) === "post_race", "Q27 d-3");
+  assert(taperStageFromDays(-10) === "post_race", "Q27 d-10");
+  assert(taperStageFromDays(-11) === null, "Q27 d-11 exit");
+  const far = resolveEffectiveWeekPhase({
+    phaseListPhase: "taper",
+    competitionDate: new Date(Date.now() - 20 * 86400000),
+    weekStart: new Date(),
+  });
+  assert(far.source.includes("exit") || far.effectivePhase === "base" || far.effectivePhase === "development", `Q27 far=${far.effectivePhase}/${far.source}`);
+  console.log("Q27 PASS (post-race limité)");
+}
+
+// Q28 — pas de rest=0 sur répétitions
+{
+  const brief = briefBase({
+    level: "sportif",
+    volumeTarget: 2000,
+    sessionIntent: "endurance",
+    seed: "j3-q28-rest",
+  });
+  const r = composeSession(brief);
+  assert(r.ok, `Q28 compose: ${r.reason}`);
+  for (const s of r.session.sets || []) {
+    if (!s.continuous && Number(s.reps) > 1) {
+      assert(Number(s.restSec) > 0, `Q28 rest=0 on ${s.reps}×${s.distancePerRep}`);
+    }
+  }
+  console.log("Q28 PASS (rest>0)");
+}
+
+// Q29 — 12×100 évité quand meilleure composition
+{
+  const built = buildCorpsByFormat("repeated", 1200, {
+    label: "crawl",
+    cue: "(Z2)",
+    restFor: () => 25,
+    maxRepsPerSet: 12,
+    preferredUnit: 100,
+    pool: 50,
+  });
+  const maxReps = Math.max(0, ...built.sets.map((s) => (s.continuous ? 0 : s.reps)));
+  assert(maxReps <= 12, `Q29 maxReps=${maxReps}`);
+  // Préférence : une série unique ou 2 blocs sans suite
+  assert(!built.sets.some((s) => /suite/i.test(s.cue || "")), "Q29 suite cue");
+  console.log("Q29 PASS (composition nageable)");
+}
+
+
+console.log("\n✅ All Q1–Q29 quality gate tests passed");

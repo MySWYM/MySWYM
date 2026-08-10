@@ -209,6 +209,26 @@ function equipmentNoteForDecouverte(equipment) {
  * Plafond de nage continue — voir decouverte-intents.js (réexporté).
  * Intention pédagogique — résolue via resolveDecouverteIntent.
  */
+/** J3 : cue objectif injecté dans le corps (pas seulement le titre). */
+function objectiveBodyCue(brief = {}, intent = {}) {
+  if (brief.painProtection || brief.hasPainConstraint || brief._qualityGateForceSafe) return null;
+  const obj = brief.objectif || "";
+  const existing = `${intent.applyCue || ""} ${intent.headline || ""}`;
+  if (obj === "eau_libre") {
+    if (/sighting|visée|orientation|navigation/i.test(existing)) return null;
+    return "sighting + allure régulière";
+  }
+  if (obj === "triathlon") {
+    if (/triathlon|économie|draft|énergie/i.test(existing)) return null;
+    return "économie d\'énergie — allure régulière";
+  }
+  if (obj === "course_piscine") {
+    if (/allure course|seuil|race|spécifique/i.test(existing)) return null;
+    return null; // intensité gérée via Z3 block
+  }
+  return null;
+}
+
 export function pedagogicalIntentDecouverte(brief = {}) {
   return resolveDecouverteIntent(brief);
 }
@@ -272,41 +292,28 @@ export function validateDecouverteHard(sessionLike, opts = {}) {
   return { ok: errors.length === 0, errors };
 }
 
-/** Série répétée exacte (reps × unit ≈ target), plafonnée (jamais 33×50). */
+/** Série répétée exacte — J3 : pas de « suite », préfère unité / 2 blocs. */
 function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exerciseId, maxReps = 12 }) {
   const target = Math.max(unit, roundTo(targetM, unit));
   const rest = Math.max(1, Number(restSec) || 20);
   const cap = Math.max(4, Number(maxReps) || 12);
-  const sets = [];
-  let remaining = target;
-  let part = 0;
-  while (remaining >= unit && part < 6) {
-    let reps = Math.min(cap, Math.max(1, Math.floor(remaining / unit)));
-    if (reps === 1 && remaining >= unit * 2) reps = Math.min(cap, Math.floor(remaining / unit));
-    sets.push({
-      reps,
-      distancePerRep: unit,
-      restSec: rest,
-      label,
-      cue: part === 0 ? cue : `${cue} — suite`,
-      block,
-      exerciseId: part === 0 ? exerciseId : `${exerciseId}_p${part}`,
-      continuous: false,
-    });
-    remaining -= reps * unit;
-    part += 1;
-    if (remaining > 0 && remaining < unit) break;
+  const unitsTry = [unit, 200, 100, 50].filter((u, i, a) => u > 0 && a.indexOf(u) === i);
+  for (const u of unitsTry) {
+    const reps = Math.round(target / u);
+    if (reps >= 2 && reps <= cap) {
+      return [{ reps, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
+    }
   }
-  if (!sets.length) {
+  const u = unit >= 100 ? unit : 100;
+  const totalReps = Math.max(4, Math.round(target / u));
+  const a = Math.min(cap, Math.ceil(totalReps / 2));
+  const b = Math.min(cap, Math.max(0, totalReps - a));
+  const sets = [{ reps: a, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
+  if (b >= 2) {
     sets.push({
-      reps: 2,
-      distancePerRep: unit,
-      restSec: rest,
-      label,
-      cue,
-      block,
-      exerciseId,
-      continuous: false,
+      reps: b, distancePerRep: u, restSec: rest, label,
+      cue: `${cue} — 2ᵉ série, même allure`,
+      block, exerciseId: `${exerciseId}_b`, continuous: false,
     });
   }
   return sets;
@@ -983,7 +990,11 @@ function composeRegulierSession(brief, rng) {
     corpsBuilt = buildCorpsByFormat(setFormat, mainCorpsTarget, {
       label: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
       altLabel,
-      cue: reprisePattern?.corpsCue || intent.applyCue,
+      cue: (() => {
+        const base = reprisePattern?.corpsCue || intent.applyCue;
+        const obj = objectiveBodyCue(brief, intent);
+        return obj ? `${base || "nage"} — ${obj}` : base;
+      })(),
       restFor,
       exerciseId: `corps_${intent.id}`,
       maxContinuous: intent.id === "reprise" ? Math.min(maxCont, 100) : maxCont,
@@ -1314,6 +1325,7 @@ function composeSportifSession(brief, rng) {
   const departLabel = strokeDepartLabel(strokeFocus);
   const techMeta = techLabelsRegulier(reprisePattern?.techPrimary || intent.techPrimary);
 
+  const hcFmt = brief.hardConstraints || hcEarly || {};
   const setFormat = selectSetFormat(
     {
       intentId: intent.id,
@@ -1323,6 +1335,9 @@ function composeSportifSession(brief, rng) {
       allowContinuous: !["vitesse", "vo2", "test"].includes(intent.id),
       forcedFormat: brief.forcedSetFormat || reprisePattern?.setFormat || null,
       level: isPerf ? "performance" : "sportif",
+      taperSafe: !!(hcFmt.forbidComplexFormats || hcFmt.forbidPyramidFiller || hcFmt.taperConstraints),
+      painSafe: !!hcFmt.painProtection,
+      forbidComplexFormats: !!hcFmt.forbidComplexFormats,
     },
     rng,
   );
@@ -1690,11 +1705,14 @@ function composeSportifSession(brief, rng) {
           z3Budget = Math.max(100, roundTo(z3Budget * Math.max(0.35, intensityRetain), 50));
         }
         preferredUnit = z3Budget <= 300 ? 50 : z3Budget <= 600 ? 100 : mainCorpsTarget >= 1600 ? 200 : 100;
+        // J3 : formats filler interdits pour intensité réelle
         corpsFormat = brief._qualityGateShortTouch
           ? "race_pace"
-          : setFormat === "progressive"
+          : ["block", "progressive", "pyramid", "broken", "mixed"].includes(setFormat)
             ? "repeated"
-            : setFormat;
+            : setFormat === "race_pace"
+              ? "race_pace"
+              : "repeated";
         // Coquille aérobie si gros volume restant
         const aeroShell = Math.max(0, mainCorpsTarget - z3Budget);
         if (aeroShell >= 200) {
@@ -1716,7 +1734,11 @@ function composeSportifSession(brief, rng) {
           }
           details.push(...(aeroBuilt.displayLines || aeroBuilt.lines));
         }
-        corpsCue = cueFor("Z3", preferredUnit, intent.applyCue || "allure seuil");
+        const objCue = objectiveBodyCue(brief, intent);
+        const z3Fallback = objCue
+          ? `${intent.applyCue || "allure seuil"} — ${objCue}`
+          : (intent.applyCue || "allure seuil");
+        corpsCue = cueFor("Z3", preferredUnit, z3Fallback);
         const z3Built = buildCorpsByFormat(corpsFormat, z3Budget, {
           label: corpsLabel.includes("/") ? "crawl" : corpsLabel,
           cue: corpsCue,
@@ -1743,9 +1765,12 @@ function composeSportifSession(brief, rng) {
           // pas de touches
         } else {
           const aeroTarget = Math.max(400, mainCorpsTarget - touchVol);
-          const aeroBuilt = buildCorpsByFormat(setFormat, aeroTarget, {
+          const objCueA = objectiveBodyCue(brief, intent);
+          const aeroCueA = objCueA ? `${intent.applyCue || "aérobie"} — ${objCueA}` : intent.applyCue;
+          let aeroFmtA = ["pyramid", "block"].includes(setFormat) ? "repeated" : setFormat;
+          const aeroBuilt = buildCorpsByFormat(aeroFmtA, aeroTarget, {
             label: corpsLabel,
-            cue: cueFor("Z2", 100, intent.applyCue),
+            cue: cueFor("Z2", 100, aeroCueA),
             restFor: (c) => restFor({ ...c, zone: "Z2" }),
             exerciseId: `corps_${intent.id}_aero`,
             maxContinuous: maxContCrawl,
@@ -1778,12 +1803,22 @@ function composeSportifSession(brief, rng) {
       } else {
         // Aérobie / récup / pain : Z1-Z2 only
         const zoneMain = painBlocked || intent.id === "recuperation" ? "Z1" : "Z2";
+        const objCue = objectiveBodyCue(brief, intent);
+        const aeroCueBase = objCue
+          ? `${intent.applyCue || "aérobie"} — ${objCue}`
+          : intent.applyCue;
+        let aeroFmt = setFormat;
+        if (hc.forbidComplexFormats || hc.forbidPyramidFiller || hc.painProtection) {
+          if (["pyramid", "broken", "block", "progressive"].includes(aeroFmt)) aeroFmt = "repeated";
+        } else if (hc.forbidLongProgressive && aeroFmt === "progressive") {
+          aeroFmt = "repeated";
+        }
         const aeroBuilt = buildCorpsByFormat(
-          hc.forbidLongProgressive && setFormat === "progressive" ? "repeated" : setFormat,
+          aeroFmt,
           mainCorpsTarget,
           {
             label: corpsLabel,
-            cue: cueFor(zoneMain, 100, intent.applyCue),
+            cue: cueFor(zoneMain, 100, aeroCueBase),
             restFor: (c) => restFor({ ...c, zone: zoneMain }),
             exerciseId: `corps_${intent.id}`,
             maxContinuous: maxContCrawl,
@@ -1863,6 +1898,25 @@ function composeSportifSession(brief, rng) {
       reason: `volume incohérent: ${consistency.errors.join("; ")}`,
       debug: consistency,
     };
+  }
+
+  // J3 safety-net : cue objectif visible même si collapse a mangé le cue set
+  {
+    const objCue = objectiveBodyCue(brief, intent);
+    const joined = details.join("\n");
+    if (objCue && brief.objectif === "eau_libre" && !/sighting|visée|orientation|navigation|lève|repér/i.test(joined)) {
+      // Annoter la première ligne corps
+      const corpsIdx = details.findIndex((l) => /^-\d/.test(l) && !/Technique|souple —|échauff/i.test(l) && details.indexOf(l) > 0);
+      if (corpsIdx >= 0) {
+        details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+      } else {
+        details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
+      }
+    }
+    if (objCue && brief.objectif === "triathlon" && !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)) {
+      const corpsIdx = details.findIndex((l) => /^-\d/.test(l) && !/Technique|souple/i.test(l));
+      if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+    }
   }
 
   // Polarisation check soft: majority Z1/Z2 on non-quality

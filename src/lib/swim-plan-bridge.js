@@ -468,7 +468,8 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     });
     weekCtx.why = engineWhy;
 
-    if (isCompetition && effectivePhase === "race") {
+    // J3 : aussi si phase effective = race (date-driven), pas seulement label phaseList
+    if ((isCompetition || effectivePhase === "race") && effectivePhase === "race") {
       // Prefer race-day representation when date-driven race
       const sessions = Array.from({ length: weekFreq }, (_, si) => {
         if (si === 0 && sport.level === "performance") {

@@ -142,6 +142,7 @@ export function sportProfileToRow(userId, profile = {}) {
     injury_status: profile.injuryStatus || null,
     injury_note: profile.injuryNote || null,
     pace100: profile.pace100 ?? null,
+    readiness_profile: profile.readinessProfile ?? null,
     extra: {
       eventDate: profile.eventDate || null,
       category: profile.category || null,
@@ -167,6 +168,7 @@ export function rowToSportProfileFields(row) {
     injuryStatus: row.injury_status,
     injuryNote: row.injury_note,
     pace100: row.pace100,
+    readinessProfile: row.readiness_profile ?? null,
     ...(row.extra || {}),
   };
 }

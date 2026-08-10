@@ -41,7 +41,8 @@ export function daysToCompetition(competitionDate, now = new Date()) {
  */
 export function taperStageFromDays(days) {
   if (days == null || !Number.isFinite(days)) return null;
-  if (days < 0) return "post_race";
+  // J3 : post_race limité (~10 j) — pas une traîne de repos jusqu'à la fin du plan
+  if (days < 0) return days >= -10 ? "post_race" : null;
   if (days === 0) return "race_day";
   if (days <= 6) return "race_week";
   if (days <= 13) return "s1";

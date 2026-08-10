@@ -72,9 +72,22 @@ export function resolveEffectiveWeekPhase({
   let effectivePhase = phaseListPhase || "development";
   let source = "phase_list";
 
-  if (postRaceRecovery || taperStage === "post_race") {
+  if (taperStage === "post_race") {
     effectivePhase = "bilan";
     source = "post_race";
+  } else if (postRaceRecovery && (days == null || (days < 0 && days >= -10))) {
+    // Flag history RECOVER : fenêtre courte (ou sans date = 1 cycle adaptation)
+    effectivePhase = "bilan";
+    source = "post_race_flag";
+  } else if (competitionDate && days != null && days < -10) {
+    // J3 : fin de fenêtre post-race — plus de repos 0m en traîne
+    if (phaseListPhase === "taper" || phaseListPhase === "competition" || phaseListPhase === "bilan") {
+      effectivePhase = "base";
+      source = "post_race_exit→base";
+    } else {
+      effectivePhase = phaseListPhase || "development";
+      source = "post_race_exit";
+    }
   } else if (taperStage === "race_day") {
     effectivePhase = "race";
     source = "race_day";

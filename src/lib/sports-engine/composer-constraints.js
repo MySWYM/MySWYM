@@ -83,14 +83,14 @@ export function taperConstraintsFromLoad(taperLoad, ctx = {}) {
   let maxZ4Meters;
   if (stage === "race_week") {
     // Touches courtes autorisées (ex. 4×50) — pas de gros seuil
-    maxZ3Meters = Math.min(200, Math.max(150, Math.round(hardBudget * 0.7)));
+    maxZ3Meters = Math.min(150, Math.max(100, Math.round(hardBudget * 0.5)));
     maxZ4Meters = Math.min(50, Math.round(maxZ3Meters * 0.2));
   } else if (stage === "s1") {
-    maxZ3Meters = Math.min(400, Math.max(200, hardBudget));
-    maxZ4Meters = Math.min(100, Math.round(maxZ3Meters * 0.35));
+    maxZ3Meters = Math.min(250, Math.max(150, Math.round(hardBudget * 0.7)));
+    maxZ4Meters = Math.min(80, Math.round(maxZ3Meters * 0.3));
   } else if (stage === "s2") {
-    maxZ3Meters = Math.min(600, Math.max(250, hardBudget));
-    maxZ4Meters = Math.min(200, Math.round(maxZ3Meters * 0.4));
+    maxZ3Meters = Math.min(450, Math.max(200, hardBudget));
+    maxZ4Meters = Math.min(150, Math.round(maxZ3Meters * 0.35));
   } else {
     maxZ3Meters = Math.min(900, Math.round(maxVolume * ir * 0.45));
     maxZ4Meters = Math.min(400, Math.round(maxZ3Meters * 0.5));
@@ -115,7 +115,7 @@ export function taperConstraintsFromLoad(taperLoad, ctx = {}) {
     taperStage: stage,
     daysToComp: days,
     maxVolume,
-    maxContinuous: stage === "race_week" ? 150 : stage === "s1" ? 250 : stage === "s2" ? 350 : 400,
+    maxContinuous: stage === "race_week" ? 150 : stage === "s1" ? 200 : stage === "s2" ? 300 : 400,
     maxHardMeters: maxZ3Meters + maxZ4Meters,
     maxZ3Meters,
     maxZ4Meters,
@@ -124,8 +124,11 @@ export function taperConstraintsFromLoad(taperLoad, ctx = {}) {
     allowRacePaceTouch,
     maxRacePaceMeters,
     forbidNewStimulus: stage === "race_week" || stage === "s1",
-    forbidLongProgressive: stage === "race_week" || (stage === "s1" && (days == null || days <= 10)),
-    forbidThresholdBlock: stage === "race_week" || (stage === "s1" && ir < 0.55),
+    forbidLongProgressive: stage === "race_week" || stage === "s1" || stage === "s2",
+    forbidThresholdBlock: stage === "race_week" || stage === "s1" || (stage === "s2" && ir < 0.7),
+    forbidPyramidFiller: stage === "race_week" || stage === "s1" || stage === "s2",
+    forbidComplexFormats: stage === "race_week" || stage === "s1",
+    maxRepsPerSet: stage === "race_week" ? 8 : stage === "s1" ? 8 : stage === "s2" ? 10 : null,
     volumeFactor: vf,
     intensityRetention: ir,
     densityFactor: df,
@@ -139,17 +142,17 @@ export function taperConstraintsFromLoad(taperLoad, ctx = {}) {
  */
 export function minFourNageBodyShare(level, specificity = "stroke_focus") {
   if (level === "decouverte") return 0.12;
-  if (level === "regulier") return 0.25;
+  if (level === "regulier") return 0.3;
   if (level === "sportif") {
     if (specificity === "race_specific") return 0.45;
-    if (specificity === "goal_specific") return 0.35;
-    return 0.35;
+    if (specificity === "goal_specific") return 0.4;
+    return 0.4;
   }
   if (level === "performance") {
     if (specificity === "race_specific") return 0.5;
-    return 0.35;
+    return 0.4;
   }
-  return 0.2;
+  return 0.3;
 }
 
 /**
@@ -217,12 +220,18 @@ export function resolveHardConstraints(brief = {}) {
   let allowRacePaceTouch = taperConstraints ? !!taperConstraints.allowRacePaceTouch : true;
   let maxRacePaceMeters = taperConstraints?.maxRacePaceMeters ?? null;
 
+  let maxReps = maxRepsForLevel(level);
+  if (taperConstraints?.maxRepsPerSet) {
+    maxReps = Math.min(maxReps, taperConstraints.maxRepsPerSet);
+  }
   if (painProtection) {
     maxIntensity = "Z2";
     maxZ3Meters = 0;
     maxZ4Meters = 0;
     allowRacePaceTouch = false;
     maxRacePaceMeters = 0;
+    // J3 : pain agit aussi sur la forme (pas de 12×100 monotones)
+    maxReps = Math.min(maxReps, 8);
   } else if (level === "decouverte") {
     maxIntensity = "Z2";
     maxZ3Meters = 0;
@@ -231,12 +240,16 @@ export function resolveHardConstraints(brief = {}) {
     maxZ4Meters = 0;
   }
 
-  const maxVolume =
+  let maxVolume =
     taperConstraints?.maxVolume != null
       ? taperConstraints.maxVolume
       : brief.volumeTarget
         ? Math.round(brief.volumeTarget * 1.12)
         : null;
+  if (painProtection) {
+    const painCap = level === "decouverte" ? 800 : level === "regulier" ? 1400 : level === "sportif" ? 1800 : 2000;
+    maxVolume = maxVolume != null ? Math.min(maxVolume, painCap) : painCap;
+  }
 
   return {
     level,
@@ -244,8 +257,8 @@ export function resolveHardConstraints(brief = {}) {
     maxIntensity,
     forbiddenIntents: painProtection ? [...FORBIDDEN_PAIN_INTENTS] : [],
     maxContinuousDistance: maxContinuous,
-    maxRepsPerSet: maxRepsForLevel(level),
-    maxSamePatternReps: maxRepsForLevel(level),
+    maxRepsPerSet: maxReps,
+    maxSamePatternReps: maxReps,
     maxVolume,
     maxZ3Meters,
     maxZ4Meters,
@@ -258,11 +271,14 @@ export function resolveHardConstraints(brief = {}) {
     isFourN,
     minFourNageBodyShare: fourNShareHint,
     forbidNewStimulus: !!taperConstraints?.forbidNewStimulus,
-    forbidLongProgressive: !!taperConstraints?.forbidLongProgressive,
-    forbidThresholdBlock: !!taperConstraints?.forbidThresholdBlock,
+    forbidLongProgressive: !!taperConstraints?.forbidLongProgressive || painProtection,
+    forbidThresholdBlock: !!taperConstraints?.forbidThresholdBlock || painProtection,
+    forbidPyramidFiller: !!taperConstraints?.forbidPyramidFiller || painProtection,
+    forbidComplexFormats: !!taperConstraints?.forbidComplexFormats || painProtection,
     volumeToleranceHi: 1.12,
-    volumeToleranceLo: 0.55, // sous-volume OK si contraintes
+    volumeToleranceLo: 0.55,
     requirePositiveRestUnlessContinuous: true,
+    requireIntentIntensity: !painProtection && level !== "decouverte",
   };
 }
 

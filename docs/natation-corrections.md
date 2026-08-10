@@ -76,6 +76,7 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-10 | Composeur J3 (qualité) | Causes racines audit 50 séances : intensité réelle = mètres Z3/Z4 si intent seuil/allure ; anti-filler (suite / pyramide volume / block facile+modéré) ; cues objectif (OW/tri/course/4N share ↑) ; taper contenu (S-3→J-3) + post_race borné ≤10j ; pain agit sur shape (reps/volume) ; QG Q16–Q29. Pas de regen silencieuse. | ✅ |
 | 2026-08-08 | Composeur Sportif D | `sportif` actif dans `SESSION_COMPOSER_ENABLED_LEVELS`. Polarisation A/B/C, Z3/Z4 contrôlés, allures T100 Premium only, tests, Arthur scale réel des séries (OW/tri), formats descending/race_pace. Performance non activé. | ✅ |
 | 2026-08-08 | Régulier refinement | setFormat (repeated/progressive/pyramid/block/alternating/continuous/broken/mixed) ; repos variable `restSecFor` ; patterns reprise (sensations→intensité légère) ; equipmentUsage none/optional/meaningful ; sessionSpecificity (4N stroke_focus vs race_specific) ; wording Découverte godille→formulation utilisateur. Sportif/Perf non activés. | ✅ |
 | 2026-08-08 | Objectif reprendre | `mapGoalToObjectifV1` : `goal=reprendre` passait derrière `category=progression` → semaine Régulier avec QUALITÉ. Objectifs explicites (reprendre, OW, triathlon…) avant le fallback progression. | ✅ |
@@ -198,6 +199,10 @@
 19. **Composeur Quality Gate (J2)** : une séance techniquement valide peut être sportivement absurde — toujours passer `validateComposedSession`. Interdit : Découverte continu > `maxContinuous` (y compris départ/fin) ; pain + Z3/Z4 ; race_week 2800m / gros Z3 ; `33×50` ; `NxM` rest=0 hors continuous ; 4N titre sans multi-nages. Sous-volume > séance incohérente. Arthur ne contourne pas le gate.
 20. **Pyramide** : jamais un monolithe ~1750 m (surtout Ironman / triathlon perf) sans paliers ni consignes. Volume pyramide ≤ **1000 m** ; sommet ≤ ~300 m ; afficher chaque palier nageable (pas un titre opaque) ; le surplus du corps = séries lisibles (Nx100…), pas un « fill » appelé pyramide.
 21. **Restitution coach** : ne jamais exposer au nageur les headlines moteur (`→ Aujourd'hui :…`), headers `Technique ·`, sections `Préparation aérobie :`, ni marketing (`on savoure`). Une ligne = distance + nage + intensité + repos. Préférer `8×200` à une pyramide inventée pour remplir le volume.
+22. **Intent = intensité réelle** (J3) : titre/intent seuil / Z3 / allure spécifique / race pace ⇒ mètres Z3 (ou Z4 si VO2) dans le corps. Interdit : « seuil » + blocs `facile`/`modéré` sans Z3.
+23. **Anti-filler** : pas de `— suite` pour contourner `maxRepsPerSet` ; pas de pyramide/block uniquement pour coller le volume ; préférer unités nageables (4–8×50/100/200) ou 2ᵉ série cohérente.
+24. **Objectif dans le corps** : eau libre → sighting/orientation ; triathlon → économie/allure ; course → race pace/seuil ; 4N → part réelle multi-nages (pas tech 4N + crawl seul).
+25. **Post-race borné** : `post_race` seulement si `daysToComp ∈ [-10, 0[` — pas de traîne de semaines à 0 m.
 
 ---
 

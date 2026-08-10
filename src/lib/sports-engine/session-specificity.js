@@ -44,12 +44,13 @@ export function fourNagesCorpsShare(specificity, strokeFocus) {
     case "race_specific":
       return 0.55;
     case "stroke_focus":
-      return 0.2;
+      // J3 : part corps 4N réelle (plus seulement tech + touches)
+      return 0.4;
     case "goal_specific":
-      return 0.35;
+      return 0.45;
     case "general":
     default:
-      return 0.15;
+      return 0.3;
   }
 }
 

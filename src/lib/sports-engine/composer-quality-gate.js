@@ -335,8 +335,108 @@ export function validateComposedSession(session, brief = {}, constraints = null)
 
   // --- phase ---
   constraintsChecked.push("phase");
-  if (c.taperConstraints?.taperStage === "race_week" && vol > 1600) {
+  const taperStage = c.taperConstraints?.taperStage;
+  if (taperStage === "race_week" && vol > 1600) {
     errors.push(`race_week volume trop élevé (${vol}m)`);
+  }
+  if (taperStage === "race_week") {
+    if (z3 > (c.maxZ3Meters ?? 150) + 20) errors.push(`race_week Z3 trop élevé (${z3}m)`);
+    if (/pyramide/i.test(text) && vol > 700) errors.push("race_week: pyramide interdite");
+  }
+  if (taperStage === "s1") {
+    if (/pyramide/i.test(text) && vol > 900) errors.push("taper s1: pyramide filler");
+    for (const line of text.split("\n")) {
+      const m = line.match(/(\d+)\s*[×x]\s*100\s*m/i);
+      if (m && Number(m[1]) >= 10) errors.push("taper s1: série trop longue (≥10×100)");
+    }
+  }
+
+  // --- J3 intensité réelle vs intent ---
+  constraintsChecked.push("intent_intensity");
+  if (c.requireIntentIntensity !== false) {
+    const intent = String(brief.sessionIntent || session.composerWhy?.intent || "");
+    const forceSafe = !!brief._qualityGateForceSafe || !!brief._qualityGateShortTouch;
+    const needsZ3 =
+      /^(seuil|threshold|allure_specifique|race_pace)$/i.test(intent) ||
+      (intent === "course_piscine" && !!brief.qualitySession);
+    const needsZ4 = /^(vitesse|vo2)$/i.test(intent);
+    if (!forceSafe && !c.painProtection) {
+      if (needsZ3 && !c.forbidThresholdBlock) {
+        const minZ3 =
+          intent === "allure_specifique" || intent === "race_pace"
+            ? Math.min(200, Math.max(100, Math.round((Number(brief.volumeTarget) || 1500) * 0.12)))
+            : Math.min(400, Math.max(200, Math.round((Number(brief.volumeTarget) || 1500) * 0.18)));
+        const z3Eff = z3 > 0 ? z3 : countZ3FromText(text);
+        if (z3Eff < minZ3 * 0.5) {
+          errors.push(
+            `intent ${intent}: Z3 réel ${z3Eff}m < minimum ~${minZ3}m (intensité annoncée absente)`,
+          );
+        }
+      }
+      if (needsZ4 && (c.maxZ4Meters == null || c.maxZ4Meters > 0)) {
+        const minZ4 = Math.min(200, Math.max(100, Math.round((Number(brief.volumeTarget) || 1500) * 0.1)));
+        const z4Eff = z4 > 0 ? z4 : countZ4FromText(text);
+        if (z4Eff < minZ4 * 0.5) {
+          errors.push(
+            `intent ${intent}: Z4 réel ${z4Eff}m < minimum ~${minZ4}m (vitesse absente)`,
+          );
+        }
+      }
+    }
+  }
+
+  // --- J3 anti-filler ---
+  constraintsChecked.push("filler");
+  if (/—\s*suite\b/i.test(text)) {
+    errors.push("filler: bloc « suite » artificiel");
+  }
+  if (/repos\s+variable/i.test(text)) {
+    errors.push("filler: repos variable non nageable");
+  }
+  if (c.forbidPyramidFiller && /pyramide/i.test(text)) {
+    errors.push("filler: pyramide interdite (taper/pain)");
+  }
+
+  // --- J3 pain shape ---
+  if (c.painProtection) {
+    for (const s of sets) {
+      if (!s.continuous && Number(s.reps) > (c.maxRepsPerSet || 8) && Number(s.distancePerRep) >= 100) {
+        errors.push(`pain: série trop longue ${s.reps}×${s.distancePerRep}m`);
+      }
+    }
+  }
+
+  // --- J3 spécificité objectif ---
+  const objectif = brief.objectif || "";
+  const intentNow = String(brief.sessionIntent || session.composerWhy?.intent || "");
+  const skipObjCue =
+    c.painProtection ||
+    brief._qualityGateForceSafe ||
+    intentNow === "recuperation" ||
+    intentNow === "repos" ||
+    c.level === "decouverte";
+  if (!skipObjCue && objectif === "eau_libre") {
+    if (!/sighting|visée|orientation|navigation|lève|repér|draft/i.test(text)) {
+      errors.push("objectif eau_libre: cue sighting/orientation absent du corps");
+    }
+  }
+  if (!skipObjCue && objectif === "triathlon" && /triathlon|seuil|aerobie|endurance|allure/i.test(intentNow)) {
+    if (!/triathlon|économie|draft|sighting|allure régulière|allure course|énergie/i.test(text)) {
+      errors.push("objectif triathlon: cue spécifique absent");
+    }
+  }
+  if (
+    !skipObjCue &&
+    objectif === "course_piscine" &&
+    (/seuil|allure_specifique|course_piscine|race|vitesse|vo2/i.test(intentNow) || brief.qualitySession)
+  ) {
+    const hasQuality =
+      z3 >= 100 ||
+      z4 >= 100 ||
+      /allure course|race|seuil|Z3|Z4|spécifique|rapide|vitesse/i.test(text);
+    if (!hasQuality) {
+      errors.push("objectif course_piscine: pas de travail allure/seuil/vitesse réel");
+    }
   }
 
   // --- pyramide : jamais un monolithe 1750 m sans info (Ironman / triathlon perf) ---
@@ -556,10 +656,17 @@ function buildMinimalSafeSession(brief, constraints) {
     used = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
     remain = Math.max(0, maxVol - used - unit);
   }
+  // J3: même en fallback minimal, garder un cue objectif si compatible (pas douleur stricte)
+  const obj = String(brief.objectif || brief.goalFamily || "").toLowerCase();
+  let corpsCue = "très facile — Z1";
+  if (!constraints.painProtection) {
+    if (/eau_libre|open_water/.test(obj)) corpsCue = "très facile — Z1 — sighting + allure régulière";
+    else if (/triathlon/.test(obj)) corpsCue = "très facile — Z1 — économie d'énergie — allure régulière";
+  }
   while (remain >= unit * 2 && sets.filter((s) => s.block === "corps").length < 4) {
     const reps = Math.min(constraints.maxRepsPerSet || 12, Math.floor(remain / unit));
     if (reps < 2) break;
-    pushSeries(reps, unit, "crawl", "très facile — Z1", "corps");
+    pushSeries(reps, unit, "crawl", corpsCue, "corps");
     remain -= reps * unit;
   }
   // fin

@@ -56,9 +56,13 @@ export function candidateSetFormats(ctx = {}) {
     corpsTarget = 800,
     allowContinuous = true,
     level = "regulier",
+    taperSafe = false,
+    painSafe = false,
+    forbidComplexFormats = false,
   } = ctx;
 
-  const pyramidOk = corpsTarget <= MAX_PYRAMID_VOLUME;
+  const complexBlocked = !!(taperSafe || painSafe || forbidComplexFormats);
+  const pyramidOk = corpsTarget <= MAX_PYRAMID_VOLUME && !complexBlocked;
   const withPyramid = (arr, at = -1) => {
     if (!pyramidOk) return arr;
     if (at < 0 || at >= arr.length) return [...arr, "pyramid"];
@@ -71,14 +75,15 @@ export function candidateSetFormats(ctx = {}) {
     if (intentId === "vitesse" || intentId === "vo2") {
       return ["broken", "repeated", "descending"];
     }
-    if (intentId === "seuil" || intentId === "allure_specifique") {
-      return ["repeated", "broken", "block", "race_pace"];
+    if (intentId === "seuil" || intentId === "allure_specifique" || intentId === "race_pace") {
+      // J3 : jamais block/progressive pour intensité annoncée (sinon facile/modéré ≠ Z3)
+      return ["repeated", "race_pace"];
     }
     if (intentId === "test") {
       return ["repeated"];
     }
     if (intentId === "course_piscine") {
-      return ["race_pace", "broken", "repeated", "block"];
+      return ["race_pace", "repeated"];
     }
     // Ironman / triathlon / OW : pyramide géante = absurde ; privilégier séries claires + allure.
     if (intentId === "eau_libre" || intentId === "triathlon") {
@@ -89,12 +94,17 @@ export function candidateSetFormats(ctx = {}) {
       return base;
     }
     if (qualitySession) {
-      return ["repeated", "block", "broken"];
+      return ["repeated", "race_pace"];
     }
     if (intentId === "recuperation" || intentId === "reprise") {
       return ["mixed", "alternating", "broken"];
     }
     // Endurance : formats classiques d'abord ; pyramide seulement si volume corps raisonnable
+    if (complexBlocked) {
+      const safe = ["repeated", "mixed", "alternating"];
+      if (allowContinuous && maxContinuous >= 300 && corpsTarget >= 600) safe.push("continuous");
+      return safe;
+    }
     const base = ["repeated", "mixed", "broken", "block", "descending"];
     if (pyramidOk && corpsTarget <= 800) base.splice(1, 0, "pyramid");
     if (allowContinuous && maxContinuous >= 400 && corpsTarget >= 800) base.push("continuous");
@@ -164,37 +174,90 @@ function makeSet({ reps, unit, restSec, label, cue, exerciseId, continuous = fal
 }
 
 /**
- * Découpe un volume en plusieurs séries ≤ maxReps (jamais 33×50).
- * Si le volume restant ne tient pas proprement → sous-volume (préférable).
+ * Choisit une unité nageable pour coller au volume en ≤ maxReps (sans « suite »).
+ */
+function pickNageableUnit(target, maxReps, preferredUnit, quantum = 50) {
+  const prefs = [];
+  if (preferredUnit) prefs.push(preferredUnit);
+  for (const u of [200, 150, 100, 75, 50, 25]) {
+    if (!prefs.includes(u) && (u % quantum === 0 || (quantum === 25 && u >= 25))) prefs.push(u);
+  }
+  for (const unit of prefs) {
+    if (unit < quantum && quantum === 50 && unit === 25) continue;
+    const reps = Math.max(1, Math.round(target / unit));
+    const vol = reps * unit;
+    if (reps >= 2 && reps <= maxReps && Math.abs(vol - target) <= Math.max(unit, 50)) {
+      return { unit, reps, vol };
+    }
+  }
+  let best = null;
+  for (const unit of prefs) {
+    if (unit < quantum && quantum === 50 && unit === 25) continue;
+    const reps = Math.min(maxReps, Math.max(2, Math.floor(target / unit)));
+    const vol = reps * unit;
+    const err = Math.abs(vol - target);
+    if (!best || err < best.err) best = { unit, reps, vol, err };
+  }
+  return best || { unit: quantum * 2, reps: 4, vol: quantum * 8 };
+}
+
+/**
+ * Découpe un volume en séries nageables ≤ maxReps.
+ * J3 : jamais de filler « suite » — préfère changer d'unité ou 2 blocs intentionnels.
  */
 function buildCappedRepeatedSets(target, unit, { maxReps = 12, restSec = 20, label, cue, exerciseId, meta = {} }) {
   const sets = [];
-  let remaining = Math.max(unit, target);
-  let part = 0;
-  while (remaining >= unit && part < 6) {
-    const maxChunk = maxReps * unit;
-    const chunk = Math.min(remaining, maxChunk);
-    let reps = Math.max(1, Math.floor(chunk / unit));
-    if (reps > maxReps) reps = maxReps;
-    if (reps === 1 && remaining > unit) {
-      // préférer au moins 2 reps si possible, sinon continu géré ailleurs
-      reps = Math.min(maxReps, Math.max(2, Math.floor(remaining / unit)));
+  const tgt = Math.max(unit, target);
+  const quantum = unit <= 25 ? 25 : 50;
+
+  const fit = pickNageableUnit(tgt, maxReps, unit, quantum);
+  if (fit && fit.reps <= maxReps && Math.abs(fit.vol - tgt) <= Math.max(fit.unit, 100)) {
+    sets.push(makeSet({ reps: fit.reps, unit: fit.unit, restSec, label, cue, exerciseId, meta }));
+    return sets;
+  }
+
+  const unitA = fit?.unit || unit;
+  const totalReps = Math.max(4, Math.round(tgt / unitA));
+  if (totalReps <= maxReps * 2) {
+    let a = Math.ceil(totalReps / 2);
+    let b = totalReps - a;
+    if (a > maxReps) { b += a - maxReps; a = maxReps; }
+    if (b > maxReps) b = maxReps;
+    if (a >= 2) {
+      sets.push(makeSet({ reps: a, unit: unitA, restSec, label, cue, exerciseId, meta: { ...meta, blockPart: 1 } }));
     }
-    sets.push(
-      makeSet({
-        reps,
-        unit,
-        restSec,
-        label,
-        cue: part === 0 ? cue : `${cue} — suite`,
-        exerciseId: part === 0 ? exerciseId : `${exerciseId}_p${part}`,
-        meta,
-      }),
-    );
-    remaining -= reps * unit;
-    part += 1;
-    // Ne pas remplir aveuglément un reliquat absurde
-    if (remaining > 0 && remaining < unit) break;
+    if (b >= 2) {
+      let unitB = unitA;
+      let repsB = b;
+      if (b > maxReps) {
+        const fitB = pickNageableUnit(b * unitA, maxReps, unitA >= 100 ? 50 : 100, quantum);
+        unitB = fitB.unit;
+        repsB = fitB.reps;
+      }
+      sets.push(makeSet({
+        reps: repsB, unit: unitB, restSec, label,
+        cue: /même allure|2ᵉ série/i.test(String(cue)) ? cue : `${cue} — 2ᵉ série, même allure`,
+        exerciseId: `${exerciseId}_b`,
+        meta: { ...meta, blockPart: 2 },
+      }));
+    }
+    return sets.length ? sets : [makeSet({ reps: Math.min(maxReps, 6), unit: unitA, restSec, label, cue, exerciseId, meta })];
+  }
+
+  const longUnit = tgt >= 1000 ? 200 : 100;
+  const longFit = pickNageableUnit(Math.round(tgt * 0.6), maxReps, longUnit, quantum);
+  const remain = Math.max(0, tgt - longFit.vol);
+  sets.push(makeSet({ reps: longFit.reps, unit: longFit.unit, restSec, label, cue, exerciseId, meta }));
+  if (remain >= quantum * 2) {
+    const shortFit = pickNageableUnit(remain, maxReps, Math.min(100, longFit.unit), quantum);
+    if (shortFit.reps >= 2) {
+      sets.push(makeSet({
+        reps: shortFit.reps, unit: shortFit.unit, restSec, label,
+        cue: `${cue} — complément`,
+        exerciseId: `${exerciseId}_c`,
+        meta: { ...meta, blockPart: 2 },
+      }));
+    }
   }
   return sets;
 }
@@ -219,16 +282,16 @@ function fitLastToTarget(sets, target, unit, maxReps = 12) {
     last.reps += 1;
     vol += last.distancePerRep;
   }
-  // Reliquat trop gros → nouvelle série plafonnée plutôt que 33 reps
-  if (vol < target - unit) {
+  // Reliquat : 2ᵉ bloc intentionnel (pas « suite »)
+  if (vol < target - Math.max(unit, 50) && sets.length < 2) {
     const need = target - vol;
     const extra = buildCappedRepeatedSets(need, last.distancePerRep || unit, {
       maxReps,
       restSec: last.restSec || 20,
       label: last.label,
-      cue: "facile, relâché",
-      exerciseId: `${last.exerciseId || "corps"}_fit`,
-      meta: { setFormat: last.setFormat || "repeated" },
+      cue: `${last.cue || "facile"} — 2ᵉ série, même allure`,
+      exerciseId: `${last.exerciseId || "corps"}_b`,
+      meta: { setFormat: last.setFormat || "repeated", blockPart: 2 },
     });
     sets.push(...extra);
   }
@@ -340,30 +403,43 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     fitLastToTarget(sets, target, unit, maxReps);
   } else if (fmt === "block") {
     const unit = 100;
-    const half = Math.max(2, Math.min(maxReps, Math.round(target / 2 / unit)));
-    let modN = Math.max(2, Math.min(maxReps, Math.round(target / unit) - half));
-    sets.push(
-      makeSet({
-        reps: half,
-        unit,
-        restSec: rest("facile", unit, { defaultRest: 25 }),
-        label,
-        cue: "facile",
-        exerciseId: `${exerciseId}_blk_easy`,
-        meta: { setFormat: "block", intensity: "facile" },
-      }),
-    );
-    sets.push(
-      ...buildCappedRepeatedSets(Math.max(unit * 2, target - half * unit), unit, {
-        maxReps,
-        restSec: rest("modere", unit, { defaultRest: 30 }),
-        label,
-        cue: "modéré",
-        exerciseId: `${exerciseId}_blk_mod`,
-        meta: { setFormat: "block", intensity: "modere" },
-      }),
-    );
-    void modN;
+    // J3 : si cue porte déjà une zone/intensité, ne pas écraser en facile/modéré
+    const qualityCue = /Z3|Z4|seuil|soutenu|race|allure cible|spécifique/i.test(String(cue || ""));
+    if (qualityCue) {
+      sets.push(
+        ...buildCappedRepeatedSets(target, unit, {
+          maxReps: Math.min(maxReps, 8),
+          restSec: rest("soutenu", unit, { defaultRest: 30 }),
+          label,
+          cue,
+          exerciseId: `${exerciseId}_blk_q`,
+          meta: { setFormat: "block", intensity: "soutenu" },
+        }),
+      );
+    } else {
+      const half = Math.max(2, Math.min(maxReps, Math.round(target / 2 / unit)));
+      sets.push(
+        makeSet({
+          reps: half,
+          unit,
+          restSec: rest("facile", unit, { defaultRest: 25 }),
+          label,
+          cue: "facile",
+          exerciseId: `${exerciseId}_blk_easy`,
+          meta: { setFormat: "block", intensity: "facile" },
+        }),
+      );
+      sets.push(
+        ...buildCappedRepeatedSets(Math.max(unit * 2, target - half * unit), unit, {
+          maxReps,
+          restSec: rest("modere", unit, { defaultRest: 30 }),
+          label,
+          cue: "modéré",
+          exerciseId: `${exerciseId}_blk_mod`,
+          meta: { setFormat: "block", intensity: "modere" },
+        }),
+      );
+    }
     fitLastToTarget(sets, target, unit, maxReps);
   } else if (fmt === "pyramid") {
     // Profils lisibles — jamais scale×2 vers 1600–1750 m (Ironman perf : absurde).
@@ -445,7 +521,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
           maxReps,
           restSec: rest("facile", unit, { defaultRest: unit >= 100 ? 25 : 20 }),
           label,
-          cue: b === 0 ? `${cue} — 1er bloc` : `${cue} — 2e bloc`,
+          cue: b === 0 ? cue : `${cue} — 2ᵉ série, même allure`,
           exerciseId: `${exerciseId}_brk_${b}`,
           meta: { setFormat: "broken", brokenBlock: b + 1 },
         }),
