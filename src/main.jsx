@@ -13,6 +13,11 @@ import BlogPost from './BlogPost.jsx'
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from './LegalPages.jsx'
 import CookieBanner from './CookieBanner.jsx'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
+import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
+import ArthurFollowupsAdmin from './ArthurFollowupsAdmin.jsx'
+import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
+import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
+import ArthurShadowAdmin from './ArthurShadowAdmin.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -30,6 +35,13 @@ createRoot(document.getElementById('root')).render(
 
         {/* Prototype parcours conversion (design + UX) */}
         <Route path="/prototype/conversion" element={<ConversionFlow />} />
+
+        {/* Admin Arthur */}
+        <Route path="/admin/arthur-growth" element={<ArthurGrowthAdmin />} />
+        <Route path="/admin/arthur-followups" element={<ArthurFollowupsAdmin />} />
+        <Route path="/admin/arthur-optimize" element={<ArthurOptimizeAdmin />} />
+        <Route path="/admin/arthur-readiness" element={<ArthurReadinessAdmin />} />
+        <Route path="/admin/arthur-shadow" element={<ArthurShadowAdmin />} />
 
         {/* Landing marketing */}
         <Route path="/accueil" element={<Landing />} />

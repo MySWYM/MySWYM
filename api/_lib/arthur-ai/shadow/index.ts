@@ -9,5 +9,6 @@ export {
   reviewShadowProposal,
   listShadowProposals,
   buildShadowReport,
+  listRecentInstagramEvents,
 } from "./review.js";
 export type { ShadowReviewAction } from "./review.js";

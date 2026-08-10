@@ -10,6 +10,10 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 export const config = {
   maxDuration: 60,
+  // Corps brut requis pour vérifier X-Hub-Signature-256 (Meta).
+  api: {
+    bodyParser: false,
+  },
 };
 
 function asQueryString(
@@ -112,8 +116,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Import dynamique : le GET Meta ne charge jamais le gros graphe Arthur
   try {
+    const { readRawBody, parseJsonBody } = await import(
+      "../_lib/arthur-ai/instagram/raw-body.js"
+    );
+    const rawBody = await readRawBody(req);
+    const parsed = parseJsonBody(rawBody);
+    if (parsed === null) {
+      log("warn", "instagram_post_invalid_json", { raw_len: rawBody.length });
+      return res.status(400).json({ ok: false, error: "Invalid JSON body" });
+    }
+    // Remplace le body auto-parsé (désactivé) pour le handler métier
+    (req as { body?: unknown }).body = parsed;
+
     const { handleInstagramWebhookPost } = await import("./webhook-post.js");
-    return handleInstagramWebhookPost(req, res);
+    return handleInstagramWebhookPost(req, res, rawBody);
   } catch (err) {
     log("error", "instagram_post_handler_load_failed", {
       name: err instanceof Error ? err.name : "Error",

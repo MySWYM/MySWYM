@@ -153,3 +153,31 @@ export async function buildShadowReport(
     note: "H1 Shadow — validation humaine sans envoi automatique",
   };
 }
+
+/** Événements Instagram / Shadow récents (même sans proposition). */
+export async function listRecentInstagramEvents(
+  admin: SupabaseClient,
+  opts: { limit?: number; days?: number } = {},
+): Promise<Record<string, unknown>[]> {
+  const limit = Math.min(50, Math.max(1, opts.limit || 25));
+  const days = Math.min(90, Math.max(1, opts.days || 14));
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+
+  const { data } = await admin
+    .from("ai_events")
+    .select("id, event_type, metadata, created_at, conversation_id")
+    .gte("created_at", since)
+    .in("event_type", [
+      "instagram_webhook_received",
+      "dm_received",
+      "shadow_proposal_created",
+      "shadow_send_blocked",
+      "instagram_message_failed",
+      "instagram_message_sent",
+      "offline_fallback",
+    ])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return data || [];
+}

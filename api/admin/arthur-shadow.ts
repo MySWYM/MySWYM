@@ -12,6 +12,7 @@ import {
   listShadowProposals,
   reviewShadowProposal,
   buildShadowReport,
+  listRecentInstagramEvents,
   isInstagramShadowMode,
   canLiveSendInstagram,
 } from "../_lib/arthur-ai/shadow/index.js";
@@ -103,6 +104,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       days,
       limit: Number(req.query?.limit) || 50,
     });
+    const recent_events = await listRecentInstagramEvents(admin, {
+      days,
+      limit: 30,
+    });
 
     return res.status(200).json({
       ok: true,
@@ -113,6 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       note: "Shadow H1 — propositions sans envoi automatique",
       report,
       proposals,
+      recent_events,
     });
   } catch (err) {
     arthurLog("error", "admin_arthur_shadow_failed", {

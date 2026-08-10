@@ -6,8 +6,8 @@ import { arthurLog } from "./logging.js";
 import {
   ARTHUR_RESPONSE_JSON_SCHEMA,
   parseArthurStructuredOutput,
-  type ArthurStructuredOutput,
 } from "./intent.js";
+import type { ArthurStructuredOutput } from "./types.js";
 import {
   executeArthurTool,
   getArthurOpenAITools,

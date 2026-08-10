@@ -19,6 +19,7 @@ import { hasInstagramCredentials } from "../_lib/arthur-ai/instagram/meta-client
 export async function handleInstagramWebhookPost(
   req: VercelRequest,
   res: VercelResponse,
+  rawBody?: string,
 ) {
   try {
     const mockHeader = String(req.headers["x-myswym-instagram-mock"] || "").trim();
@@ -69,9 +70,14 @@ export async function handleInstagramWebhookPost(
       }
 
       const signature = String(req.headers["x-hub-signature-256"] || "");
-      const raw = rawBodyFromRequest(body);
+      // Prefer bytes Meta a réellement signés (raw stream). Fallback JSON.stringify.
+      const raw = rawBodyFromRequest(body, rawBody);
       if (!verifyMetaSignature(raw, signature)) {
-        arthurLog("warn", "instagram_bad_signature", {});
+        arthurLog("warn", "instagram_bad_signature", {
+          has_signature: Boolean(signature),
+          raw_len: raw.length,
+          used_stream: Boolean(rawBody && rawBody.length),
+        });
         return res.status(403).json({ ok: false, error: "Invalid signature" });
       }
     }

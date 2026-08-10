@@ -130,7 +130,7 @@ export async function createTrainingPlan(
     profile: mergedProfile,
     goal: args.goal || mergedProfile.goal,
     targetDate: args.target_date || mergedProfile.eventDate,
-    weeks: args.weeks ?? null,
+    weeks: args.weeks ?? undefined,
     frequency: args.frequency ?? mergedProfile.sessionsPerWeek,
     isPremium: true,
     existingPlan:

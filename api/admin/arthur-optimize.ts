@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           limit: Number(body.limit) || 30,
           days: Number(body.days) || 14,
         });
-        return res.status(200).json({ ok: true, action, ...result });
+        return res.status(200).json({ action, ...result, ok: true });
       }
 
       if (action === "analyze_one") {
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(400).json({ ok: false, error: "conversationId uuid requis" });
         }
         const result = await analyzeAndPersistConversation(admin, id);
-        return res.status(200).json({ ok: true, action, conversationId: id, ...result });
+        return res.status(200).json({ action, conversationId: id, ...result, ok: true });
       }
 
       return res.status(400).json({
@@ -75,10 +75,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const days = Number(req.query?.days) || 30;
     const report = await buildOptimizationReport(admin, days);
     return res.status(200).json({
-      ok: true,
       days,
       auth_via: auth.via,
       ...report,
+      ok: true,
     });
   } catch (err) {
     arthurLog("error", "admin_arthur_optimize_failed", {
