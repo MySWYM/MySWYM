@@ -10,7 +10,7 @@ import {
   buildConfirmeArchetypeSession,
   usesConfirmeArchetypeBank,
 } from "./swim-session-generator.js";
-import { tasteToGeneratorHints } from "./user-taste.js";
+import { tasteToGeneratorHints, biasRolesForTaste } from "./user-taste.js";
 import { pickArthurBankSession } from "./session-templates-store.js";
 import {
   buildSportProfile,
