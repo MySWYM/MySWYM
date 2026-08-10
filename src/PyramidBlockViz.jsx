@@ -93,32 +93,34 @@ export default function PyramidBlockViz({
       style={{
         marginTop: 10,
         padding: "12px 12px 10px",
-        borderRadius: 14,
-        background: "linear-gradient(180deg, rgba(53,93,163,0.06) 0%, rgba(53,93,163,0.02) 100%)",
-        border: "1px solid rgba(53,93,163,0.12)",
+        borderRadius: 16,
+        background:
+          "linear-gradient(180deg, rgba(248,250,255,0.98) 0%, rgba(242,246,255,0.98) 100%)",
+        border: "1px solid rgba(83,116,196,0.12)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
       }}
     >
       <div
         style={{
           display: "flex",
-          alignItems: "baseline",
+          alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
           marginBottom: 10,
         }}
       >
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#1a2b4a" }}>
-          Pyramide {label} · {vol} m
+        <div style={{ fontSize: 11, fontWeight: 800, color: "#223556" }}>
+          {vol}m pyramide {label}
         </div>
         {rest && (
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#5a6f82" }}>{rest}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#7a8aa8" }}>{rest}</div>
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
         {steps.map((d, i) => {
           const role = roles[i];
-          const widthPct = Math.max(22, Math.round((d / max) * 78));
+          const widthPct = Math.max(28, Math.round((d / max) * 72));
           const isPeak = role === "sommet";
           return (
             <div
@@ -126,22 +128,24 @@ export default function PyramidBlockViz({
               title={`${ROLE_LABEL[role]} · ${d} m`}
               style={{
                 width: `${widthPct}%`,
-                minHeight: 26,
-                borderRadius: 8,
+                minHeight: 18,
+                borderRadius: 7,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 12,
+                fontSize: 9,
                 fontWeight: 800,
                 color: "#fff",
                 background: isPeak
-                  ? `linear-gradient(90deg, ${accent}, #1d4ed8)`
-                  : `linear-gradient(90deg, ${accent}cc, ${accent})`,
-                boxShadow: isPeak ? "0 0 0 2px rgba(53,93,163,0.22)" : "none",
-                letterSpacing: "0.02em",
+                  ? `linear-gradient(180deg, #4e7af0 0%, ${accent} 100%)`
+                  : `linear-gradient(180deg, #567ce1 0%, ${accent} 100%)`,
+                boxShadow: isPeak
+                  ? "0 2px 6px rgba(53,93,163,0.18)"
+                  : "0 1px 3px rgba(53,93,163,0.12)",
+                letterSpacing: "0.01em",
               }}
             >
-              {d} m
+              {d}m
             </div>
           );
         })}
@@ -151,25 +155,40 @@ export default function PyramidBlockViz({
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 8,
-          marginTop: 12,
-          fontSize: 11,
-          color: "#5a6f82",
+          gap: 10,
+          marginTop: 11,
+          fontSize: 9,
+          color: "#7384a1",
         }}
       >
         {groups.map((g) => (
-          <div key={g.role} style={{ textAlign: g.role === "sommet" ? "center" : g.role === "descente" ? "right" : "left" }}>
-            <div style={{ fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", fontSize: 9, marginBottom: 2, color: accent }}>
+          <div
+            key={g.role}
+            style={{
+              textAlign:
+                g.role === "sommet" ? "center" : g.role === "descente" ? "right" : "left",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 800,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                fontSize: 8,
+                marginBottom: 3,
+                color: accent,
+              }}
+            >
               {ROLE_LABEL[g.role]}
             </div>
-            <div style={{ fontWeight: 600 }}>
-              {g.items.length ? g.items.map((x) => `${x.d}`).join(" · ") + " m" : "—"}
+            <div style={{ fontWeight: 700 }}>
+              {g.items.length ? `${g.items.map((x) => x.d).join(" - ")} m` : "—"}
             </div>
           </div>
         ))}
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 11, color: "#5a6f82", textAlign: "center" }}>
+      <div style={{ marginTop: 8, fontSize: 9, color: "#6d7e9b", textAlign: "center", fontWeight: 600 }}>
         Sommet {pk} m — régulier
       </div>
     </div>
