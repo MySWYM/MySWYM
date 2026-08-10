@@ -113,7 +113,9 @@ export async function POST(request: Request): Promise<Response> {
       return jsonResponse(400, { ok: false, error: "Invalid JSON body" });
     }
 
-    const { handleInstagramWebhookPostWeb } = await import("./webhook-post.js");
+    const { handleInstagramWebhookPostWeb } = await import(
+      "../_lib/arthur-ai/instagram/webhook-post.js"
+    );
     return handleInstagramWebhookPostWeb(request, parsed, rawBody, rawBuf);
   } catch (err) {
     log("error", "instagram_post_handler_load_failed", {
