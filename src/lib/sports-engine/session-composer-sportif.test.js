@@ -21,8 +21,11 @@ import {
   maxContinuousForSportif,
   collapseSetsToDisplayLinesExact,
   buildCorpsByFormat,
+  MAX_PYRAMID_VOLUME,
+  candidateSetFormats,
   ARTHUR_GOLD_TEST_FIXTURES,
 } from "./index.js";
+import { calcDetailsDistance } from "../swim-session-generator.js";
 import {
   loadArthurGoldTestFixtures,
   resetSessionTemplatesCache,
@@ -138,7 +141,8 @@ function assertSportif(session, brief) {
     announcedDistance: session.distance,
   });
   assert(cons.ok, `volume: ${cons.errors.join("; ")}`);
-  assert(/Aujourd'hui :/i.test(session.details.join("\n")), "intention");
+  assert(!/Aujourd'hui :/i.test(session.details.join("\n")), "pas de headline narratif");
+  assert(session.details.length >= 3, "contenu nageable");
   const hard = validateSportifHard(session, {
     papillonOk: !!brief.papillonMastered,
     allowPaces: !!brief.allowPaces,
@@ -486,7 +490,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(fourMax <= 200, `4n plafonné ${fourMax}`);
 }
 
-// 16 — progressive / descending affichage simple (volume exact)
+// 16 — progressive / descending → affichage coach classique (pas de jargon progressif)
 {
   const built = buildCorpsByFormat("progressive", 600, {
     label: "crawl",
@@ -499,12 +503,12 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   });
   assert(built.sets.length >= 3, "sets internes progressifs");
   const disp = built.displayLines || collapseSetsToDisplayLinesExact(built.sets, "progressive");
-  assert(disp && disp.length === 1, "1 ligne UX");
-  assert(/progressif|facile vers le soutenu/i.test(disp[0]), `ux: ${disp[0]}`);
+  assert(disp && disp.length >= 1, "lignes UX");
+  assert(!/progressif|facile vers le soutenu/i.test(disp.join("\n")), `pas de jargon: ${disp[0]}`);
   assert(!/Z1.*Z2.*Z3/i.test(disp.join(" ")), "pas de détail zone par zone");
   const volSets = built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  const m = disp[0].match(/(\d+)\s*[×x]\s*(\d+)\s*m/i);
-  assert(m && parseInt(m[1], 10) * parseInt(m[2], 10) === volSets, "volume UX = sets");
+  const fromDisp = calcDetailsDistance(disp);
+  assert(fromDisp === volSets, `volume UX ${fromDisp} = sets ${volSets}`);
 
   const desc = buildCorpsByFormat("descending", 600, {
     label: "crawl",
@@ -515,10 +519,8 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
     pool: 50,
   });
   const dDisp = desc.displayLines || [];
-  assert(dDisp.length <= 3, "descending compact");
-  if (dDisp.length === 1) {
-    assert(/descendant|long vers le court/i.test(dDisp[0]), dDisp[0]);
-  }
+  assert(dDisp.length >= 1, "descending affiché");
+  assert(!/descendant|long vers le court/i.test(dDisp.join("\n")), "pas de jargon descendant");
 }
 
 // 17 — Arthur Gold réellement chargé + scaling réel
@@ -593,6 +595,57 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(/Z2|aérobie|orientation/i.test(down.details.join(" ")), "intention OW");
 
   resetSessionTemplatesCache();
+}
+
+// 18 — Pyramide plafonnée + paliers visibles (pas 1750 m opaque Ironman)
+{
+  assert(MAX_PYRAMID_VOLUME <= 1000, `cap ${MAX_PYRAMID_VOLUME}`);
+
+  const built = buildCorpsByFormat("pyramid", 1750, {
+    label: "crawl",
+    cue: "allure confortable",
+    restFor: () => 20,
+    exerciseId: "pyr_iron",
+    maxContinuous: 400,
+    pool: 50,
+  });
+  const pyrVol = built.sets
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(pyrVol <= MAX_PYRAMID_VOLUME, `pyramide ${pyrVol}m ≤ ${MAX_PYRAMID_VOLUME}`);
+  assert(pyrVol < 1600, "pas de scale×2 vers 1600");
+  const peak = Math.max(
+    ...built.sets.filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null).map((s) => s.distancePerRep),
+  );
+  assert(peak <= 300, `sommet ${peak}m ≤ 300`);
+
+  const disp = (built.displayLines || []).join("\n");
+  assert(/crawl|repos/i.test(disp), `display pyramide: ${disp}`);
+  assert(!/1750m\s+pyramide/i.test(disp), "pas de titre 1750m pyramide");
+  // Paliers individuels nageables (plus de collapse opaque)
+  assert((disp.match(/^\-\d+m /gm) || []).length >= 3, "paliers individuels");
+  const fromDetails = calcDetailsDistance(built.displayLines || []);
+  const fromSets = built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(
+    Math.abs(fromDetails - fromSets) <= 50,
+    `volume display=${fromDetails} sets=${fromSets}`,
+  );
+
+  // Gros corps triathlon/perf → pyramide hors candidats
+  const bigTri = candidateSetFormats({
+    intentId: "triathlon",
+    level: "performance",
+    corpsTarget: 1750,
+    maxContinuous: 400,
+  });
+  assert(!bigTri.includes("pyramid"), `pas de pyramide gros tri: ${bigTri}`);
+  const smallTri = candidateSetFormats({
+    intentId: "triathlon",
+    level: "performance",
+    corpsTarget: 800,
+    maxContinuous: 400,
+  });
+  assert(smallTri.includes("pyramid"), `pyramide OK si court: ${smallTri}`);
 }
 
 // effortCue sans pace

@@ -8,6 +8,7 @@ import {
   applyConstraintsToBrief,
   minFourNageBodyShare,
 } from "./composer-constraints.js";
+import { MAX_PYRAMID_VOLUME } from "./set-formats.js";
 
 const FOUR_N_STROKE_RE = /\b(dos|brasse|papillon|ondulation|4\s*nages|quatre\s*nages|multi-?nages)\b/i;
 const CRAWL_ONLY_RE = /\bcrawl\b/i;
@@ -338,6 +339,33 @@ export function validateComposedSession(session, brief = {}, constraints = null)
     errors.push(`race_week volume trop élevé (${vol}m)`);
   }
 
+  // --- pyramide : jamais un monolithe 1750 m sans info (Ironman / triathlon perf) ---
+  constraintsChecked.push("pyramid");
+  const setsArr = Array.isArray(session?.sets) ? session.sets : [];
+  const pyramidStepVol = setsArr
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + (Number(s.reps) || 0) * (Number(s.distancePerRep) || 0), 0);
+  if (pyramidStepVol > MAX_PYRAMID_VOLUME) {
+    errors.push(`pyramide trop longue: ${pyramidStepVol}m > max ${MAX_PYRAMID_VOLUME}m`);
+  }
+  // Affichage opaque « Xm pyramide » sans paliers (ex. « 1750m pyramide ») = erreur
+  if (/pyramide/i.test(text)) {
+    const opaque = text.match(/-(\d+)\s*m\s+pyramide\b(?![^:\n]*→)/gi) || [];
+    for (const m of opaque) {
+      const n = parseInt(m.replace(/\D/g, ""), 10);
+      if (n > MAX_PYRAMID_VOLUME) {
+        errors.push(`pyramide affichée trop longue / sans paliers: ${n}m`);
+      }
+    }
+    // Ligne pyramide sans chaîne de paliers (aucune info coach)
+    const pyrLines = text.split("\n").filter((l) => /pyramide/i.test(l) && /^\s*-/.test(l));
+    for (const line of pyrLines) {
+      if (!/→/.test(line) && !/montée|descente|sommet|\d+\s*[→\-–]\s*\d+/i.test(line)) {
+        warnings.push("pyramide sans détail de paliers");
+      }
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -537,7 +565,7 @@ function buildMinimalSafeSession(brief, constraints) {
   // fin
   pushSeries(2, unit, "au choix", "récupération", "fin");
   const vol = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  details.unshift(`→ Aujourd'hui : séance sécurisée (quality gate)`);
+  details.unshift(`-${Math.max(unit * 2, 100)}m crawl souple — Z1`);
   return {
     type: "ENDURANCE",
     title: level === "performance" ? "Performance · séance sécurisée" : `${level} · séance sécurisée`,

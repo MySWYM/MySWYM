@@ -249,7 +249,7 @@ Flux : `SessionBrief` → `BlockSplit` → sélection inventaire → séries str
 - **Régulier** : « apprendre à s'entraîner » — corps ~55–65 %, `setFormat` variés, repos variable (`restSecFor`), max 1 `qualitySession`/semaine (`regulierWeekRoles`)
 - **Sportif** : « s'entraîner pour progresser » — polarisation Z1/Z2 majoritaire, 1 qualité (seuil/vitesse/allure), Z4 limité, allures `@mm:ss` seulement si Premium+T100, tests périodiques, Arthur prioritaire OW/tri si compatible (`arthur-scale` scale les reps)
 - **Performance (Étape F+G)** : `PerformanceStrategy` → `taperLoad` si date course → `performanceWeekRoles` → Arthur si compatible → composeur. **Pas** « plus de Z4 ». Taper = volume/densité ↓, intensité courte conservée, Race Day hors volume entraînement.
-- **setFormat** : + `descending` · `race_pace` (Sportif)
+- **setFormat** : + `descending` · `race_pace` (Sportif) ; **pyramide** plafonnée ≤ 1000 m avec paliers visibles (jamais monolithe 1750 m Ironman)
 - **sessionSpecificity** : general | stroke_focus | goal_specific | race_specific
 - **Volume soft** : jamais gonfler artificiellement
 - **Hors scope** : diplômes ; adaptation post-course long terme ; persistance historique complète

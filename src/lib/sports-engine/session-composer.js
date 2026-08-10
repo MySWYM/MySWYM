@@ -68,6 +68,7 @@ function buildCorpsByFormat(format, corpsTarget, opts = {}, brief = null) {
 import { selectReprisePattern } from "./reprise-patterns.js";
 import { humanizeUserFacingText } from "./user-facing.js";
 import { effortCue, resolvePaceContext } from "./pace-display.js";
+import { finalizeCoachSession } from "./coach-restitution.js";
 
 export { maxContinuousForDecouverte } from "./decouverte-intents.js";
 export { resolveDecouverteIntent, coherentVolumeForDecouverte } from "./decouverte-intents.js";
@@ -166,19 +167,32 @@ function formatSetLine(set, beginnerFriendly) {
     !continuous && set.restSec > 0
       ? ` — repos ${set.restSec}s`
       : "";
-  const cue = set.cue ? ` — ${set.cue}` : "";
+  let cue = set.cue ? String(set.cue).trim() : "";
+  // Évite le bruit narratif / doublon d'intensité
+  if (/^applique\b/i.test(cue) || /^nage tranquillement/i.test(cue)) cue = "";
+  if (/^montée$|^descente$/i.test(cue)) cue = "";
+  const cueTxt = cue ? ` — ${cue}` : "";
   const easyTag = beginnerFriendly ? " (facile)" : " (facile)";
   if (continuous || set.reps === 1) {
     const tag = set.block === "depart" || set.block === "fin" ? easyTag : "";
-    return `-${set.distancePerRep}m ${set.label || "nage"}${cue}${tag}`;
+    return `-${set.distancePerRep}m ${set.label || "nage"}${cueTxt}${tag}`;
   }
-  return `-${set.reps} × ${set.distancePerRep}m ${set.label || "nage"}${cue}${rest}`;
+  return `-${set.reps} × ${set.distancePerRep}m ${set.label || "nage"}${cueTxt}${rest}`;
 }
 
-/** Header sans distance numérique — évite le double-comptage avec calcDetailsDistance. */
+/** Ancien header « Technique · … : » — plus exposé au nageur (reste dispo pour debug). */
 function formatTechniqueHeader(exerciseName, equipmentNote) {
-  const matos = equipmentNote ? ` · ${equipmentNote}` : "";
-  return `-Technique · ${exerciseName.toLowerCase()}${matos} :`;
+  void exerciseName;
+  void equipmentNote;
+  return null;
+}
+
+/** Matériel sur la ligne nageable (pas dans un header Technique ·). */
+function labelWithMatos(label, matosNote) {
+  if (!matosNote) return label;
+  const base = String(label || "nage").trim();
+  if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
+  return `${base} avec ${matosNote}`;
 }
 
 function equipmentNoteForDecouverte(equipment) {
@@ -362,8 +376,6 @@ function composeDecouverteSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  details.push(`→ ${intent.headline}`);
-
   // --- DÉPART ---
   // Hard: jamais de continu > maxContinuous (même en échauffement)
   const departCandidates = filterExercises(inventory, brief, { block: "depart" }).filter(
@@ -402,7 +414,10 @@ function composeDecouverteSession(brief, rng) {
     const strokes = strokesForDecouverte4n(papillonOk);
     const repsPerStroke = Math.max(1, Math.round(blocks.technique / techUnit / strokes.length));
     let used = 0;
-    details.push(formatTechniqueHeader("plusieurs nages", matosNote));
+    {
+      const th = formatTechniqueHeader("plusieurs nages", matosNote);
+      if (th) details.push(th);
+    }
     strokes.forEach((st, i) => {
       const isLast = i === strokes.length - 1;
       let reps = repsPerStroke;
@@ -410,12 +425,14 @@ function composeDecouverteSession(brief, rng) {
         const remain = blocks.technique - used;
         reps = Math.max(1, Math.round(remain / techUnit));
       }
-      const label =
+      const label = labelWithMatos(
         st === "ondulation" || st === "papillon"
           ? papillonOk && st === "papillon"
             ? "papillon facile"
             : papillonAdaptedLabel()
-          : `${st} facile`;
+          : `${st} facile`,
+        matosNote,
+      );
       const set = {
         reps,
         distancePerRep: techUnit,
@@ -429,7 +446,7 @@ function composeDecouverteSession(brief, rng) {
       };
       used += reps * techUnit;
       sets.push(set);
-      details.push(`  · ${reps} × ${techUnit}m ${label} — repos 15s`);
+      details.push(`-${reps} × ${techUnit}m ${label} — repos 15s`);
       exerciseIds.push(set.exerciseId);
     });
     const techVol = volumeFromSets(sets.filter((s) => s.block === "technique"));
@@ -473,14 +490,14 @@ function composeDecouverteSession(brief, rng) {
     const half = Math.max(techUnit * 2, roundTo(blocks.technique / 2, techUnit));
     const other = Math.max(techUnit * 2, blocks.technique - half);
     const techPrimary = buildRepeatedExact(half, techUnit, {
-      label: labelOf(primaryKey),
+      label: labelWithMatos(labelOf(primaryKey), matosNote),
       cue: cueOf(primaryKey),
       restSec: 15,
       block: "technique",
       exerciseId: techEx.id,
     });
     const techAlt = buildRepeatedExact(other, techUnit, {
-      label: labelOf(altKey),
+      label: labelWithMatos(labelOf(altKey), matosNote),
       cue: cueOf(altKey),
       restSec: 15,
       block: "technique",
@@ -491,11 +508,14 @@ function composeDecouverteSession(brief, rng) {
       techAlt[0].reps = Math.max(2, techAlt[0].reps + Math.round((blocks.technique - techVol) / techUnit));
     }
 
-    details.push(formatTechniqueHeader(`${labelOf(primaryKey)} & ${labelOf(altKey)}`, matosNote));
+    {
+      const th = formatTechniqueHeader(`${labelOf(primaryKey)} & ${labelOf(altKey)}`, matosNote);
+      if (th) details.push(th);
+    }
     for (const ts of [...techPrimary, ...techAlt]) {
       sets.push(ts);
       details.push(
-        `  · ${ts.reps} × ${ts.distancePerRep}m ${ts.label} — ${ts.cue} — repos ${ts.restSec}s`,
+        `-${ts.reps} × ${ts.distancePerRep}m ${ts.label}${ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`,
       );
     }
     exerciseIds.push(techEx.id);
@@ -655,7 +675,7 @@ function composeDecouverteSession(brief, rng) {
     };
   }
 
-  return { ok: true, session, warnings: v.warnings };
+  return { ok: true, session: finalizeCoachSession(session), warnings: v.warnings };
 }
 
 
@@ -775,8 +795,6 @@ function composeRegulierSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  details.push(`→ ${intent.headline}`);
-
   // DÉPART — jamais de continu > maxContinuous
   const departDist = blocks.depart;
   if (departDist <= maxCont) {
@@ -828,17 +846,22 @@ function composeRegulierSession(brief, rng) {
     const unit = 50;
     const repsEach = Math.max(1, Math.round(blocks.technique / unit / strokes.length));
     let used = 0;
-    details.push(formatTechniqueHeader("plusieurs nages", techMatos));
+    {
+      const th = formatTechniqueHeader("plusieurs nages", techMatos);
+      if (th) details.push(th);
+    }
     strokes.forEach((st, i) => {
       const isLast = i === strokes.length - 1;
       let reps = repsEach;
       if (isLast) reps = Math.max(1, Math.round((blocks.technique - used) / unit));
-      const label =
+      const label = labelWithMatos(
         st === "ondulation" || (st === "papillon" && !papillonOk)
           ? papillonAdaptedLabel()
           : st === "papillon"
             ? "papillon contrôlé"
-            : `${st}`;
+            : `${st}`,
+        techMatos,
+      );
       const set = {
         reps,
         distancePerRep: unit,
@@ -851,7 +874,7 @@ function composeRegulierSession(brief, rng) {
       };
       used += reps * unit;
       sets.push(set);
-      details.push(`  · ${reps} × ${unit}m ${label} — repos ${set.restSec}s`);
+      details.push(`-${reps} × ${unit}m ${label} — repos ${set.restSec}s`);
       exerciseIds.push(set.exerciseId);
     });
   } else {
@@ -859,7 +882,7 @@ function composeRegulierSession(brief, rng) {
     const other = Math.max(50, blocks.technique - half);
     const unit = 50;
     const primary = buildRepeatedExact(half, unit, {
-      label: techMeta.label,
+      label: labelWithMatos(techMeta.label, techMatos),
       cue: techMeta.cue,
       restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique" }),
       block: "technique",
@@ -872,11 +895,14 @@ function composeRegulierSession(brief, rng) {
       block: "technique",
       exerciseId: "tech_apply",
     });
-    details.push(formatTechniqueHeader(`${techMeta.label} → nage`, techMatos));
+    {
+      const th = formatTechniqueHeader(`${techMeta.label} → nage`, techMatos);
+      if (th) details.push(th);
+    }
     for (const ts of [...primary, ...apply]) {
       sets.push(ts);
       details.push(
-        `  · ${ts.reps} × ${ts.distancePerRep}m ${ts.label} — ${ts.cue} — repos ${ts.restSec}s`,
+        `-${ts.reps} × ${ts.distancePerRep}m ${ts.label}${ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`,
       );
     }
     exerciseIds.push(primary[0].exerciseId, "tech_apply");
@@ -1119,7 +1145,7 @@ function composeRegulierSession(brief, rng) {
     };
   }
 
-  return { ok: true, session, warnings: v.warnings };
+  return { ok: true, session: finalizeCoachSession(session), warnings: v.warnings };
 }
 
 /**
@@ -1331,8 +1357,6 @@ function composeSportifSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  details.push(`→ ${intent.headline}`);
-
   // DÉPART Z1 — jamais de continu > maxContinuous crawl
   const departDist = blocks.depart;
   const depCue = cueFor("Z1", departDist, "échauffement facile");
@@ -1374,17 +1398,22 @@ function composeSportifSession(brief, rng) {
     const unit = 50;
     const repsEach = Math.max(1, Math.round(blocks.technique / unit / strokes.length));
     let used = 0;
-    details.push(formatTechniqueHeader("plusieurs nages", techMatos));
+    {
+      const th = formatTechniqueHeader("plusieurs nages", techMatos);
+      if (th) details.push(th);
+    }
     strokes.forEach((st, i) => {
       const isLast = i === strokes.length - 1;
       let reps = repsEach;
       if (isLast) reps = Math.max(1, Math.round((blocks.technique - used) / unit));
-      const label =
+      const label = labelWithMatos(
         st === "ondulation" || (st === "papillon" && !papillonOk)
           ? papillonAdaptedLabel()
           : st === "papillon"
             ? "papillon contrôlé"
-            : `${st}`;
+            : `${st}`,
+        techMatos,
+      );
       const set = {
         reps,
         distancePerRep: unit,
@@ -1398,7 +1427,7 @@ function composeSportifSession(brief, rng) {
       };
       used += reps * unit;
       sets.push(set);
-      details.push(`  · ${reps} × ${unit}m ${label} — repos ${set.restSec}s`);
+      details.push(`-${reps} × ${unit}m ${label} — repos ${set.restSec}s`);
       exerciseIds.push(set.exerciseId);
     });
   } else {
@@ -1419,7 +1448,7 @@ function composeSportifSession(brief, rng) {
     const other = Math.max(50, blocks.technique - half);
     const unit = 50;
     const primary = buildRepeatedExact(half, unit, {
-      label: techMeta.label,
+      label: labelWithMatos(techMeta.label, techMatos),
       cue: techMeta.cue,
       restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique", zone: "Z2" }),
       block: "technique",
@@ -1432,12 +1461,15 @@ function composeSportifSession(brief, rng) {
       block: "technique",
       exerciseId: "tech_apply",
     });
-    details.push(formatTechniqueHeader(`${techMeta.label} → nage`, techMatos));
+    {
+      const th = formatTechniqueHeader(`${techMeta.label} → nage`, techMatos);
+      if (th) details.push(th);
+    }
     for (const ts of [...primary, ...apply]) {
       ts.zone = "Z2";
       sets.push(ts);
       details.push(
-        `  · ${ts.reps} × ${ts.distancePerRep}m ${ts.label} — ${ts.cue} — repos ${ts.restSec}s`,
+        `-${ts.reps} × ${ts.distancePerRep}m ${ts.label}${ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`,
       );
     }
     exerciseIds.push(primary[0].exerciseId, "tech_apply");
@@ -1564,8 +1596,7 @@ function composeSportifSession(brief, rng) {
       }
       const consolVol = Math.max(100, mainCorpsTarget - prepVol - z4Cap);
 
-      details.push("Préparation aérobie :");
-      const prepBuilt = buildCorpsByFormat("repeated", prepVol, {
+          const prepBuilt = buildCorpsByFormat("repeated", prepVol, {
         label: "crawl",
         cue: cueFor("Z2", 100, "préparation — rythme aisé"),
         restFor: (c) => restFor({ ...c, zone: "Z2" }),
@@ -1582,8 +1613,7 @@ function composeSportifSession(brief, rng) {
       }
       details.push(...(prepBuilt.displayLines || prepBuilt.lines));
 
-      details.push("Bloc vitesse :");
-      corpsCue = cueFor("Z4", 50, "rapide — récupère bien");
+          corpsCue = cueFor("Z4", 50, "rapide — récupère bien");
       const z4Built = buildCorpsByFormat(corpsFormat, z4Cap, {
         label: corpsLabel.includes("/") ? "crawl" : corpsLabel,
         altLabel: "crawl",
@@ -1602,8 +1632,7 @@ function composeSportifSession(brief, rng) {
       }
       details.push(...(z4Built.displayLines || z4Built.lines));
 
-      details.push("Consolidation aérobie :");
-      const consolBuilt = buildCorpsByFormat("mixed", consolVol, {
+          const consolBuilt = buildCorpsByFormat("mixed", consolVol, {
         label: "crawl",
         cue: cueFor("Z2", 100, "consolidation — nage propre après vitesse"),
         restFor: (c) => restFor({ ...c, zone: "Z2" }),
@@ -1729,8 +1758,7 @@ function composeSportifSession(brief, rng) {
             exerciseIds.push(s.exerciseId);
           }
           details.push(...(aeroBuilt.displayLines || aeroBuilt.lines));
-          details.push("Touches allure course :");
-          const raceTouchBuilt = buildCorpsByFormat("race_pace", touchVol, {
+                  const raceTouchBuilt = buildCorpsByFormat("race_pace", touchVol, {
             cue: cueFor("Z3", 50, "touches allure course"),
             restFor: (c) => restFor({ ...c, zone: "Z3" }),
             preferredUnit: 50,
@@ -1952,7 +1980,7 @@ function composeSportifSession(brief, rng) {
     };
   }
 
-  return { ok: true, session, warnings: v.warnings };
+  return { ok: true, session: finalizeCoachSession(session), warnings: v.warnings };
 }
 
 /**
