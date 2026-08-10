@@ -5369,9 +5369,9 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 43; // v43 = pyramide plafonnée (≤1000m) + paliers visibles (Ironman)
-// Remettre false au prochain bump (demande Arthur 2026-08-08 : overwrite tous les plans)
-const FORCE_PLAN_REGEN = false;
+const PLAN_VERSION = 44; // v44 = restitution coach (fiche nageable)
+// Remettre false au prochain bump (demande Arthur 2026-08-10 : overwrite tous les plans)
+const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
 const ACCESS_EPOCH_KEY = (userId) => `myswym_access_epoch_${userId}`;
