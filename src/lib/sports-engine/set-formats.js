@@ -18,7 +18,22 @@ export const SET_FORMAT_IDS = Object.freeze([
   "race_pace",
 ]);
 
+/**
+ * Volume max d'UNE pyramide (montée+sommet+descente).
+ * Au-delà (~1750 m Ironman perf) : trop long, illisible, aucune info coach utile.
+ * Le reste du corps = séries explicites (Nx100 / Nx200…), pas un « fill » pyramide.
+ */
+export const MAX_PYRAMID_VOLUME = 1000;
+
 import { collapseSetsToDisplayLinesExact } from "./display-sets.js";
+
+function pyramidStepOf(s) {
+  return s?.meta?.pyramidStep ?? s?.pyramidStep;
+}
+
+function isPyramidFill(s) {
+  return !!(s?.meta?.pyramidFill || s?.pyramidFill);
+}
 
 function roundTo(n, step) {
   return Math.round(n / step) * step;
@@ -31,6 +46,7 @@ function pickOne(arr, rng) {
 
 /**
  * Candidats de format selon intention / capacité / volume corps.
+ * Pyramide seulement si le corps reste dans une taille lisible (≤ MAX_PYRAMID_VOLUME).
  */
 export function candidateSetFormats(ctx = {}) {
   const {
@@ -42,7 +58,16 @@ export function candidateSetFormats(ctx = {}) {
     level = "regulier",
   } = ctx;
 
-  if (level === "sportif") {
+  const pyramidOk = corpsTarget <= MAX_PYRAMID_VOLUME;
+  const withPyramid = (arr, at = -1) => {
+    if (!pyramidOk) return arr;
+    if (at < 0 || at >= arr.length) return [...arr, "pyramid"];
+    const next = [...arr];
+    next.splice(at, 0, "pyramid");
+    return next;
+  };
+
+  if (level === "sportif" || level === "performance") {
     if (intentId === "vitesse" || intentId === "vo2") {
       return ["broken", "repeated", "descending"];
     }
@@ -55,13 +80,21 @@ export function candidateSetFormats(ctx = {}) {
     if (intentId === "course_piscine") {
       return ["race_pace", "broken", "repeated", "block"];
     }
+    // Ironman / triathlon / OW : pyramide géante = absurde ; privilégier séries claires + allure.
+    if (intentId === "eau_libre" || intentId === "triathlon") {
+      const base = ["mixed", "broken", "repeated", "block"];
+      if (pyramidOk) base.splice(2, 0, "pyramid");
+      if (allowContinuous && maxContinuous >= 300 && corpsTarget >= 600) base.push("continuous");
+      if (level === "performance") base.unshift("race_pace");
+      return base;
+    }
     if (qualitySession) {
       return ["repeated", "block", "broken", "progressive"];
     }
     if (intentId === "recuperation" || intentId === "reprise") {
       return ["mixed", "alternating", "broken"];
     }
-    const base = ["repeated", "pyramid", "mixed", "broken", "descending", "block"];
+    const base = withPyramid(["repeated", "mixed", "broken", "descending", "block"], 1);
     if (allowContinuous && maxContinuous >= 400 && corpsTarget >= 800) base.push("continuous");
     return base;
   }
@@ -78,17 +111,19 @@ export function candidateSetFormats(ctx = {}) {
     case "seance_courte":
       return ["mixed", "repeated", "broken"];
     case "eau_libre":
-    case "triathlon":
-      return ["mixed", "pyramid", "broken", "repeated"].concat(
-        allowContinuous && maxContinuous >= 300 && corpsTarget >= 600 ? ["continuous"] : [],
-      );
+    case "triathlon": {
+      const base = ["mixed", "broken", "repeated"];
+      if (pyramidOk) base.splice(1, 0, "pyramid");
+      if (allowContinuous && maxContinuous >= 300 && corpsTarget >= 600) base.push("continuous");
+      return base;
+    }
     case "quatre_nages":
       return ["alternating", "mixed", "broken", "repeated"];
     case "technique_endurance":
-      return ["mixed", "broken", "repeated", "pyramid"];
+      return withPyramid(["mixed", "broken", "repeated"]);
     case "endurance":
     default: {
-      const base = ["repeated", "pyramid", "mixed", "broken", "alternating"];
+      const base = withPyramid(["repeated", "mixed", "broken", "alternating"], 1);
       if (allowContinuous && maxContinuous >= 400 && corpsTarget >= 400) base.push("continuous");
       return base;
     }
@@ -119,6 +154,8 @@ function makeSet({ reps, unit, restSec, label, cue, exerciseId, continuous = fal
     exerciseId,
     continuous,
     setFormat: meta.setFormat,
+    // Nested meta + spread (rétrocompat : pyramidStep / intensity lus à plat ou via .meta)
+    meta: { ...meta },
     ...meta,
   };
 }
@@ -326,45 +363,79 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     void modN;
     fitLastToTarget(sets, target, unit, maxReps);
   } else if (fmt === "pyramid") {
-    const steps = [50, 100, 150, 200, 150, 100, 50];
-    let base = steps.reduce((a, b) => a + b, 0);
-    let scale = 1;
-    if (target >= base * 1.6) scale = 2;
-    const distances = steps.map((d) => d * scale);
+    // Profils lisibles — jamais scale×2 vers 1600–1750 m (Ironman perf : absurde).
+    // Volume pyramide plafonné ; surplus → séries explicites (pas du « fill pyramide »).
+    const pyramidBudget = Math.min(target, MAX_PYRAMID_VOLUME);
+    let stepProfile;
+    if (pyramidBudget <= 500) {
+      stepProfile = [50, 100, 150, 100, 50]; // 450
+    } else if (pyramidBudget <= 750) {
+      stepProfile = [50, 100, 150, 200, 150, 100, 50]; // 800 → clamp below
+    } else {
+      stepProfile = [100, 200, 300, 200, 100]; // 900 — sommet 300m max utile
+    }
+    // Ajuste si le budget est plus petit que le profil (retire les ailes).
+    let distances = [...stepProfile];
+    while (distances.reduce((a, b) => a + b, 0) > pyramidBudget + 25 && distances.length > 3) {
+      distances = distances.slice(1, -1);
+    }
+    // Respect maxContinuous sur chaque palier
+    distances = distances.map((d) => {
+      if (maxContinuous >= d) return d;
+      return Math.max(quantum, roundTo(Math.min(d, maxContinuous), quantum));
+    });
+    const peakIdx = Math.floor(distances.length / 2);
     let used = 0;
     distances.forEach((d, i) => {
-      if (used + d > target + 50 && i > 2) return;
-      // Respect maxContinuous on pyramid steps that look continuous (reps=1)
-      const stepDist = Math.min(d, maxContinuous >= d ? d : Math.min(d, maxContinuous) || d);
+      const isPeak = i === peakIdx;
+      const isAscent = i < peakIdx;
+      const intensity = isPeak ? "modere" : "facile";
+      const stepCue = isPeak
+        ? "sommet — régulier"
+        : isAscent
+          ? `${cue} — montée`
+          : `${cue} — descente`;
       sets.push(
         makeSet({
           reps: 1,
-          unit: stepDist,
-          restSec: rest(i < 3 ? "facile" : i > 4 ? "facile" : "modere", stepDist, {
-            defaultRest: stepDist >= 150 ? 30 : 20,
+          unit: d,
+          restSec: rest(intensity, d, {
+            defaultRest: d >= 200 ? 30 : d >= 150 ? 25 : 20,
           }),
           label,
-          cue: i === 3 ? "sommet — régulier" : cue,
+          cue: stepCue,
           exerciseId: `${exerciseId}_pyr_${i}`,
           continuous: false,
-          meta: { setFormat: "pyramid", pyramidStep: i },
+          meta: {
+            setFormat: "pyramid",
+            pyramidStep: i,
+            pyramidRole: isPeak ? "sommet" : isAscent ? "montee" : "descente",
+          },
         }),
       );
-      used += stepDist;
+      used += d;
     });
-    if (used < target - 50) {
-      sets.push(
-        ...buildCappedRepeatedSets(target - used, 50, {
-          maxReps,
-          restSec: rest("facile", 50, { defaultRest: 20 }),
-          label,
-          cue: "facile",
-          exerciseId: `${exerciseId}_pyr_fill`,
-          meta: { setFormat: "pyramid" },
-        }),
-      );
+    // Surplus hors pyramide = séries lisibles (Nx100 / Nx50), pas une fausse pyramide 1750m
+    const pyrUsed = used;
+    if (target - used >= quantum * 2) {
+      const fillUnit = target - used >= 800 ? 100 : target - used >= 400 ? 100 : 50;
+      const fillSets = buildCappedRepeatedSets(target - used, fillUnit, {
+        maxReps,
+        restSec: rest("facile", fillUnit, { defaultRest: fillUnit >= 100 ? 25 : 20 }),
+        label,
+        cue: "nage appliquée — hors pyramide",
+        exerciseId: `${exerciseId}_pyr_fill`,
+        meta: { setFormat: "repeated", pyramidFill: true },
+      });
+      fitLastToTarget(fillSets, target - pyrUsed, fillUnit, maxReps);
+      for (const s of fillSets) {
+        if (!s.meta) s.meta = {};
+        s.meta.setFormat = "repeated";
+        s.meta.pyramidFill = true;
+      }
+      sets.push(...fillSets);
     }
-    fitLastToTarget(sets, target, 50, maxReps);
+    // Ne pas fitLastToTarget sur les paliers (déformerait la pyramide)
   } else if (fmt === "broken") {
     // 2×(N×unit) — deux blocs séparés, reps plafonnées
     const unit = target >= 1000 ? 100 : 50;
@@ -526,8 +597,25 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     return `-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
   });
 
-  const collapsed = collapseSetsToDisplayLinesExact(sets, fmt);
-  const displayLines = collapsed || lines;
+  let displayLines;
+  if (fmt === "pyramid") {
+    const pyrSets = sets.filter((s) => pyramidStepOf(s) != null);
+    const fillSets = sets.filter((s) => isPyramidFill(s) || (pyramidStepOf(s) == null && (s.setFormat === "repeated" || s.meta?.setFormat === "repeated")));
+    const collapsedPyr = collapseSetsToDisplayLinesExact(pyrSets, "pyramid");
+    const fillLines = fillSets.map((s) => {
+      if (s.reps === 1) {
+        return `-${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+      }
+      return `-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+    });
+    displayLines = [
+      ...(collapsedPyr || lines.filter((_, i) => pyramidStepOf(sets[i]) != null)),
+      ...fillLines,
+    ];
+  } else {
+    const collapsed = collapseSetsToDisplayLinesExact(sets, fmt);
+    displayLines = collapsed || lines;
+  }
 
   return { sets, setFormat: fmt, lines, displayLines };
 }

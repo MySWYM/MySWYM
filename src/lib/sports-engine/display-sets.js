@@ -1,6 +1,7 @@
 /**
  * Affichage utilisateur vs sets internes (progressive / descending / pyramid).
  * Volume affiché = volume des sets (jamais inventé).
+ * Pyramide : paliers + repos + rôle (montée/sommet/descente) — jamais un seul « Xm pyramide » opaque.
  */
 
 /**
@@ -43,10 +44,24 @@ export function collapseSetsToDisplayLinesExact(sets = [], format) {
   }
 
   if (format === "pyramid") {
-    const peak = Math.max(...sets.map((s) => s.distancePerRep || 0));
-    // Pas de second « Xm » (calcDetailsDistance compterait en double)
+    // Uniquement les paliers (pyramidStep) — le fill hors pyramide est géré à part.
+    const steps = sets.filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null);
+    const use = steps.length >= 3 ? steps : sets;
+    const stepDists = use.map((s) => Number(s.distancePerRep) || 0).filter((d) => d > 0);
+    if (stepDists.length < 3) return null;
+    const pyrVol = stepDists.reduce((a, b) => a + b, 0);
+    const peak = Math.max(...stepDists);
+    const rests = use.map((s) => Number(s.restSec) || 0).filter((r) => r > 0);
+    const restMin = rests.length ? Math.min(...rests) : 20;
+    const restMax = rests.length ? Math.max(...rests) : restMin;
+    const restTxt =
+      restMin === restMax ? `repos ${restMin}s` : `repos ${restMin}–${restMax}s`;
+    // Chaîne sans « m » sur chaque palier → calcDetailsDistance ne double-compte pas.
+    const chain = stepDists.join(" → ");
+    // Header : volume = somme exacte des paliers. Pas de 2e « Xm » (sommet).
     return [
-      `-${vol}m pyramide ${label} — montée / descente (sommet ${peak}) — repos variable`,
+      // Pas de 2e « Xm » (sommet) — calcDetailsDistance compterait en double.
+      `-${pyrVol}m pyramide ${label} : ${chain} (sommet ${peak}) — ${restTxt}`,
     ];
   }
 

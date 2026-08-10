@@ -21,8 +21,11 @@ import {
   maxContinuousForSportif,
   collapseSetsToDisplayLinesExact,
   buildCorpsByFormat,
+  MAX_PYRAMID_VOLUME,
+  candidateSetFormats,
   ARTHUR_GOLD_TEST_FIXTURES,
 } from "./index.js";
+import { calcDetailsDistance } from "../swim-session-generator.js";
 import {
   loadArthurGoldTestFixtures,
   resetSessionTemplatesCache,
@@ -593,6 +596,56 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(/Z2|aérobie|orientation/i.test(down.details.join(" ")), "intention OW");
 
   resetSessionTemplatesCache();
+}
+
+// 18 — Pyramide plafonnée + paliers visibles (pas 1750 m opaque Ironman)
+{
+  assert(MAX_PYRAMID_VOLUME <= 1000, `cap ${MAX_PYRAMID_VOLUME}`);
+
+  const built = buildCorpsByFormat("pyramid", 1750, {
+    label: "crawl",
+    cue: "allure confortable",
+    restFor: () => 20,
+    exerciseId: "pyr_iron",
+    maxContinuous: 400,
+    pool: 50,
+  });
+  const pyrVol = built.sets
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(pyrVol <= MAX_PYRAMID_VOLUME, `pyramide ${pyrVol}m ≤ ${MAX_PYRAMID_VOLUME}`);
+  assert(pyrVol < 1600, "pas de scale×2 vers 1600");
+  const peak = Math.max(
+    ...built.sets.filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null).map((s) => s.distancePerRep),
+  );
+  assert(peak <= 300, `sommet ${peak}m ≤ 300`);
+
+  const disp = (built.displayLines || []).join("\n");
+  assert(/pyramide/i.test(disp), `display pyramide: ${disp}`);
+  assert(/→/.test(disp), `paliers visibles: ${disp}`);
+  assert(!/1750m\s+pyramide/i.test(disp), "pas de titre 1750m pyramide");
+  const fromDetails = calcDetailsDistance(built.displayLines || []);
+  const fromSets = built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(
+    Math.abs(fromDetails - fromSets) <= 50,
+    `volume display=${fromDetails} sets=${fromSets}`,
+  );
+
+  // Gros corps triathlon/perf → pyramide hors candidats
+  const bigTri = candidateSetFormats({
+    intentId: "triathlon",
+    level: "performance",
+    corpsTarget: 1750,
+    maxContinuous: 400,
+  });
+  assert(!bigTri.includes("pyramid"), `pas de pyramide gros tri: ${bigTri}`);
+  const smallTri = candidateSetFormats({
+    intentId: "triathlon",
+    level: "performance",
+    corpsTarget: 800,
+    maxContinuous: 400,
+  });
+  assert(smallTri.includes("pyramid"), `pyramide OK si court: ${smallTri}`);
 }
 
 // effortCue sans pace
