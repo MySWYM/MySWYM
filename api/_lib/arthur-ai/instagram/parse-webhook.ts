@@ -34,12 +34,16 @@ export function verifyMetaSignature(
     arthurLog("error", "meta_app_secret_missing", {});
     return false;
   }
-  if (!signatureHeader || !signatureHeader.startsWith("sha256=")) {
+  const header = String(signatureHeader || "").trim();
+  if (!header.toLowerCase().startsWith("sha256=")) {
     return false;
   }
 
-  const expected = createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
-  const received = signatureHeader.slice("sha256=".length);
+  const received = header.slice(header.indexOf("=") + 1).trim().toLowerCase();
+  const expected = createHmac("sha256", secret)
+    .update(Buffer.from(rawBody, "utf8"))
+    .digest("hex");
+
   try {
     const a = Buffer.from(expected, "utf8");
     const b = Buffer.from(received, "utf8");

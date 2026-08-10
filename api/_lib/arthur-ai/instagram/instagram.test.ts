@@ -111,8 +111,12 @@ test("signature Meta HMAC", () => {
   const body = '{"object":"instagram"}';
   const sig =
     "sha256=" +
-    createHmac("sha256", "secret").update(body, "utf8").digest("hex");
+    createHmac("sha256", "secret").update(Buffer.from(body, "utf8")).digest("hex");
   assert.equal(parseMod.verifyMetaSignature(body, sig), true);
+  assert.equal(
+    parseMod.verifyMetaSignature(body, sig.replace("sha256=", "SHA256=")),
+    true,
+  );
   assert.equal(parseMod.verifyMetaSignature(body, "sha256=deadbeef"), false);
 
   process.env.INSTAGRAM_MOCK = prevMock || "1";

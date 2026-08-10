@@ -1,27 +1,14 @@
 /**
  * GET/POST /api/instagram/webhook — Meta Instagram Messaging.
  *
- * GET  : hub challenge (léger, zéro import lourd — critique pour Meta Verify)
- * POST : messages → Arthur AI (import dynamique)
- *
- * Vercel Serverless : ce fichier DOIT être versionné dans git pour être déployé.
+ * Handlers Web Request/Response (pas @vercel/node helpers) pour que
+ * `request.text()` fournisse le corps brut exact signé par Meta
+ * (HMAC X-Hub-Signature-256). `api.bodyParser: false` est Next-only
+ * et n’est pas fiable sur un projet Vite.
  */
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-
 export const config = {
   maxDuration: 60,
-  // Corps brut requis pour vérifier X-Hub-Signature-256 (Meta).
-  api: {
-    bodyParser: false,
-  },
 };
-
-function asQueryString(
-  value: string | string[] | undefined,
-): string {
-  if (Array.isArray(value)) return String(value[0] || "");
-  return value == null ? "" : String(value);
-}
 
 function log(level: "info" | "warn" | "error", event: string, meta: Record<string, unknown> = {}) {
   console.log(
@@ -35,14 +22,22 @@ function log(level: "info" | "warn" | "error", event: string, meta: Record<strin
   );
 }
 
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+  });
+}
+
 /**
  * Validation Meta webhook (GET).
  * Succès : body = challenge brut (texte), status 200.
  */
-function handleMetaVerify(req: VercelRequest, res: VercelResponse) {
-  const mode = asQueryString(req.query["hub.mode"]);
-  const token = asQueryString(req.query["hub.verify_token"]);
-  const challenge = asQueryString(req.query["hub.challenge"]);
+export async function GET(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  const mode = url.searchParams.get("hub.mode") || "";
+  const token = url.searchParams.get("hub.verify_token") || "";
+  const challenge = url.searchParams.get("hub.challenge") || "";
   const expected = (process.env.META_VERIFY_TOKEN || "").trim();
 
   log("info", "meta_verify_attempt", {
@@ -56,7 +51,7 @@ function handleMetaVerify(req: VercelRequest, res: VercelResponse) {
 
   if (!mode && !token && !challenge) {
     log("warn", "meta_verify_missing_params", {});
-    return res.status(400).json({
+    return jsonResponse(400, {
       ok: false,
       error: "Paramètres Meta manquants",
       required: ["hub.mode", "hub.verify_token", "hub.challenge"],
@@ -66,7 +61,7 @@ function handleMetaVerify(req: VercelRequest, res: VercelResponse) {
 
   if (!expected) {
     log("error", "meta_verify_token_env_missing", {});
-    return res.status(503).json({
+    return jsonResponse(503, {
       ok: false,
       error: "META_VERIFY_TOKEN non configuré sur Vercel",
     });
@@ -74,7 +69,7 @@ function handleMetaVerify(req: VercelRequest, res: VercelResponse) {
 
   if (mode !== "subscribe") {
     log("warn", "meta_verify_bad_mode", { mode });
-    return res.status(403).json({
+    return jsonResponse(403, {
       ok: false,
       error: "hub.mode invalide (attendu: subscribe)",
     });
@@ -82,7 +77,7 @@ function handleMetaVerify(req: VercelRequest, res: VercelResponse) {
 
   if (!challenge) {
     log("warn", "meta_verify_missing_challenge", {});
-    return res.status(400).json({
+    return jsonResponse(400, {
       ok: false,
       error: "hub.challenge manquant",
     });
@@ -92,50 +87,49 @@ function handleMetaVerify(req: VercelRequest, res: VercelResponse) {
     log("warn", "meta_verify_token_mismatch", {
       received_prefix: token.slice(0, 6),
     });
-    return res.status(403).json({
+    return jsonResponse(403, {
       ok: false,
       error: "verify_token invalide",
     });
   }
 
   log("info", "meta_verify_ok", { challenge_len: challenge.length });
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  return res.end(challenge);
+  return new Response(challenge, {
+    status: 200,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === "GET") {
-    return handleMetaVerify(req, res);
-  }
-
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "GET, POST");
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
-  }
-
-  // Import dynamique : le GET Meta ne charge jamais le gros graphe Arthur
+export async function POST(request: Request): Promise<Response> {
   try {
-    const { readRawBody, parseJsonBody } = await import(
-      "../_lib/arthur-ai/instagram/raw-body.js"
-    );
-    const rawBody = await readRawBody(req);
-    const parsed = parseJsonBody(rawBody);
-    if (parsed === null) {
+    // Bytes exacts signés par Meta — ne pas passer par un JSON re-stringifié
+    const rawBody = await request.text();
+    let parsed: unknown;
+    try {
+      parsed = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
       log("warn", "instagram_post_invalid_json", { raw_len: rawBody.length });
-      return res.status(400).json({ ok: false, error: "Invalid JSON body" });
+      return jsonResponse(400, { ok: false, error: "Invalid JSON body" });
     }
-    // Remplace le body auto-parsé (désactivé) pour le handler métier
-    (req as { body?: unknown }).body = parsed;
 
-    const { handleInstagramWebhookPost } = await import("./webhook-post.js");
-    return handleInstagramWebhookPost(req, res, rawBody);
+    const { handleInstagramWebhookPostWeb } = await import("./webhook-post.js");
+    return handleInstagramWebhookPostWeb(request, parsed, rawBody);
   } catch (err) {
     log("error", "instagram_post_handler_load_failed", {
       name: err instanceof Error ? err.name : "Error",
       message: err instanceof Error ? err.message.slice(0, 200) : "unknown",
     });
     // Meta préfère 200 pour éviter storm de retries sur erreurs internes
-    return res.status(200).json({ ok: false, error: "handler_unavailable" });
+    return jsonResponse(200, { ok: false, error: "handler_unavailable" });
   }
 }
+
+/** Compat builders qui attendent `export default { fetch }` */
+export default {
+  async fetch(request: Request): Promise<Response> {
+    if (request.method === "GET") return GET(request);
+    if (request.method === "POST") return POST(request);
+    return jsonResponse(405, { ok: false, error: "Method not allowed" });
+  },
+};
+
