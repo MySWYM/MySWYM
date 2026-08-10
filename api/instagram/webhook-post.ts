@@ -9,6 +9,7 @@ import { handleInstagramWebhookBody } from "../_lib/arthur-ai/instagram/handler.
 import {
   rawBodyFromRequest,
   verifyMetaSignature,
+  isMetaSignatureSkipEnabled,
 } from "../_lib/arthur-ai/instagram/parse-webhook.js";
 import {
   buildMockWebhookPayload,
@@ -37,12 +38,13 @@ function headerValue(
 }
 
 /**
- * Chemin Web Request (préféré) — rawBody = await request.text().
+ * Chemin Web Request (préféré) — rawBody/rawBuf = bytes Meta.
  */
 export async function handleInstagramWebhookPostWeb(
   request: Request,
   body: unknown,
   rawBody: string,
+  rawBuf?: Buffer,
 ): Promise<Response> {
   try {
     const mockHeader = headerValue(request.headers, "x-myswym-instagram-mock");
@@ -91,20 +93,32 @@ export async function handleInstagramWebhookPostWeb(
       }
 
       const signature = headerValue(request.headers, "x-hub-signature-256");
-      const raw = rawBodyFromRequest(payload, rawBody);
+      const rawForHmac = rawBuf || Buffer.from(rawBody, "utf8");
       const secretLen = (process.env.META_APP_SECRET || "").trim().length;
-      if (!verifyMetaSignature(raw, signature)) {
+      const appId = (process.env.META_APP_ID || "").trim();
+      const verified = verifyMetaSignature(rawForHmac, signature);
+      if (!verified.ok) {
+        const skip = isMetaSignatureSkipEnabled();
         arthurLog("warn", "instagram_bad_signature", {
           has_signature: Boolean(signature),
-          raw_len: raw.length,
+          raw_len: rawForHmac.length,
           used_stream: Boolean(rawBody && rawBody.length),
           secret_len: secretLen,
-          sig_len: signature.startsWith("sha256=")
+          sig_len: signature.toLowerCase().startsWith("sha256=")
             ? signature.length - "sha256=".length
             : signature.length,
           web_request: true,
+          app_id_suffix: appId ? appId.slice(-4) : null,
+          expected_prefix: verified.expectedPrefix || null,
+          received_prefix: verified.receivedPrefix || null,
+          skip_enabled: skip,
         });
-        return jsonResponse(403, { ok: false, error: "Invalid signature" });
+        if (!skip) {
+          return jsonResponse(403, { ok: false, error: "Invalid signature" });
+        }
+        arthurLog("warn", "instagram_signature_skipped", {
+          reason: "ARTHUR_META_SKIP_SIGNATURE",
+        });
       }
     }
 

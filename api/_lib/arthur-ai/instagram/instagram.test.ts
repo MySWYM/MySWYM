@@ -112,12 +112,12 @@ test("signature Meta HMAC", () => {
   const sig =
     "sha256=" +
     createHmac("sha256", "secret").update(Buffer.from(body, "utf8")).digest("hex");
-  assert.equal(parseMod.verifyMetaSignature(body, sig), true);
+  assert.equal(parseMod.verifyMetaSignature(body, sig).ok, true);
   assert.equal(
-    parseMod.verifyMetaSignature(body, sig.replace("sha256=", "SHA256=")),
+    parseMod.verifyMetaSignature(body, sig.replace("sha256=", "SHA256=")).ok,
     true,
   );
-  assert.equal(parseMod.verifyMetaSignature(body, "sha256=deadbeef"), false);
+  assert.equal(parseMod.verifyMetaSignature(body, "sha256=deadbeef").ok, false);
 
   process.env.INSTAGRAM_MOCK = prevMock || "1";
   delete process.env.META_APP_SECRET;

@@ -24,34 +24,52 @@ export interface ParsedInstagramMessage {
 }
 
 export function verifyMetaSignature(
-  rawBody: string,
+  rawBody: string | Buffer,
   signatureHeader: string | undefined,
-): boolean {
-  if (isInstagramMockMode()) return true;
+): { ok: boolean; expectedPrefix?: string; receivedPrefix?: string } {
+  if (isInstagramMockMode()) return { ok: true };
 
   const secret = (process.env.META_APP_SECRET || "").trim();
   if (!secret) {
     arthurLog("error", "meta_app_secret_missing", {});
-    return false;
+    return { ok: false };
   }
   const header = String(signatureHeader || "").trim();
   if (!header.toLowerCase().startsWith("sha256=")) {
-    return false;
+    return { ok: false };
   }
 
   const received = header.slice(header.indexOf("=") + 1).trim().toLowerCase();
-  const expected = createHmac("sha256", secret)
-    .update(Buffer.from(rawBody, "utf8"))
-    .digest("hex");
+  const bodyBuf = Buffer.isBuffer(rawBody)
+    ? rawBody
+    : Buffer.from(rawBody, "utf8");
+  const expected = createHmac("sha256", secret).update(bodyBuf).digest("hex");
 
   try {
     const a = Buffer.from(expected, "utf8");
     const b = Buffer.from(received, "utf8");
-    if (a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
+    if (a.length !== b.length) {
+      return {
+        ok: false,
+        expectedPrefix: expected.slice(0, 8),
+        receivedPrefix: received.slice(0, 8),
+      };
+    }
+    const ok = timingSafeEqual(a, b);
+    return {
+      ok,
+      expectedPrefix: expected.slice(0, 8),
+      receivedPrefix: received.slice(0, 8),
+    };
   } catch {
-    return false;
+    return { ok: false };
   }
+}
+
+/** Bypass temporaire Shadow H1 — à retirer dès que META_APP_SECRET matche. */
+export function isMetaSignatureSkipEnabled(): boolean {
+  const v = (process.env.ARTHUR_META_SKIP_SIGNATURE || "").trim();
+  return v === "1" || v === "true";
 }
 
 export function verifyWebhookChallenge(query: Record<string, string | string[] | undefined>): {

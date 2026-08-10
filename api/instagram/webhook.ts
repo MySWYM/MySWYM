@@ -102,18 +102,19 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    // Bytes exacts signés par Meta — ne pas passer par un JSON re-stringifié
-    const rawBody = await request.text();
+    // Bytes exacts signés par Meta (arrayBuffer > text pour HMAC)
+    const rawBuf = Buffer.from(await request.arrayBuffer());
+    const rawBody = rawBuf.toString("utf8");
     let parsed: unknown;
     try {
       parsed = rawBody ? JSON.parse(rawBody) : {};
     } catch {
-      log("warn", "instagram_post_invalid_json", { raw_len: rawBody.length });
+      log("warn", "instagram_post_invalid_json", { raw_len: rawBuf.length });
       return jsonResponse(400, { ok: false, error: "Invalid JSON body" });
     }
 
     const { handleInstagramWebhookPostWeb } = await import("./webhook-post.js");
-    return handleInstagramWebhookPostWeb(request, parsed, rawBody);
+    return handleInstagramWebhookPostWeb(request, parsed, rawBody, rawBuf);
   } catch (err) {
     log("error", "instagram_post_handler_load_failed", {
       name: err instanceof Error ? err.name : "Error",
