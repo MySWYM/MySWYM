@@ -22,7 +22,7 @@
     "test:analytics": "node src/lib/analytics.test.js",
     "test:equipment": "node src/lib/sports-engine/equipment-onboarding.test.js",
     "test:readiness": "node src/lib/sports-engine/readiness.test.js",
-    "test:version-gate": "node src/lib/app-version.test.js && tsx api/app-version.test.ts",
+    "test:version-gate": "node src/lib/app-version.test.js && node scripts/app-version.test.mjs",
     "test:arthur": "ARTHUR_AI_MOCK=1 tsx api/_lib/arthur-ai/arthur-ai.test.ts",
     "test:arthur:instagram": "ARTHUR_AI_MOCK=1 INSTAGRAM_MOCK=1 tsx api/_lib/arthur-ai/instagram/instagram.test.ts",
     "test:arthur:growth": "tsx api/_lib/arthur-ai/growth/growth.test.ts",
