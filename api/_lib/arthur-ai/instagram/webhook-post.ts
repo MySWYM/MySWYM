@@ -16,6 +16,10 @@ import {
   isInstagramMockMode,
 } from "./mock.js";
 import { hasInstagramCredentials } from "./meta-client.js";
+import {
+  canLiveSendInstagram,
+  isInstagramShadowMode,
+} from "../shadow/mode.js";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -98,7 +102,11 @@ export async function handleInstagramWebhookPostWeb(
       const appId = (process.env.META_APP_ID || "").trim();
       const verified = verifyMetaSignature(rawForHmac, signature);
       if (!verified.ok) {
-        const skip = isMetaSignatureSkipEnabled();
+        // H1 Shadow : accepter les DM même si META_APP_SECRET ne matche
+        // pas encore (pas d'envoi live). Dès live send ON → HMAC obligatoire.
+        const skip =
+          isMetaSignatureSkipEnabled() ||
+          (isInstagramShadowMode() && !canLiveSendInstagram());
         arthurLog("warn", "instagram_bad_signature", {
           has_signature: Boolean(signature),
           raw_len: rawForHmac.length,
@@ -112,12 +120,16 @@ export async function handleInstagramWebhookPostWeb(
           expected_prefix: verified.expectedPrefix || null,
           received_prefix: verified.receivedPrefix || null,
           skip_enabled: skip,
+          shadow: isInstagramShadowMode(),
+          live_send: canLiveSendInstagram(),
         });
         if (!skip) {
           return jsonResponse(403, { ok: false, error: "Invalid signature" });
         }
         arthurLog("warn", "instagram_signature_skipped", {
-          reason: "ARTHUR_META_SKIP_SIGNATURE",
+          reason: isMetaSignatureSkipEnabled()
+            ? "ARTHUR_META_SKIP_SIGNATURE"
+            : "shadow_mode_soft_verify",
         });
       }
     }

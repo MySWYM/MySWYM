@@ -68,6 +68,7 @@ export default function ArthurShadowAdmin() {
   const [data, setData] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [lastRefresh, setLastRefresh] = useState("");
 
   useEffect(() => {
     ensureFonts();
@@ -79,12 +80,17 @@ export default function ArthurShadowAdmin() {
     try {
       const headers = await adminHeaders(secret);
       const res = await fetch(
-        `/api/admin/arthur-shadow?status=${encodeURIComponent(statusFilter)}&days=30`,
-        { headers },
+        `/api/admin/arthur-shadow?status=${encodeURIComponent(statusFilter)}&days=30&_=${Date.now()}`,
+        { headers, cache: "no-store" },
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
+      setLastRefresh(
+        json.fetched_at
+          ? new Date(json.fetched_at).toLocaleTimeString("fr-FR")
+          : new Date().toLocaleTimeString("fr-FR"),
+      );
     } catch (err) {
       setData(null);
       setError(err instanceof Error ? err.message : "Erreur");
@@ -232,11 +238,12 @@ export default function ArthurShadowAdmin() {
               <option value="all">All</option>
             </select>
             <button type="button" disabled={loading} onClick={load} style={btn(C.primary)}>
-              Rafraîchir
+              {loading ? "Chargement…" : "Rafraîchir"}
             </button>
             <span style={{ alignSelf: "center", fontSize: 13, fontWeight: 700, color: C.ok }}>
               shadow={String(data?.shadow_mode)} · live_send={String(data?.live_send)} ·
               followups={String(data?.followups_send)}
+              {lastRefresh ? ` · ${lastRefresh}` : ""}
             </span>
           </div>
         ) : null}
@@ -247,6 +254,23 @@ export default function ArthurShadowAdmin() {
           </p>
         ) : null}
 
+        {data && (data.recent_events || []).length === 0 ? (
+          <p
+            style={{
+              background: "#fff6e8",
+              color: "#7a4a12",
+              padding: 12,
+              borderRadius: 8,
+              marginBottom: 16,
+              fontSize: 14,
+            }}
+          >
+            Aucun événement Instagram en base. Si tu viens d’envoyer un DM et que
+            rien n’apparaît après refresh, le webhook Meta n’a pas encore été
+            accepté (souvent signature). En Shadow H1 le soft-verify est actif
+            après ce deploy — renvoie un DM puis rafraîchis.
+          </p>
+        ) : null}
         {report ? (
           <section style={{ marginBottom: 24 }}>
             <h2 style={h2}>File d’attente</h2>

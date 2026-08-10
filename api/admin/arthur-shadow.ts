@@ -17,6 +17,7 @@ import {
   canLiveSendInstagram,
 } from "../_lib/arthur-ai/shadow/index.js";
 import { isFollowupSendEnabled } from "../_lib/arthur-ai/conversion/send.js";
+import { isMetaSignatureSkipEnabled } from "../_lib/arthur-ai/instagram/parse-webhook.js";
 import { arthurLog } from "../_lib/arthur-ai/logging.js";
 import { asNonEmptyString, isUuid } from "../_lib/arthur-ai/security.js";
 
@@ -25,6 +26,9 @@ export const config = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+
   const auth = await resolveArthurAdminAuth(req);
   if (!auth.ok) {
     return res.status(auth.status).json({ ok: false, error: auth.error });
@@ -109,16 +113,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       limit: 30,
     });
 
+    const meta_signature_skip =
+      isMetaSignatureSkipEnabled() ||
+      (isInstagramShadowMode() && !canLiveSendInstagram());
+
     return res.status(200).json({
       ok: true,
       auth_via: auth.via,
       shadow_mode: isInstagramShadowMode(),
       live_send: canLiveSendInstagram(),
       followups_send: isFollowupSendEnabled(),
+      meta_signature_skip,
       note: "Shadow H1 — propositions sans envoi automatique",
       report,
       proposals,
       recent_events,
+      fetched_at: new Date().toISOString(),
     });
   } catch (err) {
     arthurLog("error", "admin_arthur_shadow_failed", {
