@@ -34,6 +34,7 @@ import {
   projectedPaceAtWeek,
 } from "./lib/swim-pace.js";
 import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
+import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -6077,6 +6078,7 @@ const SessionBlock = ({ detail, index, workIndex, accent, children = null }) => 
   if (!parsed) return null;
   const isSection = parsed.kind === "warm" || parsed.kind === "cool";
   const childLines = Array.isArray(children) ? children : [];
+  const pyramid = parsePyramidLine(detail);
 
   if (isSection) {
     return (
@@ -6136,6 +6138,16 @@ const SessionBlock = ({ detail, index, workIndex, accent, children = null }) => 
                   }}>{s}</span>
                 ))}
               </div>
+            )}
+            {pyramid && (
+              <PyramidBlockViz
+                steps={pyramid.steps}
+                peak={pyramid.peak}
+                volume={pyramid.volume}
+                rest={pyramid.rest}
+                label={pyramid.label}
+                accent={accent?.color || G.blue}
+              />
             )}
             {/* Sous-séries du même bloc (ex. éducatif + jambes) — pas de tiret/point ni de n° */}
             {childLines.length > 0 && (

@@ -13,6 +13,7 @@ import BlogPost from './BlogPost.jsx'
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from './LegalPages.jsx'
 import CookieBanner from './CookieBanner.jsx'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
+import SessionPyramidPreview from './SessionPyramidPreview.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')).render(
 
         {/* Prototype parcours conversion (design + UX) */}
         <Route path="/prototype/conversion" element={<ConversionFlow />} />
+        <Route path="/prototype/session-pyramid" element={<SessionPyramidPreview />} />
 
         {/* Landing marketing */}
         <Route path="/accueil" element={<Landing />} />
