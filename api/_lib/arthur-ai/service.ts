@@ -333,7 +333,11 @@ async function finishWithStructured(
     skipOptimization?: boolean;
   },
 ): Promise<ProcessArthurMessageResult> {
-  const structured = opts.structured;
+  let structured = opts.structured;
+  if (auth.channel === "instagram") {
+    const { applyShadowReplyPolicy } = await import("./shadow/reply-policy.js");
+    structured = applyShadowReplyPolicy(structured, input.message);
+  }
 
   await insertMessage(admin, conversationId, "assistant", structured.message, {
     intent: structured.intent,

@@ -273,17 +273,25 @@ export function mockStructuredFromUserPayload(
   let intent: ArthurStructuredOutput["intent"] = "other";
   const extracted: ArthurStructuredOutput["extracted_data"] = {};
 
-  if (/crawl|technique|respiration|virage|coulée|godille/.test(lower)) {
+  if (/crawl|technique|respiration|virage|coulée|godille|progress/.test(lower)) {
     intent = "technique";
   } else if (/triathlon|ironman|compétition|course|objectif|prépare/.test(lower)) {
     intent = "goal";
     if (/triathlon/.test(lower)) extracted.goal = "triathlon";
     const weeks = lower.match(/(\d+)\s*semaines?/);
+    const months = lower.match(/(\d+)\s*mois/);
     if (weeks) {
       const n = Number(weeks[1]);
       if (Number.isFinite(n)) {
         const d = new Date();
         d.setDate(d.getDate() + n * 7);
+        extracted.target_date = d.toISOString().slice(0, 10);
+      }
+    } else if (months) {
+      const n = Number(months[1]);
+      if (Number.isFinite(n)) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + n);
         extracted.target_date = d.toISOString().slice(0, 10);
       }
     }
@@ -309,19 +317,28 @@ export function mockStructuredFromUserPayload(
 
   let message =
     "Dis-moi un peu plus sur ton niveau et ta fréquence de nage, je pourrai t’orienter précisément.";
+  let suggested_action = "continue";
+
   if (intent === "technique") {
     message =
-      "Pour ton crawl, commence par une respiration bilatérale et un alignement tête-bassin stable. Tu nages combien de fois par semaine ?";
+      "Pour progresser en crawl : respiration bilatérale et alignement tête-bassin stable. Tu nages combien de fois par semaine ?";
+    suggested_action = "qualify_frequency";
   } else if (intent === "goal" && extracted.goal === "triathlon") {
     message =
-      "Triathlon dans ~12 semaines : on peut construire un plan progressif. Je peux te générer ton plan personnalisé. Tu veux que je le crée ?";
-    extracted.needs_plan = true;
+      "Triathlon avec une échéance : on construit une progression réaliste. Tu nages déjà combien de fois par semaine, bassin ou eau libre ?";
+    suggested_action = "qualify_frequency";
   } else if (intent === "plan_request") {
     message =
       "Je peux te générer ton plan personnalisé sur 8 semaines. Tu veux que je le crée ?";
+    suggested_action = "ask_plan_confirmation";
   } else if (intent === "subscription") {
     message =
-      "Je peux t’ouvrir le paiement sécurisé Premium (essai 7 jours sur le mensuel si éligible). Tu veux le lien mensuel ou annuel ?";
+      "Premium : essai 7 jours (carte requise), puis 4,99€/mois sans engagement, ou 39,99€/an. Détails : https://myswym.app/tarifs";
+    suggested_action = "continue";
+  } else if (intent === "other") {
+    message =
+      "Je suis coach natation MySWYM — hors sujet pour moi. Si tu as une question nage ou entraînement, envoie-la.";
+    suggested_action = "no_reply";
   }
 
   return {
@@ -330,12 +347,11 @@ export function mockStructuredFromUserPayload(
     lead_temperature,
     extracted_data: extracted,
     suggested_action:
-      intent === "plan_request" || (intent === "goal" && extracted.needs_plan)
+      suggested_action ||
+      (intent === "plan_request" || (intent === "goal" && extracted.needs_plan)
         ? "ask_plan_confirmation"
-        : intent === "subscription"
-          ? "suggest_myswym"
-          : intent === "goal"
-            ? "qualify_frequency"
-            : "continue",
+        : intent === "goal"
+          ? "qualify_frequency"
+          : "continue"),
   };
 }

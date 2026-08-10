@@ -1,5 +1,5 @@
 /**
- * Tests Shadow Mode H1 — classification + gates (pas d’envoi).
+ * Tests Shadow Mode H1 — classification + politique DM + gates (pas d’envoi).
  * Run: npm run test:arthur:shadow
  */
 import assert from "node:assert/strict";
@@ -8,7 +8,15 @@ import {
   canLiveSendInstagram,
   classifyRecommendedAction,
 } from "./mode.js";
+import {
+  applyShadowReplyPolicy,
+  containsMyswymLink,
+  isOffTopicDm,
+  isPricingDm,
+} from "./reply-policy.js";
+import { buildOfflineResponse } from "../production/offline.js";
 import { isFollowupSendEnabled } from "../conversion/send.js";
+import { fallbackStructured } from "../intent.js";
 
 test("shadow ON par défaut", () => {
   delete process.env.ARTHUR_FLAG_SHADOW_INSTAGRAM;
@@ -26,7 +34,6 @@ test("live send exige double gate", () => {
   process.env.ARTHUR_INSTAGRAM_LIVE_SEND = "1";
   assert.equal(canLiveSendInstagram(), true);
 
-  // Remettre shadow (sécurité tests suivants)
   delete process.env.ARTHUR_FLAG_SHADOW_INSTAGRAM;
   delete process.env.ARTHUR_INSTAGRAM_LIVE_SEND;
 });
@@ -86,6 +93,100 @@ test("classify default reply", () => {
       lead_temperature: "warm",
     }),
     "reply",
+  );
+});
+
+test("kebab → other/no_reply, zéro lien MySWYM", () => {
+  const inbound = "Je voudrais un kebab";
+  assert.equal(isOffTopicDm(inbound), true);
+
+  const offline = buildOfflineResponse(inbound, { reason: "openai_error" });
+  assert.equal(offline.intent, "other");
+  assert.equal(offline.suggested_action, "no_reply");
+  assert.equal(containsMyswymLink(offline.message), false);
+  assert.equal(/inscription|\/tarifs/i.test(offline.message), false);
+
+  // Même si le LLM force une promo, la policy la retire
+  const poisoned = fallbackStructured(
+    "Super ! Viens sur https://myswym.app/inscription pour ton plan Premium.",
+  );
+  poisoned.intent = "other";
+  poisoned.lead_temperature = "cold";
+  poisoned.suggested_action = "suggest_myswym";
+  const cleaned = applyShadowReplyPolicy(poisoned, inbound);
+  assert.equal(cleaned.intent, "other");
+  assert.equal(cleaned.suggested_action, "no_reply");
+  assert.equal(containsMyswymLink(cleaned.message), false);
+  assert.equal(
+    classifyRecommendedAction({
+      suggested_action: cleaned.suggested_action,
+      intent: cleaned.intent,
+      lead_temperature: cleaned.lead_temperature,
+      message: cleaned.message,
+    }),
+    "ignore",
+  );
+});
+
+test("prix app → réponse tarifaire directe", () => {
+  const inbound = "Quel est le prix de l’app ?";
+  assert.equal(isPricingDm(inbound), true);
+
+  const offline = buildOfflineResponse(inbound, { reason: "flag_offline" });
+  assert.equal(offline.intent, "subscription");
+  assert.match(offline.message, /4[,.]99/);
+  assert.match(offline.message, /39[,.]99|\/tarifs/i);
+  assert.equal(offline.suggested_action, "continue");
+  assert.equal(
+    classifyRecommendedAction({
+      suggested_action: offline.suggested_action,
+      intent: offline.intent,
+      lead_temperature: offline.lead_temperature,
+      message: offline.message,
+    }),
+    "reply",
+  );
+});
+
+test("progresser en crawl → conseil utile, suggestion pertinente", () => {
+  const inbound = "Je veux progresser en crawl";
+  assert.equal(isOffTopicDm(inbound), false);
+
+  const offline = buildOfflineResponse(inbound, { reason: "openai_error" });
+  assert.ok(["technique", "swimming_question", "training"].includes(offline.intent));
+  assert.match(offline.message, /crawl|respiration|coulée|semaine/i);
+  assert.equal(containsMyswymLink(offline.message), false);
+  assert.ok(
+    ["qualify_frequency", "continue", "suggest_myswym"].includes(
+      offline.suggested_action,
+    ),
+  );
+  const action = classifyRecommendedAction({
+    suggested_action: offline.suggested_action,
+    intent: offline.intent,
+    lead_temperature: offline.lead_temperature,
+    message: offline.message,
+  });
+  assert.ok(["qualify", "reply", "suggest_myswym"].includes(action));
+  assert.notEqual(action, "ignore");
+});
+
+test("triathlon 3 mois → qualification adaptée", () => {
+  const inbound = "J’ai un triathlon dans 3 mois";
+  assert.equal(isOffTopicDm(inbound), false);
+
+  const offline = buildOfflineResponse(inbound, { reason: "no_api_key" });
+  assert.equal(offline.intent, "goal");
+  assert.match(offline.message, /triathlon|semaine|bassin|eau libre/i);
+  assert.equal(offline.suggested_action, "qualify_frequency");
+  assert.equal(
+    classifyRecommendedAction({
+      suggested_action: offline.suggested_action,
+      intent: offline.intent,
+      lead_temperature: offline.lead_temperature,
+      message: offline.message,
+    }),
+    "qualify",
   );
 });
 

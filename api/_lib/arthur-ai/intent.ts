@@ -84,7 +84,7 @@ export const ARTHUR_RESPONSE_JSON_SCHEMA = {
     suggested_action: {
       type: "string",
       description:
-        "Action interne courte : continue | qualify_frequency | ask_plan_confirmation | suggest_myswym | handoff_human",
+        "Action interne courte : continue | qualify_frequency | ask_plan_confirmation | suggest_myswym | handoff_human | no_reply",
     },
   },
 } as const;

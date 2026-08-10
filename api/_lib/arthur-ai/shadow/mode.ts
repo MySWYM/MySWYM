@@ -53,12 +53,22 @@ export function classifyRecommendedAction(input: {
   const intent = input.intent || "";
   const temp = input.lead_temperature || "";
   const status = input.lead_status || "";
+  const msg = input.message || "";
 
-  if (action === "handoff_human" || /humain|conseiller/i.test(input.message || "")) {
+  if (action === "handoff_human" || /humain|conseiller/i.test(msg)) {
     return "handoff_human";
   }
   if (status === "premium") return "ignore";
-  if (action === "suggest_myswym" || intent === "subscription") {
+  if (
+    action === "no_reply" ||
+    (intent === "other" &&
+      !/myswym\.app|\/inscription|\/tarifs/i.test(msg) &&
+      temp === "cold")
+  ) {
+    return "ignore";
+  }
+  // suggest_myswym uniquement si l’action le demande — pas auto sur subscription/prix
+  if (action === "suggest_myswym") {
     return "suggest_myswym";
   }
   if (
@@ -67,7 +77,7 @@ export function classifyRecommendedAction(input: {
   ) {
     return "qualify";
   }
-  if (temp === "warm" && intent === "other" && (input.message || "").length < 8) {
+  if (temp === "warm" && intent === "other" && msg.length < 8) {
     return "followup_later";
   }
   if (action === "ask_plan_confirmation" || intent === "plan_request") {

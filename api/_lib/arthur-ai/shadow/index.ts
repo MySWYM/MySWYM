@@ -12,3 +12,10 @@ export {
   listRecentInstagramEvents,
 } from "./review.js";
 export type { ShadowReviewAction } from "./review.js";
+export {
+  applyShadowReplyPolicy,
+  containsMyswymLink,
+  isOffTopicDm,
+  isPricingDm,
+  MYSWYM_PRICING,
+} from "./reply-policy.js";
