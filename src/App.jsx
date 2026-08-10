@@ -36,6 +36,7 @@ import {
 import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import SessionLiveView from "./SessionLiveView.jsx";
+import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -954,8 +955,10 @@ const estimateSetPartMeters = (part) => {
  * Fix UX Performance / banque gold : plus de mur de texte sur une ligne.
  */
 const expandCompoundDetailLines = (details = []) => {
+  // Restitution coach (retire headlines / pyramides opaques / bruit UX)
+  const source = toCoachDetailLines(details);
   const out = [];
-  for (const raw of details) {
+  for (const raw of source) {
     const full = String(raw ?? "");
     const text = full.trim();
     if (!text) continue;

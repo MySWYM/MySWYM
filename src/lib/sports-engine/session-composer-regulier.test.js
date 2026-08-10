@@ -117,8 +117,8 @@ function assertRegulierSport(session, brief) {
     announcedDistance: session.distance,
   });
   assert(cons.ok, `volume: ${cons.errors.join("; ")} (sets=${cons.fromSets} details=${cons.fromDetails})`);
-  assert(/Aujourd'hui :/i.test(session.details.join("\n")), "intention");
-  assert(session.details.some((l) => /technique/i.test(l)), "bloc technique");
+  assert(!/Aujourd'hui :/i.test(session.details.join("\n")), "pas de headline narratif");
+  assert(session.details.some((l) => /rattrap|godille|jambes|flèche|technique|crawl|dos/i.test(l)), "bloc technique");
   assert(session.details.some((l) => /×|x\s*\d/i.test(l)), "vraies séries");
   const hard = validateRegulierHard(session, {
     papillonOk: !!brief.papillonMastered,

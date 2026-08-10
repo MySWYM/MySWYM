@@ -83,18 +83,20 @@ export function candidateSetFormats(ctx = {}) {
     // Ironman / triathlon / OW : pyramide géante = absurde ; privilégier séries claires + allure.
     if (intentId === "eau_libre" || intentId === "triathlon") {
       const base = ["mixed", "broken", "repeated", "block"];
-      if (pyramidOk) base.splice(2, 0, "pyramid");
+      if (pyramidOk && corpsTarget <= 800) base.splice(2, 0, "pyramid");
       if (allowContinuous && maxContinuous >= 300 && corpsTarget >= 600) base.push("continuous");
       if (level === "performance") base.unshift("race_pace");
       return base;
     }
     if (qualitySession) {
-      return ["repeated", "block", "broken", "progressive"];
+      return ["repeated", "block", "broken"];
     }
     if (intentId === "recuperation" || intentId === "reprise") {
       return ["mixed", "alternating", "broken"];
     }
-    const base = withPyramid(["repeated", "mixed", "broken", "descending", "block"], 1);
+    // Endurance : formats classiques d'abord ; pyramide seulement si volume corps raisonnable
+    const base = ["repeated", "mixed", "broken", "block", "descending"];
+    if (pyramidOk && corpsTarget <= 800) base.splice(1, 0, "pyramid");
     if (allowContinuous && maxContinuous >= 400 && corpsTarget >= 800) base.push("continuous");
     return base;
   }
@@ -113,7 +115,7 @@ export function candidateSetFormats(ctx = {}) {
     case "eau_libre":
     case "triathlon": {
       const base = ["mixed", "broken", "repeated"];
-      if (pyramidOk) base.splice(1, 0, "pyramid");
+      if (pyramidOk && corpsTarget <= 800) base.splice(1, 0, "pyramid");
       if (allowContinuous && maxContinuous >= 300 && corpsTarget >= 600) base.push("continuous");
       return base;
     }
@@ -123,7 +125,8 @@ export function candidateSetFormats(ctx = {}) {
       return withPyramid(["mixed", "broken", "repeated"]);
     case "endurance":
     default: {
-      const base = withPyramid(["repeated", "mixed", "broken", "alternating"], 1);
+      const base = ["repeated", "mixed", "broken", "alternating"];
+      if (pyramidOk && corpsTarget <= 800) base.splice(1, 0, "pyramid");
       if (allowContinuous && maxContinuous >= 400 && corpsTarget >= 400) base.push("continuous");
       return base;
     }
@@ -390,11 +393,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
       const isPeak = i === peakIdx;
       const isAscent = i < peakIdx;
       const intensity = isPeak ? "modere" : "facile";
-      const stepCue = isPeak
-        ? "sommet — régulier"
-        : isAscent
-          ? `${cue} — montée`
-          : `${cue} — descente`;
+      const stepCue = isPeak ? "régulier" : "";
       sets.push(
         makeSet({
           reps: 1,
@@ -590,11 +589,12 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
   }
 
   const lines = sets.map((s) => {
+    const cueTxt = s.cue ? ` — ${s.cue}` : "";
     if (s.continuous || s.reps === 1) {
       const restTxt = s.continuous || !s.restSec ? "" : ` — repos ${s.restSec}s`;
-      return `-${s.distancePerRep}m ${s.label} — ${s.cue}${restTxt}`;
+      return `-${s.distancePerRep}m ${s.label}${cueTxt}${restTxt}`;
     }
-    return `-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+    return `-${s.reps} × ${s.distancePerRep}m ${s.label}${cueTxt} — repos ${s.restSec}s`;
   });
 
   let displayLines;

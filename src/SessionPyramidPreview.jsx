@@ -11,13 +11,16 @@ const DEMO_SESSION = {
   distance: "2500m",
   duration: 72,
   details: [
-    "→ Aujourd'hui : nager économique (triathlon)",
     "-200m crawl souple — échauffement facile",
     "-4 × 100m crawl — exercice bras alterné — repos 30s",
     "-5 × 50m battements + planche — repos 20s",
-    "-900m pyramide crawl : 100 → 200 → 300 → 200 → 100 (sommet 300) — repos 20s",
-    "-8 × 100m crawl — nage appliquée — hors pyramide — repos 20s",
-    "-150m crawl souple — retour au calme",
+    "-100m crawl — repos 20s",
+    "-200m crawl — repos 20s",
+    "-300m crawl — régulier — repos 20s",
+    "-200m crawl — repos 20s",
+    "-100m crawl — repos 20s",
+    "-8 × 100m crawl — nage appliquée — repos 20s",
+    "-150m crawl souple — Z1",
   ],
 };
 

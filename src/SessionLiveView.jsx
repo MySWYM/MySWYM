@@ -138,11 +138,16 @@ export default function SessionLiveView({
   showCta = true,
 }) {
   const details = Array.isArray(session?.details) ? session.details : [];
+  // Contenu déjà passé par toCoachDetailLines côté App ; ici on filtre encore les headlines
+  const cleanDetails = details.filter((d) => {
+    const t = String(d || "").trim();
+    return t && !/^→/.test(t) && !/^Aujourd/i.test(t);
+  });
   const totalMeters = parseDistanceMeters(session?.distance);
 
   const rows = useMemo(() => {
     const out = [];
-    for (const raw of details) {
+    for (const raw of cleanDetails) {
       const text = stripPrefix(raw);
       if (!text || text.startsWith("Aujourd") || text.startsWith("→")) continue;
       const pyramid = parsePyramidLine(raw);
@@ -158,7 +163,7 @@ export default function SessionLiveView({
       });
     }
     return out;
-  }, [details]);
+  }, [cleanDetails]);
 
   const zones = useMemo(() => estimateZones(rows, totalMeters), [rows, totalMeters]);
   const locked = !isPremium;

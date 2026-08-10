@@ -565,7 +565,7 @@ function buildMinimalSafeSession(brief, constraints) {
   // fin
   pushSeries(2, unit, "au choix", "récupération", "fin");
   const vol = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  details.unshift(`→ Aujourd'hui : séance sécurisée (quality gate)`);
+  details.unshift(`-${Math.max(unit * 2, 100)}m crawl souple — Z1`);
   return {
     type: "ENDURANCE",
     title: level === "performance" ? "Performance · séance sécurisée" : `${level} · séance sécurisée`,

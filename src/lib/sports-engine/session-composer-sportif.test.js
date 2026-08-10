@@ -141,7 +141,8 @@ function assertSportif(session, brief) {
     announcedDistance: session.distance,
   });
   assert(cons.ok, `volume: ${cons.errors.join("; ")}`);
-  assert(/Aujourd'hui :/i.test(session.details.join("\n")), "intention");
+  assert(!/Aujourd'hui :/i.test(session.details.join("\n")), "pas de headline narratif");
+  assert(session.details.length >= 3, "contenu nageable");
   const hard = validateSportifHard(session, {
     papillonOk: !!brief.papillonMastered,
     allowPaces: !!brief.allowPaces,
@@ -489,7 +490,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(fourMax <= 200, `4n plafonné ${fourMax}`);
 }
 
-// 16 — progressive / descending affichage simple (volume exact)
+// 16 — progressive / descending → affichage coach classique (pas de jargon progressif)
 {
   const built = buildCorpsByFormat("progressive", 600, {
     label: "crawl",
@@ -502,12 +503,12 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   });
   assert(built.sets.length >= 3, "sets internes progressifs");
   const disp = built.displayLines || collapseSetsToDisplayLinesExact(built.sets, "progressive");
-  assert(disp && disp.length === 1, "1 ligne UX");
-  assert(/progressif|facile vers le soutenu/i.test(disp[0]), `ux: ${disp[0]}`);
+  assert(disp && disp.length >= 1, "lignes UX");
+  assert(!/progressif|facile vers le soutenu/i.test(disp.join("\n")), `pas de jargon: ${disp[0]}`);
   assert(!/Z1.*Z2.*Z3/i.test(disp.join(" ")), "pas de détail zone par zone");
   const volSets = built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  const m = disp[0].match(/(\d+)\s*[×x]\s*(\d+)\s*m/i);
-  assert(m && parseInt(m[1], 10) * parseInt(m[2], 10) === volSets, "volume UX = sets");
+  const fromDisp = calcDetailsDistance(disp);
+  assert(fromDisp === volSets, `volume UX ${fromDisp} = sets ${volSets}`);
 
   const desc = buildCorpsByFormat("descending", 600, {
     label: "crawl",
@@ -518,10 +519,8 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
     pool: 50,
   });
   const dDisp = desc.displayLines || [];
-  assert(dDisp.length <= 3, "descending compact");
-  if (dDisp.length === 1) {
-    assert(/descendant|long vers le court/i.test(dDisp[0]), dDisp[0]);
-  }
+  assert(dDisp.length >= 1, "descending affiché");
+  assert(!/descendant|long vers le court/i.test(dDisp.join("\n")), "pas de jargon descendant");
 }
 
 // 17 — Arthur Gold réellement chargé + scaling réel
@@ -621,9 +620,10 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(peak <= 300, `sommet ${peak}m ≤ 300`);
 
   const disp = (built.displayLines || []).join("\n");
-  assert(/pyramide/i.test(disp), `display pyramide: ${disp}`);
-  assert(/→/.test(disp), `paliers visibles: ${disp}`);
+  assert(/crawl|repos/i.test(disp), `display pyramide: ${disp}`);
   assert(!/1750m\s+pyramide/i.test(disp), "pas de titre 1750m pyramide");
+  // Paliers individuels nageables (plus de collapse opaque)
+  assert((disp.match(/^\-\d+m /gm) || []).length >= 3, "paliers individuels");
   const fromDetails = calcDetailsDistance(built.displayLines || []);
   const fromSets = built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
   assert(
