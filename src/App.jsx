@@ -35,6 +35,7 @@ import {
 } from "./lib/swim-pace.js";
 import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
+import SessionLiveView from "./SessionLiveView.jsx";
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -7117,8 +7118,6 @@ const ProgressionLoopView = ({
   const session = plan?.weeks?.[0]?.sessions?.[0];
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
-  const objectives = session?.objectives || [];
-  const tm = session ? (TYPE_META[session.type] || TYPE_META.ENDURANCE) : null;
 
   if (!session) {
     return (
@@ -7196,126 +7195,47 @@ const ProgressionLoopView = ({
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
         {!isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="card" />}
 
-        {/* Meta séance */}
-        <div style={{
-          background: G.surface, borderRadius: 20, padding: "16px 18px", marginBottom: 12,
-          border: `1px solid ${G.greyLight}`,
-          boxShadow: "0 2px 12px rgba(142,179,255,0.08)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              {resolved ? "Séance en cours de validation…" : "À nager aujourd'hui"}
-            </span>
-            {tm && (
-              <span style={{
-                fontSize: 10, fontWeight: 800, color: tm.color, background: tm.bg,
-                padding: "4px 9px", borderRadius: 8,
-              }}>{session.type}</span>
-            )}
-          </div>
-          <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: 26, fontWeight: 700, color: G.ink, lineHeight: 1.15, marginBottom: 12,
-          }}>
-            {session.title}
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: objectives.length ? 14 : 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: G.blue, background: G.blueLight, padding: "6px 12px", borderRadius: 10 }}>
-              {session.distance}
-            </span>
-            <span style={{
-              fontSize: 13, fontWeight: 600, color: G.grey, background: G.greyXLight,
-              padding: "6px 12px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 5,
-            }}>
-              <Timer size={13} /> {formatDuration(session.duration)}
-            </span>
-          </div>
-          {objectives.length > 0 && (
-            <div style={{ filter: isPremium ? "none" : "grayscale(1)", opacity: isPremium ? 1 : 0.75 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>
-                Objectifs techniques
-              </div>
-              {isPremium ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {objectives.map((obj) => (
-                    <div key={obj} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: G.ink, fontWeight: 600 }}>
-                      <Target size={14} color={G.blue} />
-                      {obj}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <button type="button" onClick={() => onUpgrade?.()} style={{ width: "100%", border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, padding: 0, textAlign: "left" }}>
-                  {[0.92, 0.78, 0.64].slice(0, Math.min(objectives.length, 3)).map((w, i) => (
-                    <div key={i} style={{ height: 14, borderRadius: 7, background: G.greyLight, width: `${w * 100}%` }} />
-                  ))}
-                  <span style={{ fontSize: 12, fontWeight: 700, color: G.greyMid, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <Lock size={12} /> Objectifs verrouillés
-                  </span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Détail séance (lecture seule via SessionCard, actions custom en dessous) */}
-        <div style={{ marginBottom: 14, pointerEvents: resolved && isPremium ? "none" : "auto" }}>
-          <SessionCard
+        <div style={{ marginBottom: 14 }}>
+          <SessionLiveView
             session={session}
-            weekIndex={0}
-            sessionIndex={0}
-            onComplete={() => {}}
-            onShare={onShare}
-            onEditFeedback={onEditFeedback}
-            defaultExpanded
             isPremium={isPremium}
+            badge={resolved ? "Séance validée" : "Séance du jour"}
+            subtitle={session.title}
+            showCta={!resolved}
+            ctaLabel={isPremium ? "Terminer la séance" : "Activer l’essai pour nager"}
             onUpgrade={onUpgrade}
-            hideCheckbox
-            analyticsCtx={{
-              planId: activePlanId,
-              profile,
-              planWeek: 1,
-              phase: session?.phase,
+            onStart={() => {
+              if (!isPremium) {
+                onUpgrade?.();
+                return;
+              }
+              if (resolved) return;
+              const props = sessionAnalyticsProps(profile, session, { planWeek: 1, sessionIndex: 0 });
+              track("session_started", {
+                level: props.level,
+                objective: props.objective,
+                planWeek: 1,
+                sessionIndex: 0,
+                volume: props.volume,
+              }, { onceKey: `session_started:${activePlanId || "loop"}:0:0` });
+              onComplete("done");
             }}
           />
         </div>
 
-        {!resolved && (
+        {!resolved && isPremium && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-            <Btn
-              variant="blue"
-              onClick={() => {
-                if (!isPremium) {
-                  onUpgrade?.();
-                  return;
-                }
-                const props = sessionAnalyticsProps(profile, session, { planWeek: 1, sessionIndex: 0 });
-                track("session_started", {
-                  level: props.level,
-                  objective: props.objective,
-                  planWeek: 1,
-                  sessionIndex: 0,
-                  volume: props.volume,
-                }, { onceKey: `session_started:${activePlanId || "loop"}:0:0` });
-                onComplete("done");
+            <button
+              type="button"
+              onClick={() => onComplete("not_done")}
+              style={{
+                width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
+                border: `1.5px solid ${G.greyLight}`, background: G.surface,
+                color: G.grey, fontSize: 14, fontWeight: 700,
               }}
-              style={{ width: "100%" }}
             >
-              {isPremium ? "Terminer la séance" : "Activer l’essai pour nager"}
-            </Btn>
-            {isPremium && (
-              <button
-                type="button"
-                onClick={() => onComplete("not_done")}
-                style={{
-                  width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
-                  border: `1.5px solid ${G.greyLight}`, background: G.surface,
-                  color: G.grey, fontSize: 14, fontWeight: 700,
-                }}
-              >
-                L'abandonner
-              </button>
-            )}
+              L&apos;abandonner
+            </button>
           </div>
         )}
 
