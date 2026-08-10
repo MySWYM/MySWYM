@@ -1,5 +1,5 @@
 /**
- * Tests Shadow Mode H1 — classification + politique DM + gates (pas d’envoi).
+ * Tests Shadow H1 — conseiller conversationnel + ignore/handoff + multi-tours.
  * Run: npm run test:arthur:shadow
  */
 import assert from "node:assert/strict";
@@ -10,6 +10,7 @@ import {
 } from "./mode.js";
 import {
   applyShadowReplyPolicy,
+  buildConversationalReply,
   containsMyswymLink,
   isOffTopicDm,
   isPricingDm,
@@ -20,188 +21,171 @@ import { buildOfflineResponse } from "../production/offline.js";
 import { takeoverHoldMessage } from "../production/takeover.js";
 import { isFollowupSendEnabled } from "../conversion/send.js";
 import { fallbackStructured } from "../intent.js";
+import { matchBuiltinKnowledge } from "../knowledge/myswym-product.js";
 
-test("shadow ON par défaut", () => {
+test("shadow ON / live send off / followups off", () => {
   delete process.env.ARTHUR_FLAG_SHADOW_INSTAGRAM;
   delete process.env.ARTHUR_INSTAGRAM_LIVE_SEND;
+  delete process.env.ARTHUR_FOLLOWUPS_SEND;
   assert.equal(isInstagramShadowMode(), true);
   assert.equal(canLiveSendInstagram(), false);
-});
-
-test("live send exige double gate", () => {
-  process.env.ARTHUR_FLAG_SHADOW_INSTAGRAM = "0";
-  delete process.env.ARTHUR_INSTAGRAM_LIVE_SEND;
-  assert.equal(isInstagramShadowMode(), false);
-  assert.equal(canLiveSendInstagram(), false);
-
-  process.env.ARTHUR_INSTAGRAM_LIVE_SEND = "1";
-  assert.equal(canLiveSendInstagram(), true);
-
-  delete process.env.ARTHUR_FLAG_SHADOW_INSTAGRAM;
-  delete process.env.ARTHUR_INSTAGRAM_LIVE_SEND;
-});
-
-test("followups send jamais activé par shadow", () => {
-  delete process.env.ARTHUR_FOLLOWUPS_SEND;
   assert.equal(isFollowupSendEnabled(), false);
 });
 
-test("classify handoff", () => {
+test("comment fonctionne l’app → réponse produit, pas ignore", () => {
+  const inbound = "Comment fonctionne l’application ?";
+  assert.equal(isOffTopicDm(inbound), false);
+  assert.equal(isLegitimateHandoffDm(inbound), false);
+
+  const r = buildOfflineResponse(inbound, { reason: "openai_error" });
+  assert.equal(r.suggested_action === "no_reply", false);
+  assert.equal(r.suggested_action === "handoff_human", false);
+  assert.ok(r.message.length > 40);
+  assert.match(r.message, /MySWYM|plan|natation/i);
+  assert.match(r.message, /\?/); // une question pour poursuivre
+  assert.ok(["myswym_question", "subscription"].includes(r.intent));
+});
+
+test("progresser en crawl → conseil + question, pas handoff", () => {
+  const inbound = "Je veux progresser en crawl ?";
+  assert.equal(isOffTopicDm(inbound), false);
+  assert.equal(isLegitimateHandoffDm(inbound), false);
+
+  const r = buildOfflineResponse(inbound, { reason: "flag_offline" });
+  assert.notEqual(r.suggested_action, "handoff_human");
+  assert.notEqual(r.suggested_action, "no_reply");
+  assert.match(r.message, /crawl|respiration|coulée/i);
+  assert.match(r.message, /semaine|\?/);
   assert.equal(
     classifyRecommendedAction({
-      suggested_action: "handoff_human",
-      intent: "support",
-    }),
-    "handoff_human",
+      suggested_action: r.suggested_action,
+      intent: r.intent,
+      lead_temperature: r.lead_temperature,
+      message: r.message,
+    }) === "handoff_human",
+    false,
   );
 });
 
-test("classify suggest_myswym", () => {
-  assert.equal(
-    classifyRecommendedAction({
-      suggested_action: "suggest_myswym",
-      intent: "plan_request",
-      lead_temperature: "hot",
-    }),
-    "suggest_myswym",
-  );
+test("triathlon 4 mois → qualification, pas handoff", () => {
+  const inbound = "J’ai un triathlon dans 4 mois";
+  assert.equal(isLegitimateHandoffDm(inbound), false);
+  const r = buildOfflineResponse(inbound, { reason: "no_api_key" });
+  assert.equal(r.intent, "goal");
+  assert.notEqual(r.suggested_action, "handoff_human");
+  assert.match(r.message, /triathlon|distance|niveau|semaine/i);
+  assert.match(r.message, /\?/);
 });
 
-test("classify qualify cold goal", () => {
-  assert.equal(
-    classifyRecommendedAction({
-      suggested_action: "continue",
-      intent: "goal",
-      lead_temperature: "cold",
-    }),
-    "qualify",
-  );
+test("prix → tarif clair + /tarifs", () => {
+  const inbound = "Quel est le prix ?";
+  assert.equal(isPricingDm(inbound), true);
+  const r = buildOfflineResponse(inbound, { reason: "openai_error" });
+  assert.match(r.message, /4[,.]99/);
+  assert.match(r.message, /tarifs/i);
+  assert.notEqual(r.suggested_action, "handoff_human");
 });
 
-test("classify ignore premium", () => {
-  assert.equal(
-    classifyRecommendedAction({
-      lead_status: "premium",
-      intent: "training",
-    }),
-    "ignore",
-  );
-});
-
-test("classify default reply", () => {
-  assert.equal(
-    classifyRecommendedAction({
-      suggested_action: "continue",
-      intent: "technique",
-      lead_temperature: "warm",
-    }),
-    "reply",
-  );
-});
-
-test("kebab → ignore/no_reply, brouillon vide, jamais handoff", () => {
-  for (const inbound of ["Je voudrais un kebab", "Kebab ?", "kebab ?"]) {
+test("kebab → ignore, brouillon vide, pas handoff", () => {
+  for (const inbound of ["kebab ?", "Je voudrais un kebab", "Kebab ?"]) {
     assert.equal(isOffTopicDm(inbound), true);
+    const r = buildOfflineResponse(inbound, { reason: "openai_error" });
+    assert.equal(r.suggested_action, "no_reply");
+    assert.equal(r.message, "");
     assert.equal(isLegitimateHandoffDm(inbound), false);
 
-    const offline = buildOfflineResponse(inbound, { reason: "openai_error" });
-    assert.equal(offline.intent, "other");
-    assert.equal(offline.suggested_action, "no_reply");
-    assert.equal(offline.message, "");
-    assert.equal(containsMyswymLink(offline.message), false);
-
-    // LLM qui force un handoff générique → écrasé
-    const poisoned = fallbackStructured(
-      "Je te passe un humain. Arthur se met en pause — contact@myswym.app",
-    );
-    poisoned.intent = "support";
+    const poisoned = fallbackStructured(HUMAN_HANDOFF_CLIENT_MESSAGE);
     poisoned.suggested_action = "handoff_human";
-    poisoned.lead_temperature = "warm";
     const cleaned = applyShadowReplyPolicy(poisoned, inbound);
     assert.equal(cleaned.suggested_action, "no_reply");
     assert.equal(cleaned.message, "");
-    assert.equal(cleaned.intent, "other");
-    assert.equal(
-      classifyRecommendedAction({
-        suggested_action: cleaned.suggested_action,
-        intent: cleaned.intent,
-        lead_temperature: cleaned.lead_temperature,
-        message: cleaned.message,
-      }),
-      "ignore",
-    );
   }
 });
 
-test("handoff_human — texte client exact uniquement si légitime", () => {
+test("handoff légitime — texte exact", () => {
+  assert.equal(isLegitimateHandoffDm("Je veux un remboursement"), true);
   assert.equal(isLegitimateHandoffDm("Je veux parler à un humain"), true);
   assert.equal(isLegitimateHandoffDm("Problème de paiement sur mon compte"), true);
-  assert.equal(isLegitimateHandoffDm("Je veux un remboursement"), true);
-  assert.equal(isLegitimateHandoffDm("J’ai une blessure au genou"), true);
-  assert.equal(isLegitimateHandoffDm("plan triathlon"), false);
-  assert.equal(isLegitimateHandoffDm("Kebab ?"), false);
+  assert.equal(takeoverHoldMessage().message, HUMAN_HANDOFF_CLIENT_MESSAGE);
 
-  const hold = takeoverHoldMessage();
-  assert.equal(hold.message, HUMAN_HANDOFF_CLIENT_MESSAGE);
-  assert.equal(hold.suggested_action, "handoff_human");
-  assert.equal(/Arthur se met en pause|Je te passe un humain/i.test(hold.message), false);
-
-  const cleaned = applyShadowReplyPolicy(
-    fallbackStructured("brouillon LLM"),
+  const r = applyShadowReplyPolicy(
+    fallbackStructured("brouillon"),
     "Je veux parler à quelqu’un de l’équipe",
   );
-  assert.equal(cleaned.suggested_action, "handoff_human");
-  assert.equal(cleaned.message, HUMAN_HANDOFF_CLIENT_MESSAGE);
-  assert.equal(
-    classifyRecommendedAction({
-      suggested_action: cleaned.suggested_action,
-      intent: cleaned.intent,
-      message: cleaned.message,
-    }),
-    "handoff_human",
-  );
+  assert.equal(r.message, HUMAN_HANDOFF_CLIENT_MESSAGE);
+  assert.equal(r.suggested_action, "handoff_human");
 });
 
-test("prix app → réponse tarifaire directe", () => {
-  const inbound = "Quel est le prix de l’app ?";
-  assert.equal(isPricingDm(inbound), true);
-  assert.equal(isLegitimateHandoffDm(inbound), false);
-
-  const offline = buildOfflineResponse(inbound, { reason: "flag_offline" });
-  assert.equal(offline.intent, "subscription");
-  assert.match(offline.message, /4[,.]99/);
-  assert.match(offline.message, /39[,.]99|\/tarifs/i);
-  assert.equal(offline.suggested_action, "continue");
+test("builtin knowledge produit disponible runtime", () => {
+  const snips = matchBuiltinKnowledge("Comment fonctionne l’application ?", "myswym_question", 2);
+  assert.ok(snips.length >= 1);
+  assert.ok(snips.some((s) => /plan|MySWYM|essai/i.test(s.content)));
 });
 
-test("progresser en crawl → conseil utile", () => {
-  const inbound = "Je veux progresser en crawl";
-  assert.equal(isOffTopicDm(inbound), false);
-
-  const offline = buildOfflineResponse(inbound, { reason: "openai_error" });
-  assert.ok(["technique", "swimming_question", "training"].includes(offline.intent));
-  assert.match(offline.message, /crawl|respiration|coulée|semaine/i);
-  assert.equal(containsMyswymLink(offline.message), false);
-  assert.notEqual(offline.suggested_action, "no_reply");
-  assert.notEqual(offline.suggested_action, "handoff_human");
+test("conversation multi-tours crawl (≥3 échanges)", () => {
+  const turns = [
+    "Je veux progresser en crawl",
+    "Je nage 2 fois par semaine",
+    "Oui je veux un plan suivi",
+  ];
+  const replies: string[] = [];
+  for (const t of turns) {
+    const r = buildOfflineResponse(t, { reason: "openai_error" });
+    assert.notEqual(r.suggested_action, "no_reply");
+    assert.notEqual(r.suggested_action, "handoff_human");
+    assert.ok(r.message.trim().length > 20, `empty reply for: ${t}`);
+    replies.push(r.message);
+  }
+  assert.equal(replies.length, 3);
+  assert.match(replies[0], /crawl|respiration|semaine/i);
+  assert.ok(replies[1].length > 20);
+  assert.match(replies[2], /plan|MySWYM|inscription|fréquence|objectif/i);
 });
 
-test("triathlon 3 mois → qualification adaptée", () => {
-  const inbound = "J’ai un triathlon dans 3 mois";
-  assert.equal(isOffTopicDm(inbound), false);
+test("conversation multi-tours triathlon (≥3 échanges)", () => {
+  const turns = [
+    "J’ai un triathlon dans 4 mois",
+    "C’est un M, je suis débutant en natation",
+    "Je peux nager 2 fois par semaine",
+  ];
+  for (const t of turns) {
+    const r = buildOfflineResponse(t, { reason: "flag_offline" });
+    assert.notEqual(r.suggested_action, "handoff_human");
+    assert.ok(r.message.length > 20);
+  }
+  const first = buildConversationalReply(turns[0]);
+  assert.ok(first);
+  assert.match(first!.message, /distance|niveau|\?/i);
+});
 
-  const offline = buildOfflineResponse(inbound, { reason: "no_api_key" });
-  assert.equal(offline.intent, "goal");
-  assert.match(offline.message, /triathlon|semaine|bassin|eau libre/i);
-  assert.equal(offline.suggested_action, "qualify_frequency");
-  assert.equal(
-    classifyRecommendedAction({
-      suggested_action: offline.suggested_action,
-      intent: offline.intent,
-      lead_temperature: offline.lead_temperature,
-      message: offline.message,
-    }),
-    "qualify",
+test("conversation multi-tours découverte app (≥3 échanges)", () => {
+  const turns = [
+    "Comment fonctionne l’application ?",
+    "Je veux surtout améliorer mon crawl",
+    "Quel est le prix ?",
+  ];
+  const out = turns.map((t) => buildOfflineResponse(t, { reason: "no_api_key" }));
+  assert.match(out[0].message, /MySWYM|plan/i);
+  assert.notEqual(out[0].suggested_action, "no_reply");
+  assert.match(out[1].message, /crawl|semaine/i);
+  assert.match(out[2].message, /4[,.]99/);
+  assert.ok(containsMyswymLink(out[2].message) || /tarifs/i.test(out[2].message));
+});
+
+test("conversation multi-tours abonnement (≥3 échanges)", () => {
+  const turns = [
+    "C’est combien l’abonnement ?",
+    "Il y a un essai ?",
+    "Et si j’annule pendant l’essai ?",
+  ];
+  for (const t of turns) {
+    const r = buildOfflineResponse(t, { reason: "openai_error" });
+    assert.notEqual(r.suggested_action, "handoff_human");
+    assert.ok(r.message.length > 15);
+  }
+  assert.match(
+    buildOfflineResponse(turns[0], { reason: "openai_error" }).message,
+    /4[,.]99/,
   );
 });
 

@@ -1,8 +1,9 @@
 /**
- * Bibliothèque de connaissances coaching (F3).
+ * Bibliothèque de connaissances coaching (F3) + produit MySWYM builtin.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";
+import { matchBuiltinKnowledge } from "../knowledge/myswym-product.js";
 
 export interface KnowledgeSnippet {
   id?: string;
@@ -14,12 +15,18 @@ export interface KnowledgeSnippet {
   priority?: number;
 }
 
-/** Matching simple intent / mots-clés → snippets actifs. */
+/** Matching simple intent / mots-clés → snippets actifs (+ fallback builtin). */
 export async function fetchRelevantKnowledge(
   admin: SupabaseClient,
   input: { intent?: string | null; message?: string | null; limit?: number },
 ): Promise<KnowledgeSnippet[]> {
-  const limit = Math.min(5, Math.max(1, input.limit || 2));
+  const limit = Math.min(5, Math.max(1, input.limit || 3));
+  const builtin = matchBuiltinKnowledge(
+    input.message || "",
+    input.intent,
+    limit,
+  );
+
   try {
     const { data, error } = await admin
       .from("ai_knowledge_snippets")
@@ -30,7 +37,7 @@ export async function fetchRelevantKnowledge(
 
     if (error || !data?.length) {
       if (error) arthurLog("warn", "knowledge_fetch_failed", { code: error.code });
-      return [];
+      return builtin;
     }
 
     const intent = (input.intent || "").toLowerCase();
@@ -47,7 +54,7 @@ export async function fetchRelevantKnowledge(
     });
 
     scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, limit).map(({ s }) => ({
+    const fromDb = scored.slice(0, limit).map(({ s }) => ({
       id: s.id,
       topic: s.topic,
       title: s.title,
@@ -56,11 +63,22 @@ export async function fetchRelevantKnowledge(
       intent_hints: s.intent_hints || [],
       priority: s.priority,
     }));
+
+    const seen = new Set<string>();
+    const merged: KnowledgeSnippet[] = [];
+    for (const s of [...fromDb, ...builtin]) {
+      const key = `${s.topic}::${s.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(s);
+      if (merged.length >= limit) break;
+    }
+    return merged;
   } catch (err) {
     arthurLog("warn", "knowledge_fetch_exception", {
       name: err instanceof Error ? err.name : "Error",
     });
-    return [];
+    return builtin;
   }
 }
 

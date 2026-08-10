@@ -1,19 +1,16 @@
 /**
- * Fallback offline Arthur — sans OpenAI (Phase G).
- * Réponses rule-based + knowledge optionnelle.
- * Respecte la politique Shadow (hors-sujet sans promo, prix directs).
+ * Fallback offline Arthur — conseiller conversationnel (Phase G / Shadow H1).
  */
 import { inferIntentHeuristic, fallbackStructured } from "../intent.js";
 import type { ArthurStructuredOutput } from "../types.js";
 import type { KnowledgeSnippet } from "../optimization/knowledge.js";
 import {
   applyShadowReplyPolicy,
-  buildOffTopicReplyMessage,
-  buildPricingReplyMessage,
+  buildConversationalReply,
   buildHumanHandoffMessage,
+  buildOffTopicReplyMessage,
   isLegitimateHandoffDm,
   isOffTopicDm,
-  isPricingDm,
 } from "../shadow/reply-policy.js";
 
 const APP = () =>
@@ -36,95 +33,63 @@ export function buildOfflineResponse(
 ): ArthurStructuredOutput {
   const intent = inferIntentHeuristic(userMessage);
   const tip = opts.snippets?.[0]?.content;
-  const link = `${APP()}/inscription?ref=arthur_offline`;
 
-  let message: string;
-  let suggested_action = "continue";
-  let lead_temperature: ArthurStructuredOutput["lead_temperature"] = "cold";
+  let structured: ArthurStructuredOutput;
 
   if (opts.reason === "rate_limited") {
-    message =
-      "Tu m’envoies beaucoup de messages — je prends un court break pour rester utile. " +
-      "Reviens dans un moment.";
+    structured = fallbackStructured(
+      "Tu m’envoies beaucoup de messages — je prends un court break pour rester utile. Reviens dans un moment.",
+    );
+    structured.suggested_action = "continue";
   } else if (opts.reason === "cost_budget_hard") {
-    message =
+    structured = fallbackStructured(
       "Je suis en mode économie pour aujourd’hui. " +
-      (tip ? `${tip} ` : "") +
-      (isOffTopicDm(userMessage)
-        ? "Reviens plus tard pour une question natation."
-        : `Tu peux avancer sur MySWYM : ${link}`);
+        (tip || "Reviens un peu plus tard pour continuer sur ta natation ou MySWYM."),
+    );
+    structured.suggested_action = "continue";
   } else if (opts.reason === "channel_disabled") {
-    message =
-      `Arthur est momentanément indisponible sur ce canal. ` +
-      `En attendant : ${APP()} — ou écris à contact@myswym.app.`;
+    structured = fallbackStructured(
+      `Arthur est momentanément indisponible sur ce canal. En attendant : ${APP()} — ou ${"contact@myswym.app"}.`,
+    );
+    structured.suggested_action = "continue";
   } else if (isLegitimateHandoffDm(userMessage)) {
-    message = buildHumanHandoffMessage();
-    suggested_action = "handoff_human";
-    lead_temperature = "warm";
-  } else if (isPricingDm(userMessage)) {
-    message = buildPricingReplyMessage();
-    suggested_action = "continue";
-    lead_temperature = "warm";
+    structured = fallbackStructured(buildHumanHandoffMessage());
+    structured.intent = "support";
+    structured.suggested_action = "handoff_human";
+    structured.lead_temperature = "warm";
   } else if (isOffTopicDm(userMessage)) {
-    message = buildOffTopicReplyMessage();
-    suggested_action = "no_reply";
-    lead_temperature = "cold";
-  } else if (intent === "technique" || intent === "swimming_question") {
-    message =
-      tip ||
-      "Conseil rapide : en crawl, garde une oreille dans l’eau à la respiration et allonge chaque coulée. Tu nages combien de fois par semaine ?";
-    suggested_action = "qualify_frequency";
-  } else if (intent === "plan_request") {
-    message =
-      "Je peux t’orienter vers un plan suivi. Précise distance / délai / séances par semaine — " +
-      `ou génère-le sur MySWYM : ${link}` +
-      (tip ? ` — ${tip}` : "");
-    suggested_action = "suggest_myswym";
-    lead_temperature = "warm";
-  } else if (intent === "goal") {
-    if (/triathlon/i.test(userMessage)) {
-      message =
-        "Triathlon avec une échéance : on construit une progression réaliste. Tu nages déjà combien de fois par semaine, et plutôt bassin ou eau libre ?";
-    } else {
-      message =
-        tip ||
-        "Bel objectif. Pour construire quelque chose de réaliste : tu nages déjà combien de fois par semaine, et sur quelle distance ?";
-    }
-    suggested_action = "qualify_frequency";
-    lead_temperature = "warm";
-  } else if (intent === "subscription" || intent === "myswym_question") {
-    message = buildPricingReplyMessage();
-    suggested_action = "continue";
-    lead_temperature = "warm";
-  } else if (intent === "training") {
-    message =
-      tip ||
-      "Dis-moi ton volume actuel (séances / semaine) et ton focus (technique, endurance, vitesse) — je te guide concrètement.";
-    suggested_action = "qualify_frequency";
+    structured = fallbackStructured(buildOffTopicReplyMessage());
+    structured.intent = "other";
+    structured.suggested_action = "no_reply";
+    structured.lead_temperature = "cold";
   } else {
-    message =
-      tip ||
-      "Dis-moi ton objectif natation (ex. triathlon, technique crawl, 2–3 séances/semaine) — je t’oriente.";
-    suggested_action = "continue";
+    const built = buildConversationalReply(userMessage);
+    if (built) {
+      structured = built;
+      if (tip && built.intent === "technique" && !built.message.includes(tip.slice(0, 24))) {
+        // garder le tip knowledge en tête si plus précis
+        structured = {
+          ...built,
+          message: `${tip} ${built.message}`.slice(0, 1000),
+        };
+      }
+    } else {
+      structured = fallbackStructured(
+        tip ||
+          "Dis-moi ton objectif natation ou ce que tu veux comprendre sur MySWYM — je t’oriente.",
+      );
+      structured.intent = intent;
+      structured.suggested_action = "continue";
+      structured.lead_temperature = "warm";
+    }
   }
 
-  const structured = fallbackStructured(message.slice(0, 1000));
-  structured.intent = isLegitimateHandoffDm(userMessage)
-    ? "support"
-    : isOffTopicDm(userMessage)
-      ? "other"
-      : isPricingDm(userMessage)
-        ? "subscription"
-        : intent;
-  structured.lead_temperature = lead_temperature;
-  structured.suggested_action = suggested_action;
   structured.extracted_data = {
     ...structured.extracted_data,
     offline: true,
     offline_reason: opts.reason,
   };
 
-  // Ne pas écraser les messages système (rate limit / budget / canal off)
   if (
     opts.reason === "rate_limited" ||
     opts.reason === "cost_budget_hard" ||

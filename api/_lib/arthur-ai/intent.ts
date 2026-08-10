@@ -191,7 +191,7 @@ export function fallbackStructured(message: string): ArthurStructuredOutput {
 /** Heuristique locale (tests / mock) — n’appelle pas OpenAI. */
 export function inferIntentHeuristic(message: string): ArthurIntent {
   const lower = message.toLowerCase();
-  if (/crawl|technique|respiration|virage|coulée|godille|coude|catch/.test(lower)) {
+  if (/crawl|technique|respiration|virage|coulée|godille|coude|catch|progresser/.test(lower)) {
     return "technique";
   }
   if (/triathlon|ironman|objectif|prépare|compétition|course cible/.test(lower)) {
@@ -200,16 +200,24 @@ export function inferIntentHeuristic(message: string): ArthurIntent {
   if (/plan|programme personnalisé|génère.*plan|créer.*plan/.test(lower)) {
     return "plan_request";
   }
-  if (/abonnement|premium|essai|stripe|tarif|prix/.test(lower)) {
+  if (
+    /abonnement|premium|essai|stripe|tarif|prix|résil|annul|combien.*(co[uû]te|co[uû]t)/.test(
+      lower,
+    )
+  ) {
     return "subscription";
   }
-  if (/myswym|comment ça marche|l['']app/.test(lower)) {
+  if (
+    /myswym|comment ça marche|comment ca marche|l['']app|appli|application|fonctionne|fonctionnement|c['']est quoi|a quoi sert|à quoi sert|inscription|inscrire|utiliser/.test(
+      lower,
+    )
+  ) {
     return "myswym_question";
   }
-  if (/aide|bug|compte|connexion|support/.test(lower)) {
+  if (/aide|bug|compte|connexion|support|rembours|plainte/.test(lower)) {
     return "support";
   }
-  if (/séance|volume|allure|z1|z2|entraînement/.test(lower)) {
+  if (/séance|volume|allure|z1|z2|entraînement|entrainement/.test(lower)) {
     return "training";
   }
   if (/nage|nager|piscine|bassin|eau libre/.test(lower)) {

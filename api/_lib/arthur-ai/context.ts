@@ -48,7 +48,7 @@ export async function buildArthurContext(
     fetchRelevantKnowledge(admin, {
       intent: null,
       message: input.currentMessage || "",
-      limit: 2,
+      limit: 3,
     }),
   ]);
 

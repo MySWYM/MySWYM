@@ -1,22 +1,24 @@
 /**
- * Politique de réponse Instagram Shadow H1.
- * Déterministe : hors-sujet → ignore + brouillon vide ;
- * handoff humain seulement si légitime + texte client exact.
+ * Politique Shadow H1 — conseiller conversationnel.
+ * Ignore seulement spam/hors-sujet évident.
+ * Handoff seulement cas bloquants.
  */
 import type { ArthurStructuredOutput } from "../types.js";
 import { inferIntentHeuristic } from "../intent.js";
+import {
+  MYSWYM_PRODUCT,
+  matchBuiltinKnowledge,
+} from "../knowledge/myswym-product.js";
 
 const APP = () =>
   (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
 
-/** Tarifs produit (alignés Tarifs.jsx / Legal). */
 export const MYSWYM_PRICING = {
-  monthlyLabel: "4,99€",
-  annualLabel: "39,99€",
-  trialDays: 7,
+  monthlyLabel: MYSWYM_PRODUCT.monthly,
+  annualLabel: MYSWYM_PRODUCT.annual,
+  trialDays: MYSWYM_PRODUCT.trialDays,
 } as const;
 
-/** Texte client exact — handoff humain légitime (Shadow H1). */
 export const HUMAN_HANDOFF_CLIENT_MESSAGE =
   "Quelqu’un de l’équipe MySWYM te répondra dès que possible. En cas d’urgence : contact@myswym.app";
 
@@ -26,14 +28,15 @@ const MYSWYM_LINK_RE =
 const INTERNAL_BOT_SPEAK_RE =
   /arthur se met en pause|je te passe un humain|en tant qu['’]ia|je suis une (ia|intelligence)|chatbot|mode pause/i;
 
-const SWIM_RELEVANT_RE =
-  /\b(nage|nager|natation|crawl|brasse|dos|papillon|piscine|bassin|eau\s*libre|triathlon|ironman|séance|entrain|entraîn|plan|programme|coach|objectif|progress|technique|respiration|virage|coulée|allure|volume|z[1-4]|premium|myswym|abonnement|tarif|prix|essai|compétition|course|bpjeps|bnssa)\b/i;
+/** Pertinent : produit, natation, sport, objectifs, support soft. */
+const RELEVANT_RE =
+  /\b(nage|nager|natation|crawl|brasse|dos|papillon|piscine|bassin|eau\s*libre|triathlon|ironman|séance|entrain|entraîn|plan|programme|coach|objectif|progress|technique|respiration|virage|coulée|allure|volume|z[1-4]|premium|myswym|abonnement|tarif|prix|essai|compétition|course|bpjeps|bnssa|appli|application|app|fonctionne|fonctionnement|inscription|inscrire|résil|annul|comment|utiliser|entraînement|entrainement|prep|prépa)\b/i;
 
 const OBVIOUS_OFFTOPIC_RE =
   /\b(kebab|pizza|burger|tacos|sushi|mcdonald|nourriture|manger|faim|recette|bitcoin|crypto|nft|forex|dating|rencontre|nude|onlyfans|voip|pharmacie|viagra)\b/i;
 
 const PRICING_RE =
-  /\b(prix|tarif|tarifs|combien|co[uû]t|abo|abonnement|premium|essai|mensuel|annuel|payer|paiement)\b/i;
+  /\b(prix|tarif|tarifs|combien|co[uû]t|abo|abonnement|premium|essai|mensuel|annuel|payer|paiement|résil|annul)\b/i;
 
 export function containsMyswymLink(text: string): boolean {
   return MYSWYM_LINK_RE.test(text || "");
@@ -47,82 +50,94 @@ export function stripMyswymLinks(text: string): string {
     .trim();
 }
 
-/** DM hors sujet / spam / absurde / sans lien natation-MySWYM. */
+export function isRelevantConversationalDm(message: string): boolean {
+  const text = String(message || "").trim();
+  if (!text) return false;
+  if (OBVIOUS_OFFTOPIC_RE.test(text) && !RELEVANT_RE.test(text)) return false;
+  if (RELEVANT_RE.test(text)) return true;
+  const intent = inferIntentHeuristic(text);
+  return intent !== "other";
+}
+
+/** Spam / absurde / hors sujet sans lien MySWYM-sport. */
 export function isOffTopicDm(message: string): boolean {
   const text = String(message || "").trim();
   if (!text) return true;
-  if (OBVIOUS_OFFTOPIC_RE.test(text) && !SWIM_RELEVANT_RE.test(text)) {
-    return true;
-  }
+  if (isRelevantConversationalDm(text)) return false;
+  if (OBVIOUS_OFFTOPIC_RE.test(text)) return true;
   const intent = inferIntentHeuristic(text);
-  if (
-    intent === "other" &&
-    !SWIM_RELEVANT_RE.test(text) &&
-    text.length < 160
-  ) {
-    return true;
-  }
-  return false;
+  return intent === "other" && text.length < 160;
 }
 
 export function isPricingDm(message: string): boolean {
   const text = String(message || "").trim();
-  if (!text) return false;
+  if (!text || isOffTopicDm(text)) return false;
   if (!PRICING_RE.test(text)) return false;
-  if (isOffTopicDm(text) && !/myswym|app|appli|premium|abo/i.test(text)) {
-    return false;
-  }
   return (
     inferIntentHeuristic(text) === "subscription" ||
-    /prix|tarif|combien.*(app|appli|premium|abo|myswym)|co[uû]te/i.test(text)
+    /prix|tarif|combien|co[uû]te|abonnement|essai|résil|annul/i.test(text)
   );
 }
 
 /**
- * Handoff humain légitime uniquement :
- * compte/paiement, remboursement, incident, plainte, médical individualisé,
- * ou demande explicite de parler à quelqu’un.
+ * Handoff uniquement cas bloquants :
+ * remboursement, paiement/compte (accès interne), plainte sensible,
+ * technique non résolue explicite, médical personnel fort, demande humaine explicite.
  */
 export function isLegitimateHandoffDm(message: string): boolean {
   const t = String(message || "").trim();
   if (!t) return false;
 
-  // Signaux handoff avant le filtre hors-sujet (sinon « remboursement » = other)
+  // Jamais de handoff sur une question coaching / produit classique
+  if (
+    /\b(crawl|triathlon|ironman|progress|fonctionne|application|appli|prix|tarif|essai|plan|séance|nage)\b/i.test(
+      t,
+    ) &&
+    !/\b(rembours|plainte|r[eé]clamation|parler\s+(à|a)\s+(un\s+)?humain|stop\s+arthur)\b/i.test(
+      t,
+    )
+  ) {
+    // sauf si vraiment compte/paiement cassé
+    if (
+      !/\b(probl[eè]me|bug|erreur|bloqu).{0,40}(compte|paiement|cb|carte|stripe)\b/i.test(
+        t,
+      )
+    ) {
+      return false;
+    }
+  }
+
   if (
     /\b(parler\s+(à|a)\s+(un\s+|une\s+)?(humain|personne|conseiller|agent|quelqu)|parler\s+à\s+quelqu|stop\s+arthur|arr[eê]t\s+arthur)\b/i.test(
       t,
     ) ||
-    (/\b(humain|conseiller|agent)\b/i.test(t) &&
-      /\b(parler|voir|contacter|joindre|équipe|equipe)\b/i.test(t))
+    (/\b(humain|personne réelle)\b/i.test(t) &&
+      /\b(parler|voir|contacter|joindre)\b/i.test(t))
   ) {
     return true;
   }
 
-  if (/\b(rembours\w*|plainte|r[eé]clamation|incident)\b/i.test(t)) return true;
+  if (/\b(rembours\w*|plainte|r[eé]clamation)\b/i.test(t)) return true;
 
   if (
-    /\b(probl[eè]me|bug|erreur|bloqu).{0,48}(compte|paiement|cb|carte|stripe|abo|factur)/i.test(
+    /\b(probl[eè]me|bug|erreur|bloqu|ne\s*(marche|fonctionne)\s*pas).{0,48}(compte|paiement|cb|carte|stripe|factur)/i.test(
       t,
     ) ||
-    /\b(compte|paiement|cb|carte|stripe|abo|factur).{0,48}(probl[eè]me|bug|erreur|bloqu|marche\s*pas)/i.test(
+    /\b(compte|paiement|cb|carte|stripe|factur).{0,48}(probl[eè]me|bug|erreur|bloqu|marche\s*pas)/i.test(
       t,
     )
   ) {
     return true;
   }
 
+  // Médical personnel explicite (pas un simple conseil technique)
   if (
-    /\b(blessure|douleur|tendinite|m[eé]decin|docteur|physio|kin[eé]|diagnostic|urgent\s+m[eé]dical)\b/i.test(
+    /\b(j['’]ai\s+(une\s+)?blessure|je\s+souffre|douleur\s+vive|urgence\s+m[eé]dicale|avis\s+(d['’])?(un\s+)?(m[eé]decin|docteur|physio|kin[eé])|diagnostic)\b/i.test(
       t,
     )
   ) {
     return true;
   }
-
-  if (isOffTopicDm(t)) return false;
-
-  // Question tarif pure → pas un handoff
-  if (isPricingDm(t)) return false;
 
   return false;
 }
@@ -133,11 +148,10 @@ export function buildPricingReplyMessage(): string {
     `Premium MySWYM : essai ${MYSWYM_PRICING.trialDays} jours (carte requise), ` +
     `puis ${MYSWYM_PRICING.monthlyLabel}/mois sans engagement, ` +
     `ou ${MYSWYM_PRICING.annualLabel}/an. ` +
-    `Détails : ${base}/tarifs`
+    `Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs} — tu vises plutôt le mensuel flexible ou l’annuel ?`
   );
 }
 
-/** Hors-sujet : brouillon vide (rien à approuver / envoyer). */
 export function buildOffTopicReplyMessage(): string {
   return "";
 }
@@ -146,9 +160,125 @@ export function buildHumanHandoffMessage(): string {
   return HUMAN_HANDOFF_CLIENT_MESSAGE;
 }
 
-/**
- * Applique la politique Shadow sur une sortie structurée.
- */
+/** Réponses conversationnelles déterministes (offline + filet policy). */
+export function buildConversationalReply(
+  inboundMessage: string,
+): ArthurStructuredOutput | null {
+  const inbound = String(inboundMessage || "").trim();
+  if (!inbound || isOffTopicDm(inbound)) return null;
+  if (isLegitimateHandoffDm(inbound)) return null;
+
+  const intent = inferIntentHeuristic(inbound);
+  const tip = matchBuiltinKnowledge(inbound, intent, 1)[0]?.content;
+  const base = APP();
+  const linkInscription = `${base}${MYSWYM_PRODUCT.paths.inscription}`;
+
+  if (isPricingDm(inbound)) {
+    return {
+      message: buildPricingReplyMessage(),
+      intent: "subscription",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "pricing" },
+      suggested_action: "continue",
+    };
+  }
+
+  if (
+    intent === "myswym_question" ||
+    /\b(fonctionne|fonctionnement|comment.*(app|appli|application|myswym)|c['’]est quoi|à quoi sert)\b/i.test(
+      inbound,
+    )
+  ) {
+    return {
+      message:
+        `MySWYM crée un plan de natation personnalisé selon ton objectif, ton niveau et ta fréquence : séances structurées (technique + volume) pour progresser sans improviser. ` +
+        (tip ? `${tip} ` : "") +
+        `Tu peux démarrer ici : ${linkInscription} — c’est quoi ton objectif principal (technique, triathlon, régularité…) ?`,
+      intent: "myswym_question",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "product_explain" },
+      suggested_action: "qualify_frequency",
+    };
+  }
+
+  if (intent === "technique" || /\bcrawl\b/i.test(inbound)) {
+    return {
+      message:
+        (tip ||
+          "Pour progresser en crawl : respiration toutes les 3 coulées, oreille dans l’eau, et allonge chaque coulée.") +
+        " Tu nages plutôt 1, 2 ou 3 fois par semaine en ce moment ? " +
+        `MySWYM peut ensuite te construire un plan adapté à ta fréquence : ${linkInscription}`,
+      intent: "technique",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "crawl_advice" },
+      suggested_action: "qualify_frequency",
+    };
+  }
+
+  if (intent === "goal" || /\btriathlon|ironman\b/i.test(inbound)) {
+    return {
+      message:
+        (tip ||
+          "Avec une échéance triathlon, on priorise d’abord nager la distance à l’aise, puis on monte le volume progressivement.") +
+        " Tu prépares quelle distance (S, M, L…) et tu te situes comment en natation aujourd’hui (débutant, à l’aise sur 750 m, plus) ?",
+      intent: "goal",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "triathlon_qualify", goal: "triathlon" },
+      suggested_action: "qualify_frequency",
+    };
+  }
+
+  if (intent === "plan_request") {
+    return {
+      message:
+        `Oui — MySWYM est fait pour ça : un plan suivi selon ton objectif et ta dispo. ` +
+        `Dis-moi fréquence (séances/semaine) et échéance si tu en as une, ou commence ici : ${linkInscription}`,
+      intent: "plan_request",
+      lead_temperature: "hot",
+      extracted_data: { needs_plan: true, shadow_policy: "plan_request" },
+      suggested_action: "suggest_myswym",
+    };
+  }
+
+  if (intent === "training" || intent === "swimming_question") {
+    return {
+      message:
+        (tip ||
+          "En natation, la régularité compte plus que la séance héroïque : 2 séances solides battent une seule très longue.") +
+        " Tu vises plutôt technique, endurance, ou une course ?",
+      intent: intent === "training" ? "training" : "swimming_question",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "training_chat" },
+      suggested_action: "qualify_frequency",
+    };
+  }
+
+  if (intent === "subscription") {
+    return {
+      message: buildPricingReplyMessage(),
+      intent: "subscription",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "pricing" },
+      suggested_action: "continue",
+    };
+  }
+
+  // Message pertinent non classé finement → engager la conversation
+  if (isRelevantConversationalDm(inbound)) {
+    return {
+      message:
+        "Je peux t’aider sur MySWYM, la natation ou un objectif (crawl, triathlon, plan). " +
+        "Tu veux plutôt comprendre l’app, un conseil technique, ou préparer une échéance ?",
+      intent: "myswym_question",
+      lead_temperature: "warm",
+      extracted_data: { shadow_policy: "open_qualify" },
+      suggested_action: "continue",
+    };
+  }
+
+  return null;
+}
+
 export function applyShadowReplyPolicy(
   structured: ArthurStructuredOutput,
   inboundMessage: string,
@@ -160,7 +290,6 @@ export function applyShadowReplyPolicy(
     message: String(structured.message || "").trim(),
   };
 
-  // 1) Handoff légitime d’abord (sinon « parler à un humain » tombe en hors-sujet)
   if (isLegitimateHandoffDm(inbound)) {
     out.intent = "support";
     out.lead_temperature = "warm";
@@ -171,7 +300,6 @@ export function applyShadowReplyPolicy(
     return out;
   }
 
-  // 2) Hors-sujet / spam → ignore, brouillon vide, jamais de handoff
   if (isOffTopicDm(inbound)) {
     out.intent = "other";
     out.lead_temperature = "cold";
@@ -183,20 +311,33 @@ export function applyShadowReplyPolicy(
     return out;
   }
 
-  // 3) Refuser un handoff inventé par le modèle
-  if (out.suggested_action === "handoff_human") {
+  // Remplacer ignore/handoff erronés + brouillons vides sur messages pertinents
+  const needsConversationalFix =
+    out.suggested_action === "no_reply" ||
+    out.suggested_action === "handoff_human" ||
+    !out.message ||
+    INTERNAL_BOT_SPEAK_RE.test(out.message) ||
+    (out.intent === "other" && isRelevantConversationalDm(inbound));
+
+  if (needsConversationalFix) {
+    const built = buildConversationalReply(inbound);
+    if (built) {
+      return {
+        ...built,
+        extracted_data: {
+          ...out.extracted_data,
+          ...built.extracted_data,
+          shadow_policy_repaired: true,
+        },
+      };
+    }
     out.suggested_action = "continue";
-    if (
-      !out.message ||
-      INTERNAL_BOT_SPEAK_RE.test(out.message) ||
-      /passe un humain|se met en pause/i.test(out.message)
-    ) {
+    if (!out.message || INTERNAL_BOT_SPEAK_RE.test(out.message)) {
       out.message =
-        "Dis-moi ton objectif natation ou ta question concrète — je t’oriente.";
+        "Je t’écoute — tu veux un conseil natation, comprendre MySWYM, ou préparer un objectif ?";
     }
   }
 
-  // 4) Nettoyer jargon interne s’il reste
   if (INTERNAL_BOT_SPEAK_RE.test(out.message)) {
     out.message = out.message
       .replace(INTERNAL_BOT_SPEAK_RE, "")
@@ -208,33 +349,10 @@ export function applyShadowReplyPolicy(
     out.intent = "subscription";
     out.lead_temperature = "warm";
     out.suggested_action = "continue";
-    if (!/\b4[,.]99\b/.test(out.message) || !/\/tarifs\b/i.test(out.message)) {
+    if (!/\b4[,.]99\b/.test(out.message)) {
       out.message = buildPricingReplyMessage();
     }
     out.extracted_data.shadow_policy = "pricing";
-    return out;
-  }
-
-  // intent other non pertinent (sans swim signal) → ignore vide
-  if (out.intent === "other" && !SWIM_RELEVANT_RE.test(inbound)) {
-    out.lead_temperature = "cold";
-    out.suggested_action = "no_reply";
-    out.message = "";
-    out.extracted_data.shadow_policy = "off_topic_ignore";
-    out.extracted_data.needs_plan = false;
-    return out;
-  }
-
-  if (
-    (out.intent === "technique" || out.intent === "swimming_question") &&
-    out.suggested_action === "continue" &&
-    /inscription\?ref=/i.test(out.message)
-  ) {
-    out.message = stripMyswymLinks(out.message).trim();
-    if (!out.message) {
-      out.message =
-        "Conseil rapide : en crawl, garde une oreille dans l’eau à la respiration et allonge chaque coulée. Tu nages combien de fois par semaine ?";
-    }
   }
 
   return out;

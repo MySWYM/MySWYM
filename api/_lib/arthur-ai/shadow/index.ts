@@ -14,10 +14,12 @@ export {
 export type { ShadowReviewAction } from "./review.js";
 export {
   applyShadowReplyPolicy,
+  buildConversationalReply,
   containsMyswymLink,
   isOffTopicDm,
   isPricingDm,
   isLegitimateHandoffDm,
+  isRelevantConversationalDm,
   HUMAN_HANDOFF_CLIENT_MESSAGE,
   MYSWYM_PRICING,
 } from "./reply-policy.js";
