@@ -162,6 +162,9 @@
 | 2026-08-08 | Force regen v41 | Demande Arthur : `PLAN_VERSION` 41 + `FORCE_PLAN_REGEN=true` — overwrite **tous** les plans (progression écrasée) pour appliquer moteur V1 + QG + K. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-08 | Matériel questionnaire | Étape matos **tous niveaux** ; Découverte = presets simples (IDs normalisés) ; `equipment: []` si aucun (plus de `null` silencieux) ; persist `sport_profiles` + édition Profil ; `equipmentUsed` ; QG `material_missing`. Pas de 2e système. | ✅ |
 | 2026-08-08 | Force regen v42 live | Demande Arthur : `PLAN_VERSION` 42 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme moteur V1 + matos normalisé. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-10 | Pyramide Ironman / triathlon perf | Feedback ChatGPT : « 1750 m en pyramide ça veut rien dire — trop long et aucune info ». Cap `MAX_PYRAMID_VOLUME=1000` ; plus de scale×2 vers 1600 m ; surplus = séries explicites hors pyramide ; affichage avec paliers `100 → 200 → 300…` + repos ; exclus des candidats si corps > 1000 m (tri/OW/perf) ; QG refuse pyramide > 1000 m / opaque. `PLAN_VERSION` 43, pas de FORCE regen. | ✅ |
+| 2026-08-10 | Restitution coach séances | Séances = pseudo-étapes / marketing (« Aujourd'hui », « on savoure ») + pyramides opaques. Module `coach-restitution.js` : strip headlines, décompose pyramides, repos explicites. Composeur : plus de `→ Aujourd'hui` dans details, plus de headers `Technique ·`, matos sur ligne nageable (`avec palmes`), formats classiques prioritaires. Design UI inchangé. Pas de change charge/taper/QG règles. | ✅ |
+| 2026-08-10 | Force regen v44 live | Demande Arthur : `PLAN_VERSION` 44 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec restitution coach. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -193,6 +196,8 @@
 17. **Taper Performance** : pas de coefficient uniforme ×0.5 ; pas « uniquement nage facile » ; pas de gros test / nouvelle technique / nouveau matos à J-3 ; suivre les **absolus** de zone (`absoluteMetersByZone`) pas seulement les % ; Race Day ≠ volume entraînement.
 18. **Feedback / adaptation** : un seul `too_easy` ≠ +10 % ; un seul `hard` ≠ crash ; `pain` = sécurité immédiate ; ne jamais doubler une séance manquée ; ne pas abandonner QualityToDevelop parce que la charge était trop haute.
 19. **Composeur Quality Gate (J2)** : une séance techniquement valide peut être sportivement absurde — toujours passer `validateComposedSession`. Interdit : Découverte continu > `maxContinuous` (y compris départ/fin) ; pain + Z3/Z4 ; race_week 2800m / gros Z3 ; `33×50` ; `NxM` rest=0 hors continuous ; 4N titre sans multi-nages. Sous-volume > séance incohérente. Arthur ne contourne pas le gate.
+20. **Pyramide** : jamais un monolithe ~1750 m (surtout Ironman / triathlon perf) sans paliers ni consignes. Volume pyramide ≤ **1000 m** ; sommet ≤ ~300 m ; afficher chaque palier nageable (pas un titre opaque) ; le surplus du corps = séries lisibles (Nx100…), pas un « fill » appelé pyramide.
+21. **Restitution coach** : ne jamais exposer au nageur les headlines moteur (`→ Aujourd'hui :…`), headers `Technique ·`, sections `Préparation aérobie :`, ni marketing (`on savoure`). Une ligne = distance + nage + intensité + repos. Préférer `8×200` à une pyramide inventée pour remplir le volume.
 
 ---
 

@@ -1,15 +1,19 @@
 /**
- * Affichage utilisateur vs sets internes (progressive / descending / pyramid).
- * Volume affiché = volume des sets (jamais inventé).
+ * Affichage utilisateur vs sets internes.
+ * Pyramide / progressive / descending : pas de monolithe opaque —
+ * on laisse les lignes individuelles (nageables) quand le format est complexe.
  */
 
 /**
- * @param {object[]} sets — sets d'un même format collapsable
+ * @param {object[]} sets
  * @param {string} format
- * @returns {string[]|null} lignes UX compactes, ou null si pas de collapse sûr
+ * @returns {string[]|null}
  */
 export function collapseSetsToDisplayLinesExact(sets = [], format) {
-  if (!sets.length || !["progressive", "descending", "pyramid"].includes(format)) {
+  // Pyramide : jamais collapsée — le nageur doit voir chaque palier.
+  if (format === "pyramid") return null;
+
+  if (!sets.length || !["progressive", "descending"].includes(format)) {
     return null;
   }
   if (sets.length < 3) return null;
@@ -19,35 +23,14 @@ export function collapseSetsToDisplayLinesExact(sets = [], format) {
   const label = sets[0]?.label || "crawl";
   const restSec = sets.find((s) => s.restSec > 0)?.restSec || 20;
 
-  if (format === "progressive") {
-    const unit = sets[0]?.distancePerRep || 100;
-    if (vol % unit !== 0) return null;
-    const reps = vol / unit;
-    return [
-      `-${reps} × ${unit}m ${label} progressif — du facile vers le soutenu — repos ${restSec}s`,
-    ];
-  }
-
-  if (format === "descending") {
-    const unit = 100;
-    if (vol % unit !== 0) {
-      // Descending mixte : afficher total + intention, volume exact via un seul libellé
-      return [
-        `-${vol}m ${label} descendant — du long vers le court — repos ${restSec}s`,
-      ];
+  // Progressive / descending → série classique lisible (pas de jargon « progressif »)
+  if (format === "progressive" || format === "descending") {
+    const unit = sets[0]?.distancePerRep || (format === "descending" ? 100 : 50);
+    if (vol % unit === 0) {
+      const reps = vol / unit;
+      return [`-${reps} × ${unit}m ${label} — repos ${restSec}s`];
     }
-    const reps = vol / unit;
-    return [
-      `-${reps} × ${unit}m ${label} descendant — du long vers le court — repos ${restSec}s`,
-    ];
-  }
-
-  if (format === "pyramid") {
-    const peak = Math.max(...sets.map((s) => s.distancePerRep || 0));
-    // Pas de second « Xm » (calcDetailsDistance compterait en double)
-    return [
-      `-${vol}m pyramide ${label} — montée / descente (sommet ${peak}) — repos variable`,
-    ];
+    return [`-${vol}m ${label} — repos ${restSec}s`];
   }
 
   return null;

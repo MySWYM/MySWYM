@@ -13,6 +13,7 @@ import {
   validateArthurCandidate,
   buildCorpsByFormat,
   volumeFromSets,
+  MAX_PYRAMID_VOLUME,
 } from "./index.js";
 import { resolveTaperLoad } from "./taper-load.js";
 
@@ -490,6 +491,65 @@ function z4Meters(session) {
   console.log("Q15 PASS");
 }
 
+// ── Q16 : Pyramide 1750 m opaque / trop longue → REJECT ──
+{
+  const fake = {
+    details: ["-1750m pyramide crawl — montée / descente (sommet 400) — repos variable"],
+    sets: [
+      { reps: 1, distancePerRep: 100, restSec: 20, meta: { setFormat: "pyramid", pyramidStep: 0 }, block: "corps", zone: "Z2" },
+      { reps: 1, distancePerRep: 200, restSec: 20, meta: { setFormat: "pyramid", pyramidStep: 1 }, block: "corps", zone: "Z2" },
+      { reps: 1, distancePerRep: 300, restSec: 25, meta: { setFormat: "pyramid", pyramidStep: 2 }, block: "corps", zone: "Z2" },
+      { reps: 1, distancePerRep: 400, restSec: 30, meta: { setFormat: "pyramid", pyramidStep: 3 }, block: "corps", zone: "Z2" },
+      { reps: 1, distancePerRep: 300, restSec: 25, meta: { setFormat: "pyramid", pyramidStep: 4 }, block: "corps", zone: "Z2" },
+      { reps: 1, distancePerRep: 200, restSec: 20, meta: { setFormat: "pyramid", pyramidStep: 5 }, block: "corps", zone: "Z2" },
+      { reps: 1, distancePerRep: 100, restSec: 20, meta: { setFormat: "pyramid", pyramidStep: 6 }, block: "corps", zone: "Z2" },
+      { reps: 3, distancePerRep: 50, restSec: 20, meta: { setFormat: "pyramid" }, block: "corps", zone: "Z2" },
+    ],
+    volumeFromSets: 1750,
+    trainingDistance: 1750,
+    distance: "1750m",
+  };
+  const brief = briefBase({
+    level: "performance",
+    objectif: "triathlon",
+    volumeTarget: 3200,
+    sessionIntent: "triathlon",
+    seed: "q16-pyr",
+  });
+  const gate = validateComposedSession(fake, brief, resolveHardConstraints(brief));
+  assert(!gate.valid, `Q16 REJECT expected: ${gate.errors.join(";")}`);
+  assert(
+    gate.errors.some((e) => /pyramide/i.test(e)),
+    `Q16 erreur pyramide: ${gate.errors.join(";")}`,
+  );
+
+  // Builder plafonné → PASS gate sur volume pyramide
+  const built = buildCorpsByFormat("pyramid", 1750, {
+    label: "crawl",
+    cue: "économie",
+    restFor: () => 20,
+    maxContinuous: 400,
+    pool: 50,
+  });
+  const pyrVol = built.sets
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(pyrVol <= MAX_PYRAMID_VOLUME, `Q16 built pyr ${pyrVol}`);
+  const okSession = {
+    details: built.displayLines,
+    sets: built.sets.map((s) => ({ ...s, block: "corps", zone: "Z2" })),
+    volumeFromSets: volumeFromSets(built.sets),
+    trainingDistance: volumeFromSets(built.sets),
+    distance: `${volumeFromSets(built.sets)}m`,
+  };
+  const gateOk = validateComposedSession(okSession, brief, resolveHardConstraints(brief));
+  assert(
+    !gateOk.errors.some((e) => /pyramide/i.test(e)),
+    `Q16 built OK: ${gateOk.errors.join(";")}`,
+  );
+  console.log("Q16 PASS");
+}
+
 // ── Bonus : compose réel pain sans Z3 ──
 {
   const brief = briefBase({
@@ -523,4 +583,4 @@ function z4Meters(session) {
   console.log("BONUS decouverte live PASS");
 }
 
-console.log("\n✅ All Q1–Q15 quality gate tests passed");
+console.log("\n✅ All Q1–Q16 quality gate tests passed");

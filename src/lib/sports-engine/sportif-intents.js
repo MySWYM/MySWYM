@@ -65,7 +65,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "technique_endurance",
     headline: "Aujourd'hui : technique puis aérobie",
     learnCue: "conserve le mouvement travaillé",
-    applyCue: "applique en Z2",
+    applyCue: "rythme aérobie régulier",
     techPrimary: "rattrape",
     quality: false,
     zone: "Z2",

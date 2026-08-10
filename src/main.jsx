@@ -13,6 +13,7 @@ import BlogPost from './BlogPost.jsx'
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from './LegalPages.jsx'
 import CookieBanner from './CookieBanner.jsx'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
+import SessionPyramidPreview from './SessionPyramidPreview.jsx'
 import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
 import ArthurFollowupsAdmin from './ArthurFollowupsAdmin.jsx'
 import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
@@ -35,6 +36,7 @@ createRoot(document.getElementById('root')).render(
 
         {/* Prototype parcours conversion (design + UX) */}
         <Route path="/prototype/conversion" element={<ConversionFlow />} />
+        <Route path="/prototype/session-pyramid" element={<SessionPyramidPreview />} />
 
         {/* Admin Arthur */}
         <Route path="/admin/arthur-growth" element={<ArthurGrowthAdmin />} />

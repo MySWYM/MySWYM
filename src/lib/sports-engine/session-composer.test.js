@@ -132,9 +132,11 @@ function assertSportDecouverte(session, brief) {
     }
   }
   assert(!/sans pause[^\n]*repos/i.test(session.details.join("\n")), "repos incohérent");
-  assert(/Aujourd'hui :/i.test(session.details.join("\n")) || /Découverte ·/i.test(session.title), "intention");
-  const techLines = session.details.filter((l) => /^\s*·/.test(l));
-  assert(techLines.length >= 2, "variété technique minimale");
+  assert(!/Aujourd'hui :/i.test(session.details.join("\n")), "pas de headline narratif");
+  assert(session.details.length >= 3 || /Découverte ·/i.test(session.title), "contenu");
+  const techSets = (session.sets || []).filter((s) => s.block === "technique");
+  assert(techSets.length >= 2, "variété technique minimale");
+  assert(!/Technique ·/i.test(session.details.join("\n")), "pas de header Technique ·");
   const hard = validateDecouverteHard(session, {
     maxContinuous: maxCont,
     papillonOk: !!brief.papillonMastered,

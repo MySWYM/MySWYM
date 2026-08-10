@@ -177,8 +177,14 @@ export {
 export { SPORTIF_GOLD_SCENARIOS } from "./sportif-intents.js";
 export { GOLD_SCENARIOS, DECOUVERTE_INTENTS } from "./decouverte-intents.js";
 export { REGULIER_GOLD_SCENARIOS, REGULIER_INTENTS } from "./regulier-intents.js";
-export { buildCorpsByFormat } from "./set-formats.js";
+export { buildCorpsByFormat, MAX_PYRAMID_VOLUME } from "./set-formats.js";
 export { collapseSetsToDisplayLinesExact, collapseSetsToDisplayLines } from "./display-sets.js";
+export {
+  toCoachDetailLines,
+  finalizeCoachSession,
+  findAmbiguousCoachLines,
+  expandPyramidDetailLine,
+} from "./coach-restitution.js";
 export { ARTHUR_GOLD_TEST_FIXTURES } from "./arthur-gold-fixtures.js";
 export { findInternalJargon } from "./user-facing.js";
 export { normalizeStrokeFocus, canUsePapillon, strokeSwimLabel, STROKE_FOCUS_IDS } from "./stroke-focus.js";
