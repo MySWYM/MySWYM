@@ -48,7 +48,7 @@ const FAQ_RULES = [
   {
     keys: ["compte", "connexion", "mot de passe", "inscription", "supprimer"],
     answer:
-      `Connexion et inscription via /connexion et /inscription. Pour un problème de compte ou une demande de suppression, écris à ${SUPPORT_EMAIL}.`,
+      `Connexion et inscription via /connexion et /inscription. Pour supprimer ton compte : Profil → Paramètres → « Supprimer mon compte », ou écris à ${SUPPORT_EMAIL}.`,
   },
 
   // ── Natation / méthode ───────────────────────────────────

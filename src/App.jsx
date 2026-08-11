@@ -65,6 +65,16 @@ import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import BuddyMatching from "./BuddyMatching.jsx";
+import CheckoutLegalGates, { checkoutGatesReady } from "./CheckoutLegalGates.jsx";
+import {
+  LEGAL_LINKS,
+  SIGNUP_AGE_LABEL,
+  SIGNUP_TERMS_LABEL_PREFIX,
+  INJURY_HEALTH_NOTICE,
+  INJURY_CONSENT_LABEL,
+  SPORT_SAFETY_SHORT,
+  ACCOUNT_DELETE_WARNING,
+} from "./lib/legal-copy.js";
 import { useTranslation } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
@@ -3356,12 +3366,15 @@ const SettingsDrawer = ({
   onGoBuddies,
   onOpenAuth,
   onSignOut,
+  onDeleteAccount,
   plan,
   profile,
   onPaceUpdate,
   onValidateSession,
 }) => {
   const { t: ts } = useTranslation("settings");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteErr, setDeleteErr] = useState(null);
   if (!open) return null;
 
   const menuRow = {
@@ -3587,7 +3600,7 @@ const SettingsDrawer = ({
             </div>
             <ChevronRight size={18} color={G.greyMid} />
           </button>
-          <button type="button" onClick={onSignOut} style={{ ...menuRow, borderBottom: "none", color: G.coral }}>
+          <button type="button" onClick={onSignOut} style={{ ...menuRow, color: G.coral }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <LogOut size={18} color={G.coral} />
               <div>
@@ -3597,6 +3610,39 @@ const SettingsDrawer = ({
             </div>
             <ChevronRight size={18} color={G.greyMid} />
           </button>
+          {user && onDeleteAccount && (
+            <button
+              type="button"
+              disabled={deleteBusy}
+              onClick={async () => {
+                setDeleteErr(null);
+                const ok = window.confirm(
+                  `${ACCOUNT_DELETE_WARNING}\n\nConfirmer la suppression définitive du compte ?`,
+                );
+                if (!ok) return;
+                setDeleteBusy(true);
+                try {
+                  await onDeleteAccount();
+                } catch (e) {
+                  setDeleteErr(e?.message || "Suppression impossible.");
+                  setDeleteBusy(false);
+                }
+              }}
+              style={{ ...menuRow, borderBottom: "none", color: G.coral }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <Trash2 size={18} color={G.coral} />
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{deleteBusy ? "Suppression…" : "Supprimer mon compte"}</div>
+                  <div style={{ fontSize: 12, color: G.grey }}>Droit à l’effacement (RGPD)</div>
+                </div>
+              </div>
+              <ChevronRight size={18} color={G.greyMid} />
+            </button>
+          )}
+          {deleteErr && (
+            <div style={{ padding: "8px 0 12px", fontSize: 12, color: "#CC0000" }}>{deleteErr}</div>
+          )}
         </div>
       </div>
     </div>,
@@ -4077,6 +4123,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
+  const [acceptAge, setAcceptAge] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const referralCode = getStoredReferralCode();
 
   const switchMode = (m) => {
@@ -4094,12 +4142,19 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         if (error) throw error;
         onAuth(data.user);
       } else if (mode === "register") {
+        if (!acceptAge || !acceptTerms) {
+          throw new Error("Confirme ton âge (18+) et accepte les CGU / confidentialité pour créer un compte.");
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/app`,
-            data: referralCode ? { referred_by: referralCode } : undefined,
+            data: {
+              ...(referralCode ? { referred_by: referralCode } : {}),
+              accepted_terms_at: new Date().toISOString(),
+              confirmed_age_18: true,
+            },
           },
         });
         if (error) throw error;
@@ -4138,6 +4193,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
     reset:    "Envoyer le lien",
   };
 
+  const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
+
   return (
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {(showBrandHeader || onBack) && (
@@ -4168,7 +4225,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         {(mode === "password" || mode === "register") && (
           <>
             <SocialAuthButtons
-              disabled={loading}
+              disabled={loading || (mode === "register" && registerBlocked)}
               intent={mode === "register" ? "signup" : "login"}
               onError={(msg) => { setSuccess(null); setError(msg); }}
             />
@@ -4202,7 +4259,28 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
           </div>
         )}
 
-        <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password)} variant="blue">
+        {mode === "register" && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey }}>
+              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
+              <span>{SIGNUP_AGE_LABEL}</span>
+            </label>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey }}>
+              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
+              <span>
+                {SIGNUP_TERMS_LABEL_PREFIX}{" "}
+                <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>CGU</a>
+                {" "}et la{" "}
+                <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>politique de confidentialité</a>.
+              </span>
+            </label>
+            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
+              {SPORT_SAFETY_SHORT}
+            </p>
+          </div>
+        )}
+
+        <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
           {loading ? "…" : ctaMap[mode]}
         </Btn>
 
@@ -4728,14 +4806,18 @@ const StepPhysique = ({ age, weightKg, heightCm, onChange, onNext, onBack }) => 
 };
 
 /** Blessure — commun à tous les programmes */
-const StepInjury = ({ injuryStatus, injuryNote, onChangeStatus, onChangeNote, onNext, onBack }) => {
-  const canNext = injuryStatus === "aucune" || (injuryStatus === "oui" && true);
+const StepInjury = ({ injuryStatus, injuryNote, injuryConsent, onChangeStatus, onChangeNote, onChangeConsent, onNext, onBack }) => {
+  const needsConsent = injuryStatus === "oui";
+  const canNext = injuryStatus === "aucune" || (injuryStatus === "oui" && !!injuryConsent);
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Blessure ?</h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
+      <p style={{ fontSize: 14, color: G.grey, marginBottom: 12, lineHeight: 1.45 }}>
         On adaptera les consignes si tu as une gêne ou une blessure en cours.
       </p>
+      <div style={{ background: "#FFF8EB", border: "1px solid #F5D78E", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
+        <p style={{ fontSize: 12, color: "#7A5B12", lineHeight: 1.5, margin: 0 }}>{INJURY_HEALTH_NOTICE}</p>
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {[
           { id: "aucune", label: "Aucune blessure", desc: "Je nage sans gêne particulière" },
@@ -4760,7 +4842,7 @@ const StepInjury = ({ injuryStatus, injuryNote, onChangeStatus, onChangeNote, on
         })}
       </div>
       {injuryStatus === "oui" && (
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}`, marginBottom: 20 }}>
+        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
           <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
             Précise (optionnel)
           </label>
@@ -4776,7 +4858,21 @@ const StepInjury = ({ injuryStatus, injuryNote, onChangeStatus, onChangeNote, on
               fontWeight: 600,
             }}
           />
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 14, fontSize: 12, lineHeight: 1.45, color: G.grey }}>
+            <input
+              type="checkbox"
+              checked={!!injuryConsent}
+              onChange={(e) => onChangeConsent?.(e.target.checked)}
+              style={{ marginTop: 2, flexShrink: 0 }}
+            />
+            <span>{INJURY_CONSENT_LABEL}</span>
+          </label>
         </div>
+      )}
+      {!needsConsent && injuryStatus === "aucune" && (
+        <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>
+          {SPORT_SAFETY_SHORT}
+        </p>
       )}
       <Btn onClick={onNext} disabled={!canNext}>Continuer</Btn>
       <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
@@ -5593,6 +5689,9 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
   const firstSession = plan?.weeks?.[0]?.sessions?.[0];
   const isLoop = !!plan?.isSessionLoop || !!plan?.isProgression;
   const insights = buildPlanReadyInsights(plan, profile);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
+  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
 
   return (
     <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onDismiss?.()}>
@@ -5652,7 +5751,15 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
           </div>
         )}
 
-        <Btn variant="blue" onClick={onContinue} disabled={loading}>
+        <CheckoutLegalGates
+          acceptTerms={acceptTerms}
+          onAcceptTerms={setAcceptTerms}
+          acceptWithdrawal={acceptWithdrawal}
+          onAcceptWithdrawal={setAcceptWithdrawal}
+          ink={G.ink}
+        />
+
+        <Btn variant="blue" onClick={onContinue} disabled={loading || !legalReady}>
           {loading ? "Redirection…" : "Essai 7 jours — débloquer mon coach"}
         </Btn>
         <button type="button" onClick={onDismiss} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
@@ -5709,6 +5816,8 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   const [err, setErr] = useState(null);
   const [period, setPeriod] = useState("monthly");
   const [user, setUser] = useState(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
 
   useEffect(() => {
     captureReferralFromUrl();
@@ -5726,6 +5835,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   });
   const headline = copy.headline;
   const subtitle = copy.subtitle;
+  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
 
   const callFunction = async (fnName, body) => {
     const { data: refreshData } = await supabase.auth.refreshSession();
@@ -5741,6 +5851,10 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 
   const handleCheckout = async () => {
     if (loading) return;
+    if (!legalReady) {
+      setErr("Accepte les CGV/CGU et confirme la demande d’accès immédiat pour continuer.");
+      return;
+    }
     setLoading(true); setErr(null);
     try {
       const priceId = isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY;
@@ -5786,7 +5900,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
           <p style={{ color: G.greyMid, fontSize: 12, marginTop: 10, lineHeight: 1.4 }}>
-            Déjà utilisé par des nageurs bassin & eau libre · 4,99 €/mois · annulation en 2 clics
+            4,99 €/mois ou 39,99 €/an · résiliation via le portail Stripe
           </p>
         </div>
 
@@ -5824,7 +5938,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>39,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · pas de remboursement</div>
+            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · pas de remboursement*</div>
           </button>
         </div>
 
@@ -5839,7 +5953,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         {isAnnual && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
-              39,99€ facturés une fois · pas de remboursement · ~3,33€/mois
+              39,99€ facturés une fois · pas de remboursement au prorata hors cas légaux · ~3,33€/mois
             </span>
           </div>
         )}
@@ -5868,8 +5982,16 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           ))}
         </div>
 
+        <CheckoutLegalGates
+          acceptTerms={acceptTerms}
+          onAcceptTerms={setAcceptTerms}
+          acceptWithdrawal={acceptWithdrawal}
+          onAcceptWithdrawal={setAcceptWithdrawal}
+          ink={G.ink}
+        />
+
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
-        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
+        <Btn variant="blue" onClick={handleCheckout} disabled={loading || !legalReady}>
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
         <button type="button" onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
@@ -10490,6 +10612,7 @@ const BLANK_PROFILE = {
   heightCm: "",
   injuryStatus: null, // "aucune" | "oui"
   injuryNote: "",
+  injuryConsent: false,
   swimStyle: null, // "crawl" | "4_nages"
   preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
   /** null = inventaire inconnu ; [] = aucun matos ; sinon ids sports-engine */
@@ -12486,6 +12609,27 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
+  const handleDeleteAccount = async () => {
+    const { data: refreshData } = await supabase.auth.refreshSession();
+    const session = refreshData?.session;
+    if (!session) throw new Error("Reconnecte-toi pour supprimer ton compte.");
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: "{}",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || "Suppression impossible.");
+    resetAnalytics();
+    await supabase.auth.signOut();
+    setSettingsOpen(false);
+    showToast("Compte supprimé.");
+  };
+
   // Thème propre à chaque compte (user_metadata + localStorage scopé par userId)
   useEffect(() => {
     const t = resolveThemeForUser(user);
@@ -12735,11 +12879,16 @@ export default function App() {
                     <StepInjury
                       injuryStatus={profile.injuryStatus}
                       injuryNote={profile.injuryNote}
+                      injuryConsent={profile.injuryConsent}
                       onChangeStatus={(v) => {
                         update("injuryStatus", v);
-                        if (v === "aucune") update("injuryNote", "");
+                        if (v === "aucune") {
+                          update("injuryNote", "");
+                          update("injuryConsent", false);
+                        }
                       }}
                       onChangeNote={(v) => update("injuryNote", v)}
+                      onChangeConsent={(v) => update("injuryConsent", v)}
                       onNext={() => setStep(10)}
                       onBack={() => setStep(7)}
                     />
@@ -12842,6 +12991,7 @@ export default function App() {
           onGoBuddies={() => setActiveTab("buddies")}
           onOpenAuth={openAuth}
           onSignOut={handleSignOut}
+          onDeleteAccount={handleDeleteAccount}
           plan={plan}
           profile={activeProfile}
           onPaceUpdate={handlePaceUpdate}

@@ -53,7 +53,8 @@ export default function CookieBanner() {
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#434751" }}>
         Nous utilisons des cookies et un stockage local <strong>nécessaires</strong> au fonctionnement
         (session, sécurité, préférences). Avec ton accord, nous mesurons aussi l’usage produit via{" "}
-        <strong>PostHog</strong> (événements anonymisés, sans contenu de séance ni notes personnelles).{" "}
+        <strong>PostHog</strong> et les performances via <strong>Vercel Speed Insights</strong>
+        {" "}(événements sans contenu de séance ni notes personnelles).{" "}
         <Link to="/politique-cookies" style={{ color: "#154388", fontWeight: 700, textDecoration: "none" }}>
           En savoir plus
         </Link>

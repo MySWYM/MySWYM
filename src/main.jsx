@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SpeedInsights } from '@vercel/speed-insights/react'
@@ -12,6 +12,7 @@ import Blog from './Blog.jsx'
 import BlogPost from './BlogPost.jsx'
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from './LegalPages.jsx'
 import CookieBanner from './CookieBanner.jsx'
+import { COOKIE_CONSENT_KEY } from './lib/cookie-consent.js'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
 import SessionPyramidPreview from './SessionPyramidPreview.jsx'
 import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
@@ -20,6 +21,28 @@ import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
 import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
 import ArthurShadowAdmin from './ArthurShadowAdmin.jsx'
 import VersionGate from './VersionGate.jsx'
+
+/** Speed Insights = mesure perf tierce → uniquement après consentement cookies. */
+function ConsentedSpeedInsights() {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    const sync = () => {
+      try {
+        setOk(localStorage.getItem(COOKIE_CONSENT_KEY) === "accepted");
+      } catch {
+        setOk(false);
+      }
+    };
+    sync();
+    window.addEventListener("myswym:cookie-consent-changed", sync);
+    window.addEventListener("myswym:cookie-consent-reset", sync);
+    return () => {
+      window.removeEventListener("myswym:cookie-consent-changed", sync);
+      window.removeEventListener("myswym:cookie-consent-reset", sync);
+    };
+  }, []);
+  return ok ? <SpeedInsights /> : null;
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -69,7 +92,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/cgv" element={<CgvPage />} />
       </Routes>
       <CookieBanner />
-      <SpeedInsights />
+      <ConsentedSpeedInsights />
     </BrowserRouter>
     </VersionGate>
   </StrictMode>,

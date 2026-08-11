@@ -149,6 +149,8 @@ export function sportProfileToRow(userId, profile = {}) {
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
       age: profile.age ?? null,
+      injuryConsent: profile.injuryConsent === true,
+      injuryConsentAt: profile.injuryConsent === true ? (profile.injuryConsentAt || new Date().toISOString()) : null,
     },
     updated_at: new Date().toISOString(),
   };
@@ -157,6 +159,7 @@ export function sportProfileToRow(userId, profile = {}) {
 /** Row → champs profil pour le moteur (sans écraser le blob) */
 export function rowToSportProfileFields(row) {
   if (!row) return {};
+  const extra = row.extra && typeof row.extra === "object" ? row.extra : {};
   return {
     level: row.level,
     goal: row.objective,
@@ -167,6 +170,8 @@ export function rowToSportProfileFields(row) {
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     injuryNote: row.injury_note,
+    injuryConsent: extra.injuryConsent === true,
+    injuryConsentAt: extra.injuryConsentAt || null,
     pace100: row.pace100,
     readinessProfile: row.readiness_profile ?? null,
     ...(row.extra || {}),

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "npm:stripe@14";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
@@ -21,6 +22,34 @@ function corsHeaders(reqOrigin: string | null) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
+}
+
+async function cancelStripeSubscriptionsForUser(
+  stripe: Stripe,
+  user: { id: string; email?: string; app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> },
+) {
+  const stored = (user.app_metadata?.stripe_customer_id
+    ?? user.user_metadata?.stripe_customer_id) as string | undefined;
+  const customerIds = new Set<string>();
+  if (stored) customerIds.add(stored);
+  if (user.email) {
+    const list = await stripe.customers.list({ email: user.email, limit: 10 });
+    for (const c of list.data) {
+      if (!(c as { deleted?: boolean }).deleted) customerIds.add(c.id);
+    }
+  }
+  for (const customerId of customerIds) {
+    const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 30 });
+    for (const sub of subs.data) {
+      if (sub.status === "canceled" || sub.status === "incomplete_expired") continue;
+      try {
+        // Annulation immédiate à la suppression de compte (évite prélèvement orphelin).
+        await stripe.subscriptions.cancel(sub.id, { prorate: false });
+      } catch (err) {
+        console.error("[delete-account] stripe cancel failed", sub.id, err);
+      }
+    }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -49,10 +78,34 @@ Deno.serve(async (req) => {
 
     const uid = user.id;
 
+    // Annuler les abonnements Stripe avant suppression (best-effort).
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (stripeKey) {
+      try {
+        const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
+        const { data: { user: adminUser } } = await admin.auth.admin.getUserById(uid);
+        await cancelStripeSubscriptionsForUser(stripe, adminUser ?? user);
+      } catch (stripeErr) {
+        console.error("[delete-account] stripe cleanup error:", stripeErr);
+      }
+    }
+
     // Best-effort purge données applicatives
-    await admin.from("strava_tokens").delete().eq("user_id", uid);
-    await admin.from("strava_activities").delete().eq("user_id", uid);
-    await admin.from("user_plans").delete().eq("user_id", uid);
+    const tables = [
+      "strava_tokens",
+      "strava_activities",
+      "user_plans",
+      "conversion_events",
+      "buddy_profiles",
+      "access_state",
+    ];
+    for (const table of tables) {
+      try {
+        await admin.from(table).delete().eq("user_id", uid);
+      } catch {
+        // table may not exist / RLS — ignore
+      }
+    }
 
     // Avatars Storage : dossier uid/
     try {

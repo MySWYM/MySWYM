@@ -54,11 +54,18 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
         </motion.div>
 
         <div className="cv:mt-auto cv:space-y-3 cv:pt-10">
+          <p className="cv:text-[11px] cv:leading-relaxed cv:text-cv-ink-tertiary">
+            Abonnement à reconduction tacite. En continuant tu acceptes les{' '}
+            <a href="/cgv" className="cv:font-semibold cv:text-cv-ink" target="_blank" rel="noopener noreferrer">CGV</a>
+            {' '}et{' '}
+            <a href="/cgu" className="cv:font-semibold cv:text-cv-ink" target="_blank" rel="noopener noreferrer">CGU</a>
+            . L’accès immédiat peut faire perdre le droit de rétractation (voir CGV).
+          </p>
           <Button fullWidth variant="premium" onClick={() => onSubscribe('monthly')}>
             Continuer — {monthly.label}/mois
           </Button>
           <Button fullWidth variant="secondary" onClick={() => onSubscribe('annual')}>
-            Annuel — {annual.label} · pas de remboursement
+            Annuel — {annual.label} · pas de remboursement*
           </Button>
           {onRestore ? (
             <button

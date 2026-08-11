@@ -14,7 +14,7 @@ const C = {
 
 const host = {
   name: "Vercel Inc.",
-  address: "340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis",
+  address: "440 N Barranca Ave #4133, Covina, CA 91723, États-Unis",
   website: "https://vercel.com",
 };
 
@@ -39,6 +39,10 @@ function H({ children }) {
   return <h2 style={{ fontSize: 16, fontWeight: 800, color: C.ink, margin: "28px 0 10px", letterSpacing: "0.02em" }}>{children}</h2>;
 }
 
+function H3({ children }) {
+  return <h3 style={{ fontSize: 14, fontWeight: 800, color: C.ink, margin: "18px 0 8px" }}>{children}</h3>;
+}
+
 function P({ children }) {
   return <p style={{ margin: "0 0 12px", color: C.inkLight }}>{children}</p>;
 }
@@ -51,300 +55,638 @@ function Ul({ items }) {
   );
 }
 
-export function MentionsLegalesPage() {
-  const { tradeName, publisher, legalForm, email, site, siret, address } = LEGAL_ENTITY;
+function Strong({ children }) {
+  return <strong style={{ color: C.ink }}>{children}</strong>;
+}
+
+function Mail({ to }) {
+  return <a href={`mailto:${to}`} style={{ color: C.accentText }}>{to}</a>;
+}
+
+function Placeholder({ label }) {
+  return <span style={{ background: "#FEF3C7", color: "#92400E", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>[À FOURNIR : {label}]</span>;
+}
+
+function PublisherBlock() {
+  const { tradeName, publisher, legalForm, email, siret, address, vatNumber } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Mentions légales" subtitle={`Informations légales de l'éditeur du site ${site.replace("https://", "")}`}>
-      <H>1. Éditeur du site</H>
+    <Ul items={[
+      <>Éditeur / vendeur : <Strong>{publisher}</Strong>, {legalForm}, exerçant sous le nom commercial <Strong>{tradeName}</Strong></>,
+      <>Contact : <Mail to={email} /></>,
+      siret ? <>SIRET : {siret}</> : <><Placeholder label="SIRET / SIREN" /></>,
+      address ? <>Adresse : {address}</> : <><Placeholder label="adresse du siège / établissement" /></>,
+      vatNumber
+        ? <>TVA : {vatNumber}</>
+        : <><Placeholder label="statut TVA (non assujetti ou n° TVA intracommunautaire)" /></>,
+    ]} />
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MENTIONS LÉGALES (LCEN)
+═══════════════════════════════════════════════════════════════════════════ */
+export function MentionsLegalesPage() {
+  const { tradeName, publisher, email, site, supportEmail } = LEGAL_ENTITY;
+  return (
+    <LegalLayout title="Mentions légales" subtitle={`Informations légales — ${site.replace("https://", "")}`}>
       <P>
-        Le site et l’application <strong style={{ color: C.ink }}>{tradeName}</strong> ({site}) sont édités par{" "}
-        <strong style={{ color: C.ink }}>{publisher}</strong>, {legalForm}, exerçant sous le nom commercial {tradeName}.
+        Conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique (LCEN),
+        les informations suivantes sont portées à la connaissance des utilisateurs.
       </P>
-      <Ul items={[
-        <>Directeur de la publication : <strong style={{ color: C.ink }}>{publisher}</strong></>,
-        <>Contact : <a href={`mailto:${email}`} style={{ color: C.accentText }}>{email}</a></>,
-        siret
-          ? <>Numéro SIRET : {siret}</>
-          : <>Numéro SIRET : communiqué sans délai sur demande écrite à {email} (mise à jour en cours sur cette page).</>,
-        address
-          ? <>Adresse du siège / établissement : {address}</>
-          : <>Adresse de l’éditeur : communiquée sur demande écrite à {email}.</>,
-      ]} />
+
+      <H>1. Éditeur du site et de l’application</H>
+      <PublisherBlock />
+      <P>
+        Directeur de la publication : <Strong>{publisher}</Strong>.
+      </P>
 
       <H>2. Hébergement</H>
+      <Ul items={[
+        <>Front / CDN : <Strong>{host.name}</Strong> — {host.address}. Site : {host.website}.</>,
+        <>Authentification, base de données et stockage fichiers : infrastructure <Strong>Supabase</Strong> (prestataire technique).</>,
+        <>Paiements : <Strong>Stripe</Strong> (prestataire de paiement — MySWYM ne stocke pas les numéros de carte).</>,
+      ]} />
+
+      <H>3. Contact</H>
       <P>
-        Le site est hébergé par <strong style={{ color: C.ink }}>{host.name}</strong>, {host.address}. Site : {host.website}.
-      </P>
-      <P>
-        Les données de compte et plans d’entraînement sont stockées via l’infrastructure <strong style={{ color: C.ink }}>Supabase</strong> (authentification et base de données).
-        Les paiements sont traités par <strong style={{ color: C.ink }}>Stripe</strong> (voir politique de confidentialité et CGV).
+        Questions générales : <Mail to={email} /> · Support : <Mail to={supportEmail} />.
       </P>
 
-      <H>3. Propriété intellectuelle</H>
+      <H>4. Propriété intellectuelle</H>
       <P>
-        L’ensemble des éléments du site et de l’application (textes, visuels, logo, structure, code, contenus d’entraînement)
-        est protégé par le droit de la propriété intellectuelle. Toute reproduction, représentation ou exploitation non autorisée est interdite.
+        L’ensemble des éléments du site et de l’application {tradeName} (textes, visuels, logo, structure, code,
+        modèles de séances, méthodologie d’entraînement) est protégé par le Code de la propriété intellectuelle.
+        Toute reproduction, représentation, extraction ou exploitation non autorisée est interdite.
       </P>
 
-      <H>4. Contact</H>
-      <P>
-        Pour toute question relative aux présentes mentions : <a href={`mailto:${email}`} style={{ color: C.accentText }}>{email}</a>.
-      </P>
+      <H>5. Documents connexes</H>
+      <Ul items={[
+        <a key="cgu" href="/cgu" style={{ color: C.accentText }}>Conditions générales d’utilisation (CGU)</a>,
+        <a key="cgv" href="/cgv" style={{ color: C.accentText }}>Conditions générales de vente (CGV)</a>,
+        <a key="priv" href="/politique-confidentialite" style={{ color: C.accentText }}>Politique de confidentialité</a>,
+        <a key="cook" href="/politique-cookies" style={{ color: C.accentText }}>Politique de cookies</a>,
+      ]} />
     </LegalLayout>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   POLITIQUE DE CONFIDENTIALITÉ
+═══════════════════════════════════════════════════════════════════════════ */
 export function PolitiqueConfidentialitePage() {
-  const { tradeName, publisher, email, site, supportEmail } = LEGAL_ENTITY;
+  const { tradeName, publisher, email, supportEmail, dpoEmail, site } = LEGAL_ENTITY;
   return (
     <LegalLayout title="Politique de confidentialité" subtitle={`Traitement des données personnelles — ${tradeName}`}>
       <P>
-        La présente politique décrit comment {publisher} ({tradeName}) traite vos données personnelles lorsque vous utilisez {site},
-        conformément au RGPD et à la loi française « Informatique et Libertés ».
+        La présente politique décrit comment {publisher} ({tradeName}) traite vos données personnelles
+        lorsque vous utilisez {site} et l’application associée, conformément au Règlement (UE) 2016/679 (RGPD)
+        et à la loi n° 78-17 du 6 janvier 1978 modifiée (« Informatique et Libertés »).
+      </P>
+      <P>
+        Cette politique est cohérente avec le fonctionnement réel du produit au {LEGAL_ENTITY.lastUpdated}.
+        Si une fonctionnalité évolue, la présente page sera mise à jour.
       </P>
 
       <H>1. Responsable du traitement</H>
+      <PublisherBlock />
+      <P>Contact données personnelles / droits : <Mail to={dpoEmail || email} />.</P>
+
+      <H>2. Données collectées et finalités</H>
+      <P>Le tableau ci-dessous résume les traitements principaux :</P>
+
+      <H3>2.1 Compte et authentification</H3>
+      <Ul items={[
+        "Données : e-mail, mot de passe (hashé par le prestataire d’auth), éventuels prénom / avatar, métadonnées de connexion.",
+        "Connexion sociale : Google (Apple annoncé comme à venir dans le produit) — identité et e-mail transmis via Supabase Auth si vous choisissez ce mode.",
+        "Finalité : création et sécurisation du compte, accès au service.",
+        "Base légale : exécution du contrat (art. 6.1.b RGPD).",
+        "Durée : durée du compte ; suppression à la demande ou après inactivité prolongée (voir §5).",
+      ]} />
+
+      <H3>2.2 Profil sportif et plans d’entraînement</H3>
+      <Ul items={[
+        "Données : objectif, niveau, fréquence, durée de séance, longueur de bassin, matériel, allures, historique de séances, feedback de difficulté.",
+        "Finalité : génération rule-based des plans / séances et adaptation progressive.",
+        "Base légale : exécution du contrat.",
+        "Important : MySWYM n’utilise pas d’IA générative pour créer les séances dans l’application ; le moteur est fondé sur des règles métier.",
+      ]} />
+
+      <H3>2.3 Données relatives à une blessure, une douleur ou une gêne</H3>
+      <Ul items={[
+        "Données : statut « blessure / gêne » (oui / aucune), note libre optionnelle, indicateurs de douleur dans le feedback de séance (oui/non), adaptations de sécurité du plan.",
+        <>Qualification : ces informations peuvent constituer des <Strong>données concernant la santé</Strong> au sens de l’article 9 du RGPD lorsqu’elles se rapportent à l’état de santé physique.</>,
+        "Finalité : adapter l’intensité / le volume des séances proposées (ex. limitation de zone), et non établir un diagnostic médical.",
+        "Base légale : consentement explicite (art. 9.2.a RGPD), recueilli lors de l’onboarding et/ou du feedback. Vous pouvez refuser de renseigner ces champs ; le service reste utilisable avec des paramètres plus génériques.",
+        "Minimisation : la note libre est optionnelle ; elle n’est pas envoyée aux outils d’analytics (PostHog).",
+        "Conservation : tant que le profil / historique de plan est conservé ; suppression avec le compte.",
+        "AIPD (DPIA) : recommandée — [À VALIDER JURIDIQUEMENT] compte tenu du caractère potentiellement sensible.",
+      ]} />
+
+      <H3>2.4 Abonnement et paiement</H3>
+      <Ul items={[
+        "Données côté MySWYM : identifiants Stripe (customer / subscription), statut d’accès Premium, dates d’essai / fin de période, codes de parrainage.",
+        "Données de carte : traitées exclusivement par Stripe ; MySWYM ne stocke pas le numéro de carte ni le CVC.",
+        "Finalité : facturation, gestion d’abonnement, lutte contre la fraude d’abonnement, obligations comptables.",
+        "Bases légales : exécution du contrat ; obligation légale (conservation comptable) ; intérêt légitime (prévention fraude abonnement).",
+      ]} />
+
+      <H3>2.5 Strava (optionnel)</H3>
+      <Ul items={[
+        "Données : tokens OAuth, activités synchronisées (distance, durée, etc. selon ce que Strava expose).",
+        "Finalité : lier des activités à votre historique MySWYM.",
+        "Base légale : exécution du contrat / consentement via connexion volontaire Strava.",
+        "Durée : jusqu’à déconnexion Strava ou suppression du compte.",
+      ]} />
+
+      <H3>2.6 Buddy Matching (si utilisé)</H3>
+      <Ul items={[
+        "Données : préférences de nage, rayon géographique, numéro WhatsApp si vous activez la découvrabilité, consentement dédié WhatsApp.",
+        "Finalité : mise en relation entre nageurs.",
+        "Base légale : consentement (notamment pour le partage du numéro WhatsApp).",
+      ]} />
+
+      <H3>2.7 Support, contact et e-mails transactionnels</H3>
+      <Ul items={[
+        "Données : messages envoyés via le formulaire de contact, e-mails de bienvenue, vérification, confirmation d’abonnement, reset mot de passe.",
+        "Prestataire e-mail : Resend (sous-traitant).",
+        "Base légale : exécution du contrat / intérêt légitime (support) / obligation légale le cas échéant.",
+      ]} />
+
+      <H3>2.8 Mesure d’audience (PostHog) — non essentiel</H3>
+      <Ul items={[
+        "Données : événements produit agrégés / pseudonymisés (niveau, objectif, fréquence, etc.), identifiant technique, pages vues.",
+        "Exclusions techniques : e-mail, notes, contenu complet de séance, notes de blessure ne sont pas envoyés comme propriétés d’événement.",
+        "Base légale : consentement (bannière cookies).",
+        "Hébergement configuré : PostHog EU (eu.i.posthog.com) lorsque la clé est active.",
+      ]} />
+
+      <H3>2.9 Événements de conversion internes (Supabase)</H3>
+      <Ul items={[
+        "Données : nom d’événement funnel (ex. signup_started, checkout_started), chemin, referrer, propriétés non sensibles, user_id si connecté.",
+        "Finalité : mesurer le parcours d’inscription / paiement pour faire fonctionner et améliorer le service.",
+        "Base légale : intérêt légitime (art. 6.1.f) pour la mesure première partie nécessaire à l’exploitation — distincte de PostHog.",
+        "Ces événements peuvent être enregistrés même si les cookies non essentiels sont refusés, car ils ne reposent pas sur des traceurs publicitaires tiers.",
+      ]} />
+
+      <H3>2.10 Données techniques</H3>
+      <Ul items={[
+        "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=), session d’auth.",
+        "Polices Google Fonts : chargement depuis les serveurs Google (peut entraîner un transfert d’adresse IP) — voir politique cookies.",
+        "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
+      ]} />
+
+      <H>3. Destinataires / sous-traitants</H>
+      <Ul items={[
+        "Supabase — auth, base de données, stockage avatars.",
+        "Stripe — paiement et portail client.",
+        "Vercel — hébergement front.",
+        "PostHog — analytics produit (si consentement).",
+        "Resend — envoi d’e-mails.",
+        "Google — OAuth (si choisi) et Google Fonts.",
+        "Strava — uniquement si connecté.",
+        "Meta / Instagram — outils internes de messagerie / growth (Arthur) côté exploitant ; pas un pixel publicitaire utilisateur dans l’app grand public au moment de cet audit.",
+      ]} />
       <P>
-        Responsable : {publisher} — {tradeName}. Contact RGPD / droits :{" "}
-        <a href={`mailto:${email}`} style={{ color: C.accentText }}>{email}</a>.
+        Des transferts hors UE peuvent avoir lieu (notamment États-Unis via Vercel, Stripe, Google, Resend).
+        Des garanties appropriées sont recherchées auprès des prestataires (ex. clauses contractuelles types).
+        Détail des DPA : <Placeholder label="liens / dates des DPA signés" />.
       </P>
 
-      <H>2. Données collectées</H>
-      <Ul items={[
-        "Identifiants de compte : adresse e-mail, mot de passe (hashé par le prestataire d’auth) ou connexion via Google (Apple à venir), métadonnées de profil (prénom, avatar).",
-        "Données sportives et plans : objectif, niveau, fréquence, bassin, allures, progression des séances, historiques locaux et synchronisés.",
-        "Paiement & abonnement : identifiants Stripe (customer / subscription), statut Premium — MySWYM ne stocke pas les numéros de carte.",
-        "Parrainage : code filleul (?ref=) et code parrain Premium le cas échéant.",
-        "Strava (optionnel) : tokens OAuth et activités synchronisées tant que le compte reste connecté.",
-        "Données techniques : logs de sécurité, préférences locales (ex. consentement cookies), données de navigation nécessaires au fonctionnement.",
-      ]} />
-
-      <H>3. Finalités et bases légales</H>
-      <Ul items={[
-        "Fourniture du service (compte, plans, Premium) — exécution du contrat.",
-        "Facturation et obligations comptables — obligation légale.",
-        "Sécurité, prévention de la fraude, support — intérêt légitime.",
-        "Mesure d’audience / cookies non essentiels — uniquement avec votre consentement (si activés).",
-        "Parrainage — exécution du programme et intérêt légitime anti-abus.",
-      ]} />
-
-      <H>4. Destinataires / sous-traitants</H>
-      <Ul items={[
-        "Supabase — authentification (email, Google ; Apple à venir), base de données, stockage d’avatars.",
-        "Google (et Apple, une fois activé) — uniquement si vous choisissez de vous connecter via leur compte (identité et e-mail transmis à Supabase).",
-        "Stripe — paiement et portail abonnement.",
-        "Vercel — hébergement et diffusion du site.",
-        "Strava — uniquement si vous connectez votre compte Strava.",
-        "Google Fonts (polices) — chargement des typographies depuis les serveurs Google.",
-      ]} />
-      <P>Des transferts hors Union européenne peuvent avoir lieu (notamment USA) ; nos prestataires mettent en place des garanties adaptées (clauses contractuelles types, etc.).</P>
+      <H>4. Transferts hors Union européenne</H>
+      <P>
+        Lorsque des données sont traitées hors UE/EEE, {tradeName} s’appuie sur les mécanismes prévus par le RGPD
+        (décision d’adéquation, clauses contractuelles types, ou autre garantie appropriée).
+        Pour toute question : <Mail to={email} />.
+      </P>
 
       <H>5. Durées de conservation</H>
       <Ul items={[
-        "Compte et plans : pendant la durée d’utilisation du compte, puis suppression / anonymisation après demande ou inactivité prolongée.",
-        "Données de facturation : durée légale applicable (généralement jusqu’à 10 ans).",
-        "Strava : jusqu’à déconnexion Strava ou suppression du compte.",
-        "Consentement cookies : jusqu’à retrait ou expiration du choix enregistré localement.",
+        "Compte, profil sportif, plans : durée d’utilisation du compte ; suppression / anonymisation après demande de suppression ou inactivité prolongée (objectif interne : 36 mois d’inactivité — [À VALIDER]).",
+        "Données de facturation / preuves de transaction : durée légale comptable (en pratique jusqu’à 10 ans).",
+        "Strava : jusqu’à déconnexion ou suppression du compte.",
+        "Consentement cookies : jusqu’à retrait ou effacement des données du navigateur.",
+        "Logs de sécurité : durée limitée nécessaire à la sécurité (ordre de grandeur : quelques semaines à quelques mois).",
       ]} />
 
       <H>6. Vos droits</H>
       <P>
-        Vous disposez des droits d’accès, rectification, effacement, limitation, opposition, portabilité, et du droit d’introduire une réclamation auprès de la CNIL (www.cnil.fr).
-        Pour exercer vos droits : {email}. Vous pouvez aussi supprimer votre compte depuis l’onglet Profil de l’application (suppression des données associées dans la mesure techniquement possible).
+        Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition,
+        de portabilité, et du droit de retirer votre consentement à tout moment (sans affecter la licéité
+        du traitement antérieur). Vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).
+      </P>
+      <P>
+        Pour exercer vos droits : <Mail to={email} />. Vous pouvez aussi demander la suppression de votre compte
+        depuis les paramètres de l’application (Profil → Paramètres) ou par e-mail. La suppression entraîne
+        l’effacement des données associées dans la mesure techniquement possible, sous réserve des obligations légales
+        de conservation (facturation).
       </P>
 
       <H>7. Sécurité</H>
       <P>
-        Accès authentifié (JWT), données d’abonnement écrites côté serveur uniquement, paiements via Stripe, politiques d’accès en base (RLS) sur les données utilisateur.
-        Aucune méthode n’est infaillible ; signalez tout incident à {supportEmail}.
+        Accès authentifié (JWT), écriture des droits d’abonnement côté serveur, paiements via Stripe,
+        politiques d’accès en base (RLS) sur les données utilisateur. Aucune mesure n’est infaillible ;
+        signalez tout incident à <Mail to={supportEmail} />.
       </P>
 
       <H>8. Mineurs</H>
       <P>
-        Le service s’adresse aux personnes majeures, ou aux mineurs disposant de l’autorisation du titulaire de l’autorité parentale.
-        Les données de santé / forme physique restent sous la responsabilité de l’utilisateur.
+        Le service est réservé aux personnes âgées de <Strong>18 ans et plus</Strong>.
+        Aucune inscription n’est autorisée pour les mineurs. Lors de la création de compte, vous confirmez avoir 18 ans révolus.
+        {tradeName} ne collecte pas volontairement de données de mineurs ; en cas de doute, le compte pourra être fermé.
       </P>
 
-      <H>9. Contact</H>
-      <P><a href={`mailto:${email}`} style={{ color: C.accentText }}>{email}</a> · <a href={`mailto:${supportEmail}`} style={{ color: C.accentText }}>{supportEmail}</a></P>
+      <H>9. Communications marketing</H>
+      <P>
+        Les e-mails transactionnels (compte, paiement, sécurité) sont envoyés indépendamment d’un consentement marketing.
+        Aucune campagne publicitaire e-mail / SMS marketing automatisée grand public n’est présentée comme active
+        dans le produit au moment de cet audit, hors outils internes. Toute communication commerciale future
+        respectera le consentement ou l’intérêt légitime applicable et un mécanisme de désinscription.
+      </P>
+
+      <H>10. Modifications</H>
+      <P>
+        Cette politique peut être mise à jour. La date en tête de page fait foi. En cas de changement substantiel,
+        une information pourra être affichée dans l’application ou envoyée par e-mail.
+      </P>
+
+      <H>11. Contact</H>
+      <P><Mail to={email} /> · <Mail to={supportEmail} /></P>
     </LegalLayout>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CGU
+═══════════════════════════════════════════════════════════════════════════ */
 export function CguPage() {
-  const { tradeName, email, site } = LEGAL_ENTITY;
+  const { tradeName, email, supportEmail, site, publisher } = LEGAL_ENTITY;
   return (
     <LegalLayout title="CGU" subtitle={`Conditions générales d'utilisation — ${tradeName}`}>
       <P>
-        Les présentes CGU régissent l’accès et l’utilisation de {site} et de l’application {tradeName}.
-        En créant un compte ou en utilisant le service, vous acceptez ces conditions.
+        Les présentes Conditions générales d’utilisation (CGU) régissent l’accès et l’utilisation de {site}
+        et de l’application {tradeName}, édités par {publisher}.
+        En créant un compte ou en utilisant le service, vous acceptez ces CGU.
+        Les conditions commerciales de l’abonnement Premium sont détaillées dans les{" "}
+        <a href="/cgv" style={{ color: C.accentText }}>CGV</a>.
       </P>
 
       <H>1. Objet du service</H>
       <P>
-        {tradeName} est un <strong style={{ color: C.ink }}>générateur de séances / plans d’entraînement de natation</strong> basé sur des règles métier
-        (pas un service médical, pas une école de natation, pas un correcteur technique à distance).
-        Les contenus sont des recommandations d’entraînement ; ils ne remplacent pas un avis médical ni un coach présent sur le bassin.
+        {tradeName} est un <Strong>service numérique de génération de séances et de plans d’entraînement de natation</Strong>,
+        fondé sur un moteur de règles métier (rule-based). Ce n’est pas :
+      </P>
+      <Ul items={[
+        "un service médical, un dispositif médical, un diagnostic ou un suivi thérapeutique ;",
+        "un kinésithérapeute, médecin, ou tout professionnel de santé ;",
+        "une école de natation garantissant l’apprentissage du geste de A à Z ;",
+        "un coach présent physiquement au bord du bassin ou en eau libre ;",
+        "une garantie de performance, de résultat (chrono, diplôme, perte de poids, réussite d’examen) ou de sécurité sportive.",
+      ]} />
+      <P>
+        Les contenus proposés sont des <Strong>recommandations d’entraînement à titre informatif et éducatif</Strong>.
+        Vous restez seul responsable de la décision de les suivre et des conditions dans lesquelles vous pratiquez.
       </P>
 
-      <H>2. Compte utilisateur</H>
+      <H>2. Accès et éligibilité</H>
       <Ul items={[
-        "Vous devez fournir des informations exactes et maintenir la confidentialité de vos identifiants.",
-        "Vous êtes responsable de l’usage de votre compte.",
-        "Un compte = une personne physique ; le partage d’accès Premium à des tiers non autorisés est interdit.",
+        "Le service est destiné aux personnes majeures (18 ans révolus).",
+        "Vous devez disposer de la capacité juridique pour contracter.",
+        "Certaines fonctionnalités (génération de plan, détail des exercices, multi-plans, départs chronométrés, adaptation feedback) nécessitent un abonnement Premium — voir CGV et page Tarifs.",
+        "Sans abonnement actif, un aperçu limité (squelette) peut rester visible, sans accès complet aux exercices ni génération de nouveaux programmes.",
       ]} />
 
-      <H>3. Accès et essai Premium</H>
-      <P>
-        L’accès au générateur de plan et au contenu des séances nécessite un abonnement Premium
-        (essai Stripe de 7 jours avec carte bancaire requis, puis mensuel ou annuel selon l’offre choisie).
-        Sans abonnement actif, l’aperçu du plan peut rester visible en lecture limitée (squelette),
-        sans accès aux exercices ni à la génération de nouveaux programmes. Détails : CGV et page Tarifs.
-      </P>
-
-      <H>4. Responsabilité sportive et santé</H>
+      <H>3. Compte utilisateur</H>
       <Ul items={[
-        "Vous pratiquez sous votre seule responsabilité et selon votre aptitude physique.",
-        "Consultez un professionnel de santé en cas de doute, pathologie, grossesse, reprise après blessure, etc.",
-        "MySWYM ne garantit aucun résultat (performance, diplôme, perte de poids, etc.).",
+        "Création : e-mail + mot de passe, ou connexion Google (Apple à venir si activé).",
+        "Exactitude : vous vous engagez à fournir des informations exactes et à les tenir à jour.",
+        <>Sécurité : vous maintenez la confidentialité de vos identifiants et notifiez {tradeName} en cas d’usage non autorisé (<Mail to={email} />).</>,
+        "Usage personnel : un compte = une personne physique ; le partage d’un accès Premium à des tiers non autorisés est interdit.",
+        <>Suspension / fermeture : {tradeName} peut suspendre ou résilier un compte en cas de violation des CGU, fraude (paiement, parrainage), atteinte à la sécurité, ou injonction légale.</>,
+        <>Suppression : vous pouvez supprimer votre compte depuis les paramètres de l’application ou en écrivant à <Mail to={email} />.</>,
       ]} />
 
-      <H>5. Contenu et propriété intellectuelle</H>
-      <P>
-        Les plans générés sont destinés à votre usage personnel. Toute revente, republication massive ou extraction automatisée est interdite sans accord écrit.
-      </P>
-
-      <H>6. Comportements interdits</H>
+      <H>4. Utilisation autorisée et interdite</H>
+      <P>Vous vous engagez à utiliser le service de manière loyale et conforme à la loi. Sont notamment interdits :</P>
       <Ul items={[
-        "Atteinte à la sécurité, reverse engineering malveillant, surcharge abusive des serveurs.",
-        "Usurpation d’identité, fraude au paiement ou au parrainage.",
-        "Contenu illicite transmis via les canaux de contact.",
+        "toute atteinte à la sécurité, intrusion, scraping abusif, reverse engineering malveillant, surcharge des serveurs ;",
+        "usurpation d’identité, fraude au paiement ou au parrainage, multi-comptes destinés à contourner l’essai ou la facturation ;",
+        "revente, republication massive ou extraction automatisée des contenus / plans sans accord écrit ;",
+        "diffusion de contenus illicites via les canaux de contact ou de mise en relation ;",
+        "toute utilisation du service comme substitut à un avis médical.",
       ]} />
 
-      <H>7. Suspension / résiliation</H>
+      <H>5. Génération des programmes</H>
       <P>
-        {tradeName} peut suspendre ou résilier un compte en cas de violation des CGU, de fraude, ou de risque pour la sécurité du service.
-        Vous pouvez supprimer votre compte depuis le Profil ou en écrivant à {email}.
+        Les plans sont générés automatiquement à partir des informations que vous renseignez (objectif, niveau,
+        fréquence, bassin, matériel, éventuelle blessure/gêne, feedbacks). Le moteur adapte ensuite certaines séances
+        selon des règles internes (progression, récupération, sécurité douleur, etc.).
+      </P>
+      <P>
+        <Strong>MySWYM ne régénère pas silencieusement les semaines déjà générées d’un plan existant</Strong>
+        au détriment de votre progression, sauf action explicite de votre part ou migration technique nécessaire
+        communiquée. Les métadonnées de version de plan ne remplacent pas cette règle de préservation.
       </P>
 
-      <H>8. Évolution du service</H>
+      <H>6. Sport, santé et sécurité — avertissements</H>
       <P>
-        Les fonctionnalités peuvent évoluer. Les plans déjà générés ne sont pas régénérés silencieusement au détriment de votre progression
-        (sauf actions explicites de votre part ou migrations techniques nécessaires communiquées).
+        La natation et l’entraînement sportif comportent des risques intrinsèques (blessures, malaise, noyade,
+        conditions de bassin ou d’eau libre, etc.). Avant de suivre un programme :
+      </P>
+      <Ul items={[
+        "évaluez votre aptitude physique ; en cas de doute, pathologie, grossesse, reprise après blessure ou arrêt prolongé, consultez un professionnel de santé ;",
+        "arrêtez immédiatement l’exercice en cas de douleur anormale, essoufflement inhabituel, douleur thoracique, vertiges ou tout symptôme inquiétant, et consultez un professionnel de santé ;",
+        "en eau libre : ne nagez jamais seul, respectez les conditions météo / courant / température, et les consignes locales de sécurité ;",
+        "en piscine : respectez le règlement intérieur et les consignes des maîtres-nageurs ;",
+        "utilisez un matériel adapté et en bon état.",
+      ]} />
+      <P>
+        Si vous déclarez une blessure / gêne ou une douleur en feedback, {tradeName} peut seulement
+        <Strong> réduire l’intensité proposée</Strong>. Cela ne constitue ni un diagnostic, ni une prise en charge médicale,
+        ni une garantie d’absence de risque.
       </P>
 
-      <H>9. Droit applicable</H>
-      <P>Droit français. À défaut d’accord amiable, tribunaux compétents selon les règles de procédure en vigueur.</P>
+      <H>7. Contenu et propriété intellectuelle</H>
+      <Ul items={[
+        "Contenus {tradeName} (textes, modèles, UI, logo, code) : propriété de l’éditeur ou de ses concédants ; licence d’usage personnel non exclusive pendant la durée d’accès.",
+        "Plans générés : destinés à votre usage personnel ; pas de revente ni extraction massive.",
+        "Contenus utilisateur (notes, messages, avatar, données Buddy) : vous conservez vos droits ; vous concédez à {tradeName} une licence limitée pour héberger et afficher ces contenus aux fins du service.",
+        "Vous garantissez disposer des droits nécessaires sur les contenus que vous fournissez.",
+      ]} />
+
+      <H>8. Disponibilité du service</H>
+      <P>
+        {tradeName} s’efforce d’assurer une disponibilité continue mais ne garantit pas un service ininterrompu
+        (maintenance, incidents, dépendances Supabase / Stripe / Vercel / réseaux). Des bugs peuvent survenir.
+        En cas d’indisponibilité prolongée imputable à {tradeName}, un avoir ou une prolongation pourra être étudié
+        au cas par cas — sans préjudice des droits légaux du consommateur.
+      </P>
+
+      <H>9. Responsabilité</H>
+      <P>
+        {tradeName} est tenu d’une obligation de moyens pour la fourniture du service numérique.
+        Dans les limites autorisées par le droit français :
+      </P>
+      <Ul items={[
+        "l’éditeur ne peut être tenu responsable des dommages résultant d’une pratique sportive inadaptée, d’un non-respect des consignes de sécurité, ou de conditions indépendantes de sa volonté (réseau, matériel de l’utilisateur, piscine, milieu naturel) ;",
+        "l’éditeur ne garantit aucun résultat sportif ;",
+        "rien dans les présentes CGU n’exclut ni ne limite la responsabilité en cas de faute intentionnelle ou lourde, d’atteinte à la vie / intégrité physique lorsqu’elle résulte d’une faute de l’éditeur, ni les droits impératifs du consommateur.",
+      ]} />
+      <P>
+        En dehors des cas où la responsabilité ne peut être limitée, la responsabilité de {tradeName} est limitée
+        au montant total payé par l’utilisateur au titre des 12 derniers mois précédant le fait générateur
+        (ou 50 € si aucun paiement) — <Strong>sous réserve des dispositions impératives applicables aux consommateurs</Strong>.
+      </P>
+
+      <H>10. Services tiers</H>
+      <P>
+        Stripe, Strava, Google, Supabase et autres prestataires ont leurs propres conditions.
+        {tradeName} n’est pas responsable du fonctionnement de ces services tiers au-delà de son obligation de moyens
+        dans le cadre de l’intégration.
+      </P>
+
+      <H>11. Modification des CGU</H>
+      <P>
+        {tradeName} peut modifier les CGU. La date de mise à jour figure en tête de page.
+        En cas de modification substantielle, les utilisateurs disposant d’un compte pourront être informés
+        (e-mail ou notification in-app). La poursuite de l’utilisation après entrée en vigueur vaut acceptation,
+        sans préjudice du droit de résilier le compte / l’abonnement si vous refusez les nouvelles conditions.
+      </P>
+
+      <H>12. Droit applicable et litiges</H>
+      <P>
+        Droit français. À défaut d’accord amiable, les tribunaux compétents selon les règles de procédure applicables,
+        sous réserve des dispositions protectrices du consommateur (y compris le droit de saisir les tribunaux
+        de son lieu de résidence).
+      </P>
+      <P>Contact : <Mail to={email} /> · <Mail to={supportEmail} /></P>
     </LegalLayout>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CGV
+═══════════════════════════════════════════════════════════════════════════ */
 export function CgvPage() {
-  const { tradeName, email, supportEmail, site } = LEGAL_ENTITY;
+  const { tradeName, email, supportEmail, site, mediatorName, mediatorWebsite, mediatorAddress } = LEGAL_ENTITY;
   return (
     <LegalLayout title="CGV" subtitle={`Conditions générales de vente — offre Premium ${tradeName}`}>
       <P>
-        Les présentes CGV s’appliquent aux abonnements Premium souscrits sur {site}.
-        L’accès au générateur de plan nécessite un abonnement (essai Stripe inclus) ; un compte sans abonnement reste en lecture seule.
+        Les présentes Conditions générales de vente (CGV) s’appliquent aux abonnements Premium souscrits sur {site}
+        par des consommateurs. Elles complètent les CGU. En cas de contradiction sur un point commercial,
+        les CGV prévalent pour l’abonnement.
       </P>
 
       <H>1. Prestataire</H>
-      <P>Vendeur : {LEGAL_ENTITY.publisher} ({tradeName}). Contact : {email} · Support : {supportEmail}.</P>
+      <PublisherBlock />
+      <P>Support : <Mail to={supportEmail} /> · Contact : <Mail to={email} />.</P>
 
-      <H>2. Offres Premium</H>
+      <H>2. Description du service Premium</H>
+      <P>L’abonnement Premium donne accès, selon l’offre souscrite, notamment à :</P>
       <Ul items={[
-        "Essai 7 jours (mensuel) : carte bancaire requise via Stripe Checkout ; 0 € pendant l’essai ; résiliation pendant l’essai = aucun prélèvement. Une seule fois par compte.",
-        "Mensuel : 4,99 € TTC / mois après l’essai — sans engagement ; reconduction tacite ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — offre prépayée (sans essai sur ce tunnel). Pas de remboursement une fois facturé, hors cas légaux (ex. droit de rétractation encore ouvert, défaut du prestataire).",
-        "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée à engagement de durée. Non résiliable avant la fin de la période engagée, sauf cas légaux.",
+        "la génération de plans d’entraînement complets ;",
+        "le détail des exercices et consignes ;",
+        "l’adaptation basée sur le feedback ;",
+        "les départs chronométrés (notation D…) ;",
+        "le multi-plans (selon offre) ;",
+        "les fonctionnalités Premium listées sur la page Tarifs au moment de la commande.",
       ]} />
       <P>
-        Les prix affichés sont en euros. Le détail des fonctionnalités Premium figure sur la page Tarifs et dans l’application.
-        MySWYM peut modifier ses tarifs pour les renouvellements futurs ; le prix de la période en cours reste inchangé.
+        Sans abonnement actif (ni essai), le compte peut conserver un historique / aperçu en lecture limitée.
       </P>
 
-      <H>3. Commande et paiement</H>
+      <H>3. Offres et prix (TTC)</H>
       <Ul items={[
-        "Le paiement est sécurisé et traité exclusivement par Stripe (carte bancaire).",
-        "La souscription vaut acceptation des présentes CGV et des CGU.",
-        "Un e-mail / reçu Stripe confirme la transaction.",
+        "Essai 7 jours (tunnel mensuel) : carte bancaire requise via Stripe Checkout ; 0 € pendant l’essai ; résiliation pendant l’essai = aucun prélèvement. Une seule fois par compte (anti-abus).",
+        "Mensuel : 4,99 € TTC / mois après l’essai — sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
+        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — prépaiement 12 mois (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
+        "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée éventuellement proposée via un identifiant de prix Stripe dédié. Elle n’est pas nécessairement affichée sur la page Tarifs grand public. Les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables ; une clause d’« engagement » ne peut pas supprimer ces droits.",
+      ]} />
+      <P>
+        Prix en euros TTC. {LEGAL_ENTITY.vatNumber
+          ? `TVA : ${LEGAL_ENTITY.vatNumber}.`
+          : <><Placeholder label="préciser non assujetti TVA ou n° TVA" /></>}
+        {" "}MySWYM peut modifier ses tarifs pour les renouvellements futurs ; le prix de la période en cours reste inchangé.
+        En cas de hausse au renouvellement, une information préalable sera fournie dans la mesure du possible
+        (objectif : au moins 15 jours avant — [À VALIDER opérationnellement]).
+      </P>
+
+      <H>4. Commande et paiement</H>
+      <Ul items={[
+        "Le paiement est traité exclusivement par Stripe (carte bancaire).",
+        "Avant redirection vers Stripe Checkout, l’application présente le prix, la périodicité, le renouvellement automatique et les liens CGU/CGV.",
+        "La validation du paiement / de l’essai vaut commande.",
+        "Un e-mail / reçu Stripe confirme la transaction ; un e-mail de confirmation d’abonnement peut également être envoyé par MySWYM.",
       ]} />
 
-      <H>4. Renouvellement et résiliation</H>
+      <H>5. Exécution et accès</H>
       <P>
-        Pendant l’essai 7 jours, la résiliation via « Gérer mon abonnement » (portail Stripe) empêche le premier prélèvement.
-        L’abonnement mensuel se renouvelle ensuite automatiquement sauf résiliation avant renouvellement.
-        L’offre annuelle est un prépaiement de 12 mois : pas de remboursement au prorata une fois facturée (hors cas légaux) ;
-        elle peut se reconduire à l’échéance selon les conditions affichées au checkout, sauf résiliation avant renouvellement.
-        L’offre biennale couvre 24 mois prépayés selon les conditions de l’offre.
+        L’accès Premium est ouvert dès validation du paiement ou du démarrage de l’essai (sous réserve du bon
+        fonctionnement des webhooks Stripe). En cas de retard technique, contactez <Mail to={supportEmail} />.
       </P>
 
-      <H>5. Droit de rétractation (14 jours)</H>
+      <H>6. Renouvellement et résiliation</H>
+      <Ul items={[
+        "Pendant l’essai 7 jours : résiliation via « Gérer mon abonnement » (portail Stripe) avant la fin de l’essai → aucun prélèvement.",
+        "Mensuel : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
+        "Annuel / biennal : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période.",
+        "Résiliation : depuis Profil → Paramètres → « Gérer mon abonnement » (portail Stripe), ou via les outils Stripe Customer Portal.",
+        "La suppression du compte n’équivaut pas automatiquement à une demande de remboursement ; elle doit être précédée, le cas échéant, de la résiliation de l’abonnement.",
+      ]} />
+
+      <H>7. Droit de rétractation (14 jours)</H>
       <P>
-        Conformément au Code de la consommation, vous disposez d’un délai de 14 jours pour vous rétracter d’un contrat conclu à distance,
-        sans motif, à compter de la souscription.
+        Conformément aux articles L221-18 et suivants du Code de la consommation, le consommateur dispose d’un délai
+        de 14 jours pour se rétracter d’un contrat conclu à distance, sans motif, à compter de la souscription.
       </P>
       <P>
-        <strong style={{ color: C.ink }}>Exception — contenu numérique / service commencé :</strong> si vous demandez l’exécution immédiate de l’accès Premium
-        et reconnaissez perdre votre droit de rétractation une fois le service pleinement exécuté (accès ouvert),
+        <Strong>Commencement anticipé / contenu numérique ou service numérique :</Strong> si vous demandez
+        expressément l’exécution immédiate de l’accès Premium pendant le délai de rétractation et reconnaissez
+        perdre votre droit de rétractation une fois le service pleinement exécuté (accès ouvert),
         le droit de rétractation peut ne plus s’appliquer dans les conditions de l’article L221-28 du Code de la consommation.
-        Pour exercer une rétractation encore ouverte : écrivez à {email} en indiquant votre e-mail de compte.
+      </P>
+      <P>
+        Ce consentement est recueilli dans l’application <Strong>avant</Strong> la redirection vers Stripe Checkout.
+        À défaut de renonciation valable, ou si les conditions légales ne sont pas réunies, le droit de rétractation
+        demeure. Pour l’exercer lorsqu’il est encore ouvert : écrivez à <Mail to={email} /> en indiquant votre e-mail de compte.
+        Un formulaire type peut être demandé au support (modèle libre accepté).
       </P>
 
-      <H>6. Programme de parrainage</H>
+      <H>8. Remboursements</H>
       <Ul items={[
-        "Réservé aux comptes Premium en règle (génération d’un code / lien).",
-        "Filleul : réduction typiquement de 20 % sur la première facture éligible (coupon Stripe), sous réserve d’éligibilité et de non-cumul avec d’autres offres incompatibles.",
-        "Parrain : crédit commercial d’un montant équivalent à 4,99 € sur le solde client Stripe après paiement réussi du filleul, une seule fois par filleul éligible.",
-        "MySWYM se réserve le droit de refuser, suspendre ou annuler un avantage en cas de fraude, auto-parrainage, abus ou non-respect des CGU.",
+        "Essai résilié à temps : 0 €.",
+        "Mensuel : pas de remboursement au prorata de la période en cours après prélèvement, hors cas légaux.",
+        "Annuel / biennal : pas de remboursement au prorata une fois facturé, hors cas légaux.",
+        "Cas légaux : rétractation ouverte, défaut de conformité, indisponibilité substantielle imputable à MySWYM, ou autre droit impératif.",
       ]} />
 
-      <H>7. Disponibilité du service</H>
+      <H>9. Échec de paiement</H>
       <P>
-        MySWYM s’efforce d’assurer une disponibilité continue mais ne garantit pas un service ininterrompu (maintenance, incidents prestataires).
-        En cas d’indisponibilité prolongée imputable à MySWYM, un avoir ou une prolongation pourra être étudié au cas par cas.
+        En cas d’échec de paiement au renouvellement, Stripe / MySWYM peuvent retenter le prélèvement.
+        L’accès Premium peut être suspendu si le paiement n’est pas régularisé. Aucune « période de grâce »
+        contractuelle fixe n’est garantie au-delà du comportement Stripe configuré — [À DOCUMENTER côté Stripe Billing].
       </P>
 
-      <H>8. Médiation / litiges</H>
+      <H>10. Programme de parrainage</H>
+      <Ul items={[
+        "Réservé aux comptes Premium en règle.",
+        "Filleul : réduction typiquement de 20 % sur la première facture éligible (coupon Stripe), sous réserve d’éligibilité et de non-cumul.",
+        "Parrain : crédit commercial d’un montant équivalent à 4,99 € sur le solde client Stripe après paiement réussi du filleul, une fois par filleul éligible.",
+        "MySWYM peut refuser, suspendre ou annuler un avantage en cas de fraude, auto-parrainage, abus ou non-respect des CGU/CGV.",
+      ]} />
+
+      <H>11. Garanties légales</H>
       <P>
-        Droit français. En cas de litige de consommation, vous pouvez recourir gratuitement à un médiateur de la consommation
-        (coordonnées communiquées sur demande à {email}) après démarche écrite préalable auprès de MySWYM.
+        Le consommateur bénéficie de la garantie légale de conformité applicable aux contenus et services numériques
+        (Code de la consommation), sans préjudice d’autres droits. MySWYM s’engage à fournir le service Premium
+        conforme à la description contractuelle.
+      </P>
+
+      <H>12. Responsabilité</H>
+      <P>
+        Les limitations de responsabilité des CGU s’appliquent, sans pouvoir écarter les responsabilités
+        et garanties légales impératives au profit du consommateur.
+      </P>
+
+      <H>13. Réclamations et médiation</H>
+      <P>
+        Toute réclamation : <Mail to={supportEmail} /> ou <Mail to={email} />.
+        En cas de litige de consommation non résolu dans un délai raisonnable après réclamation écrite,
+        vous pouvez recourir gratuitement à un médiateur de la consommation :
+      </P>
+      {mediatorName && mediatorWebsite ? (
+        <Ul items={[
+          <>Médiateur : {mediatorName}</>,
+          <>Site : <a href={mediatorWebsite} style={{ color: C.accentText }}>{mediatorWebsite}</a></>,
+          mediatorAddress ? <>Adresse : {mediatorAddress}</> : null,
+        ].filter(Boolean)} />
+      ) : (
+        <P><Placeholder label="nom + site (+ adresse) du médiateur de la consommation" /> — obligation d’information précontractuelle.</P>
+      )}
+      <P>
+        Vous pouvez aussi utiliser la plateforme européenne de règlement en ligne des litiges :
+        https://ec.europa.eu/consumers/odr
+      </P>
+
+      <H>14. Droit applicable</H>
+      <P>
+        Droit français. Tribunaux compétents selon les règles protectrices du consommateur.
       </P>
     </LegalLayout>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   POLITIQUE COOKIES
+═══════════════════════════════════════════════════════════════════════════ */
 export function PolitiqueCookiesPage() {
   const { email, tradeName } = LEGAL_ENTITY;
   return (
     <LegalLayout title="Politique de cookies" subtitle={`Cookies et traceurs — ${tradeName}`}>
+      <P>
+        Cette politique décrit les cookies et traceurs utilisés sur {tradeName}, conformément aux lignes directrices
+        CNIL relatives aux cookies et autres traceurs.
+      </P>
+
       <H>1. Qu’est-ce qu’un cookie / stockage local ?</H>
       <P>
-        Un cookie ou un stockage local (localStorage) est un petit fichier ou donnée enregistré sur votre appareil pour faire fonctionner le site,
-        mémoriser un choix, ou — le cas échéant — mesurer l’audience.
+        Un cookie ou un stockage local (localStorage / sessionStorage) est une donnée enregistrée sur votre appareil
+        pour faire fonctionner le site, mémoriser un choix, ou — le cas échéant — mesurer l’audience.
       </P>
 
-      <H>2. Ce que MySWYM utilise aujourd’hui</H>
+      <H>2. Traceurs strictement nécessaires (pas de consentement requis)</H>
       <Ul items={[
-        "Nécessaires au service : session d’authentification (Supabase), sécurité, fonctionnement de l’application.",
-        "Préférences produit en localStorage (ex. choix de consentement, caches de plans anonymes avant connexion, code de parrainage ?ref=).",
-        "Polices Google Fonts chargées depuis les serveurs Google (peut entraîner un transfert technique d’adresse IP).",
+        "Session d’authentification Supabase (maintien de connexion sécurisée).",
+        "Préférence de consentement cookies (clé locale myswym_cookie_consent_v1).",
+        "Caches techniques de plans / onboarding avant connexion, code de parrainage (?ref= → myswym_ref).",
+        "Identifiants de session internes nécessaires au fonctionnement (ex. myswym_session_id_v1 pour événements première partie).",
       ]} />
+
+      <H>3. Traceurs soumis à consentement</H>
+      <H3>3.1 PostHog (mesure d’audience produit)</H>
+      <Ul items={[
+        "Fournisseur : PostHog (hébergement EU configuré : eu.i.posthog.com).",
+        "Finalité : comprendre l’usage du produit (funnel, rétention, bugs UX).",
+        "Type : cookies / localStorage selon configuration posthog-js (persistence localStorage+cookie).",
+        "Dépôt : uniquement après « Accepter » sur la bannière.",
+        "Refus : bouton « Continuer sans cookies non essentiels » ; retrait via « Gérer les cookies » (footer).",
+        "Durée : selon configuration PostHog / jusqu’au retrait du consentement.",
+      ]} />
+
+      <H3>3.2 Google Fonts</H3>
+      <Ul items={[
+        "Fournisseur : Google.",
+        "Finalité : affichage typographique (Barlow Condensed, Lexend).",
+        "Conséquence : requête vers les serveurs Google pouvant exposer votre adresse IP.",
+        "Statut : considéré comme non essentiel / traceur tiers — [À VALIDER] : migrer vers polices auto-hébergées pour supprimer ce transfert hors consentement.",
+      ]} />
+
+      <H3>3.3 Vercel Speed Insights</H3>
+      <Ul items={[
+        "Fournisseur : Vercel.",
+        "Finalité : métriques de performance (Core Web Vitals).",
+        "Statut : mesure d’audience / performance — [À VALIDER] : activer uniquement après consentement ou désactiver si non indispensable.",
+      ]} />
+
+      <H>4. Ce que MySWYM n’utilise pas (à date d’audit)</H>
+      <Ul items={[
+        "Pas de Meta Pixel / Facebook Pixel détecté dans le front grand public.",
+        "Pas de Google Analytics (gtag) détecté.",
+        "Pas de publicité comportementale tierce détectée.",
+      ]} />
+
+      <H>5. Gestion de votre choix</H>
       <P>
-        <strong style={{ color: C.ink }}>Mesure d’audience :</strong> PostHog (analytics produit) peut être activé
-        uniquement après acceptation via la bannière cookies. Aucune donnée sensible (email, notes, contenu complet
-        de séance) n’est envoyée comme propriété d’événement. Tu peux refuser les cookies non essentiels.
+        À la première visite, une bannière permet d’accepter ou de refuser les cookies non essentiels.
+        Votre choix est mémorisé localement (clé <code>myswym_cookie_consent_v1</code> = accepted | refused).
+        Pour le modifier : lien « Gérer les cookies » du pied de page (réaffiche la bannière).
+      </P>
+      <P>
+        PostHog n’envoie des événements qu’après acceptation. Les événements funnel stockés en base Supabase
+        (conversion_events) sont distincts et documentés dans la politique de confidentialité.
       </P>
 
-      <H>3. Gestion de votre choix</H>
-      <P>
-        À la première visite, une bannière vous permet d’accepter ou de refuser les cookies non essentiels.
-        Votre choix est mémorisé localement (clé <code>myswym_cookie_consent_v1</code>).
-        Pour le modifier : effacez les données du site dans votre navigateur, ou utilisez le lien « Gérer les cookies » du pied de page / bannière.
-      </P>
-
-      <H>4. Contact</H>
-      <P><a href={`mailto:${email}`} style={{ color: C.accentText }}>{email}</a></P>
+      <H>6. Contact</H>
+      <P><Mail to={email} /></P>
     </LegalLayout>
   );
 }
