@@ -66,7 +66,13 @@ function computePace(activity: Record<string, unknown>): number | null {
   return Math.round((time / dist) * 100);
 }
 
-function mapActivity(a: Record<string, unknown>, userId: string) {
+function mapActivity(a: Record<string, unknown>, userId: string, storeHeartRate: boolean) {
+  const raw = { ...a };
+  if (!storeHeartRate) {
+    delete raw.average_heartrate;
+    delete raw.max_heartrate;
+    delete raw.heartrate_opt_out;
+  }
   return {
     user_id:            userId,
     strava_activity_id: Number(a.id),
@@ -76,10 +82,28 @@ function mapActivity(a: Record<string, unknown>, userId: string) {
     duration:           Number(a.moving_time) || null,
     pace:               computePace(a),
     calories:           Number(a.calories) || null,
-    heart_rate:         Number(a.average_heartrate) || null,
+    // Donnée de santé (art. 9) — uniquement avec consentement explicite
+    heart_rate:         storeHeartRate ? (Number(a.average_heartrate) || null) : null,
     activity_date:      (a.start_date as string)?.slice(0, 10) ?? null,
-    raw_data:           a,
+    raw_data:           raw,
   };
+}
+
+async function userHasHealthConsent(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  user: { id: string; user_metadata?: Record<string, unknown> },
+): Promise<boolean> {
+  if (user.user_metadata?.health_consent === true) return true;
+  const { data } = await supabaseAdmin
+    .from("sport_profiles")
+    .select("extra")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const extra = data?.extra;
+  if (extra && typeof extra === "object" && (extra as { healthConsent?: boolean }).healthConsent === true) {
+    return true;
+  }
+  return false;
 }
 
 Deno.serve(async (req) => {
@@ -135,8 +159,10 @@ Deno.serve(async (req) => {
 
     const activities: Record<string, unknown>[] = await actRes.json();
 
+    const storeHeartRate = await userHasHealthConsent(supabaseAdmin, user);
+
     // ── Upsert into Supabase ──────────────────────────────────────────────
-    const rows = activities.map((a) => mapActivity(a, user.id));
+    const rows = activities.map((a) => mapActivity(a, user.id, storeHeartRate));
 
     if (rows.length > 0) {
       const { error: upsertError } = await supabaseAdmin

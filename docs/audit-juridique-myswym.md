@@ -332,3 +332,12 @@ Source : `src/LegalPages.jsx` + `src/lib/legal-entity.js`.
 ---
 
 *Fin du rapport d’audit. Les documents contractuels complets sont servis par l’application.*
+
+
+## Mise à jour identité & santé (11 août 2026)
+
+- Éditeur : Arthur Noël / A.Natation — SIRET 941 900 052 00015 — 21 Rue du Cachon, 55000 Fains-Véel
+- TVA : art. 293 B CGI ; DPA Supabase/Stripe/Vercel
+- Médiateur : `[MÉDIATEUR À CONFIRMER]`
+- Données santé art. 9 : FC + blessures listes fermées ; consentement séparé ; RLS ; exclus analytics
+- Migration : `20260811120000_health_data_rls.sql`

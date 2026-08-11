@@ -23,14 +23,16 @@ export const CHECKOUT_WITHDRAWAL_LABEL =
 export const CHECKOUT_CGV_LABEL_PREFIX =
   "J’accepte les";
 
-export const INJURY_HEALTH_NOTICE =
-  "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. MySWYM n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";
-
-export const INJURY_CONSENT_LABEL =
-  "J’accepte que MySWYM traite ces informations (blessure / gêne / douleur) pour adapter mon plan. Je peux laisser « Aucune blessure » ou ne pas préciser.";
-
 export const SPORT_SAFETY_SHORT =
   "Entraîne-toi selon ta forme. Arrête en cas de symptôme inquiétant et consulte un professionnel de santé si besoin. Eau libre : ne nage jamais seul.";
 
 export const ACCOUNT_DELETE_WARNING =
   "La suppression est définitive : profil, plans et données associées seront effacés dans la mesure techniquement possible. Résilie d’abord ton abonnement Stripe si tu veux éviter un prochain prélèvement.";
+
+/** @deprecated use HEALTH_CONSENT_* from health-data.js */
+export const INJURY_HEALTH_NOTICE =
+  "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. MySWYM n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";
+
+/** @deprecated */
+export const INJURY_CONSENT_LABEL =
+  "J’accepte que MySWYM traite ces informations (blessure / gêne / douleur) pour adapter mon plan. Je peux laisser « Aucune blessure » ou ne pas préciser.";

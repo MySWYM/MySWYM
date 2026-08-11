@@ -71,7 +71,7 @@ ok(normalizeAnalyticsObjective({ category: "triathlon" }) === "triathlon", "obj 
     action: "REDUCE",
   });
   ok(clean.difficulty === "too_hard", "diff ok");
-  ok(clean.pain === true, "pain bool");
+  ok(clean.pain == null, "pain blocked (health)");
   ok(clean.notes == null && clean.comment == null, "no free text");
   ok(clean._engineHistory == null, "no history");
 }

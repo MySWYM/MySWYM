@@ -140,7 +140,13 @@ export function sportProfileToRow(userId, profile = {}) {
     preferred_stroke: profile.preferredStroke || profile.swimStyle || profile.strokeFocus || null,
     race_target: profile.raceTarget || null,
     injury_status: profile.injuryStatus || null,
-    injury_note: profile.injuryNote || null,
+    injury_zone: profile.injuryZone || null,
+    injury_severity: profile.injurySeverity || null,
+    injury_note: null, // free-text désactivé (minimisation art. 9)
+    health_consent: profile.healthConsent === true,
+    health_consent_at: profile.healthConsent === true
+      ? (profile.healthConsentAt || new Date().toISOString())
+      : null,
     pace100: profile.pace100 ?? null,
     readiness_profile: profile.readinessProfile ?? null,
     extra: {
@@ -148,9 +154,13 @@ export function sportProfileToRow(userId, profile = {}) {
       category: profile.category || null,
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
-      age: profile.age ?? null,
-      injuryConsent: profile.injuryConsent === true,
-      injuryConsentAt: profile.injuryConsent === true ? (profile.injuryConsentAt || new Date().toISOString()) : null,
+      injuryZone: profile.injuryZone || null,
+      injurySeverity: profile.injurySeverity || null,
+      healthConsent: profile.healthConsent === true,
+      healthConsentAt: profile.healthConsent === true
+        ? (profile.healthConsentAt || new Date().toISOString())
+        : null,
+      healthDeclaration: profile.healthDeclaration === true,
     },
     updated_at: new Date().toISOString(),
   };
@@ -170,8 +180,13 @@ export function rowToSportProfileFields(row) {
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     injuryNote: row.injury_note,
-    injuryConsent: extra.injuryConsent === true,
-    injuryConsentAt: extra.injuryConsentAt || null,
+    injuryZone: row.injury_zone || extra.injuryZone || null,
+    injurySeverity: row.injury_severity || extra.injurySeverity || null,
+    injuryConsent: extra.injuryConsent === true || extra.healthConsent === true,
+    injuryConsentAt: extra.injuryConsentAt || extra.healthConsentAt || null,
+    healthConsent: extra.healthConsent === true,
+    healthConsentAt: extra.healthConsentAt || null,
+    healthDeclaration: extra.healthDeclaration === true,
     pace100: row.pace100,
     readinessProfile: row.readiness_profile ?? null,
     ...(row.extra || {}),

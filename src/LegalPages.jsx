@@ -68,17 +68,39 @@ function Placeholder({ label }) {
 }
 
 function PublisherBlock() {
-  const { tradeName, publisher, legalForm, email, siret, address, vatNumber } = LEGAL_ENTITY;
+  const { tradeName, commercialName, publisher, legalForm, email, siret, address, vatNumber, apeCode } = LEGAL_ENTITY;
   return (
     <Ul items={[
-      <>Éditeur / vendeur : <Strong>{publisher}</Strong>, {legalForm}, exerçant sous le nom commercial <Strong>{tradeName}</Strong></>,
+      <>Éditeur / vendeur : <Strong>{publisher}</Strong>, {legalForm}, nom commercial <Strong>{commercialName || tradeName}</Strong>, éditeur de l’application <Strong>{tradeName}</Strong></>,
       <>Contact : <Mail to={email} /></>,
-      siret ? <>SIRET : {siret}</> : <><Placeholder label="SIRET / SIREN" /></>,
-      address ? <>Adresse : {address}</> : <><Placeholder label="adresse du siège / établissement" /></>,
-      vatNumber
-        ? <>TVA : {vatNumber}</>
-        : <><Placeholder label="statut TVA (non assujetti ou n° TVA intracommunautaire)" /></>,
-    ]} />
+      <>SIRET : {siret}</>,
+      <>Adresse : {address}</>,
+      apeCode ? <>Code APE : {apeCode}</> : null,
+      <>TVA : {vatNumber}</>,
+    ].filter(Boolean)} />
+  );
+}
+
+function MediatorBlock() {
+  const { mediatorName, mediatorWebsite, mediatorAddress, email } = LEGAL_ENTITY;
+  const pending = !mediatorName || String(mediatorName).includes("À CONFIRMER");
+  if (pending) {
+    return (
+      <P>
+        <span style={{ background: "#FEF3C7", color: "#92400E", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+          [MÉDIATEUR À CONFIRMER]
+        </span>
+        {" "}— les coordonnées du médiateur de la consommation seront publiées ici dès inscription.
+        En attendant, adressez votre réclamation écrite à <Mail to={email} />.
+      </P>
+    );
+  }
+  return (
+    <Ul items={[
+      <>Médiateur : {mediatorName}</>,
+      mediatorWebsite ? <>Site : <a href={mediatorWebsite} style={{ color: C.accentText }}>{mediatorWebsite}</a></> : null,
+      mediatorAddress ? <>Adresse : {mediatorAddress}</> : null,
+    ].filter(Boolean)} />
   );
 }
 
@@ -86,7 +108,7 @@ function PublisherBlock() {
    MENTIONS LÉGALES (LCEN)
 ═══════════════════════════════════════════════════════════════════════════ */
 export function MentionsLegalesPage() {
-  const { tradeName, publisher, email, site, supportEmail } = LEGAL_ENTITY;
+  const { tradeName, commercialName, publisher, email, site, supportEmail, subprocessors } = LEGAL_ENTITY;
   return (
     <LegalLayout title="Mentions légales" subtitle={`Informations légales — ${site.replace("https://", "")}`}>
       <P>
@@ -97,15 +119,20 @@ export function MentionsLegalesPage() {
       <H>1. Éditeur du site et de l’application</H>
       <PublisherBlock />
       <P>
-        Directeur de la publication : <Strong>{publisher}</Strong>.
+        Directeur de la publication : <Strong>{publisher}</Strong> ({commercialName}).
       </P>
 
-      <H>2. Hébergement</H>
+      <H>2. Hébergement et sous-traitants techniques</H>
       <Ul items={[
-        <>Front / CDN : <Strong>{host.name}</Strong> — {host.address}. Site : {host.website}.</>,
-        <>Authentification, base de données et stockage fichiers : infrastructure <Strong>Supabase</Strong> (prestataire technique).</>,
-        <>Paiements : <Strong>Stripe</Strong> (prestataire de paiement — MySWYM ne stocke pas les numéros de carte).</>,
+        <>Front / CDN : <Strong>{host.name}</Strong> — {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.accentText }}>vercel.com/legal/dpa</a>.</>,
+        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
+        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.accentText }}>stripe.com/legal/dpa</a>.</>,
       ]} />
+      {(subprocessors || []).length > 0 && (
+        <P>
+          Sous-traitants principaux : {(subprocessors || []).map((s) => s.name).join(", ")}.
+        </P>
+      )}
 
       <H>3. Contact</H>
       <P>
@@ -171,15 +198,21 @@ export function PolitiqueConfidentialitePage() {
         "Important : MySWYM n’utilise pas d’IA générative pour créer les séances dans l’application ; le moteur est fondé sur des règles métier.",
       ]} />
 
-      <H3>2.3 Données relatives à une blessure, une douleur ou une gêne</H3>
+      <H3>2.3 Données de santé (article 9 RGPD)</H3>
+      <P>
+        MySWYM traite certaines <Strong>données concernant la santé</Strong> uniquement avec votre
+        <Strong> consentement explicite</Strong> (art. 9.2.a RGPD), recueilli via un écran dédié dans l’application
+        (case non pré-cochée, distincte de l’acceptation des CGU).
+      </P>
       <Ul items={[
-        "Données : statut « blessure / gêne » (oui / aucune), note libre optionnelle, indicateurs de douleur dans le feedback de séance (oui/non), adaptations de sécurité du plan.",
-        <>Qualification : ces informations peuvent constituer des <Strong>données concernant la santé</Strong> au sens de l’article 9 du RGPD lorsqu’elles se rapportent à l’état de santé physique.</>,
-        "Finalité : adapter l’intensité / le volume des séances proposées (ex. limitation de zone), et non établir un diagnostic médical.",
-        "Base légale : consentement explicite (art. 9.2.a RGPD), recueilli lors de l’onboarding et/ou du feedback. Vous pouvez refuser de renseigner ces champs ; le service reste utilisable avec des paramètres plus génériques.",
-        "Minimisation : la note libre est optionnelle ; elle n’est pas envoyée aux outils d’analytics (PostHog).",
-        "Conservation : tant que le profil / historique de plan est conservé ; suppression avec le compte.",
-        "AIPD (DPIA) : recommandée — [À VALIDER JURIDIQUEMENT] compte tenu du caractère potentiellement sensible.",
+        "Données concernées : (i) fréquence cardiaque par séance (notamment synchronisée via Strava lorsque vous connectez votre compte et avez consenti) ; (ii) historique de blessures / gênes déclarées (zone du corps + niveau de gravité en liste fermée) ; (iii) indicateur de douleur en feedback de séance (oui/non).",
+        "Finalité : adaptation des séances (intensité / volume) et prévention du risque de blessure — aucun diagnostic médical, aucun traitement, aucun dispositif médical.",
+        "Base légale : consentement explicite (art. 9.2.a), distinct du contrat / des CGU. Le refus n’empêche pas d’utiliser le service (sans adaptation santé).",
+        "Caractère facultatif : vous pouvez refuser, retirer votre consentement à tout moment, ou choisir « Aucune blessure ».",
+        "Minimisation : pas de champ texte libre pour un diagnostic ou un traitement ; listes fermées uniquement. Ces champs sont exclus des outils d’analytics tiers (PostHog, etc.).",
+        "Destinataires : hébergement Supabase (sous-traitant) sous RLS ; pas de revente ; Strava uniquement si vous connectez votre compte.",
+        "Durée de conservation : pendant la durée du compte ; suppression sous 30 jours sur demande (effacement / retrait du consentement) ; purge après 24 mois d’inactivité du compte.",
+        <>Droits : accès, rectification, effacement, portabilité, retrait du consentement — exerçables par e-mail à <Mail to={email} /> ; réponse sous 1 mois (art. 12 RGPD).</>,
       ]} />
 
       <H3>2.4 Abonnement et paiement</H3>
@@ -193,8 +226,9 @@ export function PolitiqueConfidentialitePage() {
       <H3>2.5 Strava (optionnel)</H3>
       <Ul items={[
         "Données : tokens OAuth, activités synchronisées (distance, durée, etc. selon ce que Strava expose).",
+        "Fréquence cardiaque : stockée uniquement si vous avez donné le consentement santé (art. 9) ; sinon la FC n’est pas conservée côté MySWYM.",
         "Finalité : lier des activités à votre historique MySWYM.",
-        "Base légale : exécution du contrat / consentement via connexion volontaire Strava.",
+        "Base légale : exécution du contrat pour les données d’activité non sensibles ; consentement art. 9 pour la FC.",
         "Durée : jusqu’à déconnexion Strava ou suppression du compte.",
       ]} />
 
@@ -237,19 +271,17 @@ export function PolitiqueConfidentialitePage() {
 
       <H>3. Destinataires / sous-traitants</H>
       <Ul items={[
-        "Supabase — auth, base de données, stockage avatars.",
-        "Stripe — paiement et portail client.",
-        "Vercel — hébergement front.",
-        "PostHog — analytics produit (si consentement).",
+        <>Supabase — auth, base de données, stockage avatars — DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
+        <>Stripe — paiement et portail client — DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.accentText }}>stripe.com/legal/dpa</a>.</>,
+        <>Vercel — hébergement front — DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.accentText }}>vercel.com/legal/dpa</a>.</>,
+        "PostHog — analytics produit (si consentement cookies) — sans données de santé.",
         "Resend — envoi d’e-mails.",
         "Google — OAuth (si choisi) et Google Fonts.",
         "Strava — uniquement si connecté.",
-        "Meta / Instagram — outils internes de messagerie / growth (Arthur) côté exploitant ; pas un pixel publicitaire utilisateur dans l’app grand public au moment de cet audit.",
       ]} />
       <P>
-        Des transferts hors UE peuvent avoir lieu (notamment États-Unis via Vercel, Stripe, Google, Resend).
-        Des garanties appropriées sont recherchées auprès des prestataires (ex. clauses contractuelles types).
-        Détail des DPA : <Placeholder label="liens / dates des DPA signés" />.
+        Des transferts hors UE peuvent avoir lieu (notamment États-Unis via Vercel, Stripe, Google).
+        Des garanties appropriées sont recherchées auprès des prestataires (ex. clauses contractuelles types / DPA).
       </P>
 
       <H>4. Transferts hors Union européenne</H>
@@ -261,11 +293,12 @@ export function PolitiqueConfidentialitePage() {
 
       <H>5. Durées de conservation</H>
       <Ul items={[
-        "Compte, profil sportif, plans : durée d’utilisation du compte ; suppression / anonymisation après demande de suppression ou inactivité prolongée (objectif interne : 36 mois d’inactivité — [À VALIDER]).",
+        "Compte, profil sportif, plans : durée d’utilisation du compte ; purge après 24 mois d’inactivité.",
+        "Données de santé (FC, blessures) : durée du compte ; suppression sous 30 jours sur demande / retrait du consentement ; purge après 24 mois d’inactivité.",
         "Données de facturation / preuves de transaction : durée légale comptable (en pratique jusqu’à 10 ans).",
         "Strava : jusqu’à déconnexion ou suppression du compte.",
         "Consentement cookies : jusqu’à retrait ou effacement des données du navigateur.",
-        "Logs de sécurité : durée limitée nécessaire à la sécurité (ordre de grandeur : quelques semaines à quelques mois).",
+        "Logs de sécurité : durée limitée nécessaire à la sécurité.",
       ]} />
 
       <H>6. Vos droits</H>
@@ -275,10 +308,8 @@ export function PolitiqueConfidentialitePage() {
         du traitement antérieur). Vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).
       </P>
       <P>
-        Pour exercer vos droits : <Mail to={email} />. Vous pouvez aussi demander la suppression de votre compte
-        depuis les paramètres de l’application (Profil → Paramètres) ou par e-mail. La suppression entraîne
-        l’effacement des données associées dans la mesure techniquement possible, sous réserve des obligations légales
-        de conservation (facturation).
+        Pour exercer vos droits (y compris données de santé) : <Mail to={email} /> — réponse sous 1 mois.
+        Vous pouvez aussi supprimer votre compte depuis les paramètres de l’application.
       </P>
 
       <H>7. Sécurité</H>
@@ -359,9 +390,10 @@ export function CguPage() {
       <Ul items={[
         "Création : e-mail + mot de passe, ou connexion Google (Apple à venir si activé).",
         "Exactitude : vous vous engagez à fournir des informations exactes et à les tenir à jour.",
+        "Déclaration sur l’honneur (santé) : lorsque vous renseignez des données de santé (FC, blessure / gêne), vous certifiez l’exactitude des informations fournies, à l’inscription et à chaque mise à jour.",
         <>Sécurité : vous maintenez la confidentialité de vos identifiants et notifiez {tradeName} en cas d’usage non autorisé (<Mail to={email} />).</>,
         "Usage personnel : un compte = une personne physique ; le partage d’un accès Premium à des tiers non autorisés est interdit.",
-        <>Suspension / fermeture : {tradeName} peut suspendre ou résilier un compte en cas de violation des CGU, fraude (paiement, parrainage), atteinte à la sécurité, ou injonction légale.</>,
+        <>Suspension / résiliation par {tradeName} : en cas de violation des CGU, usage frauduleux, fausses déclarations répétées, tentative d’accès non autorisé aux données d’autrui, fraude (paiement, parrainage), atteinte à la sécurité, ou injonction légale.</>,
         <>Suppression : vous pouvez supprimer votre compte depuis les paramètres de l’application ou en écrivant à <Mail to={email} />.</>,
       ]} />
 
@@ -389,6 +421,11 @@ export function CguPage() {
 
       <H>6. Sport, santé et sécurité — avertissements</H>
       <P>
+        <Strong>Avertissement médical :</Strong> les plans générés sont fournis à titre indicatif et ne remplacent pas
+        l’avis d’un professionnel de santé. L’utilisateur est seul responsable de vérifier son aptitude physique,
+        y compris par un certificat médical si nécessaire, avant de suivre le programme.
+      </P>
+      <P>
         La natation et l’entraînement sportif comportent des risques intrinsèques (blessures, malaise, noyade,
         conditions de bassin ou d’eau libre, etc.). Avant de suivre un programme :
       </P>
@@ -400,7 +437,7 @@ export function CguPage() {
         "utilisez un matériel adapté et en bon état.",
       ]} />
       <P>
-        Si vous déclarez une blessure / gêne ou une douleur en feedback, {tradeName} peut seulement
+        Si vous déclarez une blessure / gêne ou une douleur en feedback (après consentement art. 9), {tradeName} peut seulement
         <Strong> réduire l’intensité proposée</Strong>. Cela ne constitue ni un diagnostic, ni une prise en charge médicale,
         ni une garantie d’absence de risque.
       </P>
@@ -428,6 +465,7 @@ export function CguPage() {
       </P>
       <Ul items={[
         "l’éditeur ne peut être tenu responsable des dommages résultant d’une pratique sportive inadaptée, d’un non-respect des consignes de sécurité, ou de conditions indépendantes de sa volonté (réseau, matériel de l’utilisateur, piscine, milieu naturel) ;",
+        "l’éditeur ne peut être tenu responsable des conséquences d’informations erronées ou volontairement falsifiées fournies par l’utilisateur (y compris données de santé) ;",
         "l’éditeur ne garantit aucun résultat sportif ;",
         "rien dans les présentes CGU n’exclut ni ne limite la responsabilité en cas de faute intentionnelle ou lourde, d’atteinte à la vie / intégrité physique lorsqu’elle résulte d’une faute de l’éditeur, ni les droits impératifs du consommateur.",
       ]} />
@@ -467,7 +505,7 @@ export function CguPage() {
    CGV
 ═══════════════════════════════════════════════════════════════════════════ */
 export function CgvPage() {
-  const { tradeName, email, supportEmail, site, mediatorName, mediatorWebsite, mediatorAddress } = LEGAL_ENTITY;
+  const { tradeName, email, supportEmail, site } = LEGAL_ENTITY;
   return (
     <LegalLayout title="CGV" subtitle={`Conditions générales de vente — offre Premium ${tradeName}`}>
       <P>
@@ -502,12 +540,10 @@ export function CgvPage() {
         "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée éventuellement proposée via un identifiant de prix Stripe dédié. Elle n’est pas nécessairement affichée sur la page Tarifs grand public. Les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables ; une clause d’« engagement » ne peut pas supprimer ces droits.",
       ]} />
       <P>
-        Prix en euros TTC. {LEGAL_ENTITY.vatNumber
-          ? `TVA : ${LEGAL_ENTITY.vatNumber}.`
-          : <><Placeholder label="préciser non assujetti TVA ou n° TVA" /></>}
+        Prix en euros TTC. TVA : {LEGAL_ENTITY.vatNumber}.
         {" "}MySWYM peut modifier ses tarifs pour les renouvellements futurs ; le prix de la période en cours reste inchangé.
         En cas de hausse au renouvellement, une information préalable sera fournie dans la mesure du possible
-        (objectif : au moins 15 jours avant — [À VALIDER opérationnellement]).
+        (objectif : au moins 15 jours avant).
       </P>
 
       <H>4. Commande et paiement</H>
@@ -584,7 +620,9 @@ export function CgvPage() {
       <H>12. Responsabilité</H>
       <P>
         Les limitations de responsabilité des CGU s’appliquent, sans pouvoir écarter les responsabilités
-        et garanties légales impératives au profit du consommateur.
+        et garanties légales impératives au profit du consommateur. Les plans sont fournis à titre indicatif
+        et ne remplacent pas l’avis d’un professionnel de santé. L’éditeur ne peut être tenu responsable
+        des conséquences d’informations erronées ou volontairement falsifiées fournies par l’utilisateur.
       </P>
 
       <H>13. Réclamations et médiation</H>
@@ -593,15 +631,7 @@ export function CgvPage() {
         En cas de litige de consommation non résolu dans un délai raisonnable après réclamation écrite,
         vous pouvez recourir gratuitement à un médiateur de la consommation :
       </P>
-      {mediatorName && mediatorWebsite ? (
-        <Ul items={[
-          <>Médiateur : {mediatorName}</>,
-          <>Site : <a href={mediatorWebsite} style={{ color: C.accentText }}>{mediatorWebsite}</a></>,
-          mediatorAddress ? <>Adresse : {mediatorAddress}</> : null,
-        ].filter(Boolean)} />
-      ) : (
-        <P><Placeholder label="nom + site (+ adresse) du médiateur de la consommation" /> — obligation d’information précontractuelle.</P>
-      )}
+      <MediatorBlock />
       <P>
         Vous pouvez aussi utiliser la plateforme européenne de règlement en ligne des litiges :
         https://ec.europa.eu/consumers/odr

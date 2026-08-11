@@ -70,11 +70,20 @@ import {
   LEGAL_LINKS,
   SIGNUP_AGE_LABEL,
   SIGNUP_TERMS_LABEL_PREFIX,
-  INJURY_HEALTH_NOTICE,
-  INJURY_CONSENT_LABEL,
   SPORT_SAFETY_SHORT,
   ACCOUNT_DELETE_WARNING,
 } from "./lib/legal-copy.js";
+import {
+  INJURY_ZONES,
+  INJURY_SEVERITIES,
+  HEALTH_CONSENT_TITLE,
+  HEALTH_CONSENT_BODY,
+  HEALTH_CONSENT_CHECKBOX,
+  HEALTH_DECLARATION_LABEL,
+  MEDICAL_WARNING_SHORT,
+  formatInjurySummary,
+  hasHealthConsent,
+} from "./lib/health-data.js";
 import { useTranslation } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
@@ -2227,7 +2236,7 @@ const buildPremiumActivityAnalysis = ({ activity, detail, currentSessionRef, pro
   };
 };
 
-const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, onUpgrade, profile }) => {
+const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, onUpgrade, profile, showHeartRate = false }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [detailPayload, setDetailPayload] = useState(null);
@@ -2288,7 +2297,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
     { label: "Allure", value: fmtPace(activity.pace) || "—", color: G.coral, bg: G.coralLight },
     { label: "Vitesse moy.", value: fmtSpeedKmh(raw.average_speed), color: G.water, bg: G.waterLight },
     { label: "Vitesse max", value: fmtSpeedKmh(raw.max_speed), color: G.gold, bg: G.goldLight },
-    { label: "FC moy.", value: raw.average_heartrate || activity.heart_rate ? `${Math.round(raw.average_heartrate || activity.heart_rate)} bpm` : "—", color: G.ink, bg: G.greyXLight },
+    { label: "FC moy.", value: showHeartRate && (raw.average_heartrate || activity.heart_rate) ? `${Math.round(raw.average_heartrate || activity.heart_rate)} bpm` : (showHeartRate ? "—" : "Masquée"), color: G.ink, bg: G.greyXLight },
     { label: "Lieu", value: venueLabel, color: G.blue, bg: G.blueLight },
     { label: cadenceValue ? "Cadence" : "Calories", value: cadenceValue || (activity.calories ? `${Math.round(activity.calories)} kcal` : "—"), color: G.mint, bg: G.mintLight },
   ];
@@ -2306,7 +2315,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
       label: "Fréquence cardiaque",
       unit: "bpm",
       color: G.coral,
-      values: Array.isArray(streams?.heartrate?.data) ? streams.heartrate.data : [],
+      values: showHeartRate && Array.isArray(streams?.heartrate?.data) ? streams.heartrate.data : [],
       formatValue: (v) => `${Math.round(v)} bpm`,
     },
     {
@@ -2494,9 +2503,13 @@ const StravaSection = ({
   const [disconnecting, setDisconnecting] = useState(false);
   const [msg,           setMsg]           = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [healthGateOpen, setHealthGateOpen] = useState(false);
+  const [healthGateChecked, setHealthGateChecked] = useState(false);
+  const [localHealthConsent, setLocalHealthConsent] = useState(null);
 
   // client_id est public (pas un secret) — fallback hardcodé si l'env n'est pas chargé
   const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
+  const healthOk = localHealthConsent === true || hasHealthConsent(profile);
 
   useEffect(() => {
     if (!user) return;
@@ -2532,6 +2545,39 @@ const StravaSection = ({
   };
 
   const connect = () => {
+    if (!healthOk) {
+      setHealthGateOpen(true);
+      setHealthGateChecked(false);
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + "/app");
+    window.location.href =
+      `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
+      `&response_type=code&redirect_uri=${redirectUri}` +
+      `&approval_prompt=auto&scope=activity%3Aread_all&state=strava_connect`;
+  };
+
+  const persistHealthConsentAndConnect = async () => {
+    if (!healthGateChecked) return;
+    const at = new Date().toISOString();
+    setLocalHealthConsent(true);
+    try {
+      await supabase.auth.updateUser({
+        data: { health_consent: true, health_consent_at: at },
+      });
+      if (user?.id) {
+        await supabase.from("sport_profiles").upsert({
+          user_id: user.id,
+          extra: {
+            ...(profile?.extra && typeof profile.extra === "object" ? profile.extra : {}),
+            healthConsent: true,
+            healthConsentAt: at,
+          },
+          updated_at: at,
+        }, { onConflict: "user_id" });
+      }
+    } catch { /* best effort */ }
+    setHealthGateOpen(false);
     const redirectUri = encodeURIComponent(window.location.origin + "/app");
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
@@ -2873,7 +2919,30 @@ const StravaSection = ({
             isPremium={isPremium}
             onUpgrade={onUpgrade}
             profile={profile}
+            showHeartRate={healthOk}
           />
+      {healthGateOpen && createPortal(
+        <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && setHealthGateOpen(false)}>
+          <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
+            <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 10 }}>
+              {HEALTH_CONSENT_TITLE}
+            </h3>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEALTH_CONSENT_BODY}</p>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.ink, marginBottom: 16 }}>
+              <input type="checkbox" checked={healthGateChecked} onChange={(e) => setHealthGateChecked(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>{HEALTH_CONSENT_CHECKBOX}</span>
+            </label>
+            <Btn variant="blue" onClick={persistHealthConsentAndConnect} disabled={!healthGateChecked}>
+              Accepter et connecter Strava
+            </Btn>
+            <button type="button" onClick={() => setHealthGateOpen(false)} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
+              Annuler
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 };
@@ -3236,9 +3305,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               profile?.heightCm ? { label: "Taille", value: `${profile.heightCm} cm` } : null,
               profile?.injuryStatus ? {
                 label: "Blessure",
-                value: profile.injuryStatus === "aucune"
-                  ? "Aucune"
-                  : (profile.injuryNote?.trim() || "Oui"),
+                value: formatInjurySummary(profile),
               } : null,
               profile?.swimStyle ? { label: "Style", value: STYLE_LABELS[profile.swimStyle] || profile.swimStyle } : null,
               profile?.preferredStroke ? { label: "Nage préf.", value: STROKE_LABELS[profile.preferredStroke] || profile.preferredStroke } : null,
@@ -4805,23 +4872,64 @@ const StepPhysique = ({ age, weightKg, heightCm, onChange, onNext, onBack }) => 
   );
 };
 
-/** Blessure — commun à tous les programmes */
-const StepInjury = ({ injuryStatus, injuryNote, injuryConsent, onChangeStatus, onChangeNote, onChangeConsent, onNext, onBack }) => {
-  const needsConsent = injuryStatus === "oui";
-  const canNext = injuryStatus === "aucune" || (injuryStatus === "oui" && !!injuryConsent);
+/** Consentement art. 9 RGPD — écran séparé (pas fusionné avec les CGU). */
+const StepHealthConsent = ({ checked, onChange, onAccept, onRefuse, onBack }) => (
+  <div className="fade-up">
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{HEALTH_CONSENT_TITLE}</h2>
+    <p style={{ fontSize: 14, color: G.grey, marginBottom: 14, lineHeight: 1.5 }}>{HEALTH_CONSENT_BODY}</p>
+    <p style={{ fontSize: 12, color: G.greyMid, marginBottom: 16, lineHeight: 1.45 }}>{MEDICAL_WARNING_SHORT}</p>
+    <label style={{
+      display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 18,
+      padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: G.surface,
+      fontSize: 13, lineHeight: 1.5, color: G.ink, cursor: "pointer",
+    }}>
+      <input
+        type="checkbox"
+        checked={!!checked}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ marginTop: 3, flexShrink: 0 }}
+      />
+      <span>{HEALTH_CONSENT_CHECKBOX}</span>
+    </label>
+    <Btn onClick={() => (checked ? onAccept() : onRefuse())} disabled={false}>
+      {checked ? "Continuer" : "Continuer sans données de santé"}
+    </Btn>
+    <button
+      type="button"
+      onClick={onRefuse}
+      style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}
+    >
+      Je refuse le traitement des données de santé
+    </button>
+    <button onClick={onBack} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+  </div>
+);
+
+/** Blessure — listes fermées uniquement (minimisation art. 9). */
+const StepInjury = ({
+  injuryStatus,
+  injuryZone,
+  injurySeverity,
+  healthDeclaration,
+  onChangeStatus,
+  onChangeZone,
+  onChangeSeverity,
+  onChangeDeclaration,
+  onNext,
+  onBack,
+}) => {
+  const canNext = injuryStatus === "aucune"
+    || (injuryStatus === "oui" && injuryZone && injurySeverity && healthDeclaration);
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Blessure ?</h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 12, lineHeight: 1.45 }}>
-        On adaptera les consignes si tu as une gêne ou une blessure en cours.
+      <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
+        Indique une zone et un niveau de gravité (listes fermées). Pas de diagnostic ni de traitement à saisir.
       </p>
-      <div style={{ background: "#FFF8EB", border: "1px solid #F5D78E", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
-        <p style={{ fontSize: 12, color: "#7A5B12", lineHeight: 1.5, margin: 0 }}>{INJURY_HEALTH_NOTICE}</p>
-      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {[
           { id: "aucune", label: "Aucune blessure", desc: "Je nage sans gêne particulière" },
-          { id: "oui", label: "Oui, j'ai une blessure / gêne", desc: "Épaule, genou, dos…" },
+          { id: "oui", label: "Oui, j'ai une blessure / gêne", desc: "Zone + gravité ci-dessous" },
         ].map((opt) => {
           const active = injuryStatus === opt.id;
           return (
@@ -4843,37 +4951,60 @@ const StepInjury = ({ injuryStatus, injuryNote, injuryConsent, onChangeStatus, o
       </div>
       {injuryStatus === "oui" && (
         <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-            Précise (optionnel)
-          </label>
-          <input
-            type="text"
-            value={injuryNote || ""}
-            onChange={(e) => onChangeNote(e.target.value)}
-            placeholder="ex : épaule droite, genou…"
-            style={{
-              ...onboardingNumInp,
-              textAlign: "left",
-              fontSize: 15,
-              fontWeight: 600,
-            }}
-          />
-          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 14, fontSize: 12, lineHeight: 1.45, color: G.grey }}>
+          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Zone du corps</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {INJURY_ZONES.map((z) => {
+              const active = injuryZone === z.id;
+              return (
+                <button
+                  key={z.id}
+                  type="button"
+                  onClick={() => onChangeZone(z.id)}
+                  style={{
+                    padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 600,
+                    border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                    background: active ? G.blueLight : G.surface,
+                    color: active ? G.blue : G.ink,
+                  }}
+                >
+                  {z.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Gravité</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+            {INJURY_SEVERITIES.map((s) => {
+              const active = injurySeverity === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => onChangeSeverity(s.id)}
+                  style={{
+                    padding: "12px 14px", borderRadius: 12, textAlign: "left", cursor: "pointer",
+                    border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                    background: active ? G.blueLight : G.greyXLight,
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 700, color: active ? G.blue : G.ink }}>{s.label}</div>
+                  <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{s.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey }}>
             <input
               type="checkbox"
-              checked={!!injuryConsent}
-              onChange={(e) => onChangeConsent?.(e.target.checked)}
+              checked={!!healthDeclaration}
+              onChange={(e) => onChangeDeclaration(e.target.checked)}
               style={{ marginTop: 2, flexShrink: 0 }}
             />
-            <span>{INJURY_CONSENT_LABEL}</span>
+            <span>{HEALTH_DECLARATION_LABEL}</span>
           </label>
         </div>
       )}
-      {!needsConsent && injuryStatus === "aucune" && (
-        <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>
-          {SPORT_SAFETY_SHORT}
-        </p>
-      )}
+      <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>{SPORT_SAFETY_SHORT}</p>
       <Btn onClick={onNext} disabled={!canNext}>Continuer</Btn>
       <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
     </div>
@@ -5304,12 +5435,16 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
   );
 };
 
-const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremium }) => {
+const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremium, healthConsent = false }) => {
   const [rating, setRating] = useState(initial?.rating ?? null);
   const [tags, setTags] = useState(() => Array.isArray(initial?.tags) ? [...initial.tags] : []);
   const [comment, setComment] = useState(initial?.comment ?? "");
+  const availableTags = healthConsent
+    ? SESSION_FEEDBACK_TAGS
+    : SESSION_FEEDBACK_TAGS.filter((t) => t !== "douleur / gêne");
 
   const toggleTag = (tag) => {
+    if (tag === "douleur / gêne" && !healthConsent) return;
     setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
@@ -5378,7 +5513,7 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
           Qu'est-ce qui cloche (ou pas) ?
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          {SESSION_FEEDBACK_TAGS.map(tag => {
+          {availableTags.map(tag => {
             const on = tags.includes(tag);
             return (
               <button
@@ -5397,6 +5532,11 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
             );
           })}
         </div>
+        {!healthConsent && (
+          <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>
+            Le tag « douleur / gêne » nécessite ton consentement données de santé (Paramètres / onboarding).
+          </p>
+        )}
 
         <input
           type="text"
@@ -10611,8 +10751,12 @@ const BLANK_PROFILE = {
   weightKg: "",
   heightCm: "",
   injuryStatus: null, // "aucune" | "oui"
-  injuryNote: "",
-  injuryConsent: false,
+  injuryZone: null,
+  injurySeverity: null,
+  injuryNote: "", // legacy — plus collecté en free-text
+  healthConsent: false,
+  healthConsentAt: null,
+  healthDeclaration: false,
   swimStyle: null, // "crawl" | "4_nages"
   preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
   /** null = inventaire inconnu ; [] = aucun matos ; sinon ids sports-engine */
@@ -11664,7 +11808,7 @@ export default function App() {
         age: genProfile.age || null,
         swim_style: genProfile.swimStyle || null,
         preferred_stroke: genProfile.preferredStroke || null,
-        has_injury: genProfile.injuryStatus === "oui",
+        has_injury: undefined, // jamais envoyé aux analytics (données santé)
         preview: openPaywallAfter,
       }, { essential: true });
       const id = `plan_${Date.now()}`;
@@ -12876,21 +13020,49 @@ export default function App() {
                   )}
 
                   {step === 8 && (
+                    <StepHealthConsent
+                      checked={!!profile.healthConsent}
+                      onChange={(v) => {
+                        update("healthConsent", v);
+                        if (v) update("healthConsentAt", new Date().toISOString());
+                      }}
+                      onAccept={() => {
+                        update("healthConsent", true);
+                        update("healthConsentAt", new Date().toISOString());
+                        setStep(11);
+                      }}
+                      onRefuse={() => {
+                        update("healthConsent", false);
+                        update("healthConsentAt", null);
+                        update("injuryStatus", "aucune");
+                        update("injuryZone", null);
+                        update("injurySeverity", null);
+                        update("healthDeclaration", false);
+                        setStep(10);
+                      }}
+                      onBack={() => setStep(7)}
+                    />
+                  )}
+
+                  {step === 11 && (
                     <StepInjury
                       injuryStatus={profile.injuryStatus}
-                      injuryNote={profile.injuryNote}
-                      injuryConsent={profile.injuryConsent}
+                      injuryZone={profile.injuryZone}
+                      injurySeverity={profile.injurySeverity}
+                      healthDeclaration={profile.healthDeclaration}
                       onChangeStatus={(v) => {
                         update("injuryStatus", v);
                         if (v === "aucune") {
-                          update("injuryNote", "");
-                          update("injuryConsent", false);
+                          update("injuryZone", null);
+                          update("injurySeverity", null);
+                          update("healthDeclaration", false);
                         }
                       }}
-                      onChangeNote={(v) => update("injuryNote", v)}
-                      onChangeConsent={(v) => update("injuryConsent", v)}
+                      onChangeZone={(v) => update("injuryZone", v)}
+                      onChangeSeverity={(v) => update("injurySeverity", v)}
+                      onChangeDeclaration={(v) => update("healthDeclaration", v)}
                       onNext={() => setStep(10)}
-                      onBack={() => setStep(7)}
+                      onBack={() => setStep(8)}
                     />
                   )}
 
@@ -12900,7 +13072,7 @@ export default function App() {
                       level={profile.level}
                       onChange={(v) => update("equipment", v)}
                       onNext={() => setStep(9)}
-                      onBack={() => setStep(8)}
+                      onBack={() => setStep(profile.healthConsent ? 11 : 8)}
                     />
                   )}
 
@@ -13016,6 +13188,7 @@ export default function App() {
               onSubmit={handleSessionFeedback}
               onSkip={closeSessionFeedbackSheet}
               isPremium={isPremium}
+              healthConsent={hasHealthConsent(activeProfile) || hasHealthConsent(user)}
             />
           );
         })()}

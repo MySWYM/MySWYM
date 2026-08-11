@@ -1,35 +1,37 @@
 /**
- * Identité éditeur MySWYM.
- * Ne jamais inventer SIRET / adresse / médiateur : laisser les placeholders.
+ * Identité éditeur MySWYM / A.Natation.
+ * Médiateur : laisser "[MÉDIATEUR À CONFIRMER]" jusqu’à inscription.
  */
 export const LEGAL_ENTITY = {
   tradeName: "MySWYM",
-  publisher: "Arthur Noel",
+  commercialName: "A.Natation",
+  publisher: "Arthur Noël",
   legalForm: "Entrepreneur individuel",
   email: "contact@myswym.app",
   supportEmail: "support@myswym.app",
   dpoEmail: "contact@myswym.app",
   site: "https://myswym.app",
-  // Obligatoires LCEN / information précontractuelle — à compléter par le propriétaire :
-  siret: "", // [À FOURNIR]
-  address: "", // [À FOURNIR]
-  rcsCity: "", // [À FOURNIR] ex. « RCS Paris » si applicable, sinon laissez vide pour EI
-  vatNumber: "", // [À FOURNIR] ou « Non assujetti à la TVA »
-  capital: "", // N/A pour EI — laisser vide
-  // Médiation de la consommation (obligatoire pour B2C) :
-  mediatorName: "", // [À FOURNIR]
-  mediatorWebsite: "", // [À FOURNIR]
-  mediatorAddress: "", // [À FOURNIR]
+  siret: "941 900 052 00015",
+  address: "21 Rue du Cachon, 55000 Fains-Véel, France",
+  apeCode: "4791A",
+  vatNumber: "TVA non applicable, article 293 B du CGI (franchise en base)",
+  capital: "",
+  // Médiation — à remplacer une fois le médiateur choisi :
+  mediatorName: "[MÉDIATEUR À CONFIRMER]",
+  mediatorWebsite: "",
+  mediatorAddress: "",
+  subprocessors: [
+    { name: "Supabase", role: "Authentification, base de données, stockage", dpa: "https://supabase.com/legal/dpa" },
+    { name: "Stripe", role: "Paiement et portail abonnement", dpa: "https://stripe.com/legal/dpa" },
+    { name: "Vercel", role: "Hébergement et diffusion du front", dpa: "https://vercel.com/legal/dpa" },
+  ],
   lastUpdated: "11 août 2026",
 };
 
 export function legalMissingFields() {
   const missing = [];
-  if (!LEGAL_ENTITY.siret) missing.push("SIRET (ou SIREN)");
-  if (!LEGAL_ENTITY.address) missing.push("Adresse du siège / établissement");
-  if (!LEGAL_ENTITY.vatNumber) missing.push("Statut TVA / n° TVA");
-  if (!LEGAL_ENTITY.mediatorName || !LEGAL_ENTITY.mediatorWebsite) {
-    missing.push("Médiateur de la consommation (nom + site)");
+  if (!LEGAL_ENTITY.mediatorName || LEGAL_ENTITY.mediatorName.includes("À CONFIRMER")) {
+    missing.push("Médiateur de la consommation");
   }
   return missing;
 }
