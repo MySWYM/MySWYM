@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Users, MapPin, MessageCircle, Settings, Search, Waves,
-  Shield, Loader2, UserPlus, EyeOff,
+  Shield, Loader2, UserPlus, EyeOff, Flag, Ban, PhoneOff, Link2,
+  AlertTriangle, CheckCircle2, X,
 } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
 import { trackEvent } from "./lib/analytics.js";
+import { supabase } from "./supabase.js";
 import {
   BUDDY_DAYS,
   BUDDY_GOAL_CATEGORIES,
@@ -13,6 +15,7 @@ import {
   BUDDY_RADIUS_OPTIONS,
   BUDDY_TIME_SLOTS,
   buildWhatsAppLink,
+  clearBuddyPhone,
   defaultBuddyForm,
   disableBuddyProfile,
   fetchDiscoverableBuddies,
@@ -32,6 +35,26 @@ import {
   toggleOutingType,
   upsertBuddyProfile,
 } from "./lib/buddy-profiles.js";
+import {
+  BUDDY_REPORT_REASONS,
+  BUDDY_REPORT_THRESHOLD,
+  BUDDY_SAFETY_WARNING,
+  blockBuddy,
+  cancelBuddyConnection,
+  fetchConnectionPhones,
+  fetchMyBuddyConnections,
+  fetchOwnModeration,
+  grantPhoneShare,
+  hasAckedBuddySafetyLocally,
+  isEmailVerified,
+  markBuddySafetyAckedLocally,
+  myPhoneShareFlag,
+  phonesReady,
+  reportBuddy,
+  requestBuddyConnection,
+  respondBuddyConnection,
+  revokePhoneShare,
+} from "./lib/buddy-connections.js";
 
 const G = {
   bg: "#f8f9fc",
@@ -68,6 +91,21 @@ const inp = {
   boxSizing: "border-box",
 };
 
+const checkboxStyle = (checked) => ({
+  marginTop: 2,
+  width: 20,
+  height: 20,
+  flexShrink: 0,
+  appearance: "none",
+  WebkitAppearance: "none",
+  border: "2px solid #111827",
+  borderRadius: 0,
+  background: checked
+    ? `center / 12px 12px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E"), ${G.blue}`
+    : "#FFFFFF",
+  cursor: "pointer",
+});
+
 function FilterChip({ active, label, onClick }) {
   return (
     <button
@@ -91,19 +129,43 @@ function FilterChip({ active, label, onClick }) {
   );
 }
 
-function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
-  const outingLabels = labelsForOutingTypes(buddy.outing_types);
-  const outingLabel = outingLabels.join(", ");
-  const waLink = canContact
-    ? buildWhatsAppLink(buddy.whatsapp_e164, {
-        senderName,
-        buddyName: buddy.display_name,
-        city: buddy.city,
-        outingLabel,
-      })
-    : null;
+function Modal({ title, children, onClose }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed", inset: 0, zIndex: 80,
+        background: "rgba(15,23,42,0.45)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 480, maxHeight: "90dvh", overflowY: "auto",
+          background: G.surface, borderRadius: 20, padding: 20,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: G.ink }}>{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Fermer" style={{ border: "none", background: G.greyXLight, borderRadius: 10, width: 36, height: 36, cursor: "pointer" }}>
+            <X size={18} color={G.grey} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
+function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
+  const outingLabels = labelsForOutingTypes(buddy.outing_types);
   const initials = (buddy.display_name || "N").slice(0, 2).toUpperCase();
+  const status = connection?.status;
 
   return (
     <article
@@ -168,35 +230,39 @@ function BuddyCard({ buddy, canContact, senderName, onNeedProfile }) {
         <p style={{ fontSize: 13, color: G.grey, margin: "0 0 12px", lineHeight: 1.5 }}>{buddy.bio}</p>
       )}
 
-      {canContact && waLink ? (
-        <a
-          href={waLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackEvent("buddy_whatsapp_click", { goal_category: buddy.goal_category }, { essential: true })}
+      {status === "accepted" ? (
+        <button
+          type="button"
+          onClick={() => onOpenConnection(connection)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             width: "100%", padding: "13px 16px", borderRadius: 14, border: "none",
-            background: "#25D366", color: G.white, fontWeight: 700, fontSize: 14,
-            textDecoration: "none", cursor: "pointer", minHeight: 48,
+            background: G.mint, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48,
           }}
         >
-          <MessageCircle size={18} />
-          Contacter sur WhatsApp
-        </a>
+          <CheckCircle2 size={18} />
+          Mise en relation active
+        </button>
+      ) : status === "pending" ? (
+        <div style={{
+          textAlign: "center", padding: "12px", borderRadius: 14, background: G.blueLight,
+          color: G.blueDeep, fontWeight: 700, fontSize: 13,
+        }}>
+          Demande en attente
+        </div>
       ) : (
         <button
           type="button"
-          onClick={onNeedProfile}
+          onClick={() => onRequest(buddy)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            width: "100%", padding: "13px 16px", borderRadius: 14,
-            border: `1.5px dashed ${G.blueMid}`, background: G.blueLight,
-            color: G.blueDeep, fontWeight: 700, fontSize: 13, cursor: "pointer", minHeight: 48,
+            width: "100%", padding: "13px 16px", borderRadius: 14, border: "none",
+            background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`,
+            color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48,
           }}
         >
-          <UserPlus size={16} />
-          Active ton profil buddy pour contacter
+          <UserPlus size={18} />
+          Demander une mise en relation
         </button>
       )}
     </article>
@@ -241,17 +307,53 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
   const [view, setView] = useState("list");
   const [form, setForm] = useState(() => defaultBuddyForm(user, profile));
   const [buddies, setBuddies] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [moderation, setModeration] = useState(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingForm, setLoadingForm] = useState(true);
+  const [loadingConn, setLoadingConn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
-  const [consentError, setConsentError] = useState(false);
+  const [phoneConsentError, setPhoneConsentError] = useState(false);
   const [cityFilter, setCityFilter] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [goalFilter, setGoalFilter] = useState("");
 
-  const senderName = form.display_name || user?.user_metadata?.firstname || "Un nageur MySWYM";
-  const canContact = !!(form.is_discoverable && normalizeWhatsAppE164(form.whatsapp_e164));
+  const [requestTarget, setRequestTarget] = useState(null);
+  const [safetyAck, setSafetyAck] = useState(false);
+  const [sharePhoneAck, setSharePhoneAck] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [respondTarget, setRespondTarget] = useState(null);
+  const [detailConn, setDetailConn] = useState(null);
+  const [phoneInfo, setPhoneInfo] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("harassment");
+  const [reportDetails, setReportDetails] = useState("");
+  const [busyAction, setBusyAction] = useState(false);
+
+  const emailOk = isEmailVerified(user);
+  const suspended = !!moderation?.buddy_suspended;
+  const hasPhoneReady = !!(form.phone_share_ready && normalizeWhatsAppE164(form.whatsapp_e164));
+  const profileReady = !!form.is_discoverable;
+
+  const connectionByPeer = useMemo(() => {
+    const map = new Map();
+    for (const c of connections) {
+      if (!c.peer_user_id) continue;
+      if (["pending", "accepted"].includes(c.status)) map.set(c.peer_user_id, c);
+    }
+    return map;
+  }, [connections]);
+
+  const pendingIncoming = useMemo(
+    () => connections.filter((c) => c.status === "pending" && c.recipient_id === user?.id),
+    [connections, user?.id],
+  );
+
+  const activeConnections = useMemo(
+    () => connections.filter((c) => c.status === "accepted" || (c.status === "pending" && c.requester_id === user?.id)),
+    [connections, user?.id],
+  );
 
   const loadList = useCallback(async () => {
     if (!user?.id) return;
@@ -286,7 +388,9 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
         bio: data.bio || "",
         whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : "",
         is_discoverable: data.is_discoverable,
-        consent_whatsapp: data.consent_whatsapp,
+        phone_share_ready: !!(data.phone_share_ready || data.consent_whatsapp),
+        phone_verified: !!data.phone_verified,
+        phone_ownership_ack: !!(data.phone_share_ready || data.consent_whatsapp),
         avatar_url: data.avatar_url || user?.user_metadata?.avatar_url || "",
       });
     } else {
@@ -295,20 +399,80 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
     setLoadingForm(false);
   }, [user, profile]);
 
+  const loadConnections = useCallback(async () => {
+    if (!user?.id) return;
+    setLoadingConn(true);
+    const [{ data, error }, mod] = await Promise.all([
+      fetchMyBuddyConnections(user.id),
+      fetchOwnModeration(user.id),
+    ]);
+    if (error) setMsg({ type: "err", text: error.message });
+    else setConnections(data);
+    setModeration(mod.data);
+    setLoadingConn(false);
+  }, [user?.id]);
+
   useEffect(() => { loadOwn(); }, [loadOwn]);
   useEffect(() => { loadList(); }, [loadList]);
+  useEffect(() => { loadConnections(); }, [loadConnections]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!detailConn || !phonesReady(detailConn)) {
+        setPhoneInfo(null);
+        return;
+      }
+      const { data, error } = await fetchConnectionPhones(detailConn.id);
+      if (!cancelled) {
+        if (error) setPhoneInfo({ error: error.message });
+        else setPhoneInfo(data);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [detailConn]);
+
+  const gateMatching = () => {
+    if (suspended) {
+      setMsg({ type: "err", text: "Ton accès Buddy est suspendu suite à des signalements. Contacte le support si besoin." });
+      return false;
+    }
+    if (!emailOk) {
+      setMsg({ type: "err", text: "Vérifie ton e-mail avant toute mise en relation (lien dans ta boîte de réception)." });
+      return false;
+    }
+    if (!hasPhoneReady) {
+      setMsg({ type: "err", text: "Enregistre un numéro privé et active le consentement de partage (profil buddy) avant de demander une mise en relation." });
+      setView("form");
+      return false;
+    }
+    return true;
+  };
+
+  const openRequestModal = (buddy) => {
+    if (!gateMatching()) return;
+    if (!profileReady) {
+      setMsg({ type: "err", text: "Publie ton profil buddy (sans exposer ton numéro) pour demander une mise en relation." });
+      setView("form");
+      return;
+    }
+    setRequestTarget(buddy);
+    setSafetyAck(hasAckedBuddySafetyLocally());
+    setSharePhoneAck(false);
+    setRequestMessage("");
+  };
 
   const handleSave = async (discoverable) => {
     if (!user?.id) return;
-    if (discoverable && !form.consent_whatsapp) {
-      setConsentError(true);
-      setMsg({ type: "err", text: "Accepte la publication de ton numéro pour rendre ton profil visible." });
+    if (form.phone_share_ready && !form.phone_ownership_ack && !form.phone_verified) {
+      setPhoneConsentError(true);
+      setMsg({ type: "err", text: "Confirme que le numéro t’appartient (consentement distinct du compte et des données de santé)." });
       return;
     }
     setSaving(true);
     setMsg(null);
-    setConsentError(false);
-    const payload = { ...form, is_discoverable: discoverable, consent_whatsapp: discoverable ? form.consent_whatsapp : false };
+    setPhoneConsentError(false);
+    const payload = { ...form, is_discoverable: discoverable };
     const { data, error } = await upsertBuddyProfile(user.id, payload);
     if (error) {
       setMsg({ type: "err", text: error.message });
@@ -316,11 +480,18 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
       setForm((f) => ({
         ...f,
         ...data,
-        whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : f.whatsapp_e164,
-        consent_whatsapp: data.consent_whatsapp,
+        whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : "",
+        phone_share_ready: !!(data.phone_share_ready || data.consent_whatsapp),
+        phone_verified: !!data.phone_verified,
+        phone_ownership_ack: !!(data.phone_share_ready || data.consent_whatsapp),
         is_discoverable: data.is_discoverable,
       }));
-      setMsg({ type: "ok", text: discoverable ? "Profil visible — les autres nageurs peuvent te contacter." : "Profil enregistré (non visible)." });
+      setMsg({
+        type: "ok",
+        text: discoverable
+          ? "Profil visible — ton numéro reste privé jusqu’à une mise en relation mutuelle."
+          : "Profil enregistré (non visible).",
+      });
       trackEvent("buddy_profile_save", { discoverable }, { essential: true });
       await loadList();
       if (discoverable) setView("list");
@@ -334,21 +505,178 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
     const { error } = await disableBuddyProfile(user.id);
     if (error) setMsg({ type: "err", text: error.message });
     else {
-      setForm((f) => ({ ...f, is_discoverable: false, consent_whatsapp: false, whatsapp_e164: "" }));
+      setForm((f) => ({ ...f, is_discoverable: false }));
       setMsg({ type: "ok", text: "Profil retiré de la liste publique." });
       await loadList();
     }
     setSaving(false);
   };
 
+  const handleClearPhone = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    const { error } = await clearBuddyPhone(user.id);
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      setForm((f) => ({
+        ...f,
+        whatsapp_e164: "",
+        phone_share_ready: false,
+        phone_verified: false,
+        phone_ownership_ack: false,
+      }));
+      setMsg({ type: "ok", text: "Numéro masqué. Les partages en cours sont à révoquer aussi dans « Mes mises en relation »." });
+    }
+    setSaving(false);
+  };
+
+  const submitRequest = async () => {
+    if (!requestTarget || !user?.id) return;
+    setBusyAction(true);
+    const { error } = await requestBuddyConnection({
+      requesterId: user.id,
+      recipientId: requestTarget.user_id,
+      message: requestMessage,
+      safetyAck,
+      sharePhoneConsent: sharePhoneAck,
+    });
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      markBuddySafetyAckedLocally();
+      setMsg({ type: "ok", text: "Demande envoyée. Le numéro ne sera visible qu’après acceptation mutuelle." });
+      trackEvent("buddy_connection_request", { goal_category: requestTarget.goal_category }, { essential: true });
+      setRequestTarget(null);
+      await loadConnections();
+    }
+    setBusyAction(false);
+  };
+
+  const submitRespond = async (accept) => {
+    if (!respondTarget || !user?.id) return;
+    setBusyAction(true);
+    const { error } = await respondBuddyConnection({
+      connectionId: respondTarget.id,
+      userId: user.id,
+      accept,
+      safetyAck,
+      sharePhoneConsent: sharePhoneAck,
+    });
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      if (accept) markBuddySafetyAckedLocally();
+      setMsg({ type: "ok", text: accept ? "Mise en relation acceptée." : "Demande refusée." });
+      setRespondTarget(null);
+      await loadConnections();
+      setView("matches");
+    }
+    setBusyAction(false);
+  };
+
+  const handleRevokePhone = async (conn) => {
+    setBusyAction(true);
+    const { error } = await revokePhoneShare(conn.id, user.id);
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      setMsg({ type: "ok", text: "Ton numéro est masqué pour cette mise en relation." });
+      await loadConnections();
+      setDetailConn(null);
+    }
+    setBusyAction(false);
+  };
+
+  const handleGrantPhone = async (conn) => {
+    setBusyAction(true);
+    const { error } = await grantPhoneShare(conn.id, user.id);
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      setMsg({ type: "ok", text: "Partage du numéro réactivé pour cette mise en relation." });
+      await loadConnections();
+      setDetailConn(null);
+    }
+    setBusyAction(false);
+  };
+
+  const handleLeave = async (conn) => {
+    setBusyAction(true);
+    const { error } = await cancelBuddyConnection(conn.id, user.id);
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      setMsg({ type: "ok", text: "Mise en relation terminée." });
+      setDetailConn(null);
+      await loadConnections();
+      await loadList();
+    }
+    setBusyAction(false);
+  };
+
+  const handleBlock = async (peerId) => {
+    if (!peerId) return;
+    setBusyAction(true);
+    const { error } = await blockBuddy(user.id, peerId);
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      setMsg({ type: "ok", text: "Utilisateur bloqué." });
+      setDetailConn(null);
+      setRespondTarget(null);
+      await loadConnections();
+      await loadList();
+    }
+    setBusyAction(false);
+  };
+
+  const submitReport = async () => {
+    if (!reportTarget || !user?.id) return;
+    setBusyAction(true);
+    const { error } = await reportBuddy({
+      reporterId: user.id,
+      reportedId: reportTarget.peer_user_id || reportTarget.user_id,
+      connectionId: reportTarget.id || null,
+      reason: reportReason,
+      details: reportDetails,
+    });
+    if (error) setMsg({ type: "err", text: error.message });
+    else {
+      setMsg({
+        type: "ok",
+        text: `Signalement enregistré. Au-delà de ${BUDDY_REPORT_THRESHOLD} signalements, le compte Buddy peut être suspendu.`,
+      });
+      setReportTarget(null);
+      await loadConnections();
+      await loadList();
+    }
+    setBusyAction(false);
+  };
+
+  const resendVerification = async () => {
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resend({ type: "signup", email: user.email });
+    setMsg(error
+      ? { type: "err", text: error.message }
+      : { type: "ok", text: "E-mail de vérification renvoyé." });
+  };
+
   const activeFilters = useMemo(() => [cityFilter, levelFilter, goalFilter].filter(Boolean).length, [cityFilter, levelFilter, goalFilter]);
+
+  const tabBtn = (id, label) => (
+    <button
+      type="button"
+      onClick={() => setView(id)}
+      style={{
+        flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", cursor: "pointer",
+        background: view === id ? G.blue : G.greyXLight,
+        color: view === id ? G.white : G.grey,
+        fontWeight: 700, fontSize: 12, fontFamily: "'Lexend', sans-serif",
+      }}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
       <BuddyTopBar user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} />
 
       <div className="app-shell" style={{ paddingTop: 20 }}>
-        {/* Header */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             <div style={{ width: 44, height: 44, borderRadius: 14, background: G.waterLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -356,35 +684,14 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
             </div>
             <div>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Binômes</h1>
-              <p style={{ margin: 0, fontSize: 13, color: G.grey }}>Trouve un partenaire eau libre · contact WhatsApp</p>
+              <p style={{ margin: 0, fontSize: 13, color: G.grey }}>Mise en relation sécurisée · numéro après accord mutuel</p>
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-            <button
-              type="button"
-              onClick={() => setView("list")}
-              style={{
-                flex: 1, padding: "11px 12px", borderRadius: 12, border: "none", cursor: "pointer",
-                background: view === "list" ? G.blue : G.greyXLight,
-                color: view === "list" ? G.white : G.grey,
-                fontWeight: 700, fontSize: 13, fontFamily: "'Lexend', sans-serif",
-              }}
-            >
-              Explorer
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("form")}
-              style={{
-                flex: 1, padding: "11px 12px", borderRadius: 12, border: "none", cursor: "pointer",
-                background: view === "form" ? G.blue : G.greyXLight,
-                color: view === "form" ? G.white : G.grey,
-                fontWeight: 700, fontSize: 13, fontFamily: "'Lexend', sans-serif",
-              }}
-            >
-              Mon profil buddy
-            </button>
+            {tabBtn("list", "Explorer")}
+            {tabBtn("matches", `Relations${pendingIncoming.length ? ` (${pendingIncoming.length})` : ""}`)}
+            {tabBtn("form", "Mon profil")}
           </div>
         </div>
 
@@ -398,8 +705,47 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
           </div>
         )}
 
+        {!emailOk && (
+          <div style={{
+            background: G.coralLight, borderRadius: 16, padding: "14px 16px", marginBottom: 16,
+            border: `1px solid #F5B7B7`, display: "flex", gap: 12, alignItems: "flex-start",
+          }}>
+            <AlertTriangle size={18} color={G.coral} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: G.coral, marginBottom: 4 }}>E-mail non vérifié</div>
+              <div style={{ fontSize: 12, color: G.ink, lineHeight: 1.45, marginBottom: 10 }}>
+                La mise en relation nécessite un compte avec e-mail vérifié (anti faux comptes).
+              </div>
+              <button type="button" onClick={resendVerification} style={{ background: G.coral, color: G.white, border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Renvoyer l’e-mail
+              </button>
+            </div>
+          </div>
+        )}
+
+        {suspended && (
+          <div style={{
+            background: G.coralLight, borderRadius: 16, padding: "14px 16px", marginBottom: 16,
+            color: G.coral, fontSize: 13, lineHeight: 1.5, fontWeight: 600,
+          }}>
+            Accès Buddy suspendu ({moderation?.report_count || 0} signalement{(moderation?.report_count || 0) > 1 ? "s" : ""}).
+            Contacte le support pour un recours.
+          </div>
+        )}
+
         {view === "list" && (
           <>
+            <div style={{
+              background: G.blueLight, borderRadius: 16, padding: "14px 16px", marginBottom: 16,
+              border: `1px solid ${G.blueMid}`, display: "flex", gap: 12, alignItems: "flex-start",
+            }}>
+              <Shield size={18} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 12, color: G.blueDeep, lineHeight: 1.5 }}>
+                Ton numéro n’apparaît jamais sur l’annuaire. Il n’est échangé qu’après acceptation mutuelle
+                et consentement explicite de partage (distinct du compte et des données de santé).
+              </div>
+            </div>
+
             <div style={{ marginBottom: 14 }}>
               <div style={{ position: "relative", marginBottom: 10 }}>
                 <Search size={16} color={G.greyMid} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
@@ -425,24 +771,6 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
               </div>
             </div>
 
-            {!canContact && (
-              <div style={{
-                background: G.blueLight, borderRadius: 16, padding: "14px 16px", marginBottom: 16,
-                border: `1px solid ${G.blueMid}`, display: "flex", gap: 12, alignItems: "flex-start",
-              }}>
-                <Shield size={18} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: G.blueDeep, marginBottom: 4 }}>Contact réciproque</div>
-                  <div style={{ fontSize: 12, color: G.blue, lineHeight: 1.45, marginBottom: 10 }}>
-                    Pour contacter quelqu&apos;un sur WhatsApp, active d&apos;abord ton propre profil buddy visible.
-                  </div>
-                  <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    Configurer mon profil
-                  </button>
-                </div>
-              </div>
-            )}
-
             {loadingList ? (
               <div style={{ textAlign: "center", padding: 40, color: G.grey }}>
                 <Loader2 size={28} />
@@ -455,7 +783,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                   {activeFilters ? "Aucun profil pour ces filtres" : "Pas encore de binôme dans ta zone"}
                 </div>
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 16px" }}>
-                  Sois le premier à te rendre visible — les autres nageurs MySWYM pourront te trouver.
+                  Publie ton profil (sans exposer ton numéro) pour apparaître dans l’annuaire.
                 </p>
                 <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 12, padding: "12px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Créer mon profil buddy
@@ -470,14 +798,128 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                   <BuddyCard
                     key={b.user_id}
                     buddy={b}
-                    canContact={canContact}
-                    senderName={senderName}
-                    onNeedProfile={() => setView("form")}
+                    connection={connectionByPeer.get(b.user_id)}
+                    onRequest={openRequestModal}
+                    onOpenConnection={(c) => { setDetailConn(c); setView("matches"); }}
                   />
                 ))}
               </div>
             )}
           </>
+        )}
+
+        {view === "matches" && (
+          loadingConn ? (
+            <div style={{ textAlign: "center", padding: 40, color: G.grey }}>Chargement…</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {pendingIncoming.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+                    Demandes reçues
+                  </div>
+                  {pendingIncoming.map((c) => (
+                    <div key={c.id} style={{ background: G.surface, borderRadius: 16, border: `1px solid ${G.greyLight}`, padding: 14, marginBottom: 10 }}>
+                      <div style={{ fontWeight: 800, color: G.ink, marginBottom: 4 }}>{c.peer_display_name}</div>
+                      {c.peer_city && <div style={{ fontSize: 13, color: G.grey, marginBottom: 8 }}>{c.peer_city}</div>}
+                      {c.message && <p style={{ fontSize: 13, color: G.grey, margin: "0 0 12px" }}>{c.message}</p>}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!gateMatching()) return;
+                            setRespondTarget(c);
+                            setSafetyAck(hasAckedBuddySafetyLocally());
+                            setSharePhoneAck(false);
+                          }}
+                          style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: G.mint, color: G.white, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          Accepter
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setBusyAction(true);
+                            const { error } = await respondBuddyConnection({
+                              connectionId: c.id,
+                              userId: user.id,
+                              accept: false,
+                              safetyAck: true,
+                              sharePhoneConsent: false,
+                            });
+                            if (error) setMsg({ type: "err", text: error.message });
+                            else {
+                              setMsg({ type: "ok", text: "Demande refusée." });
+                              await loadConnections();
+                            }
+                            setBusyAction(false);
+                          }}
+                          style={{ flex: 1, padding: 12, borderRadius: 12, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          Refuser
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+                  Mes mises en relation
+                </div>
+                {activeConnections.length === 0 && pendingIncoming.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: 28, background: G.surface, borderRadius: 16, border: `1px solid ${G.greyLight}`, color: G.grey, fontSize: 14 }}>
+                    Aucune mise en relation pour l’instant.
+                  </div>
+                ) : (
+                  activeConnections.map((c) => {
+                    const ready = phonesReady(c);
+                    const myShare = myPhoneShareFlag(c, user.id);
+                    return (
+                      <div key={c.id} style={{ background: G.surface, borderRadius: 16, border: `1px solid ${G.greyLight}`, padding: 14, marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+                          <div>
+                            <div style={{ fontWeight: 800, color: G.ink }}>{c.peer_display_name}</div>
+                            <div style={{ fontSize: 12, color: G.grey, marginTop: 4 }}>
+                              {c.status === "pending" ? "En attente de réponse" : ready ? "Numéros partagés" : myShare ? "En attente du partage de l’autre" : "Ton numéro est masqué"}
+                            </div>
+                          </div>
+                          <Link2 size={16} color={G.blue} />
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                          {c.status === "accepted" && (
+                            <button type="button" onClick={() => setDetailConn(c)} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.blue, color: G.white, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                              Voir / WhatsApp
+                            </button>
+                          )}
+                          {c.status === "accepted" && myShare && (
+                            <button type="button" onClick={() => handleRevokePhone(c)} disabled={busyAction} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.greyXLight, color: G.ink, fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                              <PhoneOff size={14} /> Masquer mon n°
+                            </button>
+                          )}
+                          {c.status === "accepted" && !myShare && (
+                            <button type="button" onClick={() => handleGrantPhone(c)} disabled={busyAction} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.mintLight, color: "#00897B", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                              Repartager mon n°
+                            </button>
+                          )}
+                          <button type="button" onClick={() => handleLeave(c)} disabled={busyAction} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.coralLight, color: G.coral, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                            Quitter
+                          </button>
+                          <button type="button" onClick={() => setReportTarget(c)} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.greyXLight, color: G.grey, fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                            <Flag size={14} /> Signaler
+                          </button>
+                          <button type="button" onClick={() => handleBlock(c.peer_user_id)} disabled={busyAction} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.greyXLight, color: G.ink, fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                            <Ban size={14} /> Bloquer
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )
         )}
 
         {view === "form" && (
@@ -499,32 +941,6 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     <div style={{ padding: "6px 10px", borderRadius: 999, background: G.blueLight, color: G.blueDeep, fontSize: 12, fontWeight: 800 }}>
                       {formatRadiusLabel(form.radius_km)}
                     </div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max={String(BUDDY_RADIUS_OPTIONS.length - 1)}
-                    step="1"
-                    value={Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15))}
-                    onChange={(e) => {
-                      const next = BUDDY_RADIUS_OPTIONS[Number(e.target.value)] || 15;
-                      setForm((f) => ({ ...f, radius_km: next }));
-                    }}
-                    style={{
-                      width: "100%",
-                      cursor: "pointer",
-                      appearance: "none",
-                      WebkitAppearance: "none",
-                      height: 8,
-                      borderRadius: 999,
-                      outline: "none",
-                      background: `linear-gradient(90deg, ${G.blue} 0%, ${G.blue} ${(Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15)) / (BUDDY_RADIUS_OPTIONS.length - 1)) * 100}%, ${G.greyXLight} ${(Math.max(0, BUDDY_RADIUS_OPTIONS.indexOf(form.radius_km || 15)) / (BUDDY_RADIUS_OPTIONS.length - 1)) * 100}%, ${G.greyXLight} 100%)`,
-                    }}
-                    aria-label="Périmètre de déplacement toléré"
-                  />
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 6, fontSize: 11, color: G.greyMid }}>
-                    <span>Proche</span>
-                    <span>Flexible</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                     {BUDDY_RADIUS_OPTIONS.map((km) => {
@@ -609,18 +1025,8 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Disponibilités</label>
                 <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 14 }}>Choisis les jours et créneaux où tu peux nager</div>
-
                 <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>Jours</div>
-                <div
-                  role="group"
-                  aria-label="Jours disponibles"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(7, 1fr)",
-                    gap: 6,
-                    marginBottom: 16,
-                  }}
-                >
+                <div role="group" aria-label="Jours disponibles" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6, marginBottom: 16 }}>
                   {BUDDY_DAYS.map((d) => {
                     const active = (form.availability_days || []).includes(d.id);
                     return (
@@ -629,26 +1035,18 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                         type="button"
                         aria-pressed={active}
                         aria-label={d.label}
-                        title={d.label}
                         onClick={() => setForm((f) => ({
                           ...f,
                           availability_days: toggleAvailabilityDay(f.availability_days, d.id),
                         }))}
                         style={{
-                          aspectRatio: "1",
-                          minHeight: 44,
-                          borderRadius: 12,
+                          aspectRatio: "1", minHeight: 44, borderRadius: 12,
                           border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                           background: active ? G.blue : G.greyXLight,
                           color: active ? G.white : G.grey,
-                          fontSize: 11,
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          fontFamily: "'Lexend', sans-serif",
-                          padding: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          fontSize: 11, fontWeight: 800, cursor: "pointer",
+                          fontFamily: "'Lexend', sans-serif", padding: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
                         {d.short}
@@ -656,13 +1054,8 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     );
                   })}
                 </div>
-
                 <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>Créneaux</div>
-                <div
-                  role="group"
-                  aria-label="Créneaux horaires"
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
-                >
+                <div role="group" aria-label="Créneaux horaires" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {BUDDY_TIME_SLOTS.map((s) => {
                     const active = (form.availability_slots || []).includes(s.id);
                     return (
@@ -675,15 +1068,12 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                           availability_slots: toggleAvailabilitySlot(f.availability_slots, s.id),
                         }))}
                         style={{
-                          padding: "12px 12px",
-                          borderRadius: 14,
+                          padding: "12px 12px", borderRadius: 14,
                           border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                           background: active ? G.blueLight : G.surface,
                           color: active ? G.blueDeep : G.grey,
-                          cursor: "pointer",
-                          fontFamily: "'Lexend', sans-serif",
-                          textAlign: "left",
-                          minHeight: 56,
+                          cursor: "pointer", fontFamily: "'Lexend', sans-serif",
+                          textAlign: "left", minHeight: 56,
                         }}
                       >
                         <div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div>
@@ -692,21 +1082,6 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     );
                   })}
                 </div>
-
-                {formatAvailabilityLabel(form.availability_days, form.availability_slots) ? (
-                  <div style={{
-                    marginTop: 12,
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    background: G.waterLight,
-                    color: G.blueDeep,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    lineHeight: 1.4,
-                  }}>
-                    {formatAvailabilityLabel(form.availability_days, form.availability_slots)}
-                  </div>
-                ) : null}
               </div>
 
               <div style={{ background: G.surface, borderRadius: 20, padding: 16, border: `1px solid ${G.greyLight}` }}>
@@ -723,13 +1098,15 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
 
               <div
                 style={{
-                  background: consentError ? "#FFF5F5" : G.surface,
+                  background: phoneConsentError ? "#FFF5F5" : G.surface,
                   borderRadius: 20,
                   padding: 16,
-                  border: `1.5px solid ${consentError ? "#F5B7B7" : G.greyLight}`,
+                  border: `1.5px solid ${phoneConsentError ? "#F5B7B7" : G.greyLight}`,
                 }}
               >
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>WhatsApp *</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                  Numéro privé (WhatsApp) — jamais public
+                </label>
                 <input
                   type="tel"
                   value={form.whatsapp_e164}
@@ -738,50 +1115,58 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                   style={inp}
                   autoComplete="tel"
                 />
+                <div style={{ fontSize: 12, color: G.grey, marginTop: 8, lineHeight: 1.5 }}>
+                  Ce numéro n’apparaît pas sur ton profil public. Il n’est révélé qu’à un binôme après acceptation mutuelle
+                  et un consentement explicite au moment de la mise en relation.
+                  {form.phone_verified
+                    ? " · Numéro vérifié."
+                    : " · Vérification SMS à venir ; pour l’instant, e-mail vérifié + déclaration de propriété."}
+                </div>
+
                 <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={form.consent_whatsapp}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setForm((f) => ({ ...f, consent_whatsapp: checked }));
-                      if (checked) setConsentError(false);
-                    }}
-                    style={{
-                      marginTop: 2,
-                      width: 20,
-                      height: 20,
-                      flexShrink: 0,
-                      appearance: "none",
-                      WebkitAppearance: "none",
-                      border: "2px solid #111827",
-                      borderRadius: 0,
-                      background: form.consent_whatsapp
-                        ? `center / 12px 12px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E"), ${G.blue}`
-                        : "#FFFFFF",
-                      cursor: "pointer",
-                    }}
+                    checked={form.phone_share_ready}
+                    onChange={(e) => setForm((f) => ({ ...f, phone_share_ready: e.target.checked }))}
+                    style={checkboxStyle(form.phone_share_ready)}
                   />
-                  <span style={{ fontSize: 12, color: consentError ? G.coral : G.grey, lineHeight: 1.55 }}>
-                    J&apos;accepte de publier mon numéro WhatsApp pour être contacté par d&apos;autres membres lorsque mon profil est actif. J&apos;ai lu les{" "}
-                    <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
-                      mentions légales
-                    </a>
-                    , la{" "}
-                    <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
-                      politique de confidentialité
-                    </a>
-                    {" "}et les{" "}
-                    <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
-                      CGU
-                    </a>
-                    . <span style={{ color: G.coral, fontWeight: 800 }}>*</span>
+                  <span style={{ fontSize: 12, color: G.grey, lineHeight: 1.55 }}>
+                    J’accepte en principe de partager mon numéro uniquement après une mise en relation
+                    mutuellement acceptée (consentement distinct du compte et des données de santé). Je pourrai retirer
+                    ce partage à tout moment.
                   </span>
                 </label>
-                {consentError && (
-                  <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: G.coral }}>
-                    Coche cette case pour publier ton numéro.
-                  </div>
+
+                <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.phone_ownership_ack}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((f) => ({ ...f, phone_ownership_ack: checked }));
+                      if (checked) setPhoneConsentError(false);
+                    }}
+                    style={checkboxStyle(form.phone_ownership_ack)}
+                  />
+                  <span style={{ fontSize: 12, color: phoneConsentError ? G.coral : G.grey, lineHeight: 1.55 }}>
+                    Je confirme que ce numéro m’appartient et que je suis joignable dessus.
+                  </span>
+                </label>
+
+                {form.whatsapp_e164 && (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={handleClearPhone}
+                    style={{
+                      marginTop: 12, width: "100%", padding: "11px", borderRadius: 12, border: "none",
+                      background: G.coralLight, color: G.coral, fontWeight: 700, fontSize: 13, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    }}
+                  >
+                    <PhoneOff size={15} />
+                    Masquer / supprimer mon numéro
+                  </button>
                 )}
               </div>
 
@@ -797,7 +1182,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                     opacity: saving ? 0.7 : 1,
                   }}
                 >
-                  {saving ? "Enregistrement…" : form.is_discoverable ? "Mettre à jour · visible" : "Publier mon profil"}
+                  {saving ? "Enregistrement…" : form.is_discoverable ? "Mettre à jour · visible" : "Publier mon profil (sans n°)"}
                 </button>
                 <button
                   type="button"
@@ -829,12 +1214,203 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
               </div>
 
               <p style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.55, margin: "0 0 8px", textAlign: "center" }}>
-                MySWYM facilite uniquement la mise en relation entre utilisateurs. Les échanges, rendez-vous, déplacements et sorties se font sous la seule responsabilité des personnes concernées. MySWYM et son éditeur déclinent toute responsabilité en cas d&apos;incident, accident, litige, dommage ou conséquence directe ou indirecte liée à une prise de contact ou à une sortie organisée via l&apos;application. Vérifie toujours météo, sécurité, niveau et matériel.
+                MySWYM facilite uniquement la mise en relation. Les rencontres hors application se font sous la responsabilité
+                des utilisateurs. Voir CGU § mise en relation et politique de confidentialité.
               </p>
             </div>
           )
         )}
       </div>
+
+      {requestTarget && (
+        <Modal title="Demander une mise en relation" onClose={() => setRequestTarget(null)}>
+          <p style={{ fontSize: 14, color: G.ink, lineHeight: 1.5, marginTop: 0 }}>
+            Avec <strong>{requestTarget.display_name}</strong>. Les numéros ne seront visibles qu’après acceptation mutuelle.
+          </p>
+          <div style={{ background: G.waterLight, borderRadius: 12, padding: 12, marginBottom: 14, fontSize: 13, color: G.blueDeep, lineHeight: 1.5 }}>
+            <strong>Sécurité :</strong> {BUDDY_SAFETY_WARNING}
+          </div>
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12, cursor: "pointer" }}>
+            <input type="checkbox" checked={safetyAck} onChange={(e) => setSafetyAck(e.target.checked)} style={checkboxStyle(safetyAck)} />
+            <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.45 }}>J’ai lu et j’accepte l’avertissement de sécurité.</span>
+          </label>
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12, cursor: "pointer" }}>
+            <input type="checkbox" checked={sharePhoneAck} onChange={(e) => setSharePhoneAck(e.target.checked)} style={checkboxStyle(sharePhoneAck)} />
+            <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.45 }}>
+              J’autorise le partage de mon numéro avec cette personne uniquement si elle accepte aussi
+              (consentement distinct, révocable à tout moment).
+            </span>
+          </label>
+          <textarea
+            value={requestMessage}
+            onChange={(e) => setRequestMessage(e.target.value)}
+            placeholder="Message optionnel (max 280 car.)"
+            maxLength={280}
+            rows={3}
+            style={{ ...inp, resize: "vertical", marginBottom: 14 }}
+          />
+          <button
+            type="button"
+            disabled={busyAction || !safetyAck || !sharePhoneAck}
+            onClick={submitRequest}
+            style={{
+              width: "100%", padding: 14, borderRadius: 14, border: "none",
+              background: (!safetyAck || !sharePhoneAck) ? G.greyMid : G.blue,
+              color: G.white, fontWeight: 700, cursor: "pointer", opacity: busyAction ? 0.7 : 1,
+            }}
+          >
+            Envoyer la demande
+          </button>
+        </Modal>
+      )}
+
+      {respondTarget && respondTarget.status === "pending" && (
+        <Modal title="Accepter la mise en relation" onClose={() => setRespondTarget(null)}>
+          <p style={{ fontSize: 14, color: G.ink, lineHeight: 1.5, marginTop: 0 }}>
+            {respondTarget.peer_display_name} souhaite nager avec toi.
+          </p>
+          <div style={{ background: G.waterLight, borderRadius: 12, padding: 12, marginBottom: 14, fontSize: 13, color: G.blueDeep, lineHeight: 1.5 }}>
+            <strong>Sécurité :</strong> {BUDDY_SAFETY_WARNING}
+          </div>
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12, cursor: "pointer" }}>
+            <input type="checkbox" checked={safetyAck} onChange={(e) => setSafetyAck(e.target.checked)} style={checkboxStyle(safetyAck)} />
+            <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.45 }}>J’ai lu et j’accepte l’avertissement de sécurité.</span>
+          </label>
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 14, cursor: "pointer" }}>
+            <input type="checkbox" checked={sharePhoneAck} onChange={(e) => setSharePhoneAck(e.target.checked)} style={checkboxStyle(sharePhoneAck)} />
+            <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.45 }}>
+              J’autorise le partage de mon numéro avec cette personne (consentement distinct, révocable).
+            </span>
+          </label>
+          <button
+            type="button"
+            disabled={busyAction || !safetyAck || !sharePhoneAck}
+            onClick={() => submitRespond(true)}
+            style={{
+              width: "100%", padding: 14, borderRadius: 14, border: "none", marginBottom: 8,
+              background: (!safetyAck || !sharePhoneAck) ? G.greyMid : G.mint,
+              color: G.white, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            Accepter et partager mon numéro
+          </button>
+          <button
+            type="button"
+            disabled={busyAction}
+            onClick={() => submitRespond(false)}
+            style={{
+              width: "100%", padding: 13, borderRadius: 14,
+              border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            Refuser
+          </button>
+        </Modal>
+      )}
+
+      {detailConn && (
+        <Modal title={detailConn.peer_display_name || "Mise en relation"} onClose={() => setDetailConn(null)}>
+          {!phonesReady(detailConn) ? (
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.5 }}>
+              Les numéros ne sont visibles que lorsque les deux personnes ont accepté le partage.
+              Tu peux masquer ton numéro ou quitter la mise en relation à tout moment.
+            </p>
+          ) : phoneInfo?.error ? (
+            <p style={{ color: G.coral, fontSize: 13 }}>{phoneInfo.error}</p>
+          ) : phoneInfo?.their_phone ? (
+            <div>
+              <div style={{ fontSize: 13, color: G.grey, marginBottom: 6 }}>Numéro de {detailConn.peer_display_name}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: G.ink, marginBottom: 14 }}>
+                {formatWhatsAppDisplay(phoneInfo.their_phone)}
+              </div>
+              {(() => {
+                const wa = buildWhatsAppLink(phoneInfo.their_phone, {
+                  senderName: form.display_name,
+                  buddyName: detailConn.peer_display_name,
+                  city: detailConn.peer_city,
+                });
+                if (!wa) return null;
+                return (
+                  <a
+                    href={wa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent("buddy_whatsapp_click", {}, { essential: true })}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      width: "100%", padding: "13px 16px", borderRadius: 14, border: "none",
+                      background: "#25D366", color: G.white, fontWeight: 700, fontSize: 14,
+                      textDecoration: "none", cursor: "pointer", minHeight: 48, marginBottom: 12,
+                    }}
+                  >
+                    <MessageCircle size={18} />
+                    Contacter sur WhatsApp
+                  </a>
+                );
+              })()}
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: G.grey }}>Chargement du numéro…</p>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            {myPhoneShareFlag(detailConn, user.id) ? (
+              <button type="button" onClick={() => handleRevokePhone(detailConn)} style={{ padding: 12, borderRadius: 12, border: "none", background: G.greyXLight, fontWeight: 700, cursor: "pointer" }}>
+                Masquer mon numéro
+              </button>
+            ) : (
+              <button type="button" onClick={() => handleGrantPhone(detailConn)} style={{ padding: 12, borderRadius: 12, border: "none", background: G.mintLight, color: "#00897B", fontWeight: 700, cursor: "pointer" }}>
+                Repartager mon numéro
+              </button>
+            )}
+            <button type="button" onClick={() => handleLeave(detailConn)} style={{ padding: 12, borderRadius: 12, border: "none", background: G.coralLight, color: G.coral, fontWeight: 700, cursor: "pointer" }}>
+              Quitter la mise en relation
+            </button>
+            <button type="button" onClick={() => { setReportTarget(detailConn); setDetailConn(null); }} style={{ padding: 12, borderRadius: 12, border: "none", background: G.greyXLight, fontWeight: 700, cursor: "pointer" }}>
+              Signaler
+            </button>
+            <button type="button" onClick={() => handleBlock(detailConn.peer_user_id)} style={{ padding: 12, borderRadius: 12, border: "none", background: G.greyXLight, fontWeight: 700, cursor: "pointer" }}>
+              Bloquer
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {reportTarget && (
+        <Modal title="Signaler un utilisateur" onClose={() => setReportTarget(null)}>
+          <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
+            Au-delà de {BUDDY_REPORT_THRESHOLD} signalements, l’accès Buddy du compte signalé peut être suspendu automatiquement.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            {BUDDY_REPORT_REASONS.map((r) => (
+              <label key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", fontSize: 13 }}>
+                <input
+                  type="radio"
+                  name="report-reason"
+                  checked={reportReason === r.id}
+                  onChange={() => setReportReason(r.id)}
+                />
+                {r.label}
+              </label>
+            ))}
+          </div>
+          <textarea
+            value={reportDetails}
+            onChange={(e) => setReportDetails(e.target.value)}
+            placeholder="Précisions (optionnel)"
+            maxLength={500}
+            rows={3}
+            style={{ ...inp, resize: "vertical", marginBottom: 12 }}
+          />
+          <button
+            type="button"
+            disabled={busyAction}
+            onClick={submitReport}
+            style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: G.coral, color: G.white, fontWeight: 700, cursor: "pointer" }}
+          >
+            Envoyer le signalement
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -63,10 +63,6 @@ function Mail({ to }) {
   return <a href={`mailto:${to}`} style={{ color: C.accentText }}>{to}</a>;
 }
 
-function Placeholder({ label }) {
-  return <span style={{ background: "#FEF3C7", color: "#92400E", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>[À FOURNIR : {label}]</span>;
-}
-
 function PublisherBlock() {
   const { tradeName, commercialName, publisher, legalForm, email, siret, address, vatNumber, apeCode } = LEGAL_ENTITY;
   return (
@@ -232,21 +228,37 @@ export function PolitiqueConfidentialitePage() {
         "Durée : jusqu’à déconnexion Strava ou suppression du compte.",
       ]} />
 
-      <H3>2.6 Buddy Matching (si utilisé)</H3>
+      <H3>2.6 Buddy Matching (profil public sans numéro)</H3>
       <Ul items={[
-        "Données : préférences de nage, rayon géographique, numéro WhatsApp si vous activez la découvrabilité, consentement dédié WhatsApp.",
-        "Finalité : mise en relation entre nageurs.",
-        "Base légale : consentement (notamment pour le partage du numéro WhatsApp).",
+        "Données : prénom affiché, ville / zone, rayon, niveau, objectif, types de sortie, disponibilités, bio, avatar.",
+        "Finalité : apparaître dans l’annuaire Buddy et permettre aux autres membres de proposer une mise en relation.",
+        "Base légale : exécution du contrat / intérêt légitime pour l’annuaire ; le numéro de téléphone n’est jamais affiché sur ce profil public.",
       ]} />
 
-      <H3>2.7 Support, contact et e-mails transactionnels</H3>
+      <H3>2.7 Mise en relation et numéro de téléphone</H3>
+      <P>
+        Lorsque vous utilisez la fonctionnalité de mise en relation (Buddy), {tradeName} peut traiter un numéro
+        de téléphone / WhatsApp aux conditions suivantes :
+      </P>
+      <Ul items={[
+        "Base légale : consentement (art. 6.1.a RGPD), distinct du consentement de compte et du consentement données de santé (art. 9).",
+        "Finalité limitée : faciliter la prise de contact pour une séance commune après acceptation mutuelle d’une mise en relation.",
+        "Visibilité conditionnelle : le numéro n’est jamais consultable librement sur l’annuaire ; il n’est révélé aux deux parties qu’après acceptation mutuelle et consentement explicite de partage de chaque partie pour cette mise en relation.",
+        "Absence de réutilisation : le numéro n’est pas utilisé à des fins publicitaires, de prospection, ni revendable à des tiers ; l’éditeur ne le publie pas.",
+        "Droit de retrait : vous pouvez masquer votre numéro, révoquer le partage pour une mise en relation, ou quitter une mise en relation à tout moment depuis votre profil / l’onglet Relations ; le retrait du consentement n’affecte pas la licéité du traitement antérieur.",
+        "Vérification : e-mail vérifié requis pour les demandes ; une vérification SMS du numéro est prévue (colonne technique phone_verified) pour limiter les faux comptes.",
+        "Signalements / blocages : comptes signalés, compteur de signalements, suspension automatique Buddy au-delà du seuil (3 signalements) ; blocs mutuels.",
+        "Durée : pendant la durée du compte / de la mise en relation ; suppression avec le compte ou sur retrait.",
+      ]} />
+
+      <H3>2.8 Support, contact et e-mails transactionnels</H3>
       <Ul items={[
         "Données : messages envoyés via le formulaire de contact, e-mails de bienvenue, vérification, confirmation d’abonnement, reset mot de passe.",
         "Prestataire e-mail : Resend (sous-traitant).",
         "Base légale : exécution du contrat / intérêt légitime (support) / obligation légale le cas échéant.",
       ]} />
 
-      <H3>2.8 Mesure d’audience (PostHog) — non essentiel</H3>
+      <H3>2.9 Mesure d’audience (PostHog) — non essentiel</H3>
       <Ul items={[
         "Données : événements produit agrégés / pseudonymisés (niveau, objectif, fréquence, etc.), identifiant technique, pages vues.",
         "Exclusions techniques : e-mail, notes, contenu complet de séance, notes de blessure ne sont pas envoyés comme propriétés d’événement.",
@@ -254,7 +266,7 @@ export function PolitiqueConfidentialitePage() {
         "Hébergement configuré : PostHog EU (eu.i.posthog.com) lorsque la clé est active.",
       ]} />
 
-      <H3>2.9 Événements de conversion internes (Supabase)</H3>
+      <H3>2.10 Événements de conversion internes (Supabase)</H3>
       <Ul items={[
         "Données : nom d’événement funnel (ex. signup_started, checkout_started), chemin, referrer, propriétés non sensibles, user_id si connecté.",
         "Finalité : mesurer le parcours d’inscription / paiement pour faire fonctionner et améliorer le service.",
@@ -262,7 +274,7 @@ export function PolitiqueConfidentialitePage() {
         "Ces événements peuvent être enregistrés même si les cookies non essentiels sont refusés, car ils ne reposent pas sur des traceurs publicitaires tiers.",
       ]} />
 
-      <H3>2.10 Données techniques</H3>
+      <H3>2.11 Données techniques</H3>
       <Ul items={[
         "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=), session d’auth.",
         "Polices Google Fonts : chargement depuis les serveurs Google (peut entraîner un transfert d’adresse IP) — voir politique cookies.",
@@ -298,6 +310,7 @@ export function PolitiqueConfidentialitePage() {
         "Données de facturation / preuves de transaction : durée légale comptable (en pratique jusqu’à 10 ans).",
         "Strava : jusqu’à déconnexion ou suppression du compte.",
         "Consentement cookies : jusqu’à retrait ou effacement des données du navigateur.",
+        "Buddy / numéro de téléphone : durée du compte ou jusqu’au retrait du consentement / masquage ; connexions et signalements purgés avec le compte.",
         "Logs de sécurité : durée limitée nécessaire à la sécurité.",
       ]} />
 
@@ -458,7 +471,22 @@ export function CguPage() {
         au cas par cas — sans préjudice des droits légaux du consommateur.
       </P>
 
-      <H>9. Responsabilité</H>
+      <H>9. Mise en relation entre utilisateurs (Buddy)</H>
+      <P>
+        AquaPlan / {tradeName} facilite la mise en relation entre utilisateurs souhaitant partager une séance.
+        L’éditeur n’est pas responsable du comportement des utilisateurs lors de ces rencontres et décline toute
+        responsabilité en cas d’incident survenu en dehors de l’application. Tout utilisateur peut être suspendu
+        en cas de signalement fondé.
+      </P>
+      <Ul items={[
+        "Le numéro de téléphone n’est jamais visible sur le profil public ; il n’est échangé qu’après acceptation mutuelle et consentement explicite de partage (distinct du compte et des données de santé).",
+        "Avant la première mise en relation, un avertissement de sécurité est affiché (lieu public, informer un proche, etc.).",
+        "Vous pouvez masquer votre numéro, quitter une mise en relation, bloquer ou signaler un utilisateur à tout moment.",
+        "Un compteur de signalements est tenu ; au-delà d’un seuil, l’accès Buddy peut être suspendu automatiquement, sans préjudice d’autres mesures (blocage, résiliation).",
+        "Un e-mail vérifié est requis ; une vérification du numéro de téléphone peut être exigée pour limiter les faux comptes.",
+      ]} />
+
+      <H>10. Responsabilité</H>
       <P>
         {tradeName} est tenu d’une obligation de moyens pour la fourniture du service numérique.
         Dans les limites autorisées par le droit français :
@@ -467,6 +495,7 @@ export function CguPage() {
         "l’éditeur ne peut être tenu responsable des dommages résultant d’une pratique sportive inadaptée, d’un non-respect des consignes de sécurité, ou de conditions indépendantes de sa volonté (réseau, matériel de l’utilisateur, piscine, milieu naturel) ;",
         "l’éditeur ne peut être tenu responsable des conséquences d’informations erronées ou volontairement falsifiées fournies par l’utilisateur (y compris données de santé) ;",
         "l’éditeur ne garantit aucun résultat sportif ;",
+        "l’éditeur n’est pas responsable des échanges, rendez-vous ou incidents entre utilisateurs hors application dans le cadre de la mise en relation Buddy (voir §9) ;",
         "rien dans les présentes CGU n’exclut ni ne limite la responsabilité en cas de faute intentionnelle ou lourde, d’atteinte à la vie / intégrité physique lorsqu’elle résulte d’une faute de l’éditeur, ni les droits impératifs du consommateur.",
       ]} />
       <P>
@@ -475,14 +504,14 @@ export function CguPage() {
         (ou 50 € si aucun paiement) — <Strong>sous réserve des dispositions impératives applicables aux consommateurs</Strong>.
       </P>
 
-      <H>10. Services tiers</H>
+      <H>11. Services tiers</H>
       <P>
         Stripe, Strava, Google, Supabase et autres prestataires ont leurs propres conditions.
         {tradeName} n’est pas responsable du fonctionnement de ces services tiers au-delà de son obligation de moyens
         dans le cadre de l’intégration.
       </P>
 
-      <H>11. Modification des CGU</H>
+      <H>12. Modification des CGU</H>
       <P>
         {tradeName} peut modifier les CGU. La date de mise à jour figure en tête de page.
         En cas de modification substantielle, les utilisateurs disposant d’un compte pourront être informés
@@ -490,7 +519,7 @@ export function CguPage() {
         sans préjudice du droit de résilier le compte / l’abonnement si vous refusez les nouvelles conditions.
       </P>
 
-      <H>12. Droit applicable et litiges</H>
+      <H>13. Droit applicable et litiges</H>
       <P>
         Droit français. À défaut d’accord amiable, les tribunaux compétents selon les règles de procédure applicables,
         sous réserve des dispositions protectrices du consommateur (y compris le droit de saisir les tribunaux
@@ -672,7 +701,7 @@ export function PolitiqueCookiesPage() {
       ]} />
 
       <H>3. Traceurs soumis à consentement</H>
-      <H3>3.1 PostHog (mesure d’audience produit)</H>
+      <H3>3.1 PostHog (mesure d’audience produit)</H3>
       <Ul items={[
         "Fournisseur : PostHog (hébergement EU configuré : eu.i.posthog.com).",
         "Finalité : comprendre l’usage du produit (funnel, rétention, bugs UX).",

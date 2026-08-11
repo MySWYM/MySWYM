@@ -341,3 +341,12 @@ Source : `src/LegalPages.jsx` + `src/lib/legal-entity.js`.
 - Médiateur : `[MÉDIATEUR À CONFIRMER]`
 - Données santé art. 9 : FC + blessures listes fermées ; consentement séparé ; RLS ; exclus analytics
 - Migration : `20260811120000_health_data_rls.sql`
+
+## Mise à jour Buddy sécurisé (11 août 2026)
+
+- Annuaire sans numéro (RPC `get_buddy_directory`) ; téléphone privé + révélation via `get_connection_phones` après match mutuel + double consentement
+- Tables : `buddy_connections`, `buddy_blocks`, `buddy_reports`, `buddy_moderation` — suspension auto Buddy à 3 signalements
+- UX : avertissement sécurité, e-mail vérifié requis, masquer n° / quitter / signaler / bloquer
+- CGU §9 mise en relation ; Privacy §2.7 « Mise en relation et numéro de téléphone » (art. 6.1.a)
+- Migration : `20260811140000_buddy_safe_matching.sql` (à appliquer sur Supabase) ; redeploy `delete-account`
+

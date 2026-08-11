@@ -114,7 +114,8 @@ export function formatAvailabilityLabel(days, slots) {
   return dayPart || slotPart || "";
 }
 
-const BUDDY_SELECT = [
+/** Colonnes lisibles par le propriétaire uniquement (RLS). */
+const BUDDY_OWN_SELECT = [
   "user_id",
   "display_name",
   "city",
@@ -128,9 +129,30 @@ const BUDDY_SELECT = [
   "bio",
   "whatsapp_e164",
   "is_discoverable",
+  "consent_whatsapp",
+  "phone_share_ready",
+  "phone_verified",
   "avatar_url",
   "updated_at",
 ].join(", ");
+
+/** Annuaire public : jamais de numéro. */
+const BUDDY_PUBLIC_FIELDS = [
+  "user_id",
+  "display_name",
+  "city",
+  "radius_km",
+  "level",
+  "goal_category",
+  "outing_types",
+  "availability_days",
+  "availability_slots",
+  "availability",
+  "bio",
+  "is_discoverable",
+  "avatar_url",
+  "updated_at",
+];
 
 /** Normalise un numéro FR/international en chiffres E.164 pour wa.me (sans +). */
 export function normalizeWhatsAppE164(raw) {
@@ -199,7 +221,10 @@ export function defaultBuddyForm(user, trainingProfile) {
     bio: "",
     whatsapp_e164: "",
     is_discoverable: false,
-    consent_whatsapp: false,
+    /** Consentement de principe à partager le n° après match mutuel (≠ publication publique). */
+    phone_share_ready: false,
+    phone_verified: false,
+    phone_ownership_ack: false,
     avatar_url: user?.user_metadata?.avatar_url || "",
   };
 }
@@ -208,16 +233,36 @@ export async function fetchOwnBuddyProfile(userId) {
   if (!userId) return { data: null, error: null };
   const { data, error } = await supabase
     .from("buddy_profiles")
-    .select(BUDDY_SELECT)
+    .select(BUDDY_OWN_SELECT)
     .eq("user_id", userId)
     .maybeSingle();
   return { data, error };
 }
 
+/**
+ * Annuaire sans numéro — RPC security definer (exclut blocs / suspens).
+ * Fallback : select limité si la RPC n'est pas encore déployée (sans whatsapp).
+ */
 export async function fetchDiscoverableBuddies({ city, level, goalCategory, excludeUserId } = {}) {
+  const { data, error } = await supabase.rpc("get_buddy_directory", {
+    p_city: city?.trim() || null,
+    p_level: level || null,
+    p_goal: goalCategory || null,
+    p_limit: 50,
+  });
+
+  if (!error) {
+    const rows = (data ?? []).map(stripPhoneFromBuddy);
+    const filtered = excludeUserId
+      ? rows.filter((r) => r.user_id !== excludeUserId)
+      : rows;
+    return { data: filtered, error: null };
+  }
+
+  // Fallback legacy (migration pas encore appliquée) — colonnes publiques uniquement
   let q = supabase
     .from("buddy_profiles")
-    .select(BUDDY_SELECT)
+    .select(BUDDY_PUBLIC_FIELDS.join(", "))
     .eq("is_discoverable", true)
     .order("updated_at", { ascending: false })
     .limit(50);
@@ -227,22 +272,39 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
   if (level) q = q.eq("level", level);
   if (goalCategory) q = q.eq("goal_category", goalCategory);
 
-  const { data, error } = await q;
-  return { data: data ?? [], error };
+  const fallback = await q;
+  return {
+    data: (fallback.data ?? []).map(stripPhoneFromBuddy),
+    error: fallback.error,
+  };
+}
+
+function stripPhoneFromBuddy(row) {
+  if (!row) return row;
+  const { whatsapp_e164: _w, consent_whatsapp: _c, phone_share_ready: _p, ...safe } = row;
+  return safe;
 }
 
 export async function upsertBuddyProfile(userId, form) {
-  const whatsapp = form.is_discoverable ? normalizeWhatsAppE164(form.whatsapp_e164) : null;
+  const whatsapp = normalizeWhatsAppE164(form.whatsapp_e164);
+  const discoverable = !!form.is_discoverable;
+  const phoneShareReady = !!form.phone_share_ready;
 
-  if (form.is_discoverable) {
-    if (!form.consent_whatsapp) {
-      return { data: null, error: { message: "Accepte la visibilité de ton numéro pour être visible." } };
-    }
+  if (discoverable && !form.city?.trim()) {
+    return { data: null, error: { message: "Indique ta ville ou zone de sortie." } };
+  }
+
+  // Le numéro n'est jamais publié sur l'annuaire. Il est stocké uniquement
+  // pour un éventuel partage après acceptation mutuelle + consentement explicite.
+  if (phoneShareReady) {
     if (!whatsapp) {
-      return { data: null, error: { message: "Numéro WhatsApp invalide (ex. 06 12 34 56 78)." } };
+      return { data: null, error: { message: "Numéro invalide (ex. 06 12 34 56 78)." } };
     }
-    if (!form.city?.trim()) {
-      return { data: null, error: { message: "Indique ta ville ou zone de sortie." } };
+    if (!form.phone_ownership_ack && !form.phone_verified) {
+      return {
+        data: null,
+        error: { message: "Confirme que ce numéro t’appartient avant de l’enregistrer pour le partage." },
+      };
     }
   }
 
@@ -264,9 +326,12 @@ export async function upsertBuddyProfile(userId, form) {
     availability_slots: availabilitySlots,
     availability: availabilityLabel || null,
     bio: (form.bio || "").trim().slice(0, 400) || null,
-    whatsapp_e164: whatsapp,
-    is_discoverable: !!form.is_discoverable,
-    consent_whatsapp: !!form.consent_whatsapp,
+    // Privé : jamais exposé via annuaire / RLS publique
+    whatsapp_e164: phoneShareReady ? whatsapp : null,
+    is_discoverable: discoverable,
+    // Legacy column + nouvelle : consentement de principe (≠ publication)
+    consent_whatsapp: phoneShareReady,
+    phone_share_ready: phoneShareReady,
     avatar_url: form.avatar_url || null,
     updated_at: new Date().toISOString(),
   };
@@ -274,7 +339,7 @@ export async function upsertBuddyProfile(userId, form) {
   const { data, error } = await supabase
     .from("buddy_profiles")
     .upsert(row, { onConflict: "user_id" })
-    .select(BUDDY_SELECT)
+    .select(BUDDY_OWN_SELECT)
     .single();
 
   return { data, error };
@@ -285,12 +350,27 @@ export async function disableBuddyProfile(userId) {
     .from("buddy_profiles")
     .update({
       is_discoverable: false,
-      whatsapp_e164: null,
-      consent_whatsapp: false,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)
-    .select(BUDDY_SELECT)
+    .select(BUDDY_OWN_SELECT)
+    .maybeSingle();
+  return { data, error };
+}
+
+/** Masque le numéro partout (profil + prêt à partager). */
+export async function clearBuddyPhone(userId) {
+  const { data, error } = await supabase
+    .from("buddy_profiles")
+    .update({
+      whatsapp_e164: null,
+      consent_whatsapp: false,
+      phone_share_ready: false,
+      phone_verified: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .select(BUDDY_OWN_SELECT)
     .maybeSingle();
   return { data, error };
 }

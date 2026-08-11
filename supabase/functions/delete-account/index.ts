@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
       "user_plans",
       "conversion_events",
       "buddy_profiles",
+      "buddy_moderation",
       "access_state",
     ];
     for (const table of tables) {
@@ -104,6 +105,22 @@ Deno.serve(async (req) => {
         await admin.from(table).delete().eq("user_id", uid);
       } catch {
         // table may not exist / RLS — ignore
+      }
+    }
+
+    // Buddy relations (colonnes requester/recipient / reporter / blocker)
+    const buddyPairDeletes: Array<{ table: string; filters: Array<[string, string]> }> = [
+      { table: "buddy_connections", filters: [["requester_id", uid], ["recipient_id", uid]] },
+      { table: "buddy_blocks", filters: [["blocker_id", uid], ["blocked_id", uid]] },
+      { table: "buddy_reports", filters: [["reporter_id", uid], ["reported_id", uid]] },
+    ];
+    for (const { table, filters } of buddyPairDeletes) {
+      for (const [col, val] of filters) {
+        try {
+          await admin.from(table).delete().eq(col, val);
+        } catch {
+          // ignore
+        }
       }
     }
 
