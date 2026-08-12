@@ -238,13 +238,19 @@ Deno.serve(async (req) => {
             created_at: new Date().toISOString(),
           });
         } else {
-          await setEntitlement(supabaseAdmin, user as AuthUser, {
-            subscription: "premium",
-            subscription_status: ACCESS_STATUS.active,
-            stripe_customer_id: customerId,
-            subscription_end: null,
-            cancel_at_period_end: false,
+          // Checkout subscription sans subscriptionId = anomalie : ne jamais
+          // écrire premium "à vie" (subscription_end: null + status active).
+          // On rattache seulement le customer ; sync-subscription / prochain event corrigera.
+          console.error("[stripe-webhook] checkout.session.completed without subscriptionId", {
+            userId,
+            sessionId: session?.id,
+            customerId,
           });
+          if (customerId) {
+            await setEntitlement(supabaseAdmin, user as AuthUser, {
+              stripe_customer_id: customerId,
+            });
+          }
         }
 
         // Email de confirmation (ne bloque pas le webhook si Resend échoue)
@@ -282,12 +288,13 @@ Deno.serve(async (req) => {
             ? (await stripe.subscriptions.retrieve(subscriptionId)).metadata?.referred_by
             : undefined);
 
+        // Crédit parrain uniquement si paiement réellement encaissé.
+        // Essai 7j (payment_status often "no_payment_required") : pas de crédit tant que
+        // le filleul n'a pas été prélevé — sinon crédit orphelin si annulation pendant l'essai.
         if (refId && session?.payment_status === "paid") {
           await creditReferrer(supabaseAdmin, filleul, refId);
-        } else if (refId && session?.payment_status !== "paid") {
-          // Abonnement créé mais paiement pending — on crédite quand même si checkout completed
-          // (checkout.session.completed pour subscription = paiement initial OK en général)
-          await creditReferrer(supabaseAdmin, filleul, refId);
+        } else if (refId) {
+          console.log("[stripe-webhook] skip referral credit (payment_status:", session?.payment_status, ")");
         }
       }
     }
@@ -303,6 +310,19 @@ Deno.serve(async (req) => {
       const currentState = await getAccessState(supabaseAdmin, user.id);
       const nextState = buildSubscriptionState(user.id, currentState, customerId ?? null, sub as Stripe.Subscription);
       await persistAccessState(supabaseAdmin, user, nextState);
+
+      // Fin d'essai → active : créditer le parrain (paiement réel après trial).
+      const prevStatus = (event.data as { previous_attributes?: { status?: string } })
+        ?.previous_attributes?.status;
+      const refId = (sub as Stripe.Subscription)?.metadata?.referred_by as string | undefined;
+      if (
+        event.type === "customer.subscription.updated" &&
+        refId &&
+        sub?.status === "active" &&
+        prevStatus === "trialing"
+      ) {
+        await creditReferrer(supabaseAdmin, user, refId);
+      }
 
       // Annulation demandée (fin de période) → automation Resend
       const prev = (event.data as { previous_attributes?: { cancel_at_period_end?: boolean } })

@@ -183,6 +183,8 @@ export function buildSubscriptionStateFromStripe(
 ): AccessStateRow {
   const cancelAtPeriodEnd = sub.cancel_at_period_end === true;
   const isTrialing = sub.status === "trialing";
+  const isPaidActive = sub.status === "active";
+  // past_due / unpaid / incomplete / canceled → pas d'entitlement (aligné sync-subscription).
   const trialEndsAt = isoFromUnixSeconds(sub.trial_end ?? null)
     ?? (isTrialing ? current?.trial_ends_at ?? null : current?.trial_ends_at ?? null);
   const trialStartedAt = isTrialing
@@ -191,11 +193,16 @@ export function buildSubscriptionStateFromStripe(
   const subscriptionEndsAt = isoFromUnixSeconds(sub.current_period_end ?? null);
   const subscriptionStartedAt = isoFromUnixSeconds(sub.start_date ?? null);
 
-  const accessStatus = isTrialing
-    ? ACCESS_STATUS.trial
-    : cancelAtPeriodEnd
-      ? ACCESS_STATUS.canceled
-      : ACCESS_STATUS.active;
+  let accessStatus: AccessStatus;
+  if (isTrialing) {
+    accessStatus = ACCESS_STATUS.trial;
+  } else if (isPaidActive && cancelAtPeriodEnd) {
+    accessStatus = ACCESS_STATUS.canceled;
+  } else if (isPaidActive) {
+    accessStatus = ACCESS_STATUS.active;
+  } else {
+    accessStatus = ACCESS_STATUS.expired;
+  }
 
   return {
     user_id: userId,
@@ -205,7 +212,7 @@ export function buildSubscriptionStateFromStripe(
     trial_used: Boolean(current?.trial_used || isTrialing || sub.trial_end),
     subscription_started_at: subscriptionStartedAt,
     subscription_ends_at: subscriptionEndsAt,
-    cancel_at_period_end: cancelAtPeriodEnd,
+    cancel_at_period_end: cancelAtPeriodEnd && (isPaidActive || isTrialing),
     stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
   };
 }

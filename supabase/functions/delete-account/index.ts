@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       "conversion_events",
       "buddy_profiles",
       "buddy_moderation",
-      "access_state",
+      "user_access_state",
     ];
     for (const table of tables) {
       try {

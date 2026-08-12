@@ -10977,7 +10977,7 @@ export default function App() {
       }
       syncAndApply();
       if (payment === "success") {
-        showToast("Essai activé — ton plan est débloqué.", 8000);
+        showToast("Premium activé — ton plan est débloqué.", 8000);
       }
       const retry = (ms) => setTimeout(syncAndApply, ms);
       const t1 = retry(2000);

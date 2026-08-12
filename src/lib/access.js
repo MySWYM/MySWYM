@@ -13,7 +13,10 @@ const ENTITLED_STATUSES = new Set([
 
 function parseMs(value) {
   if (value == null) return null;
-  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    // app_metadata.subscription_end est en secondes Unix ; ms si > 1e12
+    return value > 1e12 ? value : value * 1000;
+  }
   if (typeof value === "string") {
     const numeric = Number(value);
     if (Number.isFinite(numeric) && value.trim() !== "") {
@@ -41,10 +44,12 @@ export function getAccessState(user) {
   if (status === ACCESS_STATUS.TRIAL) accessEndsMs = trialEndsMs;
   else if (status === ACCESS_STATUS.CANCELED || status === ACCESS_STATUS.ACTIVE) accessEndsMs = subscriptionEndMs;
 
+  // Aligné sur hasEntitlement serveur : active/canceled = fin de période ; trial = fin d'essai.
+  // Ne jamais traiter "active" comme premium à vie si subscription_end est passé (metadata stale).
   const hasPremiumAccess = status === ACCESS_STATUS.ACTIVE
-    ? true
+    ? (subscriptionEndMs == null || subscriptionEndMs > now)
     : status === ACCESS_STATUS.CANCELED
-      ? (subscriptionEndMs == null || subscriptionEndMs > now)
+      ? (subscriptionEndMs != null && subscriptionEndMs > now)
       : status === ACCESS_STATUS.TRIAL
         ? (trialEndsMs != null && trialEndsMs > now)
         : false;

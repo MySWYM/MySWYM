@@ -9,6 +9,7 @@ import {
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import CheckoutLegalGates, { checkoutGatesReady } from "./CheckoutLegalGates.jsx";
 
 // ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
 const C = {
@@ -1089,6 +1090,19 @@ function Pricing() {
   const { t } = useTranslation("landing");
   const isMobile = useIsMobile();
   const [billing, setBilling] = useState("annual"); // annual | monthly
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handlePremium = async (priceId) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1100,6 +1114,11 @@ function Pricing() {
       trackEvent("signup_started", { source: "landing_pricing" }, { essential: true });
       track("signup_started", { source: "landing_pricing" }, { onceKey: "signup_started:landing_pricing" });
       window.location.href = "/inscription";
+      return;
+    }
+    if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
+      alert("Coche les cases CGV et rétractation avant de continuer.");
+      document.getElementById("landing-checkout-legal-gates")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     try {
@@ -1268,6 +1287,26 @@ function Pricing() {
                   ? t("pricing.billedAnnual", { price: PRICE_ANNUAL_LABEL })
                   : t("pricing.billedMonthly")}
               </div>
+
+              {isLoggedIn && (
+                <div
+                  id="landing-checkout-legal-gates"
+                  style={{
+                    marginBottom: 16,
+                    padding: 12,
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,0.95)",
+                  }}
+                >
+                  <CheckoutLegalGates
+                    acceptTerms={acceptTerms}
+                    onAcceptTerms={setAcceptTerms}
+                    acceptWithdrawal={acceptWithdrawal}
+                    onAcceptWithdrawal={setAcceptWithdrawal}
+                    ink={C.ink}
+                  />
+                </div>
+              )}
 
               <PrimaryCta
                 onClick={() => handlePremium(priceId)}

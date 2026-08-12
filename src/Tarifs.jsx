@@ -16,6 +16,7 @@ import { track, trackEvent } from "./lib/analytics.js";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import CheckoutLegalGates, { checkoutGatesReady } from "./CheckoutLegalGates.jsx";
 
 const C = {
   bg: "#f8f9fc",
@@ -160,10 +161,20 @@ export default function TarifsPage() {
   const isMobile = useIsMobile();
   const [openFaq, setOpenFaq] = useState(0);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
 
   useEffect(() => {
     document.title = "Tarifs MySWYM";
     window.scrollTo(0, 0);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const handlePremium = async (priceId) => {
@@ -181,6 +192,11 @@ export default function TarifsPage() {
       trackEvent("signup_started", { source: "pricing_page" }, { essential: true });
       track("signup_started", { source: "pricing_page" }, { onceKey: "signup_started:pricing_page" });
       window.location.href = "/inscription";
+      return;
+    }
+    if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
+      alert("Coche les cases CGV et rétractation avant de continuer.");
+      document.getElementById("checkout-legal-gates")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setCheckoutBusy(true);
@@ -796,6 +812,34 @@ export default function TarifsPage() {
           </div>
         </div>
       </section>
+
+      {isLoggedIn && (
+        <section style={{ padding: isMobile ? "0 16px 28px" : "0 20px 32px", background: C.bg }}>
+          <div
+            id="checkout-legal-gates"
+            style={{
+              maxWidth: 560,
+              margin: "0 auto",
+              background: C.white,
+              border: `1px solid ${C.border}`,
+              borderRadius: 20,
+              padding: isMobile ? 16 : 20,
+              boxShadow: C.shadow,
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginBottom: 6, fontFamily: FONT }}>
+              Avant de payer
+            </div>
+            <CheckoutLegalGates
+              acceptTerms={acceptTerms}
+              onAcceptTerms={setAcceptTerms}
+              acceptWithdrawal={acceptWithdrawal}
+              onAcceptWithdrawal={setAcceptWithdrawal}
+              ink={C.ink}
+            />
+          </div>
+        </section>
+      )}
 
       <section style={{ padding: isMobile ? "0 16px 40px" : "0 20px 44px", background: C.bg }}>
         <div
