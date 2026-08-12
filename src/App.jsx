@@ -293,7 +293,6 @@ const css = `
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
-  @keyframes swim     { 0%{transform:translateX(-8px)} 50%{transform:translateX(8px)} 100%{transform:translateX(-8px)} }
   @keyframes badgePop { 0%{opacity:0;transform:scale(0) rotate(-15deg)} 70%{transform:scale(1.15) rotate(3deg)} 100%{opacity:1;transform:scale(1) rotate(0)} }
   @keyframes toastIn  { from{opacity:0;transform:translateY(20px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
   .fade-up   { animation: fadeUp  0.45s ease both; }
@@ -301,7 +300,6 @@ const css = `
   .fade-up-2 { animation: fadeUp  0.45s ease 0.16s both; }
   .fade-up-3 { animation: fadeUp  0.45s ease 0.24s both; }
   .scale-in  { animation: scaleIn 0.35s cubic-bezier(.175,.885,.32,1.275) both; }
-  .swimmer   { animation: swim 2s ease-in-out infinite; display:inline-block; }
   .badge-pop { animation: badgePop 0.55s cubic-bezier(.175,.885,.32,1.275) both; }
   .toast-in  { animation: toastIn 0.4s cubic-bezier(.175,.885,.32,1.275) both; }
   input[type=date]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
@@ -13084,9 +13082,7 @@ export default function App() {
   if (authLoading) return (
     <>
       <style>{css}</style><FontLoader />
-      <div style={{ minHeight: "100vh", background: G.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div className="swimmer"><Waves size={48} color={G.blue} /></div>
-      </div>
+      <Loading />
     </>
   );
 
