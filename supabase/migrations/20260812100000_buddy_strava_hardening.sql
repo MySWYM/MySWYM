@@ -313,29 +313,24 @@ returns table (
   athlete_data jsonb,
   expires_at bigint
 )
-language plpgsql
+language sql
 security definer
 set search_path = public
 as $$
-declare
-  uid uuid := auth.uid();
-begin
-  if uid is null then raise exception 'Non authentifié'; end if;
-
-  return query
   select
-    true,
+    true as connected,
     t.athlete_id,
     t.athlete_data,
     t.expires_at
   from public.strava_tokens t
-  where t.user_id = uid
+  where t.user_id = auth.uid()
+  union all
+  select false, null::bigint, null::jsonb, null::bigint
+  where auth.uid() is not null
+    and not exists (
+      select 1 from public.strava_tokens st where st.user_id = auth.uid()
+    )
   limit 1;
-
-  if not found then
-    return query select false, null::bigint, null::jsonb, null::bigint;
-  end if;
-end;
 $$;
 
 revoke all on function public.get_strava_connection_status() from public;
