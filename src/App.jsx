@@ -2518,12 +2518,22 @@ const StravaSection = ({
 
   async function checkConnection() {
     try {
+      const { data: rpcRows, error: rpcError } = await supabase.rpc("get_strava_connection_status");
+      if (!rpcError) {
+        const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+        const isConnected = row?.connected === true;
+        setConnected(isConnected);
+        if (isConnected && row?.athlete_data) setAthlete(row.athlete_data);
+        if (isConnected) await loadActivities();
+        return;
+      }
+
+      // Fallback legacy (migration pas encore appliquée)
       const { data, error } = await supabase
         .from("strava_tokens")
         .select("athlete_data")
         .eq("user_id", user.id)
         .maybeSingle();
-      // erreur (table absente, RLS…) → afficher quand même le bouton "Connecter"
       if (error) { setConnected(false); return; }
       setConnected(!!data);
       if (data?.athlete_data) setAthlete(data.athlete_data);
@@ -2540,7 +2550,7 @@ const StravaSection = ({
       .eq("user_id", user.id)
       .in("activity_type", ["Swim", "OpenWaterSwim"])
       .order("activity_date", { ascending: false })
-      .limit(10);
+      .limit(30);
     setActivities(data ?? []);
   };
 
@@ -2589,6 +2599,7 @@ const StravaSection = ({
     setSyncing(true); setMsg(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Session expirée — reconnecte-toi.");
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-sync`,
         {
@@ -2598,7 +2609,7 @@ const StravaSection = ({
             "Authorization": `Bearer ${session.access_token}`,
             "apikey":        import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ per_page: 50 }),
+          body: JSON.stringify({ per_page: 50, sync_all: true }),
         }
       );
       const json = await res.json();
@@ -2617,6 +2628,7 @@ const StravaSection = ({
     setDisconnecting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Session expirée — reconnecte-toi.");
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-disconnect`,
         {
@@ -7817,6 +7829,24 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
 
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
+  const [stravaBestPace, setStravaBestPace] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    supabase
+      .from("strava_activities")
+      .select("pace")
+      .eq("user_id", user.id)
+      .in("activity_type", ["Swim", "OpenWaterSwim"])
+      .gt("pace", 0)
+      .order("pace", { ascending: true })
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled) setStravaBestPace(data?.[0]?.pace ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
@@ -7888,7 +7918,7 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
           isPremium={isPremium}
           onUpgrade={onUpgrade}
           onSave={onUpdateProgram}
-          stravaBestPace={null}
+          stravaBestPace={stravaBestPace}
         />
 
         {plan.weeks.map((week, i) => (
@@ -11031,12 +11061,20 @@ export default function App() {
               "Authorization": `Bearer ${session.access_token}`,
               "apikey":        import.meta.env.VITE_SUPABASE_ANON_KEY,
             },
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({
+              code,
+              redirect_uri: `${window.location.origin}/app`,
+            }),
           }
         );
         const json = await res.json();
         if (json.error) throw new Error(json.error);
-        showToast(`Strava connecté${json.athlete ? ` — Bonjour ${json.athlete}` : ""} · Synchronisation en cours…`, 6000);
+        const syncNote = json.initial_sync?.error
+          ? " · sync manuelle depuis Profil si besoin"
+          : json.initial_sync?.synced
+            ? ` · ${json.initial_sync.synced} activité(s) importée(s)`
+            : "";
+        showToast(`Strava connecté${json.athlete ? ` — Bonjour ${json.athlete}` : ""}${syncNote}`, 8000);
         setActiveTab("home");
       } catch (e) {
         showToast(`Erreur Strava : ${e.message}`, 8000);

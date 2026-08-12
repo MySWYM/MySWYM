@@ -1349,6 +1349,11 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                 );
               })()}
             </div>
+          ) : phoneInfo && !phoneInfo.their_phone ? (
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
+              {detailConn.peer_display_name || "Cette personne"} n’a pas encore enregistré de numéro.
+              Tu peux attendre qu’elle mette à jour son profil, ou masquer ton numéro en attendant.
+            </p>
           ) : (
             <p style={{ fontSize: 13, color: G.grey }}>Chargement du numéro…</p>
           )}

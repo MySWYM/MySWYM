@@ -1,6 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getStravaAccessToken,
+  stripHeartRateFromStreams,
+  userHasHealthConsent,
+} from "../_shared/strava-auth.ts";
 
-const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_ACTIVITY_URL = "https://www.strava.com/api/v3/activities";
 
 const ALLOWED_ORIGINS = [
@@ -24,35 +28,16 @@ function corsHeaders(reqOrigin: string | null) {
   };
 }
 
-async function refreshStravaToken(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  userId: string,
-  refreshToken: string
-): Promise<string> {
-  const res = await fetch(STRAVA_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: Deno.env.get("STRAVA_CLIENT_ID")!,
-      client_secret: Deno.env.get("STRAVA_CLIENT_SECRET")!,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-
-  if (!res.ok) throw new Error("Impossible de rafraichir le token Strava");
-
-  const data = await res.json();
-
-  await supabaseAdmin.from("strava_tokens").upsert({
-    user_id: userId,
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at: data.expires_at,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" });
-
-  return data.access_token;
+function stripHeartRateFromDetail(
+  detail: Record<string, unknown>,
+  storeHeartRate: boolean,
+) {
+  if (storeHeartRate || !detail) return detail;
+  const next = { ...detail };
+  delete next.average_heartrate;
+  delete next.max_heartrate;
+  delete next.has_heartrate;
+  return next;
 }
 
 Deno.serve(async (req) => {
@@ -63,16 +48,16 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Non authentifie");
+    if (!authHeader) throw new Error("Non authentifié");
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -88,42 +73,35 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .eq("strava_activity_id", activityId)
       .maybeSingle();
-    if (activityRowError || !activityRow) throw new Error("Activite introuvable");
+    if (activityRowError || !activityRow) throw new Error("Activité introuvable");
 
-    const { data: tokenRow, error: tokenError } = await supabaseAdmin
-      .from("strava_tokens")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-    if (tokenError || !tokenRow) throw new Error("Compte Strava non connecte");
-
-    const nowSec = Math.floor(Date.now() / 1000);
-    let accessToken: string = tokenRow.access_token;
-    if (tokenRow.expires_at <= nowSec + 60) {
-      accessToken = await refreshStravaToken(supabaseAdmin, user.id, tokenRow.refresh_token);
-    }
+    const accessToken = await getStravaAccessToken(supabaseAdmin, user.id);
+    const storeHeartRate = await userHasHealthConsent(supabaseAdmin, user);
 
     const detailRes = await fetch(
       `${STRAVA_ACTIVITY_URL}/${activityId}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      { headers: { Authorization: `Bearer ${accessToken}` } },
     );
-    if (!detailRes.ok) throw new Error("Impossible de recuperer le detail Strava");
-    const detail = await detailRes.json();
+    if (!detailRes.ok) throw new Error("Impossible de récupérer le détail Strava");
+    const detailRaw = await detailRes.json();
+    const detail = stripHeartRateFromDetail(detailRaw, storeHeartRate);
 
-    const streamKeys = ["time", "distance", "heartrate", "velocity_smooth", "cadence"];
+    const streamKeys = storeHeartRate
+      ? ["time", "distance", "heartrate", "velocity_smooth", "cadence"]
+      : ["time", "distance", "velocity_smooth", "cadence"];
     const streamsRes = await fetch(
       `${STRAVA_ACTIVITY_URL}/${activityId}/streams?keys=${encodeURIComponent(streamKeys.join(","))}&key_by_type=true`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
     let streams: Record<string, unknown> = {};
     if (streamsRes.ok) {
-      streams = await streamsRes.json();
+      streams = stripHeartRateFromStreams(await streamsRes.json(), storeHeartRate);
     }
 
     return new Response(
       JSON.stringify({ ok: true, detail, streams }),
-      { headers: { ...cors, "Content-Type": "application/json" } }
+      { headers: { ...cors, "Content-Type": "application/json" } },
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur inconnue";

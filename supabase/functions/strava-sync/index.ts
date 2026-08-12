@@ -1,6 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getStravaAccessToken,
+  userHasHealthConsent,
+} from "../_shared/strava-auth.ts";
 
-const STRAVA_TOKEN_URL      = "https://www.strava.com/oauth/token";
 const STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities";
 
 const SWIM_TYPES = new Set(["Swim", "OpenWaterSwim"]);
@@ -26,38 +29,6 @@ function corsHeaders(reqOrigin: string | null) {
   };
 }
 
-async function refreshStravaToken(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  userId: string,
-  refreshToken: string
-): Promise<string> {
-  const res = await fetch(STRAVA_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id:     Deno.env.get("STRAVA_CLIENT_ID")!,
-      client_secret: Deno.env.get("STRAVA_CLIENT_SECRET")!,
-      refresh_token: refreshToken,
-      grant_type:    "refresh_token",
-    }),
-  });
-
-  if (!res.ok) throw new Error("Impossible de rafraîchir le token Strava");
-
-  const data = await res.json();
-
-  await supabaseAdmin.from("strava_tokens").upsert({
-    user_id:       userId,
-    access_token:  data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at:    data.expires_at,
-    updated_at:    new Date().toISOString(),
-  }, { onConflict: "user_id" });
-
-  return data.access_token;
-}
-
-// seconds per 100 m for swim activities, null otherwise
 function computePace(activity: Record<string, unknown>): number | null {
   if (!SWIM_TYPES.has(activity.type as string)) return null;
   const dist = Number(activity.distance);
@@ -74,36 +45,32 @@ function mapActivity(a: Record<string, unknown>, userId: string, storeHeartRate:
     delete raw.heartrate_opt_out;
   }
   return {
-    user_id:            userId,
+    user_id: userId,
     strava_activity_id: Number(a.id),
-    activity_type:      (a.type as string) ?? null,
-    title:              (a.name as string) ?? null,
-    distance:           Number(a.distance) || null,
-    duration:           Number(a.moving_time) || null,
-    pace:               computePace(a),
-    calories:           Number(a.calories) || null,
-    // Donnée de santé (art. 9) — uniquement avec consentement explicite
-    heart_rate:         storeHeartRate ? (Number(a.average_heartrate) || null) : null,
-    activity_date:      (a.start_date as string)?.slice(0, 10) ?? null,
-    raw_data:           raw,
+    activity_type: (a.type as string) ?? null,
+    title: (a.name as string) ?? null,
+    distance: Number(a.distance) || null,
+    duration: Number(a.moving_time) || null,
+    pace: computePace(a),
+    calories: Number(a.calories) || null,
+    heart_rate: storeHeartRate ? (Number(a.average_heartrate) || null) : null,
+    activity_date: (a.start_date as string)?.slice(0, 10) ?? null,
+    raw_data: raw,
   };
 }
 
-async function userHasHealthConsent(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  user: { id: string; user_metadata?: Record<string, unknown> },
-): Promise<boolean> {
-  if (user.user_metadata?.health_consent === true) return true;
-  const { data } = await supabaseAdmin
-    .from("sport_profiles")
-    .select("extra")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const extra = data?.extra;
-  if (extra && typeof extra === "object" && (extra as { healthConsent?: boolean }).healthConsent === true) {
-    return true;
+async function fetchActivitiesPage(accessToken: string, perPage: number, page: number) {
+  const actRes = await fetch(
+    `${STRAVA_ACTIVITIES_URL}?per_page=${perPage}&page=${page}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!actRes.ok) {
+    if (actRes.status === 401) {
+      throw new Error("Session Strava expirée — reconnecte Strava depuis ton profil.");
+    }
+    throw new Error("Erreur API Strava lors de la récupération des activités");
   }
-  return false;
+  return actRes.json() as Promise<Record<string, unknown>[]>;
 }
 
 Deno.serve(async (req) => {
@@ -119,62 +86,42 @@ Deno.serve(async (req) => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Utilisateur introuvable");
 
-    // ── Load stored token ─────────────────────────────────────────────────
-    const { data: tokenRow, error: tokenError } = await supabaseAdmin
-      .from("strava_tokens")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    const accessToken = await getStravaAccessToken(supabaseAdmin, user.id);
 
-    if (tokenError || !tokenRow) throw new Error("Compte Strava non connecté");
-
-    // ── Refresh access token if expired ───────────────────────────────────
-    const nowSec = Math.floor(Date.now() / 1000);
-    let accessToken: string = tokenRow.access_token;
-    if (tokenRow.expires_at <= nowSec + 60) {
-      accessToken = await refreshStravaToken(supabaseAdmin, user.id, tokenRow.refresh_token);
-    }
-
-    // ── Fetch activities from Strava API ──────────────────────────────────
-    const body     = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    const perPage  = Math.min(Number(body.per_page) || 30, 100);
-    const page     = Math.max(Number(body.page) || 1, 1);
-
-    const actRes = await fetch(
-      `${STRAVA_ACTIVITIES_URL}?per_page=${perPage}&page=${page}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    if (!actRes.ok) throw new Error("Erreur API Strava lors de la récupération des activités");
-
-    const activities: Record<string, unknown>[] = await actRes.json();
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const perPage = Math.min(Number(body.per_page) || 30, 100);
+    const maxPages = body.sync_all === true ? 5 : 1;
+    let totalSynced = 0;
 
     const storeHeartRate = await userHasHealthConsent(supabaseAdmin, user);
 
-    // ── Upsert into Supabase ──────────────────────────────────────────────
-    const rows = activities.map((a) => mapActivity(a, user.id, storeHeartRate));
+    for (let page = 1; page <= maxPages; page += 1) {
+      const activities = await fetchActivitiesPage(accessToken, perPage, page);
+      if (!activities.length) break;
 
-    if (rows.length > 0) {
+      const rows = activities.map((a) => mapActivity(a, user.id, storeHeartRate));
       const { error: upsertError } = await supabaseAdmin
         .from("strava_activities")
         .upsert(rows, { onConflict: "user_id,strava_activity_id" });
-
       if (upsertError) throw upsertError;
+
+      totalSynced += rows.length;
+      if (activities.length < perPage) break;
     }
 
     return new Response(
-      JSON.stringify({ ok: true, synced: rows.length }),
-      { headers: { ...cors, "Content-Type": "application/json" } }
+      JSON.stringify({ ok: true, synced: totalSynced }),
+      { headers: { ...cors, "Content-Type": "application/json" } },
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur inconnue";

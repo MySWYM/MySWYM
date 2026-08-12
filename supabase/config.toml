@@ -51,6 +51,12 @@ verify_jwt = true
 import_map = "./functions/strava-disconnect/deno.json"
 entrypoint = "./functions/strava-disconnect/index.ts"
 
+[functions.strava-activity-detail]
+enabled = true
+verify_jwt = true
+import_map = "./functions/strava-activity-detail/deno.json"
+entrypoint = "./functions/strava-activity-detail/index.ts"
+
 [functions.ensure-referral-code]
 enabled = true
 verify_jwt = true

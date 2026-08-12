@@ -36,7 +36,11 @@ export function isEmailVerified(user) {
   return !!(user?.email_confirmed_at || user?.confirmed_at);
 }
 
-/** Demande une mise en relation (après ack sécurité + consentement partage n°). */
+function rpcErrorMessage(error) {
+  return error?.message || error?.details || "Erreur inconnue";
+}
+
+/** Demande une mise en relation (RPC sécurisée). */
 export async function requestBuddyConnection({
   requesterId,
   recipientId,
@@ -57,25 +61,15 @@ export async function requestBuddyConnection({
     };
   }
 
-  const { data, error } = await supabase
-    .from("buddy_connections")
-    .upsert(
-      {
-        requester_id: requesterId,
-        recipient_id: recipientId,
-        status: "pending",
-        requester_share_phone: true,
-        recipient_share_phone: false,
-        requester_safety_ack_at: new Date().toISOString(),
-        message: (message || "").trim().slice(0, 280) || null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "requester_id,recipient_id" },
-    )
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc("request_buddy_connection", {
+    p_recipient_id: recipientId,
+    p_message: (message || "").trim().slice(0, 280) || null,
+    p_safety_ack: true,
+    p_share_phone_consent: true,
+  });
 
-  return { data, error };
+  if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  return { data, error: null };
 }
 
 export async function respondBuddyConnection({
@@ -100,97 +94,54 @@ export async function respondBuddyConnection({
     }
   }
 
-  const patch = accept
-    ? {
-        status: "accepted",
-        recipient_share_phone: true,
-        recipient_safety_ack_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    : {
-        status: "declined",
-        recipient_share_phone: false,
-        updated_at: new Date().toISOString(),
-      };
+  const { data, error } = await supabase.rpc("respond_buddy_connection", {
+    p_connection_id: connectionId,
+    p_accept: accept,
+    p_safety_ack: accept ? true : false,
+    p_share_phone_consent: accept ? true : false,
+  });
 
-  const { data, error } = await supabase
-    .from("buddy_connections")
-    .update(patch)
-    .eq("id", connectionId)
-    .eq("recipient_id", userId)
-    .eq("status", "pending")
-    .select("*")
-    .maybeSingle();
-
-  if (!error && !data) {
-    return { data: null, error: { message: "Demande introuvable ou déjà traitée." } };
-  }
-  return { data, error };
+  if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  if (!data) return { data: null, error: { message: "Demande introuvable ou déjà traitée." } };
+  return { data, error: null };
 }
 
 /** Quitte / annule une mise en relation (pending ou accepted). */
 export async function cancelBuddyConnection(connectionId, userId) {
-  const { data, error } = await supabase
-    .from("buddy_connections")
-    .update({
-      status: "cancelled",
-      requester_share_phone: false,
-      recipient_share_phone: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", connectionId)
-    .or(`requester_id.eq.${userId},recipient_id.eq.${userId}`)
-    .in("status", ["pending", "accepted"])
-    .select("*")
-    .maybeSingle();
-  return { data, error };
+  if (!connectionId || !userId) {
+    return { data: null, error: { message: "Paramètres manquants." } };
+  }
+  const { data, error } = await supabase.rpc("cancel_buddy_connection", {
+    p_connection_id: connectionId,
+  });
+  if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  return { data, error: null };
 }
 
 /** Retire uniquement le consentement de partage du numéro (masque le n°). */
 export async function revokePhoneShare(connectionId, userId) {
-  const { data: conn, error: readErr } = await supabase
-    .from("buddy_connections")
-    .select("*")
-    .eq("id", connectionId)
-    .maybeSingle();
-  if (readErr || !conn) return { data: null, error: readErr || { message: "Introuvable" } };
-
-  const patch = { updated_at: new Date().toISOString() };
-  if (conn.requester_id === userId) patch.requester_share_phone = false;
-  else if (conn.recipient_id === userId) patch.recipient_share_phone = false;
-  else return { data: null, error: { message: "Accès refusé" } };
-
-  const { data, error } = await supabase
-    .from("buddy_connections")
-    .update(patch)
-    .eq("id", connectionId)
-    .select("*")
-    .maybeSingle();
-  return { data, error };
+  if (!connectionId || !userId) {
+    return { data: null, error: { message: "Paramètres manquants." } };
+  }
+  const { data, error } = await supabase.rpc("set_buddy_phone_share", {
+    p_connection_id: connectionId,
+    p_share: false,
+  });
+  if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  return { data, error: null };
 }
 
 /** Réactive le partage du numéro pour une connexion acceptée. */
 export async function grantPhoneShare(connectionId, userId) {
-  const { data: conn, error: readErr } = await supabase
-    .from("buddy_connections")
-    .select("*")
-    .eq("id", connectionId)
-    .eq("status", "accepted")
-    .maybeSingle();
-  if (readErr || !conn) return { data: null, error: readErr || { message: "Introuvable" } };
-
-  const patch = { updated_at: new Date().toISOString() };
-  if (conn.requester_id === userId) patch.requester_share_phone = true;
-  else if (conn.recipient_id === userId) patch.recipient_share_phone = true;
-  else return { data: null, error: { message: "Accès refusé" } };
-
-  const { data, error } = await supabase
-    .from("buddy_connections")
-    .update(patch)
-    .eq("id", connectionId)
-    .select("*")
-    .maybeSingle();
-  return { data, error };
+  if (!connectionId || !userId) {
+    return { data: null, error: { message: "Paramètres manquants." } };
+  }
+  const { data, error } = await supabase.rpc("set_buddy_phone_share", {
+    p_connection_id: connectionId,
+    p_share: true,
+  });
+  if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  return { data, error: null };
 }
 
 export async function fetchMyBuddyConnections(userId) {
@@ -231,21 +182,10 @@ export async function fetchConnectionPhones(connectionId) {
 }
 
 export async function blockBuddy(blockerId, blockedId) {
-  const { error: blockErr } = await supabase.from("buddy_blocks").upsert({
-    blocker_id: blockerId,
-    blocked_id: blockedId,
+  const { error } = await supabase.rpc("block_buddy_user", {
+    p_blocked_id: blockedId,
   });
-  if (blockErr) return { error: blockErr };
-
-  await supabase
-    .from("buddy_connections")
-    .update({ status: "blocked", updated_at: new Date().toISOString() })
-    .or(
-      `and(requester_id.eq.${blockerId},recipient_id.eq.${blockedId}),and(requester_id.eq.${blockedId},recipient_id.eq.${blockerId})`,
-    )
-    .in("status", ["pending", "accepted"]);
-
-  return { error: null };
+  return { error: error ? { message: rpcErrorMessage(error) } : null };
 }
 
 export async function reportBuddy({ reporterId, reportedId, connectionId, reason, details }) {
