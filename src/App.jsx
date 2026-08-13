@@ -5409,57 +5409,15 @@ const OnboardingWizard = ({
 };
 
 // ── LOADING ───────────────────────────────────────────────────────────────
-/** Unique boot loader — fond bleu, cercle blanc, "Loading". Rien d'autre. */
+/** Boot loader Apple-like — wordmark + spinner fin + Loading. Styles dans index.html. */
 const Loading = () => (
-  <>
-    <style>{`
-      @keyframes myswym-spin {
-        to { transform: rotate(360deg); }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .myswym-spin { animation: none !important; }
-      }
-    `}</style>
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 20,
-        background: G.blue,
-      }}
-    >
-      <div
-        className="myswym-spin"
-        aria-hidden="true"
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          border: "2.5px solid rgba(255,255,255,0.28)",
-          borderTopColor: "#FFFFFF",
-          animation: "myswym-spin 0.85s linear infinite",
-        }}
-      />
-      <p
-        style={{
-          margin: 0,
-          color: "#FFFFFF",
-          fontSize: 15,
-          fontWeight: 500,
-          letterSpacing: "0.02em",
-          fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
-        }}
-      >
-        Loading
-      </p>
+  <div className="myswym-boot" role="status" aria-live="polite" aria-busy="true">
+    <div className="myswym-boot-inner">
+      <p className="myswym-boot-mark">MySWYM</p>
+      <div className="myswym-boot-spinner" aria-hidden="true" />
+      <p className="myswym-boot-label">Loading</p>
     </div>
-  </>
+  </div>
 );
 
 // ── SHARE MODAL ───────────────────────────────────────────────────────────

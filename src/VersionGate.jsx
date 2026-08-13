@@ -10,37 +10,17 @@ import {
   forceAppUpdateReload,
 } from "./lib/version-gate.js";
 
-const BRAND_BLUE = "#355da3";
-
 const shell = {
   position: "fixed",
   inset: 0,
   zIndex: 99999,
   display: "flex",
-  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: 20,
   padding: "24px",
-  background: BRAND_BLUE,
-  color: "#FFFFFF",
+  background: "linear-gradient(160deg, #05070A 0%, #0c1520 55%, #0a1628 100%)",
+  color: "#f4f7fb",
   fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
-};
-
-const spinKeyframes = `
-@keyframes myswym-vg-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .myswym-vg-spin { animation: none !important; }
-}
-`;
-
-const spinner = {
-  width: 36,
-  height: 36,
-  borderRadius: "50%",
-  border: "2.5px solid rgba(255,255,255,0.28)",
-  borderTopColor: "#FFFFFF",
-  animation: "myswym-vg-spin 0.85s linear infinite",
 };
 
 const card = {
@@ -152,28 +132,21 @@ export default function VersionGate({ children }) {
   };
 
   if (!state.ready) {
-    // Même loader que App — fond bleu + cercle blanc. Rien d’autre.
+    // Même loader Apple que App / index.html — un seul écran.
     return (
-      <div style={shell} aria-busy="true" aria-live="polite" role="status">
-        <style>{spinKeyframes}</style>
-        <div className="myswym-vg-spin" aria-hidden="true" style={spinner} />
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 500, letterSpacing: "0.02em" }}>Loading</p>
+      <div className="myswym-boot" role="status" aria-busy="true" aria-live="polite">
+        <div className="myswym-boot-inner">
+          <p className="myswym-boot-mark">MySWYM</p>
+          <div className="myswym-boot-spinner" aria-hidden="true" />
+          <p className="myswym-boot-label">Loading</p>
+        </div>
       </div>
     );
   }
 
   if (state.mustUpdate) {
     return (
-      <div
-        style={{
-          ...shell,
-          background: "linear-gradient(160deg, #05070A 0%, #0c1520 55%, #0a1628 100%)",
-          color: "#f4f7fb",
-        }}
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="vg-title"
-      >
+      <div style={shell} role="alertdialog" aria-modal="true" aria-labelledby="vg-title">
         <div style={card}>
           <p style={{ ...text, marginBottom: 20, fontWeight: 600, color: "#93c5fd" }}>MySWYM</p>
           <h1 id="vg-title" style={title}>
