@@ -306,7 +306,44 @@ const css = `
   ::-webkit-scrollbar { width: 0; height: 0; }
   button { -webkit-tap-highlight-color: transparent; }
   button:active { transform: scale(0.97); transition: transform 0.1s; }
-  input, textarea { -webkit-appearance: none; font-size: 16px; }
+  /* Texte : pas d’apparence native iOS (zoom / style). Cases à cocher : style visible (contour noir). */
+  input:not([type="checkbox"]):not([type="radio"]), textarea {
+    -webkit-appearance: none;
+    appearance: none;
+    font-size: 16px;
+  }
+  input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border: 2px solid #111827;
+    border-radius: 3px;
+    background-color: #ffffff;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px 12px;
+    cursor: pointer;
+    vertical-align: top;
+  }
+  input[type="checkbox"]:checked {
+    background-color: #355da3;
+    border-color: #111827;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E");
+  }
+  input[type="checkbox"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  input[type="checkbox"]:focus-visible {
+    outline: 2px solid #355da3;
+    outline-offset: 2px;
+  }
 
   /* Mobile-first app column — inchangé sur téléphone */
   .app-shell {
@@ -4065,11 +4102,15 @@ async function ensureWelcomeEmail(user, { attempts = 3 } = {}) {
   return { ok: false, error: lastError };
 }
 
-const SocialAuthButtons = ({ disabled, onError, intent = "login" }) => {
+const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login" }) => {
   const [busy, setBusy] = useState(null);
 
   const startOAuth = async (provider) => {
-    if (disabled || busy) return;
+    if (busy) return;
+    if (disabled) {
+      onBlockedClick?.();
+      return;
+    }
     setBusy(provider);
     onError?.(null);
     try {
@@ -4096,17 +4137,24 @@ const SocialAuthButtons = ({ disabled, onError, intent = "login" }) => {
   const btnBase = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
     width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-    fontFamily: "'Lexend', sans-serif", cursor: disabled || busy ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
+    fontFamily: "'Lexend', sans-serif", cursor: busy ? "not-allowed" : "pointer",
+    opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <button
         type="button"
-        disabled={!!disabled || !!busy}
+        disabled={!!busy}
+        aria-disabled={disabled || !!busy}
         onClick={() => startOAuth("google")}
-        style={{ ...btnBase, background: G.surface, color: G.ink, border: `1.5px solid ${G.greyLight}` }}
+        style={{
+          ...btnBase,
+          background: G.surface,
+          color: G.ink,
+          border: `1.5px solid ${G.greyLight}`,
+          opacity: disabled ? 0.7 : 1,
+        }}
       >
         <GoogleMark />
         {busy === "google" ? "Redirection…" : "Continuer avec Google"}
@@ -4299,12 +4347,38 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         {error   && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
 
+        {/* Cases avant Google — sinon bouton grisé sans qu’on comprenne pourquoi */}
+        {mode === "register" && (
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
+              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>{SIGNUP_AGE_LABEL}</span>
+            </label>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
+              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>
+                {SIGNUP_TERMS_LABEL_PREFIX}{" "}
+                <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>CGU</a>
+                {" "}et la{" "}
+                <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>politique de confidentialité</a>.
+              </span>
+            </label>
+            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
+              {SPORT_SAFETY_SHORT}
+            </p>
+          </div>
+        )}
+
         {(mode === "password" || mode === "register") && (
           <>
             <SocialAuthButtons
-              disabled={loading || (mode === "register" && registerBlocked)}
+              disabled={loading || registerBlocked}
               intent={mode === "register" ? "signup" : "login"}
               onError={(msg) => { setSuccess(null); setError(msg); }}
+              onBlockedClick={registerBlocked ? () => {
+                setSuccess(null);
+                setError("Coche les deux cases ci-dessus pour continuer avec Google.");
+              } : undefined}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
               <div style={{ flex: 1, height: 1, background: G.greyLight }} />
@@ -4333,27 +4407,6 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
             <button onClick={() => switchMode("reset")} style={{ background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer", padding: 0 }}>
               Mot de passe oublié ?
             </button>
-          </div>
-        )}
-
-        {mode === "register" && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey }}>
-              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span>{SIGNUP_AGE_LABEL}</span>
-            </label>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey }}>
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span>
-                {SIGNUP_TERMS_LABEL_PREFIX}{" "}
-                <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>CGU</a>
-                {" "}et la{" "}
-                <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>politique de confidentialité</a>.
-              </span>
-            </label>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
-              {SPORT_SAFETY_SHORT}
-            </p>
           </div>
         )}
 
