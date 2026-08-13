@@ -5211,6 +5211,203 @@ const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStro
   );
 };
 
+/**
+ * Questionnaire plan — utiliséé en plein écran (visiteur) ou dans l’onglet Programme (compte connecté).
+ * Flux :
+ *   progression : 1 → 3 → 5 → 7 → 8 → 10 (matériel) → 9 (nages) → generate
+ *   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 10 → 9 → 6 (date) → generate
+ *   diplome : 1 → 2 → 5 → 7 → 8 → 10 → 9 → 6 — pas de niveau
+ */
+const OnboardingWizard = ({
+  profile,
+  step,
+  setStep,
+  update,
+  patchProfile,
+  error,
+  isPremium,
+  onUpgrade,
+  onGenerate,
+  onCancel = null,
+}) => {
+  const isProgression = profile.category === "progression";
+  const isDiplome = profile.category === "diplome";
+  const noDate = isProgression;
+  const disabledLevels = [];
+  const totalSteps = isProgression ? 6 : isDiplome ? 7 : 8;
+  const stepBefore5 = isDiplome ? 2 : 3;
+  const progressStep = (() => {
+    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6 })[step] || 1;
+    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 6: 7 })[step] || 1;
+    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 9: 7, 6: 8 })[step] || 1;
+  })();
+
+  return (
+    <>
+      {onCancel && step === 1 && (
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            marginBottom: 16, padding: "10px 0", background: "none", border: "none",
+            color: G.grey, cursor: "pointer", fontSize: 14, fontWeight: 600,
+          }}
+        >
+          ← Annuler
+        </button>
+      )}
+      {step > 1 && <Progress step={progressStep} total={totalSteps} />}
+      {error && (
+        <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+
+      {step === 1 && (
+        <Step1_Category onSelect={cat => {
+          if (cat === "progression") {
+            patchProfile({ category: cat, goal: "progression", pace100: null });
+            setStep(3);
+          } else {
+            patchProfile({ category: cat, goal: "", pace100: null });
+            setStep(2);
+          }
+        }} />
+      )}
+
+      {step === 2 && !isProgression && (
+        <Step2_SubGoal
+          category={profile.category}
+          onSelect={goalId => {
+            if (isDiplome) {
+              patchProfile({ goal: goalId, level: "sportif" });
+              setStep(5);
+            } else {
+              update("goal", goalId);
+              setStep(3);
+            }
+          }}
+          onBack={() => setStep(1)} />
+      )}
+
+      {step === 3 && !isDiplome && (
+        <Step3_Level
+          value={profile.level} onChange={v => update("level", v)}
+          pool={profile.pool} onPoolChange={v => update("pool", v)}
+          total={totalSteps}
+          disabledLevels={disabledLevels}
+          onNext={() => {
+            update("pace100", null);
+            setStep(5);
+          }}
+          onBack={() => isProgression ? setStep(1) : setStep(2)} />
+      )}
+
+      {step === 5 && (
+        <Step4_Frequency
+          value={profile.sessionsPerWeek}
+          onChange={v => update("sessionsPerWeek", v)}
+          total={totalSteps}
+          onNext={() => setStep(7)}
+          onBack={() => setStep(stepBefore5)}
+          isLast={false}
+          isPremium={isPremium}
+          onUpgrade={onUpgrade}
+        />
+      )}
+
+      {step === 7 && (
+        <StepPhysique
+          age={profile.age}
+          weightKg={profile.weightKg}
+          heightCm={profile.heightCm}
+          onChange={(key, val) => update(key, val)}
+          onNext={() => setStep(8)}
+          onBack={() => setStep(5)}
+        />
+      )}
+
+      {step === 8 && (
+        <StepHealthConsent
+          checked={!!profile.healthConsent}
+          onChange={(v) => {
+            if (v) patchProfile({ healthConsent: true, healthConsentAt: new Date().toISOString() });
+            else update("healthConsent", v);
+          }}
+          onAccept={() => {
+            patchProfile({ healthConsent: true, healthConsentAt: new Date().toISOString() });
+            setStep(11);
+          }}
+          onRefuse={() => {
+            patchProfile({
+              healthConsent: false,
+              healthConsentAt: null,
+              injuryStatus: "aucune",
+              injuryZone: null,
+              injurySeverity: null,
+              healthDeclaration: false,
+            });
+            setStep(10);
+          }}
+          onBack={() => setStep(7)}
+        />
+      )}
+
+      {step === 11 && (
+        <StepInjury
+          injuryStatus={profile.injuryStatus}
+          injuryZone={profile.injuryZone}
+          injurySeverity={profile.injurySeverity}
+          healthDeclaration={profile.healthDeclaration}
+          onChangeStatus={(v) => {
+            if (v === "aucune") {
+              patchProfile({
+                injuryStatus: v,
+                injuryZone: null,
+                injurySeverity: null,
+                healthDeclaration: false,
+              });
+            } else {
+              update("injuryStatus", v);
+            }
+          }}
+          onChangeZone={(v) => update("injuryZone", v)}
+          onChangeSeverity={(v) => update("injurySeverity", v)}
+          onChangeDeclaration={(v) => update("healthDeclaration", v)}
+          onNext={() => setStep(10)}
+          onBack={() => setStep(8)}
+        />
+      )}
+
+      {step === 10 && (
+        <StepEquipment
+          equipment={profile.equipment}
+          level={profile.level}
+          onChange={(v) => update("equipment", v)}
+          onNext={() => setStep(9)}
+          onBack={() => setStep(profile.healthConsent ? 11 : 8)}
+        />
+      )}
+
+      {step === 9 && (
+        <StepSwimPrefs
+          swimStyle={profile.swimStyle}
+          preferredStroke={profile.preferredStroke}
+          onChangeStyle={(v) => update("swimStyle", v)}
+          onChangeStroke={(v) => update("preferredStroke", v)}
+          onNext={() => (noDate ? onGenerate() : setStep(6))}
+          onBack={() => setStep(10)}
+          isLast={noDate}
+        />
+      )}
+
+      {step === 6 && !noDate && (
+        <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={onGenerate} onBack={() => setStep(9)} />
+      )}
+    </>
+  );
+};
+
 // ── LOADING ───────────────────────────────────────────────────────────────
 const Loading = () => (
   <>
@@ -8001,7 +8198,70 @@ const PlanSelector = ({
 };
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade, plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram, user, onOpenMenu, onTabChange }) => {
+const PlanTab = ({
+  plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade,
+  plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram,
+  user, onOpenMenu, onTabChange,
+  addingPlan = false, onboardingProps = null, onCancelAddPlan = null,
+}) => {
+  const [stravaBestPace, setStravaBestPace] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    supabase
+      .from("strava_activities")
+      .select("pace")
+      .eq("user_id", user.id)
+      .in("activity_type", ["Swim", "OpenWaterSwim"])
+      .gt("pace", 0)
+      .order("pace", { ascending: true })
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled) setStravaBestPace(data?.[0]?.pace ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  // Compte connecté sans plan (ou ajout d’un plan) → questionnaire dans le shell app
+  if ((!plan || addingPlan) && onboardingProps) {
+    return (
+      <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
+        <AppTopBar
+          user={user}
+          onOpenMenu={onOpenMenu}
+          onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+          plan={null}
+        />
+        <div className="app-shell" style={{ paddingTop: 16, paddingBottom: 24 }}>
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15, margin: 0 }}>
+              {addingPlan ? "Nouveau programme" : "Crée ton programme"}
+            </h1>
+            <p style={{ fontSize: 14, color: G.grey, marginTop: 6, lineHeight: 1.45 }}>
+              Réponds au questionnaire — Accueil, Profil et Binômes restent accessibles.
+            </p>
+          </div>
+          <OnboardingWizard
+            {...onboardingProps}
+            onCancel={addingPlan && plans?.length > 0 ? onCancelAddPlan : null}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!plan?.weeks) {
+    return (
+      <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
+        <AppTopBar user={user} onOpenMenu={onOpenMenu} onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined} plan={null} />
+        <div className="app-shell" style={{ paddingTop: 32 }}>
+          <p style={{ color: G.grey, fontSize: 14 }}>Aucun programme pour le moment.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (plan?.isSessionLoop) {
     return (
       <ProgressionLoopView
@@ -8028,24 +8288,6 @@ const PlanTab = ({ plan, profile, isPremium, onComplete, onShare, onEditFeedback
 
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
-  const [stravaBestPace, setStravaBestPace] = useState(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    supabase
-      .from("strava_activities")
-      .select("pace")
-      .eq("user_id", user.id)
-      .in("activity_type", ["Swim", "OpenWaterSwim"])
-      .gt("pace", 0)
-      .order("pace", { ascending: true })
-      .limit(1)
-      .then(({ data }) => {
-        if (!cancelled) setStravaBestPace(data?.[0]?.pace ?? null);
-      });
-    return () => { cancelled = true; };
-  }, [user?.id]);
 
   const planLabel = GOALS.find(g => g.id === profile.goal)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
@@ -8450,6 +8692,31 @@ const Dashboard = ({
           );
         })()}
 
+        {!plan && (
+          <div style={{
+            background: G.surface, borderRadius: 20, padding: "22px 18px", marginBottom: 16,
+            border: `1px solid ${G.greyLight}`,
+            boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
+          }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, margin: "0 0 8px" }}>
+              Pas encore de programme
+            </h2>
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 16px" }}>
+              Crée ton plan personnalisé dans l’onglet Programme. Profil, Binômes et paramètres restent disponibles.
+            </p>
+            <button
+              type="button"
+              onClick={() => onTabChange?.("plan")}
+              style={{
+                width: "100%", padding: "14px 16px", borderRadius: 12, border: "none",
+                background: G.blue, color: G.white, fontSize: 15, fontWeight: 700, cursor: "pointer", minHeight: 48,
+              }}
+            >
+              Créer mon programme
+            </button>
+          </div>
+        )}
+
         {isPremium && plan?.weeks?.length > 0 && (
           <CoachCard
             plan={plan}
@@ -8463,13 +8730,16 @@ const Dashboard = ({
         )}
 
         {/* ── T100 : précision des séances (levier Premium) ── */}
-        <PacePersonalizationCard
-          pace100={profile?.pace100}
-          isPremium={isPremium}
-          onSave={onPaceUpdate}
-          onUpgrade={onUpgrade}
-        />
+        {plan && (
+          <PacePersonalizationCard
+            pace100={profile?.pace100}
+            isPremium={isPremium}
+            onSave={onPaceUpdate}
+            onUpgrade={onUpgrade}
+          />
+        )}
 
+        {plan && (
         <div style={{
           background: `linear-gradient(135deg, ${G.surface} 0%, ${G.blueLight} 100%)`,
           borderRadius: 24,
@@ -8507,6 +8777,7 @@ const Dashboard = ({
             ))}
           </div>
         </div>
+        )}
 
         {!isLoop && planFinished && (
           <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
@@ -8517,7 +8788,9 @@ const Dashboard = ({
           </div>
         )}
 
-        <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
+        {plan && (
+          <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
+        )}
 
         <StravaSection
           user={user}
@@ -8531,7 +8804,7 @@ const Dashboard = ({
           onUpgrade={onUpgrade}
         />
 
-        <HomeBadgesSection plan={plan} />
+        {plan && <HomeBadgesSection plan={plan} />}
 
         <HomeBlogCarousel />
       </div>
@@ -11153,9 +11426,22 @@ export default function App() {
 
   const handleAuthBack = () => {
     forceAuthRef.current = false;
+    const openedFromUrl = authOpenedFromUrlRef.current;
     authOpenedFromUrlRef.current = false;
-    setScreen(plans.length > 0 ? "app" : "onboarding");
-    navigate(plans.length > 0 ? "/" : "/accueil", { replace: true });
+    if (plans.length > 0) {
+      setScreen("app");
+      navigate("/", { replace: true });
+      return;
+    }
+    if (user) {
+      setScreen("app");
+      setActiveTab("plan");
+      navigate("/", { replace: true });
+      return;
+    }
+    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion → landing
+    setScreen("onboarding");
+    navigate(openedFromUrl ? "/accueil" : "/", { replace: true });
   };
 
   const handleAuthSuccess = (u) => {
@@ -11228,7 +11514,11 @@ export default function App() {
       setShowPlanReady(true);
       openUpgrade("trial_required");
       if (!(isAuthPath(locationRef.current.pathname) || forceAuthRef.current)) {
-        setScreen((prev) => (prev === "loading" || prev === "auth" ? "onboarding" : prev));
+        setScreen((prev) => {
+          if (prev === "loading" || prev === "auth") return "app";
+          return prev;
+        });
+        setActiveTab((tab) => tab || "plan");
       }
     }
     supabase.auth.refreshSession().then(({ data }) => applyUser(data?.user));
@@ -11399,8 +11689,9 @@ export default function App() {
                 catch {
                   clearPendingOnboarding();
                   if (!(isAuthPath(locationRef.current.pathname) || forceAuthRef.current)) {
-                    setScreen("onboarding");
                     setStep(1);
+                    setScreen("app");
+                    setActiveTab("plan");
                   }
                 }
               }
@@ -11443,11 +11734,20 @@ export default function App() {
 
   // Analytics V1 — onboarding_started
   useEffect(() => {
-    if (screen !== "onboarding" || step !== 1) return;
+    const inAppQuiz = screen === "app" && (!plan || addingPlan) && activeTab === "plan" && step === 1;
+    const fullscreenQuiz = screen === "onboarding" && step === 1;
+    if (!inAppQuiz && !fullscreenQuiz) return;
     track("onboarding_started", personPropertiesFromProfile(profile), {
       onceKey: `onboarding_started:${user?.id || "anon"}`,
     });
-  }, [screen, step, user?.id]);
+  }, [screen, step, user?.id, activeTab, plan, addingPlan]);
+
+  // Compte connecté : ne jamais rester bloqué sur le questionnaire plein écran (perte paramètres)
+  useEffect(() => {
+    if (!user || screen !== "onboarding") return;
+    setScreen("app");
+    if (plans.length === 0 || addingPlan) setActiveTab("plan");
+  }, [user, screen, plans.length, addingPlan]);
 
   // Analytics V1 — plan_viewed
   useEffect(() => {
@@ -11670,13 +11970,17 @@ export default function App() {
         clearPendingOnboarding();
       }
 
-      // Abandon paiement ou compte sans plan : questionnaire OK, mais pending mort
+      // Abandon paiement ou compte sans plan : shell app + questionnaire (paramètres accessibles)
       if (checkoutAbandonedRef.current) {
         checkoutAbandonedRef.current = false;
         clearPendingOnboarding();
       }
-      setScreen("onboarding");
+      setPlans([]);
+      setActivePlanId(null);
+      setProfile(BLANK_PROFILE);
       setStep(1);
+      setScreen("app");
+      setActiveTab("plan");
     }
   }
 
@@ -11947,6 +12251,22 @@ export default function App() {
   }, [activePlanId, plan, user]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
+  const patchProfile = (partial) => setProfile(p => ({ ...p, ...partial }));
+
+  /** Compte connecté → shell app + questionnaire dans Programme. Visiteur → plein écran. */
+  const enterQuestionnaire = ({ resetProfile = true, asAddingPlan = false, step: nextStep = 1 } = {}) => {
+    if (resetProfile) setProfile(BLANK_PROFILE);
+    setStep(nextStep);
+    setError(null);
+    if (asAddingPlan) setAddingPlan(true);
+    else setAddingPlan(false);
+    if (user) {
+      setScreen("app");
+      setActiveTab("plan");
+    } else {
+      setScreen("onboarding");
+    }
+  };
 
   const handleGenerate = async () => {
     if (!user) {
@@ -12122,8 +12442,14 @@ export default function App() {
       }
     } catch {
       setError("Impossible de générer le plan. Réessaie !");
-      setScreen("onboarding");
-      setStep(sourceProfile.category === "progression" ? 3 : 5);
+      const retryStep = sourceProfile.category === "progression" ? 3 : 5;
+      setStep(retryStep);
+      if (user) {
+        setScreen("app");
+        setActiveTab("plan");
+      } else {
+        setScreen("onboarding");
+      }
     }
   };
 
@@ -12893,10 +13219,15 @@ export default function App() {
   const handleAddPlan = () => {
     if (!user) { openAuth("register"); return; }
     if (!canUseMultiPlan) { openUpgrade("trial_expired"); return; }
-    setAddingPlan(true);
+    enterQuestionnaire({ resetProfile: true, asAddingPlan: true });
+  };
+
+  const handleCancelAddPlan = () => {
+    setAddingPlan(false);
     setProfile(BLANK_PROFILE);
     setStep(1);
-    setScreen("onboarding");
+    setError(null);
+    setActiveTab("plan");
   };
 
   const handleSwitchPlan = (id) => {
@@ -12980,8 +13311,9 @@ export default function App() {
         supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {});
       }
       setPlans([]); setActivePlanId(null);
-      setScreen("onboarding"); setStep(1);
-      setProfile(BLANK_PROFILE); prevBadgesRef.current = [];
+      prevBadgesRef.current = [];
+      // Garder le shell app (accueil / profil / binômes / paramètres) — questionnaire dans Programme
+      enterQuestionnaire({ resetProfile: true });
     }
   };
 
@@ -13137,198 +13469,17 @@ export default function App() {
                 <BrandLogo variant="wordmark" height={22} />
               </div>
             </div>
-            {user && (
-              <div style={{
-                marginBottom: 20, padding: "12px 14px", borderRadius: 14,
-                background: G.blueLight, border: `1px solid ${G.greyLight}`,
-                display: "flex", flexDirection: "column", gap: 10,
-              }}>
-                <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.4 }}>
-                  Connecté · <span style={{ color: G.ink, fontWeight: 600 }}>{user.email}</span>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {!isPremium && (
-                    <button
-                      type="button"
-                      onClick={() => openUpgrade("trial_required")}
-                      style={{
-                        flex: 1, minWidth: 120, padding: "10px 12px", borderRadius: 10, border: "none",
-                        background: G.ink, color: G.inverse, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                      }}
-                    >
-                      Activer l’essai
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    style={{
-                      flex: 1, minWidth: 120, padding: "10px 12px", borderRadius: 10,
-                      border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink,
-                      fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    }}
-                  >
-                    Se déconnecter
-                  </button>
-                </div>
-              </div>
-            )}
-            {(() => {
-              // Flux :
-              //   progression : 1 → 3 → 5 → 7 → 8 → 10 (matériel) → 9 (nages) → generate
-              //   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 10 → 9 → 6 (date) → generate
-              //   diplome : 1 → 2 → 5 → 7 → 8 → 10 → 9 → 6 — pas de niveau
-              const isProgression = profile.category === "progression";
-              const isDiplome = profile.category === "diplome";
-              const noDate = isProgression;
-              const disabledLevels = [];
-              const totalSteps = isProgression ? 6 : isDiplome ? 7 : 8;
-              const stepBefore5 = isDiplome ? 2 : 3;
-              const progressStep = (() => {
-                if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6 })[step] || 1;
-                if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 6: 7 })[step] || 1;
-                return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 9: 7, 6: 8 })[step] || 1;
-              })();
-              return (
-                <>
-                  {step > 1 && <Progress step={progressStep} total={totalSteps} />}
-                  {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>{error}</div>}
-
-                  {step === 1 && (
-                    <Step1_Category onSelect={cat => {
-                      if (cat === "progression") {
-                        setProfile(p => ({ ...p, category: cat, goal: "progression", pace100: null }));
-                        setStep(3);
-                      } else {
-                        setProfile(p => ({ ...p, category: cat, goal: "", pace100: null }));
-                        setStep(2);
-                      }
-                    }} />
-                  )}
-
-                  {step === 2 && !isProgression && (
-                    <Step2_SubGoal
-                      category={profile.category}
-                      onSelect={goalId => {
-                        update("goal", goalId);
-                        if (isDiplome) { update("level", "sportif"); setStep(5); }
-                        else setStep(3);
-                      }}
-                      onBack={() => setStep(1)} />
-                  )}
-
-                  {step === 3 && !isDiplome && (
-                    <Step3_Level
-                      value={profile.level} onChange={v => update("level", v)}
-                      pool={profile.pool} onPoolChange={v => update("pool", v)}
-                      total={totalSteps}
-                      disabledLevels={disabledLevels}
-                      onNext={() => {
-                        update("pace100", null);
-                        setStep(5);
-                      }}
-                      onBack={() => isProgression ? setStep(1) : setStep(2)} />
-                  )}
-
-                  {step === 5 && (
-                    <Step4_Frequency
-                      value={profile.sessionsPerWeek}
-                      onChange={v => update("sessionsPerWeek", v)}
-                      total={totalSteps}
-                      onNext={() => setStep(7)}
-                      onBack={() => setStep(stepBefore5)}
-                      isLast={false}
-                      isPremium={isPremium}
-                      onUpgrade={() => openUpgrade()}
-                    />
-                  )}
-
-                  {step === 7 && (
-                    <StepPhysique
-                      age={profile.age}
-                      weightKg={profile.weightKg}
-                      heightCm={profile.heightCm}
-                      onChange={(key, val) => update(key, val)}
-                      onNext={() => setStep(8)}
-                      onBack={() => setStep(5)}
-                    />
-                  )}
-
-                  {step === 8 && (
-                    <StepHealthConsent
-                      checked={!!profile.healthConsent}
-                      onChange={(v) => {
-                        update("healthConsent", v);
-                        if (v) update("healthConsentAt", new Date().toISOString());
-                      }}
-                      onAccept={() => {
-                        update("healthConsent", true);
-                        update("healthConsentAt", new Date().toISOString());
-                        setStep(11);
-                      }}
-                      onRefuse={() => {
-                        update("healthConsent", false);
-                        update("healthConsentAt", null);
-                        update("injuryStatus", "aucune");
-                        update("injuryZone", null);
-                        update("injurySeverity", null);
-                        update("healthDeclaration", false);
-                        setStep(10);
-                      }}
-                      onBack={() => setStep(7)}
-                    />
-                  )}
-
-                  {step === 11 && (
-                    <StepInjury
-                      injuryStatus={profile.injuryStatus}
-                      injuryZone={profile.injuryZone}
-                      injurySeverity={profile.injurySeverity}
-                      healthDeclaration={profile.healthDeclaration}
-                      onChangeStatus={(v) => {
-                        update("injuryStatus", v);
-                        if (v === "aucune") {
-                          update("injuryZone", null);
-                          update("injurySeverity", null);
-                          update("healthDeclaration", false);
-                        }
-                      }}
-                      onChangeZone={(v) => update("injuryZone", v)}
-                      onChangeSeverity={(v) => update("injurySeverity", v)}
-                      onChangeDeclaration={(v) => update("healthDeclaration", v)}
-                      onNext={() => setStep(10)}
-                      onBack={() => setStep(8)}
-                    />
-                  )}
-
-                  {step === 10 && (
-                    <StepEquipment
-                      equipment={profile.equipment}
-                      level={profile.level}
-                      onChange={(v) => update("equipment", v)}
-                      onNext={() => setStep(9)}
-                      onBack={() => setStep(profile.healthConsent ? 11 : 8)}
-                    />
-                  )}
-
-                  {step === 9 && (
-                    <StepSwimPrefs
-                      swimStyle={profile.swimStyle}
-                      preferredStroke={profile.preferredStroke}
-                      onChangeStyle={(v) => update("swimStyle", v)}
-                      onChangeStroke={(v) => update("preferredStroke", v)}
-                      onNext={() => (noDate ? handleGenerate() : setStep(6))}
-                      onBack={() => setStep(10)}
-                      isLast={noDate}
-                    />
-                  )}
-
-                  {step === 6 && !noDate && (
-                    <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={handleGenerate} onBack={() => setStep(9)} />
-                  )}
-                </>
-              );
-            })()}
+            <OnboardingWizard
+              profile={profile}
+              step={step}
+              setStep={setStep}
+              update={update}
+              patchProfile={patchProfile}
+              error={error}
+              isPremium={isPremium}
+              onUpgrade={() => openUpgrade()}
+              onGenerate={handleGenerate}
+            />
           </div>
         </div>
       </div>
@@ -13377,7 +13528,17 @@ export default function App() {
           </div>
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+          profile,
+          step,
+          setStep,
+          update,
+          patchProfile,
+          error,
+          isPremium,
+          onUpgrade: () => openUpgrade(),
+          onGenerate: handleGenerate,
+        }} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} />}
         {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
