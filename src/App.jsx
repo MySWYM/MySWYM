@@ -5212,210 +5212,55 @@ const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStro
 };
 
 // ── LOADING ───────────────────────────────────────────────────────────────
+/** Unique boot loader — fond bleu, cercle blanc, "Loading". Rien d'autre. */
 const Loading = () => (
   <>
     <style>{`
-      @keyframes myswym-loader-float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-8px); }
-      }
-      @keyframes myswym-loader-pulse {
-        0%, 100% { opacity: 0.72; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.04); }
-      }
-      @keyframes myswym-loader-shimmer {
-        0% { transform: translateX(-120%); }
-        100% { transform: translateX(220%); }
+      @keyframes myswym-spin {
+        to { transform: rotate(360deg); }
       }
       @media (prefers-reduced-motion: reduce) {
-        .myswym-loading-float,
-        .myswym-loading-pulse,
-        .myswym-loading-shine {
-          animation: none !important;
-        }
+        .myswym-spin { animation: none !important; }
       }
     `}</style>
     <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "32px 20px",
-        background: `radial-gradient(circle at top, ${G.blueLight} 0%, ${G.bg} 42%), ${G.bg}`,
+        gap: 20,
+        background: G.blue,
       }}
     >
       <div
+        className="myswym-spin"
+        aria-hidden="true"
         style={{
-          width: "min(100%, 420px)",
-          background: G.glass,
-          border: `1px solid ${G.greyLight}`,
-          borderRadius: 28,
-          padding: "28px 22px",
-          boxShadow: G.bg === G_DARK.bg
-            ? "0 18px 60px rgba(0,0,0,0.35)"
-            : "0 20px 60px rgba(53,93,163,0.10)",
-          position: "relative",
-          overflow: "hidden",
-          backdropFilter: "blur(14px)",
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          border: "2.5px solid rgba(255,255,255,0.28)",
+          borderTopColor: "#FFFFFF",
+          animation: "myswym-spin 0.85s linear infinite",
+        }}
+      />
+      <p
+        style={{
+          margin: 0,
+          color: "#FFFFFF",
+          fontSize: 15,
+          fontWeight: 500,
+          letterSpacing: "0.02em",
+          fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: "auto -40px -70px auto",
-            width: 180,
-            height: 180,
-            borderRadius: "50%",
-            background: `${G.water}16`,
-            filter: "blur(8px)",
-          }}
-        />
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "7px 12px",
-            borderRadius: 999,
-            background: G.surface,
-            border: `1px solid ${G.greyLight}`,
-            color: G.blue,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            marginBottom: 18,
-          }}
-        >
-          <span
-            className="myswym-loading-pulse"
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: G.mint,
-              display: "inline-block",
-              animation: "myswym-loader-pulse 1.8s ease-in-out infinite",
-            }}
-          />
-          MySwym se prépare
-        </div>
-
-        <div
-          className="myswym-loading-float"
-          aria-hidden="true"
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 24,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: `linear-gradient(135deg, ${G.blue} 0%, ${G.water} 100%)`,
-            boxShadow: "0 14px 40px rgba(0,180,216,0.22)",
-            marginBottom: 20,
-            animation: "myswym-loader-float 3s ease-in-out infinite",
-          }}
-        >
-          <Waves size={30} color={G.white} />
-        </div>
-
-        <h1
-          style={{
-            margin: 0,
-            color: G.ink,
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: 34,
-            lineHeight: 1,
-            letterSpacing: "0.02em",
-          }}
-        >
-          Génération de ton plan
-        </h1>
-        <p
-          style={{
-            margin: "12px 0 0",
-            color: G.grey,
-            fontSize: 15,
-            lineHeight: 1.6,
-            maxWidth: 300,
-          }}
-        >
-          On prépare une progression claire, adaptée à ton niveau et pensée pour te mettre à l’eau sans friction.
-        </p>
-
-        <div
-          style={{
-            marginTop: 22,
-            padding: 16,
-            borderRadius: 20,
-            background: G.surface,
-            border: `1px solid ${G.greyLight}`,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-            {[
-              { label: "Profil", color: G.mint },
-              { label: "Séances", color: G.blue },
-              { label: "Rythme", color: G.water },
-            ].map((item) => (
-              <div
-                key={item.label}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  borderRadius: 14,
-                  padding: "12px 10px",
-                  background: G.bg,
-                  border: `1px solid ${G.greyLight}`,
-                }}
-              >
-                <div style={{ width: 26, height: 4, borderRadius: 999, background: item.color, marginBottom: 10, opacity: 0.95 }} />
-                <div style={{ color: G.ink, fontSize: 12, fontWeight: 700 }}>{item.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div
-            className="myswym-loading-shimmer"
-            style={{
-              position: "relative",
-              height: 12,
-              borderRadius: 999,
-              background: G.greyXLight,
-              overflow: "hidden",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "45%",
-                borderRadius: 999,
-                background: `linear-gradient(90deg, ${G.blue} 0%, ${G.water} 100%)`,
-              }}
-            />
-            <span
-              className="myswym-loading-shine"
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: 0,
-                bottom: 0,
-                width: "32%",
-                background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.34) 50%, transparent 100%)",
-                animation: "myswym-loader-shimmer 1.8s ease-in-out infinite",
-              }}
-            />
-          </div>
-
-          <div style={{ marginTop: 12, color: G.grey, fontSize: 12, lineHeight: 1.5 }}>
-            Quelques secondes suffisent en général.
-          </div>
-        </div>
-      </div>
+        Loading
+      </p>
     </div>
   </>
 );
