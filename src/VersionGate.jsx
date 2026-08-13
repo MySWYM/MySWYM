@@ -10,17 +10,37 @@ import {
   forceAppUpdateReload,
 } from "./lib/version-gate.js";
 
+const BRAND_BLUE = "#355da3";
+
 const shell = {
   position: "fixed",
   inset: 0,
   zIndex: 99999,
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
+  gap: 20,
   padding: "24px",
-  background: "linear-gradient(160deg, #05070A 0%, #0c1520 55%, #0a1628 100%)",
-  color: "#f4f7fb",
+  background: BRAND_BLUE,
+  color: "#FFFFFF",
   fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
+};
+
+const spinKeyframes = `
+@keyframes myswym-vg-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .myswym-vg-spin { animation: none !important; }
+}
+`;
+
+const spinner = {
+  width: 36,
+  height: 36,
+  borderRadius: "50%",
+  border: "2.5px solid rgba(255,255,255,0.28)",
+  borderTopColor: "#FFFFFF",
+  animation: "myswym-vg-spin 0.85s linear infinite",
 };
 
 const card = {
@@ -132,17 +152,28 @@ export default function VersionGate({ children }) {
   };
 
   if (!state.ready) {
-    // Court écran neutre — pas d’accès app tant que la gate n’a pas tranché
+    // Même loader que App — fond bleu + cercle blanc. Rien d’autre.
     return (
-      <div style={shell} aria-busy="true" aria-live="polite">
-        <div style={{ ...text, opacity: 0.7 }}>Chargement…</div>
+      <div style={shell} aria-busy="true" aria-live="polite" role="status">
+        <style>{spinKeyframes}</style>
+        <div className="myswym-vg-spin" aria-hidden="true" style={spinner} />
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 500, letterSpacing: "0.02em" }}>Loading</p>
       </div>
     );
   }
 
   if (state.mustUpdate) {
     return (
-      <div style={shell} role="alertdialog" aria-modal="true" aria-labelledby="vg-title">
+      <div
+        style={{
+          ...shell,
+          background: "linear-gradient(160deg, #05070A 0%, #0c1520 55%, #0a1628 100%)",
+          color: "#f4f7fb",
+        }}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="vg-title"
+      >
         <div style={card}>
           <p style={{ ...text, marginBottom: 20, fontWeight: 600, color: "#93c5fd" }}>MySWYM</p>
           <h1 id="vg-title" style={title}>
