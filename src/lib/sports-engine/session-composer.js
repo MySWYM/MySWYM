@@ -76,7 +76,11 @@ export { maxContinuousForRegulier, resolveRegulierIntent, coherentVolumeForRegul
 export { maxContinuousForSportif, resolveSportifIntent, coherentVolumeForSportif, coherentVolumeForPerformance } from "./sportif-intents.js";
 export { selectSetFormat, candidateSetFormats, SET_FORMAT_IDS } from "./set-formats.js";
 export { restSecFor } from "./recovery.js";
-export { resolveEquipmentUsage } from "./equipment-usage.js";
+export {
+  resolveEquipmentUsage,
+  isEquipmentEngagementExempt,
+  normalizeEquipmentList,
+} from "./equipment-usage.js";
 export {
   resolveSessionSpecificity,
   fourNagesCorpsShare,
@@ -199,9 +203,11 @@ function equipmentNoteForDecouverte(equipment) {
   if (!Array.isArray(equipment) || equipment.length === 0) return "";
   const hasPalmes = equipment.includes("palmes");
   const hasTuba = equipment.includes("tuba");
+  const hasPlanche = equipment.includes("planche");
   if (hasPalmes && hasTuba) return "palmes + tuba frontal";
   if (hasPalmes) return "palmes";
   if (hasTuba) return "tuba frontal";
+  if (hasPlanche) return "planche";
   return "";
 }
 
@@ -602,6 +608,13 @@ function composeDecouverteSession(brief, rng) {
     };
   }
 
+  const usedEq = [];
+  if (matosNote) {
+    if (eqList.includes("palmes") && /palmes/i.test(matosNote)) usedEq.push("palmes");
+    if (eqList.includes("tuba") && /tuba/i.test(matosNote)) usedEq.push("tuba");
+    if (eqList.includes("planche") && /planche/i.test(matosNote)) usedEq.push("planche");
+  }
+
   const session = {
     type: intent.id === "decouverte_4n" || strokeFocus === "4n" ? "TECHNIQUE" : brief.family === "technique" ? "TECHNIQUE" : "ENDURANCE",
     title: intent.headline.replace(/^Aujourd'hui :\s*/i, "Découverte · "),
@@ -634,17 +647,15 @@ function composeDecouverteSession(brief, rng) {
       papillonOk,
       maxContinuous: maxCont,
       pedagogical: intent.headline,
+      equipmentUsage: usedEq.length ? "meaningful" : "none",
+      equipmentApplied: usedEq,
     },
     sets,
     volumeFromSets: volumeSets,
     trainingDistance: volumeSets,
     maxContinuousAllowed: maxCont,
-    equipmentRequired: matosNote
-      ? ["palmes", "tuba"].filter((e) => eqList.includes(e))
-      : [],
-    equipmentUsed: matosNote
-      ? ["palmes", "tuba"].filter((e) => eqList.includes(e))
-      : [],
+    equipmentRequired: usedEq,
+    equipmentUsed: usedEq,
   };
 
   const hard = validateDecouverteHard(session, {

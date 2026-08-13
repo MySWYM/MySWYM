@@ -5131,8 +5131,8 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack, level = "" }) => {
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
         {decouverte
-          ? "On adaptera tes exercices à ce que tu as. Ce n’est pas obligatoire à chaque séance."
-          : "Sélection multiple. On ne propose que des exercices compatibles — sans t’imposer tout ton matos à chaque séance."}
+          ? "On l’intègre dans tes séances quand ça a du sens (sauf récup / affûtage)."
+          : "Sélection multiple. On l’utilise dans tes séances quand c’est utile — jamais de matos que tu n’as pas."}
       </p>
 
       {decouverte ? (
@@ -6958,6 +6958,16 @@ const SessionCard = ({
                 fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.surface,
                 border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
               }}>{intensity.zone}</span>
+            )}
+            {!locked && Array.isArray(session.equipmentUsed) && session.equipmentUsed.length > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, color: G.inkLight, background: G.surface,
+                border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
+              }}>
+                Matos : {session.equipmentUsed
+                  .map((id) => EQUIPMENT_OPTS.find((o) => o.id === id)?.label || id)
+                  .join(" · ")}
+              </span>
             )}
           </div>
           {!locked && intensity.cue && !expanded && (

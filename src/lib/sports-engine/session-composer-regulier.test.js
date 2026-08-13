@@ -342,11 +342,10 @@ for (const g of REGULIER_GOLD_SCENARIOS) {
   assert(structures.size >= 2, `formats reprise: ${[...structures]}`);
 }
 
-// === Refinement : matériel réellement utilisé quand pertinent ===
+// === Refinement : engagement matériel (inventaire → visible, sauf récup) ===
 {
-  let sawMeaningful = false;
-  let sawNone = false;
-  for (let i = 0; i < 20; i++) {
+  let engaged = 0;
+  for (let i = 0; i < 12; i++) {
     const brief = briefFrom({
       equipment: ["palmes", "tuba", "pull"],
       sessionIntent: "technique_endurance",
@@ -356,19 +355,29 @@ for (const g of REGULIER_GOLD_SCENARIOS) {
     const r = composeSession(brief);
     assert(r.ok, `eq ${i}: ${r.reason}`);
     const usage = r.session.composerWhy.equipmentUsage;
-    if (usage === "meaningful" || usage === "optional") {
-      if ((r.session.composerWhy.equipmentApplied || []).length) {
-        sawMeaningful = true;
-        assert(
-          /palmes|tuba|pull/i.test(r.session.details.join(" ")),
-          "matos appliqué visible dans détails",
-        );
-      }
-    }
-    if (usage === "none") sawNone = true;
+    assert(usage === "meaningful" || usage === "optional", `eq ${i} usage engagé: ${usage}`);
+    assert((r.session.composerWhy.equipmentApplied || []).length > 0, `eq ${i} applied`);
+    assert(
+      /palmes|tuba|pull/i.test(r.session.details.join(" ")),
+      `eq ${i} matos visible`,
+    );
+    engaged += 1;
   }
-  assert(sawMeaningful, "matériel parfois utilisé");
-  assert(sawNone, "matériel parfois non utilisé (pas systématique)");
+  assert(engaged === 12, "engagement systématique hors exempt");
+
+  let sawNoneOnRecup = false;
+  for (let i = 0; i < 16; i++) {
+    const brief = briefFrom({
+      equipment: ["palmes", "tuba", "pull"],
+      sessionIntent: "recuperation",
+      seed: `eq-recup-${i}`,
+      volumeTarget: 1200,
+    });
+    const r = composeSession(brief);
+    assert(r.ok, `recup ${i}: ${r.reason}`);
+    if (r.session.composerWhy.equipmentUsage === "none") sawNoneOnRecup = true;
+  }
+  assert(sawNoneOnRecup, "récup peut rester sans matos");
 }
 
 // === Refinement : 4N stroke_focus vs race_specific ===

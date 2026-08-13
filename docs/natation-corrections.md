@@ -33,7 +33,7 @@
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
-- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre.
+- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre. **Engagement** : inventaire déclaré non vide → au moins 1 item visible dans la séance (sauf récup / taper / course). « Aucun » = zéro matos dans les lignes.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -166,6 +166,7 @@
 | 2026-08-10 | Pyramide Ironman / triathlon perf | Feedback ChatGPT : « 1750 m en pyramide ça veut rien dire — trop long et aucune info ». Cap `MAX_PYRAMID_VOLUME=1000` ; plus de scale×2 vers 1600 m ; surplus = séries explicites hors pyramide ; affichage avec paliers `100 → 200 → 300…` + repos ; exclus des candidats si corps > 1000 m (tri/OW/perf) ; QG refuse pyramide > 1000 m / opaque. `PLAN_VERSION` 43, pas de FORCE regen. | ✅ |
 | 2026-08-10 | Restitution coach séances | Séances = pseudo-étapes / marketing (« Aujourd'hui », « on savoure ») + pyramides opaques. Module `coach-restitution.js` : strip headlines, décompose pyramides, repos explicites. Composeur : plus de `→ Aujourd'hui` dans details, plus de headers `Technique ·`, matos sur ligne nageable (`avec palmes`), formats classiques prioritaires. Design UI inchangé. Pas de change charge/taper/QG règles. | ✅ |
 | 2026-08-10 | Force regen v44 live | Demande Arthur : `PLAN_VERSION` 44 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec restitution coach. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-13 | Engagement matériel | Inventaire non vide → ≥1 item matos visible / séance (hors récup / taper / course). `resolveEquipmentUsage` plus de `none` aléatoire. Découverte : Aucun = zéro matos ; planche/palmes/tuba dans les lignes. QG `equipment_engagement`. Chip UI « Matos : … ». Pas de FORCE regen. Arthur bank : follow-up. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
