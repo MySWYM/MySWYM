@@ -151,8 +151,10 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   };
 }
 
-/** Suffixe label nage avec matos corps si pertinent. */
+/** Suffixe label nage avec matos corps (format restitution : `avec …`). */
 export function labelWithEquipment(baseLabel, eqUsage) {
   if (!eqUsage?.corpsNote) return baseLabel;
-  return `${baseLabel} · ${eqUsage.corpsNote}`;
+  const base = String(baseLabel || "nage").trim();
+  if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
+  return `${base} avec ${eqUsage.corpsNote}`;
 }

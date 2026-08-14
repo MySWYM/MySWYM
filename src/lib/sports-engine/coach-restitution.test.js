@@ -82,6 +82,19 @@ function briefFor(level, over = {}) {
   console.log("R1 PASS");
 }
 
+// R1b — matos `·` → `avec` (restitution + engagement)
+{
+  const cleaned = toCoachDetailLines([
+    "-8 × 50m crawl · palmes — Z2 — repos 20s",
+    "-4 × 100m crawl · pull-buoy — repos 15s",
+  ]);
+  const text = cleaned.join("\n");
+  assert(/crawl avec palmes/i.test(text), "palmes avec");
+  assert(/crawl avec pull-buoy/i.test(text), "pull avec");
+  assert(!/crawl\s*[·•]\s*palmes/i.test(text), "no · palmes");
+  console.log("R1b PASS");
+}
+
 // R2 — expand pyramid steps
 {
   const lines = expandPyramidDetailLine(

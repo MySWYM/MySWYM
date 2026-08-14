@@ -33,7 +33,7 @@
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
-- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre. **Engagement** : inventaire déclaré non vide → au moins 1 item visible dans la séance (sauf récup / taper / course). « Aucun » = zéro matos dans les lignes.
+- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement, format **`avec palmes` / `avec pull-buoy`** (pas `· palmes`). **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte historique : « palmes + tuba frontal » sur le titre — préférer désormais la ligne nageable. **Engagement** : inventaire déclaré non vide → au moins 1 item visible dans la séance (sauf récup / taper / course). « Aucun » = zéro matos dans les lignes.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -167,6 +167,7 @@
 | 2026-08-10 | Restitution coach séances | Séances = pseudo-étapes / marketing (« Aujourd'hui », « on savoure ») + pyramides opaques. Module `coach-restitution.js` : strip headlines, décompose pyramides, repos explicites. Composeur : plus de `→ Aujourd'hui` dans details, plus de headers `Technique ·`, matos sur ligne nageable (`avec palmes`), formats classiques prioritaires. Design UI inchangé. Pas de change charge/taper/QG règles. | ✅ |
 | 2026-08-10 | Force regen v44 live | Demande Arthur : `PLAN_VERSION` 44 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec restitution coach. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-13 | Engagement matériel | Inventaire non vide → ≥1 item matos visible / séance (hors récup / taper / course). `resolveEquipmentUsage` plus de `none` aléatoire. Découverte : Aucun = zéro matos ; planche/palmes/tuba dans les lignes. QG `equipment_engagement`. Chip UI « Matos : … ». Pas de FORCE regen. Arthur bank : follow-up. | ✅ |
+| 2026-08-14 | Matos + restitution live | Alignement wording matos sur fiche coach (`avec …`, plus `· palmes`). Restitution normalise les lignes legacy. `PLAN_VERSION` 45 + `FORCE_PLAN_REGEN=true` pour écraser les plans existants (engagement matos + texte nageable). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
@@ -181,7 +182,7 @@
 
 1. **BNSSA** : oublier le volet sauvetage (sortie bassin, enchaînement, chrono 100 m examen).
 2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = **flèche + grand chien** (+ palmes/tuba) seulement — pas de catch-up/roulis/virages. **Ne pas demander de T100.**
-2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes**.
+2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes** ; inventaire déclaré → matos **visible** (`avec …`) hors récup/taper/course ; « Aucun » = zéro matos.
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.

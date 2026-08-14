@@ -131,6 +131,11 @@ export function toCoachDetailLines(details = []) {
 
     next = rewriteFinLine(next);
     next = cleanCueNoise(next);
+    // Matos sur ligne nageable : `crawl · pull-buoy` → `crawl avec pull-buoy`
+    next = next.replace(
+      /\s*[·•]\s*(palmes(?:\s*\+\s*tuba(?:\s+frontal)?)?|tuba(?:\s+frontal)?|pull-buoy|pull\b|plaquettes?|planche|élastique)/gi,
+      " avec $1",
+    );
 
     // Drop empty remnants
     if (!next || next === "-" || /^-\s*$/.test(next)) continue;
