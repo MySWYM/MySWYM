@@ -3,6 +3,8 @@
  * Ne touche PAS au volume/charge/taper : uniquement wording + décomposition affichage.
  */
 
+import { sanitizeSessionDetails } from "./session-labels.js";
+
 const HEADLINE_RE = /^\s*(?:→\s*)?(?:Aujourd'?hui\s*:|La séance du jour|Le but de cette séance)/i;
 const ENGINE_SECTION_RE =
   /^\s*(Préparation aérobie|Bloc vitesse|Consolidation aérobie|Touches allure course|Technique\s*[·•]|Étape\s*\d)\s*:?\s*$/i;
@@ -144,7 +146,7 @@ export function toCoachDetailLines(details = []) {
 
     out.push(next);
   }
-  return out;
+  return sanitizeSessionDetails(out);
 }
 
 /**

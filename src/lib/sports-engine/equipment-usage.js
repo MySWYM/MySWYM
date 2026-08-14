@@ -1,6 +1,10 @@
 /**
- * Utilisation du matériel — engagement quand inventaire non vide.
- * Filtre (ne jamais demander du matos absent) + injection visible.
+ * Matériel : pédagogie d'abord (éducatif → outil), jamais au hasard sur le titre.
+ * Interdit pull + palmes dans la même séance :
+ * pull-buoy entre les jambes = pas de battements (bras seuls) ;
+ * palmes = battements. Les deux en même temps n'ont aucun sens.
+ * Inventaire : on peut posséder les deux ; on ne les combine pas le même jour.
+ * Engagement : inventaire non vide hors récup/taper → ≥1 item visible quand possible.
  * @typedef {'none'|'optional'|'meaningful'} EquipmentUsage
  */
 
@@ -27,11 +31,50 @@ export function isEquipmentEngagementExempt(brief = {}) {
     phase === "taper" ||
     phase === "competition" ||
     !!taperStage ||
-    !!brief.taperLoad?.taperStage;
+    ["s1", "s2", "s3", "race_week", "race_day"].includes(String(taperStage || ""));
   if (taperish) return true;
   if (/recuperation|recup|repos|^race$|race_day|competition/.test(intent)) return true;
   if (brief.role?.isRaceDay || brief.isRaceDay || brief.role?.sessionIntent === "race") return true;
   return false;
+}
+
+/** Outils utiles pour un focus — premier possédé = celui qu'on prend. */
+export function pedagogicalTechEquipment(techFocus, level = "regulier") {
+  switch (techFocus) {
+    case "technique_jambes":
+      return ["planche", "palmes"];
+    case "technique_roulis":
+      return ["palmes"];
+    case "technique_respiration":
+    case "technique_croisement":
+      return ["tuba"];
+    case "technique_catchup":
+      return level === "regulier" || level === "decouverte" ? ["palmes"] : ["plaquettes", "palmes"];
+    case "technique_fleche":
+    case "technique_grand_chien":
+      return ["palmes", "tuba"];
+    case "technique_virages":
+      return ["palmes"];
+    default:
+      return [];
+  }
+}
+
+export function forbiddenTechEquipment(techFocus) {
+  if (techFocus === "technique_roulis") return ["plaquettes"];
+  if (techFocus === "technique_jambes") return ["pull", "plaquettes"];
+  if (techFocus === "technique_respiration") return ["plaquettes", "palmes"];
+  return [];
+}
+
+function firstOwned(prefer, available) {
+  return prefer.find((eq) => available.includes(eq)) || null;
+}
+
+function displayName(eq) {
+  if (eq === "pull") return "pull-buoy";
+  if (eq === "tuba") return "tuba frontal";
+  return eq;
 }
 
 function pickOne(list, rng) {
@@ -39,132 +82,119 @@ function pickOne(list, rng) {
   return list[Math.floor(rng() * list.length) % list.length];
 }
 
-function buildNotes(applied, intent, usage) {
-  const techNote = [];
-  const corpsNote = [];
-  if (applied.includes("tuba")) techNote.push("tuba frontal");
-  if (applied.includes("planche")) techNote.push("planche");
-  if (applied.includes("elastique")) techNote.push("élastique");
-  if (applied.includes("palmes")) {
-    if (intent === "technique_endurance" || intent === "quatre_nages" || usage === "meaningful") {
-      techNote.push("palmes");
-    } else {
-      corpsNote.push("palmes");
-    }
-  }
-  if (applied.includes("pull")) corpsNote.push("pull-buoy");
-  if (applied.includes("plaquettes")) corpsNote.push("plaquettes");
-
-  const note =
-    applied.length === 0
-      ? ""
-      : applied.includes("palmes") && applied.includes("tuba")
-        ? "palmes + tuba"
-        : applied[0] === "pull"
-          ? "pull-buoy"
-          : applied[0] === "tuba"
-            ? "tuba frontal"
-            : applied[0] === "elastique"
-              ? "élastique"
-              : applied.join(" + ");
-
-  return {
-    note,
-    techNote: techNote.length ? techNote.join(" + ") : "",
-    corpsNote: corpsNote.length ? corpsNote.join(" + ") : "",
-  };
-}
-
 /**
  * Décide si / comment utiliser le matos disponible.
- * Inventaire non vide + hors exempt → toujours ≥1 item appliqué (visible).
- * Jamais tout le matos d'un coup. Déterministe via rng.
+ * Lié à l'éducatif du jour — pas un roll indépendant.
+ * Inventaire non vide + hors exempt → engagement visible.
  */
 export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   const available = normalizeEquipmentList(brief.equipment);
-  if (!available.length) {
-    return { usage: "none", applied: [], note: "", techNote: "", corpsNote: "", engaged: false };
-  }
+  const empty = {
+    usage: "none",
+    applied: [],
+    note: "",
+    techNote: "",
+    corpsNote: "",
+    engaged: false,
+  };
+  if (!available.length) return empty;
 
   const intent = brief.sessionIntent || brief.intent || "";
   const quality = !!brief.qualitySession;
+  const techFocus = brief.techFocus || brief.primaryTechnicalGoal || "";
+  const level = brief.level || "regulier";
   const exempt = isEquipmentEngagementExempt(brief);
-
-  /** @type {EquipmentUsage} */
-  let usage = "none";
+  const roll = typeof rng === "function" ? rng() : Math.random();
 
   if (exempt) {
-    // Affûtage / récup / course : rarement un peu de matos, jamais forcé
-    const roll = rng();
-    if (roll >= 0.18) {
-      return { usage: "none", applied: [], note: "", techNote: "", corpsNote: "", engaged: false };
-    }
-    usage = "optional";
-  } else {
-    // Engagement : meaningful ~55 %, optional ~45 % — jamais none
-    let roll = rng();
-    if (intent === "technique_endurance" || intent === "quatre_nages" || intent === "reprise") {
-      roll = Math.max(0, roll - 0.12);
-    }
-    if (quality) roll = Math.max(0, roll - 0.05);
-    usage = roll < 0.55 ? "meaningful" : "optional";
+    // Soft optionnel en récup/taper — rarement
+    if (roll >= 0.18) return empty;
   }
 
-  const preferTech = [];
-  const preferCorps = [];
-  if (available.includes("tuba")) preferTech.push("tuba");
-  if (available.includes("planche")) preferTech.push("planche");
-  if (available.includes("elastique")) preferTech.push("elastique");
-  if (available.includes("palmes")) {
-    preferTech.push("palmes");
-    preferCorps.push("palmes");
+  const prefer = pedagogicalTechEquipment(techFocus, level);
+  const wishPrefer = Array.isArray(brief.wishPreferEquipment)
+    ? brief.wishPreferEquipment.filter((e) => available.includes(e))
+    : [];
+  const techEq =
+    firstOwned(wishPrefer.length ? wishPrefer : prefer, available) ||
+    firstOwned(prefer, available);
+
+  let useTech = false;
+  if (techEq === "planche" && techFocus === "technique_jambes") useTech = roll < 0.9;
+  else if (techEq === "palmes" && techFocus === "technique_roulis") useTech = roll < 0.85;
+  else if (techEq === "tuba" && /respiration|croisement|fleche|chien/.test(techFocus)) useTech = roll < 0.8;
+  else if (techEq) useTech = roll < (exempt ? 0.45 : 0.72);
+  else if (!exempt && available.length) useTech = roll < 0.55;
+
+  const applied = [];
+  const techNote = [];
+  const corpsNote = [];
+
+  if (useTech && techEq) {
+    if (techFocus === "technique_fleche" || techFocus === "technique_grand_chien") {
+      if (available.includes("palmes")) {
+        applied.push("palmes");
+        techNote.push("palmes");
+      }
+      if (available.includes("tuba")) {
+        applied.push("tuba");
+        techNote.push("tuba frontal");
+      }
+    } else {
+      applied.push(techEq);
+      techNote.push(displayName(techEq));
+    }
   }
-  if (available.includes("pull")) preferCorps.push("pull");
-  if (available.includes("plaquettes")) preferCorps.push("plaquettes");
 
-  const primaryPool = preferTech.length || preferCorps.length
-    ? [...new Set([...preferTech, ...preferCorps])]
-    : available;
+  // Engagement hors exempt : garantir ≥1 item pédagogique / wish / inventaire
+  if (!exempt && applied.length === 0 && available.length) {
+    const fallbackPool = wishPrefer.length
+      ? wishPrefer
+      : prefer.filter((e) => available.includes(e)).length
+        ? prefer.filter((e) => available.includes(e))
+        : available.filter((e) => e !== "pull" || !available.includes("palmes"));
+    const pick = pickOne(fallbackPool.length ? fallbackPool : available, typeof rng === "function" ? rng : Math.random);
+    if (pick) {
+      applied.push(pick);
+      if (pick === "pull") corpsNote.push("pull-buoy");
+      else techNote.push(displayName(pick));
+    }
+  }
 
-  let applied = [pickOne(primaryPool, rng)].filter(Boolean);
-
-  // meaningful : parfois palmes + tuba (complémentaires), jamais pull + palmes
-  if (usage === "meaningful" && applied.includes("palmes") && available.includes("tuba") && rng() < 0.45) {
-    if (!applied.includes("tuba")) applied.push("tuba");
+  const palmesOn = applied.includes("palmes");
+  const canPull =
+    available.includes("pull") &&
+    !palmesOn &&
+    !quality &&
+    !/vitesse|vo2|test/.test(intent);
+  const rollC = typeof rng === "function" ? rng() : Math.random();
+  if (canPull && rollC < 0.4 && !wishPrefer.includes("palmes")) {
+    applied.push("pull");
+    corpsNote.push("pull-buoy");
   }
 
   if (applied.includes("pull") && applied.includes("palmes")) {
-    applied = rng() < 0.5 ? ["pull"] : ["palmes"];
+    applied.splice(applied.indexOf("pull"), 1);
+    const idx = corpsNote.indexOf("pull-buoy");
+    if (idx >= 0) corpsNote.splice(idx, 1);
   }
 
-  // Engagement hors exempt : garantir ≥1
-  if (!exempt && applied.length === 0 && available.length) {
-    applied = [pickOne(available, rng)].filter(Boolean);
-  }
+  const usage =
+    applied.length === 0
+      ? "none"
+      : techNote.length && corpsNote.length
+        ? "meaningful"
+        : applied.length
+          ? "optional"
+          : "none";
+  const note = [...techNote, ...corpsNote].join(" + ");
 
-  // Soft wish : si matos demandé et possédé, le favoriser
-  const prefer = Array.isArray(brief.wishPreferEquipment) ? brief.wishPreferEquipment : [];
-  const preferOwned = prefer.filter((e) => available.includes(e));
-  if (preferOwned.length && applied.length && !preferOwned.includes(applied[0]) && rng() < 0.7) {
-    applied = [pickOne(preferOwned, rng)].filter(Boolean);
-    if (
-      applied.includes("palmes") &&
-      available.includes("tuba") &&
-      preferOwned.includes("tuba") &&
-      rng() < 0.4
-    ) {
-      applied.push("tuba");
-    }
-    if (applied.includes("pull") && applied.includes("palmes")) {
-      applied = preferOwned.includes("pull") && !preferOwned.includes("palmes") ? ["pull"] : ["palmes"];
-    }
-  }
-
-  const notes = buildNotes(applied, intent, usage);
   return {
-    usage: applied.length ? usage : "none",
+    usage,
     applied,
-    ...notes,
+    note,
+    techNote: techNote.join(" + "),
+    corpsNote: corpsNote.join(" + "),
     engaged: applied.length > 0,
   };
 }

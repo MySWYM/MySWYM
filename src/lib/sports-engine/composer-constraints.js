@@ -4,6 +4,7 @@
  */
 
 import { fourNagesCorpsShare } from "./session-specificity.js";
+import { isFourNagesDeclared } from "./four-nages-mix.js";
 import { maxContinuousForDecouverte } from "./decouverte-intents.js";
 import { maxContinuousForRegulier } from "./regulier-intents.js";
 import { maxContinuousForSportif } from "./sportif-intents.js";
@@ -205,6 +206,7 @@ export function resolveHardConstraints(brief = {}) {
   const strokeFocus = brief.strokeFocus || "mixte";
   const isFourN =
     strokeFocus === "4n" ||
+    isFourNagesDeclared(brief) ||
     brief.objectif === "quatre_nages" ||
     brief.sessionIntent === "quatre_nages" ||
     /4.?nages|quatre.?nages/i.test(String(brief.objectif || ""));

@@ -128,6 +128,8 @@ export function buildSessionBrief({
       weekCtx?.capacity?.maxContinuousDistance ??
       null,
     strokeFocus,
+    preferredStroke: sport?.preferredStroke || null,
+    swimStyle: sport?.swimStyle || null,
     papillonMastered: !!sport?.papillonMastered,
     strokesMastered: sport?.strokesMastered || null,
     preferredStroke: sport?.preferredStroke || null,

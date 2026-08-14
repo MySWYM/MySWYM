@@ -39,6 +39,7 @@ import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js"
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import SessionLiveView from "./SessionLiveView.jsx";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
+import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -1040,7 +1041,7 @@ const expandCompoundDetailLines = (details = []) => {
       out.push(text);
     }
   }
-  return out;
+  return out.map((line) => prettifySessionDetailLine(line));
 };
 
 /** Texte plat d'une séance — WhatsApp / description Strava */
@@ -5085,33 +5086,10 @@ const EQUIPMENT_OPTS = [
   { id: "elastique", label: "Élastique" },
 ];
 
-/** Presets Découverte — wording simple, IDs normalisés derrière. */
-const DECOUVERTE_EQUIPMENT_PRESETS = [
-  { id: "none", label: "Aucun", equipment: [] },
-  { id: "palmes", label: "Palmes", equipment: ["palmes"] },
-  { id: "tuba", label: "Tuba", equipment: ["tuba"] },
-  { id: "palmes_tuba", label: "Palmes + tuba", equipment: ["palmes", "tuba"] },
-  { id: "planche", label: "Planche", equipment: ["planche"] },
-];
-
-function isDecouverteLevel(level) {
-  const l = String(level || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
-  return l.includes("decouv") || l === "beginner" || l === "debutant";
-}
-
-function discoveryPresetIdFromEquipment(equipment) {
-  if (!Array.isArray(equipment)) return null;
-  const sorted = [...equipment].sort().join(",");
-  const hit = DECOUVERTE_EQUIPMENT_PRESETS.find((p) => [...p.equipment].sort().join(",") === sorted);
-  return hit?.id ?? null;
-}
-
-/** Matériel dispo — filtre les exos du moteur V1 (disponibilité ≠ obligation). */
-const StepEquipment = ({ equipment, onChange, onNext, onBack, level = "" }) => {
-  const decouverte = isDecouverteLevel(level);
+/** Matériel dispo — même multi-sélection à tous les niveaux (plusieurs ou aucun). */
+const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
   const selected = Array.isArray(equipment) ? equipment : [];
   const answered = Array.isArray(equipment); // null = pas encore répondu
-  const presetId = discoveryPresetIdFromEquipment(selected);
 
   const toggle = (id) => {
     if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
@@ -5129,71 +5107,44 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack, level = "" }) => {
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        {decouverte ? "Quel matériel as-tu ?" : "Quel matériel as-tu à disposition ?"}
+        Quel matériel as-tu à disposition ?
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        {decouverte
-          ? "On l’intègre dans tes séances quand ça a du sens (sauf récup / affûtage)."
-          : "Sélection multiple. On l’utilise dans tes séances quand c’est utile — jamais de matos que tu n’as pas."}
+        Tu peux en cocher plusieurs, ou aucun. On l’intègre quand c’est utile — jamais de matos que tu n’as pas.
       </p>
 
-      {decouverte ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-          {DECOUVERTE_EQUIPMENT_PRESETS.map((o) => {
-            const active = answered && presetId === o.id;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => onChange([...o.equipment])}
-                style={{
-                  padding: "14px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
-                  border: `2px solid ${active ? G.blue : G.greyLight}`,
-                  background: active ? G.blueLight : G.surface,
-                  fontWeight: 700, fontSize: 15, color: G.ink,
-                }}
-              >
-                {active ? "● " : "○ "}{o.label}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-            {EQUIPMENT_OPTS.map((o) => {
-              const active = selected.includes(o.id);
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => toggle(o.id)}
-                  style={{
-                    padding: "14px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
-                    border: `2px solid ${active ? G.blue : G.greyLight}`,
-                    background: active ? G.blueLight : G.surface,
-                    fontWeight: 700, fontSize: 15, color: G.ink,
-                  }}
-                >
-                  {active ? "✓ " : ""}{o.label}
-                </button>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={chooseNone}
-            style={{
-              width: "100%", marginBottom: 12, padding: "12px 18px", borderRadius: 14, cursor: "pointer",
-              border: `2px solid ${answered && selected.length === 0 ? G.blue : G.greyLight}`,
-              background: answered && selected.length === 0 ? G.blueLight : G.surface,
-              fontWeight: 700, fontSize: 14, color: G.ink,
-            }}
-          >
-            {answered && selected.length === 0 ? "✓ " : ""}Aucun
-          </button>
-        </>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        {EQUIPMENT_OPTS.map((o) => {
+          const active = selected.includes(o.id);
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => toggle(o.id)}
+              style={{
+                padding: "14px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
+                border: `2px solid ${active ? G.blue : G.greyLight}`,
+                background: active ? G.blueLight : G.surface,
+                fontWeight: 700, fontSize: 15, color: G.ink,
+              }}
+            >
+              {active ? "✓ " : ""}{o.label}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={chooseNone}
+        style={{
+          width: "100%", marginBottom: 12, padding: "12px 18px", borderRadius: 14, cursor: "pointer",
+          border: `2px solid ${answered && selected.length === 0 ? G.blue : G.greyLight}`,
+          background: answered && selected.length === 0 ? G.blueLight : G.surface,
+          fontWeight: 700, fontSize: 14, color: G.ink,
+        }}
+      >
+        {answered && selected.length === 0 ? "✓ " : ""}Aucun
+      </button>
 
       <Btn onClick={handleNext}>Continuer</Btn>
       <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
@@ -5450,7 +5401,6 @@ const OnboardingWizard = ({
       {step === 10 && (
         <StepEquipment
           equipment={profile.equipment}
-          level={profile.level}
           onChange={(v) => update("equipment", v)}
           onNext={() => setStep(12)}
           onBack={() => setStep(profile.healthConsent ? 11 : 8)}
@@ -5908,7 +5858,7 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 46; // v46 = distance moyenne + wish onboarding + matos
+const PLAN_VERSION = 46; // v46 = distance + wish + matos pédagogique + 4 nages
 // Remettre false au prochain bump (demande Arthur 2026-08-14 : overwrite plans)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
