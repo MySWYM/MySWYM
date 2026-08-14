@@ -110,7 +110,9 @@ function briefFrom({
 
 function hasFourBlocks(details) {
   const hasDepart = details.some((l) => /échauffement|souple|dos|tranquillement|brasse/i.test(l));
-  const hasTech = details.some((l) => /technique|flèche|grand chien|plusieurs nages|ondulation/i.test(l));
+  const hasTech = details.some((l) =>
+    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile/i.test(l),
+  );
   const hasCorps = details.some(
     (l) => /×/.test(l) && /facile|sensation|respiration|visée|tête|alterne|rythme/i.test(l),
   );
@@ -139,7 +141,8 @@ function assertSportDecouverte(session, brief) {
   assert(!/Technique ·/i.test(session.details.join("\n")), "pas de header Technique ·");
   const hard = validateDecouverteHard(session, {
     maxContinuous: maxCont,
-    papillonOk: !!brief.papillonMastered,
+    papillonOk: canUsePapillon(brief),
+    strokeFocus: brief.strokeFocus,
     allowLongReps: maxCont >= 100,
   });
   assert(hard.ok, `hard sport: ${hard.errors.join("; ")}`);
@@ -159,8 +162,11 @@ assert(isComposerEnabledForLevel("sportif"), "Sportif actif étape D");
 assert(normalizeStrokeFocus({ strokeFocus: "crawl_mainly" }) === "crawl", "ux crawl");
 assert(normalizeStrokeFocus({ strokeFocus: "plusieurs" }) === "mixte", "ux mixte");
 assert(normalizeStrokeFocus({ strokeFocus: "4n" }) === "4n", "ux 4n");
+assert(normalizeStrokeFocus({ swimStyle: "4_nages", preferredStroke: "dos" }) === "4n", "4n prime sur préférence");
+assert(normalizeStrokeFocus({ swimStyle: "crawl", preferredStroke: "dos" }) === "dos", "sans 4n, préférence dos");
 assert(normalizeStrokeFocus({}, "eau_libre") === "crawl", "défaut OW=crawl");
-assert(!canUsePapillon({ level: "decouverte" }), "papillon off Découverte");
+assert(canUsePapillon({ level: "decouverte", strokeFocus: "4n" }), "4n ⇒ papillon");
+assert(!canUsePapillon({ level: "decouverte" }), "papillon off Découverte hors 4n");
 assert(canUsePapillon({ level: "decouverte", papillonMastered: true }), "papillon on si maîtrisé");
 
 // === Cas 1 ===
@@ -295,43 +301,29 @@ for (const g of GOLD_SCENARIOS) {
   const vol = r.session.volumeFromSets;
   assert(vol >= g.volumeBand[0] - 50 && vol <= g.volumeBand[1] + 50, `${g.id} volume ${vol} hors ${g.volumeBand}`);
   assert(r.session.composerWhy.intent === g.intent, `${g.id} intent`);
-  if (g.strokeFocus === "4n" && g.papillonMastered === false) {
-    assert(!/\bpapillon\b/i.test(r.session.details.join(" ")) || /ondulation|prépa/i.test(r.session.details.join(" ")), `${g.id} pas papillon imposé`);
+  if (g.strokeFocus === "4n") {
+    assert(/\bpapillon\b/i.test(r.session.details.join(" ")), `${g.id} papillon 4 nages`);
   }
 }
 
-// === 4N + papillon maîtrisé vs non ===
+// === 4N : les quatre nages, papillon inclus (fractionné) ===
 {
-  const noPap = briefFrom({
+  const fourN = briefFrom({
     level: "découverte",
     objectif: "nager_progresser",
     duration: 45,
     equipment: [],
     volumeTarget: 800,
-    seed: "4n-nopap",
+    seed: "4n-all",
     strokeFocus: "4n",
     papillonMastered: false,
     sessionIntent: "decouverte_4n",
   });
-  const r1 = composeSession(noPap);
+  const r1 = composeSession(fourN);
   assert(r1.ok, r1.reason);
-  assert(/ondulation|dos|brasse|crawl/i.test(r1.session.details.join(" ")), "4n alternatif");
-  assert(!/\b\d+\s*×\s*\d+m papillon\b/i.test(r1.session.details.join("\n")), "pas de série papillon");
-
-  const yesPap = briefFrom({
-    level: "découverte",
-    objectif: "nager_progresser",
-    duration: 45,
-    equipment: [],
-    volumeTarget: 800,
-    seed: "4n-pap",
-    strokeFocus: "4n",
-    papillonMastered: true,
-    sessionIntent: "decouverte_4n",
-  });
-  const r2 = composeSession(yesPap);
-  assert(r2.ok, r2.reason);
-  assert(/papillon/i.test(r2.session.details.join(" ")), "4n avec papillon si maîtrisé");
+  const txt = r1.session.details.join("\n");
+  assert(/\bcrawl\b/i.test(txt) && /\bdos\b/i.test(txt) && /brasse/i.test(txt) && /\bpapillon\b/i.test(txt), "4n quatre nages");
+  assert(!/ondulation \(prépa papillon\)/i.test(txt), "pas de substitut ondulation");
 }
 
 // Volume sets

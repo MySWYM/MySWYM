@@ -13,6 +13,7 @@ import {
   buildSessionBrief,
   assertVolumeConsistency,
   validateSportifHard,
+  canUsePapillon,
   isComposerEnabledForLevel,
   SESSION_COMPOSER_ENABLED_LEVELS,
   sportifWeekRoles,
@@ -130,7 +131,8 @@ function assertPerfSession(session, brief) {
   });
   assert(cons.ok, `volume: ${cons.errors.join("; ")}`);
   const hard = validateSportifHard(session, {
-    papillonOk: !!brief.papillonMastered,
+    papillonOk: canUsePapillon(brief),
+    strokeFocus: brief.strokeFocus,
     allowPaces: !!brief.allowPaces,
     intentId: brief.sessionIntent,
   });

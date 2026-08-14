@@ -3,6 +3,12 @@
  * strokeFocus = quelles nages travailler / préférer
  * sessionSpecificity = à quel point la séance doit coller à ce focus / objectif / course
  */
+import {
+  allocateStrokeMeters,
+  buildFourNagesStrokeSetsFromAlloc,
+  fourNagesMix,
+  FOUR_STROKES,
+} from "./four-nages-mix.js";
 
 /** @typedef {'general'|'stroke_focus'|'goal_specific'|'race_specific'} SessionSpecificity */
 
@@ -55,67 +61,41 @@ export function fourNagesCorpsShare(specificity, strokeFocus) {
 }
 
 /**
- * Construit une portion corps multi-nages (dos/brasse/crawl[/ondulation]).
- * Respecte maxContinuous stroke-aware : 4N faible → 25/50, pas de long continu.
+ * Construit une portion corps 4 nages : une série par nage, jamais un intitulé vague.
+ * Mix selon la préférence ; papillon toujours présent, fractionné (longueur de bassin).
  */
 export function buildFourNagesCorpsPortion(
   targetM,
-  { papillonOk = false, restFor, cue = "nages enchaînées", maxContinuous = 100 } = {},
+  {
+    papillonOk = true,
+    restFor,
+    cue = "nage explicite",
+    maxContinuous = 100,
+    pool = 25,
+    preferredStroke = null,
+    mix = null,
+    level = "regulier",
+    includeStrokes = null,
+  } = {},
 ) {
-  const strokes = papillonOk
-    ? ["dos", "brasse", "crawl", "papillon"]
-    : ["dos", "brasse", "crawl", "ondulation (prépa papillon)"];
-  // Capacité 4N faible → unités courtes (25/50) ; élevée → 50/100
-  const unit =
-    maxContinuous <= 50 ? 25 : maxContinuous <= 100 ? 50 : maxContinuous <= 200 ? 50 : 100;
-  const target = Math.max(unit * strokes.length, Math.round(targetM / unit) * unit);
-  const totalReps = Math.max(strokes.length, Math.round(target / unit));
-  // Répartir équitablement ; le surplus va au crawl (pas à l'ondulation/papillon)
-  const base = Math.floor(totalReps / strokes.length);
-  const repsArr = strokes.map(() => Math.max(1, base));
-  let assigned = repsArr.reduce((a, b) => a + b, 0);
-  let crawlIdx = strokes.findIndex((s) => s === "crawl");
-  if (crawlIdx < 0) crawlIdx = 0;
-  while (assigned < totalReps) {
-    repsArr[crawlIdx] += 1;
-    assigned += 1;
-  }
-  while (assigned > totalReps && repsArr[crawlIdx] > 1) {
-    repsArr[crawlIdx] -= 1;
-    assigned -= 1;
-  }
-  const sets = [];
-  strokes.forEach((st, i) => {
-    const restSec =
-      typeof restFor === "function"
-        ? restFor({ intensity: "facile", distancePerRep: unit, setFormat: "alternating", block: "corps" })
-        : 20;
-    const distPerRep = Math.min(unit, maxContinuous);
-    sets.push({
-      reps: repsArr[i],
-      distancePerRep: distPerRep,
-      restSec,
-      label: st,
-      cue,
-      block: "corps",
-      exerciseId: `corps_4n_${i}`,
-      continuous: false,
-      setFormat: "alternating",
-      blockRole: "specific",
-    });
+  void papillonOk;
+  const weights = mix || fourNagesMix(preferredStroke);
+  const unit = pool === 50 ? 50 : 25;
+  const strokes = includeStrokes || FOUR_STROKES;
+  const allocAll = allocateStrokeMeters(targetM, weights, pool);
+  const alloc = {};
+  for (const s of strokes) alloc[s] = allocAll[s];
+  const built = buildFourNagesStrokeSetsFromAlloc(alloc, {
+    pool,
+    level,
+    restFor,
+    block: "corps",
+    cue,
+    maxContinuous: Math.max(unit, maxContinuous),
+    includeStrokes: strokes,
+    easy: level === "decouverte",
+    exercisePrefix: "corps_4n",
+    maxReps: 12,
   });
-  // Recalibrate volume if unit changed by maxContinuous clamp
-  let used = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  if (used < target - unit && maxContinuous >= unit) {
-    const need = Math.round((target - used) / unit);
-    if (need > 0) {
-      sets[crawlIdx].reps += need;
-      used += need * unit;
-    }
-  }
-  const lines = sets.map(
-    (s) => `-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`,
-  );
-  used = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  return { sets, lines, used };
+  return built;
 }

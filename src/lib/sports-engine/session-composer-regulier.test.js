@@ -23,6 +23,7 @@ import {
   fourNagesCorpsShare,
   humanizeUserFacingText,
   findInternalJargon,
+  canUsePapillon,
 } from "./index.js";
 
 function assert(cond, msg) {
@@ -121,7 +122,8 @@ function assertRegulierSport(session, brief) {
   assert(session.details.some((l) => /rattrap|godille|jambes|flèche|technique|crawl|dos/i.test(l)), "bloc technique");
   assert(session.details.some((l) => /×|x\s*\d/i.test(l)), "vraies séries");
   const hard = validateRegulierHard(session, {
-    papillonOk: !!brief.papillonMastered,
+    papillonOk: canUsePapillon(brief),
+    strokeFocus: brief.strokeFocus,
     qualitySession: !!session.qualitySession,
   });
   assert(hard.ok, `hard: ${hard.errors.join("; ")}`);
@@ -197,8 +199,8 @@ assert(isComposerEnabledForLevel("sportif"), "Sportif enabled");
   const r = composeSession(brief);
   assert(r.ok, `cas4: ${r.reason}`);
   assertRegulierSport(r.session, brief);
-  assert(/dos|brasse|crawl/i.test(r.session.details.join(" ")), "cas4 nages");
-  assert(!/\b\d+\s*×\s*\d+m papillon\b/i.test(r.session.details.join("\n")), "cas4 pas papillon imposé");
+  assert(/dos|brasse|crawl|papillon/i.test(r.session.details.join(" ")), "cas4 nages");
+  assert(/\bpapillon\b/i.test(r.session.details.join(" ")), "cas4 papillon 4 nages");
 }
 
 // === Cas 5 : reprise ===
@@ -397,8 +399,8 @@ for (const g of REGULIER_GOLD_SCENARIOS) {
   assert(rRace.session.sessionSpecificity === "race_specific", "spec race");
   const textRace = rRace.session.details.join("\n");
   assert(/dos|brasse/i.test(textRace), "race_specific corps multi-nages");
-  assert(!/\b\d+\s*×\s*\d+m papillon\b/i.test(textRace), "papillon non maîtrisé");
-  assert(!/\b\d+\s*×\s*\d+m papillon\b/i.test(rSf.session.details.join("\n")), "sf pas papillon");
+  assert(/\bpapillon\b/i.test(textRace), "race_specific papillon");
+  assert(/\bpapillon\b/i.test(rSf.session.details.join("\n")), "sf papillon");
 }
 
 // === Refinement : rôles 4N portent sessionSpecificity ===

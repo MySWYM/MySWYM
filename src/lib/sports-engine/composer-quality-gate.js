@@ -9,6 +9,7 @@ import {
   minFourNageBodyShare,
 } from "./composer-constraints.js";
 import { MAX_PYRAMID_VOLUME } from "./set-formats.js";
+import { hasPullPalmesConflict } from "./session-compose.js";
 
 const FOUR_N_STROKE_RE = /\b(dos|brasse|papillon|ondulation|4\s*nages|quatre\s*nages|multi-?nages)\b/i;
 const CRAWL_ONLY_RE = /\bcrawl\b/i;
@@ -304,13 +305,14 @@ export function validateComposedSession(session, brief = {}, constraints = null)
       }
     }
   }
-  if (/pull/i.test(text) && /palmes/i.test(text) && /pull.*palmes|palmes.*pull/i.test(text)) {
-    // same line pull+palmes
-    for (const line of text.split("\n")) {
-      if (/pull/i.test(line) && /palmes/i.test(line)) {
-        errors.push("matériel incompatible: pull + palmes");
-      }
-    }
+  if (
+    hasPullPalmesConflict([
+      text,
+      ...(session.equipmentUsed || []),
+      ...(session.equipmentRequired || []),
+    ])
+  ) {
+    errors.push("matériel incompatible: pull + palmes");
   }
 
   // --- 4N ---
@@ -568,23 +570,24 @@ export function composeWithQualityGate(brief, composeOnce) {
 
   // Ultime : séance minimale handcrafted (garantit hard constraints)
   const minimal = buildMinimalSafeSession(safeBrief, baseConstraints);
-  // Respect papillon maîtrisé dans le minimal 4N
-  if (baseConstraints.isFourN && brief.papillonMastered) {
+  // Respect 4 nages : les quatre nages, papillon inclus
+  if (baseConstraints.isFourN) {
     const corps = minimal.sets.filter((s) => s.block === "corps");
-    if (corps.length && !minimal.details.some((l) => /papillon/i.test(l))) {
+    const hasPap = minimal.details.some((l) => /\bpapillon\b/i.test(l));
+    if (corps.length && !hasPap) {
       minimal.sets.push({
         reps: 2,
         distancePerRep: 25,
         restSec: 20,
         label: "papillon",
-        cue: "touches multi-nages",
+        cue: "nage explicite",
         block: "corps",
         continuous: false,
         zone: "Z1",
         stroke: "papillon",
         exerciseId: "safe_pap",
       });
-      minimal.details.splice(-1, 0, "-2 × 25m papillon — touches multi-nages — repos 20s");
+      minimal.details.splice(-1, 0, "-2 × 25m papillon — nage explicite — repos 20s");
       const vol = minimal.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
       minimal.volumeFromSets = vol;
       minimal.trainingDistance = vol;
@@ -648,10 +651,10 @@ function buildMinimalSafeSession(brief, constraints) {
   let remain = Math.max(unit * 2, maxVol - used - unit);
   // 4N si requis
   if (constraints.isFourN) {
-    const fourN = Math.max(unit * 3, Math.round(remain * (constraints.minFourNageBodyShare || 0.35)));
-    const per = Math.max(1, Math.floor(fourN / unit / 3));
-    for (const stroke of ["dos", "brasse", "crawl"]) {
-      pushSeries(per, unit, stroke, "touches multi-nages", "corps");
+    const fourN = Math.max(unit * 4, Math.round(remain * (constraints.minFourNageBodyShare || 0.35)));
+    const per = Math.max(1, Math.floor(fourN / unit / 4));
+    for (const stroke of ["crawl", "dos", "brasse", "papillon"]) {
+      pushSeries(per, unit, stroke, "nage explicite", "corps");
     }
     used = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
     remain = Math.max(0, maxVol - used - unit);

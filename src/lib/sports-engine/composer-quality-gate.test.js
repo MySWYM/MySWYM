@@ -684,9 +684,7 @@ function textOf(session) {
   const r = composeSession(brief);
   assert(r.ok, `Q21 compose: ${r.reason}`);
   const txt = textOf(r.session);
-  assert(/dos/i.test(txt) && /brasse/i.test(txt), `Q21 multi-nages\n${txt}`);
-  const crawlOnlyMain = !/corps_4n|travail 4 nages|touches multi-nages|plusieurs nages/i.test(txt);
-  assert(!crawlOnlyMain || (/dos/i.test(txt) && /brasse/i.test(txt) && /papillon|ondulation/i.test(txt)), "Q21 4N décoratif");
+  assert(/dos/i.test(txt) && /brasse/i.test(txt) && /papillon/i.test(txt), `Q21 multi-nages\n${txt}`);
   console.log("Q21 PASS (4N corps)");
 }
 

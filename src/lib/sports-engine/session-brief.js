@@ -122,6 +122,8 @@ export function buildSessionBrief({
       weekCtx?.capacity?.maxContinuousDistance ??
       null,
     strokeFocus,
+    preferredStroke: sport?.preferredStroke || null,
+    swimStyle: sport?.swimStyle || null,
     papillonMastered: !!sport?.papillonMastered,
     strokesMastered: sport?.strokesMastered || null,
     sessionIntent: role.sessionIntent || sport?.sessionIntent || null,

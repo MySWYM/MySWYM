@@ -97,6 +97,7 @@ export {
   displayIntensity,
   sessionFitsEquipment,
   detectEquipmentInDetails,
+  hasPullPalmesConflict,
 } from "./session-compose.js";
 export { validateSession, maxZoneForProfile } from "./validate.js";
 export {
@@ -187,8 +188,32 @@ export {
 } from "./coach-restitution.js";
 export { ARTHUR_GOLD_TEST_FIXTURES } from "./arthur-gold-fixtures.js";
 export { findInternalJargon } from "./user-facing.js";
+export {
+  sanitizeSessionDetailLine,
+  prettifySessionDetailLine,
+  sanitizeSessionDetails,
+  isVagueVolumeThemeTitle,
+  hasEducatifOrConcreteSwim,
+  containsForbiddenIntensityCode,
+  assertDisplayLabelsClean,
+} from "./session-labels.js";
 export { normalizeStrokeFocus, canUsePapillon, strokeSwimLabel, STROKE_FOCUS_IDS } from "./stroke-focus.js";
+export {
+  fourNagesMix,
+  allocateStrokeMeters,
+  measureStrokeVolume,
+  isFourNagesDeclared,
+  FOUR_STROKES,
+  FOUR_NAGES_MIX,
+  mixWithinTolerance,
+} from "./four-nages-mix.js";
 export { fourNagesCorpsShare } from "./session-specificity.js";
+export {
+  IM_ORDER,
+  buildFourNagesImSets,
+  pickImFormat,
+  imFormatCatalog,
+} from "./four-nages-im.js";
 
 import { buildSportProfile } from "./types.js";
 import { estimateCapacity } from "./capacity.js";
