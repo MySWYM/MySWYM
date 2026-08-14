@@ -49,7 +49,8 @@ import {
 } from "./lib/swim-pace.js";
 import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
-import SessionLiveView from "./SessionLiveView.jsx";
+import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
+import PoolMode from "./workout/PoolMode.jsx";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
@@ -7116,6 +7117,7 @@ const SessionCard = ({
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [copied, setCopied] = useState(false);
+  const [poolOpen, setPoolOpen] = useState(false);
   const viewedRef = useRef(false);
   const startedRef = useRef(false);
   const intensity = parseIntensity(session.intensity);
@@ -7130,6 +7132,7 @@ const SessionCard = ({
   const sessionOnceBase = analyticsCtx
     ? `${analyticsCtx.planId || "plan"}:${weekIndex}:${sessionIndex}`
     : null;
+  const poolSessionKey = sessionOnceBase || `session_${weekIndex}_${sessionIndex}`;
 
   const emitSessionViewed = () => {
     if (!analyticsCtx || viewedRef.current) return;
@@ -7457,68 +7460,24 @@ const SessionCard = ({
             {expanded ? <ChevronUp size={14} color={G.greyMid} /> : <ChevronDown size={14} color={G.greyMid} />}
           </button>
           {expanded && (
-            <div style={{ background: "#fafbfc", padding: "8px 12px 14px" }}>
-              {intensity.cue && (
-                <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, margin: "0 4px 12px" }}>
-                  {intensity.cue.charAt(0).toUpperCase() + intensity.cue.slice(1)}
-                </p>
-              )}
-              {(() => {
-                const nodes = [];
-                let workCounterLocal = 0;
-                detailGroups.forEach((g, gi) => {
-                  if (g.type === "block") {
-                    workCounterLocal += 1;
-                    nodes.push(
-                      <div key={`b-${gi}`} style={{
-                        background: G.surface, borderRadius: 14, padding: "4px 12px",
-                        border: `1px solid ${G.greyLight}`,
-                      }}>
-                        <SessionBlock
-                          detail={g.header}
-                          index={0}
-                          workIndex={workCounterLocal}
-                          accent={{ bg: tm.bg, color: tm.color }}
-                          children={g.children}
-                        />
-                      </div>
-                    );
+            <div style={{ background: "#fafbfc", padding: "12px 12px 16px" }}>
+              <WorkoutPrepView
+                session={session}
+                colors={G}
+                accent={{ bg: tm.bg, color: tm.color }}
+                isPremium={isPremium}
+                embedded
+                showStart={!resolved}
+                onUpgrade={() => onUpgrade?.("session_locked")}
+                onStart={() => {
+                  if (!isPremium) {
+                    onUpgrade?.("session_locked");
                     return;
                   }
-                  const group = [];
-                  g.lines.forEach((raw, li) => {
-                    const parsed = parseSessionDetail(raw);
-                    if (!parsed) return;
-                    if (parsed.kind !== "work") {
-                      nodes.push(
-                        <SessionBlock key={`s-${gi}-${li}`} detail={raw} index={0} workIndex={0} accent={{ bg: tm.bg, color: tm.color }} />
-                      );
-                      return;
-                    }
-                    workCounterLocal += 1;
-                    group.push({ raw, workIndex: workCounterLocal, key: `${gi}-${li}` });
-                  });
-                  if (group.length) {
-                    nodes.push(
-                      <div key={`g-${gi}`} style={{
-                        background: G.surface, borderRadius: 14, padding: "4px 12px",
-                        border: `1px solid ${G.greyLight}`,
-                      }}>
-                        {group.map((item, ii) => (
-                          <SessionBlock
-                            key={item.key}
-                            detail={item.raw}
-                            index={ii}
-                            workIndex={item.workIndex}
-                            accent={{ bg: tm.bg, color: tm.color }}
-                          />
-                        ))}
-                      </div>
-                    );
-                  }
-                });
-                return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{nodes}</div>;
-              })()}
+                  emitSessionStarted();
+                  setPoolOpen(true);
+                }}
+              />
               <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
                 <button
                   type="button"
@@ -7553,31 +7512,20 @@ const SessionCard = ({
               <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
                 Colle le texte dans WhatsApp ou la description Strava.
               </p>
-              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "12px 4px 0" }}>
-                Un terme ou un éducatif pas clair ?{" "}
-                <a
-                  href={INSTAGRAM_MYSWYM}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
-                >
-                  Vidéos sur Instagram
-                </a>
-                {" "}— Premium.
-              </p>
-              <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.5, margin: "8px 4px 0" }}>
-                Vocabulaire ?{" "}
-                <a
-                  href="/blog/glossaire-natation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: G.blue, fontWeight: 600, textDecoration: "none" }}
-                >
-                  Glossaire natation
-                </a>
-                .
-              </p>
             </div>
+          )}
+          {poolOpen && (
+            <PoolMode
+              session={session}
+              sessionKey={poolSessionKey}
+              colors={G}
+              accent={{ bg: tm.bg, color: tm.color }}
+              onClose={() => setPoolOpen(false)}
+              onFinish={() => {
+                setPoolOpen(false);
+                if (!resolved && isPremium) onComplete?.("done");
+              }}
+            />
           )}
             </>
           )}
@@ -8050,6 +7998,7 @@ const ProgressionLoopView = ({
   const session = plan?.weeks?.[0]?.sessions?.[0];
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
+  const [poolOpen, setPoolOpen] = useState(false);
 
   if (!session) {
     return (
@@ -8125,13 +8074,13 @@ const ProgressionLoopView = ({
         {!isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="card" />}
 
         <div style={{ marginBottom: 14 }}>
-          <SessionLiveView
+          <WorkoutPrepView
             session={session}
+            colors={G}
+            accent={{ bg: (TYPE_META[session.type] || TYPE_META.ENDURANCE).bg, color: (TYPE_META[session.type] || TYPE_META.ENDURANCE).color }}
             isPremium={isPremium}
-            badge={resolved ? "Séance validée" : "Séance du jour"}
-            subtitle={session.title}
-            showCta={!resolved}
-            ctaLabel={isPremium ? "Terminer la séance" : "Activer l’essai pour nager"}
+            showStart={!resolved}
+            startLabel={isPremium ? "Commencer la séance" : "Activer l’essai pour nager"}
             onUpgrade={onUpgrade}
             onStart={() => {
               if (!isPremium) {
@@ -8147,13 +8096,38 @@ const ProgressionLoopView = ({
                 sessionIndex: 0,
                 volume: props.volume,
               }, { onceKey: `session_started:${activePlanId || "loop"}:0:0` });
-              onComplete("done");
+              setPoolOpen(true);
             }}
           />
         </div>
 
+        {poolOpen && (
+          <PoolMode
+            session={session}
+            sessionKey={`${activePlanId || "loop"}:today`}
+            colors={G}
+            accent={{ bg: (TYPE_META[session.type] || TYPE_META.ENDURANCE).bg, color: (TYPE_META[session.type] || TYPE_META.ENDURANCE).color }}
+            onClose={() => setPoolOpen(false)}
+            onFinish={() => {
+              setPoolOpen(false);
+              onComplete("done");
+            }}
+          />
+        )}
+
         {!resolved && isPremium && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+            <button
+              type="button"
+              onClick={() => onComplete("done")}
+              style={{
+                width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
+                border: `1.5px solid ${G.greyLight}`, background: G.surface,
+                color: G.inkLight, fontSize: 14, fontWeight: 700,
+              }}
+            >
+              Marquer comme terminée
+            </button>
             <button
               type="button"
               onClick={() => onComplete("not_done")}
