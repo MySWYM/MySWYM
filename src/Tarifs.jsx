@@ -253,7 +253,7 @@ export default function TarifsPage() {
   const annualHighlights = [
     "Coach personnel et programme adaptatif jusqu'au jour J.",
     "Allures T100, projection et adaptation apres feedback.",
-    "Strava, badges, multi-plans et suivi semaine apres semaine.",
+    "Strava, badges, adaptation coach et suivi semaine apres semaine.",
     "39,99€/an · pas de remboursement (hors cas legaux).",
   ];
 

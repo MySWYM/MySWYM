@@ -5,6 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSportsPersistence } from "../../../../src/lib/sports-persistence/index.js";
 import { generateArthurPlan } from "../../../../src/lib/sports-engine/server-adapter/generateArthurPlan.js";
+import { replaceActivePlan } from "../../../../src/lib/swimmer-profile.js";
 import { isUuid } from "../security.js";
 import { arthurLog } from "../logging.js";
 import { trackAiEvent } from "../tracking.js";
@@ -74,7 +75,7 @@ export async function createTrainingPlan(
 
   const { data: plansRow, error: plansErr } = await admin
     .from("user_plans")
-    .select("plans_json, active_plan_id, updated_at")
+    .select("plans_json, active_plan_id, plan_history, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -84,6 +85,9 @@ export async function createTrainingPlan(
   }
 
   const plans = Array.isArray(plansRow?.plans_json) ? plansRow.plans_json : [];
+  const planHistory = Array.isArray(plansRow?.plan_history)
+    ? plansRow.plan_history
+    : [];
   const activeId = plansRow?.active_plan_id || null;
   const activeEntry =
     plans.find((p: { id?: string }) => p?.id === activeId) || plans[0] || null;
@@ -144,10 +148,8 @@ export async function createTrainingPlan(
     });
   }
 
-  const planId =
-    args.replace_existing && activeEntry?.id
-      ? activeEntry.id
-      : `plan_${Date.now()}`;
+  // Nouveau plan_id à chaque génération — l'ancien part en plan_history
+  const planId = `plan_${Date.now()}`;
 
   const entryProfile = { ...generated.profile };
   delete entryProfile.taste;
@@ -160,23 +162,19 @@ export async function createTrainingPlan(
     startDate: generated.plan.startDate || Date.now(),
   };
 
-  let nextPlans;
-  if (args.replace_existing && activeEntry?.id) {
-    nextPlans = plans.map((p: { id?: string }) =>
-      p.id === activeEntry.id ? entry : p,
-    );
-    if (!nextPlans.some((p: { id?: string }) => p.id === planId)) {
-      nextPlans = [...nextPlans, entry];
-    }
-  } else {
-    nextPlans = [...plans.filter((p: { id?: string }) => p.id !== planId), entry];
-  }
+  const replaced = replaceActivePlan(
+    plans,
+    planHistory,
+    entry,
+    activeEntry?.id || activeId,
+  );
 
   const { error: upsertErr } = await admin.from("user_plans").upsert(
     {
       user_id: userId,
-      plans_json: nextPlans,
-      active_plan_id: planId,
+      plans_json: replaced.plans,
+      active_plan_id: replaced.activeId,
+      plan_history: replaced.history,
       updated_at: new Date().toISOString(),
       profile: entryProfile,
       plan: generated.plan,
@@ -224,6 +222,10 @@ export async function createTrainingPlan(
 
 function mapSportRowToProfile(row: Record<string, unknown>) {
   if (!row || Object.keys(row).length === 0) return {};
+  const extra =
+    row.extra && typeof row.extra === "object"
+      ? (row.extra as Record<string, unknown>)
+      : {};
   return {
     level: row.level,
     goal: row.objective,
@@ -232,9 +234,16 @@ function mapSportRowToProfile(row: Record<string, unknown>) {
     pool: row.pool_length,
     equipment: row.equipment || [],
     preferredStroke: row.preferred_stroke,
+    swimStyle: row.swim_style || extra.swimStyle || null,
+    age: row.age ?? extra.age ?? null,
+    weightKg: extra.weightKg ?? null,
+    heightCm: extra.heightCm ?? null,
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     pace100: row.pace100,
     readinessProfile: row.readiness_profile,
+    category: extra.category ?? null,
+    eventDate: extra.eventDate ?? null,
+    trainingFocus: extra.trainingFocus ?? null,
   };
 }

@@ -19,7 +19,7 @@ import {
   normalizeFeedbackRating,
   missedSessionPolicy,
 } from "./lib/sports-engine/index.js";
-import { createSportsPersistence } from "./lib/sports-persistence/index.js";
+import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -27,6 +27,18 @@ import {
   applyWeekFeedbackToTaste,
   mergeTasteProfiles,
 } from "./lib/user-taste.js";
+import {
+  extractSwimmerProfile,
+  extractPlanObjective,
+  mergeForGeneration,
+  isSwimmerProfileComplete,
+  resolveQuestionnaireMode,
+  buildQuestionnaireDraft,
+  enforceSingleActivePlan,
+  replaceActivePlan,
+  TRAINING_FOCUS_OPTIONS,
+  hydrateSwimmerFromSources,
+} from "./lib/swimmer-profile.js";
 import {
   appZoneMultForT100,
   calcDistanceProjection,
@@ -1173,21 +1185,23 @@ const writeDeletedPlanIds = (userId, ids) => {
   } catch { /* ignore */ }
 };
 
-/** Persistance compte : union local∪remote (sauf tombstones), puis upsert Supabase. */
-const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds = null) => {
+/** Persistance compte : union local∪remote (sauf tombstones), 1 plan actif max, puis upsert Supabase. */
+const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds = null, localHistory = []) => {
   const now = new Date().toISOString();
   const tombstones = deletedIds instanceof Set ? new Set(deletedIds) : readDeletedPlanIds(userId);
   let remotePlans = [];
   let remoteActive = null;
+  let remoteHistory = [];
   let remoteTime = 0;
   try {
     const { data } = await supabase
       .from("user_plans")
-      .select("plans_json, active_plan_id, updated_at")
+      .select("plans_json, active_plan_id, plan_history, updated_at")
       .eq("user_id", userId)
       .maybeSingle();
     if (Array.isArray(data?.plans_json)) remotePlans = data.plans_json;
     remoteActive = data?.active_plan_id || null;
+    if (Array.isArray(data?.plan_history)) remoteHistory = data.plan_history;
     remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
   } catch { /* offline / network */ }
 
@@ -1197,7 +1211,7 @@ const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds 
     if (ts) localTime = Math.max(new Date(ts).getTime() || 0, localTime);
   } catch { /* ignore */ }
 
-  const { plans: merged, active } = mergePlanLists(
+  const { plans: mergedRaw, active: activeRaw } = mergePlanLists(
     localPlans || [],
     remotePlans,
     activePlanId,
@@ -1208,17 +1222,37 @@ const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds 
     tombstones,
   );
 
+  // Historique : union local ∪ remote (par id), sans doublon
+  const histById = new Map();
+  for (const h of [...(remoteHistory || []), ...(localHistory || [])]) {
+    if (h?.id) histById.set(h.id, h);
+  }
+  const existingHistory = [...histById.values()];
+  const enforced = enforceSingleActivePlan(mergedRaw, activeRaw, existingHistory);
+  const merged = enforced.plans;
+  const active = enforced.activeId;
+  const history = enforced.history;
+
   try {
     localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(merged));
     if (active) localStorage.setItem(`myswym_active_${userId}`, active);
     else localStorage.removeItem(`myswym_active_${userId}`);
+    localStorage.setItem(`myswym_plan_history_${userId}`, JSON.stringify(history));
     localStorage.setItem(`myswym_plans_updated_${userId}`, now);
   } catch { /* ignore */ }
 
   if (merged.length === 0) {
-    const { error } = await supabase.from("user_plans").delete().eq("user_id", userId);
+    const { error } = await supabase.from("user_plans").upsert({
+      user_id: userId,
+      plans_json: [],
+      active_plan_id: null,
+      plan_history: history,
+      profile: null,
+      plan: null,
+      updated_at: now,
+    }, { onConflict: "user_id" });
     if (!error) writeDeletedPlanIds(userId, new Set());
-    return { plans: [], active: null, error: error || null };
+    return { plans: [], active: null, history, error: error || null };
   }
 
   const activeEntry = merged.find((e) => e.id === active) ?? merged[0];
@@ -1226,6 +1260,7 @@ const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds 
     user_id: userId,
     plans_json: merged,
     active_plan_id: active,
+    plan_history: history,
     profile: activeEntry?.profile ?? null,
     plan: activeEntry?.plan ?? null,
     updated_at: now,
@@ -1234,11 +1269,11 @@ const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds 
   if (error) {
     if (import.meta.env.DEV) console.warn("[plans] upsert failed", error.message);
     writeDeletedPlanIds(userId, tombstones);
-    return { plans: merged, active, error };
+    return { plans: merged, active, history, error };
   }
 
   writeDeletedPlanIds(userId, new Set());
-  return { plans: merged, active, error: null };
+  return { plans: merged, active, history, error: null };
 };
 
 const computeStats = (plan) => {
@@ -2995,7 +3030,7 @@ const StravaSection = ({
   );
 };
 
-const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange }) => {
+const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange, onSwimmerProfileChange }) => {
   const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
   const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
@@ -3153,7 +3188,6 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
   const goalLabel = GOALS.find(g => g.id === profile?.goal)?.label
     || CATEGORIES.find(c => c.id === profile?.category)?.label
     || "Mon objectif";
-  const freqLabel = FREQUENCIES.find(f => f.id === profile?.sessionsPerWeek)?.label || `${profile?.sessionsPerWeek || 1} séance${(profile?.sessionsPerWeek || 1) > 1 ? "s" : ""} / semaine`;
 
   return (
     <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
@@ -3339,24 +3373,16 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Mon objectif</div>
-              <div style={{ fontSize: 12, color: G.grey }}>Ton cap personnel dans l&apos;application</div>
+              <div style={{ fontSize: 12, color: G.grey }}>Change via « Nouveau plan » dans Programme</div>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {[
               { label: "Objectif", value: goalLabel },
-              { label: "Niveau", value: levelLabel },
-              { label: "Rythme", value: freqLabel },
-              { label: "Bassin", value: `${profile?.pool || 25} m` },
-              profile?.age ? { label: "Âge", value: `${profile.age} ans` } : null,
-              profile?.weightKg ? { label: "Poids", value: `${profile.weightKg} kg` } : null,
-              profile?.heightCm ? { label: "Taille", value: `${profile.heightCm} cm` } : null,
-              profile?.injuryStatus ? {
-                label: "Blessure",
-                value: formatInjurySummary(profile),
-              } : null,
-              profile?.swimStyle ? { label: "Style", value: STYLE_LABELS[profile.swimStyle] || profile.swimStyle } : null,
-              profile?.preferredStroke ? { label: "Nage préf.", value: STROKE_LABELS[profile.preferredStroke] || profile.preferredStroke } : null,
+              profile?.eventDate ? { label: "Date", value: profile.eventDate } : null,
+              profile?.trainingFocus
+                ? { label: "Focus", value: TRAINING_FOCUS_OPTIONS.find((o) => o.id === profile.trainingFocus)?.label || profile.trainingFocus }
+                : null,
             ].filter(Boolean).map((item) => (
               <div key={item.label} style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 12px" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
@@ -3364,11 +3390,155 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               </div>
             ))}
           </div>
+        </div>
 
+        {onSwimmerProfileChange && (
+          <>
+            <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Mon profil</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {[
+                  { key: "age", label: "Âge", placeholder: "ans" },
+                  { key: "weightKg", label: "Poids", placeholder: "kg" },
+                  { key: "heightCm", label: "Taille", placeholder: "cm" },
+                ].map(({ key, label, placeholder }) => (
+                  <label key={key} style={{ display: "block" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={profile?.[key] ?? ""}
+                      placeholder={placeholder}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        onSwimmerProfileChange({ [key]: raw === "" ? "" : Number(raw) });
+                      }}
+                      style={{
+                        width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12,
+                        border: `1.5px solid ${G.greyLight}`, background: G.greyXLight, fontSize: 14, fontWeight: 700, color: G.ink,
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Ma natation</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {LEVELS.map((l) => {
+                  const active = profile?.level === l.id;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ level: l.id })}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Bassin</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                {POOLS.map((p) => {
+                  const active = Number(profile?.pool) === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ pool: p.id })}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fréquence</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {FREQUENCIES.map((f) => {
+                  const active = Number(profile?.sessionsPerWeek) === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ sessionsPerWeek: f.id })}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Style</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                {SWIM_STYLES.map((s) => {
+                  const active = profile?.swimStyle === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ swimStyle: s.id })}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Nage préférée</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {PREFERRED_STROKES.map((s) => {
+                  const active = profile?.preferredStroke === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ preferredStroke: s.id })}
+                      style={{
+                        padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
           {onEquipmentChange && (
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${G.greyLight}` }}>
+            <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: G.ink }}>Matériel</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Mon matériel</div>
                 {!editingEquipment ? (
                   <button
                     type="button"
@@ -3457,6 +3627,110 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             </div>
           )}
         </div>
+
+        {onSwimmerProfileChange && (
+          <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Santé et blessures</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              {[
+                { id: "aucune", label: "Aucune" },
+                { id: "oui", label: "Oui" },
+              ].map((o) => {
+                const active = profile?.injuryStatus === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => {
+                      if (o.id === "aucune") {
+                        onSwimmerProfileChange({
+                          injuryStatus: "aucune",
+                          injuryZone: null,
+                          injurySeverity: null,
+                          healthDeclaration: false,
+                        });
+                      } else {
+                        onSwimmerProfileChange({ injuryStatus: "oui" });
+                      }
+                    }}
+                    style={{
+                      flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                      border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                      background: active ? G.blueLight : G.surface,
+                      color: active ? G.blue : G.ink,
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            {profile?.injuryStatus === "oui" && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zone</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  {INJURY_ZONES.map((z) => {
+                    const active = profile?.injuryZone === z.id;
+                    return (
+                      <button
+                        key={z.id}
+                        type="button"
+                        onClick={() => onSwimmerProfileChange({ injuryZone: z.id })}
+                        style={{
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blueLight : G.surface,
+                          color: active ? G.blue : G.ink,
+                        }}
+                      >
+                        {z.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sévérité</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  {INJURY_SEVERITIES.map((s) => {
+                    const active = profile?.injurySeverity === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => onSwimmerProfileChange({ injurySeverity: s.id })}
+                        style={{
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blueLight : G.surface,
+                          color: active ? G.blue : G.ink,
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={!!profile?.healthConsent}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  onSwimmerProfileChange({
+                    healthConsent: v,
+                    healthConsentAt: v ? new Date().toISOString() : null,
+                  });
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
+                {HEALTH_CONSENT_CHECKBOX}
+              </span>
+            </label>
+          </div>
+        )}
 
         <div style={{ marginBottom: 24 }}>
           <HomeBadgesSection plan={plan} />
@@ -5215,12 +5489,78 @@ const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStro
   );
 };
 
+/** Focus d’entraînement du cycle (objectif plan). */
+const StepTrainingFocus = ({
+  value,
+  onChange,
+  onNext,
+  onBack,
+  isLast = false,
+  equipmentSummary = null,
+  onEditProfile = null,
+}) => (
+  <div className="fade-up">
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+      Sur quoi veux-tu mettre l’accent ?
+    </h2>
+    <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
+      On orientera le cycle autour de cette priorité.
+    </p>
+
+    {equipmentSummary != null && (
+      <div style={{
+        background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16,
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+      }}>
+        <div style={{ fontSize: 13, color: G.ink, lineHeight: 1.4, minWidth: 0 }}>
+          <span style={{ fontWeight: 700 }}>Matériel disponible: </span>
+          {equipmentSummary}
+        </div>
+        {onEditProfile && (
+          <button
+            type="button"
+            onClick={onEditProfile}
+            style={{
+              flexShrink: 0, background: "none", border: "none", color: G.blue,
+              fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4,
+            }}
+          >
+            Modifier
+          </button>
+        )}
+      </div>
+    )}
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+      {TRAINING_FOCUS_OPTIONS.map((o) => {
+        const active = value === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onChange(o.id)}
+            style={{
+              padding: "16px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
+              border: `2px solid ${active ? G.blue : G.greyLight}`,
+              background: active ? G.blueLight : G.surface,
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.blueDeep : G.ink }}>{o.label}</div>
+            <div style={{ fontSize: 13, color: active ? G.blue : G.grey, marginTop: 2 }}>{o.desc}</div>
+          </button>
+        );
+      })}
+    </div>
+
+    <Btn onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
+    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+  </div>
+);
+
 /**
- * Questionnaire plan — utiliséé en plein écran (visiteur) ou dans l’onglet Programme (compte connecté).
- * Flux :
- *   progression : 1 → 3 → 5 → 7 → 8 → 10 (matériel) → 9 (nages) → generate
- *   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 10 → 9 → 6 (date) → generate
- *   diplome : 1 → 2 → 5 → 7 → 8 → 10 → 9 → 6 — pas de niveau
+ * Questionnaire plan — utilisé en plein écran (visiteur) ou dans l’onglet Programme (compte connecté).
+ * mode="full"  : profil + objectif (1re fois)
+ * mode="goal"  : objectif + focus seulement (profil déjà connu)
  */
 const OnboardingWizard = ({
   profile,
@@ -5233,18 +5573,62 @@ const OnboardingWizard = ({
   onUpgrade,
   onGenerate,
   onCancel = null,
+  mode = "full",
+  onEditProfile = null,
 }) => {
+  const isGoalMode = mode === "goal";
   const isProgression = profile.category === "progression";
   const isDiplome = profile.category === "diplome";
   const noDate = isProgression;
   const disabledLevels = [];
-  const totalSteps = isProgression ? 6 : isDiplome ? 7 : 8;
+
+  const equipmentSummary = (() => {
+    if (!Array.isArray(profile.equipment)) return "Non renseigné";
+    if (profile.equipment.length === 0) return "Aucun";
+    return profile.equipment.map((id) => EQUIPMENT_OPTS.find((o) => o.id === id)?.label || id).join(" · ");
+  })();
+
+  const totalSteps = isGoalMode
+    ? (isProgression ? 2 : 4)
+    : (isProgression ? 7 : isDiplome ? 8 : 9);
+
   const stepBefore5 = isDiplome ? 2 : 3;
   const progressStep = (() => {
-    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6 })[step] || 1;
-    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 6: 7 })[step] || 1;
-    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 9: 7, 6: 8 })[step] || 1;
+    if (isGoalMode) {
+      if (isProgression) return ({ 1: 1, 12: 2 })[step] || 1;
+      return ({ 1: 1, 2: 2, 6: 3, 12: 4 })[step] || 1;
+    }
+    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 12: 7 })[step] || 1;
+    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 12: 7, 6: 8 })[step] || 1;
+    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 9: 7, 12: 8, 6: 9 })[step] || 1;
   })();
+
+  const goAfterCategory = (cat) => {
+    if (cat === "progression") {
+      patchProfile({ category: cat, goal: "progression", pace100: null });
+      if (isGoalMode) setStep(12);
+      else setStep(3);
+    } else {
+      patchProfile({ category: cat, goal: "", pace100: null });
+      setStep(2);
+    }
+  };
+
+  const goAfterSubGoal = (goalId) => {
+    if (isGoalMode) {
+      if (isDiplome) patchProfile({ goal: goalId, level: "sportif" });
+      else update("goal", goalId);
+      setStep(noDate ? 12 : 6);
+      return;
+    }
+    if (isDiplome) {
+      patchProfile({ goal: goalId, level: "sportif" });
+      setStep(5);
+    } else {
+      update("goal", goalId);
+      setStep(3);
+    }
+  };
 
   return (
     <>
@@ -5268,33 +5652,17 @@ const OnboardingWizard = ({
       )}
 
       {step === 1 && (
-        <Step1_Category onSelect={cat => {
-          if (cat === "progression") {
-            patchProfile({ category: cat, goal: "progression", pace100: null });
-            setStep(3);
-          } else {
-            patchProfile({ category: cat, goal: "", pace100: null });
-            setStep(2);
-          }
-        }} />
+        <Step1_Category onSelect={goAfterCategory} />
       )}
 
       {step === 2 && !isProgression && (
         <Step2_SubGoal
           category={profile.category}
-          onSelect={goalId => {
-            if (isDiplome) {
-              patchProfile({ goal: goalId, level: "sportif" });
-              setStep(5);
-            } else {
-              update("goal", goalId);
-              setStep(3);
-            }
-          }}
+          onSelect={goAfterSubGoal}
           onBack={() => setStep(1)} />
       )}
 
-      {step === 3 && !isDiplome && (
+      {!isGoalMode && step === 3 && !isDiplome && (
         <Step3_Level
           value={profile.level} onChange={v => update("level", v)}
           pool={profile.pool} onPoolChange={v => update("pool", v)}
@@ -5307,7 +5675,7 @@ const OnboardingWizard = ({
           onBack={() => isProgression ? setStep(1) : setStep(2)} />
       )}
 
-      {step === 5 && (
+      {!isGoalMode && step === 5 && (
         <Step4_Frequency
           value={profile.sessionsPerWeek}
           onChange={v => update("sessionsPerWeek", v)}
@@ -5320,7 +5688,7 @@ const OnboardingWizard = ({
         />
       )}
 
-      {step === 7 && (
+      {!isGoalMode && step === 7 && (
         <StepPhysique
           age={profile.age}
           weightKg={profile.weightKg}
@@ -5331,7 +5699,7 @@ const OnboardingWizard = ({
         />
       )}
 
-      {step === 8 && (
+      {!isGoalMode && step === 8 && (
         <StepHealthConsent
           checked={!!profile.healthConsent}
           onChange={(v) => {
@@ -5357,7 +5725,7 @@ const OnboardingWizard = ({
         />
       )}
 
-      {step === 11 && (
+      {!isGoalMode && step === 11 && (
         <StepInjury
           injuryStatus={profile.injuryStatus}
           injuryZone={profile.injuryZone}
@@ -5383,7 +5751,7 @@ const OnboardingWizard = ({
         />
       )}
 
-      {step === 10 && (
+      {!isGoalMode && step === 10 && (
         <StepEquipment
           equipment={profile.equipment}
           onChange={(v) => update("equipment", v)}
@@ -5392,20 +5760,50 @@ const OnboardingWizard = ({
         />
       )}
 
-      {step === 9 && (
+      {!isGoalMode && step === 9 && (
         <StepSwimPrefs
           swimStyle={profile.swimStyle}
           preferredStroke={profile.preferredStroke}
           onChangeStyle={(v) => update("swimStyle", v)}
           onChangeStroke={(v) => update("preferredStroke", v)}
-          onNext={() => (noDate ? onGenerate() : setStep(6))}
+          onNext={() => setStep(12)}
           onBack={() => setStep(10)}
-          isLast={noDate}
+          isLast={false}
+        />
+      )}
+
+      {step === 12 && (
+        <StepTrainingFocus
+          value={profile.trainingFocus}
+          onChange={(v) => update("trainingFocus", v)}
+          onNext={() => {
+            if (isGoalMode || noDate) onGenerate();
+            else setStep(6);
+          }}
+          onBack={() => {
+            if (isGoalMode) {
+              if (noDate) setStep(isProgression ? 1 : 2);
+              else setStep(6);
+            } else {
+              setStep(9);
+            }
+          }}
+          isLast={isGoalMode || noDate}
+          equipmentSummary={isGoalMode ? equipmentSummary : null}
+          onEditProfile={isGoalMode ? onEditProfile : null}
         />
       )}
 
       {step === 6 && !noDate && (
-        <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={onGenerate} onBack={() => setStep(9)} />
+        <Step2_Date
+          value={profile.eventDate}
+          onChange={v => update("eventDate", v)}
+          onNext={() => (isGoalMode ? setStep(12) : onGenerate())}
+          onBack={() => {
+            if (isGoalMode) setStep(2);
+            else setStep(12);
+          }}
+        />
       )}
     </>
   );
@@ -5884,7 +6282,7 @@ const PREMIUM_TIER_LINES = [
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
-  "Projection d’allures · multi-plans · vidéos technique",
+  "Projection d’allures · plans complets · vidéos technique",
 ];
 
 const PlanTierComparison = ({ compact = false }) => (
@@ -5919,7 +6317,7 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
         </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: G.white }}>Premium actif</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Plan complet · départs D… · multi-projets</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Plan complet · départs D… · adaptation coach</div>
         </div>
       </div>
     );
@@ -7657,10 +8055,7 @@ const ProgressionLoopView = ({
             <PlanSelector
               plans={plans}
               activePlanId={activePlanId}
-              isPremium={isPremium}
-              onSwitchPlan={onSwitchPlan}
               onAddPlan={onAddPlan}
-              onDeletePlan={onDeletePlan}
             />
           </div>
         </div>
@@ -7791,215 +8186,65 @@ const ProgressionLoopView = ({
 const PlanSelector = ({
   plans,
   activePlanId,
-  isPremium,
-  onSwitchPlan,
   onAddPlan,
-  onDeletePlan,
 }) => {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef(null);
-  const [menuStyle, setMenuStyle] = useState({ top: 88, left: 16, width: 320 });
   const planList = plans || [];
   const activeEntry = planList.find((entry) => entry.id === activePlanId) || planList[0] || null;
-  const visiblePlans = isPremium
-    ? planList
-    : activeEntry
-      ? [activeEntry]
-      : planList.slice(0, 1);
   const primary = getPlanPrimaryLabel(activeEntry);
   const secondary = getPlanSecondaryLabel(activeEntry);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const updatePosition = () => {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const left = Math.max(16, Math.min(rect.left, window.innerWidth - 16 - rect.width));
-      const width = Math.min(rect.width, window.innerWidth - 32);
-      setMenuStyle({ top: rect.bottom + 10, left, width });
-    };
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open]);
-
   if (!planList.length) return null;
 
-  const closeMenu = () => setOpen(false);
-  const handleSelect = (id) => {
-    onSwitchPlan(id);
-    closeMenu();
-  };
-
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          width: "100%",
-          minHeight: 56,
-          padding: "12px 16px",
-          borderRadius: 18,
-          cursor: "pointer",
-          border: `1.5px solid ${open ? G.blue : G.greyLight}`,
-          background: open ? G.blueLight : G.surface,
-          color: G.ink,
-          boxShadow: open ? "0 10px 24px rgba(53,93,163,0.10)" : "0 2px 10px rgba(25,28,30,0.04)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          textAlign: "left",
-          marginBottom: 12,
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
-            Plan actif
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: open ? G.blueDeep : G.ink, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {primary}
-          </div>
-          {secondary && (
-            <div style={{ fontSize: 12, fontWeight: 600, color: open ? G.blue : G.grey, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {secondary}
-            </div>
-          )}
+    <div style={{
+      width: "100%",
+      minHeight: 56,
+      padding: "12px 16px",
+      borderRadius: 18,
+      border: `1.5px solid ${G.greyLight}`,
+      background: G.surface,
+      boxShadow: "0 2px 10px rgba(25,28,30,0.04)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+      marginBottom: 12,
+    }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+          Plan actif
         </div>
-        {open ? <ChevronUp size={18} color={G.blue} /> : <ChevronDown size={18} color={G.greyMid} />}
-      </button>
-      {open && createPortal(
-        <>
-          <button
-            type="button"
-            aria-label="Fermer le sélecteur de plan"
-            onClick={closeMenu}
-            style={{
-              position: "fixed",
-              inset: 0,
-              border: "none",
-              background: "rgba(12,14,18,0.42)",
-              zIndex: 79,
-              cursor: "pointer",
-            }}
-          />
-          <div style={{
-            position: "fixed",
-            top: menuStyle.top,
-            left: menuStyle.left,
-            width: menuStyle.width,
-            maxWidth: "calc(100vw - 32px)",
-            background: G.surface,
-            border: `1px solid ${G.greyLight}`,
-            borderRadius: 20,
-            boxShadow: "0 24px 60px rgba(12,14,18,0.20)",
-            zIndex: 80,
-            overflow: "hidden",
-          }}>
-            <div style={{ padding: "10px 10px 6px" }}>
-              {visiblePlans.map((entry) => {
-                const isActive = entry.id === activePlanId;
-                const itemPrimary = getPlanPrimaryLabel(entry);
-                const itemSecondary = getPlanSecondaryLabel(entry);
-                return (
-                  <div key={entry.id} style={{
-                    display: "flex",
-                    alignItems: "stretch",
-                    borderRadius: 16,
-                    border: `1px solid ${isActive ? `${G.blue}33` : "transparent"}`,
-                    background: isActive ? G.blueLight : "transparent",
-                    marginBottom: 6,
-                    overflow: "hidden",
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(entry.id)}
-                      style={{
-                        flex: 1,
-                        minHeight: 56,
-                        padding: "12px 14px",
-                        border: "none",
-                        background: "none",
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div style={{ fontSize: 14, fontWeight: 800, color: isActive ? G.blueDeep : G.ink, lineHeight: 1.15 }}>
-                        {itemPrimary}
-                      </div>
-                      {itemSecondary && (
-                        <div style={{ fontSize: 11, fontWeight: 600, color: isActive ? G.blue : G.grey, marginTop: 4 }}>
-                          {itemSecondary}
-                        </div>
-                      )}
-                    </button>
-                    {isPremium && visiblePlans.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeletePlan(entry.id);
-                          closeMenu();
-                        }}
-                        aria-label={`Supprimer ${itemPrimary}`}
-                        style={{
-                          width: 42,
-                          border: "none",
-                          borderLeft: `1px solid ${isActive ? `${G.blue}22` : G.greyLight}`,
-                          background: "none",
-                          color: isActive ? G.blue : G.greyMid,
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ padding: "4px 10px 10px", borderTop: `1px solid ${G.greyXLight}` }}>
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  onAddPlan();
-                }}
-                style={{
-                  width: "100%",
-                  minHeight: 48,
-                  borderRadius: 14,
-                  cursor: "pointer",
-                  border: `1.5px dashed ${isPremium ? G.greyLight : `${G.gold}66`}`,
-                  background: isPremium ? "transparent" : G.goldLight,
-                  color: isPremium ? G.grey : G.gold,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                {isPremium ? <Plus size={14} /> : <Lock size={12} />}
-                {isPremium ? "Ajouter un plan" : "Essai 7 jours"}
-              </button>
-            </div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {primary}
+        </div>
+        {secondary && (
+          <div style={{ fontSize: 12, fontWeight: 600, color: G.grey, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {secondary}
           </div>
-        </>,
-        document.body
+        )}
+      </div>
+      {onAddPlan && (
+        <button
+          type="button"
+          onClick={onAddPlan}
+          style={{
+            flexShrink: 0,
+            minHeight: 40,
+            padding: "8px 12px",
+            borderRadius: 12,
+            cursor: "pointer",
+            border: `1.5px solid ${G.blue}`,
+            background: G.blueLight,
+            color: G.blue,
+            fontSize: 12,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Nouveau plan
+        </button>
       )}
-    </>
+    </div>
   );
 };
 
@@ -8042,7 +8287,7 @@ const PlanTab = ({
         <div className="app-shell" style={{ paddingTop: 16, paddingBottom: 24 }}>
           <div style={{ marginBottom: 20 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15, margin: 0 }}>
-              {addingPlan ? "Nouveau programme" : "Crée ton programme"}
+              {addingPlan ? "Remplacer mon programme" : "Crée ton programme"}
             </h1>
             <p style={{ fontSize: 14, color: G.grey, marginTop: 6, lineHeight: 1.45 }}>
               Réponds au questionnaire — Accueil, Profil et Binômes restent accessibles.
@@ -8133,10 +8378,7 @@ const PlanTab = ({
           <PlanSelector
             plans={plans}
             activePlanId={activePlanId}
-            isPremium={isPremium}
-            onSwitchPlan={onSwitchPlan}
             onAddPlan={onAddPlan}
-            onDeletePlan={onDeletePlan}
           />
         </div>
       </div>
@@ -11049,6 +11291,7 @@ const BLANK_PROFILE = {
   category: "",
   goal: "",
   eventDate: "",
+  trainingFocus: null,
   level: "",
   pool: 50,
   sessionsPerWeek: null,
@@ -11108,7 +11351,10 @@ export default function App() {
   const [profile, setProfile] = useState(BLANK_PROFILE);
   const [plans, setPlans] = useState([]);
   const [activePlanId, setActivePlanId] = useState(null);
+  const [planHistory, setPlanHistory] = useState([]);
   const [addingPlan, setAddingPlan] = useState(false);
+  const [questionnaireMode, setQuestionnaireMode] = useState("full");
+  const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState(null);
   const [error, setError] = useState(null);
   const [feedbackWeek, setFeedbackWeek] = useState(null);
@@ -11134,7 +11380,6 @@ export default function App() {
   const accessState = getAccessState(user);
   const canGenerateProgram = !!user && accessState.canGenerateProgram;
   const canUpdateProgram = !!user && accessState.canUpdateProgram;
-  const canUseMultiPlan = !!user && accessState.canUseMultiPlan;
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
@@ -11509,7 +11754,7 @@ export default function App() {
       } else {
         plansHydratedRef.current = false;
         resetAnalytics();
-        setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setTasteProfile(blankTaste()); setAuthLoading(false);
+        setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setPlanHistory([]); setAddingPlan(false); setQuestionnaireMode("full"); setTasteProfile(blankTaste()); setAuthLoading(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -11612,16 +11857,16 @@ export default function App() {
         }
       });
     }
-    const finalize = (existing, existingActive) => {
+    const finalize = (existing, existingActive, existingHistory = []) => {
       let merged = stampPlansAccess(dedupePlans(existing || []), userIsPremium);
       let active = existingActive || null;
-      if (!active && merged.length > 0) active = merged[0].id;
-      if (active && !merged.some(e => e.id === active)) active = merged[0]?.id ?? null;
-      // Sans Premium : un seul plan actif exposé (les autres restent en base)
-      if (!userIsPremium && merged.length > 1 && active) {
-        const preferred = merged.find((e) => e.id === active) || merged[0];
-        active = preferred.id;
-      }
+      const enforced = enforceSingleActivePlan(merged, active, existingHistory);
+      merged = enforced.plans;
+      active = enforced.activeId;
+      setPlanHistory(enforced.history || []);
+      try {
+        localStorage.setItem(`myswym_plan_history_${userId}`, JSON.stringify(enforced.history || []));
+      } catch { /* ignore */ }
       if (merged.length > 0) {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
@@ -11657,13 +11902,15 @@ export default function App() {
 
     // 2. Supabase — source de vérité cross-device (comparée au cache local)
     let remotePlans = null, remoteActive = null, remoteUpdatedAt = 0, remoteUpdatedIso = null;
+    let remoteHistory = [];
     try {
       const { data, error } = await supabase.from("user_plans")
-        .select("profile, plan, plans_json, active_plan_id, updated_at")
+        .select("profile, plan, plans_json, active_plan_id, plan_history, updated_at")
         .eq("user_id", userId).single();
       if (data && !error) {
         remoteUpdatedIso = data.updated_at || null;
         if (data.updated_at) remoteUpdatedAt = new Date(data.updated_at).getTime() || 0;
+        if (Array.isArray(data.plan_history)) remoteHistory = data.plan_history;
         if (Array.isArray(data.plans_json) && data.plans_json.length > 0) {
           remotePlans = data.plans_json;
           remoteActive = data.active_plan_id;
@@ -11675,32 +11922,62 @@ export default function App() {
       }
     } catch {}
 
+    let localHistory = [];
+    try {
+      const rawH = localStorage.getItem(`myswym_plan_history_${userId}`);
+      if (rawH) {
+        const parsedH = JSON.parse(rawH);
+        if (Array.isArray(parsedH)) localHistory = parsedH;
+      }
+    } catch {}
+
+    const histById = new Map();
+    for (const h of [...remoteHistory, ...localHistory]) {
+      if (h?.id) histById.set(h.id, h);
+    }
+    const mergedHistorySeed = [...histById.values()];
+
     let chosenPlans = null, chosenActive = null, chosenUpdatedIso = null;
     if (localPlans || remotePlans) {
       const merged = mergePlanLists(
         localPlans, remotePlans, localActive, remoteActive, localUpdatedAt, remoteUpdatedAt, null, deletedPlanIdsRef.current
       );
-      chosenPlans = merged.plans;
-      chosenActive = merged.active;
+      const single = enforceSingleActivePlan(merged.plans, merged.active, mergedHistorySeed);
+      chosenPlans = single.plans;
+      chosenActive = single.activeId;
       chosenUpdatedIso = merged.updatedAt;
+      // Remplace mergedHistorySeed par l'historique enrichi (plans archivés)
+      mergedHistorySeed.length = 0;
+      mergedHistorySeed.push(...single.history);
     }
 
     if (chosenPlans?.length) {
       const enforced = enforceAll(chosenPlans);
       // Étape K : reconstruire _engineHistory depuis les faits Supabase (si migration appliquée)
       let withFacts = enforced;
+      let sportRowFields = {};
       try {
         const { ok, facts } = await sportsPersistence.loadSportsFacts(userId, chosenActive);
         if (ok && facts) {
-          withFacts = enforced.map((e) => ({
-            ...e,
-            profile: sportsPersistence.attachEngineHistoryToProfile(e.profile, e.plan, facts),
-            plan: {
-              ...e.plan,
-              _engineHistory: sportsPersistence.attachEngineHistoryToProfile(e.profile, e.plan, facts)._engineHistory,
-              volumeAdj: e.plan?.volumeAdj ?? 1,
-            },
-          }));
+          sportRowFields = rowToSportProfileFields(facts.sportProfile);
+          withFacts = enforced.map((e) => {
+            const hydratedProfile = {
+              ...e.profile,
+              ...hydrateSwimmerFromSources({
+                sportRowFields,
+                planProfile: e.profile,
+              }),
+            };
+            return {
+              ...e,
+              profile: sportsPersistence.attachEngineHistoryToProfile(hydratedProfile, e.plan, facts),
+              plan: {
+                ...e.plan,
+                _engineHistory: sportsPersistence.attachEngineHistoryToProfile(hydratedProfile, e.plan, facts)._engineHistory,
+                volumeAdj: e.plan?.volumeAdj ?? 1,
+              },
+            };
+          });
         } else {
           // Compat blob : s'assurer que profile porte volumeAdj + history plan
           withFacts = enforced.map((e) => ({
@@ -11715,17 +11992,22 @@ export default function App() {
         }));
       }
       cachePlans(withFacts, chosenActive, chosenUpdatedIso);
+      try {
+        localStorage.setItem(`myswym_plan_history_${userId}`, JSON.stringify(mergedHistorySeed));
+      } catch {}
       const remoteIds = new Set((remotePlans || []).map((e) => e.id));
       const localHadExtra = withFacts.some((e) => !remoteIds.has(e.id));
-      if (localHadExtra || !remotePlans?.length) {
-        persistAccountPlans(userId, withFacts, chosenActive, deletedPlanIdsRef.current).then(({ plans: synced, active }) => {
+      const needsSinglePersist = (remotePlans || []).length > 1 || withFacts.length > 1;
+      if (localHadExtra || !remotePlans?.length || needsSinglePersist) {
+        persistAccountPlans(userId, withFacts, chosenActive, deletedPlanIdsRef.current, mergedHistorySeed).then(({ plans: synced, active, history }) => {
+          if (history) setPlanHistory(history);
           if (synced?.length && (synced.length !== withFacts.length || active !== chosenActive)) {
             setPlans(synced);
             setActivePlanId(active);
           }
         }).catch(() => {});
       }
-      if (finalize(withFacts, chosenActive)) return;
+      if (finalize(withFacts, chosenActive, mergedHistorySeed)) return;
     }
 
     // 3. Ancien localStorage mono-plan (migration)
@@ -11735,12 +12017,12 @@ export default function App() {
       if (sp && spl) {
         const id = `plan_${Date.now()}`;
         const entry = { id, profile: JSON.parse(sp), plan: enforce(JSON.parse(spl)) };
-        if (finalize([entry], id)) return;
+        if (finalize([entry], id, mergedHistorySeed)) return;
       }
     } catch {}
 
     // 4. Aucun plan existant — reprendre le pending (quiz) plutôt que reset éternel à l’étape 1
-    if (!finalize([], null)) {
+    if (!finalize([], null, mergedHistorySeed)) {
       plansHydratedRef.current = true;
       // Race : resumePending a pu écrire le plan pendant ce load
       try {
@@ -11749,7 +12031,7 @@ export default function App() {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            if (finalize(enforceAll(parsed), activeId)) return;
+            if (finalize(enforceAll(parsed), activeId, mergedHistorySeed)) return;
           }
         }
       } catch {}
@@ -11783,8 +12065,10 @@ export default function App() {
       }
       setPlans([]);
       setActivePlanId(null);
+      setPlanHistory(mergedHistorySeed);
       setProfile(BLANK_PROFILE);
       setStep(1);
+      setQuestionnaireMode("full");
       setScreen("app");
       setActiveTab("plan");
     }
@@ -11820,8 +12104,9 @@ export default function App() {
     const save = async () => {
       const snapshot = plans;
       const activeSnap = activePlanId;
-      const { plans: merged, active, error } = await persistAccountPlans(
-        user.id, snapshot, activeSnap, deletedPlanIdsRef.current
+      const historySnap = planHistory;
+      const { plans: merged, active, history, error } = await persistAccountPlans(
+        user.id, snapshot, activeSnap, deletedPlanIdsRef.current, historySnap
       );
       if (saveGen !== plansSaveGenRef.current) return;
       if (error) {
@@ -11829,6 +12114,7 @@ export default function App() {
         return;
       }
       deletedPlanIdsRef.current = new Set();
+      if (Array.isArray(history)) setPlanHistory(history);
       const mergedIds = merged.map((e) => e.id).sort().join(",");
       const currentIds = snapshot.map((e) => e.id).sort().join(",");
       if (mergedIds !== currentIds || active !== activeSnap) {
@@ -11837,7 +12123,7 @@ export default function App() {
       }
     };
     save();
-  }, [plans, activePlanId, user]);
+  }, [plans, activePlanId, planHistory, user]);
 
   // Re-sync au retour sur l'app : fusionne cache local + Supabase (ne jamais écraser un plan d'un autre appareil)
   useEffect(() => {
@@ -11855,10 +12141,11 @@ export default function App() {
         }
 
         const { data, error } = await supabase.from("user_plans")
-          .select("plans_json, active_plan_id, updated_at")
+          .select("plans_json, active_plan_id, plan_history, updated_at")
           .eq("user_id", user.id).single();
         if (error) return;
         const remotePlans = Array.isArray(data?.plans_json) ? data.plans_json : [];
+        const remoteHistory = Array.isArray(data?.plan_history) ? data.plan_history : [];
         const remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
         if (!localPlans.length && !remotePlans.length) return;
 
@@ -11866,7 +12153,12 @@ export default function App() {
         const { plans: merged, active, updatedAt } = mergePlanLists(
           localPlans, remotePlans, localActive, data?.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
         );
-        const enforced = merged.map(e => ({ ...e, plan: enforce(e.plan) }));
+        const histSeed = [...planHistory];
+        for (const h of remoteHistory) {
+          if (h?.id && !histSeed.some((x) => x?.id === h.id)) histSeed.push(h);
+        }
+        const single = enforceSingleActivePlan(merged, active, histSeed);
+        const enforced = single.plans.map(e => ({ ...e, plan: enforce(e.plan) }));
 
         const mergedIds = enforced.map(e => e.id).sort().join(",");
         const currentIds = plans.map(e => e.id).sort().join(",");
@@ -11874,7 +12166,7 @@ export default function App() {
         const currentProgress = plans.reduce((s, e) => s + planProgressScore(e), 0);
         // Ne pas écraser un changement de fréquence local (2×→3×) si la progression est égale
         const localFreq = plans.find(e => e.id === activePlanId)?.profile?.sessionsPerWeek;
-        const mergedFreq = enforced.find(e => e.id === active)?.profile?.sessionsPerWeek;
+        const mergedFreq = enforced.find(e => e.id === single.activeId)?.profile?.sessionsPerWeek;
         if (
           mergedIds === currentIds
           && enforced.length === plans.length
@@ -11883,9 +12175,11 @@ export default function App() {
         ) return;
 
         setPlans(enforced);
-        setActivePlanId(active);
+        setActivePlanId(single.activeId);
+        setPlanHistory(single.history);
         localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(enforced));
-        localStorage.setItem(`myswym_active_${user.id}`, active);
+        if (single.activeId) localStorage.setItem(`myswym_active_${user.id}`, single.activeId);
+        localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(single.history));
         localStorage.setItem(`myswym_plans_updated_${user.id}`, updatedAt);
       } catch {}
     };
@@ -12060,8 +12354,28 @@ export default function App() {
   const patchProfile = (partial) => setProfile(p => ({ ...p, ...partial }));
 
   /** Compte connecté → shell app + questionnaire dans Programme. Visiteur → plein écran. */
-  const enterQuestionnaire = ({ resetProfile = true, asAddingPlan = false, step: nextStep = 1 } = {}) => {
-    if (resetProfile) setProfile(BLANK_PROFILE);
+  const enterQuestionnaire = ({ resetProfile = true, asAddingPlan = false, step: nextStep = 1, mode } = {}) => {
+    const swimmerKnown = hydrateSwimmerFromSources({
+      sportRowFields: {},
+      planProfile: activePlanEntry?.profile || profile,
+    });
+    const resolvedMode = mode || resolveQuestionnaireMode(swimmerKnown, { replacing: asAddingPlan });
+    setQuestionnaireMode(resolvedMode);
+
+    if (resetProfile) {
+      if (resolvedMode === "goal") {
+        // Garder champs permanents, vider objectif
+        setProfile(buildQuestionnaireDraft(extractSwimmerProfile(swimmerKnown), {}));
+      } else if (Object.keys(extractSwimmerProfile(swimmerKnown)).some((k) => {
+        const v = swimmerKnown[k];
+        return v != null && v !== "" && !(Array.isArray(v) && v.length === 0 && k !== "equipment");
+      })) {
+        setProfile(buildQuestionnaireDraft(extractSwimmerProfile(swimmerKnown), {}));
+      } else {
+        setProfile({ ...BLANK_PROFILE });
+      }
+    }
+
     setStep(nextStep);
     setError(null);
     if (asAddingPlan) setAddingPlan(true);
@@ -12069,6 +12383,20 @@ export default function App() {
     if (user) {
       setScreen("app");
       setActiveTab("plan");
+      // Hydrate depuis sport_profiles (async) pour compléter le draft
+      if (resetProfile) {
+        sportsPersistence.loadSportsFacts(user.id).then(({ ok, facts }) => {
+          if (!ok || !facts?.sportProfile) return;
+          const sportFields = rowToSportProfileFields(facts.sportProfile);
+          const hydrated = hydrateSwimmerFromSources({
+            sportRowFields: sportFields,
+            planProfile: activePlanEntry?.profile || {},
+          });
+          setProfile((prev) => buildQuestionnaireDraft(hydrated, extractPlanObjective(prev)));
+          const nextMode = mode || resolveQuestionnaireMode(hydrated, { replacing: asAddingPlan });
+          setQuestionnaireMode(nextMode);
+        }).catch(() => {});
+      }
     } else {
       setScreen("onboarding");
     }
@@ -12082,15 +12410,14 @@ export default function App() {
       openAuth("register");
       return;
     }
-    // Nouveau plan supplémentaire = Premium uniquement
-    if (addingPlan && !canGenerateProgram) {
+    // Remplacement d’un plan existant = Premium (1er plan = aperçu OK)
+    if (addingPlan && plans.length > 0 && !canGenerateProgram) {
       openUpgrade("trial_required");
       return;
     }
     // Option B : aperçu d’abord, Stripe ensuite (évite boucle questionnaire si abandon)
     const openPaywallAfter = !canGenerateProgram;
     await generatePlanFromProfile(profile, {
-      addingPlanFlag: addingPlan,
       taste: tasteProfile,
       openPaywallAfter,
     });
@@ -12141,10 +12468,15 @@ export default function App() {
     }
   };
 
-  const generatePlanFromProfile = async (sourceProfile, { addingPlanFlag = false, taste = null, openPaywallAfter = false } = {}) => {
+  const generatePlanFromProfile = async (sourceProfile, { taste = null, openPaywallAfter = false } = {}) => {
     setScreen("loading"); setError(null);
     try {
-      let genProfile = { ...sourceProfile, taste: taste || tasteProfile };
+      const swimmer = extractSwimmerProfile(sourceProfile);
+      const objective = extractPlanObjective(sourceProfile);
+      let genProfile = mergeForGeneration(swimmer, objective, {
+        ...sourceProfile,
+        taste: taste || tasteProfile,
+      });
       if (isProgressionGoal(genProfile.goal) || genProfile.category === "progression") {
         genProfile = { ...genProfile, sessionsPerWeek: genProfile.sessionsPerWeek || 1 };
       }
@@ -12206,34 +12538,35 @@ export default function App() {
         plan: { ...p, taste: entryTaste, isPremium: livePremium },
         startDate: Date.now(),
       };
-      // Toujours partir de l'état React (pas d'un localStorage éventuellement périmé)
-      const nextPlans = addingPlanFlag
-        ? [...plans.filter((e) => e.id !== id), entry]
-        : [entry];
-      setPlans(nextPlans);
-      if (addingPlanFlag) setAddingPlan(false);
-      setActivePlanId(id);
+      // 1 user = 1 plan actif : remplace toujours (ancien → historique)
+      const replaced = replaceActivePlan(plans, planHistory, entry, activePlanId);
+      setPlans(replaced.plans);
+      setPlanHistory(replaced.history);
+      setActivePlanId(replaced.activeId);
+      setAddingPlan(false);
       plansHydratedRef.current = true;
       // Persistance immédiate compte (cross-device) avant Stripe / reload
       if (user?.id) {
         try {
           const now = new Date().toISOString();
-          localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
-          localStorage.setItem(`myswym_active_${user.id}`, id);
+          localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(replaced.plans));
+          localStorage.setItem(`myswym_active_${user.id}`, replaced.activeId || id);
+          localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(replaced.history));
           localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
-          const { plans: synced, active, error } = await persistAccountPlans(
-            user.id, nextPlans, id, deletedPlanIdsRef.current
+          const { plans: synced, active, history, error } = await persistAccountPlans(
+            user.id, replaced.plans, replaced.activeId, deletedPlanIdsRef.current, replaced.history
           );
           if (error && import.meta.env.DEV) console.warn("[plans] create persist failed", error.message);
-          // Étape K — faits sportifs (profil + séances planifiées + race target)
+          // Étape K — faits sportifs (profil nageur + séances planifiées + race target)
           sportsPersistence.upsertSportProfile(user.id, entryProfile).then(() => {});
           sportsPersistence.upsertPlannedSessionsFromPlan(user.id, id, entry.plan).then(() => {});
           if (entryProfile.raceTarget?.distance) {
             sportsPersistence.upsertRaceTarget(user.id, entryProfile.raceTarget).then(() => {});
           }
+          if (Array.isArray(history)) setPlanHistory(history);
           if (synced?.length) {
             deletedPlanIdsRef.current = new Set();
-            if (synced.length !== nextPlans.length || active !== id) {
+            if (synced.length !== replaced.plans.length || active !== replaced.activeId) {
               setPlans(synced);
               setActivePlanId(active || id);
             }
@@ -12268,14 +12601,13 @@ export default function App() {
     setProfile(pending.profile);
     if (pending.addingPlan) setAddingPlan(true);
     const needsPaywall = !checkIsPremium(u);
-    // addingPlan sans Premium → upgrade modal (pas de preview gratuit multi-plans)
+    // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
       openUpgrade("trial_required");
       setScreen("app");
       return true;
     }
     await generatePlanFromProfile(pending.profile, {
-      addingPlanFlag: !!pending.addingPlan,
       taste: pending.tasteProfile ? normalizeTaste(pending.tasteProfile) : tasteProfile,
       openPaywallAfter: needsPaywall && !pending.addingPlan,
     });
@@ -12462,6 +12794,15 @@ export default function App() {
       }));
 
       if (resolvedStatus === "done") {
+        // Statut completed en base dès la validation — indépendant de la fiche de retour
+        if (user) {
+          sportsPersistence.markSessionStatus(user.id, {
+            planId: activePlanId,
+            weekIndex: 0,
+            sessionIndex: 0,
+            status: "completed",
+          }).then(() => {});
+        }
         // Feedback d'abord — avance à la fermeture du sheet
         setSessionFeedbackTarget({ weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived });
       } else {
@@ -12534,6 +12875,15 @@ export default function App() {
       return { ...entry, plan: newPlan };
     }));
     if (resolvedStatus === "done") {
+      // Statut completed en base dès la validation — indépendant de la fiche de retour
+      if (user) {
+        sportsPersistence.markSessionStatus(user.id, {
+          planId: activePlanId,
+          weekIndex,
+          sessionIndex,
+          status: "completed",
+        }).then(() => {});
+      }
       setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: true });
     }
   };
@@ -12799,12 +13149,7 @@ export default function App() {
         tags: Array.isArray(tags) ? tags : [],
         comment: comment || null,
       }).then(() => {});
-      sportsPersistence.markSessionStatus(user.id, {
-        planId: activePlanId,
-        weekIndex,
-        sessionIndex,
-        status: "completed",
-      }).then(() => {});
+      // markSessionStatus("completed") est déjà appelé dans handleComplete
     }
 
     if (!isPremium && (legacyRating === "easy" || legacyRating === "hard" || tasteDriven)) {
@@ -12959,6 +13304,26 @@ export default function App() {
     }
   };
 
+  /** Édition profil nageur depuis ProfileTab — pas de régénération auto. */
+  const handleSwimmerProfileChange = (partial) => {
+    if (!partial || typeof partial !== "object") return;
+    const swimmerPartial = extractSwimmerProfile(partial);
+    const nextPatch = { ...swimmerPartial };
+    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuryNote", "healthConsent", "healthConsentAt", "healthDeclaration"]) {
+      if (partial[k] !== undefined) nextPatch[k] = partial[k];
+    }
+    if (activePlanId) {
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        return { ...e, profile: { ...e.profile, ...nextPatch } };
+      }));
+    }
+    if (user?.id) {
+      const nextProfile = { ...(activePlanEntry?.profile || {}), ...nextPatch };
+      sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
+  };
+
   const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
     if (!activePlanEntry) return;
     if (!canUpdateProgram) {
@@ -13014,7 +13379,7 @@ export default function App() {
           const raw = localStorage.getItem(`myswym_plans_${user.id}`);
           const parsed = raw ? JSON.parse(raw) : null;
           if (Array.isArray(parsed) && parsed.length > 0) {
-            await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current);
+            await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
           }
         } catch {}
       }
@@ -13024,103 +13389,94 @@ export default function App() {
 
   const handleAddPlan = () => {
     if (!user) { openAuth("register"); return; }
-    if (!canUseMultiPlan) { openUpgrade("trial_expired"); return; }
-    enterQuestionnaire({ resetProfile: true, asAddingPlan: true });
+    if (!plans.length) {
+      const sw = extractSwimmerProfile(activeProfile);
+      enterQuestionnaire({
+        resetProfile: true,
+        asAddingPlan: false,
+        mode: resolveQuestionnaireMode(sw, { replacing: false }),
+      });
+      return;
+    }
+    // Remplacement d'un plan existant → Premium (même gate que update)
+    if (!canGenerateProgram) {
+      openUpgrade("trial_expired");
+      return;
+    }
+    setReplaceConfirmOpen(true);
+  };
+
+  const confirmReplacePlan = () => {
+    setReplaceConfirmOpen(false);
+    const sw = hydrateSwimmerFromSources({
+      sportRowFields: {},
+      planProfile: activeProfile,
+    });
+    const mode = isSwimmerProfileComplete(sw) ? "goal" : "full";
+    enterQuestionnaire({ resetProfile: true, asAddingPlan: true, mode });
   };
 
   const handleCancelAddPlan = () => {
     setAddingPlan(false);
+    setQuestionnaireMode("full");
     setProfile(BLANK_PROFILE);
     setStep(1);
     setError(null);
     setActiveTab("plan");
   };
 
-  const handleSwitchPlan = (id) => {
-    if (!canUseMultiPlan && id !== activePlanId) {
-      openUpgrade("trial_expired");
-      return;
-    }
-    setActivePlanId(id);
-    setActiveTab("plan");
+  const handleSwitchPlan = () => {
+    // 1 plan actif max — pas de bascule multi-plans
   };
 
   const handleDeletePlan = (id) => {
-    if (plans.length <= 1) return; // bouton caché si 1 seul plan, mais sécurité
-    setDeletePlanId(id);
+    // Archive le plan unique vers l'historique puis reset
+    if (!id || !plans.length) return;
+    handleReset();
   };
 
   const confirmDeletePlan = () => {
-    const id = deletePlanId;
     setDeletePlanId(null);
-    if (!id || plans.length <= 1) return;
-    const remaining = plans.filter(e => e.id !== id);
-    const nextActive = activePlanId === id ? remaining[0].id : activePlanId;
-    deletedPlanIdsRef.current.add(id);
-    if (user?.id) writeDeletedPlanIds(user.id, deletedPlanIdsRef.current);
-    setPlans(remaining);
-    if (activePlanId === id) setActivePlanId(nextActive);
-    // Persiste immédiatement sur le compte (évite résurrection cross-device)
-    if (user) {
-      const now = new Date().toISOString();
-      try {
-        localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(remaining));
-        localStorage.setItem(`myswym_active_${user.id}`, nextActive);
-        localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
-      } catch {}
-      plansSaveGenRef.current += 1;
-      persistAccountPlans(user.id, remaining, nextActive, deletedPlanIdsRef.current)
-        .then(({ error }) => {
-          if (!error) deletedPlanIdsRef.current = new Set();
-          else if (import.meta.env.DEV) console.warn("[plans] delete persist failed", error.message);
-        })
-        .catch(() => {});
-    }
   };
 
   const handleReset = () => {
-    if (plans.length > 1) {
-      // Supprime uniquement le plan actif, garde les autres
-      const removedId = activePlanId;
-      const remaining = plans.filter(e => e.id !== activePlanId);
-      if (removedId) {
-        deletedPlanIdsRef.current.add(removedId);
-        if (user?.id) writeDeletedPlanIds(user.id, deletedPlanIdsRef.current);
-      }
-      setPlans(remaining);
-      setActivePlanId(remaining[0].id);
-      if (user) {
-        const now = new Date().toISOString();
-        try {
-          localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(remaining));
-          localStorage.setItem(`myswym_active_${user.id}`, remaining[0].id);
-          localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
-        } catch {}
-        plansSaveGenRef.current += 1;
-        persistAccountPlans(user.id, remaining, remaining[0].id, deletedPlanIdsRef.current)
-          .then(({ error }) => {
-            if (!error) deletedPlanIdsRef.current = new Set();
-          })
-          .catch(() => {});
-      }
-    } else {
-      // Dernier plan — reset complet
-      if (user) {
-        localStorage.removeItem(`myswym_plans_${user.id}`);
-        localStorage.removeItem(`myswym_active_${user.id}`);
-        localStorage.removeItem(`myswym_plans_updated_${user.id}`);
-        localStorage.removeItem(`myswym_profile_${user.id}`);
-        localStorage.removeItem(`myswym_plan_${user.id}`);
-        writeDeletedPlanIds(user.id, new Set());
-        deletedPlanIdsRef.current = new Set();
-        plansSaveGenRef.current += 1;
-        supabase.from("user_plans").delete().eq("user_id", user.id).then(() => {});
-      }
-      setPlans([]); setActivePlanId(null);
-      prevBadgesRef.current = [];
-      // Garder le shell app (accueil / profil / binômes / paramètres) — questionnaire dans Programme
-      enterQuestionnaire({ resetProfile: true });
+    const removed = activePlanEntry || plans[0] || null;
+    let nextHistory = planHistory;
+    if (removed?.id) {
+      nextHistory = enforceSingleActivePlan([], null, [
+        ...planHistory,
+        {
+          ...removed,
+          archivedAt: new Date().toISOString(),
+          archiveReason: "reset",
+        },
+      ]).history;
+      setPlanHistory(nextHistory);
+      deletedPlanIdsRef.current.add(removed.id);
+      if (user?.id) writeDeletedPlanIds(user.id, deletedPlanIdsRef.current);
     }
+    if (user) {
+      localStorage.removeItem(`myswym_plans_${user.id}`);
+      localStorage.removeItem(`myswym_active_${user.id}`);
+      localStorage.removeItem(`myswym_plans_updated_${user.id}`);
+      localStorage.removeItem(`myswym_profile_${user.id}`);
+      localStorage.removeItem(`myswym_plan_${user.id}`);
+      try {
+        localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(nextHistory));
+      } catch {}
+      writeDeletedPlanIds(user.id, new Set());
+      deletedPlanIdsRef.current = new Set();
+      plansSaveGenRef.current += 1;
+      persistAccountPlans(user.id, [], null, deletedPlanIdsRef.current, nextHistory)
+        .then(({ history, error }) => {
+          if (!error && Array.isArray(history)) setPlanHistory(history);
+        })
+        .catch(() => {});
+    }
+    setPlans([]); setActivePlanId(null);
+    prevBadgesRef.current = [];
+    // Garder le shell app — questionnaire dans Programme
+    enterQuestionnaire({ resetProfile: true });
   };
 
   const handleSignOut = async () => {
@@ -13285,6 +13641,8 @@ export default function App() {
               isPremium={isPremium}
               onUpgrade={() => openUpgrade()}
               onGenerate={handleGenerate}
+              mode={questionnaireMode}
+              onEditProfile={() => setActiveTab("profile")}
             />
           </div>
         </div>
@@ -13344,8 +13702,10 @@ export default function App() {
           isPremium,
           onUpgrade: () => openUpgrade(),
           onGenerate: handleGenerate,
+          mode: questionnaireMode,
+          onEditProfile: () => setActiveTab("profile"),
         }} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
         {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
         <Footer aboveBottomNav />
@@ -13425,6 +13785,17 @@ export default function App() {
             weeksBlocked={null}
             planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
             trialEligible={!accessState.trialUsed}
+          />
+        )}
+        {replaceConfirmOpen && (
+          <ConfirmSheet
+            title="Remplacer ton plan ?"
+            message="Tu as déjà un plan actif. Le remplacer archive l'ancien et génère un nouveau plan. Continuer ?"
+            confirmLabel="Continuer"
+            cancelLabel="Annuler"
+            destructive={false}
+            onConfirm={confirmReplacePlan}
+            onCancel={() => setReplaceConfirmOpen(false)}
           />
         )}
         {deletePlanId && (

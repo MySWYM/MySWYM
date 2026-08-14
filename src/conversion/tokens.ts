@@ -94,6 +94,6 @@ export const PREMIUM_FEATURES = [
   'Coach personnel et programme adaptatif',
   'Allures T100 et projection de progression',
   'Adaptation après chaque feedback',
-  'Strava, badges, multi-plans et stats',
+  'Strava, badges, adaptation et stats',
   'Toutes les futures nouveautés Premium incluses',
 ] as const

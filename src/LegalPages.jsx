@@ -395,7 +395,7 @@ export function CguPage() {
       <Ul items={[
         "Le service est destiné aux personnes majeures (18 ans révolus).",
         "Vous devez disposer de la capacité juridique pour contracter.",
-        "Certaines fonctionnalités (génération de plan, détail des exercices, multi-plans, départs chronométrés, adaptation feedback) nécessitent un abonnement Premium — voir CGV et page Tarifs.",
+        "Certaines fonctionnalités (génération de plan, détail des exercices, départs chronométrés, adaptation feedback) nécessitent un abonnement Premium — voir CGV et page Tarifs.",
         "Sans abonnement actif, un aperçu limité (squelette) peut rester visible, sans accès complet aux exercices ni génération de nouveaux programmes.",
       ]} />
 
@@ -554,7 +554,7 @@ export function CgvPage() {
         "le détail des exercices et consignes ;",
         "l’adaptation basée sur le feedback ;",
         "les départs chronométrés (notation D…) ;",
-        "le multi-plans (selon offre) ;",
+        "le suivi de ton plan actif (selon offre) ;",
         "les fonctionnalités Premium listées sur la page Tarifs au moment de la commande.",
       ]} />
       <P>
