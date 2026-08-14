@@ -47,7 +47,7 @@
 - **Affûtage** : 1 semaine dès 6 sem. de plan, **2 semaines** dès 10 sem. Volume ↓, touches vitesse, puis semaine compétition.
 - **Semaine de compétition** (dernière avant l’event) : **toujours easy** — **1 séance** si fréquence ≤3×/sem, **2 séances** si >3. Volume très bas, séances courtes (~20–25 min), rappels de vitesse **≤12,5 m**, phrase : « Ne t’inquiète pas : si tu as suivi le plan, le travail est fait. »
 - **« Nager & Progresser »** : **plus de plan multi-semaines**. Mode boucle (`isSessionLoop`) : une seule séance à la fois (`buildProgressionLoopSession`), validation Terminer/Abandonner → nouvelle génération. Questionnaire : **fréquence demandée** (comme les autres programmes) pour le profil ; la boucle génère toujours 1 séance à la fois. Freemium : **8 séances** au total + **2 nouvelles / semaine** calendaire ; Régénérer = Premium. Premières séances (cursor &lt; 3) forcées faciles.
-- **Questionnaire commun** (tous programmes) : âge, poids (kg), taille (cm), blessure (aucune / oui + note), séances/semaine, style préféré (crawl / 4 nages), nage préférée (papillon / dos / brasse / crawl). Stockés dans `entry.profile` ; affichés sur l’onglet Profil.
+- **Questionnaire commun** (tous programmes) : âge, poids (kg), taille (cm), blessure (aucune / oui + note), séances/semaine, style préféré (crawl / 4 nages), nage préférée (papillon / dos / brasse / crawl), **distance moyenne / séance** (`targetSessionDistance`), **demande libre** (`trainingWish` + `trainingWishMeta`). Stockés dans `entry.profile` (+ `sport_profiles.extra`) ; affichés sur l’onglet Profil.
 
 ### Objectifs spécifiques
 
@@ -168,6 +168,7 @@
 | 2026-08-10 | Force regen v44 live | Demande Arthur : `PLAN_VERSION` 44 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec restitution coach. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-13 | Engagement matériel | Inventaire non vide → ≥1 item matos visible / séance (hors récup / taper / course). `resolveEquipmentUsage` plus de `none` aléatoire. Découverte : Aucun = zéro matos ; planche/palmes/tuba dans les lignes. QG `equipment_engagement`. Chip UI « Matos : … ». Pas de FORCE regen. Arthur bank : follow-up. | ✅ |
 | 2026-08-14 | Matos + restitution live | Alignement wording matos sur fiche coach (`avec …`, plus `· palmes`). Restitution normalise les lignes legacy. `PLAN_VERSION` 45 + `FORCE_PLAN_REGEN=true` pour écraser les plans existants (engagement matos + texte nageable). Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-14 | Distance moyenne + wish | Questionnaire : slider distance/séance + texte libre « Qu’aimerais-tu retrouver… ». Volume ancré via `targetSessionDistance` dans `resolveEffectiveWeekVolume` (bornes niveau). Wish → `trainingWishMeta` tags (strokes/matos/intents/tech) soft bias composeur/rôles — pas de LLM. Persist `sport_profiles.extra`. `PLAN_VERSION` 46 + FORCE regen. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne

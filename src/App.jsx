@@ -14,6 +14,8 @@ import {
 } from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey } from "./lib/swim-plan-bridge.js";
+import { StepSessionDistance, StepTrainingWish } from "./OnboardingDistanceWish.jsx";
+import { parseTrainingWish } from "./lib/sports-engine/training-wish.js";
 import {
   decideAdaptAction,
   normalizeFeedbackRating,
@@ -5267,9 +5269,9 @@ const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStro
 /**
  * Questionnaire plan — utiliséé en plein écran (visiteur) ou dans l’onglet Programme (compte connecté).
  * Flux :
- *   progression : 1 → 3 → 5 → 7 → 8 → 10 (matériel) → 9 (nages) → generate
- *   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 10 → 9 → 6 (date) → generate
- *   diplome : 1 → 2 → 5 → 7 → 8 → 10 → 9 → 6 — pas de niveau
+ *   progression : 1 → 3 → 5 → 7 → 8 → 10 (matériel) → 12 (distance) → 9 (nages) → 13 (wish) → generate
+ *   triathlon/eau_libre : 1 → 2 → 3 → 5 → 7 → 8 → 10 → 12 → 9 → 6 (date) → 13 → generate
+ *   diplome : 1 → 2 → 5 → 7 → 8 → 10 → 12 → 9 → 6 → 13 — pas de niveau
  */
 const OnboardingWizard = ({
   profile,
@@ -5287,13 +5289,26 @@ const OnboardingWizard = ({
   const isDiplome = profile.category === "diplome";
   const noDate = isProgression;
   const disabledLevels = [];
-  const totalSteps = isProgression ? 6 : isDiplome ? 7 : 8;
+  const totalSteps = isProgression ? 8 : isDiplome ? 9 : 10;
   const stepBefore5 = isDiplome ? 2 : 3;
   const progressStep = (() => {
-    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6 })[step] || 1;
-    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 9: 6, 6: 7 })[step] || 1;
-    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 9: 7, 6: 8 })[step] || 1;
+    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 12: 6, 9: 7, 13: 8 })[step] || 1;
+    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 12: 6, 9: 7, 6: 8, 13: 9 })[step] || 1;
+    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 6: 9, 13: 10 })[step] || 1;
   })();
+
+  const finishWish = () => {
+    const raw = typeof profile.trainingWish === "string" ? profile.trainingWish.trim() : "";
+    if (raw) {
+      patchProfile({
+        trainingWish: raw,
+        trainingWishMeta: parseTrainingWish(raw),
+      });
+    } else {
+      patchProfile({ trainingWish: "", trainingWishMeta: null });
+    }
+    onGenerate();
+  };
 
   return (
     <>
@@ -5437,8 +5452,20 @@ const OnboardingWizard = ({
           equipment={profile.equipment}
           level={profile.level}
           onChange={(v) => update("equipment", v)}
-          onNext={() => setStep(9)}
+          onNext={() => setStep(12)}
           onBack={() => setStep(profile.healthConsent ? 11 : 8)}
+        />
+      )}
+
+      {step === 12 && (
+        <StepSessionDistance
+          value={profile.targetSessionDistance}
+          level={profile.level}
+          onChange={(v) => update("targetSessionDistance", v)}
+          onNext={() => setStep(9)}
+          onBack={() => setStep(10)}
+          Btn={Btn}
+          G={G}
         />
       )}
 
@@ -5448,14 +5475,31 @@ const OnboardingWizard = ({
           preferredStroke={profile.preferredStroke}
           onChangeStyle={(v) => update("swimStyle", v)}
           onChangeStroke={(v) => update("preferredStroke", v)}
-          onNext={() => (noDate ? onGenerate() : setStep(6))}
-          onBack={() => setStep(10)}
-          isLast={noDate}
+          onNext={() => (noDate ? setStep(13) : setStep(6))}
+          onBack={() => setStep(12)}
+          isLast={false}
         />
       )}
 
       {step === 6 && !noDate && (
-        <Step2_Date value={profile.eventDate} onChange={v => update("eventDate", v)} onNext={onGenerate} onBack={() => setStep(9)} />
+        <Step2_Date
+          value={profile.eventDate}
+          onChange={v => update("eventDate", v)}
+          onNext={() => setStep(13)}
+          onBack={() => setStep(9)}
+        />
+      )}
+
+      {step === 13 && (
+        <StepTrainingWish
+          value={profile.trainingWish}
+          onChange={(v) => update("trainingWish", v)}
+          onNext={finishWish}
+          onBack={() => (noDate ? setStep(9) : setStep(6))}
+          isLast
+          Btn={Btn}
+          G={G}
+        />
       )}
     </>
   );
@@ -5864,8 +5908,8 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 45; // v45 = engagement matériel + restitution coach (avec matos)
-// Remettre false au prochain bump (demande Arthur 2026-08-14 : overwrite plans — matos + texte)
+const PLAN_VERSION = 46; // v46 = distance moyenne + wish onboarding + matos
+// Remettre false au prochain bump (demande Arthur 2026-08-14 : overwrite plans)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
@@ -11129,6 +11173,11 @@ const BLANK_PROFILE = {
   preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
   /** null = inventaire inconnu ; [] = aucun matos ; sinon ids sports-engine */
   equipment: null,
+  /** Distance moyenne souhaitée / séance (m) — null = non renseigné (legacy) */
+  targetSessionDistance: null,
+  /** Demande libre onboarding */
+  trainingWish: "",
+  trainingWishMeta: null,
 };
 
 export default function App() {
@@ -12223,6 +12272,20 @@ export default function App() {
           ),
         };
       }
+      // Demande libre → meta exploitable (tags) pour le moteur + analytics ultérieures
+      if (typeof genProfile.trainingWish === "string" && genProfile.trainingWish.trim()) {
+        const wishRaw = genProfile.trainingWish.trim().slice(0, 2000);
+        genProfile = {
+          ...genProfile,
+          trainingWish: wishRaw,
+          trainingWishMeta: parseTrainingWish(wishRaw),
+        };
+      } else {
+        genProfile = { ...genProfile, trainingWish: "", trainingWishMeta: null };
+      }
+      if (!(Number(genProfile.targetSessionDistance) > 0)) {
+        genProfile = { ...genProfile, targetSessionDistance: null };
+      }
       const p  = await generatePlan(genProfile, true);
       trackEvent("plan_generated", {
         goal: genProfile.goal,
@@ -12245,6 +12308,11 @@ export default function App() {
         totalWeeks: p?.totalRealWeeks ?? p?.weeks?.length ?? null,
         equipmentCount: Array.isArray(genProfile.equipment) ? genProfile.equipment.length : 0,
         hasEquipment: Array.isArray(genProfile.equipment) && genProfile.equipment.length > 0,
+        targetSessionDistance: Number(genProfile.targetSessionDistance) > 0 ? Number(genProfile.targetSessionDistance) : null,
+        hasTrainingWish: !!(genProfile.trainingWish && String(genProfile.trainingWish).trim()),
+        trainingWishTagCount: Array.isArray(genProfile.trainingWishMeta?.tags)
+          ? genProfile.trainingWishMeta.tags.length
+          : 0,
       }, {
         onceKey: `plan_created:${id}`,
       });

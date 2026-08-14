@@ -71,6 +71,21 @@ export {
   formatEffectiveEngineWhy,
 } from "./week-orchestration.js";
 export {
+  SESSION_DISTANCE_PRESETS,
+  formatSessionDistanceLabel,
+  defaultSessionDistanceForLevel,
+  nearestSessionDistancePreset,
+  normalizeTargetSessionDistance,
+  applyTargetSessionDistanceToTargets,
+  sessionDistancePhaseScale,
+} from "./session-distance-pref.js";
+export {
+  parseTrainingWish,
+  trainingWishToHints,
+  biasRolesForTrainingWish,
+  applyWishStrokeToBrief,
+} from "./training-wish.js";
+export {
   normalizeRaceTarget,
   resolveRaceTarget,
   raceTargetPacePer100,
@@ -239,6 +254,7 @@ export function prepareWeekContext(profile, phase, wi, freq, prevWeekDistance, h
     adaptiveDeload,
     objectifV1: sport.objectifV1,
     raceTarget: sport.raceTarget,
+    targetSessionDistance: sport.targetSessionDistance,
   });
 
   const volumePlan = {

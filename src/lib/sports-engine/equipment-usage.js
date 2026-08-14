@@ -142,6 +142,24 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     applied = [pickOne(available, rng)].filter(Boolean);
   }
 
+  // Soft wish : si matos demandé et possédé, le favoriser
+  const prefer = Array.isArray(brief.wishPreferEquipment) ? brief.wishPreferEquipment : [];
+  const preferOwned = prefer.filter((e) => available.includes(e));
+  if (preferOwned.length && applied.length && !preferOwned.includes(applied[0]) && rng() < 0.7) {
+    applied = [pickOne(preferOwned, rng)].filter(Boolean);
+    if (
+      applied.includes("palmes") &&
+      available.includes("tuba") &&
+      preferOwned.includes("tuba") &&
+      rng() < 0.4
+    ) {
+      applied.push("tuba");
+    }
+    if (applied.includes("pull") && applied.includes("palmes")) {
+      applied = preferOwned.includes("pull") && !preferOwned.includes("palmes") ? ["pull"] : ["palmes"];
+    }
+  }
+
   const notes = buildNotes(applied, intent, usage);
   return {
     usage: applied.length ? usage : "none",

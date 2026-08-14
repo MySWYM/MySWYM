@@ -8,6 +8,7 @@
 
 import { daysToCompetition, taperStageFromDays, resolveTaperLoad } from "./taper-load.js";
 import { weeksToCompetition, horizonBandFromWeeks } from "./performance-strategy.js";
+import { applyTargetSessionDistanceToTargets } from "./session-distance-pref.js";
 
 const WEEK_REF = {
   decouverte: 2800,
@@ -158,6 +159,8 @@ export function resolveEffectiveWeekVolume({
   freq = 3,
   ambition = "full",
   leverHint = "volume",
+  /** Préférence questionnaire (m) — ancre les séances si renseignée */
+  targetSessionDistance = null,
 } = {}) {
   const raw = WEEK_REF[level] ?? WEEK_REF.regulier;
   const capacityAdjusted = raw * Math.max(0.4, Number(capacityFactor) || 1);
@@ -233,10 +236,28 @@ export function resolveEffectiveWeekVolume({
 
   const weights = Array.from({ length: Math.max(1, freq) }, (_, i) => (i === Math.min(1, freq - 1) ? 1.15 : 1));
   const sumW = weights.reduce((a, b) => a + b, 0);
-  const sessionTargets =
+  let sessionTargets =
     effectiveWeekVolume <= 0
       ? Array.from({ length: freq }, () => 0)
       : weights.map((w) => Math.max(400, Math.round((effectiveWeekVolume * w) / sumW / 50) * 50));
+
+  // Ancre questionnaire : recentrer les séances autour de la distance préférée
+  let distancePrefApplied = false;
+  let distancePrefAnchor = null;
+  if (targetSessionDistance != null && effectiveWeekVolume > 0) {
+    const applied = applyTargetSessionDistanceToTargets(sessionTargets, targetSessionDistance, {
+      level,
+      typeSemaine,
+      effectivePhase,
+      effectiveTaperStage,
+    });
+    if (applied.applied) {
+      sessionTargets = applied.sessionTargets;
+      effectiveWeekVolume = applied.weekTarget;
+      distancePrefApplied = true;
+      distancePrefAnchor = applied.anchor;
+    }
+  }
 
   return {
     rawWeekVolume: raw,
@@ -245,6 +266,8 @@ export function resolveEffectiveWeekVolume({
     phaseAdjustedVolume: Math.round(phaseAdjusted),
     effectiveWeekVolume,
     sessionTargets,
+    distancePrefApplied,
+    distancePrefAnchor,
     typeSemaine,
     lever,
     factors: {
@@ -427,6 +450,7 @@ export function buildWeekOrchestration({
   adaptiveDeload = false,
   objectifV1 = null,
   raceTarget = null,
+  targetSessionDistance = null,
 } = {}) {
   const postRace = !!(history.postRaceRecovery || history.weeklyAdaptation?.action === "RECOVER");
   const phaseInfo = resolveEffectiveWeekPhase({
@@ -480,6 +504,7 @@ export function buildWeekOrchestration({
       adaptation?.primaryLever === "recovery"
         ? "volume"
         : adaptation?.primaryLever || leverHint,
+    targetSessionDistance,
   });
 
   return {
