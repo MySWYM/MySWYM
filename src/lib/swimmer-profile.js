@@ -14,6 +14,7 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "equipment",
   "swimStyle",
   "preferredStroke",
+  "targetSessionDistance",
   "injuryStatus",
   "injuryZone",
   "injurySeverity",
@@ -32,6 +33,8 @@ export const PLAN_OBJECTIVE_KEYS = Object.freeze([
   "eventDate",
   "raceTarget",
   "trainingFocus",
+  "trainingWish",
+  "trainingWishMeta",
 ]);
 
 /** Champs indispensables pour générer sans re-questionnaire profil. */
@@ -231,6 +234,9 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     preferredStroke: null,
     equipment: null,
     pace100: null,
+    targetSessionDistance: null,
+    trainingWish: "",
+    trainingWishMeta: null,
     ...extractSwimmerProfile(swimmerProfile),
     ...extractPlanObjective(objective),
   };

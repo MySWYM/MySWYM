@@ -164,6 +164,7 @@ export function sportProfileToRow(userId, profile = {}) {
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
       swimStyle: profile.swimStyle || null,
+      age: profile.age ?? age,
       injuryZone: profile.injuryZone || null,
       injurySeverity: profile.injurySeverity || null,
       healthConsent: profile.healthConsent === true,
@@ -171,6 +172,14 @@ export function sportProfileToRow(userId, profile = {}) {
         ? (profile.healthConsentAt || new Date().toISOString())
         : null,
       healthDeclaration: profile.healthDeclaration === true,
+      targetSessionDistance:
+        Number(profile.targetSessionDistance) > 0 ? Number(profile.targetSessionDistance) : null,
+      trainingWish: typeof profile.trainingWish === "string" ? profile.trainingWish.slice(0, 2000) : "",
+      trainingWishMeta:
+        profile.trainingWishMeta && typeof profile.trainingWishMeta === "object"
+          ? profile.trainingWishMeta
+          : null,
+      preferredStroke: profile.preferredStroke || null,
     },
     updated_at: new Date().toISOString(),
   };

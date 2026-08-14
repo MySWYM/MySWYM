@@ -13,6 +13,8 @@
 
 import { normalizeStrokeFocus } from "./stroke-focus.js";
 import { normalizeRaceTarget } from "./race-target.js";
+import { parseTrainingWish, trainingWishToHints } from "./training-wish.js";
+import { normalizeTargetSessionDistance } from "./session-distance-pref.js";
 
 export const OBJECTIF_V1 = {
   NAGER_PROGRESSER: "nager_progresser",
@@ -157,6 +159,31 @@ export function buildSportProfile(profile = {}, opts = {}) {
     taste: profile.taste || null,
     /** Disponibilité actuelle (questionnaire) — null = ancien profil / non renseigné */
     readinessProfile: profile.readinessProfile || null,
+    /** Distance moyenne souhaitée / séance (m) — null = legacy */
+    targetSessionDistance: normalizeTargetSessionDistance(
+      profile.targetSessionDistance,
+      uiLevel,
+    ),
+    /** Demande libre onboarding (texte + meta parsée) */
+    trainingWish: typeof profile.trainingWish === "string" ? profile.trainingWish : "",
+    trainingWishMeta: (() => {
+      if (profile.trainingWishMeta && typeof profile.trainingWishMeta === "object") {
+        return profile.trainingWishMeta;
+      }
+      if (typeof profile.trainingWish === "string" && profile.trainingWish.trim()) {
+        return parseTrainingWish(profile.trainingWish);
+      }
+      return null;
+    })(),
+    trainingWishHints: (() => {
+      const meta =
+        profile.trainingWishMeta && typeof profile.trainingWishMeta === "object"
+          ? profile.trainingWishMeta
+          : typeof profile.trainingWish === "string" && profile.trainingWish.trim()
+            ? parseTrainingWish(profile.trainingWish)
+            : null;
+      return trainingWishToHints(meta, { equipmentOwned: equipment });
+    })(),
     capacity: opts.capacity || null,
     confidence: opts.capacity?.confidence ?? 0.2,
     // Course piscine — cible explicite uniquement (jamais inventée)

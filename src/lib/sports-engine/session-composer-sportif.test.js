@@ -283,10 +283,10 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/[56]×200m/i.test(sess.details.join(" ")), `reps réduites: ${sess.details.join(" | ")}`);
 }
 
-// 10 — matériel
+// 10 — engagement matériel
 {
-  let saw = false;
-  for (let i = 0; i < 15; i++) {
+  let engaged = 0;
+  for (let i = 0; i < 12; i++) {
     const r = composeSession(
       briefFrom({
         equipment: ["palmes", "tuba", "pull"],
@@ -295,12 +295,11 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
       }),
     );
     assert(r.ok, `s10 ${i}: ${r.reason}`);
-    if ((r.session.composerWhy.equipmentApplied || []).length) {
-      saw = true;
-      assert(/palmes|tuba|pull/i.test(r.session.details.join(" ")), "matos visible");
-    }
+    assert((r.session.composerWhy.equipmentApplied || []).length > 0, `s10 ${i} applied`);
+    assert(/palmes|tuba|pull/i.test(r.session.details.join(" ")), `s10 ${i} matos visible`);
+    engaged += 1;
   }
-  assert(saw, "matos parfois utilisé");
+  assert(engaged === 12, "matos engagé systématiquement");
 }
 
 // Polarisation : séance aérobie majoritaire Z1/Z2

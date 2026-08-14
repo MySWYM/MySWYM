@@ -9,6 +9,7 @@ import {
   minFourNageBodyShare,
 } from "./composer-constraints.js";
 import { MAX_PYRAMID_VOLUME } from "./set-formats.js";
+import { isEquipmentEngagementExempt } from "./equipment-usage.js";
 import { hasPullPalmesConflict } from "./session-compose.js";
 
 const FOUR_N_STROKE_RE = /\b(dos|brasse|papillon|ondulation|4\s*nages|quatre\s*nages|multi-?nages)\b/i;
@@ -313,6 +314,19 @@ export function validateComposedSession(session, brief = {}, constraints = null)
     ])
   ) {
     errors.push("matériel incompatible: pull + palmes");
+  }
+  // Engagement composeur : matos déclaré → ≥1 item appliqué (hors récup/taper/course)
+  if (
+    Array.isArray(brief.equipment) &&
+    brief.equipment.length > 0 &&
+    session.composerWhy?.equipmentUsage != null &&
+    !isEquipmentEngagementExempt(brief)
+  ) {
+    const used = session.equipmentUsed || session.equipmentRequired || [];
+    const visible = /palmes|tuba|pull|planche|plaquette|élastique|elastique/i.test(text);
+    if (!used.length || !visible) {
+      errors.push("equipment_engagement: matos déclaré non appliqué");
+    }
   }
 
   // --- 4N ---
