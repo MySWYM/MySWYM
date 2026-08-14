@@ -201,6 +201,16 @@ export {
   findAmbiguousCoachLines,
   expandPyramidDetailLine,
 } from "./coach-restitution.js";
+export {
+  validateSessionCoherence,
+  enforceSessionCoherence,
+  sumDetailsMeters,
+  lineSwimMeters,
+  parseNxM,
+  snapTotalTo00or50,
+  fixLengthPatternLine,
+  fixInternalDistanceRefs,
+} from "./session-coherence.js";
 export { ARTHUR_GOLD_TEST_FIXTURES } from "./arthur-gold-fixtures.js";
 export { findInternalJargon } from "./user-facing.js";
 export {

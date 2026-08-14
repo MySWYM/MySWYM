@@ -73,9 +73,9 @@ const TECHNIQUE = {
     block(450, ["· 10x25m respiration 5T, focus sortie d'eau tête basse R10''", "· 4x50m 3T aller / 5T retour R20''"]),
     block(400, ["· 8x25m respiration 7T (endurance apnée) R20''", "· 4x50m 3T avec accélération dernier 15m R20''"]),
     block(450, ["· 6x50m bilatéral 3T, focus rythme régulier R20''", "· 6x25m sans respirer 15m + reprise 3T R15''"]),
-    block(700, ["· 4x150 : 3T/5T/7T/5T/3T par 25m", "· 4x25m respiration tardive, tête qui reste basse R15''"]),
-    block(600, ["· 6x100m : (3T/5T/7T/9T par 50m)"]),
-    block(600, ["· 12x50 D1' (Z2) — (3T/5T/7T/9T par 50m)"]),
+    block(700, ["· 4x150m : 3T/5T/7T/5T/3T/crawl libre par 25m", "· 4x25m respiration tardive, tête qui reste basse R15''"]),
+    block(600, ["· 6x100m : (3T/5T par 50m)"]),
+    block(600, ["· 12x50m D1' (Z2) — (3T/5T par 50m)"]),
     block(500, ["· 10x25m respiration 3T R15''", "· 4x50m 5T sans accélérer"]),
     block(650, ["· 4x100m bilatéral 3T R20''", "· 4x50m 5T, focus régularité R15''"]),
     block(500, ["· 8x25m apnée 1 longueur puis reprise 3T R20''", "· 4x50m 3T normal"]),
@@ -970,7 +970,7 @@ const OW_BASE_SESSIONS = [
         `Échauffement : ${w}m crawl palmes — Z1`,
         `${n50}×${P}m accélération progressive sur la longueur — R15"`,
         `${slow}m le plus lent possible — recherche de sensation, relâche les épaules`,
-        `${n200}×${4*P}m crawl — ${ow100Rest(P, level)} — Z2, même allure du 1er au dernier 200m`,
+        `${n200}×${4*P}m crawl — ${ow100Rest(P, level)} — Z2, même allure du 1er au dernier ${4*P}m`,
         `Retour au calme : ${rac}`,
       ],
     };
@@ -1126,6 +1126,7 @@ export function buildConfirmeArchetypeSession(archeIdx, pool, level, opts = {}) 
   const idx = ((archeIdx % n) + n) % n;
   const arche = OW_BASE_SESSIONS[idx](P, level, opts);
   const dist = calcDetailsDistance(arche.details);
+  // Lazy import avoid circular — finalize is light wording/math on details
   return {
     type: arche.type,
     title: arche.title,
@@ -1135,6 +1136,7 @@ export function buildConfirmeArchetypeSession(archeIdx, pool, level, opts = {}) 
     duration: Math.max(40, Math.min(90, Math.round(dist / 35))),
     completed: false,
     skipped: null,
+    pool: P,
   };
 }
 

@@ -1,9 +1,11 @@
 /**
  * Restitution coach — transforme les détails générés en fiche séance nageable.
  * Ne touche PAS au volume/charge/taper : uniquement wording + décomposition affichage.
+ * La cohérence distances (somme / patterns / total 00|50) est appliquée ici.
  */
 
 import { sanitizeSessionDetails } from "./session-labels.js";
+import { enforceSessionCoherence } from "./session-coherence.js";
 
 const HEADLINE_RE = /^\s*(?:→\s*)?(?:Aujourd'?hui\s*:|La séance du jour|Le but de cette séance)/i;
 const ENGINE_SECTION_RE =
@@ -150,15 +152,15 @@ export function toCoachDetailLines(details = []) {
 }
 
 /**
- * Applique la restitution coach sur une séance (details uniquement).
+ * Applique la restitution coach + cohérence distances sur une séance.
  */
-export function finalizeCoachSession(session) {
+export function finalizeCoachSession(session, opts = {}) {
   if (!session || !Array.isArray(session.details)) return session;
   const details = toCoachDetailLines(session.details);
-  return {
-    ...session,
-    details,
-  };
+  const pool = opts.pool === 50 ? 50 : opts.pool === 25 ? 25 : Number(session?.pool) === 50 ? 50 : 25;
+  const drafted = { ...session, details };
+  const enforced = enforceSessionCoherence(drafted, { pool, strict: opts.strict !== false });
+  return enforced.session || drafted;
 }
 
 /**

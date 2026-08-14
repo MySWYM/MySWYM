@@ -22,6 +22,7 @@
     "test:analytics": "node src/lib/analytics.test.js",
     "test:equipment": "node src/lib/sports-engine/equipment-usage.test.js && node src/lib/sports-engine/equipment-onboarding.test.js",
     "test:session-pref": "node src/lib/sports-engine/session-pref-onboarding.test.js",
+    "test:coherence": "node src/lib/sports-engine/session-coherence.test.js",
     "test:readiness": "node src/lib/sports-engine/readiness.test.js",
     "test:version-gate": "node src/lib/app-version.test.js && node scripts/app-version.test.mjs",
     "test:arthur": "ARTHUR_AI_MOCK=1 tsx api/_lib/arthur-ai/arthur-ai.test.ts",
@@ -32,7 +33,7 @@
     "test:arthur:production": "tsx api/_lib/arthur-ai/production/production.test.ts",
     "test:arthur:shadow": "tsx api/_lib/arthur-ai/shadow/shadow.test.ts",
     "test:labels": "node src/lib/sports-engine/session-labels.test.js",
-    "test:composer:all": "node src/lib/sports-engine/session-composer.test.js && node src/lib/sports-engine/session-composer-regulier.test.js && node src/lib/sports-engine/session-composer-sportif.test.js && node src/lib/sports-engine/race-quality.test.js && node src/lib/sports-engine/performance-strategy.test.js && node src/lib/sports-engine/taper-load.test.js && node src/lib/sports-engine/feedback-loop.test.js && node src/lib/sports-engine/orchestration.test.js && node src/lib/sports-engine/composer-quality-gate.test.js && node src/lib/sports-engine/equipment-onboarding.test.js && node src/lib/sports-engine/readiness.test.js && node src/lib/sports-engine/technique-from-bank.test.js && node src/lib/sports-engine/corps-from-bank.test.js && node src/lib/sports-engine/session-labels.test.js && node src/lib/sports-engine/coach-restitution.test.js && node src/lib/sports-engine/four-nages-mix.test.js",
+    "test:composer:all": "node src/lib/sports-engine/session-composer.test.js && node src/lib/sports-engine/session-composer-regulier.test.js && node src/lib/sports-engine/session-composer-sportif.test.js && node src/lib/sports-engine/race-quality.test.js && node src/lib/sports-engine/performance-strategy.test.js && node src/lib/sports-engine/taper-load.test.js && node src/lib/sports-engine/feedback-loop.test.js && node src/lib/sports-engine/orchestration.test.js && node src/lib/sports-engine/composer-quality-gate.test.js && node src/lib/sports-engine/equipment-onboarding.test.js && node src/lib/sports-engine/readiness.test.js && node src/lib/sports-engine/technique-from-bank.test.js && node src/lib/sports-engine/corps-from-bank.test.js && node src/lib/sports-engine/session-labels.test.js && node src/lib/sports-engine/coach-restitution.test.js && node src/lib/sports-engine/four-nages-mix.test.js && node src/lib/sports-engine/session-coherence.test.js",
     "email": "email dev --dir api/_lib/emails",
     "email:test": "node scripts/send-test-email.mjs",
     "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs"

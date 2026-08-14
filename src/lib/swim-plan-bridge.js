@@ -37,6 +37,7 @@ import {
   validateArthurCandidate,
   resolveHardConstraints,
   scaleSessionLinesToVolume,
+  finalizeCoachSession,
 } from "./sports-engine/index.js";
 import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
 import {
@@ -257,39 +258,47 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
     const v = variants[si % variants.length];
     // Toujours multiple de 50 (annonce XX00 / XX50)
     const dist = Math.max(50, Math.round(v.distance / 50) * 50);
-    return {
-      type: si === 0 && n > 1 ? "VITESSE" : "ENDURANCE",
-      title: `${focusLabel} S${weekNumber}.${si + 1}`,
-      intensity: beginnerFriendly ? "Facile + touches rapides" : "Z1 + touches Z4 (12,5 m)",
-      details: v.details,
-      distance: `${dist}m`,
-      duration: v.duration,
-      completed: false,
-      skipped: null,
-    };
+    return finalizeCoachSession(
+      {
+        type: si === 0 && n > 1 ? "VITESSE" : "ENDURANCE",
+        title: `${focusLabel} S${weekNumber}.${si + 1}`,
+        intensity: beginnerFriendly ? "Facile + touches rapides" : "Z1 + touches Z4 (12,5 m)",
+        details: v.details,
+        distance: `${dist}m`,
+        duration: v.duration,
+        completed: false,
+        skipped: null,
+        pool,
+      },
+      { pool },
+    );
   });
 }
 
-function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false, uiLevel = null) {
+function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false, uiLevel = null, pool = 25) {
   const details = sessionTextToDetails(res.text);
   const total = res.total;
   const isTest = role?.objectif === "test";
-  return {
-    type: mapRoleToType(role),
-    title: isTest
-      ? `Test progression S${weekNumber}.${sessionIndex + 1}`
-      : `${focusLabel} S${weekNumber}.${sessionIndex + 1}`,
-    intensity: zoneLabel(details, role, beginnerFriendly, uiLevel),
-    details,
-    distance: `${total}m`,
-    duration: Math.max(40, Math.min(90, Math.round(total / 35))),
-    completed: false,
-    skipped: null,
-    isTest: isTest || undefined,
-    family: role?.family,
-    isKeySession: role?.isKeySession || undefined,
-    engineWhy: role?.engineWhy,
-  };
+  return finalizeCoachSession(
+    {
+      type: mapRoleToType(role),
+      title: isTest
+        ? `Test progression S${weekNumber}.${sessionIndex + 1}`
+        : `${focusLabel} S${weekNumber}.${sessionIndex + 1}`,
+      intensity: zoneLabel(details, role, beginnerFriendly, uiLevel),
+      details,
+      distance: `${total}m`,
+      duration: Math.max(40, Math.min(90, Math.round(total / 35))),
+      completed: false,
+      skipped: null,
+      isTest: isTest || undefined,
+      family: role?.family,
+      isKeySession: role?.isKeySession || undefined,
+      engineWhy: role?.engineWhy,
+      pool,
+    },
+    { pool },
+  );
 }
 
 /** Index de la semaine dans sa phase (0 = première semaine de ce phaseName) */
@@ -563,24 +572,31 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
           scaleVolume: true,
         });
         if (fromDb) {
-          return {
-            ...fromDb,
-            family: role?.family,
-            isKeySession: role?.isKeySession,
-            engineWhy: fromDb.engineWhy || engineWhy,
-            trainingDistance:
-              fromDb.trainingDistance ??
-              (parseInt(String(fromDb.distance || "").replace(/\D/g, ""), 10) || 0),
-            intensity:
-              beginnerFriendly || sport.level === "decouverte" || sport.level === "regulier"
-                ? displayIntensity(fromDb.intensity, sport.level, beginnerFriendly)
-                : fromDb.intensity,
-          };
+          return finalizeCoachSession(
+            {
+              ...fromDb,
+              family: role?.family,
+              isKeySession: role?.isKeySession,
+              engineWhy: fromDb.engineWhy || engineWhy,
+              trainingDistance:
+                fromDb.trainingDistance ??
+                (parseInt(String(fromDb.distance || "").replace(/\D/g, ""), 10) || 0),
+              intensity:
+                beginnerFriendly || sport.level === "decouverte" || sport.level === "regulier"
+                  ? displayIntensity(fromDb.intensity, sport.level, beginnerFriendly)
+                  : fromDb.intensity,
+              pool,
+            },
+            { pool },
+          );
         }
-        return buildConfirmeArchetypeSession(archeIdx, pool, bankLevel, {
-          ...bankOpts,
-          tasteHints,
-        });
+        return finalizeCoachSession(
+          buildConfirmeArchetypeSession(archeIdx, pool, bankLevel, {
+            ...bankOpts,
+            tasteHints,
+          }),
+          { pool },
+        );
       });
       prevWeekDistance = sumTrainingDistance(sessions);
       return {
@@ -818,6 +834,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
         focusLabel,
         beginnerFriendly,
         sport.level,
+        pool,
       );
       return {
         ...mapped,
@@ -917,8 +934,10 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
   let session;
   if (useConfirmeBank) {
     const fromDb = pickArthurBankSession(profilObj, c);
-    session = fromDb
-      || buildConfirmeArchetypeSession(c, pool, bankLevel, { ...bankOpts, tasteHints });
+    session = finalizeCoachSession(
+      fromDb || buildConfirmeArchetypeSession(c, pool, bankLevel, { ...bankOpts, tasteHints }),
+      { pool },
+    );
     session = {
       ...session,
       completed: false,
@@ -942,7 +961,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     );
     const raw = weekData.sessions[0];
     session = {
-      ...toMySwymSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly),
+      ...toMySwymSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly, null, pool),
       title: focusLabel,
       objectives: variant.objectives,
       loopVariant: variant.id,

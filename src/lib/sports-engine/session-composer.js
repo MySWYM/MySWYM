@@ -852,7 +852,11 @@ function composeDecouverteSession(brief, rng) {
     };
   }
 
-  return { ok: true, session: finalizeCoachSession(session), warnings: v.warnings };
+  return {
+    ok: true,
+    session: finalizeCoachSession(session, { pool: brief.pool || session.pool || 25 }),
+    warnings: v.warnings,
+  };
 }
 
 
@@ -1478,7 +1482,11 @@ function composeRegulierSession(brief, rng) {
     };
   }
 
-  return { ok: true, session: finalizeCoachSession(session), warnings: v.warnings };
+  return {
+    ok: true,
+    session: finalizeCoachSession(session, { pool: brief.pool || session.pool || 25 }),
+    warnings: v.warnings,
+  };
 }
 
 /**
@@ -2400,7 +2408,11 @@ function composeSportifSession(brief, rng) {
     };
   }
 
-  return { ok: true, session: finalizeCoachSession(session), warnings: v.warnings };
+  return {
+    ok: true,
+    session: finalizeCoachSession(session, { pool: brief.pool || session.pool || 25 }),
+    warnings: v.warnings,
+  };
 }
 
 /**

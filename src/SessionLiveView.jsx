@@ -4,6 +4,8 @@
 import { useMemo } from "react";
 import { Waves, Target, Zap, Activity, Droplets, Timer, Lock, Play } from "lucide-react";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
+import { finalizeCoachSession } from "./lib/sports-engine/coach-restitution.js";
+import { lineSwimMeters } from "./lib/sports-engine/session-coherence.js";
 
 const G = {
   ink: "#172b4d",
@@ -25,19 +27,7 @@ function stripPrefix(raw) {
 }
 
 function parseMeters(text) {
-  const t = String(text || "");
-  const nxm = t.match(/(\d+)\s*[×x]\s*(\d+)\s*m/i);
-  if (nxm) return parseInt(nxm[1], 10) * parseInt(nxm[2], 10);
-  const arrow = t.match(/(\d+(?:\s*→\s*\d+)+)/);
-  if (arrow && /pyramide/i.test(t)) {
-    return arrow[1]
-      .split(/\s*→\s*/)
-      .map((n) => parseInt(n, 10))
-      .filter((n) => Number.isFinite(n))
-      .reduce((a, b) => a + b, 0);
-  }
-  const single = t.match(/(\d+)\s*m\b/i);
-  return single ? parseInt(single[1], 10) : 0;
+  return lineSwimMeters(text);
 }
 
 function guessKind(text) {
@@ -137,13 +127,20 @@ export default function SessionLiveView({
   subtitle = null,
   showCta = true,
 }) {
-  const details = Array.isArray(session?.details) ? session.details : [];
+  const coherentSession = useMemo(
+    () =>
+      finalizeCoachSession(session || { details: [] }, {
+        pool: session?.pool === 50 ? 50 : 25,
+      }),
+    [session],
+  );
+  const details = Array.isArray(coherentSession?.details) ? coherentSession.details : [];
   // Contenu déjà passé par toCoachDetailLines côté App ; ici on filtre encore les headlines
   const cleanDetails = details.filter((d) => {
     const t = String(d || "").trim();
     return t && !/^→/.test(t) && !/^Aujourd/i.test(t);
   });
-  const totalMeters = parseDistanceMeters(session?.distance);
+  const totalMeters = parseDistanceMeters(coherentSession?.distance);
 
   const rows = useMemo(() => {
     const out = [];
@@ -157,7 +154,7 @@ export default function SessionLiveView({
         kind,
         title: pyramid ? `${pyramid.volume}m pyramide ${pyramid.label}` : titleFrom(text),
         subtitle: pyramid ? "Bloc principal" : subtitleFrom(text, kind),
-        meta: restFrom(text) || (kind === "warm" || kind === "cool" ? formatDuration(Math.max(4, Math.round((parseMeters(text) || 100) / 50))) : null),
+        meta: restFrom(text) || ((kind === "warm" || kind === "cool") && parseMeters(text) ? `${parseMeters(text)} m` : null),
         meters: pyramid?.volume || parseMeters(text),
         pyramid,
       });

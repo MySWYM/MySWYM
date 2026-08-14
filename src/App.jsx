@@ -38,7 +38,7 @@ import {
 import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import SessionLiveView from "./SessionLiveView.jsx";
-import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
+import { toCoachDetailLines, finalizeCoachSession } from "./lib/sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
@@ -1008,12 +1008,28 @@ const estimateSetPartMeters = (part) => {
 };
 
 /**
+ * Prépare une séance pour affichage : restitution coach + cohérence distances.
+ */
+const prepareSessionForDisplay = (session) => {
+  if (!session) return session;
+  return finalizeCoachSession(session, {
+    pool: session.pool === 50 ? 50 : 25,
+  });
+};
+
+/**
  * Découpe les lignes Arthur compactes « A · B · C — Z2 » en titre + sous-séries.
  * Fix UX Performance / banque gold : plus de mur de texte sur une ligne.
  */
-const expandCompoundDetailLines = (details = []) => {
-  // Restitution coach (retire headlines / pyramides opaques / bruit UX)
-  const source = toCoachDetailLines(details);
+const expandCompoundDetailLines = (details = [], sessionMeta = null) => {
+  const coherent = prepareSessionForDisplay({
+    details,
+    distance: sessionMeta?.distance,
+    trainingDistance: sessionMeta?.trainingDistance,
+    volumeFromSets: sessionMeta?.volumeFromSets,
+    pool: sessionMeta?.pool,
+  });
+  const source = coherent.details || toCoachDetailLines(details);
   const out = [];
   for (const raw of source) {
     const full = String(raw ?? "");
@@ -1046,12 +1062,13 @@ const expandCompoundDetailLines = (details = []) => {
 
 /** Texte plat d'une séance — WhatsApp / description Strava */
 const formatSessionPlainText = (session) => {
+  const display = prepareSessionForDisplay(session);
   const lines = [
-    `${session.title || "Séance"} — ${session.distance || ""}${session.duration ? ` — ${formatDuration(session.duration)}` : ""}`.trim(),
+    `${display.title || "Séance"} — ${display.distance || ""}${display.duration ? ` — ${formatDuration(display.duration)}` : ""}`.trim(),
   ];
-  if (session.intensity) lines.push(String(session.intensity));
+  if (display.intensity) lines.push(String(display.intensity));
   lines.push("");
-  expandCompoundDetailLines(session.details || []).forEach((d) => {
+  expandCompoundDetailLines(display.details || [], display).forEach((d) => {
     const kind = classifyDetailLine(d);
     const t = stripDetailPrefix(d).replace(/\s*:\s*$/, "");
     if (!t) return;
@@ -6715,7 +6732,8 @@ const SessionCard = ({
   const viewedRef = useRef(false);
   const startedRef = useRef(false);
   const intensity = parseIntensity(session.intensity);
-  const details = expandCompoundDetailLines(session.details || []);
+  const displaySession = prepareSessionForDisplay(session);
+  const details = expandCompoundDetailLines(displaySession.details || [], displaySession);
   const detailGroups = groupSessionDetails(details);
   const blockCount = detailGroups.reduce((n, g) => {
     if (g.type === "block") return n + 1;
@@ -6939,7 +6957,7 @@ const SessionCard = ({
             <span style={{
               fontSize: 11, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color,
               background: resolved || locked ? G.greyLight : tm.bg, padding: "4px 9px", borderRadius: 8,
-            }}>{session.distance}</span>
+            }}>{displaySession.distance || session.distance}</span>
             <span style={{
               fontSize: 11, fontWeight: 600, color: G.grey, background: G.greyXLight,
               padding: "4px 9px", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 4,
