@@ -316,11 +316,13 @@ export function validateComposedSession(session, brief = {}, constraints = null)
     errors.push("matériel incompatible: pull + palmes");
   }
   // Engagement composeur : matos déclaré → ≥1 item appliqué (hors récup/taper/course)
+  // Exception : inventaire entièrement interdit pour le focus (ex. seul tuba un jour 3T/5T)
   if (
     Array.isArray(brief.equipment) &&
     brief.equipment.length > 0 &&
     session.composerWhy?.equipmentUsage != null &&
-    !isEquipmentEngagementExempt(brief)
+    !isEquipmentEngagementExempt(brief) &&
+    session.composerWhy?.equipmentEngagementSkipped !== "forbidden_for_focus"
   ) {
     const used = session.equipmentUsed || session.equipmentRequired || [];
     const visible = /palmes|tuba|pull|planche|plaquette|élastique|elastique/i.test(text);

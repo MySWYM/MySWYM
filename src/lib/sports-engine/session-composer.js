@@ -204,6 +204,13 @@ function labelWithMatos(label, matosNote) {
   if (!matosNote) return label;
   const base = String(label || "nage").trim();
   if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
+  // 3T/5T = tête qui tourne pour respirer — jamais coller le tuba frontal
+  if (
+    /tuba/i.test(matosNote) &&
+    /\b\d+\s*T\b|3T|5T|7T|9T|bilatéral|hypoxie|respiration\s+(?:3|5|7)/i.test(base)
+  ) {
+    return base;
+  }
   const note = String(matosNote).replace(/\bpalmes\s*\+\s*tuba(?:\s+frontal)?/gi, "palmes et tuba frontal");
   return `${base} avec ${note}`;
 }
@@ -1432,6 +1439,7 @@ function composeRegulierSession(brief, rng) {
       reprisePattern: reprisePattern?.id || null,
       equipmentUsage: eqUsage.usage,
       equipmentApplied: eqUsage.applied,
+      equipmentEngagementSkipped: eqUsage.engagementSkippedReason || null,
       papillonOk,
       qualitySession,
       maxContinuous: maxCont,
@@ -2339,6 +2347,7 @@ function composeSportifSession(brief, rng) {
       reprisePattern: reprisePattern?.id || null,
       equipmentUsage: eqUsage.usage,
       equipmentApplied: eqUsage.applied,
+      equipmentEngagementSkipped: eqUsage.engagementSkippedReason || null,
       papillonOk,
       qualitySession,
       zone,

@@ -238,8 +238,19 @@ export function buildTechniqueFromBank({
       alreadyHasMatos ||
       APPLY_LINE_RE.test(label) ||
       (/planche/i.test(matosNote) && !/jambes|battement/i.test(label)) ||
-      (/palmes/i.test(matosNote) && /3T|5T|7T|respiration/i.test(label));
+      (/palmes/i.test(matosNote) && /3T|5T|7T|respiration/i.test(label)) ||
+      // 3T/5T = respiration latérale (tête qui tourne) — jamais de tuba frontal
+      (/tuba/i.test(matosNote) &&
+        /\b\d+\s*T\b|3T|5T|7T|9T|bilatéral|hypoxie|respiration\s+(?:3|5|7)/i.test(label));
     if (!skipGlue) label = `${label} avec ${matosNote}`;
+    // Filet de sécurité : retirer tuba collé par erreur sur une ligne 3T/5T
+    if (/tuba/i.test(label) && /\b\d+\s*T\b|3T|5T|7T|9T|bilatéral/i.test(label)) {
+      label = label
+        .replace(/\s*avec\s+tuba(?:\s+frontal)?/gi, "")
+        .replace(/\s*[,+]?\s*tuba(?:\s+frontal)?/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
     const set = {
       reps,
       distancePerRep: dist,

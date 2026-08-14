@@ -38,7 +38,11 @@ export function isEquipmentEngagementExempt(brief = {}) {
   return false;
 }
 
-/** Outils utiles pour un focus — premier possédé = celui qu'on prend. */
+/**
+ * Outils utiles pour un focus — premier possédé = celui qu'on prend.
+ * 3T/5T = 1 respiration tous les N coups de bras (tête qui tourne) → PAS de tuba frontal
+ * (le tuba fixe la tête et annule l'exercice). Tuba = flèche / grand chien / aisance débutant.
+ */
 export function pedagogicalTechEquipment(techFocus, level = "regulier") {
   switch (techFocus) {
     case "technique_jambes":
@@ -47,7 +51,8 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
       return ["palmes"];
     case "technique_respiration":
     case "technique_croisement":
-      return ["tuba"];
+      // Respiration rythmée (3T/5T/bilatéral) : pas de matos — surtout pas de tuba
+      return [];
     case "technique_catchup":
       return level === "regulier" || level === "decouverte" ? ["palmes"] : ["plaquettes", "palmes"];
     case "technique_fleche":
@@ -63,8 +68,18 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
 export function forbiddenTechEquipment(techFocus) {
   if (techFocus === "technique_roulis") return ["plaquettes"];
   if (techFocus === "technique_jambes") return ["pull", "plaquettes"];
-  if (techFocus === "technique_respiration") return ["plaquettes", "palmes"];
+  // 3T/5T = rotation de tête pour respirer → tuba frontal interdit (et palmes/plaquettes inutiles)
+  if (techFocus === "technique_respiration" || techFocus === "technique_croisement") {
+    return ["plaquettes", "palmes", "tuba"];
+  }
   return [];
+}
+
+/** Ligne éducatif 3T/5T/7T / bilatéral : incompatible avec tuba frontal. */
+export function isBreathPatternLine(text) {
+  return /\b\d+\s*T\b|3T|5T|7T|9T|bilatéral|hypoxie\s*\d|respiration\s+(?:3|5|7)\s*temps/i.test(
+    String(text || ""),
+  );
 }
 
 function firstOwned(prefer, available) {
@@ -112,25 +127,30 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   }
 
   const prefer = pedagogicalTechEquipment(techFocus, level);
+  const forbidden = forbiddenTechEquipment(techFocus);
   const wishPrefer = Array.isArray(brief.wishPreferEquipment)
-    ? brief.wishPreferEquipment.filter((e) => available.includes(e))
+    ? brief.wishPreferEquipment.filter((e) => available.includes(e) && !forbidden.includes(e))
     : [];
   const techEq =
     firstOwned(wishPrefer.length ? wishPrefer : prefer, available) ||
     firstOwned(prefer, available);
+  const techEqOk = techEq && !forbidden.includes(techEq);
 
   let useTech = false;
-  if (techEq === "planche" && techFocus === "technique_jambes") useTech = roll < 0.9;
-  else if (techEq === "palmes" && techFocus === "technique_roulis") useTech = roll < 0.85;
-  else if (techEq === "tuba" && /respiration|croisement|fleche|chien/.test(techFocus)) useTech = roll < 0.8;
-  else if (techEq) useTech = roll < (exempt ? 0.45 : 0.72);
-  else if (!exempt && available.length) useTech = roll < 0.55;
+  if (techEqOk && techEq === "planche" && techFocus === "technique_jambes") useTech = roll < 0.9;
+  else if (techEqOk && techEq === "palmes" && techFocus === "technique_roulis") useTech = roll < 0.85;
+  else if (techEqOk && techEq === "tuba" && /fleche|chien/.test(techFocus)) useTech = roll < 0.8;
+  else if (techEqOk) useTech = roll < (exempt ? 0.45 : 0.72);
+  else if (!exempt && available.length && prefer.length === 0 && /respiration|croisement/.test(techFocus)) {
+    // Respiration 3T/5T : pas de matos sur l'éducatif ; engagement via corps (pull) si possible
+    useTech = false;
+  } else if (!exempt && available.length) useTech = roll < 0.55;
 
   const applied = [];
   const techNote = [];
   const corpsNote = [];
 
-  if (useTech && techEq) {
+  if (useTech && techEqOk) {
     if (techFocus === "technique_fleche" || techFocus === "technique_grand_chien") {
       if (available.includes("palmes")) {
         applied.push("palmes");
@@ -147,18 +167,38 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   }
 
   // Engagement hors exempt : garantir ≥1 item pédagogique / wish / inventaire
+  // Interdits = pas sur l'éducatif (ex. tuba sur 3T, pull sur jambes) ;
+  // le pull reste OK au corps même un jour jambes.
   if (!exempt && applied.length === 0 && available.length) {
-    const fallbackPool = wishPrefer.length
-      ? wishPrefer
-      : prefer.filter((e) => available.includes(e)).length
-        ? prefer.filter((e) => available.includes(e))
-        : available.filter((e) => e !== "pull" || !available.includes("palmes"));
-    const pick = pickOne(fallbackPool.length ? fallbackPool : available, typeof rng === "function" ? rng : Math.random);
-    if (pick) {
-      applied.push(pick);
-      if (pick === "pull") corpsNote.push("pull-buoy");
-      else techNote.push(displayName(pick));
+    const techSafe = available.filter((e) => !forbidden.includes(e));
+    const preferAvail = prefer.filter((e) => techSafe.includes(e));
+    const wishTech = wishPrefer.filter((e) => techSafe.includes(e));
+
+    if (/respiration|croisement/.test(techFocus) && available.includes("pull")) {
+      applied.push("pull");
+      corpsNote.push("pull-buoy");
+    } else if (wishTech.length || preferAvail.length) {
+      const pick = pickOne(
+        wishTech.length ? wishTech : preferAvail,
+        typeof rng === "function" ? rng : Math.random,
+      );
+      if (pick) {
+        applied.push(pick);
+        if (pick === "pull") corpsNote.push("pull-buoy");
+        else techNote.push(displayName(pick));
+      }
+    } else if (available.includes("pull") && !available.includes("palmes")) {
+      applied.push("pull");
+      corpsNote.push("pull-buoy");
+    } else if (techSafe.length) {
+      const pick = pickOne(techSafe, typeof rng === "function" ? rng : Math.random);
+      if (pick) {
+        applied.push(pick);
+        if (pick === "pull") corpsNote.push("pull-buoy");
+        else techNote.push(displayName(pick));
+      }
     }
+    // Sinon : inventaire entièrement inutilisable pour ce focus (ex. seul tuba un jour 3T)
   }
 
   const palmesOn = applied.includes("palmes");
@@ -179,23 +219,37 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     if (idx >= 0) corpsNote.splice(idx, 1);
   }
 
+  // Dedupe (engagement + corps pull peuvent doubler)
+  const uniq = (arr) => [...new Set(arr)];
+  const appliedUniq = uniq(applied);
+  const techNoteUniq = uniq(techNote);
+  const corpsNoteUniq = uniq(corpsNote);
+
   const usage =
-    applied.length === 0
+    appliedUniq.length === 0
       ? "none"
-      : techNote.length && corpsNote.length
+      : techNoteUniq.length && corpsNoteUniq.length
         ? "meaningful"
-        : applied.length
+        : appliedUniq.length
           ? "optional"
           : "none";
-  const note = [...techNote, ...corpsNote].join(" + ");
+  const note = [...techNoteUniq, ...corpsNoteUniq].join(" + ");
+  const engagementSkippedReason =
+    !exempt &&
+    available.length > 0 &&
+    appliedUniq.length === 0 &&
+    available.every((e) => forbidden.includes(e) || (e === "pull" && available.includes("palmes")))
+      ? "forbidden_for_focus"
+      : null;
 
   return {
     usage,
-    applied,
+    applied: appliedUniq,
     note,
-    techNote: techNote.join(" + "),
-    corpsNote: corpsNote.join(" + "),
-    engaged: applied.length > 0,
+    techNote: techNoteUniq.join(" + "),
+    corpsNote: corpsNoteUniq.join(" + "),
+    engaged: appliedUniq.length > 0,
+    engagementSkippedReason,
   };
 }
 

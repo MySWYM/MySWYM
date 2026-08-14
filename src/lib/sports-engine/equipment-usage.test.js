@@ -6,6 +6,9 @@ import {
   resolveEquipmentUsage,
   isEquipmentEngagementExempt,
   normalizeEquipmentList,
+  pedagogicalTechEquipment,
+  forbiddenTechEquipment,
+  isBreathPatternLine,
 } from "./equipment-usage.js";
 
 function assert(cond, msg) {
@@ -71,6 +74,58 @@ ok(!isEquipmentEngagementExempt({ sessionIntent: "endurance", phase: "base" }), 
     );
     ok(!(u.applied.includes("pull") && u.applied.includes("palmes")), `no pull+palmes ${i}`);
   }
+}
+
+{
+  // 3T/5T = respiration latérale → PAS de tuba frontal
+  ok(pedagogicalTechEquipment("technique_respiration").length === 0, "respi: pas de matos préféré");
+  ok(forbiddenTechEquipment("technique_respiration").includes("tuba"), "respi forbid tuba");
+  ok(isBreathPatternLine("8×25m respiration 3T"), "3T is breath pattern");
+  ok(isBreathPatternLine("4×50m 3T/5T alterné"), "3T/5T pattern");
+  ok(!isBreathPatternLine("8×25m flèche + tuba frontal"), "flèche not breath pattern");
+
+  for (let i = 0; i < 40; i++) {
+    const rng = () => (i * 0.17 + 0.05) % 1;
+    const u = resolveEquipmentUsage(
+      {
+        equipment: ["tuba", "palmes"],
+        techFocus: "technique_respiration",
+        sessionIntent: "endurance",
+        phase: "base",
+        level: "regulier",
+      },
+      rng,
+    );
+    ok(!u.techNote || !/tuba/i.test(u.techNote), `pas tuba en techNote respi ${i}: ${u.techNote}`);
+    ok(!u.applied.includes("tuba") || u.corpsNote, `tuba jamais collé au 3T ${i}`);
+  }
+
+  // Seul tuba + focus respiration → skip engagement plutôt que forcer le tuba sur le 3T
+  const onlyTuba = resolveEquipmentUsage(
+    {
+      equipment: ["tuba"],
+      techFocus: "technique_respiration",
+      sessionIntent: "endurance",
+      phase: "base",
+      level: "regulier",
+    },
+    () => 0.1,
+  );
+  ok(onlyTuba.applied.length === 0, "seul tuba respi → pas d'appliqué");
+  ok(onlyTuba.engagementSkippedReason === "forbidden_for_focus", "skip reason");
+
+  // Flèche / grand chien : tuba OK
+  const fleche = resolveEquipmentUsage(
+    {
+      equipment: ["tuba", "palmes"],
+      techFocus: "technique_fleche",
+      sessionIntent: "endurance",
+      phase: "base",
+      level: "decouverte",
+    },
+    () => 0.1,
+  );
+  ok(fleche.applied.includes("tuba") || fleche.applied.includes("palmes"), "flèche utilise tuba/palmes");
 }
 
 console.log(`equipment-usage.test.js: ${n} assertions OK`);
