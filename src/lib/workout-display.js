@@ -250,9 +250,9 @@ export function splitHeadline(main) {
 function sectionForKind(kind, cues, main) {
   if (kind === "warm") return "warm";
   if (kind === "cool") return "cool";
-  const blob = `${main || ""} ${ (cues || []).join(" ") }`.toLowerCase();
-  if (/échauff|souple|mise en route/.test(blob)) return "warm";
-  if (/retour|calme|récupération/.test(blob)) return "cool";
+  const blob = `${main || ""} ${(cues || []).join(" ")}`.toLowerCase();
+  if (/échauff|mise en route/.test(blob)) return "warm";
+  if (/retour(\s+au\s+calme)?|cool\s*down/.test(blob)) return "cool";
   return "main";
 }
 
