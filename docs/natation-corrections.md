@@ -33,7 +33,7 @@
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
-- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit dans une même séance** : pull-buoy + palmes — le pull (entre les jambes) coupe les battements pour travailler les bras ; les palmes servent à battre. Posséder les deux est OK ; les combiner le même jour, non. Exception Découverte : « palmes + tuba frontal » sur le titre. **Quand l’utiliser** : planche sur les jambes ; palmes sur le roulis (jamais plaquettes) ; tuba sur la respiration ; pull sur le corps aérobie si pas de palmes ce jour-là.
+- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc. Matos **dans la ligne d’exo** seulement, format **`avec palmes` / `avec pull-buoy`**. **Interdit dans une même séance** : pull-buoy + palmes (pull = bras seuls ; palmes = battements). Posséder les deux OK. **Quand l’utiliser** : planche sur les jambes ; palmes sur le roulis (jamais plaquettes) ; tuba sur la respiration ; pull sur le corps aérobie si pas de palmes ce jour-là. **Engagement** : inventaire non vide → ≥1 item visible (sauf récup / taper / course). « Aucun » = zéro matos.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -47,7 +47,7 @@
 - **Affûtage** : 1 semaine dès 6 sem. de plan, **2 semaines** dès 10 sem. Volume ↓, touches vitesse, puis semaine compétition.
 - **Semaine de compétition** (dernière avant l’event) : **toujours easy** — **1 séance** si fréquence ≤3×/sem, **2 séances** si >3. Volume très bas, séances courtes (~20–25 min), rappels de vitesse **≤12,5 m**, phrase : « Ne t’inquiète pas : si tu as suivi le plan, le travail est fait. »
 - **« Nager & Progresser »** : **plus de plan multi-semaines**. Mode boucle (`isSessionLoop`) : une seule séance à la fois (`buildProgressionLoopSession`), validation Terminer/Abandonner → nouvelle génération. Questionnaire : **fréquence demandée** (comme les autres programmes) pour le profil ; la boucle génère toujours 1 séance à la fois. Freemium : **8 séances** au total + **2 nouvelles / semaine** calendaire ; Régénérer = Premium. Premières séances (cursor &lt; 3) forcées faciles.
-- **Questionnaire commun** (tous programmes) : âge, poids (kg), taille (cm), blessure (aucune / oui + note), séances/semaine, style préféré (crawl / 4 nages), nage préférée (papillon / dos / brasse / crawl). Stockés dans `entry.profile` ; affichés sur l’onglet Profil.
+- **Questionnaire commun** (tous programmes) : âge, poids (kg), taille (cm), blessure (aucune / oui + note), séances/semaine, style préféré (crawl / 4 nages), nage préférée (papillon / dos / brasse / crawl), **distance moyenne / séance** (`targetSessionDistance`), **demande libre** (`trainingWish` + `trainingWishMeta`). Stockés dans `entry.profile` (+ `sport_profiles.extra`) ; affichés sur l’onglet Profil.
 
 ### Objectifs spécifiques
 
@@ -177,6 +177,12 @@
 | 2026-08-10 | Pyramide Ironman / triathlon perf | Feedback ChatGPT : « 1750 m en pyramide ça veut rien dire — trop long et aucune info ». Cap `MAX_PYRAMID_VOLUME=1000` ; plus de scale×2 vers 1600 m ; surplus = séries explicites hors pyramide ; affichage avec paliers `100 → 200 → 300…` + repos ; exclus des candidats si corps > 1000 m (tri/OW/perf) ; QG refuse pyramide > 1000 m / opaque. `PLAN_VERSION` 43, pas de FORCE regen. | ✅ |
 | 2026-08-10 | Restitution coach séances | Séances = pseudo-étapes / marketing (« Aujourd'hui », « on savoure ») + pyramides opaques. Module `coach-restitution.js` : strip headlines, décompose pyramides, repos explicites. Composeur : plus de `→ Aujourd'hui` dans details, plus de headers `Technique ·`, matos sur ligne nageable (`avec palmes`), formats classiques prioritaires. Design UI inchangé. Pas de change charge/taper/QG règles. | ✅ |
 | 2026-08-10 | Force regen v44 live | Demande Arthur : `PLAN_VERSION` 44 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec restitution coach. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
+| 2026-08-13 | Engagement matériel | Inventaire non vide → ≥1 item matos visible / séance (hors récup / taper / course). QG `equipment_engagement`. Chip UI « Matos : … ». | ✅ |
+| 2026-08-14 | Matos pédagogique (Arthur) | Multi-select tous niveaux ; matos lié à l’éducatif (planche/jambes, palmes/roulis, tuba/respiration) ; interdit pull+palmes même séance. | ✅ |
+| 2026-08-14 | 4 nages + IM | Compose 4 nages explicites + formats IM olympiques. Force regen v45 sur main. | ✅ |
+| 2026-08-14 | Distance moyenne + wish | Slider distance/séance + texte libre. Volume ancré `targetSessionDistance`. Wish → tags soft bias. `PLAN_VERSION` 46 + FORCE regen. | ✅ |
+| | | *Ajouter ici chaque nouvelle correction* | |
+
 
 ### Format pour une nouvelle ligne
 
@@ -190,7 +196,7 @@
 
 1. **BNSSA** : oublier le volet sauvetage (sortie bassin, enchaînement, chrono 100 m examen).
 2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = **flèche + grand chien** (+ palmes/tuba) seulement — pas de catch-up/roulis/virages. **Ne pas demander de T100.**
-2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes dans la même séance** (pull = pas de jambes / palmes = battements). Inventaire onboarding = **plusieurs ou aucun**, tous niveaux — posséder les deux est OK.
+2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes dans la même séance** ; inventaire = plusieurs ou aucun ; inventaire déclaré → matos **visible** (`avec …`) hors récup/taper/course.
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.

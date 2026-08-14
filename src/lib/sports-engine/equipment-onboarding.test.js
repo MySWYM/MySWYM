@@ -116,7 +116,7 @@ ok(detectEquipmentInDetails(["planche battements"]).includes("planche"), "detect
   const r = composeSession(briefFrom({ level: "découverte", equipment: [], seed: "d1" }));
   ok(r.ok, `D1 ${r.reason || ""}`);
   ok(sessionFitsEquipment(r.session.details, []), "D1 fits");
-  ok(!/palmes|tuba|pull|plaquette/i.test((r.session.details || []).join(" ")), "D1 no matos");
+  ok(!/palmes|tuba|pull|plaquette|planche/i.test((r.session.details || []).join(" ")), "D1 no matos");
   ok((r.session.equipmentUsed || []).length === 0, "D1 used []");
 }
 
@@ -125,6 +125,8 @@ ok(detectEquipmentInDetails(["planche battements"]).includes("planche"), "detect
   const r = composeSession(briefFrom({ level: "découverte", equipment: ["palmes"], seed: "d2" }));
   ok(r.ok, `D2 ${r.reason || ""}`);
   ok(sessionFitsEquipment(r.session.details, ["palmes"]), "D2 fits");
+  ok(/palmes/i.test((r.session.details || []).join(" ")), "D2 palmes visible");
+  ok((r.session.equipmentUsed || []).includes("palmes"), "D2 used palmes");
 }
 
 // D3
@@ -132,6 +134,7 @@ ok(detectEquipmentInDetails(["planche battements"]).includes("planche"), "detect
   const r = composeSession(briefFrom({ level: "découverte", equipment: ["palmes", "tuba"], seed: "d3" }));
   ok(r.ok, `D3 ${r.reason || ""}`);
   ok(sessionFitsEquipment(r.session.details, ["palmes", "tuba"]), "D3 fits");
+  ok(/palmes|tuba/i.test((r.session.details || []).join(" ")), "D3 matos visible");
 }
 
 // Découverte : inventaire multi (combo hors anciens presets exclusifs)
@@ -149,7 +152,33 @@ ok(detectEquipmentInDetails(["planche battements"]).includes("planche"), "detect
   const r = composeSession(briefFrom({ level: "découverte", equipment: ["tuba"], seed: "d4" }));
   ok(r.ok, `D4 ${r.reason || ""}`);
   ok(sessionFitsEquipment(r.session.details, ["tuba"]), "D4 fits");
+  ok(/tuba/i.test((r.session.details || []).join(" ")), "D4 tuba visible");
   ok(!(r.session.equipmentRequired || []).includes("palmes"), "D4 no palmes required");
+}
+
+// D5 planche
+{
+  const r = composeSession(briefFrom({ level: "découverte", equipment: ["planche"], seed: "d5" }));
+  ok(r.ok, `D5 ${r.reason || ""}`);
+  ok(sessionFitsEquipment(r.session.details, ["planche"]), "D5 fits");
+  ok(/planche/i.test((r.session.details || []).join(" ")), "D5 planche visible");
+  ok((r.session.equipmentUsed || []).includes("planche"), "D5 used planche");
+}
+
+// Engagement Régulier / Sportif
+{
+  const r = composeSession(briefFrom({
+    level: "régulier",
+    equipment: ["pull"],
+    objectif: "eau_libre",
+    seed: "r-pull-eng",
+    volumeTarget: 1600,
+    duration: 55,
+    sessionIntent: "endurance",
+  }));
+  ok(r.ok, `r-pull-eng ${r.reason || ""}`);
+  ok((r.session.equipmentUsed || []).length > 0, "r-pull engaged");
+  ok(/pull/i.test((r.session.details || []).join(" ")), "r-pull visible");
 }
 
 // Régulier / Sportif

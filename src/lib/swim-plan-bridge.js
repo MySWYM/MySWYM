@@ -36,7 +36,13 @@ import {
   formatEffectiveEngineWhy,
   validateArthurCandidate,
   resolveHardConstraints,
+  scaleSessionLinesToVolume,
 } from "./sports-engine/index.js";
+import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
+import {
+  normalizeTargetSessionDistance,
+  sessionDistancePhaseScale,
+} from "./sports-engine/session-distance-pref.js";
 import { sessionTemplatesReady } from "./session-templates-store.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
@@ -439,6 +445,14 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       painProtection: !!(sport.hasPainConstraint || historyBase.painProtection),
       preserveQuality: true,
     });
+
+    // Soft wish onboarding (jamais hard override)
+    const wishHints =
+      sport.trainingWishHints ||
+      trainingWishToHints(sport.trainingWishMeta || profile.trainingWish, {
+        equipmentOwned: sport.equipment,
+      });
+    roles = biasRolesForTrainingWish(roles, wishHints);
 
     // Douleur : intention complète
     if (sport.hasPainConstraint || historyBase.painProtection || weekCtx.maxZone === "Z2") {
@@ -885,7 +899,11 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
   const phaseKey = easyPhase ? "foncier" : (c % 5 === 0 ? "developpement" : "foncier");
   const typeSemaine = easyPhase ? "allegee" : "normale";
   const roles = biasRolesForTaste([variant.role], tasteHints);
-  const role = roles[0] || variant.role;
+  const wishHints = trainingWishToHints(profile.trainingWishMeta || profile.trainingWish, {
+    equipmentOwned: Array.isArray(profile.equipment) ? profile.equipment : null,
+  });
+  const wishedRoles = biasRolesForTrainingWish(roles, wishHints);
+  const role = wishedRoles[0] || variant.role;
   const focusLabel = variant.focus;
   const weekNum = c + 1;
 
@@ -919,7 +937,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       "",
       typeSemaine,
       0,
-      roles,
+      wishedRoles,
       { volMult, simplifyWording, pool, tasteHints },
     );
     const raw = weekData.sessions[0];
@@ -929,6 +947,37 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       objectives: variant.objectives,
       loopVariant: variant.id,
     };
+  }
+
+  // Ancre distance moyenne (questionnaire) — scale soft si renseignée
+  const sportLevel =
+    profile.level === "découverte" || profile.level === "beginner"
+      ? "decouverte"
+      : profile.level === "régulier"
+        ? "regulier"
+        : profile.level === "sportif"
+          ? "sportif"
+          : profile.level === "performance" || profile.level === "advanced"
+            ? "performance"
+            : "regulier";
+  const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sportLevel);
+  if (preferred && session) {
+    const scale = sessionDistancePhaseScale({
+      typeSemaine,
+      effectivePhase: easyPhase ? "base" : "development",
+    });
+    const target = Math.max(400, Math.round((preferred * scale * (easyPhase ? 0.9 : 1)) / 50) * 50);
+    const base =
+      session.trainingDistance ||
+      parseInt(String(session.distance || "").replace(/\D/g, ""), 10) ||
+      0;
+    if (base > 200 && Math.abs(base - target) / target > 0.08) {
+      session = scaleSessionLinesToVolume(session, base, target, { lever: "reps" });
+      session.trainingDistance =
+        session.volumeFromDetails ||
+        parseInt(String(session.distance || "").replace(/\D/g, ""), 10) ||
+        target;
+    }
   }
 
   const week = {

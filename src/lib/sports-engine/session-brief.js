@@ -67,11 +67,17 @@ export function buildSessionBrief({
     normalizeStrokeFocus(sport || {}, objectif) ||
     "mixte";
 
+  const wishHints = sport?.trainingWishHints || null;
+
   let primaryTechnicalGoal = "technique_fleche";
   if (level === "decouverte") {
     primaryTechnicalGoal = FOCUS_DECOUVERTE[(weekIndex + sessionIndex) % FOCUS_DECOUVERTE.length];
   } else if (role.objectif?.startsWith("technique_")) {
     primaryTechnicalGoal = role.objectif;
+  } else if (wishHints?.preferTech?.includes("virages") && level !== "decouverte") {
+    primaryTechnicalGoal = "technique_virages";
+  } else if (wishHints?.preferTech?.includes("rattrape") && level !== "decouverte") {
+    primaryTechnicalGoal = "technique_catchup";
   }
 
   const blueprint = composeSessionBlueprint({
@@ -87,7 +93,7 @@ export function buildSessionBrief({
       ? String(seed)
       : `${level}|${objectif}|${phaseName}|w${weekIndex}|s${sessionIndex}|v${blueprint.volumeTarget}|${family}|${strokeFocus}`;
 
-  const brief = {
+  let brief = {
     level,
     objectif,
     phase: phaseName,
@@ -126,6 +132,9 @@ export function buildSessionBrief({
     swimStyle: sport?.swimStyle || null,
     papillonMastered: !!sport?.papillonMastered,
     strokesMastered: sport?.strokesMastered || null,
+    preferredStroke: sport?.preferredStroke || null,
+    wishHints,
+    wishPreferEquipment: wishHints?.preferEquipment || [],
     sessionIntent: role.sessionIntent || sport?.sessionIntent || null,
     qualitySession: !!role.qualitySession,
     sessionSpecificity: role.sessionSpecificity || sport?.sessionSpecificity || null,
@@ -157,6 +166,18 @@ export function buildSessionBrief({
     ),
     hasPainConstraint: !!(sport?.hasPainConstraint || role.painProtected),
   };
+
+  // Soft wish stroke (compatible only)
+  if (wishHints?.ready) {
+    if (wishHints.preferFourN && level !== "decouverte") {
+      brief.strokeFocus = "4n";
+    } else if (wishHints.preferStroke === "crawl") {
+      brief.strokeFocus = "crawl";
+    } else if (wishHints.preferStroke === "dos" || wishHints.preferStroke === "brasse") {
+      brief.strokeFocus = "mixte";
+      brief.preferredStroke = wishHints.preferStroke;
+    }
+  }
 
   brief.hardConstraints = resolveHardConstraints(brief);
   if (brief.hardConstraints.maxVolume != null && brief.volumeTarget > brief.hardConstraints.maxVolume) {
