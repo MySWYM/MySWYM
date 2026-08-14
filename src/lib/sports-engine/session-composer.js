@@ -67,8 +67,15 @@ function buildCorpsByFormat(format, corpsTarget, opts = {}, brief = null) {
 }
 import { selectReprisePattern } from "./reprise-patterns.js";
 import { humanizeUserFacingText } from "./user-facing.js";
+import { concreteApplyCue, concreteTechLabel } from "./session-labels.js";
 import { effortCue, resolvePaceContext } from "./pace-display.js";
 import { finalizeCoachSession } from "./coach-restitution.js";
+import { pickTechniqueFromBank, buildTechniqueFromBank, resolveTechPrimaryForComposer } from "./technique-from-bank.js";
+import {
+  shouldUseCorpsBank,
+  pickCorpsFromBank,
+  buildCorpsFromBank,
+} from "./corps-from-bank.js";
 
 export { maxContinuousForDecouverte } from "./decouverte-intents.js";
 export { resolveDecouverteIntent, coherentVolumeForDecouverte } from "./decouverte-intents.js";
@@ -161,7 +168,7 @@ export function assertVolumeConsistency({ sets, details, announcedDistance, tole
   return { ok: errors.length === 0, fromSets, fromDetails, announced, errors };
 }
 
-function formatSetLine(set, beginnerFriendly) {
+function formatSetLine(set, _beginnerFriendly) {
   const continuous = set.continuous === true || (set.reps === 1 && set.continuous !== false);
   const rest =
     !continuous && set.restSec > 0
@@ -172,10 +179,8 @@ function formatSetLine(set, beginnerFriendly) {
   if (/^applique\b/i.test(cue) || /^nage tranquillement/i.test(cue)) cue = "";
   if (/^montée$|^descente$/i.test(cue)) cue = "";
   const cueTxt = cue ? ` — ${cue}` : "";
-  const easyTag = beginnerFriendly ? " (facile)" : " (facile)";
   if (continuous || set.reps === 1) {
-    const tag = set.block === "depart" || set.block === "fin" ? easyTag : "";
-    return `-${set.distancePerRep}m ${set.label || "nage"}${cueTxt}${tag}`;
+    return `-${set.distancePerRep}m ${set.label || "nage"}${cueTxt}`;
   }
   return `-${set.reps} × ${set.distancePerRep}m ${set.label || "nage"}${cueTxt}${rest}`;
 }
@@ -192,14 +197,15 @@ function labelWithMatos(label, matosNote) {
   if (!matosNote) return label;
   const base = String(label || "nage").trim();
   if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
-  return `${base} avec ${matosNote}`;
+  const note = String(matosNote).replace(/\bpalmes\s*\+\s*tuba(?:\s+frontal)?/gi, "palmes et tuba frontal");
+  return `${base} avec ${note}`;
 }
 
 function equipmentNoteForDecouverte(equipment) {
   if (!Array.isArray(equipment) || equipment.length === 0) return "";
   const hasPalmes = equipment.includes("palmes");
   const hasTuba = equipment.includes("tuba");
-  if (hasPalmes && hasTuba) return "palmes + tuba frontal";
+  if (hasPalmes && hasTuba) return "palmes et tuba frontal";
   if (hasPalmes) return "palmes";
   if (hasTuba) return "tuba frontal";
   return "";
@@ -312,7 +318,7 @@ function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exercis
   if (b >= 2) {
     sets.push({
       reps: b, distancePerRep: u, restSec: rest, label,
-      cue: `${cue} — 2ᵉ série, même allure`,
+      cue: `${cue} — 2e bloc, récup un peu plus longue`,
       block, exerciseId: `${exerciseId}_b`, continuous: false,
     });
   }
@@ -483,7 +489,7 @@ function composeDecouverteSession(brief, rng) {
     const altKey = intent.techAlt || "nage";
     const labelOf = (k) => {
       if (k === "chien") return "grand chien";
-      if (k === "nage") return "nage normale";
+      if (k === "nage") return "crawl facile, respiration sur le côté habituel";
       if (k === "flèche") return "flèche";
       return k;
     };
@@ -521,9 +527,11 @@ function composeDecouverteSession(brief, rng) {
     }
     for (const ts of [...techPrimary, ...techAlt]) {
       sets.push(ts);
-      details.push(
-        `-${ts.reps} × ${ts.distancePerRep}m ${ts.label}${ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`,
-      );
+      const isApply = /crawl facile|respiration sur le côté/i.test(ts.label);
+      const mid = isApply
+        ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
+        : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl souple`;
+      details.push(`-${mid}${ts.cue && !isApply ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
     }
     exerciseIds.push(techEx.id);
   }
@@ -714,13 +722,129 @@ export function validateRegulierHard(sessionLike, opts = {}) {
   return { ok: errors.length === 0, errors };
 }
 
+/** Technique banque réelle ; false → fallback générique. */
+function tryAppendTechniqueFromBank({
+  inventory,
+  techMeta,
+  brief,
+  eqList,
+  eqUsage,
+  rng,
+  targetVol,
+  pool,
+  restFor,
+  swimLabel,
+  applyCue,
+  matosNote,
+  zone,
+  maxReps,
+  sets,
+  details,
+  exerciseIds,
+}) {
+  if (!techMeta?.focus) return false;
+  const techAllowed = (eqUsage?.applied || []).filter((eq) => eq && eq !== "pull");
+  const pickEq = techAllowed.length ? techAllowed : [];
+  const avoid = [];
+  if (pickEq.includes("palmes")) avoid.push("pull");
+  if (techMeta.focus === "technique_roulis") avoid.push("plaquettes");
+  const techEx = pickTechniqueFromBank({
+    focusKey: techMeta.focus,
+    level: brief.level,
+    equipment: pickEq.length ? pickEq : [],
+    painProtection: !!(brief.painProtection || brief.hardConstraints?.painProtection),
+    inventory,
+    rng,
+    preferEquipment: pickEq,
+    avoidEquipment: avoid,
+  });
+  const built = buildTechniqueFromBank({
+    techEx,
+    targetVol,
+    pool,
+    swimLabel,
+    applyCue,
+    matosNote,
+    zone,
+    maxReps: maxReps || brief.hardConstraints?.maxRepsPerSet || 12,
+    restFor,
+  });
+  if (!built.usedBank || !built.sets.length) return false;
+  for (const ts of built.sets) {
+    sets.push(ts);
+    exerciseIds.push(ts.exerciseId);
+  }
+  details.push(...built.lines);
+  return true;
+}
+
+function tryBuildCorpsFromBank({
+  brief,
+  intent,
+  rng,
+  targetVol,
+  pool,
+  restFor,
+  swimLabel,
+  applyCue,
+  zone,
+  maxContinuous,
+  maxReps,
+  qualitySession,
+  preferredFormat,
+}) {
+  if (preferredFormat === "pyramid" || preferredFormat === "alternating") {
+    return null;
+  }
+  if (
+    !shouldUseCorpsBank({
+      level: brief.level,
+      qualitySession: !!(qualitySession || brief.qualitySession || intent.quality),
+      intentId: intent.id,
+      objectif: brief.objectif,
+      taperStage: brief.taperLoad?.taperStage || brief.hardConstraints?.taperStage,
+      taperHot: !!brief.taperShortQuality,
+    })
+  ) {
+    return null;
+  }
+  const corpsEx = pickCorpsFromBank({
+    intentId: intent.id,
+    objectif: brief.objectif,
+    level: brief.level,
+    equipment: brief.equipment,
+    painProtection: !!(brief.painProtection || brief.hardConstraints?.painProtection),
+    pool,
+    maxContinuous,
+    targetVol,
+    inventory: getExerciseInventory(),
+    rng,
+  });
+  const built = buildCorpsFromBank({
+    corpsEx,
+    targetVol,
+    pool,
+    swimLabel,
+    applyCue,
+    zone,
+    maxReps: maxReps || brief.hardConstraints?.maxRepsPerSet || 12,
+    maxContinuous,
+    restFor,
+  });
+  if (!built.usedBank || !built.sets.length) return null;
+  built.setFormat = preferredFormat || built.setFormat;
+  return built;
+}
+
 function techLabelsRegulier(primary) {
   const map = {
-    rattrape: { label: "rattrapé", cue: "bras dans l'axe, glisse", focus: "technique_catchup" },
-    respiration: { label: "respiration 3 temps", cue: "confortable, régulier", focus: "technique_respiration" },
-    roulis: { label: "roulis", cue: "épaule qui sort, rotation douce", focus: "technique_roulis" },
-    jambes: { label: "jambes crawl", cue: "battements souples", focus: "technique_jambes" },
-    nage: { label: "nage appliquée", cue: "mouvement propre", focus: null },
+    rattrape: { label: "crawl rattrapé", cue: "bras dans l'axe, glisse", focus: "technique_catchup" },
+    respiration: { label: "crawl en expirant continûment dans l'eau", cue: "expire sans t'arrêter", focus: "technique_respiration" },
+    roulis: { label: "battements sur le côté", cue: "épaule qui sort, rotation douce", focus: "technique_roulis" },
+    jambes: { label: "battements crawl", cue: "battements souples", focus: "technique_jambes" },
+    chiens: { label: "grand chien", cue: "bras sous l'eau, traction large", focus: "technique_chiens" },
+    virages: { label: "coulée après virage", cue: "rotation groupée, mains basses", focus: "technique_virages" },
+    nage: { label: "crawl facile, respiration sur le côté habituel", cue: "mouvement propre", focus: null },
     "4n": { label: "plusieurs nages", cue: "une nage propre par 50 m", focus: null },
   };
   return map[primary] || map.rattrape;
@@ -750,10 +874,6 @@ function composeRegulierSession(brief, rng) {
   const strokeFocus = brief.strokeFocus || "mixte";
   const papillonOk = canUsePapillon({ ...brief, level: "regulier" });
   const sessionSpecificity = resolveSessionSpecificity(brief);
-  const eqUsage = resolveEquipmentUsage(
-    { ...brief, sessionIntent: intent.id, qualitySession },
-    rng,
-  );
 
   const reprisePattern =
     intent.id === "reprise" ? selectReprisePattern(brief, rng) : null;
@@ -767,15 +887,25 @@ function composeRegulierSession(brief, rng) {
     };
   }
 
+  const techPrimary = resolveTechPrimaryForComposer({ ...brief, level: "regulier" }, intent);
+  const techMeta = techLabelsRegulier(techPrimary);
+  const eqUsage = resolveEquipmentUsage(
+    {
+      ...brief,
+      level: "regulier",
+      sessionIntent: intent.id,
+      qualitySession,
+      techFocus: techMeta.focus,
+    },
+    rng,
+  );
+
   const swimLabelRaw = strokeSwimLabel(strokeFocus, { papillonOk });
   const swimLabel = labelWithEquipment(
     swimLabelRaw.replace(" facile", "") || "crawl",
     eqUsage,
   );
   const departLabel = strokeDepartLabel(strokeFocus);
-  const techMeta = techLabelsRegulier(
-    reprisePattern?.techPrimary || intent.techPrimary,
-  );
 
   const setFormat = selectSetFormat(
     {
@@ -885,34 +1015,57 @@ function composeRegulierSession(brief, rng) {
       exerciseIds.push(set.exerciseId);
     });
   } else {
-    const half = Math.max(100, roundTo(blocks.technique * 0.6, 50));
-    const other = Math.max(50, blocks.technique - half);
-    const unit = 50;
-    const primary = buildRepeatedExact(half, unit, {
-      label: labelWithMatos(techMeta.label, techMatos),
-      cue: techMeta.cue,
-      restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique" }),
-      block: "technique",
-      exerciseId: techFocus?.id || "tech_regulier",
+    const fromBank = tryAppendTechniqueFromBank({
+      inventory,
+      techMeta,
+      brief: { ...brief, level: "regulier" },
+      eqList,
+      eqUsage,
+      rng,
+      targetVol: blocks.technique,
+      pool,
+      restFor,
+      swimLabel: swimLabelRaw.replace(" facile", "") || "crawl",
+      applyCue: concreteApplyCue(intent.applyCue, swimLabelRaw.replace(" facile", "") || "crawl"),
+      matosNote: techMatos,
+      zone: null,
+      maxReps: 12,
+      sets,
+      details,
+      exerciseIds,
     });
-    const apply = buildRepeatedExact(other, unit, {
-      label: swimLabelRaw.replace(" facile", "") || "crawl",
-      cue: intent.applyCue,
-      restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique" }),
-      block: "technique",
-      exerciseId: "tech_apply",
-    });
-    {
-      const th = formatTechniqueHeader(`${techMeta.label} → nage`, techMatos);
-      if (th) details.push(th);
+    if (!fromBank) {
+      const half = Math.max(100, roundTo(blocks.technique * 0.6, 50));
+      const other = Math.max(50, blocks.technique - half);
+      const unit = 50;
+      const primary = buildRepeatedExact(half, unit, {
+        label: labelWithMatos(concreteTechLabel(techMeta.label, techMeta.focus), techMatos),
+        cue: techMeta.cue,
+        restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique" }),
+        block: "technique",
+        exerciseId: techFocus?.id || "tech_regulier",
+      });
+      const apply = buildRepeatedExact(other, unit, {
+        label: concreteApplyCue(intent.applyCue, swimLabelRaw.replace(" facile", "") || "crawl"),
+        cue: "",
+        restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique" }),
+        block: "technique",
+        exerciseId: "tech_apply",
+      });
+      {
+        const th = formatTechniqueHeader(`${techMeta.label} → nage`, techMatos);
+        if (th) details.push(th);
+      }
+      for (const ts of [...primary, ...apply]) {
+        sets.push(ts);
+        const isApply = ts.exerciseId === "tech_apply";
+        const mid = isApply
+          ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
+          : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl souple`;
+        details.push(`-${mid}${!isApply && ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
+      }
+      exerciseIds.push(primary[0].exerciseId, "tech_apply");
     }
-    for (const ts of [...primary, ...apply]) {
-      sets.push(ts);
-      details.push(
-        `-${ts.reps} × ${ts.distancePerRep}m ${ts.label}${ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`,
-      );
-    }
-    exerciseIds.push(primary[0].exerciseId, "tech_apply");
   }
 
   // CORPS
@@ -987,19 +1140,40 @@ function composeRegulierSession(brief, rng) {
       },
     );
   } else {
-    corpsBuilt = buildCorpsByFormat(setFormat, mainCorpsTarget, {
-      label: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
-      altLabel,
-      cue: (() => {
+    const bankCorps = tryBuildCorpsFromBank({
+      brief: { ...brief, level: "regulier" },
+      intent,
+      rng,
+      targetVol: mainCorpsTarget,
+      pool,
+      restFor,
+      swimLabel: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
+      applyCue: (() => {
         const base = reprisePattern?.corpsCue || intent.applyCue;
         const obj = objectiveBodyCue(brief, intent);
         return obj ? `${base || "nage"} — ${obj}` : base;
       })(),
-      restFor,
-      exerciseId: `corps_${intent.id}`,
+      zone: null,
       maxContinuous: intent.id === "reprise" ? Math.min(maxCont, 100) : maxCont,
-      pool,
+      maxReps: 12,
+      qualitySession,
+      preferredFormat: setFormat,
     });
+    corpsBuilt =
+      bankCorps ||
+      buildCorpsByFormat(setFormat, mainCorpsTarget, {
+        label: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
+        altLabel,
+        cue: (() => {
+          const base = reprisePattern?.corpsCue || intent.applyCue;
+          const obj = objectiveBodyCue(brief, intent);
+          return obj ? `${base || "nage"} — ${obj}` : base;
+        })(),
+        restFor,
+        exerciseId: `corps_${intent.id}`,
+        maxContinuous: intent.id === "reprise" ? Math.min(maxCont, 100) : maxCont,
+        pool,
+      });
   }
 
   // race_specific : portion 4N d'abord ou après selon volume
@@ -1104,6 +1278,7 @@ function composeRegulierSession(brief, rng) {
       blocks,
       exercises: exerciseIds,
       intent: intent.id,
+      techPrimary,
       strokeFocus,
       sessionSpecificity,
       setFormat: corpsBuilt.setFormat,
@@ -1303,10 +1478,6 @@ function composeSportifSession(brief, rng) {
   const sessionSpecificity = resolveSessionSpecificity(brief);
   const paceCtx = resolvePaceContext(brief);
   const zone = intent.zone || brief.intensityTarget || "Z2";
-  const eqUsage = resolveEquipmentUsage(
-    { ...brief, sessionIntent: intent.id, qualitySession },
-    rng,
-  );
 
   const reprisePattern =
     intent.id === "reprise" ? selectReprisePattern(brief, rng) : null;
@@ -1320,10 +1491,25 @@ function composeSportifSession(brief, rng) {
     };
   }
 
+  const techPrimary = resolveTechPrimaryForComposer(
+    { ...brief, level: isPerf ? "performance" : "sportif" },
+    intent,
+  );
+  const techMeta = techLabelsRegulier(techPrimary);
+  const eqUsage = resolveEquipmentUsage(
+    {
+      ...brief,
+      level: isPerf ? "performance" : "sportif",
+      sessionIntent: intent.id,
+      qualitySession,
+      techFocus: techMeta.focus,
+    },
+    rng,
+  );
+
   const swimLabelRaw = strokeSwimLabel(strokeFocus, { papillonOk }).replace(" facile", "") || "crawl";
   const swimLabel = labelWithEquipment(swimLabelRaw, eqUsage);
   const departLabel = strokeDepartLabel(strokeFocus);
-  const techMeta = techLabelsRegulier(reprisePattern?.techPrimary || intent.techPrimary);
 
   const hcFmt = brief.hardConstraints || hcEarly || {};
   const setFormat = selectSetFormat(
@@ -1446,48 +1632,71 @@ function composeSportifSession(brief, rng) {
       exerciseIds.push(set.exerciseId);
     });
   } else {
-    const techFocus =
-      inventory.find(
-        (ex) =>
-          ex.focusKey === techMeta.focus &&
-          !rejectsMissingEquipment(ex, eqList) &&
-          !ex.incompatibilities?.includes("sportif"),
-      ) ||
-      inventory.find(
-        (ex) =>
-          ex.type === "technique" &&
-          ex.focusKey === "technique_catchup" &&
-          !rejectsMissingEquipment(ex, eqList),
-      );
-    const half = Math.max(100, roundTo(blocks.technique * 0.55, 50));
-    const other = Math.max(50, blocks.technique - half);
-    const unit = 50;
-    const primary = buildRepeatedExact(half, unit, {
-      label: labelWithMatos(techMeta.label, techMatos),
-      cue: techMeta.cue,
-      restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique", zone: "Z2" }),
-      block: "technique",
-      exerciseId: techFocus?.id || "tech_sportif",
+    const fromBank = tryAppendTechniqueFromBank({
+      inventory,
+      techMeta,
+      brief: { ...brief, level: isPerf ? "performance" : "sportif" },
+      eqList,
+      eqUsage,
+      rng,
+      targetVol: blocks.technique,
+      pool,
+      restFor,
+      swimLabel: swimLabelRaw,
+      applyCue: concreteApplyCue(intent.applyCue, swimLabelRaw),
+      matosNote: techMatos,
+      zone: "Z2",
+      maxReps: brief.hardConstraints?.maxRepsPerSet || 12,
+      sets,
+      details,
+      exerciseIds,
     });
-    const apply = buildRepeatedExact(other, unit, {
-      label: swimLabelRaw,
-      cue: intent.applyCue,
-      restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique", zone: "Z2" }),
-      block: "technique",
-      exerciseId: "tech_apply",
-    });
-    {
-      const th = formatTechniqueHeader(`${techMeta.label} → nage`, techMatos);
-      if (th) details.push(th);
+    if (!fromBank) {
+      const techFocus =
+        inventory.find(
+          (ex) =>
+            ex.focusKey === techMeta.focus &&
+            !rejectsMissingEquipment(ex, eqList) &&
+            !ex.incompatibilities?.includes("sportif"),
+        ) ||
+        inventory.find(
+          (ex) =>
+            ex.type === "technique" &&
+            ex.focusKey === "technique_catchup" &&
+            !rejectsMissingEquipment(ex, eqList),
+        );
+      const half = Math.max(100, roundTo(blocks.technique * 0.55, 50));
+      const other = Math.max(50, blocks.technique - half);
+      const unit = 50;
+      const primary = buildRepeatedExact(half, unit, {
+        label: labelWithMatos(concreteTechLabel(techMeta.label, techMeta.focus), techMatos),
+        cue: techMeta.cue,
+        restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique", zone: "Z2" }),
+        block: "technique",
+        exerciseId: techFocus?.id || "tech_sportif",
+      });
+      const apply = buildRepeatedExact(other, unit, {
+        label: concreteApplyCue(intent.applyCue, swimLabelRaw),
+        cue: "",
+        restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique", zone: "Z2" }),
+        block: "technique",
+        exerciseId: "tech_apply",
+      });
+      {
+        const th = formatTechniqueHeader(`${techMeta.label} → nage`, techMatos);
+        if (th) details.push(th);
+      }
+      for (const ts of [...primary, ...apply]) {
+        ts.zone = "Z2";
+        sets.push(ts);
+        const isApply = ts.exerciseId === "tech_apply";
+        const mid = isApply
+          ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
+          : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl souple`;
+        details.push(`-${mid}${!isApply && ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
+      }
+      exerciseIds.push(primary[0].exerciseId, "tech_apply");
     }
-    for (const ts of [...primary, ...apply]) {
-      ts.zone = "Z2";
-      sets.push(ts);
-      details.push(
-        `-${ts.reps} × ${ts.distancePerRep}m ${ts.label}${ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`,
-      );
-    }
-    exerciseIds.push(primary[0].exerciseId, "tech_apply");
   }
 
   // CORPS
@@ -1813,20 +2022,37 @@ function composeSportifSession(brief, rng) {
         } else if (hc.forbidLongProgressive && aeroFmt === "progressive") {
           aeroFmt = "repeated";
         }
-        const aeroBuilt = buildCorpsByFormat(
-          aeroFmt,
-          mainCorpsTarget,
-          {
-            label: corpsLabel,
-            cue: cueFor(zoneMain, 100, aeroCueBase),
-            restFor: (c) => restFor({ ...c, zone: zoneMain }),
-            exerciseId: `corps_${intent.id}`,
-            maxContinuous: maxContCrawl,
-            pool,
-            maxRepsPerSet: hc.maxRepsPerSet,
-          },
-          brief,
-        );
+        const bankCorps = tryBuildCorpsFromBank({
+          brief: { ...brief, level: isPerf ? "performance" : "sportif" },
+          intent,
+          rng,
+          targetVol: mainCorpsTarget,
+          pool,
+          restFor: (c) => restFor({ ...c, zone: zoneMain }),
+          swimLabel: corpsLabel,
+          applyCue: cueFor(zoneMain, 100, aeroCueBase),
+          zone: zoneMain,
+          maxContinuous: maxContCrawl,
+          maxReps: hc.maxRepsPerSet || 12,
+          qualitySession,
+          preferredFormat: aeroFmt,
+        });
+        const aeroBuilt =
+          bankCorps ||
+          buildCorpsByFormat(
+            aeroFmt,
+            mainCorpsTarget,
+            {
+              label: corpsLabel,
+              cue: cueFor(zoneMain, 100, aeroCueBase),
+              restFor: (c) => restFor({ ...c, zone: zoneMain }),
+              exerciseId: `corps_${intent.id}`,
+              maxContinuous: maxContCrawl,
+              pool,
+              maxRepsPerSet: hc.maxRepsPerSet,
+            },
+            brief,
+          );
         for (const s of aeroBuilt.sets) {
           s.zone = zoneMain;
           sets.push(s);
@@ -1913,9 +2139,17 @@ function composeSportifSession(brief, rng) {
         details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
       }
     }
-    if (objCue && brief.objectif === "triathlon" && !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)) {
-      const corpsIdx = details.findIndex((l) => /^-\d/.test(l) && !/Technique|souple/i.test(l));
-      if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+    if (brief.objectif === "triathlon" && !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)) {
+      const triCue = objCue || "économie d'énergie — allure régulière";
+      const corpsIdx = details.findIndex(
+        (l) =>
+          /^-\d/.test(l) &&
+          !/souple|échauff|récup|au choix|Technique/i.test(l) &&
+          (/\(Z[23]\)|Z[23]\s*@/.test(l) || /\d+\s*[×x]\s*(100|200|400)\s*m/i.test(l)),
+      );
+      const fallbackIdx = details.findIndex((l) => /^-\d/.test(l) && !/souple|Technique/i.test(l));
+      const idx = corpsIdx >= 0 ? corpsIdx : fallbackIdx;
+      if (idx >= 0) details[idx] = `${details[idx]} — ${triCue}`;
     }
   }
 
@@ -1967,6 +2201,7 @@ function composeSportifSession(brief, rng) {
       blocks,
       exercises: exerciseIds,
       intent: intent.id,
+      techPrimary,
       strokeFocus,
       sessionSpecificity,
       setFormat: brief._lastSetFormat || setFormat,

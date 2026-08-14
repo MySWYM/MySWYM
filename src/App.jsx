@@ -37,6 +37,7 @@ import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js"
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import SessionLiveView from "./SessionLiveView.jsx";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
+import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -1038,7 +1039,7 @@ const expandCompoundDetailLines = (details = []) => {
       out.push(text);
     }
   }
-  return out;
+  return out.map((line) => prettifySessionDetailLine(line));
 };
 
 /** Texte plat d'une séance — WhatsApp / description Strava */

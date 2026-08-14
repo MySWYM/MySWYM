@@ -187,6 +187,15 @@ export {
 } from "./coach-restitution.js";
 export { ARTHUR_GOLD_TEST_FIXTURES } from "./arthur-gold-fixtures.js";
 export { findInternalJargon } from "./user-facing.js";
+export {
+  sanitizeSessionDetailLine,
+  prettifySessionDetailLine,
+  sanitizeSessionDetails,
+  isVagueVolumeThemeTitle,
+  hasEducatifOrConcreteSwim,
+  containsForbiddenIntensityCode,
+  assertDisplayLabelsClean,
+} from "./session-labels.js";
 export { normalizeStrokeFocus, canUsePapillon, strokeSwimLabel, STROKE_FOCUS_IDS } from "./stroke-focus.js";
 export { fourNagesCorpsShare } from "./session-specificity.js";
 

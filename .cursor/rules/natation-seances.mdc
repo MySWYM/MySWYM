@@ -41,3 +41,4 @@ alwaysApply: false
 
 - Générer des séances via API LLM dans l’app.
 - Ignorer `docs/natation-corrections.md` quand on touche aux templates.
+- Afficher `(facile @2)` / `@2` / `@3` dans un titre nageur, ou un bloc `600m respiration` / `6x50 technique` sans éducatif nommé.

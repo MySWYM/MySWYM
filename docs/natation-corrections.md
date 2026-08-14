@@ -15,7 +15,7 @@
   - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : BNSSA, BPJEPS, tests pompiers uniquement.
 - **Pas de LLM** pour générer les séances : logique déterministe uniquement.
 - Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m). Totaux annoncés en **XX00 / XX25 / XX50 / XX75** (pas de 320 m etc.). `block()` recalcule depuis les lignes + arrondi ×25. Moteur coach : `profile.pool` passé via `opts.pool` ; pas de séries `Nx25m` en bassin 50 (variantes 50m / adaptation technique).
-- **Blocs technique** : 1 numéro UI = 1 bloc. Titre `400m éducatif + jambes :` + sous-séries indentées (pas de tirets/points numérotés séparément). Affichage regroupe header + `·` enfants.
+- **Blocs technique** : 1 numéro UI = 1 bloc. Titre explicite avec éducatif nommé (jamais `600m respiration` / `6x50 technique`). Sous-séries indentées si besoin. Affichage regroupe header + `·` enfants.
 - **Séances Performance / banque Arthur** : lignes compactes `A · B · C — Z2` découpées automatiquement en sous-séries verticales (`expandCompoundDetailLines`) — pas de mur de texte.
 - Chaque séance structurée : **échauffement** + **retour calme** (sauf séances eau libre spécifiques).
 - Premium : intervalles en `D…` (départ) + allure cible si `pace100` renseigné. Gratuit : `R…` (récup simple) **sans** tags `@mm:ss` d'allure.
@@ -33,7 +33,7 @@
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
-- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre.
+- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre. **Quand l’utiliser** : planche sur les jambes ; palmes sur le roulis (jamais plaquettes) ; tuba sur la respiration ; pull sur le corps aérobie si pas de palmes ce jour-là.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -68,6 +68,7 @@
 - Après changement structurel des plans : incrémenter `PLAN_VERSION` pour régénérer les plans obsolètes.
 - Feedback hebdo (`easy` / `ok` / `hard`) : ajuste le **volume** des semaines futures vierges (`adjustPlan` + `volumeAdj` plafonné). Coach = régénération générateur (details = total) ; jamais une semaine déjà commencée.
 - Feedback **par séance** (`session.feedback` : rating + tags + comment) : sheet après « séance faite » ; miroir table `session_feedback`. Premium : micro-`adjustPlan(..., { sessionNudge: true })` au **premier** retour only (±3 %) — le hebdo reste le levier principal. Ne pas poser `week.feedback` depuis un nudge sessionnel.
+- **Complétion séance → `planned_sessions`** : `markSessionStatus(..., status: "completed")` dès `handleComplete` (plan classique **et** boucle Nager & Progresser), pas seulement si la fiche de retour est soumise. `insertSessionFeedback` reste réservé au vrai retour (rating/tags/comment). Fermer le sheet sans soumettre ne doit plus laisser `planned_sessions` en `planned`.
 - **Profil de goûts** (`user_taste_profile` + `src/lib/user-taste.js`) : chaque retour (séance + hebdo) met à jour un score EMA par compte (volume, intensité, éducatifs, clarté, types, keywords/couleurs/styles). Alimente le générateur (volume ±8 %, rôles COSD, focus technique, wording). Persistance Supabase + localStorage ; migration anon → compte à la connexion. Ne jamais écraser une semaine commencée.
 
 ---
@@ -76,6 +77,11 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-14 | Libellés séance | Plus de suffixes d’intensité (`(facile @2)`, `@2`, `@3`) dans les titres. Plus de blocs `600m respiration` / `6x50 technique` : éducatif nommé ou nage concrète (`crawl facile, respiration sur le côté habituel`). Allures structurées type `départ toutes les 1 min, confortable entre 44 et 47 s` conservées. Pas de regen. | ✅ |
+| 2026-08-14 | Éducatifs + matos | Cycle technique composeur (~3/8 jambes, chiens rare). Matos pédagogique : planche/jambes, palmes/roulis, tuba/respiration — pas un roll aléatoire. Drills banque qui portent déjà l’outil ; matos seulement sur la ligne d’éducatif. Jamais pull+palmes. « sans planche » ne requiert plus de planche. Pas de regen. | ✅ |
+| 2026-08-14 | Composeur corps banque | Aérobie régulier/sportif : corps = `CORPS_PHYSIO` (8×100, 4×200, 2 blocs, sighting…) scalé, plus de `5×100` + `5×100 — 2ᵉ série, même allure`. Qualité/Z3/Z4, pyramide, 4N, Découverte, taper chaud inchangés. Broken synthétique = 1 ligne « en 2 blocs de N ». Pas de regen. | ✅ |
+| 2026-08-14 | Complétion → planned_sessions | `markSessionStatus("completed")` déplacé de `handleSessionFeedback` vers `handleComplete` (classique + boucle) : fermer la fiche sans soumettre ne laisse plus `planned_sessions` en `planned` alors que `user_plans` a `completed: true`. `insertSessionFeedback` inchangé (retour seulement). Doublon clé `"4n"` dans `STROKE_UX_TO_FOCUS` retiré. Pas de regen / pas de bump `PLAN_VERSION`. | ✅ |
+| 2026-08-14 | Composeur technique banque | Régulier/sportif : bloc technique = vraies lignes `TECHNIQUE` (rng, pas `inventory.find` #0 + label générique). Bassin 50 : éducatif Nx25 → même volume en 50 (pas 25 sprint + 25 relâché). Toujours un bout de nage appliquée. Découverte inchangée (flèche + grand chien). Pas de regen. | ✅ |
 | 2026-08-10 | Composeur J3 (qualité) | Causes racines audit 50 séances : intensité réelle = mètres Z3/Z4 si intent seuil/allure ; anti-filler (suite / pyramide volume / block facile+modéré) ; cues objectif (OW/tri/course/4N share ↑) ; taper contenu (S-3→J-3) + post_race borné ≤10j ; pain agit sur shape (reps/volume) ; QG Q16–Q29. Pas de regen silencieuse. | ✅ |
 | 2026-08-08 | Composeur Sportif D | `sportif` actif dans `SESSION_COMPOSER_ENABLED_LEVELS`. Polarisation A/B/C, Z3/Z4 contrôlés, allures T100 Premium only, tests, Arthur scale réel des séries (OW/tri), formats descending/race_pace. Performance non activé. | ✅ |
 | 2026-08-08 | Régulier refinement | setFormat (repeated/progressive/pyramid/block/alternating/continuous/broken/mixed) ; repos variable `restSecFor` ; patterns reprise (sensations→intensité légère) ; equipmentUsage none/optional/meaningful ; sessionSpecificity (4N stroke_focus vs race_specific) ; wording Découverte godille→formulation utilisateur. Sportif/Perf non activés. | ✅ |
@@ -166,7 +172,6 @@
 | 2026-08-10 | Pyramide Ironman / triathlon perf | Feedback ChatGPT : « 1750 m en pyramide ça veut rien dire — trop long et aucune info ». Cap `MAX_PYRAMID_VOLUME=1000` ; plus de scale×2 vers 1600 m ; surplus = séries explicites hors pyramide ; affichage avec paliers `100 → 200 → 300…` + repos ; exclus des candidats si corps > 1000 m (tri/OW/perf) ; QG refuse pyramide > 1000 m / opaque. `PLAN_VERSION` 43, pas de FORCE regen. | ✅ |
 | 2026-08-10 | Restitution coach séances | Séances = pseudo-étapes / marketing (« Aujourd'hui », « on savoure ») + pyramides opaques. Module `coach-restitution.js` : strip headlines, décompose pyramides, repos explicites. Composeur : plus de `→ Aujourd'hui` dans details, plus de headers `Technique ·`, matos sur ligne nageable (`avec palmes`), formats classiques prioritaires. Design UI inchangé. Pas de change charge/taper/QG règles. | ✅ |
 | 2026-08-10 | Force regen v44 live | Demande Arthur : `PLAN_VERSION` 44 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec restitution coach. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
-| | | *Ajouter ici chaque nouvelle correction* | |
 
 ### Format pour une nouvelle ligne
 
@@ -203,6 +208,11 @@
 23. **Anti-filler** : pas de `— suite` pour contourner `maxRepsPerSet` ; pas de pyramide/block uniquement pour coller le volume ; préférer unités nageables (4–8×50/100/200) ou 2ᵉ série cohérente.
 24. **Objectif dans le corps** : eau libre → sighting/orientation ; triathlon → économie/allure ; course → race pace/seuil ; 4N → part réelle multi-nages (pas tech 4N + crawl seul).
 25. **Post-race borné** : `post_race` seulement si `daysToComp ∈ [-10, 0[` — pas de traîne de semaines à 0 m.
+26. **Technique composeur** : ne pas coller le 1er drill d’inventaire + consigne générique (`6×50 rattrapé — bras dans l'axe`). Restituer les lignes Arthur, variées. **Éducatifs bassin 50** ≠ variantes vitesse : `8×25` → `4×50` même volume, jamais 25 à bloc + 25 relâché. Toujours **éducatif puis nage appliquée**. Découverte = flèche + grand chien seulement.
+27. **Complétion vs feedback** : ne jamais lier `markSessionStatus("completed")` à la soumission de la fiche de retour — le statut part dès « séance faite » (`handleComplete`), classique et boucle. Le feedback (`insertSessionFeedback`) est optionnel.
+28. **Corps composeur** : ne pas splitter le volume en deux séries identiques (`5×100` + `5×100 — 2ᵉ série, même allure`). Restituer `CORPS_PHYSIO` (reps/distance/blocs Arthur). Qualité/seuil/vitesse restent des formats d’intensité, pas la banque aéro. Broken = **une** ligne `en 2 blocs de N`.
+29. **Matos × éducatif** : le matériel suit l’éducatif, il n’est pas tiré au sort. Jambes → **planche** (sinon palmes) ; roulis → **palmes** (jamais plaquettes) ; respiration → **tuba** (pas palmes sur le 3T) ; rattrapé → palmes optionnelles / plaquettes en sportif. **Interdit pull + palmes** dans la même séance. Matos **sur la ligne d’éducatif**, pas sur la nage appliquée ni le titre. « sans planche » ≠ exige une planche. Cycle ~3/8 jambes.
+30. **Libellés affichés** : jamais de codes d’intensité bruts (`(facile @2)`, `@2`, `@3`) dans le texte nageur. Jamais un bloc technique/nage appliquée = volume + thème seul (`600m respiration`, `6x50 technique`, `300m roulis`, `400m appuis`). Toujours un éducatif nommé ou une nage concrète. Repli : `4×50 m crawl facile, respiration sur le côté habituel`.
 
 ---
 

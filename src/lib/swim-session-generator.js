@@ -1,4 +1,5 @@
 import { paceTagFromT100 } from "./swim-pace.js";
+import { sanitizeSessionDetails, humanizeBeginnerZoneTags } from "./sports-engine/session-labels.js";
 
 /* ============== BASE DE DONNÉES ============== */
 /* Principe : chaque bloc de contenu porte sa distance EXACTE, calculée à
@@ -370,8 +371,8 @@ const FOCUS_CYCLE_DECOUVERTE = [
   "technique_grand_chien",
 ];
 
-/** Découverte : palmes + tuba frontal sur le titre (flottaison / respiration). Autres niveaux : matos uniquement dans les lignes d'exo. */
-const MATERIEL_DECOUVERTE = [" palmes + tuba frontal", " palmes + tuba frontal"];
+/** Découverte : palmes et tuba frontal sur la ligne d'éducatif (flottaison / respiration). Autres niveaux : matos uniquement dans les lignes d'exo. */
+const MATERIEL_DECOUVERTE = [" palmes et tuba frontal", " palmes et tuba frontal"];
 const RESPIRATIONS = ["bilatérale 3T", "libre", "bilatérale alternée"];
 
 /* ============== UTILITAIRES ============== */
@@ -500,6 +501,29 @@ function adaptLineRepsForPool50(line) {
   return t;
 }
 
+function appendMatosIfMissing(line, materiel) {
+  const note = String(materiel || "").trim();
+  if (!note) return line;
+  if (/palmes|tuba/i.test(line)) return line;
+  return `${line.replace(/\s*$/, "")} avec ${note.replace(/^avec\s+/i, "")}`;
+}
+
+/** Bloc technique : lignes d'éducatif nommées — jamais « 600m respiration ». */
+function pushExplicitTechLines(lignes, techPicked, materiel = "") {
+  const drills = (techPicked?.lines || [])
+    .map((l) => String(l).trim().replace(/^[·\-\s]+/, ""))
+    .filter(Boolean);
+  if (!drills.length) {
+    const vol = techPicked?.distance || 200;
+    const reps = Math.max(2, Math.round(vol / 50));
+    lignes.push(`-${reps}x50m crawl facile, respiration sur le côté habituel`);
+    return;
+  }
+  drills.forEach((d, i) => {
+    let line = appendMatosIfMissing(d, i === 0 ? materiel : "");
+    lignes.push(`-${line.replace(/^-/, "")}`);
+  });
+}
 /** Adapte un bloc technique au bassin 50 — distance = somme réelle des reps adaptées. */
 function adaptTechBlockForPool(blk, pool) {
   if (pool !== 50 || !blk) return blk;
@@ -556,15 +580,7 @@ function clarifyBeginnerLine(line) {
   t = t.replace(/\bD(\d+)'(?!\d)/g, "— départ toutes les $1min");
   t = t.replace(/\bD(\d+)"/g, "— départ toutes les $1s");
 
-  t = t.replace(/\(Z1\s*@/g, "(facile @");
-  t = t.replace(/\(Z2\s*@/g, "(confortable @");
-  t = t.replace(/\(Z3\s*@/g, "(soutenu @");
-  t = t.replace(/\(Z4\s*@/g, "(rapide @");
-  t = t.replace(/\(Z1\)/g, "(facile)");
-  t = t.replace(/\(Z2\)/g, "(confortable)");
-  t = t.replace(/\(Z3\)/g, "(soutenu)");
-  t = t.replace(/\(Z4\)/g, "(rapide)");
-  t = t.replace(/\(Z1 souple\)/gi, "(facile — souple)");
+  t = humanizeBeginnerZoneTags(t);
 
   t = t.replace(/\(RAC\)/gi, "(récup)");
   t = t.replace(/\bRAC\b/g, "récup");
@@ -616,14 +632,9 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
     pick(techBlock.drills, "tech_semaine_"+techKey),
     bassin,
   );
-  // Matos : uniquement dans les lignes d'exo (jamais collé au hasard sur le titre — incohérent).
-  // Exception Découverte : palmes + tuba frontal sur le titre (consigne niveau).
+  // Matos : dans la ligne d'éducatif (Découverte : palmes et tuba frontal).
   const materiel = isBeginner ? pick(MATERIEL_DECOUVERTE, "materiel") : "";
-  lignes.push(`-${techPicked.distance}m ${techBlock.label.toLowerCase()}${materiel} :`);
-  techPicked.lines.forEach(l => {
-    const clean = String(l).trim().replace(/^[·\-\s]+/, "");
-    lignes.push(`  · ${clean}`);
-  });
+  pushExplicitTechLines(lignes, techPicked, materiel);
 
   const zone = forcedZone || pick(phase.zones, "zone_"+indexSeance);
   let principalDist, principalLines;
@@ -646,10 +657,8 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
       bassin,
     );
     principalDist = mainPicked.distance;
-    principalLines = [
-      `-${principalDist}m ${mainTech.label.toLowerCase()} :`,
-      ...mainPicked.lines.map(l => `  · ${String(l).trim().replace(/^[·\-\s]+/, "")}`),
-    ];
+    principalLines = [];
+    pushExplicitTechLines(principalLines, mainPicked, "");
   } else if (isTest) {
     const r = pick(CORPS_PHYSIO.test, "physio_test")();
     const tag = paceTag(ref100Seconds, ref400Seconds, zone === "Z4" ? "Z4" : "Z3", r.repDist);
@@ -679,7 +688,8 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
 
   // Départ / fin : (Zx) → (Zx @…) si Premium + T100 ; corps déjà taggé via paceTag
   const withPace = annotateBareZones(lignes, ref100Seconds);
-  const body = isBeginner ? clarifyBeginnerSession(withPace) : withPace;
+  const clarified = isBeginner ? clarifyBeginnerSession(withPace) : withPace;
+  const body = sanitizeSessionDetails(clarified);
   const header = `S${numSemaine}.${indexSeance} : ${totalFinal}m`;
   return { text: header + "\n" + body.join("\n"), total: totalFinal, zone, role: objectifKey };
 }
