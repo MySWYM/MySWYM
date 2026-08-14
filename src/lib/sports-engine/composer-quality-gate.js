@@ -9,6 +9,7 @@ import {
   minFourNageBodyShare,
 } from "./composer-constraints.js";
 import { MAX_PYRAMID_VOLUME } from "./set-formats.js";
+import { hasPullPalmesConflict } from "./session-compose.js";
 
 const FOUR_N_STROKE_RE = /\b(dos|brasse|papillon|ondulation|4\s*nages|quatre\s*nages|multi-?nages)\b/i;
 const CRAWL_ONLY_RE = /\bcrawl\b/i;
@@ -304,13 +305,14 @@ export function validateComposedSession(session, brief = {}, constraints = null)
       }
     }
   }
-  if (/pull/i.test(text) && /palmes/i.test(text) && /pull.*palmes|palmes.*pull/i.test(text)) {
-    // same line pull+palmes
-    for (const line of text.split("\n")) {
-      if (/pull/i.test(line) && /palmes/i.test(line)) {
-        errors.push("matériel incompatible: pull + palmes");
-      }
-    }
+  if (
+    hasPullPalmesConflict([
+      text,
+      ...(session.equipmentUsed || []),
+      ...(session.equipmentRequired || []),
+    ])
+  ) {
+    errors.push("matériel incompatible: pull + palmes");
   }
 
   // --- 4N ---

@@ -10,6 +10,7 @@ import {
   normalizeProfileEquipment,
   EQUIPMENT_IDS,
   validateComposedSession,
+  hasPullPalmesConflict,
 } from "./index.js";
 import { sessionFitsEquipment, detectEquipmentInDetails } from "./session-compose.js";
 
@@ -133,6 +134,16 @@ ok(detectEquipmentInDetails(["planche battements"]).includes("planche"), "detect
   ok(sessionFitsEquipment(r.session.details, ["palmes", "tuba"]), "D3 fits");
 }
 
+// Découverte : inventaire multi (combo hors anciens presets exclusifs)
+{
+  const owned = ["palmes", "tuba", "planche"];
+  const sport = buildSportProfile({ level: "découverte", goal: "progression", equipment: owned });
+  ok(owned.every((id) => sport.equipment.includes(id)), "découverte keeps several items");
+  const r = composeSession(briefFrom({ level: "découverte", equipment: owned, seed: "d-multi" }));
+  ok(r.ok, `d-multi ${r.reason || ""}`);
+  ok(sessionFitsEquipment(r.session.details, owned), "d-multi fits");
+}
+
 // D4
 {
   const r = composeSession(briefFrom({ level: "découverte", equipment: ["tuba"], seed: "d4" }));
@@ -186,6 +197,41 @@ for (const [level, equipment, objectif, seed] of [
   }));
   ok(r.ok, `p-none ${r.reason || ""}`);
   ok(sessionFitsEquipment(r.session.details, []), "p-none fits");
+}
+
+// Inventaire : posséder pull + palmes OK ; les combiner dans une séance, non
+{
+  const owned = ["palmes", "pull"];
+  const sport = buildSportProfile({ level: "régulier", goal: "progression", equipment: owned });
+  ok(owned.every((id) => sport.equipment.includes(id)), "inventory may own both");
+  ok(hasPullPalmesConflict(["8×50 palmes", "4×100 pull-buoy"]), "conflict across lines");
+  ok(!sessionFitsEquipment(["8×50 palmes", "4×100 pull-buoy"], owned), "session rejects combo");
+  const r = composeSession(briefFrom({
+    level: "régulier",
+    equipment: owned,
+    objectif: "nager_progresser",
+    seed: "own-both",
+    volumeTarget: 1600,
+    duration: 55,
+    sessionIntent: "endurance",
+  }));
+  ok(r.ok, `own-both ${r.reason || ""}`);
+  ok(!hasPullPalmesConflict(r.session.details || []), "compose never mixes pull+palmes");
+  const fakeBoth = {
+    details: ["8×50 palmes (Z2)", "4×100 pull-buoy (Z2)"],
+    distance: "900m",
+    duration: 40,
+    equipmentRequired: ["palmes", "pull"],
+    equipmentUsed: ["palmes", "pull"],
+    volumeFromSets: 900,
+    trainingDistance: 900,
+    type: "ENDURANCE",
+    title: "Fake both",
+    intensity: "Z2",
+  };
+  const vBoth = validateComposedSession(fakeBoth, briefFrom({ level: "régulier", equipment: owned, seed: "qg-both" }));
+  ok(!vBoth.ok, "QG reject pull+palmes séance");
+  ok((vBoth.errors || []).some((e) => String(e).includes("pull + palmes")), "QG names conflict");
 }
 
 // Négatif QG

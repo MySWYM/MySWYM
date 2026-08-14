@@ -33,7 +33,7 @@
 - **Focus jambes** : toujours **éducatif court puis série jambes** — jamais enchaîner deux blocs battements (titre + détail).
 - **Même structure** départ → technique → corps → fin ; **volume** selon niveau : découverte ≈0.55 · régulier ≈0.8 · sportif ≈1.0 · performance ≈1.25 (triathlon perf ≈1.35).
 - **Découverte** : wording allégé (Z1→facile, R15→repos). Éducatifs **uniquement** : **flèche** + **grand chien**, avec **palmes + tuba frontal**. Pas de catch-up / roulis / virages / petit chien à ce niveau — sensations, glisse, confiance. **Pas de demande T100** (onboarding / profil) : souvent incapables d’enchaîner 100 m — séances sans allures `@mm:ss`.
-- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit** : pull-buoy + palmes (incompatible). Exception Découverte : « palmes + tuba frontal » sur le titre. **Quand l’utiliser** : planche sur les jambes ; palmes sur le roulis (jamais plaquettes) ; tuba sur la respiration ; pull sur le corps aérobie si pas de palmes ce jour-là.
+- **Matériel** : ne **jamais** coller de matos aléatoire sur le titre de bloc (incohérent avec les lignes). Matos **dans la ligne d’exo** seulement. **Interdit dans une même séance** : pull-buoy + palmes — le pull (entre les jambes) coupe les battements pour travailler les bras ; les palmes servent à battre. Posséder les deux est OK ; les combiner le même jour, non. Exception Découverte : « palmes + tuba frontal » sur le titre. **Quand l’utiliser** : planche sur les jambes ; palmes sur le roulis (jamais plaquettes) ; tuba sur la respiration ; pull sur le corps aérobie si pas de palmes ce jour-là.
 - **Triathlon / eau libre** : niveau « découverte » autorisé (formats courts ouverts).
 - **Sportif vs performance** : volumes clairement distincts via le multiplicateur.
 - **Inter / confirmé** : format Arthur Excel (Z1–Z4, R15'', Cr/Dos).
@@ -77,6 +77,8 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-14 | Pull + palmes | Interdit dans **une séance** (pas dans l’inventaire) : pull-buoy = flotteur entre les jambes, bras seuls ; palmes = battements. QG sur toute la séance, plus seulement la même ligne. Imposer le matos à chaque séance = plus tard. Pas de regen. | ✅ |
+| 2026-08-14 | Inventaire matériel | Tous les niveaux (Découverte inclus) : multi-sélection + « Aucun ». Plus de presets exclusifs Découverte (un seul combo). Disponibilité ≠ obligation ; jamais pull+palmes dans une séance. Pas de regen. | ✅ |
 | 2026-08-14 | Libellés séance | Plus de suffixes d’intensité (`(facile @2)`, `@2`, `@3`) dans les titres. Plus de blocs `600m respiration` / `6x50 technique` : éducatif nommé ou nage concrète (`crawl facile, respiration sur le côté habituel`). Allures structurées type `départ toutes les 1 min, confortable entre 44 et 47 s` conservées. Pas de regen. | ✅ |
 | 2026-08-14 | Éducatifs + matos | Cycle technique composeur (~3/8 jambes, chiens rare). Matos pédagogique : planche/jambes, palmes/roulis, tuba/respiration — pas un roll aléatoire. Drills banque qui portent déjà l’outil ; matos seulement sur la ligne d’éducatif. Jamais pull+palmes. « sans planche » ne requiert plus de planche. Pas de regen. | ✅ |
 | 2026-08-14 | Composeur corps banque | Aérobie régulier/sportif : corps = `CORPS_PHYSIO` (8×100, 4×200, 2 blocs, sighting…) scalé, plus de `5×100` + `5×100 — 2ᵉ série, même allure`. Qualité/Z3/Z4, pyramide, 4N, Découverte, taper chaud inchangés. Broken synthétique = 1 ligne « en 2 blocs de N ». Pas de regen. | ✅ |
@@ -185,7 +187,7 @@
 
 1. **BNSSA** : oublier le volet sauvetage (sortie bassin, enchaînement, chrono 100 m examen).
 2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = **flèche + grand chien** (+ palmes/tuba) seulement — pas de catch-up/roulis/virages. **Ne pas demander de T100.**
-2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes**.
+2b. **Matériel** : pas de matos aléatoire sur le titre ; jamais **pull-buoy + palmes dans la même séance** (pull = pas de jambes / palmes = battements). Inventaire onboarding = **plusieurs ou aucun**, tous niveaux — posséder les deux est OK.
 3. **Eau libre + niveau Performance** : appliquer le bloc `isAdv` « Alternée 4 nages » plein de brasse — utiliser séances crawl/sighting (`usePoolIMBlock`).
 4. **Eau libre** : écrire uniquement des `8×100m` bassin sans consigne sighting / lieu.
 5. **Allures** : donner des récup fixes identiques pour tous sans tenir compte de `pace100` quand il est renseigné. Ne plus demander ni utiliser un temps 400 m comme référence — **T100 seul**, départ dans l'eau.
@@ -211,7 +213,7 @@
 26. **Technique composeur** : ne pas coller le 1er drill d’inventaire + consigne générique (`6×50 rattrapé — bras dans l'axe`). Restituer les lignes Arthur, variées. **Éducatifs bassin 50** ≠ variantes vitesse : `8×25` → `4×50` même volume, jamais 25 à bloc + 25 relâché. Toujours **éducatif puis nage appliquée**. Découverte = flèche + grand chien seulement.
 27. **Complétion vs feedback** : ne jamais lier `markSessionStatus("completed")` à la soumission de la fiche de retour — le statut part dès « séance faite » (`handleComplete`), classique et boucle. Le feedback (`insertSessionFeedback`) est optionnel.
 28. **Corps composeur** : ne pas splitter le volume en deux séries identiques (`5×100` + `5×100 — 2ᵉ série, même allure`). Restituer `CORPS_PHYSIO` (reps/distance/blocs Arthur). Qualité/seuil/vitesse restent des formats d’intensité, pas la banque aéro. Broken = **une** ligne `en 2 blocs de N`.
-29. **Matos × éducatif** : le matériel suit l’éducatif, il n’est pas tiré au sort. Jambes → **planche** (sinon palmes) ; roulis → **palmes** (jamais plaquettes) ; respiration → **tuba** (pas palmes sur le 3T) ; rattrapé → palmes optionnelles / plaquettes en sportif. **Interdit pull + palmes** dans la même séance. Matos **sur la ligne d’éducatif**, pas sur la nage appliquée ni le titre. « sans planche » ≠ exige une planche. Cycle ~3/8 jambes.
+29. **Matos × éducatif** : le matériel suit l’éducatif, il n’est pas tiré au sort. Jambes → **planche** (sinon palmes) ; roulis → **palmes** (jamais plaquettes) ; respiration → **tuba** (pas palmes sur le 3T) ; rattrapé → palmes optionnelles / plaquettes en sportif. **Interdit pull + palmes** dans la même séance (contradictoire : pull coupe les jambes, palmes les utilisent). Matos **sur la ligne d’éducatif**, pas sur la nage appliquée ni le titre. « sans planche » ≠ exige une planche. Cycle ~3/8 jambes.
 30. **Libellés affichés** : jamais de codes d’intensité bruts (`(facile @2)`, `@2`, `@3`) dans le texte nageur. Jamais un bloc technique/nage appliquée = volume + thème seul (`600m respiration`, `6x50 technique`, `300m roulis`, `400m appuis`). Toujours un éducatif nommé ou une nage concrète. Repli : `4×50 m crawl facile, respiration sur le côté habituel`.
 
 ---

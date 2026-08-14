@@ -97,6 +97,7 @@ export {
   displayIntensity,
   sessionFitsEquipment,
   detectEquipmentInDetails,
+  hasPullPalmesConflict,
 } from "./session-compose.js";
 export { validateSession, maxZoneForProfile } from "./validate.js";
 export {

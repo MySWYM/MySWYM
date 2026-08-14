@@ -16,8 +16,18 @@ const EQUIP_KEYWORDS = {
 
 /** Détecte le matériel requis dans des lignes de détail */
 export function detectEquipmentInDetails(details = []) {
-  const text = details.join(" ");
+  const text = details.join(" ").replace(/sans\s+(planche|palmes|pull|tuba|plaquettes?)/gi, "");
   return EQUIPMENT_IDS.filter((id) => EQUIP_KEYWORDS[id].test(text));
+}
+
+/**
+ * Pull-buoy (entre les jambes → bras seuls, pas de battements)
+ * et palmes (battements) sont incompatibles dans la même séance.
+ * Posséder les deux dans l'inventaire est OK ; les combiner le même jour, non.
+ */
+export function hasPullPalmesConflict(source) {
+  const text = Array.isArray(source) ? source.filter(Boolean).join(" ") : String(source || "");
+  return /pull/i.test(text) && /palmes?/i.test(text);
 }
 
 /**
@@ -26,9 +36,7 @@ export function detectEquipmentInDetails(details = []) {
  */
 export function sessionFitsEquipment(details, equipment) {
   const required = detectEquipmentInDetails(details);
-  // Interdit pull + palmes ensemble (règle produit)
-  const text = details.join(" ");
-  if (/pull/i.test(text) && /palmes?/i.test(text)) return false;
+  if (hasPullPalmesConflict(details)) return false;
 
   if (equipment == null) return true; // inconnu
   if (equipment.length === 0) {

@@ -1,8 +1,10 @@
 /**
- * Utilisation du matériel Régulier — influence la composition sans être systématique.
- * @typedef {'none'|'optional'|'meaningful'} EquipmentUsage
+ * Matériel : pédagogie d'abord (éducatif → outil), jamais au hasard sur le titre.
+ * Interdit pull + palmes dans la même séance :
+ * pull-buoy entre les jambes = pas de battements (bras seuls) ;
+ * palmes = battements. Les deux en même temps n'ont aucun sens.
+ * Inventaire : on peut posséder les deux ; on ne les combine pas le même jour.
  */
-
 const KNOWN = ["palmes", "tuba", "pull", "plaquettes", "pull-buoy", "planche", "elastique"];
 
 export function normalizeEquipmentList(equipment) {
@@ -17,103 +19,122 @@ export function normalizeEquipmentList(equipment) {
     });
 }
 
+/** Outils utiles pour un focus — premier possédé = celui qu'on prend. */
+export function pedagogicalTechEquipment(techFocus, level = "regulier") {
+  switch (techFocus) {
+    case "technique_jambes":
+      return ["planche", "palmes"];
+    case "technique_roulis":
+      return ["palmes"];
+    case "technique_respiration":
+    case "technique_croisement":
+      return ["tuba"];
+    case "technique_catchup":
+      return level === "regulier" || level === "decouverte" ? ["palmes"] : ["plaquettes", "palmes"];
+    case "technique_fleche":
+    case "technique_grand_chien":
+      return ["palmes", "tuba"];
+    default:
+      return [];
+  }
+}
+
+export function forbiddenTechEquipment(techFocus) {
+  if (techFocus === "technique_roulis") return ["plaquettes"];
+  if (techFocus === "technique_jambes") return ["pull", "plaquettes"];
+  if (techFocus === "technique_respiration") return ["plaquettes", "palmes"];
+  return [];
+}
+
+function firstOwned(prefer, available) {
+  return prefer.find((eq) => available.includes(eq)) || null;
+}
+
+function displayName(eq) {
+  if (eq === "pull") return "pull-buoy";
+  if (eq === "tuba") return "tuba frontal";
+  return eq;
+}
+
 /**
  * Décide si / comment utiliser le matos disponible.
- * Jamais tout le matos d'un coup. Déterministe via rng.
+ * Lié à l'éducatif du jour — pas un roll indépendant.
  */
 export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   const available = normalizeEquipmentList(brief.equipment);
-  if (!available.length) {
-    return { usage: "none", applied: [], note: "", techNote: "", corpsNote: "" };
-  }
+  const empty = { usage: "none", applied: [], note: "", techNote: "", corpsNote: "" };
+  if (!available.length) return empty;
 
   const intent = brief.sessionIntent || brief.intent || "";
   const quality = !!brief.qualitySession;
   const phase = brief.effectivePhase || brief.phase || "";
-  const taperish = phase === "taper" || phase === "competition" || !!brief.taperStage;
+  const taperish =
+    phase === "taper" ||
+    phase === "competition" ||
+    !!brief.taperStage ||
+    ["s1", "s2", "race_week", "race_day"].includes(brief.taperLoad?.taperStage);
+  const techFocus = brief.techFocus || brief.primaryTechnicalGoal || "";
+  const level = brief.level || "regulier";
+  const recup = intent === "recuperation" || intent === "reprise";
 
-  // Bias : technique / reprise / 4n → plus souvent meaningful ; récup / taper → souvent none
-  let roll = rng();
-  if (intent === "recuperation" || taperish) roll = Math.min(1, roll + 0.25);
-  if (intent === "technique_endurance" || intent === "quatre_nages" || intent === "reprise") {
-    roll = Math.max(0, roll - 0.15);
-  }
-  if (quality) roll = Math.max(0, roll - 0.05);
+  if (taperish || recup) return empty;
 
-  /** @type {EquipmentUsage} */
-  let usage = "none";
-  if (roll < 0.32) usage = "meaningful";
-  else if (roll < 0.62) usage = "optional";
-  else usage = "none";
+  const prefer = pedagogicalTechEquipment(techFocus, level);
+  const techEq = firstOwned(prefer, available);
+  const roll = typeof rng === "function" ? rng() : Math.random();
 
-  if (usage === "none") {
-    return { usage, applied: [], note: "", techNote: "", corpsNote: "" };
-  }
+  let useTech = false;
+  if (techEq === "planche" && techFocus === "technique_jambes") useTech = roll < 0.9;
+  else if (techEq === "palmes" && techFocus === "technique_roulis") useTech = roll < 0.85;
+  else if (techEq === "tuba" && /respiration|croisement|fleche|chien/.test(techFocus)) useTech = roll < 0.8;
+  else if (techEq) useTech = roll < 0.55;
 
-  // Choisir 1 item (meaningful) ou 0–1 (optional)
-  const pick = (list) => list[Math.floor(rng() * list.length) % list.length];
-
-  // Préférences sémantiques
-  const preferTech = [];
-  const preferCorps = [];
-  if (available.includes("tuba")) preferTech.push("tuba");
-  if (available.includes("palmes")) {
-    preferTech.push("palmes");
-    preferCorps.push("palmes");
-  }
-  if (available.includes("pull")) preferCorps.push("pull");
-
-  let applied = [];
-  if (usage === "optional") {
-    if (rng() < 0.55) {
-      applied = [pick(preferTech.length ? preferTech : available)];
-    }
-  } else {
-    // meaningful : 1 item, parfois 2 si complementary (palmes+tuba) sans pull+palmes
-    const primaryPool = preferTech.length || preferCorps.length
-      ? [...new Set([...preferTech, ...preferCorps])]
-      : available;
-    applied = [pick(primaryPool)];
-    if (
-      applied.includes("palmes") &&
-      available.includes("tuba") &&
-      rng() < 0.4 &&
-      !applied.includes("tuba")
-    ) {
-      applied.push("tuba");
-    }
-    // Interdit pull + palmes
-    if (applied.includes("pull") && applied.includes("palmes")) {
-      applied = rng() < 0.5 ? ["pull"] : ["palmes"];
-    }
-  }
-
+  const applied = [];
   const techNote = [];
   const corpsNote = [];
-  if (applied.includes("tuba")) techNote.push("tuba frontal");
-  if (applied.includes("palmes")) {
-    if (intent === "technique_endurance" || usage === "meaningful") techNote.push("palmes");
-    else corpsNote.push("palmes");
-  }
-  if (applied.includes("pull")) corpsNote.push("pull-buoy");
 
-  const note =
-    applied.length === 0
-      ? ""
-      : applied.includes("palmes") && applied.includes("tuba")
-        ? "palmes + tuba"
-        : applied[0] === "pull"
-          ? "pull-buoy"
-          : applied[0] === "tuba"
-            ? "tuba frontal"
-            : applied.join(" + ");
+  if (useTech && techEq) {
+    if (techFocus === "technique_fleche" || techFocus === "technique_grand_chien") {
+      if (available.includes("palmes")) {
+        applied.push("palmes");
+        techNote.push("palmes");
+      }
+      if (available.includes("tuba")) {
+        applied.push("tuba");
+        techNote.push("tuba frontal");
+      }
+    } else {
+      applied.push(techEq);
+      techNote.push(displayName(techEq));
+    }
+  }
+
+  const palmesOn = applied.includes("palmes");
+  const canPull =
+    available.includes("pull") &&
+    !palmesOn &&
+    !quality &&
+    !/vitesse|vo2|test/.test(intent);
+  const rollC = typeof rng === "function" ? rng() : Math.random();
+  if (canPull && rollC < 0.4) {
+    applied.push("pull");
+    corpsNote.push("pull-buoy");
+  }
+
+  if (applied.includes("pull") && applied.includes("palmes")) {
+    applied.splice(applied.indexOf("pull"), 1);
+    corpsNote.length = 0;
+  }
+
+  const usage = applied.length === 0 ? "none" : techNote.length && corpsNote.length ? "meaningful" : applied.length ? "optional" : "none";
+  const note = [...techNote, ...corpsNote].join(" + ");
 
   return {
     usage,
     applied,
     note,
-    techNote: techNote.length ? techNote.join(" + ") : "",
-    corpsNote: corpsNote.length ? corpsNote.join(" + ") : "",
+    techNote: techNote.join(" + "),
+    corpsNote: corpsNote.join(" + "),
   };
 }
 
