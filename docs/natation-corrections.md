@@ -77,6 +77,7 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-14 | Force regen v45 live | Demande Arthur : `PLAN_VERSION` 45 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec 4 nages explicites + IM. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-14 | 4 nages composition | Case `quatre nages` = crawl+dos+brasse+papillon dans **chaque** séance, blocs nagés explicites (pas un intitulé « 4 nages »). Mix sur le volume total : 40/20/20/20 ; préf. crawl 50/17/17/16 ; autre préf. 40/30/15/15. Crawl toujours majoritaire. Papillon fractionné (longueur de bassin), jamais omis ni remplacé par ondulation. `swimStyle=4_nages` prime sur la nage préférée. Charge/QG/persist inchangés. Pas de regen. | ✅ |
 | 2026-08-14 | 4 nages IM | Formats olympiques enchaînés (pap→dos→brasse→crawl) : 100 (25/nage, bassin 25), 200 (50/nage), 400 (100/nage). Fun : 8×50 à 12,5 m/nage (changement au milieu) ; 400 dont 25 nage complète / 25 jambes ou éducatif libre. Découverte : pas d’IM enchaîné. Mix inchangé. Pas de regen. | ✅ |
 | 2026-08-14 | Pull + palmes | Interdit dans **une séance** (pas dans l’inventaire) : pull-buoy = flotteur entre les jambes, bras seuls ; palmes = battements. QG sur toute la séance, plus seulement la même ligne. Imposer le matos à chaque séance = plus tard. Pas de regen. | ✅ |
