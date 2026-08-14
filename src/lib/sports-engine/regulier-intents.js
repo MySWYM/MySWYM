@@ -76,7 +76,7 @@ export const REGULIER_INTENTS = Object.freeze({
   quatre_nages: {
     id: "quatre_nages",
     headline: "Aujourd'hui : progresser sur plusieurs nages",
-    learnCue: "une nage propre à chaque 50 m",
+    learnCue: "une nage propre par longueur",
     applyCue: "alterne les nages maîtrisées",
     techPrimary: "4n",
     quality: false,

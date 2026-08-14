@@ -184,7 +184,7 @@ function briefFor(level, over = {}) {
     });
     assert(cons.ok, `${over.seed} vol ${cons.errors.join(";")}`);
     if (over.strokeFocus === "4n") {
-      assert(/dos|brasse|4n|papillon|ondulation/i.test(r.session.details.join(" ")), `${over.seed} 4n content`);
+      assert(/dos|brasse|papillon/i.test(r.session.details.join(" ")), `${over.seed} 4n content`);
     }
   }
   console.log("R6b PASS");

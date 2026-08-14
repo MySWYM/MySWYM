@@ -130,7 +130,7 @@ export const DECOUVERTE_INTENTS = Object.freeze({
   decouverte_4n: {
     id: "decouverte_4n",
     headline: "Aujourd'hui : découvrir plusieurs nages",
-    learnCue: "une nage différente à chaque 25 m",
+    learnCue: "une nage différente à chaque longueur",
     applyCue: "alterne les nages que tu maîtrises, facile",
     techPrimary: "4n",
     techAlt: "nage",

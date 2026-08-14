@@ -144,7 +144,8 @@ function assertSportif(session, brief) {
   assert(!/Aujourd'hui :/i.test(session.details.join("\n")), "pas de headline narratif");
   assert(session.details.length >= 3, "contenu nageable");
   const hard = validateSportifHard(session, {
-    papillonOk: !!brief.papillonMastered,
+    papillonOk: canUsePapillon(brief),
+    strokeFocus: brief.strokeFocus,
     allowPaces: !!brief.allowPaces,
     intentId: brief.sessionIntent,
   });
@@ -226,9 +227,10 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
     }),
   );
   assert(r.ok, `s5: ${r.reason}`);
-  assert(!canUsePapillon({ level: "sportif", strokeFocus: "4n", papillonMastered: false }), "no pap");
-  assert(!/\b\d+\s*×\s*\d+m papillon\b/i.test(r.session.details.join("\n")), "pas papillon imposé");
-  assert(/dos|brasse|ondulation/i.test(r.session.details.join(" ")), "multi nages");
+  assert(canUsePapillon({ level: "sportif", strokeFocus: "4n", papillonMastered: false }), "4n papillon");
+  assert(/\bpapillon\b/i.test(r.session.details.join("\n")), "papillon explicite");
+  assert(!/crawl\s*\/\s*dos\s*\/\s*brasse/i.test(r.session.details.join("\n")), "pas d'intitulé vague 4 nages");
+  assert(/dos|brasse|papillon/i.test(r.session.details.join(" ")), "multi nages");
 }
 
 // 6 — CSS/T100 disponible (Premium)

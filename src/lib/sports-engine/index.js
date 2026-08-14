@@ -198,7 +198,22 @@ export {
   assertDisplayLabelsClean,
 } from "./session-labels.js";
 export { normalizeStrokeFocus, canUsePapillon, strokeSwimLabel, STROKE_FOCUS_IDS } from "./stroke-focus.js";
+export {
+  fourNagesMix,
+  allocateStrokeMeters,
+  measureStrokeVolume,
+  isFourNagesDeclared,
+  FOUR_STROKES,
+  FOUR_NAGES_MIX,
+  mixWithinTolerance,
+} from "./four-nages-mix.js";
 export { fourNagesCorpsShare } from "./session-specificity.js";
+export {
+  IM_ORDER,
+  buildFourNagesImSets,
+  pickImFormat,
+  imFormatCatalog,
+} from "./four-nages-im.js";
 
 import { buildSportProfile } from "./types.js";
 import { estimateCapacity } from "./capacity.js";

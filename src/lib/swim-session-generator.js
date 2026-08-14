@@ -1088,8 +1088,10 @@ export function calcDetailsDistance(details = []) {
   let total = 0;
   for (const line of details) {
     let rest = line;
+    let counted = false;
     rest = rest.replace(/(\d+)\s*[×x]\s*(\d+)\s*m/g, (_, n, x) => {
       total += parseInt(n, 10) * parseInt(x, 10);
+      counted = true;
       return "";
     });
     rest = rest.replace(/(\d+(?:\s*[–\-]\s*\d+)+)\s*m/g, (_, seq) => {
@@ -1097,9 +1099,16 @@ export function calcDetailsDistance(details = []) {
         const n = parseInt(v.trim(), 10);
         if (!Number.isNaN(n)) total += n;
       });
+      counted = true;
       return "";
     });
-    rest.replace(/\b(\d+)\s*m\b/g, (_, x) => { total += parseInt(x, 10); });
+    rest.replace(/\b(\d+)\s*m\b/g, (_, x) => {
+      if (!counted) {
+        total += parseInt(x, 10);
+        counted = true;
+      }
+      return "";
+    });
   }
   return total;
 }

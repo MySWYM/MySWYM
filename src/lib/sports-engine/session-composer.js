@@ -38,20 +38,23 @@ import {
   canUsePapillon,
   strokeSwimLabel,
   strokeDepartLabel,
-  strokesForDecouverte4n,
-  papillonAdaptedLabel,
 } from "./stroke-focus.js";
+import {
+  allocateStrokeMeters,
+  buildFourNagesCoverageSets,
+  buildFourNagesStrokeSetsFromAlloc,
+  fourNagesMixFromBrief,
+  isFourNagesDeclared,
+  measureStrokeVolume,
+} from "./four-nages-mix.js";
+import { buildFourNagesImSets } from "./four-nages-im.js";
 import { selectSetFormat, buildCorpsByFormat as buildCorpsByFormatRaw } from "./set-formats.js";
 import { collapseSetsToDisplayLinesExact } from "./display-sets.js";
 import { restSecFor } from "./recovery.js";
 import { resolveEquipmentUsage, labelWithEquipment } from "./equipment-usage.js";
-import {
-  resolveSessionSpecificity,
-  fourNagesCorpsShare,
-  buildFourNagesCorpsPortion,
-} from "./session-specificity.js";
+import { resolveSessionSpecificity } from "./session-specificity.js";
 import { composeWithQualityGate } from "./composer-quality-gate.js";
-import { resolveHardConstraints, minFourNageBodyShare } from "./composer-constraints.js";
+import { resolveHardConstraints } from "./composer-constraints.js";
 
 /** buildCorpsByFormat + hard constraints (maxReps / maxContinuous). */
 function buildCorpsByFormat(format, corpsTarget, opts = {}, brief = null) {
@@ -201,6 +204,158 @@ function labelWithMatos(label, matosNote) {
   return `${base} avec ${note}`;
 }
 
+function isFourNSession(brief, strokeFocus) {
+  return (
+    strokeFocus === "4n" ||
+    brief?.hardConstraints?.isFourN ||
+    isFourNagesDeclared(brief) ||
+    brief?.sessionIntent === "quatre_nages"
+  );
+}
+
+function fourNagesAllowsPapillon(sessionLike = {}, opts = {}) {
+  return (
+    isFourNagesDeclared(sessionLike) ||
+    isFourNagesDeclared(opts) ||
+    sessionLike.strokeFocus === "4n" ||
+    opts.strokeFocus === "4n" ||
+    opts.fourN === true
+  );
+}
+
+function appendFourNagesTechniqueBlock({
+  brief,
+  techniqueVolume,
+  pool,
+  restFor,
+  zone,
+  cue,
+  matosNote,
+  sets,
+  details,
+  exerciseIds,
+}) {
+  const mix = fourNagesMixFromBrief(brief);
+  const alloc = allocateStrokeMeters(techniqueVolume, mix, pool);
+  const safeCue = /\d+\s*m\b/i.test(String(cue || "")) ? "geste propre" : cue || "geste propre";
+  const built = buildFourNagesStrokeSetsFromAlloc(alloc, {
+    pool,
+    level: brief.level,
+    restFor,
+    block: "technique",
+    cue: safeCue,
+    zone,
+    easy: brief.level === "decouverte",
+    exercisePrefix: "tech_4n",
+    maxReps: 12,
+  });
+  for (const s of built.sets) {
+    s.label = labelWithMatos(s.label, matosNote);
+    sets.push(s);
+    details.push(formatSetLine(s, brief.level === "decouverte"));
+    exerciseIds.push(s.exerciseId);
+  }
+  return built.used;
+}
+
+function planFourNagesCorps({
+  brief,
+  sessionSpecificity,
+  corpsTarget,
+  volumeTotal,
+  usedSets,
+  pool,
+  restFor,
+  maxContinuous,
+  finReserve = 0,
+  rng,
+}) {
+  void finReserve;
+  const mix = fourNagesMixFromBrief(brief);
+  const used = measureStrokeVolume({ sets: usedSets });
+  const targets = allocateStrokeMeters(volumeTotal, mix, pool);
+  const unit = pool === 50 ? 50 : 25;
+  const minCrawl = unit * 2;
+  const others = ["dos", "brasse", "papillon"];
+  const need = {};
+  let needSum = 0;
+  for (const s of others) {
+    need[s] = Math.max(unit, (targets[s] || 0) - (used.meters[s] || 0));
+    needSum += need[s];
+  }
+  const maxFourN = Math.max(unit * 3, Math.max(0, Number(corpsTarget) - minCrawl));
+  const fourNBudget = Math.min(needSum, maxFourN);
+  const setCap =
+    Number(brief.hardConstraints?.maxContinuousDistance) ||
+    (brief.level === "regulier" ? 200 : brief.level === "decouverte" ? maxContinuous : 400);
+  const im = buildFourNagesImSets({
+    brief,
+    budget: fourNBudget,
+    pool,
+    restFor,
+    rng,
+    maxSetContinuous: setCap,
+    maxStrokeContinuous: maxContinuous,
+  });
+  const remainingBudget = Math.max(0, fourNBudget - (im.used || 0));
+  const usedAfterIm = measureStrokeVolume({ sets: [...(usedSets || []), ...(im.sets || [])] });
+  const still = {};
+  let stillSum = 0;
+  for (const s of others) {
+    still[s] = Math.max(0, (targets[s] || 0) - (usedAfterIm.meters[s] || 0));
+    stillSum += still[s];
+  }
+  const fillBudget = Math.min(remainingBudget, stillSum);
+  const fillStrokes = others.filter((s) => still[s] >= unit);
+  let mono = { sets: [], lines: [], used: 0 };
+  if (fillBudget >= unit * Math.max(1, fillStrokes.length) && fillStrokes.length) {
+    const weights = {};
+    for (const s of fillStrokes) weights[s] = still[s] / stillSum;
+    const alloc = allocateStrokeMeters(fillBudget, weights, pool, { strokes: fillStrokes });
+    mono = buildFourNagesStrokeSetsFromAlloc(alloc, {
+      pool,
+      level: brief.level,
+      restFor,
+      block: "corps",
+      cue: sessionSpecificity === "race_specific" ? "enchaîne proprement" : "nage explicite",
+      maxContinuous,
+      includeStrokes: fillStrokes,
+      easy: brief.level === "decouverte",
+      exercisePrefix: "corps_4n",
+      maxReps: 12,
+    });
+  }
+  const fourNPortion = {
+    sets: [...(im.sets || []), ...(mono.sets || [])],
+    lines: [...(im.lines || []), ...(mono.lines || [])],
+    used: (im.used || 0) + (mono.used || 0),
+  };
+  return {
+    fourNPortion,
+    mainCorpsTarget: Math.max(minCrawl, Number(corpsTarget) - (fourNPortion.used || 0)),
+    mix,
+  };
+}
+
+function attachFourNagesCoverage(result, brief) {
+  if (!result?.ok || !result.session || !isFourNSession(brief, brief.strokeFocus)) return result;
+  for (const s of result.session.sets || []) {
+    if (!s.stroke && s.stroke !== "im" && (s.block === "corps" || s.block === "depart" || s.block === "fin")) {
+      s.stroke = "crawl";
+    }
+  }
+  const extra = buildFourNagesCoverageSets(result.session, brief);
+  if (!extra.sets.length) return result;
+  const session = result.session;
+  session.sets = [...(session.sets || []), ...extra.sets];
+  session.details = [...(session.details || []), ...extra.lines];
+  const vol = session.sets.reduce((a, s) => a + (Number(s.reps) || 1) * (Number(s.distancePerRep) || 0), 0);
+  session.volumeFromSets = vol;
+  session.trainingDistance = vol;
+  session.distance = `${vol}m`;
+  return result;
+}
+
 function equipmentNoteForDecouverte(equipment) {
   if (!Array.isArray(equipment) || equipment.length === 0) return "";
   const hasPalmes = equipment.includes("palmes");
@@ -255,8 +410,8 @@ export function validateDecouverteHard(sessionLike, opts = {}) {
   if (/sans pause[^\n]*repos|repos[^\n]*sans pause/i.test(text)) {
     errors.push("repos incohérent après nage continue");
   }
-  // Papillon non maîtrisé : pas de distance papillon réelle
-  if (opts.papillonOk === false || sessionLike.papillonMastered === false) {
+  // Papillon non maîtrisé : pas de distance papillon réelle — sauf profil 4 nages
+  if (!fourNagesAllowsPapillon(sessionLike, opts) && (opts.papillonOk === false || sessionLike.papillonMastered === false)) {
     if (/\bpapillon\b/i.test(text) && !/ondulation|prépa|adapt/i.test(text)) {
       errors.push("papillon imposé sans maîtrise");
     }
@@ -417,58 +572,25 @@ function composeDecouverteSession(brief, rng) {
     });
   }
   for (const s of departSets) {
+    if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
     sets.push(s);
     details.push(formatSetLine(s, beginnerFriendly));
   }
   if (departEx) exerciseIds.push(departEx.id);
 
   // --- TECHNIQUE ---
-  if (intent.id === "decouverte_4n" || strokeFocus === "4n") {
-    const strokes = strokesForDecouverte4n(papillonOk);
-    const repsPerStroke = Math.max(1, Math.round(blocks.technique / techUnit / strokes.length));
-    let used = 0;
-    {
-      const th = formatTechniqueHeader("plusieurs nages", matosNote);
-      if (th) details.push(th);
-    }
-    strokes.forEach((st, i) => {
-      const isLast = i === strokes.length - 1;
-      let reps = repsPerStroke;
-      if (isLast) {
-        const remain = blocks.technique - used;
-        reps = Math.max(1, Math.round(remain / techUnit));
-      }
-      const label = labelWithMatos(
-        st === "ondulation" || st === "papillon"
-          ? papillonOk && st === "papillon"
-            ? "papillon facile"
-            : papillonAdaptedLabel()
-          : `${st} facile`,
-        matosNote,
-      );
-      const set = {
-        reps,
-        distancePerRep: techUnit,
-        restSec: 15,
-        label,
-        cue: intent.learnCue,
-        block: "technique",
-        exerciseId: `tech_4n_${st}`,
-        continuous: false,
-        stroke: st,
-      };
-      used += reps * techUnit;
-      sets.push(set);
-      details.push(`-${reps} × ${techUnit}m ${label} — repos 15s`);
-      exerciseIds.push(set.exerciseId);
+  if (intent.id === "decouverte_4n" || isFourNSession(brief, strokeFocus)) {
+    appendFourNagesTechniqueBlock({
+      brief,
+      techniqueVolume: blocks.technique,
+      pool,
+      restFor: () => 15,
+      cue: intent.learnCue,
+      matosNote,
+      sets,
+      details,
+      exerciseIds,
     });
-    const techVol = volumeFromSets(sets.filter((s) => s.block === "technique"));
-    if (techVol !== blocks.technique) {
-      const last = [...sets].reverse().find((s) => s.block === "technique");
-      if (last) {
-        last.reps = Math.max(1, last.reps + Math.round((blocks.technique - techVol) / techUnit));
-      }
-    }
   } else {
     const techCandidates = filterExercises(inventory, brief, { block: "technique" });
     let techEx = pickOne(techCandidates, rng);
@@ -540,8 +662,26 @@ function composeDecouverteSession(brief, rng) {
   const corpsUnit =
     intent.preferLongerReps && maxCont >= 100 ? 100 : pool === 25 ? 25 : 50;
   const safeUnit = corpsUnit >= 75 && maxCont < 100 ? (pool === 25 ? 25 : 50) : corpsUnit;
-  const corpsSets = fillAccessibleVolume(blocks.corps, pool, maxCont, {
-    label: swimLabel,
+  let corpsTarget = blocks.corps;
+  let fourNPortion = null;
+  if (isFourNSession(brief, strokeFocus)) {
+    const planned = planFourNagesCorps({
+      brief,
+      sessionSpecificity: "stroke_focus",
+      corpsTarget: blocks.corps,
+      volumeTotal: coherentVolume,
+      usedSets: sets,
+      pool,
+      restFor: () => 20,
+      maxContinuous: maxCont,
+      finReserve: blocks.rac,
+      rng,
+    });
+    fourNPortion = planned.fourNPortion;
+    corpsTarget = planned.mainCorpsTarget;
+  }
+  const corpsSets = fillAccessibleVolume(corpsTarget, pool, maxCont, {
+    label: isFourNSession(brief, strokeFocus) ? "crawl facile" : swimLabel,
     cue: intent.applyCue,
     restSec: safeUnit >= 100 ? 30 : 20,
     block: "corps",
@@ -550,13 +690,21 @@ function composeDecouverteSession(brief, rng) {
     unit: safeUnit,
   });
   for (const cs of corpsSets) {
+    if (isFourNSession(brief, strokeFocus)) cs.stroke = "crawl";
     sets.push(cs);
     details.push(formatSetLine(cs, beginnerFriendly));
   }
   exerciseIds.push(corpsSets[0].exerciseId);
+  if (fourNPortion) {
+    for (const s of fourNPortion.sets) {
+      sets.push(s);
+      exerciseIds.push(s.exerciseId);
+    }
+    details.push(...fourNPortion.lines);
+  }
 
   // --- FIN --- (respecte maxContinuous : pas de 100–150m continu si plafond 50)
-  const finLabel = "au choix (récup)";
+  const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
   let finSets;
   if (blocks.rac <= maxCont) {
     finSets = [
@@ -580,8 +728,11 @@ function composeDecouverteSession(brief, rng) {
     });
   }
   for (const s of finSets) {
+    if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
     sets.push(s);
-    if (s.continuous || s.reps === 1) {
+    if (isFourNSession(brief, strokeFocus)) {
+      details.push(formatSetLine(s, beginnerFriendly));
+    } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
       const finText = humanizeUserFacingText(
         FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
@@ -704,7 +855,7 @@ export function validateRegulierHard(sessionLike, opts = {}) {
   if (/sans pause[^\n]*repos|repos[^\n]*sans pause/i.test(text)) {
     errors.push("repos incohérent après nage continue");
   }
-  if (opts.papillonOk === false || sessionLike.papillonMastered === false) {
+  if (!fourNagesAllowsPapillon(sessionLike, opts) && (opts.papillonOk === false || sessionLike.papillonMastered === false)) {
     if (/\bpapillon\b/i.test(text) && !/ondulation|prépa|adapt/i.test(text)) {
       errors.push("papillon imposé sans maîtrise");
     }
@@ -845,7 +996,7 @@ function techLabelsRegulier(primary) {
     chiens: { label: "grand chien", cue: "bras sous l'eau, traction large", focus: "technique_chiens" },
     virages: { label: "coulée après virage", cue: "rotation groupée, mains basses", focus: "technique_virages" },
     nage: { label: "crawl facile, respiration sur le côté habituel", cue: "mouvement propre", focus: null },
-    "4n": { label: "plusieurs nages", cue: "une nage propre par 50 m", focus: null },
+    "4n": { label: "plusieurs nages", cue: "une nage propre par longueur", focus: null },
   };
   return map[primary] || map.rattrape;
 }
@@ -941,6 +1092,7 @@ function composeRegulierSession(brief, rng) {
       block: "depart",
       exerciseId: "depart_regulier",
     });
+    if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
     sets.push(s);
     details.push(formatSetLine(s, false).replace(/ \(Z1\)/, " (facile)"));
   } else {
@@ -953,6 +1105,7 @@ function composeRegulierSession(brief, rng) {
       maxReps: 12,
     });
     for (const s of ds) {
+      if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
       sets.push(s);
       details.push(formatSetLine(s, false));
     }
@@ -978,41 +1131,17 @@ function composeRegulierSession(brief, rng) {
 
   const techMatos = eqUsage.techNote || "";
 
-  if (intent.techPrimary === "4n" || strokeFocus === "4n") {
-    const strokes = strokesForDecouverte4n(papillonOk);
-    const unit = 50;
-    const repsEach = Math.max(1, Math.round(blocks.technique / unit / strokes.length));
-    let used = 0;
-    {
-      const th = formatTechniqueHeader("plusieurs nages", techMatos);
-      if (th) details.push(th);
-    }
-    strokes.forEach((st, i) => {
-      const isLast = i === strokes.length - 1;
-      let reps = repsEach;
-      if (isLast) reps = Math.max(1, Math.round((blocks.technique - used) / unit));
-      const label = labelWithMatos(
-        st === "ondulation" || (st === "papillon" && !papillonOk)
-          ? papillonAdaptedLabel()
-          : st === "papillon"
-            ? "papillon contrôlé"
-            : `${st}`,
-        techMatos,
-      );
-      const set = {
-        reps,
-        distancePerRep: unit,
-        restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique" }),
-        label,
-        cue: intent.learnCue,
-        block: "technique",
-        exerciseId: `tech_4n_${st}`,
-        continuous: false,
-      };
-      used += reps * unit;
-      sets.push(set);
-      details.push(`-${reps} × ${unit}m ${label} — repos ${set.restSec}s`);
-      exerciseIds.push(set.exerciseId);
+  if (intent.techPrimary === "4n" || isFourNSession(brief, strokeFocus)) {
+    appendFourNagesTechniqueBlock({
+      brief,
+      techniqueVolume: blocks.technique,
+      pool,
+      restFor,
+      cue: intent.learnCue,
+      matosNote: techMatos,
+      sets,
+      details,
+      exerciseIds,
     });
   } else {
     const fromBank = tryAppendTechniqueFromBank({
@@ -1070,34 +1199,35 @@ function composeRegulierSession(brief, rng) {
 
   // CORPS
   const corpsTarget = blocks.corps;
-  const corpsShare4n = fourNagesCorpsShare(sessionSpecificity, strokeFocus);
   let mainCorpsTarget = corpsTarget;
   let fourNPortion = null;
 
-  if (strokeFocus === "4n" && corpsShare4n > 0.12) {
-    const fourNDist = Math.max(200, roundTo(corpsTarget * corpsShare4n, 50));
-    mainCorpsTarget = Math.max(200, corpsTarget - fourNDist);
-    fourNPortion = buildFourNagesCorpsPortion(fourNDist, {
-      papillonOk,
+  if (isFourNSession(brief, strokeFocus)) {
+    const planned = planFourNagesCorps({
+      brief,
+      sessionSpecificity,
+      corpsTarget,
+      volumeTotal: coherentVolume,
+      usedSets: sets,
+      pool,
       restFor,
-      cue:
-        sessionSpecificity === "race_specific"
-          ? "travail 4 nages — enchaîne proprement"
-          : "touches multi-nages",
+      maxContinuous: maxCont,
+      finReserve: blocks.rac || blocks.fin || 0,
+      rng,
     });
+    fourNPortion = planned.fourNPortion;
+    mainCorpsTarget = planned.mainCorpsTarget;
   }
 
-  const corpsLabel =
-    strokeFocus === "4n" && sessionSpecificity !== "race_specific"
-      ? labelWithEquipment("crawl", eqUsage)
-      : swimLabel;
+  const corpsLabel = isFourNSession(brief, strokeFocus)
+    ? labelWithEquipment("crawl", eqUsage)
+    : swimLabel;
 
-  const altLabel =
-    strokeFocus === "mixte" || strokeFocus === "4n"
+  const altLabel = isFourNSession(brief, strokeFocus)
+    ? "crawl"
+    : strokeFocus === "mixte" || strokeFocus === "crawl"
       ? "dos"
-      : strokeFocus === "crawl"
-        ? "dos"
-        : "crawl";
+      : "crawl";
 
   // Reprise intensité légère : block facile/modéré sans « soutenu »
   let corpsBuilt;
@@ -1140,7 +1270,9 @@ function composeRegulierSession(brief, rng) {
       },
     );
   } else {
-    const bankCorps = tryBuildCorpsFromBank({
+    const bankCorps = isFourNSession(brief, strokeFocus)
+      ? null
+      : tryBuildCorpsFromBank({
       brief: { ...brief, level: "regulier" },
       intent,
       rng,
@@ -1161,9 +1293,9 @@ function composeRegulierSession(brief, rng) {
     });
     corpsBuilt =
       bankCorps ||
-      buildCorpsByFormat(setFormat, mainCorpsTarget, {
+      buildCorpsByFormat(isFourNSession(brief, strokeFocus) ? "repeated" : setFormat, mainCorpsTarget, {
         label: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
-        altLabel,
+        altLabel: isFourNSession(brief, strokeFocus) ? "crawl" : altLabel,
         cue: (() => {
           const base = reprisePattern?.corpsCue || intent.applyCue;
           const obj = objectiveBodyCue(brief, intent);
@@ -1200,11 +1332,12 @@ function composeRegulierSession(brief, rng) {
   }
 
   // FIN — respect maxContinuous
+  const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
   let finSets;
   if (blocks.rac <= maxCont) {
     finSets = [
       buildContinuous(blocks.rac, {
-        label: "au choix (récup)",
+        label: finLabel,
         cue: "facile",
         block: "fin",
         exerciseId: `fin_${pickIndex(FINS_SEMAINE, rng)}`,
@@ -1212,7 +1345,7 @@ function composeRegulierSession(brief, rng) {
     ];
   } else {
     finSets = buildRepeatedExact(blocks.rac, 50, {
-      label: "au choix (récup)",
+      label: finLabel,
       cue: "facile",
       restSec: restFor({ intensity: "facile", distancePerRep: 50, block: "fin" }),
       block: "fin",
@@ -1221,8 +1354,11 @@ function composeRegulierSession(brief, rng) {
     });
   }
   for (const s of finSets) {
+    if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
     sets.push(s);
-    if (s.continuous || s.reps === 1) {
+    if (isFourNSession(brief, strokeFocus)) {
+      details.push(formatSetLine(s, false));
+    } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
       const finText = FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
         .replace(/\(Z1\)/i, "(facile)")
@@ -1343,7 +1479,7 @@ export function validateSportifHard(sessionLike, opts = {}) {
   if (/sans pause[^\n]*repos|repos[^\n]*sans pause/i.test(text)) {
     errors.push("repos incohérent après nage continue");
   }
-  if (opts.papillonOk === false || sessionLike.papillonMastered === false) {
+  if (!fourNagesAllowsPapillon(sessionLike, opts) && (opts.papillonOk === false || sessionLike.papillonMastered === false)) {
     if (/\bpapillon\b/i.test(text) && !/ondulation|prépa|adapt/i.test(text)) {
       errors.push("papillon imposé sans maîtrise");
     }
@@ -1571,6 +1707,7 @@ function composeSportifSession(brief, rng) {
     });
     s.zone = "Z1";
     s.blockRole = "preparation";
+    if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
     sets.push(s);
     details.push(`-${departDist}m ${departLabel} — ${depCue}`);
   } else {
@@ -1586,6 +1723,7 @@ function composeSportifSession(brief, rng) {
     for (const s of ds) {
       s.zone = "Z1";
       s.blockRole = "preparation";
+      if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
       sets.push(s);
       details.push(formatSetLine(s, false));
     }
@@ -1594,42 +1732,18 @@ function composeSportifSession(brief, rng) {
 
   // TECHNIQUE
   const techMatos = eqUsage.techNote || "";
-  if (intent.techPrimary === "4n" || strokeFocus === "4n") {
-    const strokes = strokesForDecouverte4n(papillonOk);
-    const unit = 50;
-    const repsEach = Math.max(1, Math.round(blocks.technique / unit / strokes.length));
-    let used = 0;
-    {
-      const th = formatTechniqueHeader("plusieurs nages", techMatos);
-      if (th) details.push(th);
-    }
-    strokes.forEach((st, i) => {
-      const isLast = i === strokes.length - 1;
-      let reps = repsEach;
-      if (isLast) reps = Math.max(1, Math.round((blocks.technique - used) / unit));
-      const label = labelWithMatos(
-        st === "ondulation" || (st === "papillon" && !papillonOk)
-          ? papillonAdaptedLabel()
-          : st === "papillon"
-            ? "papillon contrôlé"
-            : `${st}`,
-        techMatos,
-      );
-      const set = {
-        reps,
-        distancePerRep: unit,
-        restSec: restFor({ intensity: "facile", distancePerRep: unit, block: "technique", zone: "Z2" }),
-        label,
-        cue: intent.learnCue,
-        block: "technique",
-        exerciseId: `tech_4n_${st}`,
-        continuous: false,
-        zone: "Z2",
-      };
-      used += reps * unit;
-      sets.push(set);
-      details.push(`-${reps} × ${unit}m ${label} — repos ${set.restSec}s`);
-      exerciseIds.push(set.exerciseId);
+  if (intent.techPrimary === "4n" || isFourNSession(brief, strokeFocus)) {
+    appendFourNagesTechniqueBlock({
+      brief,
+      techniqueVolume: blocks.technique,
+      pool,
+      restFor,
+      zone: "Z2",
+      cue: intent.learnCue,
+      matosNote: techMatos,
+      sets,
+      details,
+      exerciseIds,
     });
   } else {
     const fromBank = tryAppendTechniqueFromBank({
@@ -1701,32 +1815,29 @@ function composeSportifSession(brief, rng) {
 
   // CORPS
   const corpsTarget = blocks.corps;
-  const baseShare4n = fourNagesCorpsShare(sessionSpecificity, strokeFocus);
-  const corpsShare4n =
-    strokeFocus === "4n" || brief._minFourNageBodyShare
-      ? Math.max(baseShare4n, brief._minFourNageBodyShare || minFourNageBodyShare(brief.level, sessionSpecificity))
-      : baseShare4n;
   let mainCorpsTarget = corpsTarget;
   let fourNPortion = null;
 
-  if ((strokeFocus === "4n" || brief.hardConstraints?.isFourN) && corpsShare4n > 0.12) {
-    const fourNDist = Math.max(200, roundTo(corpsTarget * corpsShare4n, 50));
-    mainCorpsTarget = Math.max(300, corpsTarget - fourNDist);
-    fourNPortion = buildFourNagesCorpsPortion(fourNDist, {
-      papillonOk,
+  if (isFourNSession(brief, strokeFocus) || brief.hardConstraints?.isFourN) {
+    const planned = planFourNagesCorps({
+      brief,
+      sessionSpecificity,
+      corpsTarget,
+      volumeTotal: coherentVolume,
+      usedSets: sets,
+      pool,
       restFor,
       maxContinuous: maxCont4n,
-      cue:
-        sessionSpecificity === "race_specific"
-          ? "travail 4 nages — enchaîne proprement"
-          : "touches multi-nages",
+      finReserve: blocks.rac || blocks.fin || 0,
+      rng,
     });
+    fourNPortion = planned.fourNPortion;
+    mainCorpsTarget = planned.mainCorpsTarget;
   }
 
-  const corpsLabel =
-    strokeFocus === "4n" && sessionSpecificity !== "race_specific"
-      ? labelWithEquipment("crawl", eqUsage)
-      : swimLabel;
+  const corpsLabel = isFourNSession(brief, strokeFocus)
+    ? labelWithEquipment("crawl", eqUsage)
+    : swimLabel;
 
   let preferredUnit = null;
   let corpsFormat = setFormat;
@@ -2016,13 +2127,15 @@ function composeSportifSession(brief, rng) {
         const aeroCueBase = objCue
           ? `${intent.applyCue || "aérobie"} — ${objCue}`
           : intent.applyCue;
-        let aeroFmt = setFormat;
+        let aeroFmt = isFourNSession(brief, strokeFocus) ? "repeated" : setFormat;
         if (hc.forbidComplexFormats || hc.forbidPyramidFiller || hc.painProtection) {
           if (["pyramid", "broken", "block", "progressive"].includes(aeroFmt)) aeroFmt = "repeated";
         } else if (hc.forbidLongProgressive && aeroFmt === "progressive") {
           aeroFmt = "repeated";
         }
-        const bankCorps = tryBuildCorpsFromBank({
+        const bankCorps = isFourNSession(brief, strokeFocus)
+          ? null
+          : tryBuildCorpsFromBank({
           brief: { ...brief, level: isPerf ? "performance" : "sportif" },
           intent,
           rng,
@@ -2077,30 +2190,37 @@ function composeSportifSession(brief, rng) {
 
   // FIN Z1 — respect maxContinuous (taper / pain)
   const finMaxCont = Math.min(maxContCrawl, brief.hardConstraints?.maxContinuousDistance || maxContCrawl);
+  const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
   let finSets;
   if (blocks.rac <= finMaxCont) {
     const finSet = buildContinuous(blocks.rac, {
-      label: "au choix (récup)",
+      label: finLabel,
       cue: cueFor("Z1", blocks.rac, "récupération"),
       block: "fin",
       exerciseId: `fin_${pickIndex(FINS_SEMAINE, rng)}`,
     });
     finSet.zone = "Z1";
+    if (isFourNSession(brief, strokeFocus)) finSet.stroke = "crawl";
     finSets = [finSet];
   } else {
     finSets = buildRepeatedExact(blocks.rac, Math.min(100, finMaxCont), {
-      label: "au choix (récup)",
+      label: finLabel,
       cue: cueFor("Z1", 100, "récupération"),
       restSec: restFor({ intensity: "facile", distancePerRep: 100, block: "fin", zone: "Z1" }),
       block: "fin",
       exerciseId: `fin_${pickIndex(FINS_SEMAINE, rng)}`,
       maxReps: 12,
     });
-    for (const s of finSets) s.zone = "Z1";
+    for (const s of finSets) {
+      s.zone = "Z1";
+      if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
+    }
   }
   for (const s of finSets) {
     sets.push(s);
-    if (s.continuous || s.reps === 1) {
+    if (isFourNSession(brief, strokeFocus)) {
+      details.push(formatSetLine(s, false));
+    } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
       const finText = FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
         .replace(/\(Z1\)/i, "(Z1)")
@@ -2294,17 +2414,17 @@ export function composeSessionOnce(brief) {
   }
   const rng = createRng(brief.seed);
 
+  let result;
   if (brief.level === "decouverte") {
-    return composeDecouverteSession(brief, rng);
+    result = composeDecouverteSession(brief, rng);
+  } else if (brief.level === "regulier") {
+    result = composeRegulierSession(brief, rng);
+  } else if (brief.level === "sportif" || brief.level === "performance") {
+    result = composeSportifSession(brief, rng);
+  } else {
+    return { ok: false, reason: `composeur non actif pour niveau=${brief.level}` };
   }
-  if (brief.level === "regulier") {
-    return composeRegulierSession(brief, rng);
-  }
-  if (brief.level === "sportif" || brief.level === "performance") {
-    return composeSportifSession(brief, rng);
-  }
-
-  return { ok: false, reason: `composeur non actif pour niveau=${brief.level}` };
+  return attachFourNagesCoverage(result, brief);
 }
 
 export function isComposerEnabledForLevel(level) {
