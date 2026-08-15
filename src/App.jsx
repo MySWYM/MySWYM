@@ -40,6 +40,8 @@ import {
   replaceActivePlan,
   TRAINING_FOCUS_OPTIONS,
   hydrateSwimmerFromSources,
+  BIRTH_MONTH_OPTIONS,
+  computeAgeFromBirth,
 } from "./lib/swimmer-profile.js";
 import {
   appZoneMultForT100,
@@ -3399,31 +3401,99 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
           <>
             <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Mon profil</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                {[
-                  { key: "age", label: "Âge", placeholder: "ans" },
-                  { key: "weightKg", label: "Poids", placeholder: "kg" },
-                  { key: "heightCm", label: "Taille", placeholder: "cm" },
-                ].map(({ key, label, placeholder }) => (
-                  <label key={key} style={{ display: "block" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={profile?.[key] ?? ""}
-                      placeholder={placeholder}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        onSwimmerProfileChange({ [key]: raw === "" ? "" : Number(raw) });
-                      }}
-                      style={{
-                        width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12,
-                        border: `1.5px solid ${G.greyLight}`, background: G.greyXLight, fontSize: 14, fontWeight: 700, color: G.ink,
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
+              {(() => {
+                const nowY = new Date().getFullYear();
+                const birthMonth = profile?.birthMonth ?? "";
+                const birthYear = profile?.birthYear ?? (
+                  profile?.age != null && profile.age !== "" && Number.isFinite(Number(profile.age))
+                    ? nowY - Math.round(Number(profile.age))
+                    : ""
+                );
+                const ageNow = computeAgeFromBirth(birthMonth, birthYear)
+                  ?? (Number.isFinite(Number(profile?.age)) ? Number(profile.age) : null);
+                const fieldStyle = {
+                  width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12,
+                  border: `1.5px solid ${G.greyLight}`, background: G.greyXLight, fontSize: 14, fontWeight: 700, color: G.ink,
+                };
+                const patchBirth = (nextMonth, nextYear) => {
+                  const m = nextMonth === "" ? "" : Number(nextMonth);
+                  const y = nextYear === "" ? "" : Number(nextYear);
+                  const age = computeAgeFromBirth(m, y);
+                  onSwimmerProfileChange({
+                    birthMonth: m,
+                    birthYear: y,
+                    ...(age != null ? { age } : {}),
+                  });
+                };
+                return (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 8, marginBottom: 8 }}>
+                      <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                          Mois de naissance
+                        </div>
+                        <select
+                          value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            patchBirth(raw === "" ? "" : Number(raw), birthYear);
+                          }}
+                          style={{ ...fieldStyle, cursor: "pointer" }}
+                        >
+                          <option value="">Mois</option>
+                          {BIRTH_MONTH_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                          Année
+                        </div>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1900}
+                          max={nowY}
+                          value={birthYear ?? ""}
+                          placeholder="ex. 1998"
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            patchBirth(birthMonth, raw === "" ? "" : Number(raw));
+                          }}
+                          style={fieldStyle}
+                        />
+                      </label>
+                    </div>
+                    {ageNow != null && (
+                      <div style={{ fontSize: 12, color: G.grey, marginBottom: 12 }}>
+                        Âge actuel : <span style={{ fontWeight: 700, color: G.ink }}>{ageNow} ans</span>
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {[
+                        { key: "weightKg", label: "Poids", placeholder: "kg" },
+                        { key: "heightCm", label: "Taille", placeholder: "cm" },
+                      ].map(({ key, label, placeholder }) => (
+                        <label key={key} style={{ display: "block" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={profile?.[key] ?? ""}
+                            placeholder={placeholder}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              onSwimmerProfileChange({ [key]: raw === "" ? "" : Number(raw) });
+                            }}
+                            style={fieldStyle}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
@@ -5170,25 +5240,80 @@ const onboardingNumInp = {
   boxSizing: "border-box",
 };
 
-/** Âge · poids · taille — commun à tous les programmes */
-const StepPhysique = ({ age, weightKg, heightCm, onChange, onNext, onBack }) => {
-  const ageN = parseInt(age, 10);
+/** Naissance · poids · taille — commun à tous les programmes */
+const StepPhysique = ({ birthMonth, birthYear, weightKg, heightCm, onChange, onPatch, onNext, onBack }) => {
+  const nowY = new Date().getFullYear();
+  const ageN = computeAgeFromBirth(birthMonth, birthYear);
   const wN = parseFloat(String(weightKg).replace(",", "."));
   const hN = parseInt(heightCm, 10);
-  const ageOk = Number.isFinite(ageN) && ageN >= 10 && ageN <= 90;
+  const ageOk = ageN != null && ageN >= 10 && ageN <= 90;
   const weightOk = Number.isFinite(wN) && wN >= 30 && wN <= 250;
   const heightOk = Number.isFinite(hN) && hN >= 100 && hN <= 230;
   const canNext = ageOk && weightOk && heightOk;
+
+  const setBirth = (month, year) => {
+    const m = month === "" || month == null ? "" : Number(month);
+    const y = year === "" || year == null ? "" : Number(year);
+    const age = computeAgeFromBirth(m, y);
+    const patch = {
+      birthMonth: m === "" ? "" : m,
+      birthYear: y === "" ? "" : y,
+      ...(age != null ? { age } : { age: "" }),
+    };
+    if (typeof onPatch === "function") onPatch(patch);
+    else {
+      onChange("birthMonth", patch.birthMonth);
+      onChange("birthYear", patch.birthYear);
+      onChange("age", patch.age);
+    }
+  };
 
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Ton profil</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        Âge, poids et taille — pour mieux adapter ton plan.
+        Date de naissance, poids et taille — pour mieux adapter ton plan.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}` }}>
+          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+            Naissance
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 10 }}>
+            <select
+              value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setBirth(raw === "" ? "" : Number(raw), birthYear);
+              }}
+              style={{ ...onboardingNumInp, cursor: "pointer", textAlign: "left", fontSize: 16 }}
+            >
+              <option value="">Mois</option>
+              {BIRTH_MONTH_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1900}
+              max={nowY}
+              value={birthYear ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setBirth(birthMonth, raw === "" ? "" : Number(raw));
+              }}
+              placeholder="Année"
+              style={onboardingNumInp}
+            />
+          </div>
+          {ageN != null && (
+            <div style={{ marginTop: 10, fontSize: 13, color: G.grey }}>
+              Âge actuel : <span style={{ fontWeight: 700, color: G.ink }}>{ageN} ans</span>
+            </div>
+          )}
+        </div>
         {[
-          { key: "age", label: "Âge", value: age, placeholder: "ex : 28", suffix: "ans", inputMode: "numeric" },
           { key: "weightKg", label: "Poids", value: weightKg, placeholder: "ex : 72", suffix: "kg", inputMode: "decimal" },
           { key: "heightCm", label: "Taille", value: heightCm, placeholder: "ex : 175", suffix: "cm", inputMode: "numeric" },
         ].map((f) => (
@@ -5707,10 +5832,12 @@ const OnboardingWizard = ({
 
       {!isGoalMode && step === 7 && (
         <StepPhysique
-          age={profile.age}
+          birthMonth={profile.birthMonth}
+          birthYear={profile.birthYear}
           weightKg={profile.weightKg}
           heightCm={profile.heightCm}
           onChange={(key, val) => update(key, val)}
+          onPatch={patchProfile}
           onNext={() => setStep(8)}
           onBack={() => setStep(5)}
         />
@@ -11332,6 +11459,8 @@ const BLANK_PROFILE = {
   weightCurrent: "",
   weightGoal: "",
   pace100: null,
+  birthMonth: "",
+  birthYear: "",
   age: "",
   weightKg: "",
   heightCm: "",

@@ -10,6 +10,7 @@ import {
   rebuildEngineHistory,
   normalizePersistedDifficulty,
   sportProfileToRow,
+  rowToSportProfileFields,
   sessionToPlannedRow,
   adaptationToRow,
   createSportsPersistence,
@@ -46,11 +47,30 @@ function phases(n, pattern) {
     sessionsPerWeek: 3,
     pool: 50,
     equipment: ["palmes"],
+    birthMonth: 6,
+    birthYear: 1995,
     raceTarget: { distance: 200, stroke: "crawl", targetTimeSec: 130 },
   });
   assert(row.user_id === "u1" && row.level === "sportif" && row.frequency === 3, "K1 row");
   assert(row.race_target.distance === 200, "K1 race");
+  assert(row.extra.birthMonth === 6 && row.extra.birthYear === 1995, "K1 birth");
+  assert(typeof row.age === "number" && row.age >= 20 && row.age <= 40, "K1 age derived");
   console.log("K1 PASS");
+}
+
+// ── K1b birth → age round-trip ──
+{
+  const row = sportProfileToRow("u2", {
+    level: "régulier",
+    sessionsPerWeek: 2,
+    pool: 25,
+    birthMonth: 1,
+    birthYear: 2000,
+  });
+  const fields = rowToSportProfileFields(row);
+  assert(fields.birthMonth === 1 && fields.birthYear === 2000, "K1b birth fields");
+  assert(fields.age === row.age, "K1b age mirror");
+  console.log("K1b PASS");
 }
 
 // ── K2 planned session row ──

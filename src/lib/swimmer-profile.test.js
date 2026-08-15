@@ -10,6 +10,8 @@ import {
   resolveQuestionnaireMode,
   buildQuestionnaireDraft,
   hydrateSwimmerFromSources,
+  computeAgeFromBirth,
+  withDerivedAge,
 } from "./swimmer-profile.js";
 
 {
@@ -17,7 +19,8 @@ import {
     level: "sportif",
     pool: 25,
     sessionsPerWeek: 3,
-    age: 28,
+    birthMonth: 3,
+    birthYear: 1998,
     goal: "triathlon_olympic",
     category: "triathlon",
     eventDate: "2026-09-01",
@@ -30,10 +33,30 @@ import {
   assert.equal(sw.level, "sportif");
   assert.deepEqual(sw.equipment, ["palmes"]);
   assert.equal(sw.goal, undefined);
+  assert.equal(sw.birthMonth, 3);
+  assert.equal(sw.birthYear, 1998);
+  assert.equal(typeof sw.age, "number");
   const obj = extractPlanObjective(src);
   assert.equal(obj.goal, "triathlon_olympic");
   assert.equal(obj.trainingFocus, "technique");
   assert.equal(obj.level, undefined);
+}
+
+{
+  // Avant l'anniversaire (mois non encore atteint) → âge = année courante - année - 1
+  assert.equal(computeAgeFromBirth(12, 2000, new Date("2026-06-15")), 25);
+  // Après / pendant le mois de naissance → âge révolu
+  assert.equal(computeAgeFromBirth(3, 2000, new Date("2026-03-15")), 26);
+  assert.equal(computeAgeFromBirth(3, 2000, new Date("2026-02-28")), 25);
+  assert.equal(computeAgeFromBirth(null, 2000), null);
+  assert.equal(computeAgeFromBirth(3, null), null);
+}
+
+{
+  const derived = withDerivedAge({ birthMonth: 1, birthYear: 1990 }, new Date("2026-08-15"));
+  assert.equal(derived.age, 36);
+  const legacy = withDerivedAge({ age: 28 }, new Date("2026-08-15"));
+  assert.equal(legacy.age, 28);
 }
 
 {
@@ -101,6 +124,8 @@ import {
   assert.equal(draft.level, "sportif");
   assert.equal(draft.category, "");
   assert.deepEqual(draft.equipment, ["tuba"]);
+  assert.equal(draft.birthMonth, "");
+  assert.equal(draft.birthYear, "");
 }
 
 {

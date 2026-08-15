@@ -4,6 +4,8 @@
  * NE CALCULE PAS de phase / volume / strategy / séance.
  */
 
+import { computeAgeFromBirth } from "../swimmer-profile.js";
+
 /** Distance d'entraînement (jamais la course). Aligné week-orchestration. */
 export function trainingDistanceOfSession(session) {
   if (!session) return 0;
@@ -129,10 +131,29 @@ export function rebuildEngineHistory({
 
 /** Profil nageur persistant → row sport_profiles (1:1 user). */
 export function sportProfileToRow(userId, profile = {}) {
-  const ageNum = profile.age != null && profile.age !== ""
-    ? Number(profile.age)
-    : null;
-  const age = Number.isFinite(ageNum) ? Math.round(ageNum) : null;
+  const birthMonthNum =
+    profile.birthMonth != null && profile.birthMonth !== ""
+      ? Number(profile.birthMonth)
+      : null;
+  const birthYearNum =
+    profile.birthYear != null && profile.birthYear !== ""
+      ? Number(profile.birthYear)
+      : null;
+  const birthMonth =
+    Number.isFinite(birthMonthNum) && birthMonthNum >= 1 && birthMonthNum <= 12
+      ? Math.round(birthMonthNum)
+      : null;
+  const birthYear =
+    Number.isFinite(birthYearNum) && birthYearNum >= 1900
+      ? Math.round(birthYearNum)
+      : null;
+
+  let age = computeAgeFromBirth(birthMonth, birthYear);
+  if (age == null && profile.age != null && profile.age !== "") {
+    const ageNum = Number(profile.age);
+    if (Number.isFinite(ageNum)) age = Math.round(ageNum);
+  }
+
   return {
     user_id: userId,
     level: profile.level || null,
@@ -160,11 +181,12 @@ export function sportProfileToRow(userId, profile = {}) {
       eventDate: profile.eventDate || null,
       category: profile.category || null,
       trainingFocus: profile.trainingFocus || null,
+      birthMonth,
+      birthYear,
       age,
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
       swimStyle: profile.swimStyle || null,
-      age: profile.age ?? age,
       injuryZone: profile.injuryZone || null,
       injurySeverity: profile.injurySeverity || null,
       healthConsent: profile.healthConsent === true,
@@ -189,7 +211,17 @@ export function sportProfileToRow(userId, profile = {}) {
 export function rowToSportProfileFields(row) {
   if (!row) return {};
   const extra = row.extra && typeof row.extra === "object" ? row.extra : {};
-  const age = row.age ?? (extra.age != null && extra.age !== "" ? Number(extra.age) : null);
+  const birthMonth =
+    extra.birthMonth != null && extra.birthMonth !== ""
+      ? Number(extra.birthMonth)
+      : null;
+  const birthYear =
+    extra.birthYear != null && extra.birthYear !== ""
+      ? Number(extra.birthYear)
+      : null;
+  const ageFromBirth = computeAgeFromBirth(birthMonth, birthYear);
+  const ageLegacy = row.age ?? (extra.age != null && extra.age !== "" ? Number(extra.age) : null);
+  const age = ageFromBirth ?? (Number.isFinite(Number(ageLegacy)) ? Number(ageLegacy) : null);
   return {
     level: row.level,
     goal: row.objective,
@@ -198,7 +230,13 @@ export function rowToSportProfileFields(row) {
     equipment: row.equipment || [],
     preferredStroke: row.preferred_stroke,
     swimStyle: row.swim_style || extra.swimStyle || null,
-    age: Number.isFinite(Number(age)) ? Number(age) : (extra.age ?? null),
+    birthMonth: Number.isFinite(birthMonth) && birthMonth >= 1 && birthMonth <= 12
+      ? Math.round(birthMonth)
+      : null,
+    birthYear: Number.isFinite(birthYear) && birthYear >= 1900
+      ? Math.round(birthYear)
+      : null,
+    age: age != null && Number.isFinite(Number(age)) ? Number(age) : (extra.age ?? null),
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     injuryNote: null,

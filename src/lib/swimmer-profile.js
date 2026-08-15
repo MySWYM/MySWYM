@@ -8,7 +8,9 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "level",
   "pool",
   "sessionsPerWeek",
-  "age",
+  "birthMonth",
+  "birthYear",
+  "age", // dérivé de birthMonth/birthYear (miroir legacy)
   "weightKg",
   "heightCm",
   "equipment",
@@ -26,6 +28,78 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "readinessProfile",
   "sessionDuration",
 ]);
+
+/** Mois de naissance (1–12) — libellés FR pour selects. */
+export const BIRTH_MONTH_OPTIONS = Object.freeze([
+  { value: 1, label: "Janvier" },
+  { value: 2, label: "Février" },
+  { value: 3, label: "Mars" },
+  { value: 4, label: "Avril" },
+  { value: 5, label: "Mai" },
+  { value: 6, label: "Juin" },
+  { value: 7, label: "Juillet" },
+  { value: 8, label: "Août" },
+  { value: 9, label: "Septembre" },
+  { value: 10, label: "Octobre" },
+  { value: 11, label: "Novembre" },
+  { value: 12, label: "Décembre" },
+]);
+
+/**
+ * Âge en années révolues depuis mois + année de naissance.
+ * Sans jour : anniversaire traité au 1er du mois de naissance.
+ */
+export function computeAgeFromBirth(birthMonth, birthYear, now = new Date()) {
+  const year = Number(birthYear);
+  const month = Number(birthMonth);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return null;
+  const y = Math.round(year);
+  const m = Math.round(month);
+  const maxYear = now.getFullYear();
+  if (y < 1900 || y > maxYear || m < 1 || m > 12) return null;
+  let age = maxYear - y;
+  const nowMonth = now.getMonth() + 1;
+  if (nowMonth < m) age -= 1;
+  if (age < 0 || age > 120) return null;
+  return age;
+}
+
+/** Normalise mois/année et recalcule `age` si possible (sinon conserve age legacy). */
+export function withDerivedAge(profile = {}, now = new Date()) {
+  if (!profile || typeof profile !== "object") return {};
+  const out = { ...profile };
+
+  const monthNum =
+    profile.birthMonth != null && profile.birthMonth !== ""
+      ? Math.round(Number(profile.birthMonth))
+      : null;
+  const yearNum =
+    profile.birthYear != null && profile.birthYear !== ""
+      ? Math.round(Number(profile.birthYear))
+      : null;
+
+  if (Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12) {
+    out.birthMonth = monthNum;
+  } else if (profile.birthMonth === "") {
+    out.birthMonth = "";
+  }
+
+  const maxYear = now.getFullYear();
+  if (Number.isFinite(yearNum) && yearNum >= 1900 && yearNum <= maxYear) {
+    out.birthYear = yearNum;
+  } else if (profile.birthYear === "") {
+    out.birthYear = "";
+  }
+
+  const derived = computeAgeFromBirth(out.birthMonth, out.birthYear, now);
+  if (derived != null) {
+    out.age = derived;
+  } else if (profile.age != null && profile.age !== "") {
+    const a = Number(profile.age);
+    if (Number.isFinite(a)) out.age = Math.round(a);
+  }
+  return out;
+}
 
 export const PLAN_OBJECTIVE_KEYS = Object.freeze([
   "category",
@@ -103,7 +177,7 @@ export function extractSwimmerProfile(source = {}) {
     const n = Number(raw.sessionsPerWeek);
     if (Number.isFinite(n)) raw.sessionsPerWeek = Math.max(1, Math.min(5, n));
   }
-  return raw;
+  return withDerivedAge(raw);
 }
 
 /** Extrait l'objectif / préférences de cycle (plan). */
@@ -220,6 +294,8 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     level: "",
     pool: 50,
     sessionsPerWeek: null,
+    birthMonth: "",
+    birthYear: "",
     age: "",
     weightKg: "",
     heightCm: "",

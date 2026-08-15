@@ -235,6 +235,8 @@ function mapSportRowToProfile(row: Record<string, unknown>) {
     equipment: row.equipment || [],
     preferredStroke: row.preferred_stroke,
     swimStyle: row.swim_style || extra.swimStyle || null,
+    birthMonth: extra.birthMonth ?? null,
+    birthYear: extra.birthYear ?? null,
     age: row.age ?? extra.age ?? null,
     weightKg: extra.weightKg ?? null,
     heightCm: extra.heightCm ?? null,
