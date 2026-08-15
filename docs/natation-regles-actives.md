@@ -19,7 +19,7 @@
 
 7. **Éducatifs / jambes** — Bloc milieu : privilégier jambes et nage appliquée. Grand/petit chien = rare (≈1 séance sur 8), pas dominant. Focus jambes = éducatif court puis série jambes — jamais deux blocs battements d’affilée.
 
-8. **Découverte** — Éducatifs uniquement : flèche + grand chien, avec palmes + tuba frontal. Pas de catch-up / roulis / virages / petit chien. Pas de demande T100. Wording allégé.
+8. **Découverte** — Éducatifs uniquement : flèche + grand chien, avec palmes + tuba frontal. Pas de catch-up / roulis / virages / petit chien. Pas de demande T100. Wording allégé. Les niveaux Excel (« niveau Arthur ») filtrent aussi : un éducatif absent de Découverte n’entre pas dans un programme Découverte (« adaptable à tous niveaux » ≠ « Tous niveaux »).
 
 9. **Matériel** — Le matériel déclaré indique ce que le nageur peut utiliser, jamais ce qu’il doit utiliser. Une séance peut être sans matériel même si l’inventaire est rempli. Lorsqu’un matériel est utilisé, il doit être affiché explicitement sur la ligne d’exercice concernée. Jamais pull-buoy + palmes dans une même séance ; matériel lié à l’éducatif, jamais tiré au sort.
 

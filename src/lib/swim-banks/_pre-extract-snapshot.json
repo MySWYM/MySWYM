@@ -1577,16 +1577,14 @@
   "seanceSamples": {
     "decouverte|nager_progresser|case1-decouverte-np-30": {
       "ok": true,
-      "distance": "950m",
+      "distance": "900m",
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
         "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
         "-3 × 50 m Grand chien avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
         "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
-        "-3 × 50 m crawl — lent — focus glisse — repos 20s",
-        "-3 × 50 m crawl — moyen — respiration — repos 20s",
-        "-2 × 50 m crawl — vite — fluide — repos 40s",
+        "-7 × 50 m crawl / dos facile — garde un rythme facile entre chaque longueur — repos 20s",
         "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
       ]
     },
@@ -1597,7 +1595,7 @@
       "type": "ENDURANCE",
       "details": [
         "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
+        "-3 × 50 m flèche avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
         "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
         "-3 × 50 m crawl — lent — focus glisse — repos 20s",
         "-3 × 50 m crawl — moyen — respiration — repos 20s",
