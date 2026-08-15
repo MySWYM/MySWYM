@@ -583,7 +583,7 @@ function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exercis
       distancePerRep: u,
       restSec: rest,
       label,
-      cue: part === 0 ? cue : `${cue} — suite`,
+      cue: part === 0 ? cue : `${cue} — 2e bloc, contraste`,
       block,
       exerciseId: part === 0 ? exerciseId : `${exerciseId}_b${part}`,
       continuous: false,
@@ -728,6 +728,7 @@ function tryArthurFunCorps({
   rng,
   maxContinuous,
   zone = null,
+  maxReps = null,
 }) {
   if (!pedagogyFlags().funMainSets) return null;
   if (brief?.hardConstraints?.painProtection || brief?.taperShortQuality) return null;
@@ -738,7 +739,7 @@ function tryArthurFunCorps({
   if (/^(vitesse|vo2|seuil|css|test)$/.test(intentId)) return null;
   // Garder une part de formats classiques (variété setFormat / tests)
   if (typeof rng === "function" && rng() < 0.35) return null;
-  return buildArthurFunMainBlock({
+  const built = buildArthurFunMainBlock({
     budget,
     pool,
     level,
@@ -747,6 +748,10 @@ function tryArthurFunCorps({
     rng,
     zone,
   });
+  if (!built?.sets?.length) return null;
+  const cap = Number(maxReps) || brief?.hardConstraints?.maxRepsPerSet || 0;
+  if (cap > 0 && built.sets.some((s) => !s.continuous && (s.reps || 0) > cap)) return null;
+  return built;
 }
 
 /**
@@ -965,6 +970,7 @@ function composeDecouverteSession(brief, rng) {
     fourNPortion = planned.fourNPortion;
     corpsTarget = planned.mainCorpsTarget;
   }
+  const corpsMaxReps = brief.hardConstraints?.maxRepsPerSet || 10;
   const corpsSets = fillAccessibleVolume(corpsTarget, pool, maxCont, {
     label: isFourNSession(brief, strokeFocus) ? "crawl facile" : swimLabel,
     cue: intent.applyCue,
@@ -973,6 +979,7 @@ function composeDecouverteSession(brief, rng) {
     exerciseId: `corps_${intent.id}_${strokeFocus}`,
     preferSeries: true,
     unit: safeUnit,
+    maxReps: corpsMaxReps,
   });
   const arthurCorps = !isFourNSession(brief, strokeFocus)
     ? tryArthurFunCorps({
@@ -983,9 +990,10 @@ function composeDecouverteSession(brief, rng) {
         intent,
         rng,
         maxContinuous: maxCont,
+        maxReps: corpsMaxReps,
       })
     : null;
-  if (arthurCorps?.sets?.length) {
+  if (arthurCorps?.sets?.length && arthurCorps.sets.every((s) => (s.reps || 1) <= corpsMaxReps)) {
     for (const cs of arthurCorps.sets) {
       sets.push(cs);
       exerciseIds.push(cs.exerciseId);
