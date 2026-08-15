@@ -336,8 +336,10 @@ export function buildArthurCooldownForBudget({
 function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk = false }) {
   let pool = ARTHUR_DRAFT_DRILLS.filter((d) => {
     if (d.id === "ui_catalog_progressif") return false;
+    // Excel « niveau Arthur » : l’éducatif doit lister le niveau utilisateur.
+    if (!Array.isArray(d.levels) || !d.levels.includes(level)) return false;
+    // Découverte : allowlist pédagogique (règle 8) en plus des niveaux Excel.
     if (level === "decouverte" && !DECOUVERTE_ALLOW.has(d.id)) return false;
-    if (level !== "decouverte" && !d.levels.includes(level)) return false;
     if (d.recoveryOnly && (level === "sportif" || level === "performance")) return false;
     if (!hasEquip(equipment, d.equipmentRequired)) return false;
     if (!papillonOk && /papillon/i.test(`${d.name} ${d.stroke} ${d.id}`)) return false;
@@ -375,7 +377,15 @@ function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk 
 
   if (level === "decouverte" && chosen.length) {
     const must = ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"]
-      .map((id) => ARTHUR_DRAFT_DRILLS.find((d) => d.id === id && hasEquip(equipment, d.equipmentRequired)))
+      .map((id) =>
+        ARTHUR_DRAFT_DRILLS.find(
+          (d) =>
+            d.id === id &&
+            d.levels?.includes("decouverte") &&
+            DECOUVERTE_ALLOW.has(d.id) &&
+            hasEquip(equipment, d.equipmentRequired),
+        ),
+      )
       .filter(Boolean);
     if (must.length) {
       chosen[0] = pick(rng, must);

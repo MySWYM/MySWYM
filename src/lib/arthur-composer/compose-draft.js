@@ -156,11 +156,16 @@ function formatDrillSet(rng, { pool, level, budget }) {
   return choice;
 }
 
+function drillAllowedForLevel(d, level) {
+  if (!d || d.id === "ui_catalog_progressif") return false;
+  if (!Array.isArray(d.levels) || !d.levels.includes(level)) return false;
+  if (level === "decouverte" && !DECOUVERTE_ALLOW.has(d.id)) return false;
+  return true;
+}
+
 function selectDrills(rng, { level, objective, equipment, count = 2, forRecovery = false }) {
   let pool = ARTHUR_DRAFT_DRILLS.filter((d) => {
-    if (d.id === "ui_catalog_progressif") return false;
-    if (level === "decouverte" && !DECOUVERTE_ALLOW.has(d.id)) return false;
-    if (level !== "decouverte" && !d.levels.includes(level)) return false;
+    if (!drillAllowedForLevel(d, level)) return false;
     if (d.recoveryOnly && !forRecovery && (level === "sportif" || level === "performance")) {
       return false;
     }
@@ -179,10 +184,7 @@ function selectDrills(rng, { level, objective, equipment, count = 2, forRecovery
       pool = shuffle(
         rng,
         ARTHUR_DRAFT_DRILLS.filter(
-          (d) =>
-            d.levels.includes(level) &&
-            hasEquip(equipment, d.equipmentRequired) &&
-            d.id !== "ui_catalog_progressif",
+          (d) => drillAllowedForLevel(d, level) && hasEquip(equipment, d.equipmentRequired),
         ),
       );
     }
@@ -199,10 +201,14 @@ function selectDrills(rng, { level, objective, equipment, count = 2, forRecovery
     used.add(d.id);
   }
 
-  if (level === "decouverte") {
+  if (level === "decouverte" && chosen.length) {
     const must = ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"];
     const replace = must
-      .map((id) => ARTHUR_DRAFT_DRILLS.find((d) => d.id === id && hasEquip(equipment, d.equipmentRequired)))
+      .map((id) =>
+        ARTHUR_DRAFT_DRILLS.find(
+          (d) => d.id === id && drillAllowedForLevel(d, "decouverte") && hasEquip(equipment, d.equipmentRequired),
+        ),
+      )
       .filter(Boolean);
     if (replace.length) {
       chosen[0] = replace[Math.floor(rng() * replace.length)];
