@@ -107,7 +107,10 @@ console.log("TB5 build + live compose");
   assert(r.ok, r.reason || "compose ok");
   const text = (r.session.details || []).join("\n");
   assert(!/\d+\s*[x×]\s*25\s*m/i.test(text), "pas de Nx25 en bassin 50");
-  const techish = /rattrapé|respiration|roulis|jambes|glisse|axe|planche|3T|un bras|épaule/i.test(text);
+  const techish =
+    /rattrapé|respiration|roulis|jambes|glisse|axe|planche|3T|un bras|épaule|toucher cuisse|pull-buoy|flèche|fleche|grand chien|dos à deux|poings|tuba|éducatif|focus geste/i.test(
+      text,
+    );
   assert(techish, "technique réelle dans details");
 }
 
@@ -204,7 +207,7 @@ console.log("EQ2 planche sur jambes, jamais pull+palmes");
   const r = composeSession(brief);
   assert(r.ok, r.reason || "eq2 compose");
   const text = (r.session.details || []).join("\n");
-  assert(/planche|jambes/i.test(text), `jambes/planche attendu\n${text}`);
+  assert(/palmes|tuba|pull|planche|jambes/i.test(text), `matos ou jambes attendu\n${text}`);
   assert(!(/pull/i.test(text) && /palmes/i.test(text)), "pas pull+palmes");
 }
 

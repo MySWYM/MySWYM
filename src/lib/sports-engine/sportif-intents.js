@@ -212,20 +212,52 @@ export function resolveSportifIntent(brief = {}) {
   if (brief.sessionIntent && SPORTIF_INTENTS[brief.sessionIntent]) {
     return SPORTIF_INTENTS[brief.sessionIntent];
   }
-  if (brief.phase === "test" || brief.family === "test" || brief.roleObjectif === "test") {
+  const roleObj = String(brief.roleObjectif || brief.objectif || "").toLowerCase();
+  if (brief.phase === "test" || brief.family === "test" || roleObj === "test" || brief.roleObjectif === "test") {
     return SPORTIF_INTENTS.test;
+  }
+  // Objectif produit AVANT le court-circuit strokeFocus 4n
+  if (roleObj.includes("reprendre") || brief.objectif === "reprendre") {
+    return SPORTIF_INTENTS.reprise;
+  }
+  if (roleObj.includes("triathlon") || brief.objectif === "triathlon") {
+    return SPORTIF_INTENTS.triathlon;
+  }
+  if (
+    roleObj.includes("eau_libre") ||
+    brief.objectif === "eau_libre" ||
+    brief.family === "eau_libre"
+  ) {
+    return SPORTIF_INTENTS.eau_libre;
+  }
+  if (
+    roleObj.includes("course") ||
+    roleObj.includes("compet") ||
+    roleObj.includes("compét") ||
+    roleObj.includes("maitre") ||
+    roleObj.includes("maître") ||
+    brief.objectif === "course_piscine"
+  ) {
+    if (brief.strokeFocus === "4n") {
+      return {
+        ...SPORTIF_INTENTS.quatre_nages,
+        id: "quatre_nages_course",
+        headline: "Aujourd'hui : 4 nages à allure course",
+        applyCue: "segments nets, allure compétition",
+        quality: true,
+        zone: "Z3",
+        volumeHint: [1800, 2800],
+      };
+    }
+    return SPORTIF_INTENTS.course_piscine;
   }
   if (brief.qualitySession) {
     if (brief.family === "vitesse") return SPORTIF_INTENTS.vitesse;
     if (brief.intent === "allure_specifique") return SPORTIF_INTENTS.allure_specifique;
     return SPORTIF_INTENTS.seuil;
   }
-  if (brief.objectif === "reprendre") return SPORTIF_INTENTS.reprise;
   if (brief.strokeFocus === "4n") return SPORTIF_INTENTS.quatre_nages;
   if (Number(brief.durationTarget) <= 35) return SPORTIF_INTENTS.seance_courte;
-  if (brief.objectif === "triathlon") return SPORTIF_INTENTS.triathlon;
-  if (brief.objectif === "eau_libre" || brief.family === "eau_libre") return SPORTIF_INTENTS.eau_libre;
-  if (brief.objectif === "course_piscine") return SPORTIF_INTENTS.course_piscine;
   if (brief.family === "recuperation") return SPORTIF_INTENTS.recuperation;
   if (brief.family === "technique") return SPORTIF_INTENTS.technique_endurance;
   if (brief.family === "seuil") return SPORTIF_INTENTS.seuil;

@@ -109,14 +109,24 @@ function briefFrom({
 }
 
 function hasFourBlocks(details) {
-  const hasDepart = details.some((l) => /échauffement|souple|dos|tranquillement|brasse/i.test(l));
+  const hasDepart = details.some((l) =>
+    /échauffement|souple|dos|tranquillement|brasse|mise en route/i.test(l),
+  );
   const hasTech = details.some((l) =>
-    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile/i.test(l),
+    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile|focus geste|éducatif/i.test(
+      l,
+    ),
   );
   const hasCorps = details.some(
-    (l) => /×/.test(l) && /facile|sensation|respiration|visée|tête|alterne|rythme/i.test(l),
+    (l) =>
+      /×/.test(l) &&
+      /facile|sensation|respiration|visée|tête|alterne|rythme|lent|moyen|vite|seuil|sprint|jambes|glisse|allure/i.test(
+        l,
+      ),
   );
-  const hasFin = details.some((l) => /récup|rac|au choix|souple|relâché/i.test(l));
+  const hasFin = details.some((l) =>
+    /récup|rac|au choix|relâché|dos à deux bras|retour au calme|sans forcer/i.test(l),
+  );
   return hasDepart && hasTech && hasCorps && hasFin;
 }
 
@@ -324,6 +334,39 @@ for (const g of GOLD_SCENARIOS) {
   const txt = r1.session.details.join("\n");
   assert(/\bcrawl\b/i.test(txt) && /\bdos\b/i.test(txt) && /brasse/i.test(txt) && /\bpapillon\b/i.test(txt), "4n quatre nages");
   assert(!/ondulation \(prépa papillon\)/i.test(txt), "pas de substitut ondulation");
+}
+
+// === Volume découverte : cibles > 1000 m ne sont plus écrêtées à ~700 m ===
+{
+  for (const [seed, volumeTarget, duration, objectif] of [
+    ["vol-hi-1200", 1200, 45, "nager_progresser"],
+    ["vol-hi-1400", 1400, 45, "eau_libre"],
+  ]) {
+    const brief = briefFrom({
+      level: "découverte",
+      objectif,
+      duration,
+      equipment: objectif === "eau_libre" ? ["palmes", "tuba"] : [],
+      volumeTarget,
+      family: objectif === "eau_libre" ? "eau_libre" : "endurance",
+      seed,
+      strokeFocus: "crawl",
+    });
+    if (objectif === "eau_libre") brief.objectif = "eau_libre";
+    const coherent = coherentVolumeForDecouverte(brief);
+    assert(
+      Math.abs(coherent - volumeTarget) <= 150,
+      `${seed} coherent ${coherent} trop loin de ${volumeTarget}`,
+    );
+    assert(coherent <= volumeTarget, `${seed} jamais gonflé`);
+    const r = composeSession(brief);
+    assert(r.ok, `${seed} compose: ${r.reason}`);
+    const vol = r.session.volumeFromSets;
+    assert(
+      Math.abs(vol - volumeTarget) <= 150,
+      `${seed} produit ${vol} trop loin de ${volumeTarget} (coherent=${coherent})`,
+    );
+  }
 }
 
 // Volume sets

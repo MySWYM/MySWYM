@@ -2,7 +2,18 @@
  * Catalogue d’éducatifs MySWYM / Arthur Natation.
  * Architecture prête pour vidéos & contenus propriétaires.
  * Aucun contenu OpenSwim / concurrent.
+ *
+ * Affichage : si une fiche Arthur fiable existe pour un éducatif *existant*,
+ * nom / utilité / consignes / niveau / matériel viennent d’Arthur.
+ * Les 11 ajouts `arthur_*` ne sont pas matchés ici (pas de sélection auto).
  */
+
+import {
+  CATALOG_ID_TO_ARTHUR_ID,
+  applyArthurFicheToEducatif,
+  getArthurEducatifFiche,
+  matchArthurEducatif,
+} from "./arthur-educatif-fiches.js";
 
 /** @typedef {{
  *  id: string,
@@ -14,6 +25,10 @@
  *  videoUrl?: string | null,
  *  thumbUrl?: string | null,
  *  match: RegExp[],
+ *  level?: string | null,
+ *  equipment?: string | null,
+ *  ficheSource?: 'catalog' | 'arthur',
+ *  arthurId?: string | null,
  * }} Educatif
  */
 
@@ -164,21 +179,75 @@ export const EDUCATIFS = [
   },
 ];
 
+function withArthurOverlay(edu) {
+  if (!edu) return null;
+  const arthurId = CATALOG_ID_TO_ARTHUR_ID[edu.id];
+  if (!arthurId) {
+    return { ...edu, ficheSource: edu.ficheSource || "catalog", arthurId: null };
+  }
+  const fiche = getArthurEducatifFiche(arthurId);
+  if (!fiche) {
+    return { ...edu, ficheSource: "catalog", arthurId: null };
+  }
+  return applyArthurFicheToEducatif(edu, fiche);
+}
+
 /**
  * Trouve le premier éducatif correspondant à un texte de séance.
+ * Catalogue d’abord (overlay Arthur si map fiable), sinon fiches Arthur existantes.
  * @param {string} text
  * @returns {Educatif | null}
  */
 export function matchEducatif(text) {
   const t = String(text || "");
   if (!t.trim()) return null;
+
+  const arthur = matchArthurEducatif(t);
+
   for (const edu of EDUCATIFS) {
-    if (edu.match.some((re) => re.test(t))) return edu;
+    if (!edu.match.some((re) => re.test(t))) continue;
+
+    // « jambes » catalogue est trop large : préférer crawl/dos Arthur si détecté
+    if (
+      edu.id === "jambes" &&
+      arthur &&
+      (arthur.arthurId === "educatif_jambes_crawl" || arthur.arthurId === "educatif_jambes_dos")
+    ) {
+      return arthur;
+    }
+
+    // Nouveaux éducatifs Arthur (`arthur_*`) : ne pas coller la fiche existante « rattrapé »
+    if (edu.id === "rattrape" && /rattrap[eé]\s*cuisse/i.test(t)) {
+      continue;
+    }
+
+    return withArthurOverlay(edu);
   }
-  return null;
+
+  return arthur;
 }
 
 export function getEducatifById(id) {
   if (!id) return null;
-  return EDUCATIFS.find((e) => e.id === id) || null;
+  const fromCatalog = EDUCATIFS.find((e) => e.id === id);
+  if (fromCatalog) return withArthurOverlay(fromCatalog);
+  const fiche = getArthurEducatifFiche(id);
+  if (fiche) {
+    return {
+      id: fiche.id,
+      name: fiche.name,
+      shortDescription: fiche.utility || "",
+      objective: fiche.utility || "",
+      cue: fiche.instructions || "",
+      mistakes: [],
+      videoUrl: null,
+      thumbUrl: null,
+      match: [],
+      level: fiche.level || null,
+      equipment: fiche.equipment || null,
+      ficheSource: "arthur",
+      arthurId: fiche.id,
+    };
+  }
+  return null;
 }

@@ -106,6 +106,7 @@ export {
   splitSessionBlocksRegulier,
   splitSessionBlocksSportif,
   splitSessionBlocksPerformance,
+  biasBlocksForObjectif,
 } from "./volume.js";
 export {
   composeSessionBlueprint,
@@ -176,6 +177,8 @@ export {
   scaleDetailLine,
   humanizeUserFacingText,
 } from "./session-composer.js";
+export { pedagogyFlags, PEDAGOGY_FLAGS } from "./pedagogy-flags.js";
+export { ARTHUR_WARMUP_RECIPES, buildArthurWarmupForBudget } from "./arthur-warmup-recipes.js";
 export {
   validateComposedSession,
   validateArthurCandidate,
@@ -207,6 +210,7 @@ export {
   sanitizeSessionDetailLine,
   prettifySessionDetailLine,
   sanitizeSessionDetails,
+  humanizeArthurDisplayTerms,
   isVagueVolumeThemeTitle,
   hasEducatifOrConcreteSwim,
   containsForbiddenIntensityCode,

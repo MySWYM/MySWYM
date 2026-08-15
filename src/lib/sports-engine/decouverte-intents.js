@@ -77,10 +77,11 @@ export const DECOUVERTE_INTENTS = Object.freeze({
     id: "reprise",
     headline: "Aujourd'hui : retrouver les sensations",
     learnCue: "mouvements simples, sans chercher la perf",
-    applyCue: "très facile, écoute ton corps",
+    applyCue: "très facile, écoute ton corps — pauses autorisées",
     techPrimary: "flèche",
     techAlt: "nage",
-    volumeHint: [600, 800],
+    volumeHint: [500, 750],
+    preferLongerReps: false,
   },
   eau_libre_orientation: {
     id: "eau_libre_orientation",
@@ -103,11 +104,12 @@ export const DECOUVERTE_INTENTS = Object.freeze({
   triathlon_facile: {
     id: "triathlon_facile",
     headline: "Aujourd'hui : nager régulièrement sans te fatiguer",
-    learnCue: "respiration confortable",
-    applyCue: "crawl régulier, facile",
+    learnCue: "respiration confortable, rythme de course",
+    applyCue: "crawl régulier, économie d'énergie — allure tenable",
     techPrimary: "nage",
     techAlt: "flèche",
-    volumeHint: [700, 900],
+    volumeHint: [800, 1100],
+    preferLongerReps: true,
   },
   seance_courte: {
     id: "seance_courte",
@@ -146,6 +148,7 @@ export function resolveDecouverteIntent(brief = {}) {
     return DECOUVERTE_INTENTS[brief.sessionIntent];
   }
 
+  const roleObj = String(brief.roleObjectif || brief.objectif || "").toLowerCase();
   const obj = brief.objectif;
   const duration = Number(brief.durationTarget) || 30;
   const stroke = brief.strokeFocus || "mixte";
@@ -153,16 +156,17 @@ export function resolveDecouverteIntent(brief = {}) {
     Array.isArray(brief.equipment) &&
     brief.equipment.some((e) => e === "palmes" || e === "tuba");
 
-  if (obj === "reprendre") return DECOUVERTE_INTENTS.reprise;
-  if (stroke === "4n") return DECOUVERTE_INTENTS.decouverte_4n;
-  if (duration <= 30 && obj !== "eau_libre") return DECOUVERTE_INTENTS.seance_courte;
-  if (obj === "triathlon") return DECOUVERTE_INTENTS.triathlon_facile;
-  if (obj === "eau_libre") {
+  // Objectif produit avant cycle générique / 4n
+  if (roleObj.includes("reprendre") || obj === "reprendre") return DECOUVERTE_INTENTS.reprise;
+  if (roleObj.includes("triathlon") || obj === "triathlon") return DECOUVERTE_INTENTS.triathlon_facile;
+  if (roleObj.includes("eau_libre") || obj === "eau_libre") {
     if (brief.family === "endurance" || brief.keySession) {
       return DECOUVERTE_INTENTS.eau_libre_endurance;
     }
     return DECOUVERTE_INTENTS.eau_libre_orientation;
   }
+  if (stroke === "4n") return DECOUVERTE_INTENTS.decouverte_4n;
+  if (duration <= 30 && obj !== "eau_libre") return DECOUVERTE_INTENTS.seance_courte;
   if (hasMatos && (brief.sessionIndex || 0) % 3 === 2) {
     return DECOUVERTE_INTENTS.materiel;
   }
@@ -177,6 +181,8 @@ export function resolveDecouverteIntent(brief = {}) {
 
 /**
  * Volume cohérent : on peut BAISSER vs cible moteur, jamais gonfler artificiellement.
+ * Les plafonds durée / capacité scalent avec la durée et la cible (comme Régulier/Sportif) —
+ * `volumeHint` guide la fourchette typique mais ne doit plus écrêter 1200–1400 m à ~700 m.
  */
 export function coherentVolumeForDecouverte(brief = {}) {
   const engine = Math.max(400, Number(brief.volumeTarget) || 750);
@@ -185,13 +191,34 @@ export function coherentVolumeForDecouverte(brief = {}) {
   const [hintLo, hintHi] = intent.volumeHint || [600, 850];
   const maxCont = maxContinuousForDecouverte(brief);
 
-  const byCapacity = maxCont <= 50 ? Math.min(hintHi, 850) : Math.min(hintHi + 100, 1000);
-  const byDuration = Math.round((duration * 22) / 50) * 50;
-  const durationCap = duration <= 30 ? Math.min(700, byDuration + 100) : duration <= 40 ? 850 : 1000;
+  let durationCap = 1500;
+  if (duration <= 25) durationCap = 650;
+  else if (duration <= 30) durationCap = 750;
+  else if (duration <= 40) durationCap = 1100;
+  else if (duration <= 50) durationCap = 1400;
+  else durationCap = 1500;
 
-  const coherent = Math.min(engine, byCapacity, durationCap, hintHi);
-  const floored = Math.max(Math.min(hintLo, engine), Math.min(coherent, engine));
-  return Math.min(engine, Math.max(500, Math.round(floored / 50) * 50));
+  // Intents pédagogiquement courts : rester dans la fourchette basse
+  if (intent.id === "seance_courte") {
+    durationCap = Math.min(durationCap, hintHi);
+  } else if (intent.id === "reprise") {
+    durationCap = Math.min(durationCap, Math.max(hintHi, 800));
+  }
+
+  // hintHi = guide, pas plafond dur face à une cible supportée par la durée
+  const hintCeiling = Math.max(hintHi, Math.min(engine, durationCap));
+
+  // Capacité continue faible : frein doux (~5 %), pas un mur fixe 850/1000
+  const byCapacity =
+    maxCont <= 50
+      ? Math.min(hintCeiling, Math.max(hintHi, Math.round(Math.min(engine, durationCap) * 0.95)))
+      : hintCeiling;
+
+  const coherent = Math.min(engine, byCapacity, durationCap);
+  const floor = Math.min(hintLo, durationCap, engine);
+  const floored = Math.max(floor, Math.min(coherent, engine));
+  const minVol = duration <= 30 ? 500 : 600;
+  return Math.min(engine, Math.max(minVol, Math.round(floored / 50) * 50));
 }
 
 /** Scénarios Gold — métadonnées de référence pour tests (pas de séances figées). */
@@ -200,10 +227,10 @@ export const GOLD_SCENARIOS = Object.freeze([
   { id: "GOLD2", intent: "glisse", strokeFocus: "mixte", duration: 45, equipment: [], volumeBand: [600, 800] },
   { id: "GOLD3", intent: "respiration", strokeFocus: "crawl", duration: 40, equipment: [], volumeBand: [600, 800] },
   { id: "GOLD4", intent: "premieres_longueurs", strokeFocus: "crawl", duration: 45, equipment: [], volumeBand: [700, 900] },
-  { id: "GOLD5", intent: "reprise", strokeFocus: "mixte", duration: 30, equipment: [], volumeBand: [600, 800] },
+  { id: "GOLD5", intent: "reprise", strokeFocus: "mixte", duration: 30, equipment: [], volumeBand: [500, 750] },
   { id: "GOLD6", intent: "eau_libre_orientation", strokeFocus: "crawl", duration: 45, equipment: [], volumeBand: [700, 900], objectif: "eau_libre" },
   { id: "GOLD7", intent: "eau_libre_endurance", strokeFocus: "crawl", duration: 45, equipment: [], volumeBand: [800, 1000], objectif: "eau_libre" },
-  { id: "GOLD8", intent: "triathlon_facile", strokeFocus: "crawl", duration: 45, equipment: [], volumeBand: [700, 900], objectif: "triathlon" },
+  { id: "GOLD8", intent: "triathlon_facile", strokeFocus: "crawl", duration: 45, equipment: [], volumeBand: [800, 1100], objectif: "triathlon" },
   { id: "GOLD9", intent: "seance_courte", strokeFocus: "crawl", duration: 30, equipment: [], volumeBand: [500, 700] },
   { id: "GOLD10", intent: "materiel", strokeFocus: "crawl", duration: 45, equipment: ["palmes", "tuba"], volumeBand: [700, 900] },
   { id: "GOLD11", intent: "decouverte_4n", strokeFocus: "4n", duration: 45, equipment: [], volumeBand: [600, 850], papillonMastered: false },

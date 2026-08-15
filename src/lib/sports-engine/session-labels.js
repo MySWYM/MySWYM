@@ -122,11 +122,53 @@ export function humanizeBeginnerZoneTags(text) {
     /\(\s*Z4\s*@\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*\)/gi,
     (_, lo, hi) => humanPaceRange("rapide", lo, hi),
   );
-  out = out.replace(/\(Z1 souple\)/gi, "souple");
-  out = out.replace(/\(Z1\)/g, "");
+  out = out.replace(/\(Z1 souple\)/gi, "(facile)");
+  out = out.replace(/\(Z1\)/g, "(facile)");
   out = out.replace(/\(Z2\)/g, "");
   out = out.replace(/\(Z3\)/g, "");
   out = out.replace(/\(Z4\)/g, "");
+  return out;
+}
+
+/**
+ * Règle Arthur D9 — texte affiché nageur : jamais `souple` ni `Z1`.
+ * Remplacements concrets selon le contexte ; ne change pas volumes ni sélection de blocs.
+ */
+export function humanizeArthurDisplayTerms(text) {
+  let out = String(text || "");
+  if (!out) return out;
+
+  out = out.replace(/\bZ1\s*\/\s*Z2\b/gi, "facile / confortable");
+  out = out.replace(/\bZ1\s*-\s*Z2\b/gi, "facile - confortable");
+  out = out.replace(/\(Z1\s*souple\)/gi, "(facile)");
+  out = out.replace(/\(Z1\)/gi, "(facile)");
+
+  out = out.replace(/—\s*Z1\b/gi, (match, offset, full) => {
+    const head = String(full).slice(Math.max(0, offset - 100), offset).toLowerCase();
+    if (/échauff|mise en route|d[ée]part/i.test(head)) return "— mise en route";
+    if (/récup|rac|au choix|lent|retour|très facile/i.test(head)) return "— retour au calme";
+    const lineStart = String(full).slice(0, offset);
+    if (/^[\s\-–—]*\d+\s*m\b/i.test(lineStart.trim()) && !/[×x]\s*\d/i.test(lineStart)) {
+      return "— retour au calme";
+    }
+    return "— facile";
+  });
+  out = out.replace(/\bZ1\b/g, "facile");
+
+  out = out.replace(/\bcrawl\s+souple\b/gi, "crawl facile");
+  out = out.replace(/\bdos\s+souple\b/gi, "dos facile");
+  out = out.replace(/\bbrasse\s+souple\b/gi, "brasse facile");
+  out = out.replace(/\bmixte\s+crawl\/dos\s+souple\b/gi, "mixte crawl/dos facile");
+  out = out.replace(/\bcrawl\s*\/\s*dos\s+souple\b/gi, "crawl / dos facile");
+  out = out.replace(/\bdos\s*\/\s*crawl\s+souple\b/gi, "dos / crawl facile");
+  out = out.replace(/\bbattements?\s+souples?\b/gi, "battements sans forcer");
+  out = out.replace(/\bjambes?\s+souples?\b/gi, "jambes sans forcer");
+  out = out.replace(/\bmouvements?\s+souples?\b/gi, "mouvements sans forcer");
+  out = out.replace(/\btrès\s+souple\b/gi, "très facile");
+  out = out.replace(/—\s*souple\b/gi, "— sans forcer");
+  out = out.replace(/\bsouple\s*—/gi, "facile —");
+  out = out.replace(/\bsouple\b/gi, "facile");
+
   return out;
 }
 
@@ -241,7 +283,7 @@ export function explicitTechSetLine({ reps, unit, focusKey, theme } = {}) {
   if (!educatif) {
     return `-${n} × ${u}m ${fallbackNamedSwimLabel()}`;
   }
-  return `-${n} × ${u}m : ${educatif} + crawl souple`;
+  return `-${n} × ${u}m : ${educatif} + crawl facile`;
 }
 
 function rewriteVagueLine(text) {
@@ -249,14 +291,14 @@ function rewriteVagueLine(text) {
   const nx = String(text).match(/(\d+)\s*[x×]\s*(\d+)/i);
   const educatif = explicitEducatifLabel(themeKeyFromTitle(text));
   if (nx) {
-    if (educatif) return `${dash}${nx[1]} × ${nx[2]}m : ${educatif} + crawl souple`;
+    if (educatif) return `${dash}${nx[1]} × ${nx[2]}m : ${educatif} + crawl facile`;
     return `${dash}${nx[1]} × ${nx[2]}m ${fallbackNamedSwimLabel()}`;
   }
   if (educatif) {
     const vol = parseVolumeFromTitle(text) || 200;
     const unit = 50;
     const reps = Math.max(2, Math.round(vol / unit));
-    return `${dash}${reps} × ${unit}m : ${educatif} + crawl souple`;
+    return `${dash}${reps} × ${unit}m : ${educatif} + crawl facile`;
   }
   return fallbackNamedSwimLine(text);
 }
@@ -279,6 +321,7 @@ export function sanitizeSessionDetailLine(text) {
   let out = stripIntensityParensAndCodes(body);
   out = humanizeEquipmentPhrase(out);
   out = formatDistanceTokens(out);
+  out = humanizeArthurDisplayTerms(out);
   out = tidySpaces(out);
   let line = `${indent}${bullet}${out}`;
 
@@ -338,6 +381,8 @@ export function assertDisplayLabelsClean(details = []) {
   for (const line of shown) {
     if (containsForbiddenIntensityCode(line)) bad.push(`intensity:${line}`);
     if (isVagueVolumeThemeTitle(line)) bad.push(`vague:${line}`);
+    if (/\bsouple\b/i.test(line)) bad.push(`souple:${line}`);
+    if (/\bZ1\b/.test(line)) bad.push(`Z1:${line}`);
   }
   const techish = shown.filter(
     (l) =>

@@ -166,3 +166,46 @@ export function splitSessionBlocksPerformance(totalM) {
   }
   return { depart, technique, corps, rac, total: depart + technique + corps + rac };
 }
+
+/**
+ * Biais proportions départ/technique/corps/fin selon l’objectif produit
+ * (même niveau + même volume → structures mesurablement différentes).
+ */
+export function biasBlocksForObjectif(blocks, objectif = "", level = "regulier") {
+  if (!blocks || !Number(blocks.total)) return blocks;
+  const t = Number(blocks.total);
+  const key = String(objectif || "").toLowerCase();
+  if (!key) return blocks;
+
+  let departR;
+  let techR;
+  let racR;
+  if (/course|compet|compét|maitre|maître|seuil|vitesse/.test(key)) {
+    departR = 0.12;
+    techR = level === "decouverte" ? 0.18 : 0.1;
+    racR = 0.1;
+  } else if (/triathlon|eau_libre|open_water/.test(key)) {
+    departR = 0.14;
+    techR = level === "decouverte" ? 0.2 : 0.12;
+    racR = 0.08;
+  } else if (/reprendre|reprise|recup/.test(key)) {
+    departR = 0.18;
+    techR = 0.22;
+    racR = 0.15;
+  } else if (/progress|nager_progresser|technique|aisance/.test(key)) {
+    departR = 0.15;
+    techR = level === "decouverte" ? 0.3 : 0.22;
+    racR = 0.1;
+  } else {
+    return blocks;
+  }
+
+  const depart = Math.max(50, Math.round((t * departR) / 50) * 50);
+  const technique = Math.max(50, Math.round((t * techR) / 50) * 50);
+  const rac = Math.max(50, Math.round((t * racR) / 50) * 50);
+  let corps = t - depart - technique - rac;
+  corps = Math.max(100, Math.round(corps / 50) * 50);
+  const drift = t - (depart + technique + corps + rac);
+  if (drift !== 0) corps = Math.max(100, corps + drift);
+  return { depart, technique, corps, rac, total: depart + technique + corps + rac };
+}

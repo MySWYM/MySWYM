@@ -92,10 +92,10 @@ export function strokeSwimLabel(strokeFocus, { papillonOk = false } = {}) {
 
 /** Label départ selon stroke */
 export function strokeDepartLabel(strokeFocus) {
-  if (strokeFocus === "dos") return "dos souple";
-  if (strokeFocus === "brasse") return "brasse / crawl souple";
-  if (strokeFocus === "mixte") return "crawl / dos souple";
-  return "crawl souple";
+  if (strokeFocus === "dos") return "dos facile";
+  if (strokeFocus === "brasse") return "brasse / crawl facile";
+  if (strokeFocus === "mixte") return "crawl / dos facile";
+  return "crawl facile";
 }
 
 /**

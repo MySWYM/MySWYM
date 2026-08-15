@@ -10,12 +10,16 @@ alwaysApply: true
 Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif**, ou une règle métier natation :
 
 1. Appliquer le fix dans le code si demandé.
-2. **Documenter** dans `docs/natation-corrections.md` (tableau historique + section « erreurs récurrentes » si nouvelle règle).
-3. Ne pas refaire une erreur déjà listée dans ce fichier.
+2. **Documenter** dans la mémoire scindée :
+   - `docs/natation-regles-actives.md` et/ou `docs/natation-validation-seances.md` si règle durable ;
+   - `docs/natation-historique.md` (ligne datée + statut `✅ active` / `↩ remplacée` / `🧪 à vérifier`) ;
+   - `docs/natation-source-de-verite.md` si hiérarchie / architecture.
+3. Index : `docs/natation-corrections.md` (pointeurs uniquement).
+4. Ne pas réappliquer une entrée `↩ remplacée` ; ne pas refaire une erreur listée dans l’historique.
 
 ## Produit (rappels)
 
-- Plans = moteur rule-based dans `App.jsx`, pas d'IA générative.
+- Plans = moteur `composeSession` + quality gate. Arthur **forme le LLM à entraîner** (règles, catalogues, corrections). Le LLM sert au dev, à améliorer et à varier les séances ; il ne publie pas une séance nageur sans ce filtre. Pas de LLM in-app non cadré.
 - Auth : `/connexion`, `/inscription` (legacy `?auth=` → redirect).
 - Footer global : `src/Footer.jsx` sur toutes les pages.
 - Freemium : **trial-first** — aperçu squelette sans abo ; essai Stripe 7j (carte) → Premium (plans complets, multi-plans, départs `D…`, adaptation feedback).

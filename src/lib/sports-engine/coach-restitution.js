@@ -69,7 +69,7 @@ export function expandPyramidDetailLine(line) {
       const lines = [`-${reps} × ${unit}m ${label} — repos ${rest}s`];
       const rem = vol - used;
       if (rem >= 50) {
-        lines.push(`-${rem}m ${label} souple — repos ${rest}s`);
+        lines.push(`-${rem}m ${label} facile — repos ${rest}s`);
       }
       return lines;
     }
@@ -97,12 +97,12 @@ function cleanCueNoise(line) {
 function rewriteFinLine(line) {
   let out = String(line || "");
   if (MARKETING_FIN_RE.test(out)) {
-    out = out.replace(/,?\s*on savoure la fin de séance/gi, " — souple");
-    out = out.replace(/,?\s*on souffle un bon coup à l'arrivée/gi, " — souple");
-    out = out.replace(/,?\s*recherche de sensation/gi, " — souple");
+    out = out.replace(/,?\s*on savoure la fin de séance/gi, " — retour au calme");
+    out = out.replace(/,?\s*on souffle un bon coup à l'arrivée/gi, " — sans forcer");
+    out = out.replace(/,?\s*recherche de sensation/gi, " — à ton rythme");
   }
-  out = out.replace(/\(RAC\)/gi, "— Z1");
-  out = out.replace(/\bRAC\b/gi, "souple");
+  out = out.replace(/\(RAC\)/gi, "— retour au calme");
+  out = out.replace(/\bRAC\b/gi, "retour au calme");
   return out;
 }
 
@@ -142,7 +142,7 @@ export function toCoachDetailLines(details = []) {
     // Drop empty remnants
     if (!next || next === "-" || /^-\s*$/.test(next)) continue;
     // Drop orphan labels without distance
-    if (!/\d/.test(next) && !/souple|récup|facile/i.test(next)) continue;
+    if (!/\d/.test(next) && !/facile|récup|sans forcer|retour au calme|à ton rythme/i.test(next)) continue;
 
     out.push(next);
   }

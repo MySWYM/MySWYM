@@ -84,6 +84,23 @@ export default function DrillInfoSheet({ educatif, onClose, colors: G }) {
           {educatif.shortDescription}
         </p>
 
+        {(educatif.level || educatif.equipment) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {educatif.level ? (
+              <div style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4 }}>
+                <span style={{ fontWeight: 800, color: G.grey, letterSpacing: "0.04em", textTransform: "uppercase" }}>Niveau · </span>
+                {educatif.level}
+              </div>
+            ) : null}
+            {educatif.equipment ? (
+              <div style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4 }}>
+                <span style={{ fontWeight: 800, color: G.grey, letterSpacing: "0.04em", textTransform: "uppercase" }}>Matériel · </span>
+                {educatif.equipment}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
             Objectif

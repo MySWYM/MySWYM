@@ -1244,6 +1244,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
 
   const niveauKey = mapNiveau(profile);
   const profilObj = mapObjectifProfil(profile);
+  const sport = buildSportProfile(profile);
   const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
   const tasteHints = tasteToGeneratorHints(profile.taste);
   const simplifyWording =
@@ -1266,6 +1267,89 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
   const focusLabel = variant.focus;
   const weekNum = c + 1;
 
+  let session = null;
+
+  // Composeur pédagogique (échauffements / RAC / éducatifs / corps fun Arthur)
+  if (isComposerEnabledForLevel(sport.level)) {
+    const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sport.level);
+    const baseVol =
+      preferred ||
+      (sport.level === "decouverte"
+        ? 800
+        : sport.level === "regulier"
+          ? 1600
+          : sport.level === "sportif"
+            ? 2200
+            : 2800);
+    const volumeTarget = Math.max(
+      500,
+      Math.round((baseVol * (easyPhase ? 0.85 : 1) * Math.min(1.15, Math.max(0.75, volMult))) / 50) * 50,
+    );
+    const family = String(role.objectif || "").startsWith("technique")
+      ? "technique"
+      : role.objectif === "vitesse"
+        ? "vitesse"
+        : role.zone === "Z3"
+          ? "seuil"
+          : role.objectif === "mixte"
+            ? "endurance"
+            : "endurance";
+    const sessionIntent =
+      family === "technique"
+        ? sport.level === "decouverte"
+          ? "aisance"
+          : "technique_endurance"
+        : family === "vitesse"
+          ? "vitesse"
+          : family === "seuil"
+            ? sport.level === "regulier"
+              ? "allure_progressive"
+              : "seuil"
+            : "endurance";
+    const brief = buildSessionBrief({
+      sport: { ...sport, sessionsPerWeek: 1 },
+      weekCtx: {
+        volumePlan: {
+          sessionTargets: [volumeTarget],
+          weekTarget: volumeTarget,
+          lever: "volume",
+          typeSemaine,
+        },
+        phaseKey,
+        effectivePhase: easyPhase ? "base" : "development",
+      },
+      role: {
+        ...role,
+        family,
+        intent: sessionIntent,
+        sessionIntent,
+        qualitySession: role.zone === "Z3" || role.zone === "Z4",
+      },
+      weekIndex: c,
+      sessionIndex: 0,
+      durationTarget: Number(profile.sessionDuration || profile.duration) || (easyPhase ? 35 : 45),
+      seed: `loop|${sport.level}|c${c}|${variant.id}|${volumeTarget}`,
+    });
+    const result = composeSession(brief);
+    if (result.ok && result.session) {
+      session = {
+        ...result.session,
+        title: focusLabel,
+        objectives: variant.objectives,
+        loopVariant: variant.id,
+        composedBy: "session-composer",
+      };
+    } else {
+      logComposerFallback(result.reason || "loop compose failed", {
+        level: sport.level,
+        weekIndex: c,
+        sessionIndex: 0,
+        seed: brief.seed,
+      });
+    }
+  }
+
+  if (!session) {
   const useConfirmeBank = usesConfirmeArchetypeBank(niveauKey, profilObj) && !easyPhase;
   const bankOpts = { isPremium: !!isPremium, pace100: profile.pace100 ?? null };
   const bankLevel =
@@ -1273,7 +1357,6 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       ? profile.level
       : "performance";
 
-  let session;
   if (useConfirmeBank) {
     const fromDb = pickArthurBankSession(profilObj, c);
     session = fromDb
@@ -1307,6 +1390,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       loopVariant: variant.id,
     };
   }
+  }
 
   // Ancre distance moyenne (questionnaire) — scale soft si renseignée
   const sportLevel =
@@ -1320,7 +1404,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
             ? "performance"
             : "regulier";
   const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sportLevel);
-  if (preferred && session) {
+  if (preferred && session && session.composedBy !== "session-composer") {
     const scale = sessionDistancePhaseScale({
       typeSemaine,
       effectivePhase: easyPhase ? "base" : "development",
