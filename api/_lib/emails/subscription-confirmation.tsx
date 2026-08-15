@@ -24,7 +24,7 @@ export function SubscriptionConfirmationEmail({
       <Text style={emailText.h1}>{greeting}</Text>
       <Text style={emailText.p}>
         Ton abonnement <strong style={emailText.strong}>{planLabel}</strong> est
-        actif. Tu as accès aux plans complets, au multi-plans et aux départs
+        actif. Tu as accès aux plans complets, à l’adaptation coach et aux départs
         chronométrés.
       </Text>
       <Text style={emailText.p}>

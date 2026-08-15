@@ -4,6 +4,8 @@
  * NE CALCULE PAS de phase / volume / strategy / séance.
  */
 
+import { computeAgeFromBirth } from "../swimmer-profile.js";
+
 /** Distance d'entraînement (jamais la course). Aligné week-orchestration. */
 export function trainingDistanceOfSession(session) {
   if (!session) return 0;
@@ -127,17 +129,43 @@ export function rebuildEngineHistory({
   };
 }
 
-/** Profil onboarding → row sport_profiles */
+/** Profil nageur persistant → row sport_profiles (1:1 user). */
 export function sportProfileToRow(userId, profile = {}) {
+  const birthMonthNum =
+    profile.birthMonth != null && profile.birthMonth !== ""
+      ? Number(profile.birthMonth)
+      : null;
+  const birthYearNum =
+    profile.birthYear != null && profile.birthYear !== ""
+      ? Number(profile.birthYear)
+      : null;
+  const birthMonth =
+    Number.isFinite(birthMonthNum) && birthMonthNum >= 1 && birthMonthNum <= 12
+      ? Math.round(birthMonthNum)
+      : null;
+  const birthYear =
+    Number.isFinite(birthYearNum) && birthYearNum >= 1900
+      ? Math.round(birthYearNum)
+      : null;
+
+  let age = computeAgeFromBirth(birthMonth, birthYear);
+  if (age == null && profile.age != null && profile.age !== "") {
+    const ageNum = Number(profile.age);
+    if (Number.isFinite(ageNum)) age = Math.round(ageNum);
+  }
+
   return {
     user_id: userId,
     level: profile.level || null,
+    // objective = objectif du cycle courant (miroité pour compat Arthur / lectures)
     objective: profile.goal || profile.objectifV1 || profile.category || null,
     frequency: profile.sessionsPerWeek ?? null,
     session_duration: profile.sessionDuration ?? profile.durationTarget ?? null,
     equipment: Array.isArray(profile.equipment) ? profile.equipment : [],
     pool_length: profile.pool ?? null,
-    preferred_stroke: profile.preferredStroke || profile.swimStyle || profile.strokeFocus || null,
+    preferred_stroke: profile.preferredStroke || profile.strokeFocus || null,
+    swim_style: profile.swimStyle || null,
+    age,
     race_target: profile.raceTarget || null,
     injury_status: profile.injuryStatus || null,
     injury_zone: profile.injuryZone || null,
@@ -152,9 +180,13 @@ export function sportProfileToRow(userId, profile = {}) {
     extra: {
       eventDate: profile.eventDate || null,
       category: profile.category || null,
+      trainingFocus: profile.trainingFocus || null,
+      birthMonth,
+      birthYear,
+      age,
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
-      age: profile.age ?? null,
+      swimStyle: profile.swimStyle || null,
       injuryZone: profile.injuryZone || null,
       injurySeverity: profile.injurySeverity || null,
       healthConsent: profile.healthConsent === true,
@@ -169,7 +201,6 @@ export function sportProfileToRow(userId, profile = {}) {
         profile.trainingWishMeta && typeof profile.trainingWishMeta === "object"
           ? profile.trainingWishMeta
           : null,
-      swimStyle: profile.swimStyle || null,
       preferredStroke: profile.preferredStroke || null,
     },
     updated_at: new Date().toISOString(),
@@ -180,6 +211,17 @@ export function sportProfileToRow(userId, profile = {}) {
 export function rowToSportProfileFields(row) {
   if (!row) return {};
   const extra = row.extra && typeof row.extra === "object" ? row.extra : {};
+  const birthMonth =
+    extra.birthMonth != null && extra.birthMonth !== ""
+      ? Number(extra.birthMonth)
+      : null;
+  const birthYear =
+    extra.birthYear != null && extra.birthYear !== ""
+      ? Number(extra.birthYear)
+      : null;
+  const ageFromBirth = computeAgeFromBirth(birthMonth, birthYear);
+  const ageLegacy = row.age ?? (extra.age != null && extra.age !== "" ? Number(extra.age) : null);
+  const age = ageFromBirth ?? (Number.isFinite(Number(ageLegacy)) ? Number(ageLegacy) : null);
   return {
     level: row.level,
     goal: row.objective,
@@ -187,6 +229,14 @@ export function rowToSportProfileFields(row) {
     pool: row.pool_length,
     equipment: row.equipment || [],
     preferredStroke: row.preferred_stroke,
+    swimStyle: row.swim_style || extra.swimStyle || null,
+    birthMonth: Number.isFinite(birthMonth) && birthMonth >= 1 && birthMonth <= 12
+      ? Math.round(birthMonth)
+      : null,
+    birthYear: Number.isFinite(birthYear) && birthYear >= 1900
+      ? Math.round(birthYear)
+      : null,
+    age: age != null && Number.isFinite(Number(age)) ? Number(age) : (extra.age ?? null),
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     injuryNote: null,
@@ -197,7 +247,11 @@ export function rowToSportProfileFields(row) {
     healthDeclaration: extra.healthDeclaration === true,
     pace100: row.pace100,
     readinessProfile: row.readiness_profile ?? null,
-    ...(row.extra || {}),
+    weightKg: extra.weightKg ?? null,
+    heightCm: extra.heightCm ?? null,
+    category: extra.category ?? null,
+    eventDate: extra.eventDate ?? null,
+    trainingFocus: extra.trainingFocus ?? null,
   };
 }
 

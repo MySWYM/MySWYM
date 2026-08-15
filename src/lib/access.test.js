@@ -78,6 +78,16 @@ const nowSec = Math.floor(Date.now() / 1000);
     subscription_status: ACCESS_STATUS.EXPIRED,
   }));
   assert.equal(state.hasPremiumAccess, false);
+  assert.equal(state.canUseMultiPlan, false, "multi-plans retired — always false");
+}
+
+{
+  const premium = getAccessState(userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.ACTIVE,
+    subscription_end: nowSec + 86400,
+  }));
+  assert.equal(premium.canUseMultiPlan, false, "even premium: single active plan only");
 }
 
 console.log("access.test.js OK");

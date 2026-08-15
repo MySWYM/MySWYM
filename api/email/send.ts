@@ -142,7 +142,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         category: "subscription_confirmation",
         html: layout(
           greeting,
-          p(`Ton abonnement <strong style="color:#191c1e">${escapeHtml(planLabel)}</strong> est actif. Tu as accès aux plans complets, au multi-plans et aux départs chronométrés.`) +
+          p(`Ton abonnement <strong style="color:#191c1e">${escapeHtml(planLabel)}</strong> est actif. Tu as accès aux plans complets, à l’adaptation coach et aux départs chronométrés.`) +
             p("Un reçu Stripe t’a été (ou va t’être) envoyé séparément. Tu peux gérer ton abonnement à tout moment depuis l’app."),
           { label: "Gérer mon abonnement", url: manageUrl },
         ),
@@ -236,7 +236,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         html: layout(
           "Ton plan continue quand tu veux",
           p(`${who}on plan MySWYM est toujours là — séances structurées, progression claire, sans te perdre.`) +
-            p("Premium débloque le programme complet, le multi-plans et les départs chronométrés. Essai 7 jours avec carte, puis 4,99 € / mois — tu peux annuler quand tu veux.") +
+            p("Premium débloque le programme complet, l’adaptation coach et les départs chronométrés. Essai 7 jours avec carte, puis 4,99 € / mois — tu peux annuler quand tu veux.") +
             p("Un clic et tu reprends exactement où tu en étais."),
           { label: "Reprendre mon plan", url: ctaUrl },
         ),

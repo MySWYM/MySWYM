@@ -39,7 +39,7 @@
     "i4Desc": "Effort zones and adaptation from your feedback.",
     "i5Title": "Up to 5 sessions / week",
     "i5Desc": "A realistic schedule for your life.",
-    "i6Title": "Strava & multi-plans",
+    "i6Title": "Strava & tracking",
     "i6Desc": "Tracking, badges, several goals in parallel.",
     "badgeTrial": "TRIAL",
     "badgePrem": "PREMIUM"
@@ -128,7 +128,7 @@
     "premF1": "Personal coach and adaptive program",
     "premF2": "T100 paces and progress projection",
     "premF3": "Adaptation after every feedback",
-    "premF4": "Strava, badges, multi-plans, and stats",
+    "premF4": "Strava, badges, adaptation, and stats",
     "premF5": "Up to 5 sessions / week",
     "moreLink": "Full details on",
     "moreLinkLabel": "the Pricing page",

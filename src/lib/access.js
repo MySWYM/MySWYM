@@ -74,7 +74,8 @@ export function getAccessState(user) {
     canSeeAdvancedAnalysis: hasPremiumAccess,
     canUseAdaptiveFeatures: hasPremiumAccess,
     canUsePremiumVideos: hasPremiumAccess,
-    canUseMultiPlan: hasPremiumAccess,
+    // Legacy flag — multi-plans retiré (1 plan actif max). Toujours false.
+    canUseMultiPlan: false,
     canUseAdvancedStats: hasPremiumAccess,
     accessEndsMs,
     trialDaysLeft,

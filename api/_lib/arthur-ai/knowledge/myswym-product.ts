@@ -31,7 +31,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_how_it_works",
       title: "Fonctionnement de l’app",
       content:
-        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). L’essai Premium ${MYSWYM_PRODUCT.trialDays} jours (carte requise) débloque plans complets, multi-plans et adaptation. Sans abo : aperçu / lecture limitée. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
+        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). L’essai Premium ${MYSWYM_PRODUCT.trialDays} jours (carte requise) débloque plans complets et adaptation. Sans abo : aperçu / lecture limitée. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
       tags: [
         "fonctionne",
         "application",
@@ -66,7 +66,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_features",
       title: "Fonctionnalités Premium",
       content:
-        "Premium : plans complets, multi-plans, départs D…, allures cibles, adaptation selon le feedback. Freemium trial-first : aperçu squelette sans abo, essai Stripe 7j pour tester vraiment.",
+        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Freemium trial-first : aperçu squelette sans abo, essai Stripe 7j pour tester vraiment.",
       tags: ["fonctionnalité", "premium", "plan", "allure", "adaptation"],
       intent_hints: ["myswym_question", "plan_request", "subscription"],
       priority: 85,
