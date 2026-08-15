@@ -19,7 +19,7 @@ Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif*
 
 ## Produit (rappels)
 
-- Plans = moteur rule-based dans `App.jsx`, pas d'IA générative.
+- Plans = moteur `composeSession` + quality gate. Arthur **forme le LLM à entraîner** (règles, catalogues, corrections). Le LLM sert au dev, à améliorer et à varier les séances ; il ne publie pas une séance nageur sans ce filtre. Pas de LLM in-app non cadré.
 - Auth : `/connexion`, `/inscription` (legacy `?auth=` → redirect).
 - Footer global : `src/Footer.jsx` sur toutes les pages.
 - Freemium : **trial-first** — aperçu squelette sans abo ; essai Stripe 7j (carte) → Premium (plans complets, multi-plans, départs `D…`, adaptation feedback).

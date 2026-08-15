@@ -18,6 +18,8 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-15 | LLM coach à former | Arthur utilise le LLM et lui apprend à entraîner (méthode MySWYM). Le LLM propose / varie ; `composeSession` + quality gate + validation Arthur restent le filtre avant le nageur. Pas de séance inventée live non cadrée. | ✅ active |
+| 2026-08-15 | IA vs LLM in-app | « Pas de LLM » = pas d’appel API dans l’app pour inventer une séance. L’IA (Cursor) sert au dev, à améliorer les séances et à les rendre moins monotones ; le moteur reste rule-based sur du contenu validé. | ↩ remplacée |
 | 2026-08-15 | Livraison composeur Arthur | `composeSession` = générateur des nouvelles séances (échauffements, RAC dos 100/200 « facile sans forcer », éducatifs, corps fun par objectif). Boucle Nager & Progresser via `buildProgressionLoopSession` → composeur ; fallback seulement si échec réel. Séances déjà enregistrées inchangées. Flags pédagogie ON (rollback env `=0`). Matos visible dans les détails (pas de phantom). | ✅ active |
 | 2026-08-15 | Mémoire scindée | Réorganisation : `natation-regles-actives.md` + `natation-source-de-verite.md` + `natation-validation-seances.md` + ce journal. Distances (total …00/…50), cohérence blocs, `block()` sans arrondi, hiérarchie sources, matos disponibilité≠obligation, mix 4 nages reformulé. Aucun code métier modifié. | ✅ active |
 | 2026-08-15 | Distances / volume | Règle active : blocs = multiples du bassin ; total = somme exacte ; total final …00 ou …50 uniquement (jamais …25/…75) ; bloc 25 m OK en bassin 25 seulement ; ajustement nage facile / RAC si cible invalide. | ✅ active |

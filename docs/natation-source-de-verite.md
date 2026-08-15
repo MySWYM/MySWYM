@@ -15,7 +15,7 @@
 | Composition, contrôles et rendu | Un seul point d’entrée : `composeSession` |
 | Ancien moteur | Fallback technique temporaire, jamais une source de décision concurrente |
 
-**Précision obligatoire** : il peut exister plusieurs modules internes, mais MySWYM possède **un seul générateur visible** et **un seul orchestrateur de décision**.
+**Précision obligatoire** : un seul générateur visible (`composeSession`) et un seul orchestrateur. Arthur **apprend au LLM à entraîner** (méthode MySWYM). Le LLM écrit et propose ; il ne décide pas une séance nageur sans moteur + quality gate + validation Arthur.
 
 ---
 

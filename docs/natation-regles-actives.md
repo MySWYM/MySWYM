@@ -5,7 +5,7 @@
 
 ---
 
-1. **Un seul générateur visible** — Point d’entrée unique : `composeSession`. Pas de LLM pour générer les séances. L’ancien moteur est un fallback technique temporaire, jamais une source de décision concurrente.
+1. **Un seul générateur visible** — Point d’entrée unique : `composeSession`. Arthur **apprend au LLM à entraîner** (règles, catalogues Gold, corrections, lots). Le LLM rédige, varie, propose ; une séance nageur ne part jamais sans moteur + quality gate + validation Arthur. Pas de LLM in-app non cadré (CGU). L’ancien moteur est un fallback technique temporaire, jamais une source de décision concurrente.
 
 2. **Distances / bassin** — Chaque bloc est un multiple de la longueur du bassin. Le volume total affiché est la somme exacte des blocs, sans arrondi silencieux. Une séance doit toujours se terminer sur un total finissant par `00` ou `50 m`, jamais par `25 m` ou `75 m`. En bassin de 25 m, un bloc peut faire 25 m ; cette tolérance ne vaut pas pour le total final de séance. Si le total cible ne respecte pas cette règle, le composeur ajuste un bloc de nage facile ou le retour au calme.
 

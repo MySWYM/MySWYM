@@ -40,6 +40,12 @@ alwaysApply: false
 - Sprint = récup complète. Affichage : jamais `souple` ni `Z1`.
 - **Fun partout** : contrastes ; pas 2 séries d’affilée à la même allure ; pas de monolithes.
 
+## LLM : Arthur lui apprend à entraîner
+
+- **Oui, on utilise le LLM.** Arthur l’enseigne : règles actives, catalogues, séances Gold, corrections, anti-monotonie.
+- **Le LLM propose** (rédaction, variantes, éducatifs, fun). **Le moteur décide** ce qui part au nageur (`composeSession` + quality gate + validation Arthur).
+- **Interdit** : séance inventée live, hors banques / hors gate / sans validation Arthur.
+
 ## Interdit
 
 - Générer des séances via API LLM dans l’app.
