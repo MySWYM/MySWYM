@@ -33,7 +33,7 @@
 
 14. **Périodisation volume** — Semaine N ≤ N−1 × 1,10. Feedback hebdo `volumeAdj` plafonné [0,70 ; 1,30]. Ne jamais régénérer silencieusement une semaine déjà commencée.
 
-15. **Migration plan** — `PLAN_VERSION` = métadonnées. Pas de regen complète des semaines sauf force regen explicite demandée par Arthur. Merge via `shouldPreserveWeek` / `mergePreservingProgress`.
+15. **Migration plan** — `PLAN_VERSION` = métadonnées. Merge séance par séance : séance `completed` / `skipped` conservée intacte ; séance non validée remplacée par le moteur ; semaine avec feedback/satisfaction conservée entière ; nombre de séances différent → fallback semaine entière. `FORCE_PLAN_REGEN` ne bypass jamais le merge (pas d’écrasement total).
 
 16. **Quality Gate** — Toute séance composée passe `validateComposedSession`. Arthur ne contourne pas le gate. Sous-volume > séance incohérente.
 

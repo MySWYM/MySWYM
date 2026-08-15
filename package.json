@@ -18,7 +18,7 @@
     "test:adapt": "node src/lib/sports-engine/feedback-loop.test.js",
     "test:orchestration": "node src/lib/sports-engine/orchestration.test.js",
     "test:quality-gate": "node src/lib/sports-engine/composer-quality-gate.test.js",
-    "test:persist": "node src/lib/sports-persistence/sports-persistence.test.js",
+    "test:persist": "node src/lib/sports-persistence/sports-persistence.test.js && node src/lib/plan-progress-merge.test.js",
     "test:analytics": "node src/lib/analytics.test.js",
     "test:equipment": "node src/lib/sports-engine/equipment-usage.test.js && node src/lib/sports-engine/equipment-onboarding.test.js",
     "test:session-pref": "node src/lib/sports-engine/session-pref-onboarding.test.js",
