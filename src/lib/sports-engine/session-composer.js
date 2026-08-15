@@ -78,7 +78,7 @@ function buildCorpsByFormat(format, corpsTarget, opts = {}, brief = null) {
 }
 import { selectReprisePattern } from "./reprise-patterns.js";
 import { humanizeUserFacingText } from "./user-facing.js";
-import { concreteApplyCue, concreteTechLabel } from "./session-labels.js";
+import { concreteApplyCue, concreteTechLabel, sanitizeSessionDetails, humanizeArthurDisplayTerms } from "./session-labels.js";
 import { effortCue, resolvePaceContext } from "./pace-display.js";
 import { finalizeCoachSession } from "./coach-restitution.js";
 import { pickTechniqueFromBank, buildTechniqueFromBank, resolveTechPrimaryForComposer } from "./technique-from-bank.js";
@@ -360,7 +360,8 @@ function attachFourNagesCoverage(result, brief) {
   if (!extra.sets.length) return result;
   const session = result.session;
   session.sets = [...(session.sets || []), ...extra.sets];
-  session.details = [...(session.details || []), ...extra.lines];
+  // D9 : les lignes 4N ajoutées après finalizeCoachSession doivent passer le filtre affichage
+  session.details = sanitizeSessionDetails([...(session.details || []), ...extra.lines]);
   const vol = session.sets.reduce((a, s) => a + (Number(s.reps) || 1) * (Number(s.distancePerRep) || 0), 0);
   session.volumeFromSets = vol;
   session.trainingDistance = vol;
@@ -1062,9 +1063,9 @@ function composeDecouverteSession(brief, rng) {
     } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
       const finText = humanizeUserFacingText(
-        FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
-          .replace(/\(Z1\)/i, "(facile)")
-          .replace(/\(RAC\)/i, "(récup)"),
+        humanizeArthurDisplayTerms(
+          FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep).replace(/\(RAC\)/i, "(récup)"),
+        ),
         { level: "decouverte" },
       );
       details.push(finText.startsWith("-") ? finText : `-${finText}`);
@@ -1768,9 +1769,9 @@ function composeRegulierSession(brief, rng) {
       details.push(formatSetLine(s, false));
     } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
-      const finText = FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
-        .replace(/\(Z1\)/i, "(facile)")
-        .replace(/\(RAC\)/i, "(récup)");
+      const finText = humanizeArthurDisplayTerms(
+        FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep).replace(/\(RAC\)/i, "(récup)"),
+      );
       details.push(finText.startsWith("-") ? finText : `-${finText}`);
     } else {
       details.push(formatSetLine(s, false));
@@ -2732,9 +2733,9 @@ function composeSportifSession(brief, rng) {
       details.push(formatSetLine(s, false));
     } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
-      const finText = FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
-        .replace(/\(Z1\)/i, "(facile)")
-        .replace(/\(RAC\)/i, "(récup)");
+      const finText = humanizeArthurDisplayTerms(
+        FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep).replace(/\(RAC\)/i, "(récup)"),
+      );
       details.push(finText.startsWith("-") ? finText : `-${finText}`);
     } else {
       details.push(formatSetLine(s, false));

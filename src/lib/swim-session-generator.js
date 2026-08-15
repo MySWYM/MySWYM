@@ -441,12 +441,14 @@ export function buildConfirmeArchetypeSession(archeIdx, pool, level, opts = {}) 
   const n = OW_BASE_SESSIONS.length;
   const idx = ((archeIdx % n) + n) % n;
   const arche = OW_BASE_SESSIONS[idx](P, level, opts);
-  const dist = calcDetailsDistance(arche.details);
+  // D9 : banques OW peuvent contenir souple/Z1 en interne — filtrer à la sortie affichage
+  const details = sanitizeSessionDetails(arche.details || []);
+  const dist = calcDetailsDistance(details);
   return {
     type: arche.type,
     title: arche.title,
     intensity: arche.intensity,
-    details: arche.details,
+    details,
     distance: `${dist}m`,
     duration: Math.max(40, Math.min(90, Math.round(dist / 35))),
     completed: false,

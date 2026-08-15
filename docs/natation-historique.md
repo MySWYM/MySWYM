@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-15 | Bug D9 souple/Z1 | `attachFourNagesCoverage` et `buildConfirmeArchetypeSession` passent par `sanitizeSessionDetails`. Remplacements morts `(Z1)` remplacés par `humanizeArthurDisplayTerms`. Banques OW inchangées (filtre à la sortie). | ✅ active |
 | 2026-08-15 | Bug objectifs quasi-identiques | `resolve*Intent` lit `roleObjectif` avant le court-circuit `strokeFocus===4n`. `composeSessionBlueprint` + `biasBlocksForObjectif` varient les proportions départ/technique/corps selon l’objectif (progression vs compétition, triathlon, reprise…). | ✅ active |
 | 2026-08-15 | Bug volume Découverte | `coherentVolumeForDecouverte` scale durée/cible comme Régulier/Sportif ; `volumeHint` n’écrête plus 1200–1400 m à ~700 m. Corps Découverte respecte `maxRepsPerSet` (découpe multi-blocs). Tolérance produit ~±150 m. | ✅ active |
 | 2026-08-15 | LLM coach à former | Arthur utilise le LLM et lui apprend à entraîner (méthode MySWYM). Le LLM propose / varie ; `composeSession` + quality gate + validation Arthur restent le filtre avant le nageur. Pas de séance inventée live non cadrée. | ✅ active |
