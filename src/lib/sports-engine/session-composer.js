@@ -566,20 +566,19 @@ function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exercis
       return [{ reps, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
     }
   }
-  // Découpe en plusieurs séries à l’unité (respecte maxContinuous)
+  // Découpe en plusieurs séries à l’unité (respecte maxContinuous + maxReps)
   const u = Math.min(unit, Number.isFinite(maxU) ? maxU : unit);
   const totalReps = Math.max(2, Math.round(target / u));
+  const nParts = Math.max(1, Math.ceil(totalReps / cap));
+  const base = Math.floor(totalReps / nParts);
+  let rem = totalReps - base * nParts;
   const sets = [];
-  let left = totalReps;
-  let part = 0;
-  while (left > 0) {
-    const chunk = Math.min(cap, left);
-    if (chunk < 2 && sets.length) {
-      sets[sets.length - 1].reps += chunk;
-      break;
-    }
+  for (let part = 0; part < nParts; part++) {
+    const reps = base + (rem > 0 ? 1 : 0);
+    if (rem > 0) rem -= 1;
+    if (reps < 2) continue;
     sets.push({
-      reps: Math.max(2, chunk),
+      reps: Math.min(cap, reps),
       distancePerRep: u,
       restSec: rest,
       label,
@@ -588,11 +587,10 @@ function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exercis
       exerciseId: part === 0 ? exerciseId : `${exerciseId}_b${part}`,
       continuous: false,
     });
-    left -= Math.max(2, chunk);
-    part += 1;
-    if (part > 6) break;
   }
-  return sets.length ? sets : [{ reps: 2, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
+  return sets.length
+    ? sets
+    : [{ reps: Math.min(cap, 2), distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
 }
 
 /** Continu court (1 × distance), jamais de repos affiché. */

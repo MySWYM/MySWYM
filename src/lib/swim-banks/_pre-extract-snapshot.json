@@ -1577,11 +1577,11 @@
   "seanceSamples": {
     "decouverte|nager_progresser|case1-decouverte-np-30": {
       "ok": true,
-      "distance": "900m",
+      "distance": "950m",
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
-        "-3 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
         "-3 × 50 m Grand chien avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
         "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
         "-3 × 50 m crawl — lent — focus glisse — repos 20s",
@@ -1592,11 +1592,11 @@
     },
     "decouverte|nager_progresser|case2-decouverte-ow-45": {
       "ok": true,
-      "distance": "900m",
+      "distance": "950m",
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
-        "-3 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
         "-3 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
         "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
         "-3 × 50 m crawl — lent — focus glisse — repos 20s",
@@ -1607,11 +1607,11 @@
     },
     "decouverte|nager_progresser|case3-regulier": {
       "ok": true,
-      "distance": "900m",
+      "distance": "950m",
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
-        "-3 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
         "-3 × 50 m flèche avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
         "-2 × 50 m Battements bras en opposition avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
         "-3 × 50 m crawl — lent — focus glisse — repos 20s",
