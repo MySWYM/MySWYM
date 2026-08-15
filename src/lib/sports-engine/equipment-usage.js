@@ -4,11 +4,60 @@
  * pull-buoy entre les jambes = pas de battements (bras seuls) ;
  * palmes = battements. Les deux en même temps n'ont aucun sens.
  * Inventaire : on peut posséder les deux ; on ne les combine pas le même jour.
+ * Beat / tempo (3T, 5T, 7T, 9T) : jamais avec tuba — le tuba coupe le compte de respiration.
  * Engagement : inventaire non vide hors récup/taper → ≥1 item visible quand possible.
  * @typedef {'none'|'optional'|'meaningful'} EquipmentUsage
  */
 
 const KNOWN = ["palmes", "tuba", "pull", "plaquettes", "pull-buoy", "planche", "elastique"];
+
+/** Compte de respiration / tempo (3, 5, 7, 9 beats). */
+export const BREATHING_BEAT_RE =
+  /\b(?:3|5|7|9)\s*T\b|(?:respiration|bilatéral(?:e)?)\s*(?:3|5|7|9)(?:\s*T)?|(?:3|5|7|9)\s*temps/i;
+
+export function hasBreathingBeat(text) {
+  return BREATHING_BEAT_RE.test(String(text || ""));
+}
+
+/** Même ligne (ou même prescription) : beat/tempo + tuba = interdit. */
+export function hasBeatTubaConflict(source) {
+  const lines = Array.isArray(source)
+    ? source.filter(Boolean).map(String)
+    : String(source || "")
+        .split("\n")
+        .filter(Boolean);
+  return lines.some((line) => hasBreathingBeat(line) && /\btuba\b/i.test(line));
+}
+
+/** Retire le tuba d'une ligne qui demande un beat/tempo. */
+export function stripTubaFromBeatLine(text) {
+  const raw = String(text ?? "");
+  if (!hasBreathingBeat(raw) || !/\btuba\b/i.test(raw)) return raw;
+  return raw
+    .replace(/\bpalmes\s*(?:\+|et)\s*tuba(?:\s+frontal)?\b/gi, "palmes")
+    .replace(/\btuba(?:\s+frontal)?\b/gi, "")
+    .replace(/\s*\+\s*(?=\s*[·—–,]|$)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,;·])/g, "$1")
+    .replace(/\s+—\s*—/g, " — ")
+    .replace(/\s+$/g, "")
+    .replace(/^\s+/g, "")
+    .replace(/\s+avec\s*$/i, "")
+    .trim();
+}
+
+/** Note matos sans tuba si le label demande déjà un beat/tempo. */
+export function filterMatosNoteForLabel(label, matosNote) {
+  if (!matosNote) return "";
+  if (!hasBreathingBeat(label)) return String(matosNote);
+  return String(matosNote)
+    .replace(/\bpalmes\s*(?:\+|et)\s*tuba(?:\s+frontal)?\b/gi, "palmes")
+    .replace(/\btuba(?:\s+frontal)?\b/gi, "")
+    .replace(/\s*\+\s*/g, " + ")
+    .replace(/^\s*\+\s*|\s*\+\s*$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 export function normalizeEquipmentList(equipment) {
   if (!Array.isArray(equipment)) return [];
@@ -46,7 +95,10 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
     case "technique_roulis":
       return ["palmes"];
     case "technique_respiration":
+      // 3T/5T/7T/9T = tempo : jamais de tuba. Pas d'outil par défaut sur ce focus.
+      return [];
     case "technique_croisement":
+      // Alignement / entrée de main (pas un compte de beats) → tuba OK.
       return ["tuba"];
     case "technique_catchup":
       return level === "regulier" || level === "decouverte" ? ["palmes"] : ["plaquettes", "palmes"];
@@ -63,7 +115,8 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
 export function forbiddenTechEquipment(techFocus) {
   if (techFocus === "technique_roulis") return ["plaquettes"];
   if (techFocus === "technique_jambes") return ["pull", "plaquettes"];
-  if (techFocus === "technique_respiration") return ["plaquettes", "palmes"];
+  // Respiration tempo (3T…) : pas de palmes ni tuba sur la ligne de beats.
+  if (techFocus === "technique_respiration") return ["plaquettes", "palmes", "tuba"];
   return [];
 }
 
@@ -112,25 +165,27 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   }
 
   const prefer = pedagogicalTechEquipment(techFocus, level);
+  const forbidden = new Set(forbiddenTechEquipment(techFocus));
   const wishPrefer = Array.isArray(brief.wishPreferEquipment)
-    ? brief.wishPreferEquipment.filter((e) => available.includes(e))
+    ? brief.wishPreferEquipment.filter((e) => available.includes(e) && !forbidden.has(e))
     : [];
+  const preferAllowed = prefer.filter((e) => available.includes(e) && !forbidden.has(e));
   const techEq =
-    firstOwned(wishPrefer.length ? wishPrefer : prefer, available) ||
-    firstOwned(prefer, available);
+    firstOwned(wishPrefer.length ? wishPrefer : preferAllowed, available) ||
+    firstOwned(preferAllowed, available);
 
   let useTech = false;
   if (techEq === "planche" && techFocus === "technique_jambes") useTech = roll < 0.9;
   else if (techEq === "palmes" && techFocus === "technique_roulis") useTech = roll < 0.85;
-  else if (techEq === "tuba" && /respiration|croisement|fleche|chien/.test(techFocus)) useTech = roll < 0.8;
+  else if (techEq === "tuba" && /croisement|fleche|chien/.test(techFocus)) useTech = roll < 0.8;
   else if (techEq) useTech = roll < (exempt ? 0.45 : 0.72);
-  else if (!exempt && available.length) useTech = roll < 0.55;
+  else if (!exempt && preferAllowed.length) useTech = roll < 0.55;
 
   const applied = [];
   const techNote = [];
   const corpsNote = [];
 
-  if (useTech && techEq) {
+  if (useTech && techEq && !forbidden.has(techEq)) {
     if (techFocus === "technique_fleche" || techFocus === "technique_grand_chien") {
       if (available.includes("palmes")) {
         applied.push("palmes");
@@ -146,18 +201,27 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     }
   }
 
-  // Engagement hors exempt : garantir ≥1 item pédagogique / wish / inventaire
+  // Engagement hors exempt : ≥1 item. Si interdit sur le focus tech (ex. tuba + 3T),
+  // basculer sur le corps (nage sans compte de beats).
   if (!exempt && applied.length === 0 && available.length) {
-    const fallbackPool = wishPrefer.length
+    const techPool = wishPrefer.length
       ? wishPrefer
-      : prefer.filter((e) => available.includes(e)).length
-        ? prefer.filter((e) => available.includes(e))
-        : available.filter((e) => e !== "pull" || !available.includes("palmes"));
-    const pick = pickOne(fallbackPool.length ? fallbackPool : available, typeof rng === "function" ? rng : Math.random);
+      : preferAllowed.length
+        ? preferAllowed
+        : available.filter((e) => !forbidden.has(e) && (e !== "pull" || !available.includes("palmes")));
+    const corpsPool = available.filter(
+      (e) => (e === "pull" || forbidden.has(e) || !techPool.includes(e)) && e !== "plaquettes",
+    );
+    const pick =
+      pickOne(techPool, typeof rng === "function" ? rng : Math.random) ||
+      pickOne(corpsPool.length ? corpsPool : available, typeof rng === "function" ? rng : Math.random);
     if (pick) {
       applied.push(pick);
-      if (pick === "pull") corpsNote.push("pull-buoy");
-      else techNote.push(displayName(pick));
+      if (pick === "pull" || forbidden.has(pick) || !techPool.includes(pick)) {
+        corpsNote.push(displayName(pick));
+      } else {
+        techNote.push(displayName(pick));
+      }
     }
   }
 

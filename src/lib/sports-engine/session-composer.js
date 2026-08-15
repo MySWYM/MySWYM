@@ -51,7 +51,7 @@ import { buildFourNagesImSets } from "./four-nages-im.js";
 import { selectSetFormat, buildCorpsByFormat as buildCorpsByFormatRaw } from "./set-formats.js";
 import { collapseSetsToDisplayLinesExact } from "./display-sets.js";
 import { restSecFor } from "./recovery.js";
-import { resolveEquipmentUsage, labelWithEquipment } from "./equipment-usage.js";
+import { resolveEquipmentUsage, labelWithEquipment, filterMatosNoteForLabel, forbiddenTechEquipment } from "./equipment-usage.js";
 import { resolveSessionSpecificity } from "./session-specificity.js";
 import { composeWithQualityGate } from "./composer-quality-gate.js";
 import { resolveHardConstraints } from "./composer-constraints.js";
@@ -204,7 +204,11 @@ function labelWithMatos(label, matosNote) {
   if (!matosNote) return label;
   const base = String(label || "nage").trim();
   if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
-  const note = String(matosNote).replace(/\bpalmes\s*\+\s*tuba(?:\s+frontal)?/gi, "palmes et tuba frontal");
+  const note = filterMatosNoteForLabel(
+    base,
+    String(matosNote).replace(/\bpalmes\s*\+\s*tuba(?:\s+frontal)?/gi, "palmes et tuba frontal"),
+  );
+  if (!note) return base;
   return `${base} avec ${note}`;
 }
 
@@ -905,15 +909,27 @@ function tryAppendTechniqueFromBank({
   exerciseIds,
 }) {
   if (!techMeta?.focus) return false;
-  const techAllowed = (eqUsage?.applied || []).filter((eq) => eq && eq !== "pull");
-  const pickEq = techAllowed.length ? techAllowed : [];
-  const avoid = [];
+  const forbidden = new Set(forbiddenTechEquipment(techMeta.focus));
+  // Matos technique seulement (corpsNote = engagement hors éducatif / beats).
+  const pickEq = String(eqUsage?.techNote || "")
+    .split(/\s*\+\s*/)
+    .map((s) => s.trim().toLowerCase())
+    .map((s) => {
+      if (/tuba/.test(s)) return "tuba";
+      if (/pull/.test(s)) return "pull";
+      if (/planche/.test(s)) return "planche";
+      if (/palmes/.test(s)) return "palmes";
+      if (/plaquette/.test(s)) return "plaquettes";
+      return null;
+    })
+    .filter((eq) => eq && eq !== "pull" && !forbidden.has(eq));
+  const avoid = [...forbidden];
   if (pickEq.includes("palmes")) avoid.push("pull");
   if (techMeta.focus === "technique_roulis") avoid.push("plaquettes");
   const techEx = pickTechniqueFromBank({
     focusKey: techMeta.focus,
     level: brief.level,
-    equipment: pickEq.length ? pickEq : [],
+    equipment: eqList,
     painProtection: !!(brief.painProtection || brief.hardConstraints?.painProtection),
     inventory,
     rng,
@@ -1240,11 +1256,16 @@ function composeRegulierSession(brief, rng) {
       ? "dos"
       : "crawl";
 
+  const corpsSwimLabel =
+    corpsLabel.includes("/") && setFormat !== "alternating"
+      ? labelWithEquipment("crawl", eqUsage)
+      : corpsLabel;
+
   // Reprise intensité légère : block facile/modéré sans « soutenu »
   let corpsBuilt;
   if (reprisePattern?.lightQuality) {
     corpsBuilt = buildCorpsByFormat("block", mainCorpsTarget, {
-      label: corpsLabel,
+      label: corpsSwimLabel,
       altLabel,
       cue: reprisePattern.corpsCue,
       restFor: (c) => restFor({ ...c, intensity: c.intensity === "soutenu" ? "modere" : c.intensity }),
@@ -1271,7 +1292,7 @@ function composeRegulierSession(brief, rng) {
       setFormat === "repeated" ? "progressive" : setFormat,
       mainCorpsTarget,
       {
-        label: corpsLabel.includes("/") ? "crawl" : corpsLabel,
+        label: corpsSwimLabel,
         altLabel,
         cue: intent.applyCue,
         restFor,
@@ -1290,7 +1311,7 @@ function composeRegulierSession(brief, rng) {
       targetVol: mainCorpsTarget,
       pool,
       restFor,
-      swimLabel: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
+      swimLabel: corpsSwimLabel,
       applyCue: (() => {
         const base = reprisePattern?.corpsCue || intent.applyCue;
         const obj = objectiveBodyCue(brief, intent);
@@ -1305,7 +1326,7 @@ function composeRegulierSession(brief, rng) {
     corpsBuilt =
       bankCorps ||
       buildCorpsByFormat(isFourNSession(brief, strokeFocus) ? "repeated" : setFormat, mainCorpsTarget, {
-        label: corpsLabel.includes("/") && setFormat !== "alternating" ? "crawl" : corpsLabel,
+        label: corpsSwimLabel,
         altLabel: isFourNSession(brief, strokeFocus) ? "crawl" : altLabel,
         cue: (() => {
           const base = reprisePattern?.corpsCue || intent.applyCue;
@@ -1850,6 +1871,9 @@ function composeSportifSession(brief, rng) {
     ? labelWithEquipment("crawl", eqUsage)
     : swimLabel;
 
+  const corpsSwimLabelSportif =
+    corpsLabel.includes("/") ? labelWithEquipment("crawl", eqUsage) : corpsLabel;
+
   let preferredUnit = null;
   let corpsFormat = setFormat;
   let corpsCue = cueFor(zone, 200, intent.applyCue);
@@ -1961,7 +1985,7 @@ function composeSportifSession(brief, rng) {
 
           corpsCue = cueFor("Z4", 50, "rapide — récupère bien");
       const z4Built = buildCorpsByFormat(corpsFormat, z4Cap, {
-        label: corpsLabel.includes("/") ? "crawl" : corpsLabel,
+        label: corpsSwimLabelSportif,
         altLabel: "crawl",
         cue: corpsCue,
         restFor: (c) => restFor({ ...c, zone: "Z4" }),
@@ -2048,7 +2072,7 @@ function composeSportifSession(brief, rng) {
         const aeroShell = Math.max(0, mainCorpsTarget - z3Budget);
         if (aeroShell >= 200) {
           const aeroBuilt = buildCorpsByFormat("repeated", aeroShell, {
-            label: corpsLabel,
+            label: corpsSwimLabelSportif,
             cue: cueFor("Z2", 100, "aérobie — coquille"),
             restFor: (c) => restFor({ ...c, zone: "Z2" }),
             exerciseId: `corps_${intent.id}_aero`,
@@ -2071,7 +2095,7 @@ function composeSportifSession(brief, rng) {
           : (intent.applyCue || "allure seuil");
         corpsCue = cueFor("Z3", preferredUnit, z3Fallback);
         const z3Built = buildCorpsByFormat(corpsFormat, z3Budget, {
-          label: corpsLabel.includes("/") ? "crawl" : corpsLabel,
+          label: corpsSwimLabelSportif,
           cue: corpsCue,
           restFor: (c) => restFor({ ...c, zone: "Z3" }),
           exerciseId: `corps_${intent.id}_z3`,
@@ -2100,7 +2124,7 @@ function composeSportifSession(brief, rng) {
           const aeroCueA = objCueA ? `${intent.applyCue || "aérobie"} — ${objCueA}` : intent.applyCue;
           let aeroFmtA = ["pyramid", "block"].includes(setFormat) ? "repeated" : setFormat;
           const aeroBuilt = buildCorpsByFormat(aeroFmtA, aeroTarget, {
-            label: corpsLabel,
+            label: corpsSwimLabelSportif,
             cue: cueFor("Z2", 100, aeroCueA),
             restFor: (c) => restFor({ ...c, zone: "Z2" }),
             exerciseId: `corps_${intent.id}_aero`,
@@ -2153,7 +2177,7 @@ function composeSportifSession(brief, rng) {
           targetVol: mainCorpsTarget,
           pool,
           restFor: (c) => restFor({ ...c, zone: zoneMain }),
-          swimLabel: corpsLabel,
+          swimLabel: corpsSwimLabelSportif,
           applyCue: cueFor(zoneMain, 100, aeroCueBase),
           zone: zoneMain,
           maxContinuous: maxContCrawl,
@@ -2167,7 +2191,7 @@ function composeSportifSession(brief, rng) {
             aeroFmt,
             mainCorpsTarget,
             {
-              label: corpsLabel,
+              label: corpsSwimLabelSportif,
               cue: cueFor(zoneMain, 100, aeroCueBase),
               restFor: (c) => restFor({ ...c, zone: zoneMain }),
               exerciseId: `corps_${intent.id}`,

@@ -6,6 +6,11 @@ import {
   resolveEquipmentUsage,
   isEquipmentEngagementExempt,
   normalizeEquipmentList,
+  pedagogicalTechEquipment,
+  hasBreathingBeat,
+  hasBeatTubaConflict,
+  stripTubaFromBeatLine,
+  filterMatosNoteForLabel,
 } from "./equipment-usage.js";
 
 function assert(cond, msg) {
@@ -72,5 +77,23 @@ ok(!isEquipmentEngagementExempt({ sessionIntent: "endurance", phase: "base" }), 
     ok(!(u.applied.includes("pull") && u.applied.includes("palmes")), `no pull+palmes ${i}`);
   }
 }
+
+ok(hasBreathingBeat("8×50 respiration 3T"), "3T");
+ok(hasBreathingBeat("6×50 bilatéral 5T"), "5T");
+ok(hasBreathingBeat("4×50 7 temps"), "7 temps");
+ok(hasBreathingBeat("(3T/5T/7T/9T par 50m)"), "suite beats");
+ok(!hasBreathingBeat("200m crawl avec tuba frontal"), "pas beat");
+ok(hasBeatTubaConflict(["8×50 respiration 3T avec tuba frontal"]), "conflict line");
+ok(!hasBeatTubaConflict(["8×50 respiration 3T", "200m crawl avec tuba frontal"]), "ok séparés");
+ok(
+  !/\btuba\b/i.test(stripTubaFromBeatLine("8×50 respiration 3T avec tuba frontal")),
+  "strip tuba",
+);
+ok(filterMatosNoteForLabel("respiration 3T", "tuba frontal") === "", "filter note");
+ok(
+  pedagogicalTechEquipment("technique_respiration").length === 0,
+  "respiration: pas de tuba pédagogique",
+);
+ok(pedagogicalTechEquipment("technique_croisement").includes("tuba"), "croisement: tuba OK");
 
 console.log(`equipment-usage.test.js: ${n} assertions OK`);

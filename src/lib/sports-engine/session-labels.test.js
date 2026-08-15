@@ -198,4 +198,11 @@ console.log("L10 sanitizeSessionDetails idempotent + @2 RPE");
   for (const line of once) noForbiddenIntensity(line, "L10");
 }
 
+console.log("L11 beat/tempo + tuba → strip tuba");
+{
+  const out = sanitizeSessionDetailLine("8×50 respiration 3T avec tuba frontal");
+  assert(/3T/i.test(out), "beat conservé");
+  assert(!/\btuba\b/i.test(out), `pas de tuba: ${out}`);
+}
+
 console.log("✅ session-labels tests passed");

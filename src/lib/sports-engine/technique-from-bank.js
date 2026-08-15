@@ -7,6 +7,7 @@ import {
   rejectsMissingEquipment,
 } from "./exercise-library.js";
 import { concreteApplyCue, concreteTechLabel, isVagueVolumeThemeTitle } from "./session-labels.js";
+import { filterMatosNoteForLabel, hasBreathingBeat } from "./equipment-usage.js";
 
 /** Danger réel (douleur) — pas ADVANCED_RE (qui tague aussi rattrapé / petit chien). */
 const PAIN_SKIP_RE = /apnée|apnee|\b7T\b|\b9T\b|culbute|hypoxie|VO2|à bloc|depart plongé|sprint|Z4/i;
@@ -233,13 +234,15 @@ export function buildTechniqueFromBank({
       label = concreteTechLabel("", techEx.focusKey);
     }
     const alreadyHasMatos = /palmes|tuba|pull|planche|plaquette|avec\s/i.test(label);
+    const safeMatos = filterMatosNoteForLabel(label, matosNote);
     const skipGlue =
-      !matosNote ||
+      !safeMatos ||
       alreadyHasMatos ||
       APPLY_LINE_RE.test(label) ||
-      (/planche/i.test(matosNote) && !/jambes|battement/i.test(label)) ||
-      (/palmes/i.test(matosNote) && /3T|5T|7T|respiration/i.test(label));
-    if (!skipGlue) label = `${label} avec ${matosNote}`;
+      (/planche/i.test(safeMatos) && !/jambes|battement/i.test(label)) ||
+      (/palmes/i.test(safeMatos) && (/3T|5T|7T|9T|respiration/i.test(label) || hasBreathingBeat(label))) ||
+      (/tuba/i.test(safeMatos) && hasBreathingBeat(label));
+    if (!skipGlue) label = `${label} avec ${safeMatos}`;
     const set = {
       reps,
       distancePerRep: dist,

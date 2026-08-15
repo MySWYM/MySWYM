@@ -4,6 +4,7 @@
  */
 import { splitSessionBlocks, splitSessionBlocksDecouverte, splitSessionBlocksRegulier, splitSessionBlocksSportif, splitSessionBlocksPerformance } from "./volume.js";
 import { EQUIPMENT_IDS } from "./types.js";
+import { hasBeatTubaConflict } from "./equipment-usage.js";
 
 const EQUIP_KEYWORDS = {
   planche: /planche/i,
@@ -37,6 +38,7 @@ export function hasPullPalmesConflict(source) {
 export function sessionFitsEquipment(details, equipment) {
   const required = detectEquipmentInDetails(details);
   if (hasPullPalmesConflict(details)) return false;
+  if (hasBeatTubaConflict(details)) return false;
 
   if (equipment == null) return true; // inconnu
   if (equipment.length === 0) {

@@ -208,7 +208,7 @@ console.log("EQ2 planche sur jambes, jamais pull+palmes");
   assert(!(/pull/i.test(text) && /palmes/i.test(text)), "pas pull+palmes");
 }
 
-console.log("EQ3 tuba sur respiration (pas palmes sur 3T)");
+console.log("EQ3 respiration tempo : pas de tuba sur 3T/5T");
 {
   const sport = buildSportProfile({
     level: "régulier",
@@ -243,7 +243,12 @@ console.log("EQ3 tuba sur respiration (pas palmes sur 3T)");
   const r = composeSession(brief);
   assert(r.ok, r.reason || "eq3 compose");
   const text = (r.session.details || []).join("\n");
-  assert(/3T|5T|respiration|bilatéral|tuba/i.test(text), `respiration\n${text}`);
+  assert(/3T|5T|respiration|bilatéral/i.test(text), `respiration\n${text}`);
+  const beatLines = text.split("\n").filter((l) => /\b(?:3|5|7|9)\s*T\b|respiration\s*(?:3|5|7|9)/i.test(l));
+  assert(
+    !beatLines.some((l) => /\btuba\b/i.test(l)),
+    `pas tuba sur beats: ${beatLines.join(" | ")}`,
+  );
   const techLines = text.split("\n").filter((l) => /3T|5T|respiration|bilatéral|tuba/i.test(l));
   assert(!techLines.some((l) => /palmes/i.test(l)), `pas palmes sur respi: ${techLines.join(" | ")}`);
 }

@@ -4,6 +4,8 @@
  * uniquement le texte généré / restitué.
  */
 
+import { stripTubaFromBeatLine } from "./equipment-usage.js";
+
 const GENERIC_THEME_RE =
   /^(respiration|technique|roulis|appuis|éducatifs?|educatifs?|nage appliqu[ée]e|rotation(?: du corps)?|roulis\s*\/\s*rotation du corps)$/i;
 
@@ -278,6 +280,7 @@ export function sanitizeSessionDetailLine(text) {
   const { indent, bullet, body } = splitIndentAndBullet(text);
   let out = stripIntensityParensAndCodes(body);
   out = humanizeEquipmentPhrase(out);
+  out = stripTubaFromBeatLine(out);
   out = formatDistanceTokens(out);
   out = tidySpaces(out);
   let line = `${indent}${bullet}${out}`;

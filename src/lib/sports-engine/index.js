@@ -114,6 +114,19 @@ export {
   detectEquipmentInDetails,
   hasPullPalmesConflict,
 } from "./session-compose.js";
+export {
+  resolveEquipmentUsage,
+  isEquipmentEngagementExempt,
+  normalizeEquipmentList,
+  pedagogicalTechEquipment,
+  forbiddenTechEquipment,
+  labelWithEquipment,
+  hasBreathingBeat,
+  hasBeatTubaConflict,
+  stripTubaFromBeatLine,
+  filterMatosNoteForLabel,
+  BREATHING_BEAT_RE,
+} from "./equipment-usage.js";
 export { validateSession, maxZoneForProfile } from "./validate.js";
 export {
   decideAdaptAction,
