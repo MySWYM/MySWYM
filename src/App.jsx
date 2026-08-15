@@ -13,7 +13,7 @@ import {
   sessionAnalyticsProps,
 } from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey } from "./lib/swim-plan-bridge.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { StepSessionDistance, StepTrainingWish } from "./OnboardingDistanceWish.jsx";
 import { parseTrainingWish } from "./lib/sports-engine/training-wish.js";
 import {
@@ -578,9 +578,9 @@ const GOALS = [
 // Catégories onboarding (step 1)
 const CATEGORIES = [
   { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Séance du jour · Progresser à ton rythme" },
-  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "XS · S · M · L · XXL" },
-  { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "500 m · 1 km · 2,5 km · 5 km · 10 km · 25 km" },
-  { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "BNSSA · BPJEPS · CAEPMNS" },
+  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "Séance du jour · XS · S · M · L · XXL" },
+  { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "Séance du jour · 500 m à 25 km" },
+  { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "Séance du jour · BNSSA · BPJEPS · CAEPMNS" },
 ];
 
 // Sous-objectifs par catégorie
@@ -619,9 +619,13 @@ const getPlanPrimaryLabel = (entry) => {
 const getPlanSecondaryLabel = (entry) => {
   const profile = entry?.profile || {};
   const meta = [];
-  if (isProgressionGoal(profile.goal) || profile.category === "progression") {
+  if (isProgressionGoal(profile.goal) || usesSessionLoop(profile)) {
     if (profile.level) meta.push(capitalizeLabel(profile.level));
-    meta.push(profile.sessionsPerWeek ? pluralizeSessions(profile.sessionsPerWeek) : "Mode libre");
+    meta.push(profile.sessionsPerWeek ? pluralizeSessions(profile.sessionsPerWeek) : "Séance du jour");
+    if (profile.eventDate) {
+      const days = Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000));
+      meta.push(`J−${days}`);
+    }
     return meta.join(" · ");
   }
   if (profile.sessionsPerWeek) meta.push(`${profile.sessionsPerWeek}×/sem`);
@@ -6390,8 +6394,8 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 46; // v46 = distance + wish + matos pédagogique + 4 nages
-// Remettre false au prochain bump (demande Arthur 2026-08-14 : overwrite plans)
+const PLAN_VERSION = 47; // v47 = boucle séance unique aussi pour triathlon / eau libre / diplôme
+// Remettre false au prochain bump (demande Arthur : overwrite plans → boucle)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
@@ -8126,6 +8130,12 @@ const ProgressionLoopView = ({
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
   const [poolOpen, setPoolOpen] = useState(false);
+  const loopTitle = GOALS.find((g) => g.id === profile?.goal)?.label
+    || CATEGORIES.find((c) => c.id === profile?.category)?.label
+    || "Nager & Progresser";
+  const daysToEvent = profile?.eventDate
+    ? Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000))
+    : null;
 
   if (!session) {
     return (
@@ -8166,7 +8176,7 @@ const ProgressionLoopView = ({
         }}>
           <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>
-              Nager &amp; Progresser
+              {loopTitle}
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <span style={{
@@ -8175,6 +8185,14 @@ const ProgressionLoopView = ({
               }}>
                 Séance du jour
               </span>
+              {daysToEvent != null && (
+                <span style={{
+                  fontSize: 12, fontWeight: 600, color: G.blue,
+                  background: G.blueLight, padding: "4px 9px", borderRadius: 8,
+                }}>
+                  J−{daysToEvent}
+                </span>
+              )}
               {!isPremium && (
                 <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <Lock size={11} /> Essai requis
@@ -11341,9 +11359,11 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   _isPremium = !!isPremium;
   const wellness = isWellnessGoal(goal);
   const progression = isProgressionGoal(goal);
+  const sessionLoop = usesSessionLoop(profile) || progression;
 
-  // ── Mode boucle « Nager & Progresser » : une seule séance, pas de plan multi-semaines
-  if (progression) {
+  // ── Mode boucle : une seule séance à la fois (Nager & Progresser, triathlon, eau libre, diplôme)
+  // Pas d'accès à la semaine complète → évite l'impression de séances qui se répètent.
+  if (sessionLoop) {
     const cursor = 0;
     const wkKey = isoWeekKey(new Date(referenceTime));
     const { week } = buildProgressionLoopSession(
@@ -11356,7 +11376,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
       previewWeeks: [],
       totalRealWeeks: 1,
       isPremium,
-      isProgression: true,
+      isProgression: progression,
       isSessionLoop: true,
       sessionCursor: cursor,
       freeSessionsUsed: isPremium ? 0 : 1,
@@ -11801,7 +11821,7 @@ export default function App() {
     if (!activePlanEntry) return;
     const { plan: ap, profile: aprof } = activePlanEntry;
     if (!aprof?.goal || !ap?.weeks) return;
-    if (ap.isSessionLoop || ap.isProgression || isProgressionGoal(aprof.goal)) return;
+    if (ap.isSessionLoop || ap.isProgression || usesSessionLoop(aprof)) return;
     const originalStartDate = ap.startDate ?? activePlanEntry.startDate ?? Date.now();
     const expectedWeeks = computePlanTotalWeeks(aprof, originalStartDate);
     const storedWeeks = ap.totalRealWeeks ?? 0;
@@ -12359,7 +12379,7 @@ export default function App() {
 
   // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
   // FORCE_PLAN_REGEN = true : overwrite TOUS les plans déjà créés (1 fois / session), même version à jour.
-  // Aussi : progression legacy (12 sem.) → boucle séance si !isSessionLoop.
+  // Aussi : objectifs boucle (progression / triathlon / eau libre / diplôme) multi-semaines → séance unique.
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
     const forceAll = FORCE_PLAN_REGEN && !forceRegenDoneRef.current;
@@ -12367,8 +12387,8 @@ export default function App() {
       if (!e.plan) return false;
       if (forceAll) return true;
       if ((e.plan.version ?? 0) < PLAN_VERSION) return true;
-      // Ancien plan « Nager & Progresser » multi-semaines → boucle
-      if (isProgressionGoal(e.profile?.goal) && !e.plan.isSessionLoop) return true;
+      // Ancien plan multi-semaines → boucle séance unique
+      if (usesSessionLoop(e.profile) && !e.plan.isSessionLoop) return true;
       return false;
     });
     if (needsUpdate.length === 0) return;
@@ -12645,7 +12665,7 @@ export default function App() {
         ...sourceProfile,
         taste: taste || tasteProfile,
       });
-      if (isProgressionGoal(genProfile.goal) || genProfile.category === "progression") {
+      if (usesSessionLoop(genProfile)) {
         genProfile = { ...genProfile, sessionsPerWeek: genProfile.sessionsPerWeek || 1 };
       }
       // Découverte : jamais de T100 (souvent incapables d'enchaîner 100 m)

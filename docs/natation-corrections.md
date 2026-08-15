@@ -11,8 +11,8 @@
 ### Moteur & format
 
 - Les séances sont générées dans `generatePlan` :
-  - **Moteur coaching** (`src/lib/swim-session-generator.js` + `swim-plan-bridge.js`) : triathlon, eau libre, progression, bien-être, compétition maître. Structure **départ (godilles Z1) → technique rotative → corps physio (Z1–Z4) → fin RAC**, règle **+10 %** hebdo.
-  - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : BNSSA, BPJEPS, tests pompiers uniquement.
+  - **Moteur coaching** (`src/lib/swim-session-generator.js` + `swim-plan-bridge.js`) : triathlon, eau libre, progression, bien-être, compétition maître. Structure **départ (godilles Z1) → technique rotative → corps physio (Z1–Z4) → fin RAC**, règle **+10 %** hebdo. **Triathlon / eau libre / diplôme / Nager & Progresser** = boucle 1 séance (`usesSessionLoop`), pas de semaine complète exposée.
+  - **Ancien moteur** (`SESSION_TEMPLATES`, `PHASE_PATTERNS`) : bien-être multi-semaines + templates diplôme consommés aussi via la boucle diplôme.
 - **Pas de LLM** pour générer les séances : logique déterministe uniquement.
 - Distances **multiples de la longueur de bassin** (`snap`, `pool` 25 ou 50 m). Totaux annoncés en **XX00 / XX25 / XX50 / XX75** (pas de 320 m etc.). `block()` recalcule depuis les lignes + arrondi ×25. Moteur coach : `profile.pool` passé via `opts.pool` ; pas de séries `Nx25m` en bassin 50 (variantes 50m / adaptation technique).
 - **Blocs technique** : 1 numéro UI = 1 bloc. Titre explicite avec éducatif nommé (jamais `600m respiration` / `6x50 technique`). Sous-séries indentées si besoin. Affichage regroupe header + `·` enfants.
@@ -46,7 +46,7 @@
 - **Semaines test** (`phase: "test"`) : chronos 100/200/400 m pour mesurer l’évolution — 1 à 2 selon la durée du plan (après base / après développement).
 - **Affûtage** : 1 semaine dès 6 sem. de plan, **2 semaines** dès 10 sem. Volume ↓, touches vitesse, puis semaine compétition.
 - **Semaine de compétition** (dernière avant l’event) : **toujours easy** — **1 séance** si fréquence ≤3×/sem, **2 séances** si >3. Volume très bas, séances courtes (~20–25 min), rappels de vitesse **≤12,5 m**, phrase : « Ne t’inquiète pas : si tu as suivi le plan, le travail est fait. »
-- **« Nager & Progresser »** : **plus de plan multi-semaines**. Mode boucle (`isSessionLoop`) : une seule séance à la fois (`buildProgressionLoopSession`), validation Terminer/Abandonner → nouvelle génération. Questionnaire : **fréquence demandée** (comme les autres programmes) pour le profil ; la boucle génère toujours 1 séance à la fois. Freemium : **8 séances** au total + **2 nouvelles / semaine** calendaire ; Régénérer = Premium. Premières séances (cursor &lt; 3) forcées faciles.
+- **« Nager & Progresser » / triathlon / eau libre / diplôme** : **plus de plan multi-semaines** pour ces objectifs. Mode boucle (`isSessionLoop` via `usesSessionLoop`) : une seule séance à la fois (`buildProgressionLoopSession`), validation Terminer/Abandonner → nouvelle génération. **Pourquoi** : l’accès à toute la semaine donne l’impression de séances qui se répètent. Variantes par famille (tri / OW / diplôme examen). Questionnaire : **fréquence demandée** pour le profil ; la boucle génère toujours 1 séance à la fois. J−X affiché si `eventDate`. Reprise / perte de poids / compétition maître restent multi-semaines. Premières séances (cursor &lt; 3) forcées faciles.
 - **Questionnaire commun** (tous programmes) : âge, poids (kg), taille (cm), blessure (aucune / oui + note), séances/semaine, style préféré (crawl / 4 nages), nage préférée (papillon / dos / brasse / crawl), **distance moyenne / séance** (`targetSessionDistance`), **demande libre** (`trainingWish` + `trainingWishMeta`). Stockés dans `entry.profile` (+ `sport_profiles.extra`) ; affichés sur l’onglet Profil.
 
 ### Objectifs spécifiques
@@ -77,6 +77,7 @@
 
 | Date | Contexte | Correction | Statut |
 |------|----------|------------|--------|
+| 2026-08-15 | Boucle tous objectifs | Triathlon, eau libre et diplôme passent en **séance du jour** (`usesSessionLoop` + `PLAN_VERSION` 47 + force regen) : plus d’accès à la semaine complète (évite l’impression de répétition). Variantes spécifiques tri/OW ; diplôme = templates examen. Reprise / maître inchangés (multi-semaines). | ✅ |
 | 2026-08-14 | Force regen v45 live | Demande Arthur : `PLAN_VERSION` 45 + `FORCE_PLAN_REGEN=true` — tous les comptes (y compris existants) régénèrent le programme avec 4 nages explicites + IM. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-14 | 4 nages composition | Case `quatre nages` = crawl+dos+brasse+papillon dans **chaque** séance, blocs nagés explicites (pas un intitulé « 4 nages »). Mix sur le volume total : 40/20/20/20 ; préf. crawl 50/17/17/16 ; autre préf. 40/30/15/15. Crawl toujours majoritaire. Papillon fractionné (longueur de bassin), jamais omis ni remplacé par ondulation. `swimStyle=4_nages` prime sur la nage préférée. Charge/QG/persist inchangés. Pas de regen. | ✅ |
 | 2026-08-14 | 4 nages IM | Formats olympiques enchaînés (pap→dos→brasse→crawl) : 100 (25/nage, bassin 25), 200 (50/nage), 400 (100/nage). Fun : 8×50 à 12,5 m/nage (changement au milieu) ; 400 dont 25 nage complète / 25 jambes ou éducatif libre. Découverte : pas d’IM enchaîné. Mix inchangé. Pas de regen. | ✅ |
@@ -205,7 +206,7 @@
 8. **Vocabulaire** : dire **godilles**, pas « sculling » (anglicisme) dans les consignes de séance. Sur débutant : expliquer les éducatifs (grand/petit chien) plutôt que le terme seul.
 9. **Éducatifs** : ne pas saturer les séances de grand/petit chien — privilégier **jambes** et nage. MySWYM = générateur, pas école. **Jamais** deux blocs jambes d’affilée (ex. 400m jambes + 8x50 jambes) — éducatif puis jambes.
 10. **Migration plan** : incrémenter `PLAN_VERSION` n'autorise **pas** une régénération complète des semaines — risque d'effacer la progression. Migration légère (previewWeeks, version) uniquement. **Exception** : force regen explicite demandée par Arthur (ex. v14, aucun user actif).
-12. **Nager & Progresser** : ne pas regenerer un plan multi-semaines ni demander la fréquence — c’est une **boucle séance unique** (Terminer/Abandonner → suivante).
+12. **Boucle séance unique** (Nager & Progresser **et** triathlon / eau libre / diplôme) : ne pas regenerer un plan multi-semaines ni afficher toute la semaine — une séance à la fois (Terminer/Abandonner → suivante). Exception : reprise / bien-être / compétition maître.
 13. **Sportif course piscine** : ne pas mettre B **et** C en Z3 par défaut — polarisation (beaucoup d’aérobie, une qualité). C = Z1/Z2 + touches allure ; peak peut être plus soutenu.
 14. **Sportif vitesse** : ne pas « remplir » en Z2 sans intention — architecture préparation → qualité → consolidation (`blockRole`).
 15. **Continu 4N** : ne pas appliquer le `maxContinuous` crawl au 4N — distances continues stroke-aware ; 25/50/100 si capacité faible.

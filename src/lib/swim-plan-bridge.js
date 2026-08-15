@@ -47,6 +47,47 @@ import { sessionTemplatesReady } from "./session-templates-store.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
+/**
+ * Boucle « une séance à la fois » (pas d'accès à la semaine complète).
+ * Couvre Nager & Progresser, triathlon, eau libre et prépa diplôme —
+ * pour éviter l'impression de séances qui se répètent quand on voit toute la semaine.
+ * Bien-être / reprise / compétition maître restent en plan multi-semaines.
+ */
+export function usesSessionLoop(profile = {}) {
+  const goal = profile.goal || "";
+  const category = profile.category || "";
+  if (goal === "reprendre" || goal === "perte_de_poids") return false;
+  if (goal === "competition_maitre" || goal === "course_piscine") return false;
+  if (goal === "progression" || goal.startsWith("prog_") || category === "progression") return true;
+  if (category === "triathlon" || goal.startsWith("triathlon")) return true;
+  if (
+    category === "eau_libre" ||
+    category === "open_water" ||
+    goal.startsWith("open_water") ||
+    goal.startsWith("eau_libre")
+  ) {
+    return true;
+  }
+  if (DIPLOMA_GOALS.has(goal) || category === "diplome") return true;
+  return false;
+}
+
+function loopFamilyFromProfile(profile = {}) {
+  const goal = profile.goal || "";
+  const category = profile.category || "";
+  if (DIPLOMA_GOALS.has(goal) || category === "diplome") return "diplome";
+  if (category === "triathlon" || goal.startsWith("triathlon")) return "triathlon";
+  if (
+    category === "eau_libre" ||
+    category === "open_water" ||
+    goal.startsWith("open_water") ||
+    goal.startsWith("eau_libre")
+  ) {
+    return "eau_libre";
+  }
+  return "progression";
+}
+
 const PHASE_MAP = {
   base: "foncier",
   development: "developpement",
@@ -847,30 +888,329 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
 }
 
 /**
- * Rotation des rôles pour le mode « Nager & Progresser » (boucle séance unique).
+ * Rotation des rôles pour le mode boucle séance unique.
  * Premières séances (cursor < 3) forcées faciles — sensation « envie de revenir demain ».
+ * Variantes par famille d'objectif pour que triathlon / eau libre / diplôme restent spécifiques.
  */
-const LOOP_VARIANTS = [
-  { id: "technique", focus: "Technique & sensations", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Respiration fluide", "Sensations de glisse"] },
-  { id: "endurance", focus: "Endurance confortable", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Allure régulière", "Respiration toutes les 3 tractions"] },
-  { id: "jambes", focus: "Jambes & gainage", role: { objectif: "technique_jambes", zone: "Z1" }, objectives: ["Battements efficaces", "Gainage du bassin"] },
-  { id: "respiration", focus: "Respiration bilatérale", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Respiration des deux côtés", "Rythme calme"] },
-  { id: "vitesse", focus: "Touches de vitesse", role: { objectif: "vitesse", zone: "Z4" }, objectives: ["Accélérations courtes", "Récupération complète"] },
-  { id: "pull", focus: "Pull & traction", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Traction longue", "Sensations de bras"] },
-  { id: "sensations", focus: "Sensations & fluidité", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Nage détendue", "Écoute du corps"] },
-  { id: "mixte", focus: "Séance mixte", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Variété d'allures", "Plaisir de nager"] },
-  { id: "defi", focus: "Mini défi", role: { objectif: "endurance", zone: "Z3" }, objectives: ["Tenir l'effort", "Constante des temps"] },
-  { id: "roulis", focus: "Roulis & alignement", role: { objectif: "technique_roulis", zone: "Z1" }, objectives: ["Rotation du corps", "Alignement tête-bassin"] },
-];
+const LOOP_VARIANTS_BY_FAMILY = {
+  progression: [
+    { id: "technique", focus: "Technique & sensations", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Respiration fluide", "Sensations de glisse"] },
+    { id: "endurance", focus: "Endurance confortable", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Allure régulière", "Respiration toutes les 3 tractions"] },
+    { id: "jambes", focus: "Jambes & gainage", role: { objectif: "technique_jambes", zone: "Z1" }, objectives: ["Battements efficaces", "Gainage du bassin"] },
+    { id: "respiration", focus: "Respiration bilatérale", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Respiration des deux côtés", "Rythme calme"] },
+    { id: "vitesse", focus: "Touches de vitesse", role: { objectif: "vitesse", zone: "Z4" }, objectives: ["Accélérations courtes", "Récupération complète"] },
+    { id: "pull", focus: "Pull & traction", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Traction longue", "Sensations de bras"] },
+    { id: "sensations", focus: "Sensations & fluidité", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Nage détendue", "Écoute du corps"] },
+    { id: "mixte", focus: "Séance mixte", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Variété d'allures", "Plaisir de nager"] },
+    { id: "defi", focus: "Mini défi", role: { objectif: "endurance", zone: "Z3" }, objectives: ["Tenir l'effort", "Constante des temps"] },
+    { id: "roulis", focus: "Roulis & alignement", role: { objectif: "technique_roulis", zone: "Z1" }, objectives: ["Rotation du corps", "Alignement tête-bassin"] },
+  ],
+  triathlon: [
+    { id: "tri_aero", focus: "Endurance triathlon", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Allure régulière", "Respiration stable"] },
+    { id: "tri_sight", focus: "Sighting & trajectoire", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Repères fréquents", "Ligne droite"] },
+    { id: "tri_tech", focus: "Technique crawl efficace", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Traction longue", "Économie d'énergie"] },
+    { id: "tri_seuil", focus: "Allure compétition", role: { objectif: "mixte", zone: "Z3" }, objectives: ["Régularité des temps", "Tenir l'effort"] },
+    { id: "tri_start", focus: "Départ & premiers mètres", role: { objectif: "vitesse", zone: "Z4" }, objectives: ["Accélération courte", "Retour à l'allure course"] },
+    { id: "tri_jambes", focus: "Jambes économes", role: { objectif: "technique_jambes", zone: "Z1" }, objectives: ["Battements utiles", "Préserver les jambes pour le vélo"] },
+    { id: "tri_ow", focus: "Simulation eau libre", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Sighting", "Nage sans ligne"] },
+    { id: "tri_mix", focus: "Séance mixte course", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Variété d'allures", "Gestion d'effort"] },
+  ],
+  eau_libre: [
+    { id: "ow_sight", focus: "Sighting & orientation", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Repères toutes les 6–8 tractions", "Trajectoire"] },
+    { id: "ow_aero", focus: "Endurance eau libre", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Volume confortable", "Respiration calme"] },
+    { id: "ow_tech", focus: "Crawl efficace", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Glisse", "Respiration bilatérale"] },
+    { id: "ow_seuil", focus: "Allure course", role: { objectif: "eau_libre", zone: "Z3" }, objectives: ["Régularité", "Tenir sans s'écrouler"] },
+    { id: "ow_draft", focus: "Nage groupée", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Suivre un rythme", "Contact / écart"] },
+    { id: "ow_vitesse", focus: "Touches vitesse", role: { objectif: "vitesse", zone: "Z4" }, objectives: ["Accélérations", "Récup complète"] },
+    { id: "ow_jambes", focus: "Jambes & alignement", role: { objectif: "technique_jambes", zone: "Z1" }, objectives: ["Gainage", "Battements stables"] },
+    { id: "ow_long", focus: "Bloc long continu", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Continuité", "Gestion d'effort"] },
+  ],
+};
 
-const LOOP_EASY_VARIANTS = [
-  { id: "easy_tech", focus: "Première séance — douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
-  { id: "easy_sens", focus: "Sensations faciles", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Respiration calme", "Plaisir dans l'eau"] },
-  { id: "easy_tech2", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
-];
+const LOOP_EASY_BY_FAMILY = {
+  progression: [
+    { id: "easy_tech", focus: "Première séance — douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+    { id: "easy_sens", focus: "Sensations faciles", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Respiration calme", "Plaisir dans l'eau"] },
+    { id: "easy_tech2", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
+  ],
+  triathlon: [
+    { id: "tri_easy1", focus: "Première séance triathlon — douce", role: { objectif: "mixte", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+    { id: "tri_easy2", focus: "Sensations course", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Respiration calme", "Glisse"] },
+    { id: "tri_easy3", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
+  ],
+  eau_libre: [
+    { id: "ow_easy1", focus: "Première séance eau libre — douce", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+    { id: "ow_easy2", focus: "Sighting facile", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Repères calmes", "Plaisir"] },
+    { id: "ow_easy3", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
+  ],
+};
+
+/** Séances diplôme (BNSSA / BPJEPS / pompiers / CAEPMNS) — une variante à la fois. */
+function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
+  const pool = profile.pool === 25 ? 25 : 50;
+  const goal = profile.goal || "bnssa";
+  const c = Math.max(0, Number(cursor) || 0);
+  const P = pool;
+  const volScale = easyPhase ? 0.75 : 1;
+
+  const bnssaVariants = [
+    {
+      id: "simu_100",
+      focus: "Simulation parcours 100 m",
+      type: "BNSSA",
+      intensity: "Apnée & remorquage — qualité de parcours",
+      objectives: ["Tracé fond propre", "Remorquage stable"],
+      details: (n) => [
+        `Échauffement : ${Math.round(200 * n / 50) * 50}m NL progressif + ${P * 2}m battements`,
+        `Apnée dynamique : ${Math.max(3, Math.round(6 * n))}×15m immersion complète — R2' — sans appui`,
+        `Simulation 100m : 25m NL → 15m apnée → virage → 15m apnée → 25m remorquage — R3'`,
+        `Remorquage : ${Math.max(2, Math.round(4 * n))}×${P}m — R1'30" — position dorsale, visage hors de l'eau`,
+        `Retour au calme : ${P * 4}m dos lent`,
+      ],
+    },
+    {
+      id: "palmes_250",
+      focus: "Prépa 250 m palmes & plongée",
+      type: "BNSSA",
+      intensity: "Endurance équipée + apnée",
+      objectives: ["Virages équipés", "Plongée canard"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
+        `${Math.max(3, Math.round(6 * n))}×${2 * P}m palmes + masque + tuba — R20" — touche le mur à chaque virage`,
+        `Plongée canard : 6× plongée → fond → saisie mannequin → remontée — R2'`,
+        `Remorquage : ${Math.max(2, Math.round(4 * n))}×${P}m position dorsale — R1'30"`,
+        `Retour au calme : ${P * 4}m dos lent`,
+      ],
+    },
+    {
+      id: "apnee_fatigue",
+      focus: "Endurance & apnée sous fatigue",
+      type: "BNSSA",
+      intensity: "Tenir les apnées après l'effort",
+      objectives: ["Apnée après fatigue", "Remorquage propre"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL progressif + ${P * 2}m battements`,
+        `${Math.max(3, Math.round(5 * n))}×${2 * P}m NL — R20" — endurance de base`,
+        `Apnée dynamique : ${Math.max(3, Math.round(6 * n))}×15m — R2' — immersion complète`,
+        `${Math.max(2, Math.round(4 * n))}×${P}m remorquage — R1'30" — position dorsale`,
+        `Retour au calme : ${P * 4}m dos lent`,
+      ],
+    },
+    {
+      id: "volume_equipe",
+      focus: "Palmes + tuba — volume équipé",
+      type: "BNSSA",
+      intensity: "Endurance masque/tuba + apnées courtes",
+      objectives: ["Respiration tuba", "Virages propres"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL + ${P * 2}m palmes souples`,
+        `${Math.max(3, Math.round(6 * n))}×${2 * P}m palmes + masque + tuba — R15"`,
+        `Apnée : ${Math.max(3, Math.round(5 * n))}×15m — R1'30" — après fatigue équipée`,
+        `${Math.max(2, Math.round(3 * n))}×${P}m remorquage dorsale — R1'`,
+        `Retour au calme : ${P * 4}m dos sans matériel`,
+      ],
+    },
+    {
+      id: "ench_exam",
+      focus: "Enchaînement exam",
+      type: "BNSSA",
+      intensity: "Simulation complète sous fatigue",
+      objectives: ["Enchaînement fluide", "Gestion de l'effort"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
+        `${Math.max(2, Math.round(4 * n))}×${2 * P}m palmes + tuba — R20"`,
+        `Bloc exam : 50m palmes → 15m apnée → ${P}m remorquage — ×${Math.max(2, Math.round(4 * n))} — R2'30"`,
+        `Apnée isolée : ${Math.max(3, Math.round(4 * n))}×15m — R2'`,
+        `Retour au calme : ${P * 4}m dos lent`,
+      ],
+    },
+  ];
+
+  const bpjepsVariants = [
+    {
+      id: "bp_400",
+      focus: "Spécifique 400 m NL",
+      type: "SEUIL",
+      intensity: "Régularité des 100 — objectif < 7'40\"",
+      objectives: ["Splits réguliers", "Allure examen"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL progressif + ${P * 2}m éducatif respiration`,
+        `${Math.max(3, Math.round(4 * n))}×100m NL — R30" — même temps à chaque 100`,
+        `2×200m NL — R45" — allure 400 m examen`,
+        `${Math.max(2, Math.round(3 * n))}×50m NL — R20" — un peu plus vite, récup complète`,
+        `Retour au calme : ${P * 4}m dos / brasse souple`,
+      ],
+    },
+    {
+      id: "bp_im",
+      focus: "100 m 4 nages",
+      type: "TECHNIQUE",
+      intensity: "Enchaînement pap → dos → brasse → crawl",
+      objectives: ["Transitions propres", "Objectif < 1'50\""],
+      details: (n) => [
+        `Échauffement : ${P * 4}m 4 nages souple`,
+        `${Math.max(4, Math.round(6 * n))}×25m nage complète (alterne les 4) — R20"`,
+        `${Math.max(2, Math.round(3 * n))}×100m 4 nages — R1' — ordre olympique`,
+        `${Math.max(2, Math.round(3 * n))}×50m (25 brasse + 25 crawl) — R30"`,
+        `Retour au calme : ${P * 4}m choix libre`,
+      ],
+    },
+    {
+      id: "bp_aero",
+      focus: "Volume NL régulier",
+      type: "ENDURANCE",
+      intensity: "Base aérobie pour le 400 m",
+      objectives: ["Continuité", "Respiration stable"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
+        `${Math.max(4, Math.round(8 * n))}×${2 * P}m NL — R20" — allure confortable`,
+        `${Math.max(2, Math.round(3 * n))}×100m NL — R25" — un cran au-dessus`,
+        `Retour au calme : ${P * 4}m dos lent`,
+      ],
+    },
+    {
+      id: "bp_seuil",
+      focus: "Fractionné 400 m",
+      type: "SEUIL",
+      intensity: "Effort soutenu, temps constants",
+      objectives: ["Constante des temps", "Récup courte maîtrisée"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL progressif`,
+        `8×50m NL — R15" — allure 400 m`,
+        `${Math.max(2, Math.round(3 * n))}×150m NL — R40" — tenir l'allure`,
+        `4×25m NL rapide — R30" — récup complète`,
+        `Retour au calme : ${P * 4}m souple`,
+      ],
+    },
+  ];
+
+  const pompierVariants = [
+    {
+      id: "pomp_400",
+      focus: "400 m NL tests",
+      type: "SEUIL",
+      intensity: "Endurance vitesse — tests pompiers",
+      objectives: ["Tenir 400 m", "Allure régulière"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
+        `${Math.max(3, Math.round(4 * n))}×100m NL — R30" — splits réguliers`,
+        `1×400m NL continu — chronomètre, allure cible`,
+        `${Math.max(2, Math.round(3 * n))}×50m NL — R25"`,
+        `Retour au calme : ${P * 4}m dos`,
+      ],
+    },
+    {
+      id: "pomp_sauv",
+      focus: "50 m sauvetage",
+      type: "BNSSA",
+      intensity: "Vitesse + remorquage court",
+      objectives: ["Départ explosif", "Remorquage contrôlé"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL progressif`,
+        `${Math.max(4, Math.round(6 * n))}×${P}m NL rapide — R40" — récup quasi complète`,
+        `${Math.max(3, Math.round(5 * n))}×${P}m remorquage — R1' — position dorsale`,
+        `Simu 50m : nage → saisie → remorquage — ×${Math.max(2, Math.round(3 * n))} — R2'`,
+        `Retour au calme : ${P * 4}m souple`,
+      ],
+    },
+    {
+      id: "pomp_mix",
+      focus: "NL + sauvetage mixte",
+      type: "BNSSA",
+      intensity: "Enchaînement effort → sauvetage",
+      objectives: ["Gérer la fatigue", "Qualité du remorquage"],
+      details: (n) => [
+        `Échauffement : ${P * 4}m NL`,
+        `${Math.max(3, Math.round(5 * n))}×${2 * P}m NL — R20"`,
+        `Apnée : ${Math.max(3, Math.round(4 * n))}×15m — R1'30"`,
+        `${Math.max(2, Math.round(4 * n))}×${P}m remorquage — R1'`,
+        `Retour au calme : ${P * 4}m dos`,
+      ],
+    },
+  ];
+
+  let pool_variants = bnssaVariants;
+  if (goal === "bpjeps_aan") pool_variants = bpjepsVariants;
+  else if (goal === "tests_pompiers") pool_variants = pompierVariants;
+  else if (goal === "caepmns") pool_variants = [...bnssaVariants.slice(0, 3), ...pompierVariants.slice(0, 2)];
+
+  const easyDiploma = [
+    {
+      id: "dip_easy1",
+      focus: "Première séance prépa — douce",
+      type: "ENDURANCE",
+      intensity: "Prise de marques",
+      objectives: ["Nager sans forcer", "Confiance"],
+      details: () => [
+        `Échauffement : ${P * 4}m NL très souple`,
+        `${Math.max(4, Math.round(6 * volScale))}×${P}m NL — R20" — confortable`,
+        `${P * 2}m battements avec planche — respirations calmes`,
+        `Retour au calme : ${P * 2}m dos lent`,
+      ],
+    },
+    {
+      id: "dip_easy2",
+      focus: "Sensations & matériel",
+      type: "TECHNIQUE",
+      intensity: "Découverte douce",
+      objectives: ["Matériel à l'aise", "Respiration"],
+      details: () => [
+        `Échauffement : ${P * 4}m NL`,
+        `${Math.max(3, Math.round(4 * volScale))}×${2 * P}m NL — R25"`,
+        `${P * 2}m palmes souples (si tu en as) ou battements`,
+        `Retour au calme : ${P * 2}m choix libre`,
+      ],
+    },
+    {
+      id: "dip_easy3",
+      focus: "Base endurance légère",
+      type: "ENDURANCE",
+      intensity: "Volume facile",
+      objectives: ["Continuité", "Plaisir"],
+      details: () => [
+        `Échauffement : ${P * 2}m NL + ${P * 2}m dos`,
+        `${Math.max(4, Math.round(8 * volScale))}×${P}m NL — R15" — tu peux parler`,
+        `Retour au calme : ${P * 4}m souple`,
+      ],
+    },
+  ];
+
+  const variant = easyPhase
+    ? easyDiploma[c % easyDiploma.length]
+    : pool_variants[(c - 3) % pool_variants.length];
+
+  const details = variant.details(volScale);
+  let dist = 0;
+  for (const line of details) {
+    const m = line.match(/(\d+)\s*×\s*(\d+)\s*m/i);
+    if (m) dist += parseInt(m[1], 10) * parseInt(m[2], 10);
+    else {
+      const single = line.match(/(\d+)\s*m/i);
+      if (single) dist += parseInt(single[1], 10);
+    }
+  }
+  dist = Math.round(dist / 25) * 25 || 800;
+
+  return {
+    variant,
+    session: {
+      type: variant.type,
+      title: variant.focus,
+      intensity: variant.intensity,
+      details,
+      distance: `${dist}m`,
+      duration: Math.max(35, Math.min(90, Math.round(dist / 35))),
+      completed: false,
+      skipped: null,
+      objectives: variant.objectives,
+      loopVariant: variant.id,
+      trainingDistance: dist,
+    },
+  };
+}
 
 /**
- * Génère une seule séance pour le mode boucle « Nager & Progresser ».
+ * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
  * @param {object} profile
  * @param {number} cursor — index de variété (0 = 1ʳᵉ séance)
  * @param {boolean} isPremium
@@ -879,9 +1219,28 @@ const LOOP_EASY_VARIANTS = [
 export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false) {
   const c = Math.max(0, Number(cursor) || 0);
   const easyPhase = c < 3;
+  const family = loopFamilyFromProfile(profile);
+
+  // Diplôme : templates examen (pas le générateur coach générique)
+  if (family === "diplome") {
+    const { variant, session } = buildDiplomaLoopSessionPayload(profile, c, easyPhase);
+    const week = {
+      number: 1,
+      focus: variant.focus,
+      tip: null,
+      feedback: null,
+      isBilan: false,
+      isTest: false,
+      sessions: [session],
+    };
+    return { session, focus: variant.focus, week };
+  }
+
+  const variants = LOOP_VARIANTS_BY_FAMILY[family] || LOOP_VARIANTS_BY_FAMILY.progression;
+  const easyVariants = LOOP_EASY_BY_FAMILY[family] || LOOP_EASY_BY_FAMILY.progression;
   const variant = easyPhase
-    ? LOOP_EASY_VARIANTS[c % LOOP_EASY_VARIANTS.length]
-    : LOOP_VARIANTS[(c - 3) % LOOP_VARIANTS.length];
+    ? easyVariants[c % easyVariants.length]
+    : variants[(c - 3) % variants.length];
 
   const niveauKey = mapNiveau(profile);
   const profilObj = mapObjectifProfil(profile);

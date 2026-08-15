@@ -79,7 +79,8 @@ export function mapGoalToObjectifV1(profile = {}) {
   }
   if (category === "triathlon" || goal.startsWith("triathlon")) return OBJECTIF_V1.TRIATHLON;
   if (["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"].includes(goal)) return OBJECTIF_V1.DIPLOME;
-  if (category === "progression" || goal === "progression" || profile.isSessionLoop) {
+  // isSessionLoop seul ne doit pas écraser un objectif déjà mappé plus haut
+  if (category === "progression" || goal === "progression" || (profile.isSessionLoop && !goal && !category)) {
     return OBJECTIF_V1.NAGER_PROGRESSER;
   }
   return OBJECTIF_V1.AUTRE;
