@@ -4,7 +4,8 @@
  * pull-buoy entre les jambes = pas de battements (bras seuls) ;
  * palmes = battements. Les deux en même temps n'ont aucun sens.
  * Inventaire : on peut posséder les deux ; on ne les combine pas le même jour.
- * Beat / tempo (3T, 5T, 7T, 9T) : jamais avec tuba — le tuba coupe le compte de respiration.
+ * Beat / tempo (3T, 5T, 7T, 9T) : le moteur ne colle jamais de tuba dessus
+ * (le tuba coupe le compte). Tuba OK s’il est déjà noté dans l’Excel sur l’éducatif.
  * Engagement : inventaire non vide hors récup/taper → ≥1 item visible quand possible.
  * @typedef {'none'|'optional'|'meaningful'} EquipmentUsage
  */
@@ -95,10 +96,10 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
     case "technique_roulis":
       return ["palmes"];
     case "technique_respiration":
-      // 3T/5T/7T/9T = tempo : jamais de tuba. Pas d'outil par défaut sur ce focus.
+      // Pas de matos inventé : 3T/5T… ≠ tuba collé. Tuba seulement s’il est déjà dans l’Excel.
       return [];
     case "technique_croisement":
-      // Alignement / entrée de main (pas un compte de beats) → tuba OK.
+      // Alignement / entrée de main → tuba OK (souvent noté Excel).
       return ["tuba"];
     case "technique_catchup":
       return level === "regulier" || level === "decouverte" ? ["palmes"] : ["plaquettes", "palmes"];
@@ -115,8 +116,8 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
 export function forbiddenTechEquipment(techFocus) {
   if (techFocus === "technique_roulis") return ["plaquettes"];
   if (techFocus === "technique_jambes") return ["pull", "plaquettes"];
-  // Respiration tempo (3T…) : pas de palmes ni tuba sur la ligne de beats.
-  if (techFocus === "technique_respiration") return ["plaquettes", "palmes", "tuba"];
+  // Respiration : pas de palmes collées sur 3T. Tuba autorisé s’il est dans l’Excel (pas inventé).
+  if (techFocus === "technique_respiration") return ["plaquettes", "palmes"];
   return [];
 }
 
@@ -201,14 +202,13 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     }
   }
 
-  // Engagement hors exempt : ≥1 item. Si interdit sur le focus tech (ex. tuba + 3T),
-  // basculer sur le corps (nage sans compte de beats).
+  // Engagement hors exempt : ≥1 item.
+  // Ne pas inventer de matos tech hors pédagogie / wish (ex. tuba sur respiration 3T) :
+  // tuba Excel reste via la banque ; ici on bascule sur le corps.
   if (!exempt && applied.length === 0 && available.length) {
     const techPool = wishPrefer.length
       ? wishPrefer
-      : preferAllowed.length
-        ? preferAllowed
-        : available.filter((e) => !forbidden.has(e) && (e !== "pull" || !available.includes("palmes")));
+      : preferAllowed;
     const corpsPool = available.filter(
       (e) => (e === "pull" || forbidden.has(e) || !techPool.includes(e)) && e !== "plaquettes",
     );
@@ -217,10 +217,10 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
       pickOne(corpsPool.length ? corpsPool : available, typeof rng === "function" ? rng : Math.random);
     if (pick) {
       applied.push(pick);
-      if (pick === "pull" || forbidden.has(pick) || !techPool.includes(pick)) {
-        corpsNote.push(displayName(pick));
-      } else {
+      if (techPool.includes(pick) && pick !== "pull" && !forbidden.has(pick)) {
         techNote.push(displayName(pick));
+      } else {
+        corpsNote.push(displayName(pick));
       }
     }
   }

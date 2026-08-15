@@ -910,7 +910,7 @@ function tryAppendTechniqueFromBank({
 }) {
   if (!techMeta?.focus) return false;
   const forbidden = new Set(forbiddenTechEquipment(techMeta.focus));
-  // Matos technique seulement (corpsNote = engagement hors éducatif / beats).
+  // Matos technique seulement (corpsNote = engagement hors éducatif).
   const pickEq = String(eqUsage?.techNote || "")
     .split(/\s*\+\s*/)
     .map((s) => s.trim().toLowerCase())
@@ -923,8 +923,17 @@ function tryAppendTechniqueFromBank({
       return null;
     })
     .filter((eq) => eq && eq !== "pull" && !forbidden.has(eq));
+  // Arthur Excel : préférer un éducatif qui porte déjà le tuba s’il est dans l’inventaire
+  // (ne pas inventer tuba sur un 3T — buildTechniqueFromBank ne le colle pas sur les beats).
+  const preferExcelTuba =
+    !pickEq.includes("tuba") &&
+    eqList.includes("tuba") &&
+    !forbidden.has("tuba")
+      ? ["tuba"]
+      : [];
+  const prefer = pickEq.length ? pickEq : preferExcelTuba;
   const avoid = [...forbidden];
-  if (pickEq.includes("palmes")) avoid.push("pull");
+  if (pickEq.includes("palmes") || prefer.includes("palmes")) avoid.push("pull");
   if (techMeta.focus === "technique_roulis") avoid.push("plaquettes");
   const techEx = pickTechniqueFromBank({
     focusKey: techMeta.focus,
@@ -933,7 +942,7 @@ function tryAppendTechniqueFromBank({
     painProtection: !!(brief.painProtection || brief.hardConstraints?.painProtection),
     inventory,
     rng,
-    preferEquipment: pickEq,
+    preferEquipment: prefer,
     avoidEquipment: avoid,
   });
   const built = buildTechniqueFromBank({

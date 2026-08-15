@@ -12,6 +12,7 @@ import {
 } from "./technique-from-bank.js";
 import { composeSession } from "./session-composer.js";
 import { buildSportProfile, buildSessionBrief } from "./index.js";
+import { hasBeatTubaConflict } from "./equipment-usage.js";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -302,6 +303,44 @@ console.log("EQ5 pick préfère planche");
   });
   assert(ex, "jambes candidate");
   assert(/planche/i.test((ex.instructions || []).join(" ")), "drill planche");
+}
+
+console.log("EQ6 tuba Excel préservé ; beat+tuba écarté");
+{
+  const inventory = [
+    {
+      id: "excel_tuba_align",
+      type: "technique",
+      focusKey: "technique_croisement",
+      minLevel: "regulier",
+      instructions: ["· 8x50m rattrapé + tuba frontal — alignement tête R20''"],
+    },
+    {
+      id: "excel_beat_tuba_bad",
+      type: "technique",
+      focusKey: "technique_croisement",
+      minLevel: "regulier",
+      instructions: ["· 8x50m respiration 3T avec tuba frontal R20''"],
+    },
+  ];
+  const picked = pickTechniqueFromBank({
+    focusKey: "technique_croisement",
+    level: "regulier",
+    equipment: ["tuba"],
+    preferEquipment: ["tuba"],
+    inventory,
+    rng: () => 0.1,
+  });
+  assert(picked?.id === "excel_tuba_align", `préfère Excel tuba sans beat, got ${picked?.id}`);
+  const built = buildTechniqueFromBank({
+    techEx: picked,
+    targetVol: 400,
+    pool: 50,
+    matosNote: "",
+  });
+  assert(built.usedBank, "built");
+  assert(/tuba/i.test(built.lines.join(" ")), `tuba Excel conservé\n${built.lines.join("\n")}`);
+  assert(!hasBeatTubaConflict(built.lines), "pas beat+tuba");
 }
 
 console.log("✅ technique-from-bank tests passed");

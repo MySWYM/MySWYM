@@ -144,8 +144,18 @@ export function pickTechniqueFromBank(opts = {}) {
     const filtered = list.filter((ex) => !avoid.some((eq) => drillHasEq(ex, eq)));
     if (filtered.length) pool = filtered;
   }
+  // Jamais beat/tempo + tuba : écarter les drills Excel qui cumulent les deux.
+  const noBeatTuba = pool.filter(
+    (ex) => !(drillHasEq(ex, "tuba") && hasBreathingBeat(drillText(ex))),
+  );
+  if (noBeatTuba.length) pool = noBeatTuba;
   if (prefer.length) {
-    const matching = pool.filter((ex) => prefer.some((eq) => drillHasEq(ex, eq)));
+    let matching = pool.filter((ex) => prefer.some((eq) => drillHasEq(ex, eq)));
+    // Tuba Excel : préférer un éducatif qui porte déjà le tuba (sans beats).
+    if (prefer.includes("tuba")) {
+      const tubaOnly = matching.filter((ex) => drillHasEq(ex, "tuba"));
+      if (tubaOnly.length) matching = tubaOnly;
+    }
     if (matching.length) pool = matching;
   }
   if (!pool.length) return null;
@@ -234,7 +244,15 @@ export function buildTechniqueFromBank({
       label = concreteTechLabel("", techEx.focusKey);
     }
     const alreadyHasMatos = /palmes|tuba|pull|planche|plaquette|avec\s/i.test(label);
-    const safeMatos = filterMatosNoteForLabel(label, matosNote);
+    // Excel : si l’éducatif porte déjà le matos, on le garde (sauf beat+tuba → strip plus bas / sanitize).
+    let safeMatos = filterMatosNoteForLabel(label, matosNote);
+    if (alreadyHasMatos && hasBreathingBeat(label) && /\btuba\b/i.test(label)) {
+      label = label
+        .replace(/\bpalmes\s*(?:\+|et)\s*tuba(?:\s+frontal)?\b/gi, "palmes")
+        .replace(/\btuba(?:\s+frontal)?\b/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
     const skipGlue =
       !safeMatos ||
       alreadyHasMatos ||
