@@ -74,9 +74,11 @@ Appliqué dans `genererSemaineSessions` via `weekScale = target / refTotal` (pas
 
 ## 3. Hors scope pour l’instant
 
-BNSSA / BPJEPS / tests pompiers → ancien `SESSION_TEMPLATES` (examens spécifiques).
+Dryland, checklist technique A/B/C, mental COSD → plus tard.
 
-Dryland, checklist technique A/B/C, mental COSD → plus tard, sans toucher l’UI actuelle.
+**Triathlon / eau libre / diplôme** : depuis v47, générés en **boucle séance unique** (comme Nager & Progresser) — pas de semaine complète visible. Le contenu diplôme reste exam-spécifique dans `buildProgressionLoopSession` ; tri/OW passent par le générateur coach avec variantes dédiées.
+
+Reprise / perte de poids / compétition maître → plan multi-semaines (patterns legacy ou coach selon l’objectif).
 
 ---
 
