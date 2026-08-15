@@ -8,7 +8,7 @@ import {
   DEPARTS_SEMAINE,
   DEPARTS_AVEC_JAMBES,
   FINS_SEMAINE,
-} from "../swim-session-generator.js";
+} from "../swim-banks/index.js";
 import { EQUIPMENT_IDS } from "./types.js";
 import { detectEquipmentInDetails } from "./session-compose.js";
 

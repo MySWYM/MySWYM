@@ -79,6 +79,8 @@ function briefFor(level, over = {}) {
   assert(!/repos variable/i.test(text), "no repos variable");
   assert(!/1750m pyramide/i.test(text), "no opaque 1750 pyramid");
   assert(/4 × 50\s*m rattrapé/i.test(text), "tech set kept");
+  assert(!/\bsouple\b/i.test(text), "D9 no souple");
+  assert(!/\bZ1\b/.test(text), "D9 no Z1");
   console.log("R1 PASS");
 }
 

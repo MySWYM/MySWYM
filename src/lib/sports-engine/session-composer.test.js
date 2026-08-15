@@ -109,14 +109,24 @@ function briefFrom({
 }
 
 function hasFourBlocks(details) {
-  const hasDepart = details.some((l) => /échauffement|souple|dos|tranquillement|brasse/i.test(l));
+  const hasDepart = details.some((l) =>
+    /échauffement|souple|dos|tranquillement|brasse|mise en route/i.test(l),
+  );
   const hasTech = details.some((l) =>
-    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile/i.test(l),
+    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile|focus geste|éducatif/i.test(
+      l,
+    ),
   );
   const hasCorps = details.some(
-    (l) => /×/.test(l) && /facile|sensation|respiration|visée|tête|alterne|rythme/i.test(l),
+    (l) =>
+      /×/.test(l) &&
+      /facile|sensation|respiration|visée|tête|alterne|rythme|lent|moyen|vite|seuil|sprint|jambes|glisse|allure/i.test(
+        l,
+      ),
   );
-  const hasFin = details.some((l) => /récup|rac|au choix|souple|relâché/i.test(l));
+  const hasFin = details.some((l) =>
+    /récup|rac|au choix|relâché|dos à deux bras|retour au calme|sans forcer/i.test(l),
+  );
   return hasDepart && hasTech && hasCorps && hasFin;
 }
 

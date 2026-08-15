@@ -521,7 +521,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
           maxReps,
           restSec: rest("facile", unit, { defaultRest: unit >= 100 ? 25 : 20 }),
           label,
-          cue: b === 0 ? cue : `${cue} — 2ᵉ série, même allure`,
+          cue: b === 0 ? `${cue} — 1er bloc` : `${cue} — 2e bloc, contraste`,
           exerciseId: `${exerciseId}_brk_${b}`,
           meta: { setFormat: "broken", brokenBlock: b + 1 },
         }),
@@ -687,6 +687,11 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     displayLines = [
       ...(collapsedPyr || lines.filter((_, i) => pyramidStepOf(sets[i]) != null)),
       ...fillLines,
+    ];
+  } else if (fmt === "broken" && sets.length >= 2) {
+    const a = sets[0];
+    displayLines = [
+      `-2 blocs de ${a.reps} × ${a.distancePerRep}m ${a.label} — ${cue} — repos ${a.restSec || 20}s`,
     ];
   } else {
     const collapsed = collapseSetsToDisplayLinesExact(sets, fmt);

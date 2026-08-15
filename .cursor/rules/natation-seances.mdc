@@ -8,37 +8,42 @@ alwaysApply: false
 
 ## Avant toute modification
 
-1. **Lire** `docs/natation-corrections.md` (mémoire des corrections Arthur).
-2. Ne pas réintroduire les erreurs listées en bas de ce fichier mémoire.
-3. Si Arthur corrige une séance dans le chat → **mettre à jour** `docs/natation-corrections.md` avec une ligne datée avant de terminer.
+1. **Lire** dans l’ordre :
+   - `docs/natation-regles-actives.md` (règles non négociables)
+   - `docs/natation-validation-seances.md` (contrôles distance / matos / 4 nages / rendu)
+   - `docs/natation-source-de-verite.md` (hiérarchie des sources)
+2. Consulter `docs/natation-historique.md` pour le journal ; ne pas réappliquer une entrée `↩ remplacée`.
+3. Si Arthur corrige une séance → mettre à jour règles actives / validation + une ligne datée dans l’historique avant de terminer.
+4. Index de bascule : `docs/natation-corrections.md` (pointeurs uniquement).
 
 ## Où coder
 
-- Corps des séances : `SESSION_TEMPLATES` dans `src/App.jsx`
-- Répartition semaines : `PHASE_PATTERNS`, `BNSSA_PATTERNS`, `WELLNESS_PATTERNS`, etc.
-- Changement de structure → incrémenter `PLAN_VERSION`
+- Point d’entrée unique : `composeSession` (composition, contrôles, rendu).
+- Banque Gold : Supabase `session_templates`.
+- Catalogue composeur : versionné dans le code.
+- Ancien moteur (`SESSION_TEMPLATES` / patterns diplômes) = fallback temporaire seulement.
+- Changement de structure → incrémenter `PLAN_VERSION` (métadonnées ; pas de regen silencieuse).
 
-## Règles de contenu
+## Règles de contenu (extraits)
 
-- **Découverte** : court, simple, encourageant ; pas de charge seuil/vitesse précoce.
-- **BNSSA / pompiers** : 100 m répétés + **simulations sauvetage** (sortie eau, enchaînement) ; pas endurance générique seule.
-- **BPJEPS** : 400 m NL, objectif examen, régularité — distinct de BNSSA.
-- **Eau libre** : préfixe `À faire en eau libre` + sighting / combinaison ; pas que du bassin.
-- **Triathlon** : cues régularité / bouée sur reps longues.
-- Toujours **échauffement + retour calme** (sauf OW déjà structuré autrement).
-- Distances = multiples du bassin (`pool` 25/50).
-- Premium : `dep()` → `D…` + allure si `pace100`. Gratuit : `R…`.
-- Sprint = récup **complète** entre reps.
-- **Générateur ≠ école** : beaucoup de **jambes**, peu de grand/petit chien (rare dans le cycle).
-
-## Qualité
-
-- Vérifier cohérence distance annoncée vs `calcSessionDistance(details)`.
-- Varier les titres / détails via `weekIdx` ; éviter copier-coller une variante déjà refusée (voir mémoire).
-- Ton : français, tutoiement, consignes concrètes.
+- **Distances** : blocs = multiples du bassin ; total = somme exacte ; total final …00 ou …50 (jamais …25/…75). `block()` = somme exacte, pas d’arrondi correcteur.
+- **Cohérence** : chaque bloc a une distance ; volume affiché = somme des blocs ; pas d’incohérence d’unité.
+- **Matériel** : disponibilité ≠ obligation ; matos utilisé = visible sur la ligne ; jamais pull + palmes ; lié à l’éducatif.
+- **4 nages** : crawl = plus grande part (40/20/20/20 ; préf. crawl 50/17/17/16 ; autre préf. 40/30/15/15).
+- **Éducatifs** : jambes + nage appliquée prioritaires ; chiens rares (~1/8).
+- **Découverte** : flèche + grand chien (+ palmes/tuba) ; pas de T100.
+- **BNSSA / pompiers** : sauvetage, pas endurance générique seule.
+- **BPJEPS** : 400 m NL, distinct de BNSSA.
+- **Eau libre** : sighting / lieu ; **Triathlon** : cues course.
+- Toujours échauffement + retour au calme (sauf OW déjà structuré).
+- Premium : `D…` + allure si `pace100`. Gratuit : `R…`.
+- Sprint = récup complète. Affichage : jamais `souple` ni `Z1`.
+- **Fun partout** : contrastes ; pas 2 séries d’affilée à la même allure ; pas de monolithes.
 
 ## Interdit
 
 - Générer des séances via API LLM dans l’app.
-- Ignorer `docs/natation-corrections.md` quand on touche aux templates.
-- Afficher `(facile @2)` / `@2` / `@3` dans un titre nageur, ou un bloc `600m respiration` / `6x50 technique` sans éducatif nommé.
+- Traiter l’ancien moteur ou l’historique `↩ remplacée` comme source de décision concurrente.
+- Afficher `(facile @2)` / `@2` / `@3`, ou un bloc `600m respiration` / `6x50 technique` sans éducatif nommé.
+- Afficher `souple` ou `Z1` au nageur.
+- Imposer du matériel uniquement parce que l’inventaire est rempli.

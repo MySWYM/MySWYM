@@ -1,0 +1,1722 @@
+{
+  "techniqueKeys": [
+    "technique_respiration",
+    "technique_roulis",
+    "technique_catchup",
+    "technique_jambes",
+    "technique_chiens",
+    "technique_fleche",
+    "technique_grand_chien",
+    "technique_croisement",
+    "technique_virages"
+  ],
+  "techniqueDrillCount": 97,
+  "technique": {
+    "technique_respiration": {
+      "label": "Respiration",
+      "drills": [
+        {
+          "distance": 600,
+          "lines": [
+            "· 8x25m respiration 3T (3 temps) R15''",
+            "· 8x25m respiration 5T R15''",
+            "· 4x50m alterné 3T/5T par 25m"
+          ]
+        },
+        {
+          "distance": 600,
+          "lines": [
+            "· 6x50m bilatéral 3T R20''",
+            "· 4x25m apnée contrôlée 2 coups sans respirer + reprise",
+            "· 4x50m 3T/5T alterné"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 10x25m respiration 5T, focus sortie d'eau tête basse R10''",
+            "· 4x50m 3T aller / 5T retour R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m respiration 7T (endurance apnée) R20''",
+            "· 4x50m 3T avec accélération dernier 15m R20''"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 6x50m bilatéral 3T, focus rythme régulier R20''",
+            "· 6x25m sans respirer 15m + reprise 3T R15''"
+          ]
+        },
+        {
+          "distance": 700,
+          "lines": [
+            "· 4x150 : 3T/5T/7T/5T/3T par 25m",
+            "· 4x25m respiration tardive, tête qui reste basse R15''"
+          ]
+        },
+        {
+          "distance": 600,
+          "lines": [
+            "· 6x100m : (3T/5T/7T/9T par 50m)"
+          ]
+        },
+        {
+          "distance": 600,
+          "lines": [
+            "· 12x50 D1' (Z2) — (3T/5T/7T/9T par 50m)"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 10x25m respiration 3T R15''",
+            "· 4x50m 5T sans accélérer"
+          ]
+        },
+        {
+          "distance": 600,
+          "lines": [
+            "· 4x100m bilatéral 3T R20''",
+            "· 4x50m 5T, focus régularité R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m apnée 1 longueur puis reprise 3T R20''",
+            "· 4x50m 3T normal"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 6x50m 3T aller, 5T retour R15''",
+            "· 4x50m bilatérale libre"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m respiration tardive, tête basse le plus longtemps possible R15''",
+            "· 4x50m 3T régulier"
+          ]
+        },
+        {
+          "distance": 600,
+          "lines": [
+            "· 4x100m : 25m apnée + 75m respiration 3T R20''",
+            "· 4x50m bilatéral 5T"
+          ]
+        }
+      ]
+    },
+    "technique_roulis": {
+      "label": "Roulis / rotation du corps",
+      "drills": [
+        {
+          "distance": 600,
+          "lines": [
+            "· 6x50m roulis exagéré, épaule qui sort de l'eau R20''",
+            "· 4x25m avec pull-buoy, focus rotation bassin",
+            "· 4x50m amplitude + roulis R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m un bras (l'autre tendu devant), focus rotation R15''",
+            "· 4x50m roulis marqué, respiration tardive R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 6x50m roulis + glisse prolongée R20''",
+            "· 4x25m pull-buoy rotation complète épaules-hanches"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m « 6 battements par roulis » R15''",
+            "· 4x50m roulis contrôlé, regard fixe vers le fond R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 6x50m roulis avec pull-buoy, focus appui R20''",
+            "· 4x25m nage complète, garder l'amplitude de roulis"
+          ]
+        },
+        {
+          "distance": 200,
+          "lines": [
+            "· 4x50 palmes : 25m bras droit devant / gauche cuisse ; 25m inversé — respiration latérale"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x50m le moins de mouvements possible/25m — focus position, efficacité de traction R20''"
+          ]
+        },
+        {
+          "distance": 200,
+          "lines": [
+            "· 8x25m palmes : 1x crawl sous l'eau · 1x godille pieds en avant sur le dos R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 6x50m un bras, focus rotation des hanches R20''",
+            "· 4x25m nage complète, garder l'amplitude"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m roulis marqué, épaule qui sort franchement R15''",
+            "· 4x50m nage complète"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x100m : 50m roulis exagéré + 50m nage normale R20''"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m pull-buoy, focus rotation bassin-épaules R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m un bras alterné, main qui reste devant R15''",
+            "· 4x50m amplitude + roulis"
+          ]
+        },
+        {
+          "distance": 200,
+          "lines": [
+            "· 4x50m palmes, focus rotation complète sans forcer R20''"
+          ]
+        }
+      ]
+    },
+    "technique_catchup": {
+      "label": "Rattrapé",
+      "drills": [
+        {
+          "distance": 500,
+          "lines": [
+            "· 8x25m rattrapé (bras dans l'axe des épaules) R15''",
+            "· 4x50m rattrapé lent, focus glisse",
+            "· 4x25m rattrapé rapide, transition vers nage normale"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 6x50m rattrapé R20''",
+            "· 4x25m rattrapé avec palmes, focus appui",
+            "· 4x25m retour à nage complète, garder la glisse"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 10x25m rattrapé très lent, glisse maximale R15''",
+            "· 4x50m rattrapé progressif (lent → rapide) R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 6x50m rattrapé + plaquettes légères, focus prise d'appui R20''",
+            "· 4x25m nage complète en gardant le temps de glisse"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m rattrapé, compter le temps de glisse à voix haute R15''",
+            "· 4x50m rattrapé / nage normale alterné par 25m"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m rattrapé, main qui attend franchement R15''",
+            "· 4x50m rattrapé rapide"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x100m : 50m rattrapé + 50m nage normale R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 6x50m rattrapé avec palmes R20''",
+            "· 4x25m nage complète, garder la glisse"
+          ]
+        },
+        {
+          "distance": 250,
+          "lines": [
+            "· 10x25m rattrapé progressif (lent → rapide) R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m rattrapé, focus alignement épaule-main R15''",
+            "· 4x50m nage normale"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 6x50m rattrapé + plaquettes légères R20''",
+            "· 4x50m nage complète"
+          ]
+        }
+      ]
+    },
+    "technique_jambes": {
+      "label": "Éducatif + jambes",
+      "drills": [
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x25m rattrapé R15''",
+            "· 6x50m jambes crawl planche R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x50m un bras (l'autre tendu devant) R20''",
+            "· 4x50m jambes crawl planche R15''"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 8x25m godilles R15''",
+            "· 6x50m jambes dos planche R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x25m rattrapé R15''",
+            "· 4x50m jambes crawl palmes R20''",
+            "· 4x25m nage complète"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 6x25m crawl lent regard fond R15''",
+            "· 5x50m jambes crawl planche R15''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x50m rattrapé R20''",
+            "· 4x50m jambes crawl sans planche (bras devant) R20''"
+          ]
+        },
+        {
+          "distance": 550,
+          "lines": [
+            "· 8x25m un bras R15''",
+            "· 6x50m jambes crawl planche R15''",
+            "· 2x25m nage complète"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x25m entrée de main alignée R15''",
+            "· 4x50m jambes crawl planche R15''",
+            "· 4x25m nage"
+          ]
+        },
+        {
+          "distance": 600,
+          "lines": [
+            "· 4x50m rattrapé R20''",
+            "· 4x100m : 50m jambes · 50m crawl R20''"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 6x25m glisse / position R15''",
+            "· 4x50m jambes crawl R15''",
+            "· 4x25m nage complète"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x25m un bras R15''",
+            "· 6x50m jambes crawl palmes R15''"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 6x25m godilles R15''",
+            "· 5x50m jambes dos planche R15''",
+            "· 2x25m nage complète"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x50m rattrapé R20''",
+            "· 4x50m jambes crawl planche, focus gainage R20''"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 4x25m respiration 3T R15''",
+            "· 4x100m : 50m jambes · 50m crawl R20''"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 6x25m entrée de main alignée R15''",
+            "· 4x50m jambes dos planche R15''"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 4x50m un bras R20''",
+            "· 5x50m jambes crawl palmes R15''",
+            "· 2x25m nage"
+          ]
+        }
+      ]
+    },
+    "technique_chiens": {
+      "label": "Grand chien & petit chien",
+      "drills": [
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x50 : 25m grand chien · 25m normal"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x50 : 25m petit chien · 25m normal"
+          ]
+        },
+        {
+          "distance": 500,
+          "lines": [
+            "· 6x25m grand chien R15''",
+            "· 6x25m petit chien R15''",
+            "· 4x50m nage normale"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m grand chien R15''",
+            "· 4x50m nage complète"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 6x25m grand chien R15''",
+            "· 4x50m nage normale"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 6x25m petit chien R15''",
+            "· 4x50m nage complète"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x50 : 25m grand chien · 25m petit chien",
+            "· 4x50m nage normale"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 8x25m grand chien R10''",
+            "· 4x25m nage complète"
+          ]
+        }
+      ]
+    },
+    "technique_fleche": {
+      "label": "La flèche",
+      "drills": [
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m flèche : poussée mur + glisse bras tendus, tête entre les bras R15''",
+            "· 4x50m crawl facile"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m : 25m flèche · 25m crawl facile R20''"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 10x25m flèche, sens la glisse le plus longtemps possible R15''",
+            "· 4x25m crawl facile"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m flèche R15''",
+            "· 4x50m nage facile, garde la sensation de glisse"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m : 25m flèche · 25m dos facile R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m flèche, souffle doucement pendant la glisse R15''",
+            "· 4x50m crawl facile"
+          ]
+        }
+      ]
+    },
+    "technique_grand_chien": {
+      "label": "Grand chien",
+      "drills": [
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m grand chien : bras qui restent sous l'eau, traction large R15''",
+            "· 4x50m crawl facile"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m : 25m grand chien · 25m crawl facile R20''"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 10x25m grand chien, lentement, sens l'eau R15''",
+            "· 4x25m crawl facile"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m grand chien R15''",
+            "· 4x50m nage facile"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m : 25m grand chien · 25m flèche R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m grand chien, bras sous l'eau du début à la fin R15''",
+            "· 4x50m crawl facile"
+          ]
+        }
+      ]
+    },
+    "technique_croisement": {
+      "label": "Alignement / entrée de main",
+      "drills": [
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x50m focus entrée de main alignée épaule R20''"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m : 25m un bras · 25m nage complète R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m crawl lent, regard vers le fond R15''",
+            "· 4x50m nage normale, checker l'alignement"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x50m : 25m rattrapé large · 25m nage R20''"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m nage complète, entrée de main devant l'épaule R20''"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m entrée de main devant l'épaule, focus alignement R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m un bras, main qui entre alignée R15''",
+            "· 4x50m nage complète"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x50m : 25m rattrapé serré · 25m nage normale R20''"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x50m focus regard vers le fond, alignement tête-colonne R20''"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 6x25m entrée de main + glisse avant traction R15''",
+            "· 4x50m nage normale, vérifier l'alignement"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x100m : 50m focus alignement + 50m nage complète R20''"
+          ]
+        }
+      ]
+    },
+    "technique_virages": {
+      "label": "Virages culbute",
+      "drills": [
+        {
+          "distance": 550,
+          "lines": [
+            "· 8x25m culbute sans mur (rotation seule) R20''",
+            "· 6x25m approche + virage, mains fixes hauteur hanches R20''",
+            "· 4x50m avec virage au mur, sortie propulsée"
+          ]
+        },
+        {
+          "distance": 550,
+          "lines": [
+            "· 6x25m virage + coulée R20''",
+            "· 8x25m rotation seule, focus mains basses fixes",
+            "· 4x50m enchaînement 2 virages par longueur"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 10x25m culbute isolée R15''",
+            "· 4x50m virage + accélération sortie de mur R25''"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 8x25m rotation seule, compter 1-2 pour la rotation autour des épaules R20''",
+            "· 6x25m virage complet, focus mains qui ne remontent pas R20''"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 6x25m approche à vitesse réelle + virage R20''",
+            "· 4x50m 2 longueurs avec virage, sortie en 5 coups de jambes"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 8x25m culbute, focus position groupée R20''",
+            "· 4x50m avec virage, sortie rapide"
+          ]
+        },
+        {
+          "distance": 300,
+          "lines": [
+            "· 6x25m approche + virage, mains basses R20''",
+            "· 6x25m sortie de virage en 5 coups de jambes R15''"
+          ]
+        },
+        {
+          "distance": 450,
+          "lines": [
+            "· 10x25m rotation seule, apnée courte R15''",
+            "· 4x50m virage complet enchaîné"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 6x25m virage + coulée R20''",
+            "· 4x50m 2 virages par longueur, allure contrôlée"
+          ]
+        },
+        {
+          "distance": 350,
+          "lines": [
+            "· 8x25m culbute sans mur, compter la rotation R20''",
+            "· 6x25m virage réel, mains fixes"
+          ]
+        },
+        {
+          "distance": 400,
+          "lines": [
+            "· 4x100m avec 2 virages par répétition, sortie propulsée R20''"
+          ]
+        }
+      ]
+    }
+  },
+  "corpsCounts": {
+    "endurance": 24,
+    "vitesse": 20,
+    "mixte": 16,
+    "eau_libre": 14,
+    "test": 10
+  },
+  "corps": {
+    "endurance": [
+      {
+        "text": "8x100m D2'",
+        "distance": 800,
+        "repDist": 100
+      },
+      {
+        "text": "6x100m R20''",
+        "distance": 600,
+        "repDist": 100
+      },
+      {
+        "text": "10x50 D1'",
+        "distance": 500,
+        "repDist": 50
+      },
+      {
+        "text": "12x50 D1'",
+        "distance": 600,
+        "repDist": 50
+      },
+      {
+        "text": "3x400m R30''",
+        "distance": 1200,
+        "repDist": 400
+      },
+      {
+        "text": "4x200m R20''",
+        "distance": 800,
+        "repDist": 200
+      },
+      {
+        "text": "6x200m R20''",
+        "distance": 1200,
+        "repDist": 200
+      },
+      {
+        "text": "4x150m R20''",
+        "distance": 600,
+        "repDist": 150
+      },
+      {
+        "text": "400m continu (sans pause)",
+        "distance": 400,
+        "repDist": 400
+      },
+      {
+        "text": "800m continu (sans pause)",
+        "distance": 800,
+        "repDist": 800
+      },
+      {
+        "text": "5x100m ↗ progressif R20''",
+        "distance": 500,
+        "repDist": 100
+      },
+      {
+        "text": "8x50m R15''",
+        "distance": 400,
+        "repDist": 50
+      },
+      {
+        "text": "10x100m R15''",
+        "distance": 1000,
+        "repDist": 100
+      },
+      {
+        "text": "4x100m R10''",
+        "distance": 400,
+        "repDist": 100
+      },
+      {
+        "text": "2x400m R45''",
+        "distance": 800,
+        "repDist": 400
+      },
+      {
+        "text": "6x150m R20''",
+        "distance": 900,
+        "repDist": 150
+      },
+      {
+        "text": "8x150m R15''",
+        "distance": 1200,
+        "repDist": 150
+      },
+      {
+        "text": "1200m continu (sans pause)",
+        "distance": 1200,
+        "repDist": 1200
+      },
+      {
+        "text": "5x200m R20''",
+        "distance": 1000,
+        "repDist": 200
+      },
+      {
+        "text": "3x300m R30''",
+        "distance": 900,
+        "repDist": 300
+      },
+      {
+        "text": "6x300m R30''",
+        "distance": 1800,
+        "repDist": 300
+      },
+      {
+        "text": "4x100m ↘ dégressif R20''",
+        "distance": 400,
+        "repDist": 100
+      },
+      {
+        "text": "16x50m R10''",
+        "distance": 800,
+        "repDist": 50
+      },
+      {
+        "text": "2x(4x100m R15'') — R45'' entre séries",
+        "distance": 800,
+        "repDist": 100
+      }
+    ],
+    "vitesse": [
+      {
+        "text": "8x50m R30''",
+        "distance": 400,
+        "repDist": 50
+      },
+      {
+        "text": "6x50m R45'' RAC",
+        "distance": 300,
+        "repDist": 50
+      },
+      {
+        "text": "10x25m départ plongé R30''",
+        "distance": 250,
+        "repDist": 25,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "4x(4x25m) R15'' — R1' entre séries",
+        "distance": 400,
+        "repDist": 25,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "6x25m R45'' RAC",
+        "distance": 150,
+        "repDist": 25,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "10x50m : 25m à bloc + 25m relâché — départ plongé R30''",
+        "distance": 500,
+        "repDist": 50,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "4x(4x50m : 25m à bloc + 25m relâché) R15'' — R1' entre séries",
+        "distance": 800,
+        "repDist": 50,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "6x50m : 25m à bloc + 25m relâché R45'' RAC",
+        "distance": 300,
+        "repDist": 50,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "4x50m progressif : · 1 — lent · 2 — ↗ · 3 — ↗ · 4 — rapide",
+        "distance": 200,
+        "repDist": 50
+      },
+      {
+        "text": "4x50m dégressif : · 1 — rapide · 2 — ↘ · 3 — ↘ · 4 — lent",
+        "distance": 200,
+        "repDist": 50
+      },
+      {
+        "text": "12x50m R30''",
+        "distance": 600,
+        "repDist": 50
+      },
+      {
+        "text": "8x25m départ plongé R45''",
+        "distance": 200,
+        "repDist": 25,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "8x50m : 25m à bloc + 25m relâché — départ plongé R45''",
+        "distance": 400,
+        "repDist": 50,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "5x(3x25m) R10'' — R45'' entre séries",
+        "distance": 375,
+        "repDist": 25,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "5x(3x50m : 25m à bloc + 25m relâché) R10'' — R45'' entre séries",
+        "distance": 750,
+        "repDist": 50,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "4x25m sprint max R1'",
+        "distance": 100,
+        "repDist": 25,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "4x50m : 25m sprint max + 25m relâché R1'",
+        "distance": 200,
+        "repDist": 50,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "6x50m accélération progressive sur la longueur R30''",
+        "distance": 300,
+        "repDist": 50
+      },
+      {
+        "text": "3x100m : 50m rapide + 50m relâché R45''",
+        "distance": 300,
+        "repDist": 100
+      },
+      {
+        "text": "8x50m dégressif par 2 (1-2 modéré, 3-4 ↗, 5-6 ↗, 7-8 rapide) R30''",
+        "distance": 400,
+        "repDist": 50
+      }
+    ],
+    "mixte": [
+      {
+        "text": "4x100m : 50m technique + 50m physio R20''",
+        "distance": 400,
+        "repDist": 100
+      },
+      {
+        "text": "6x75m : 25m éducatif + 50m physio R20''",
+        "distance": 450,
+        "repDist": 75,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "6x100m : 50m éducatif + 50m physio R20''",
+        "distance": 600,
+        "repDist": 100,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "3x(2x100m physio + 2x25m technique) R20''",
+        "distance": 750,
+        "repDist": 100,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "3x(2x100m physio + 1x50m technique) R20''",
+        "distance": 750,
+        "repDist": 100,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "4x50m technique + 4x50m physio R20''",
+        "distance": 400,
+        "repDist": 50
+      },
+      {
+        "text": "5x100m : 25m rattrapé + 75m physio R20''",
+        "distance": 500,
+        "repDist": 100,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "5x100m : 50m rattrapé + 50m physio R20''",
+        "distance": 500,
+        "repDist": 100,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "4x150m : 50m technique + 100m physio R20''",
+        "distance": 600,
+        "repDist": 150
+      },
+      {
+        "text": "6x50m technique + 6x50m physio R15''",
+        "distance": 600,
+        "repDist": 50
+      },
+      {
+        "text": "4x75m : 25m technique + 50m physio R20''",
+        "distance": 300,
+        "repDist": 75,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "4x100m : 50m technique + 50m physio R20''",
+        "distance": 400,
+        "repDist": 100,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "3x200m : 100m technique + 100m physio R30''",
+        "distance": 600,
+        "repDist": 200
+      },
+      {
+        "text": "2x(4x75m : 25m technique + 50m physio) R15'' — R45'' entre séries",
+        "distance": 600,
+        "repDist": 75,
+        "pools": [
+          25
+        ]
+      },
+      {
+        "text": "2x(4x100m : 50m technique + 50m physio) R15'' — R45'' entre séries",
+        "distance": 800,
+        "repDist": 100,
+        "pools": [
+          50
+        ]
+      },
+      {
+        "text": "8x50m alterné technique/physio R20''",
+        "distance": 400,
+        "repDist": 50
+      }
+    ],
+    "eau_libre": [
+      {
+        "text": "8x100m, visée toutes les 6 coups (sighting) R20''",
+        "distance": 800,
+        "repDist": 100
+      },
+      {
+        "text": "6x150m continu, focus navigation R30''",
+        "distance": 900,
+        "repDist": 150
+      },
+      {
+        "text": "4x200m, simulation peloton (drafting mental) R30''",
+        "distance": 800,
+        "repDist": 200
+      },
+      {
+        "text": "2x400m allure course, sighting régulier R1'",
+        "distance": 800,
+        "repDist": 400
+      },
+      {
+        "text": "5x100m avec départ groupé simulé R20''",
+        "distance": 500,
+        "repDist": 100
+      },
+      {
+        "text": "3x300m continu, sighting toutes les 8 coups R30''",
+        "distance": 900,
+        "repDist": 300
+      },
+      {
+        "text": "10x100m, visée toutes les 8 coups R15''",
+        "distance": 1000,
+        "repDist": 100
+      },
+      {
+        "text": "4x300m continu, sighting régulier R30''",
+        "distance": 1200,
+        "repDist": 300
+      },
+      {
+        "text": "2x600m allure course, sighting toutes les 10 coups R1'",
+        "distance": 1200,
+        "repDist": 600
+      },
+      {
+        "text": "6x100m départ groupé simulé, sighting immédiat R15''",
+        "distance": 600,
+        "repDist": 100
+      },
+      {
+        "text": "3x400m continu, navigation autonome R45''",
+        "distance": 1200,
+        "repDist": 400
+      },
+      {
+        "text": "8x150m, alternance sighting/technique R20''",
+        "distance": 1200,
+        "repDist": 150
+      },
+      {
+        "text": "1x800m allure course continue, sighting toutes les 8 coups",
+        "distance": 800,
+        "repDist": 800
+      },
+      {
+        "text": "5x200m simulation peloton (drafting mental) R25''",
+        "distance": 1000,
+        "repDist": 200
+      }
+    ],
+    "test": [
+      {
+        "text": "400m chrono continu — note ton temps (CSS)",
+        "distance": 400,
+        "repDist": 400
+      },
+      {
+        "text": "2x200m chrono R3' — note chaque temps",
+        "distance": 400,
+        "repDist": 200
+      },
+      {
+        "text": "100m chrono max + 300m facile R3' — note le 100m",
+        "distance": 400,
+        "repDist": 100
+      },
+      {
+        "text": "3x100m chrono R2'30 — note chaque 100m (régularité)",
+        "distance": 300,
+        "repDist": 100
+      },
+      {
+        "text": "200m allure course + 100m max R2' — note les 2 temps",
+        "distance": 300,
+        "repDist": 100
+      },
+      {
+        "text": "8x50m D1'15 (Z3) — note le temps moyen /50m",
+        "distance": 400,
+        "repDist": 50
+      },
+      {
+        "text": "500m chrono continu — note ton temps",
+        "distance": 500,
+        "repDist": 500
+      },
+      {
+        "text": "4x100m chrono R2' — note chaque temps (régularité)",
+        "distance": 400,
+        "repDist": 100
+      },
+      {
+        "text": "2x150m chrono R2'30 — note chaque temps",
+        "distance": 300,
+        "repDist": 150
+      },
+      {
+        "text": "300m allure course + 100m max R3' — note les 2 temps",
+        "distance": 400,
+        "repDist": 100
+      }
+    ]
+  },
+  "departs": [
+    {
+      "distance": 400,
+      "text": "-400m Dos/Cr par 100m (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Cr/Dos par 50m (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Cr palmes (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m mixte crawl/dos souple (Z1)"
+    },
+    {
+      "distance": 350,
+      "text": "-350m mixte crawl/dos (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m au choix (3ème 25m chq 100 en godille) (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Cr souple (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Dos/Cr par 50m (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Cr/Dos par 25m (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Cr tuba (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Dos souple (Z1)"
+    },
+    {
+      "distance": 350,
+      "text": "-350m Cr/Dos par 50m (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m au choix, change de nage toutes les 2 longueurs (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m Cr palmes + tuba (Z1)"
+    },
+    {
+      "distance": 450,
+      "text": "-450m mixte crawl/dos souple (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m au choix (dernier 25m chq 50m en godille) (Z1)"
+    }
+  ],
+  "departsJambes": [
+    {
+      "distance": 400,
+      "text": "-400m au choix (3ème 25m chq 100 en jambes) (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m jambes crawl planche (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m jambes dos planche (Z1)"
+    },
+    {
+      "distance": 400,
+      "text": "-400m au choix (dernier 25m chq 50m en jambes) (Z1)"
+    }
+  ],
+  "fins": [
+    "-200m au choix — Z1",
+    "-200m libre récup — Z1",
+    "-200m le + lent possible — Z1",
+    "-200m au choix — Z1",
+    "-200m au choix — souple",
+    "-200m dos très facile — Z1",
+    "-200m multi-nages, sans chrono — Z1",
+    "-200m au choix, dernière longueur en godilles — Z1",
+    "-200m relâché, respiration ample — Z1",
+    "-200m souple — Z1"
+  ],
+  "focus": [
+    "technique_jambes",
+    "technique_respiration",
+    "technique_roulis",
+    "technique_jambes",
+    "technique_catchup",
+    "technique_virages",
+    "technique_chiens",
+    "technique_jambes"
+  ],
+  "focusDecouverte": [
+    "technique_fleche",
+    "technique_grand_chien",
+    "technique_fleche",
+    "technique_grand_chien",
+    "technique_fleche",
+    "technique_grand_chien",
+    "technique_fleche",
+    "technique_grand_chien"
+  ],
+  "owCount": 18,
+  "ow": [
+    {
+      "i": 0,
+      "title": "Grand chien & roulis",
+      "type": "TECHNIQUE",
+      "intensity": "Z1/Z2 — réathlétisation, nage appliquée sans forcer",
+      "details": [
+        "Échauffement : 400m crawl/dos par 50m — Z1, alterne à chaque longueur",
+        "4×50m grand chien + tuba frontal — le plus lentement possible — R20\" — un bras tendu devant, échange complet, sens la prise d'eau",
+        "4×50m palmes + tuba roulis — R20\" — rotation du bassin, talons à la surface",
+        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — garde la technique des éducatifs, sighting tous les 8 bras",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 1,
+      "title": "Position & endurance 100m",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — allure régulière, recherche de position dans l'eau",
+      "details": [
+        "Échauffement : 400m crawl palmes — Z1, jambes actives, corps à plat",
+        "200m le plus lent possible — recherche de sensation, loin devant / loin derrière, teste différentes positions",
+        "4×50m palmes : 50m bras droit devant / gauche cuisse · 50m inversé — respiration latérale — R20\"",
+        "6×100m crawl — R20\" — Z2, allure régulière, respiration 3 temps",
+        "Retour au calme : 300"
+      ]
+    },
+    {
+      "i": 2,
+      "title": "Sensibilité & continuité",
+      "type": "RÉCUPÉRATION",
+      "intensity": "Z1/Z2 léger — efficacité et position, sans pression",
+      "details": [
+        "Échauffement : 200m crawl + 200m dos — Z1",
+        "8×50m le moins de mouvements possible par 50m — R20\" — concentre-toi sur la position, efficacité de traction, loin devant / loin derrière",
+        "400m crawl Z2 — sans pause, rythme régulier — tu dois tenir de bout en bout",
+        "200m palmes : 50m ondulation sous l'eau / 150m crawl — R20\" — sens l'ondulation, enchaîne en nage fluide",
+        "Retour au calme : 100 relâché — Z1"
+      ]
+    },
+    {
+      "i": 3,
+      "title": "DPS & progressif/dégressif",
+      "type": "TECHNIQUE",
+      "intensity": "Z2 — modulation d'allure sans vitesse, nage appliquée",
+      "details": [
+        "Échauffement : 400m crawl/dos par 100m — Z1",
+        "4×50m le moins de coups de bras possible sur 50m — R20\" — compte tes bras, vise moins de cycles",
+        "4×50m progressif : 1 lent · 2 ↗ · 3 ↗ · 4 rapide — R20\" — monte en puissance sur la série",
+        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — même technique qu'en éducatif",
+        "4×50m dégressif : 1 rapide · 2 ↘ · 3 ↘ · 4 lent — R20\" — redescends progressivement",
+        "Retour au calme : 300"
+      ]
+    },
+    {
+      "i": 4,
+      "title": "Endurance 100m & position palmes",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — fond aérobie, travail de position en échauffement",
+      "details": [
+        "Échauffement : 400m crawl palmes — Z1",
+        "4×50m palmes : 50m bras droit devant / gauche cuisse · 50m inversé — respiration latérale — R20\"",
+        "8×100m crawl — R20\" — Z2, allure tenue du 1er au dernier 100m",
+        "200m le plus lent possible — recherche de sensation, relâche les épaules",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 5,
+      "title": "Hypoxie intégrée",
+      "type": "TECHNIQUE",
+      "intensity": "Z2 — contrôle respiratoire intégré au set, pas de sprint",
+      "details": [
+        "Échauffement : 400m au choix — Z1, crawl ou dos",
+        "200m jambes planche — battements mains en flèche, corps gainé",
+        "6×100m : 50m grand chien · 50m normal — R15\" — le plus lentement possible sur l'éducatif",
+        "6×100m crawl — R20\" — respiration par 100m : 3 temps · 5 temps · 7 temps · 9 temps · 7 temps · 5 temps",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 6,
+      "title": "Volume 50m & hypoxie rotative",
+      "type": "TECHNIQUE",
+      "intensity": "Z2 — montée de volume, nage appliquée, épaule en confiance",
+      "details": [
+        "Échauffement : 400m crawl/dos par 50m — Z1",
+        "5×50m tuba lent : 50m grand chien · 50m crawl normal — R20\" — le plus lentement possible",
+        "5×50m palmes + tuba roulis — R20\" — rotation consciente",
+        "12×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — respiration par 50m en rotation : 3 temps · 5 temps · 7 temps · 9 temps",
+        "400m le plus lent possible — recherche de sensation + récup — relâche tout"
+      ]
+    },
+    {
+      "i": 7,
+      "title": "Endurance 100m & travail sous l'eau",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — fond aérobie, volume en hausse sans monter l'intensité",
+      "details": [
+        "Échauffement : 400m crawl palmes — Z1",
+        "2×100m rattrapé drill + tuba — le plus lentement possible — R20\" — un bras attend l'autre",
+        "8×50m palmes : 1× crawl sous l'eau · 1× godille pied en avant sur le dos — R20\" — alterne les 50m",
+        "10×100m crawl — R20\" — Z2, allure régulière — note si tu tiens le même rythme sur toutes les reps",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 8,
+      "title": "Reps 150m & ondulation palmes",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — reps longues, respiration et ondulation, gestion d'allure",
+      "details": [
+        "Échauffement : 400m au choix — Z1",
+        "8×100m : 50m grand chien · 50m crawl normal — R15\" — le plus lentement possible sur l'éducatif",
+        "4×150m crawl — R25\" — respiration par 25m : 3 temps · 5 temps · 7 temps · 5 temps · 3 temps — même allure malgré le changement respiratoire",
+        "4×100m palmes : 50m ondulation sous l'eau / 150m crawl — R0'30\" — sens l'ondulation, enchaîne en nage fluide",
+        "200m le plus lent possible — souple + sensation"
+      ]
+    },
+    {
+      "i": 9,
+      "title": "Rythme de nage & fréquence de bras",
+      "type": "TECHNIQUE",
+      "intensity": "Z2 — conscience du rythme, pas de vitesse pure",
+      "details": [
+        "Échauffement : 400m crawl/dos — Z1, respiration libre",
+        "6×50m compte tes cycles de bras par longueur — R15\" — vise le même chiffre à chaque fois",
+        "8×100m crawl — R0'30\" — respiration 3 temps, nage appliquée — garde la même fréquence du 1er au dernier",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 10,
+      "title": "Endurance 200m & gestion d'allure",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — allure tenue sur des reps longues",
+      "details": [
+        "Échauffement : 400m crawl palmes — Z1",
+        "4×50m accélération progressive sur la longueur — R15\"",
+        "200m le plus lent possible — recherche de sensation, relâche les épaules",
+        "4×200m crawl — R20\" — Z2, même allure du 1er au dernier 200m",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 11,
+      "title": "Virages & reprise de nage",
+      "type": "TECHNIQUE",
+      "intensity": "Z2 — technique de virage, pas de vitesse",
+      "details": [
+        "Échauffement : 400m crawl/dos par 50m — Z1",
+        "8×50m virage + 5m de coulée + tuba — R15\" — reprise de nage progressive après le mur",
+        "8×100m crawl — R20\" — enchaîne le virage sans casser l'allure",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 12,
+      "title": "Sighting avancé & navigation",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — sighting fréquent, nage appliquée",
+      "details": [
+        "Échauffement : 400m crawl palmes — Z1",
+        "4×50m sighting tous les 4 bras — R15\" — lève les yeux sans casser le rythme",
+        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — sighting tous les 6-8 bras, garde le cap",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 13,
+      "title": "Endurance longue & négatif split",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — 2ème moitié plus rapide que la 1ère",
+      "details": [
+        "Échauffement : 400m au choix — Z1",
+        "600m crawl — première moitié Z1/Z2 souple, deuxième moitié un peu plus soutenue",
+        "Retour au calme : 300"
+      ]
+    },
+    {
+      "i": 14,
+      "title": "Jambes & gainage",
+      "type": "TECHNIQUE",
+      "intensity": "Z2 — renforcement jambes/gainage, pas de vitesse",
+      "details": [
+        "Échauffement : 400m au choix — Z1",
+        "300m jambes planche — battements réguliers, corps gainé",
+        "6×50m pull-buoy sans battements — R15\" — focus gainage et rotation",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 15,
+      "title": "Simulation allure course",
+      "type": "ENDURANCE",
+      "intensity": "Z2/Z3 — allure objectif, régularité",
+      "details": [
+        "Échauffement : 400m crawl progressif — Z1",
+        "6×100m crawl — R0'30\" — allure course cible, note si tu tiens le rythme",
+        "Retour au calme : 200"
+      ]
+    },
+    {
+      "i": 16,
+      "title": "Volume 200m & respiration contrôlée",
+      "type": "ENDURANCE",
+      "intensity": "Z2 — fond aérobie, contrôle respiratoire",
+      "details": [
+        "Échauffement : 400m au choix — Z1",
+        "4×200m crawl — R20\" — respiration par 200m : 3 temps · 5 temps · 7 temps · 9 temps",
+        "Retour au calme : 300"
+      ]
+    },
+    {
+      "i": 17,
+      "title": "Récupération active & sensations fines",
+      "type": "RÉCUPÉRATION",
+      "intensity": "Z1 — très facile, aucune pression",
+      "details": [
+        "Échauffement : 300m dos/crawl très facile — Z1",
+        "400m crawl Z1 — sans pause, relâché, focus respiration",
+        "200m palmes ondulation très facile — sens le corps qui glisse",
+        "Retour au calme : 200 relâché — Z1"
+      ]
+    }
+  ],
+  "seanceSamples": {
+    "decouverte|nager_progresser|case1-decouverte-np-30": {
+      "ok": true,
+      "distance": "900m",
+      "title": "Découverte · enchaîner un peu plus longtemps",
+      "type": "ENDURANCE",
+      "details": [
+        "-3 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m Grand chien avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
+        "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
+        "-3 × 50 m crawl — lent — focus glisse — repos 20s",
+        "-3 × 50 m crawl — moyen — respiration — repos 20s",
+        "-2 × 50 m crawl — vite — fluide — repos 40s",
+        "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
+      ]
+    },
+    "decouverte|nager_progresser|case2-decouverte-ow-45": {
+      "ok": true,
+      "distance": "900m",
+      "title": "Découverte · enchaîner un peu plus longtemps",
+      "type": "ENDURANCE",
+      "details": [
+        "-3 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
+        "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
+        "-3 × 50 m crawl — lent — focus glisse — repos 20s",
+        "-3 × 50 m crawl — moyen — respiration — repos 20s",
+        "-2 × 50 m crawl — vite — fluide — repos 40s",
+        "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
+      ]
+    },
+    "decouverte|nager_progresser|case3-regulier": {
+      "ok": true,
+      "distance": "900m",
+      "title": "Découverte · enchaîner un peu plus longtemps",
+      "type": "ENDURANCE",
+      "details": [
+        "-3 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m flèche avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
+        "-2 × 50 m Battements bras en opposition avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
+        "-3 × 50 m crawl — lent — focus glisse — repos 20s",
+        "-3 × 50 m crawl — moyen — respiration — repos 20s",
+        "-2 × 50 m crawl — vite — fluide — repos 40s",
+        "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
+      ]
+    },
+    "regulier|nager_progresser|case1-decouverte-np-30": {
+      "ok": true,
+      "distance": "1350m",
+      "title": "Régulier · construire l'endurance",
+      "type": "ENDURANCE",
+      "details": [
+        "-2 × 100 m (50 m crawl + 50 m autre nage) — mise en route, facile",
+        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-3 × 50 m Nager avec un pull-buoy entre les cuisses — facile, sans forcer — focus geste — repos 20s",
+        "-100 m crawl — repos 25s",
+        "-150 m crawl — repos 30s",
+        "-200 m crawl — régulier — repos 30s",
+        "-150 m crawl — repos 30s",
+        "-100 m crawl — repos 25s",
+        "-100 m dos à deux bras — facile, sans forcer",
+        "-50 m crawl facile — retour au calme, sans forcer"
+      ]
+    },
+    "regulier|nager_progresser|case2-decouverte-ow-45": {
+      "ok": true,
+      "distance": "1400m",
+      "title": "Régulier · construire l'endurance",
+      "type": "ENDURANCE",
+      "details": [
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-3 × 50 m flèche avec tuba frontal — facile, sans forcer — focus geste — repos 20s",
+        "-5 × 50 m crawl — lent — repos 20s",
+        "-5 × 50 m crawl — moyen — repos 25s",
+        "-5 × 50 m crawl — vite — repos 35s",
+        "-100 m dos à deux bras — facile, sans forcer",
+        "-50 m crawl facile — retour au calme, sans forcer"
+      ]
+    },
+    "regulier|nager_progresser|case3-regulier": {
+      "ok": true,
+      "distance": "1350m",
+      "title": "Régulier · construire l'endurance",
+      "type": "ENDURANCE",
+      "details": [
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-3 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 20s",
+        "-100 m crawl — repos 25s",
+        "-150 m crawl — repos 30s",
+        "-200 m crawl — régulier — repos 30s",
+        "-150 m crawl — repos 30s",
+        "-100 m crawl — repos 25s",
+        "-100 m dos à deux bras — facile, sans forcer",
+        "-50 m crawl facile — retour au calme, sans forcer"
+      ]
+    },
+    "sportif|eau_libre|case1-decouverte-np-30": {
+      "ok": true,
+      "distance": "1900m",
+      "title": "Sportif · endurance + orientation",
+      "type": "ENDURANCE",
+      "details": [
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-3 × 50 m Nager avec un pull-buoy entre les cuisses — facile, sans forcer — focus geste — repos 20s",
+        "-6 × 200 m crawl — visée toutes les 8 coups — repos 25s",
+        "-100 m dos à deux bras — facile, sans forcer",
+        "-100 m crawl facile — retour au calme, sans forcer"
+      ]
+    },
+    "sportif|eau_libre|case2-decouverte-ow-45": {
+      "ok": true,
+      "distance": "1800m",
+      "title": "Sportif · endurance + orientation",
+      "type": "ENDURANCE",
+      "details": [
+        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-3 × 50 m Crawl rattrapé avec pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-4 × 200 m crawl — allure tenable, focus économie — repos 25s — sighting + allure régulière",
+        "-3 × 50 m jambes crawl — confortable — repos 20s",
+        "-3 × 50 m crawl facile — sans forcer — repos 20s",
+        "-100 m dos à deux bras — facile, sans forcer",
+        "-100 m crawl facile — retour au calme, sans forcer"
+      ]
+    },
+    "sportif|eau_libre|case3-regulier": {
+      "ok": true,
+      "distance": "1800m",
+      "title": "Sportif · endurance + orientation",
+      "type": "ENDURANCE",
+      "details": [
+        "-2 × 100 m (50 m crawl + 50 m dos) — mise en route, facile",
+        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-3 × 50 m Crawl rattrapé avec pull-buoy — facile, sans forcer — focus geste — repos 20s",
+        "-4 × 200 m crawl — allure tenable, focus économie — repos 25s — sighting + allure régulière",
+        "-3 × 50 m jambes crawl — confortable — repos 20s",
+        "-3 × 50 m crawl facile — sans forcer — repos 20s",
+        "-100 m dos à deux bras — facile, sans forcer",
+        "-100 m crawl facile — retour au calme, sans forcer"
+      ]
+    }
+  }
+}

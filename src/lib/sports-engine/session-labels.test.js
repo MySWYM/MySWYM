@@ -11,6 +11,7 @@ import {
   containsForbiddenIntensityCode,
   assertDisplayLabelsClean,
   fallbackNamedSwimLine,
+  humanizeArthurDisplayTerms,
 } from "./session-labels.js";
 import { toCoachDetailLines, composeSession, buildSportProfile, buildSessionBrief } from "./index.js";
 import { genererSeanceDeSemaine } from "../swim-session-generator.js";
@@ -196,6 +197,27 @@ console.log("L10 sanitizeSessionDetails idempotent + @2 RPE");
   const twice = sanitizeSessionDetails(once);
   assert(once.join("|") === twice.join("|"), "idempotent");
   for (const line of once) noForbiddenIntensity(line, "L10");
+}
+
+console.log("L11 D9 — jamais souple ni Z1 à l'affichage");
+{
+  const samples = [
+    "-400m crawl souple (Z1)",
+    "-200m au choix — Z1",
+    "-200m souple — Z1",
+    "-6 × 25 m : flèche + crawl souple — échauffement",
+    "première moitié Z1/Z2 souple",
+  ];
+  for (const raw of samples) {
+    const out = sanitizeSessionDetailLine(raw);
+    assert(!/\bsouple\b/i.test(out), `souple restant: ${raw} → ${out}`);
+    assert(!/\bZ1\b/.test(out), `Z1 restant: ${raw} → ${out}`);
+  }
+  const hum = humanizeArthurDisplayTerms("-200m dos très facile — Z1");
+  assert(/retour au calme|facile/i.test(hum), `fin Z1: ${hum}`);
+  assert(!/\bZ1\b/.test(hum), hum);
+  const clean = assertDisplayLabelsClean(samples.map((s) => sanitizeSessionDetailLine(s)));
+  assert(clean.ok, clean.bad.join("; "));
 }
 
 console.log("✅ session-labels tests passed");

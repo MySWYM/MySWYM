@@ -17,6 +17,14 @@ import {
   ADVANCED_RE,
   COMPLEX_SERIES_RE,
 } from "./exercise-library.js";
+import { pedagogyFlags } from "./pedagogy-flags.js";
+import { buildArthurWarmupForBudget } from "./arthur-warmup-recipes.js";
+import {
+  mapBriefToPedagogyObjective,
+  buildArthurCooldownForBudget,
+  buildArthurTechniqueBlock,
+  buildArthurFunMainBlock,
+} from "./arthur-pedagogy-blocks.js";
 import {
   maxContinuousForDecouverte,
   resolveDecouverteIntent,
@@ -51,7 +59,7 @@ import { buildFourNagesImSets } from "./four-nages-im.js";
 import { selectSetFormat, buildCorpsByFormat as buildCorpsByFormatRaw } from "./set-formats.js";
 import { collapseSetsToDisplayLinesExact } from "./display-sets.js";
 import { restSecFor } from "./recovery.js";
-import { resolveEquipmentUsage, labelWithEquipment } from "./equipment-usage.js";
+import { resolveEquipmentUsage, labelWithEquipment, isEquipmentEngagementExempt } from "./equipment-usage.js";
 import { resolveSessionSpecificity } from "./session-specificity.js";
 import { composeWithQualityGate } from "./composer-quality-gate.js";
 import { resolveHardConstraints } from "./composer-constraints.js";
@@ -396,6 +404,90 @@ function objectiveBodyCue(brief = {}, intent = {}) {
   return null;
 }
 
+/** Injecte cue objectif sur une ligne corps si absent (QG eau libre / triathlon). */
+function ensureObjectiveCueInDetails(details, brief, intent) {
+  void intent;
+  const joined = details.join("\n");
+  if (
+    (brief.objectif === "eau_libre" || brief.family === "eau_libre") &&
+    !/sighting|visée|orientation|navigation|lève|repér/i.test(joined)
+  ) {
+    const objCue = "sighting + allure régulière";
+    const corpsIdx = details.findIndex(
+      (l) =>
+        /^-\d/.test(l) &&
+        /crawl|jambes|nage/i.test(l) &&
+        !/mise en route|dos à deux|retour au calme|focus geste/i.test(l),
+    );
+    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+    else details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
+  }
+  if (
+    (brief.objectif === "triathlon" || brief.family === "triathlon") &&
+    !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)
+  ) {
+    const objCue = "économie d'énergie — allure régulière";
+    const corpsIdx = details.findIndex(
+      (l) =>
+        /^-\d/.test(l) &&
+        /crawl|jambes/i.test(l) &&
+        !/mise en route|dos à deux|focus geste/i.test(l),
+    );
+    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+  }
+}
+
+/** Matos visible dans les détails → liste appliquée (engagement QG). */
+function harvestEquipmentFromDetails(details, inventory = []) {
+  const joined = (details || []).join("\n");
+  const out = [];
+  for (const e of inventory) {
+    if (e === "pull" && /pull/i.test(joined)) out.push("pull");
+    else if (e === "palmes" && /palmes/i.test(joined)) out.push("palmes");
+    else if (e === "tuba" && /tuba/i.test(joined)) out.push("tuba");
+    else if (e === "planche" && /planche/i.test(joined)) out.push("planche");
+    else if (e === "plaquettes" && /plaquette/i.test(joined)) out.push("plaquettes");
+  }
+  return out;
+}
+
+/** Si inventaire non vide et rien d’appliqué : annoter une ligne technique. */
+function ensureEquipmentEngagement(details, eqList, brief) {
+  if (!eqList?.length || isEquipmentEngagementExempt(brief)) return [];
+  let used = harvestEquipmentFromDetails(details, eqList);
+  if (used.length) return used;
+  const inject = [];
+  // Un seul item suffit pour l’engagement QG (évite palmes+tuba systématique)
+  if (eqList.includes("tuba")) inject.push("tuba");
+  else if (eqList.includes("palmes")) inject.push("palmes");
+  else if (eqList.includes("planche")) inject.push("planche");
+  else if (eqList.includes("pull")) inject.push("pull-buoy");
+  if (!inject.length) return used;
+  const label = inject.map((x) => (x === "tuba" ? "tuba frontal" : x)).join(" et ");
+  const matosRe = /palmes|tuba|pull|planche|plaquette|élastique|elastique/i;
+  const candidates = [];
+  for (let i = 0; i < details.length; i++) {
+    const l = details[i];
+    if (!/×.*m/i.test(l)) continue;
+    if (/mise en route|dos à deux|retour au calme|récup/i.test(l)) continue;
+    if (matosRe.test(l)) continue;
+    candidates.push(i);
+  }
+  for (const techIdx of candidates) {
+    const before = details[techIdx];
+    // « avec un doigt » n’est pas du matos — injecter avant le 1er tiret cadratin
+    if (/ — /.test(before)) {
+      details[techIdx] = before.replace(/ — /, ` avec ${label} — `);
+    } else {
+      details[techIdx] = `${before} avec ${label}`;
+    }
+    used = harvestEquipmentFromDetails(details, eqList);
+    if (used.length) return used;
+    details[techIdx] = before;
+  }
+  return [];
+}
+
 export function pedagogicalIntentDecouverte(brief = {}) {
   return resolveDecouverteIntent(brief);
 }
@@ -460,30 +552,47 @@ export function validateDecouverteHard(sessionLike, opts = {}) {
 }
 
 /** Série répétée exacte — J3 : pas de « suite », préfère unité / 2 blocs. */
-function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exerciseId, maxReps = 12 }) {
+function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exerciseId, maxReps = 12, maxContinuous }) {
   const target = Math.max(unit, roundTo(targetM, unit));
   const rest = Math.max(1, Number(restSec) || 20);
   const cap = Math.max(4, Number(maxReps) || 12);
-  const unitsTry = [unit, 200, 100, 50].filter((u, i, a) => u > 0 && a.indexOf(u) === i);
+  const maxU = Number(maxContinuous) > 0 ? Number(maxContinuous) : Infinity;
+  const unitsTry = [unit, 50, 100, 200]
+    .filter((u, i, a) => u > 0 && u <= maxU && a.indexOf(u) === i)
+    .sort((a, b) => a - b);
   for (const u of unitsTry) {
     const reps = Math.round(target / u);
-    if (reps >= 2 && reps <= cap) {
+    if (reps >= 2 && reps <= cap && Math.abs(reps * u - target) <= u) {
       return [{ reps, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
     }
   }
-  const u = unit >= 100 ? unit : 100;
-  const totalReps = Math.max(4, Math.round(target / u));
-  const a = Math.min(cap, Math.ceil(totalReps / 2));
-  const b = Math.min(cap, Math.max(0, totalReps - a));
-  const sets = [{ reps: a, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
-  if (b >= 2) {
+  // Découpe en plusieurs séries à l’unité (respecte maxContinuous)
+  const u = Math.min(unit, Number.isFinite(maxU) ? maxU : unit);
+  const totalReps = Math.max(2, Math.round(target / u));
+  const sets = [];
+  let left = totalReps;
+  let part = 0;
+  while (left > 0) {
+    const chunk = Math.min(cap, left);
+    if (chunk < 2 && sets.length) {
+      sets[sets.length - 1].reps += chunk;
+      break;
+    }
     sets.push({
-      reps: b, distancePerRep: u, restSec: rest, label,
-      cue: `${cue} — 2e bloc, récup un peu plus longue`,
-      block, exerciseId: `${exerciseId}_b`, continuous: false,
+      reps: Math.max(2, chunk),
+      distancePerRep: u,
+      restSec: rest,
+      label,
+      cue: part === 0 ? cue : `${cue} — suite`,
+      block,
+      exerciseId: part === 0 ? exerciseId : `${exerciseId}_b${part}`,
+      continuous: false,
     });
+    left -= Math.max(2, chunk);
+    part += 1;
+    if (part > 6) break;
   }
-  return sets;
+  return sets.length ? sets : [{ reps: 2, distancePerRep: u, restSec: rest, label, cue, block, exerciseId, continuous: false }];
 }
 
 /** Continu court (1 × distance), jamais de repos affiché. */
@@ -501,6 +610,146 @@ function buildContinuous(distanceM, { label, cue, block, exerciseId }) {
 }
 
 /**
+ * Bascule pédagogie warmups : recette Arthur si flag ON et volume compatible.
+ * Sinon false → le composeur garde le départ synthétique actuel.
+ */
+function tryArthurDepart({ budget, pool, level, brief, strokeFocus, rng, sets, details, exerciseIds, maxContinuous }) {
+  if (!pedagogyFlags().warmups) return false;
+  const built = buildArthurWarmupForBudget({
+    budget,
+    pool,
+    level,
+    fourNages: isFourNSession(brief, strokeFocus),
+    maxContinuous: maxContinuous ?? (level === "decouverte" ? 50 : 200),
+    rng,
+  });
+  if (!built) return false;
+  sets.push(built.set);
+  details.push(built.detailLine);
+  exerciseIds.push(built.recipeId);
+  return true;
+}
+
+/** RAC Arthur (D10 dos à deux bras) — fallback FINS_SEMAINE si échec. */
+function tryArthurFin({
+  budget,
+  pool,
+  level,
+  brief,
+  intent,
+  equipment,
+  rng,
+  sets,
+  details,
+  exerciseIds,
+  maxContinuous,
+  zone = null,
+  fourNages = false,
+}) {
+  if (!pedagogyFlags().cooldowns) return false;
+  const built = buildArthurCooldownForBudget({
+    budget,
+    pool,
+    level,
+    objective: mapBriefToPedagogyObjective(brief, intent),
+    equipment: equipment || [],
+    maxContinuous: maxContinuous ?? (level === "decouverte" ? 50 : 200),
+    rng,
+    zone,
+  });
+  if (!built?.sets?.length) return false;
+  for (const s of built.sets) {
+    if (fourNages && /crawl/i.test(s.label || "")) s.stroke = "crawl";
+    sets.push(s);
+  }
+  details.push(...built.lines);
+  exerciseIds.push(built.recipeId);
+  return true;
+}
+
+/** Éducatifs Arthur en bloc technique — fallback banque / synthétique. */
+function tryArthurTechnique({
+  budget,
+  pool,
+  level,
+  brief,
+  intent,
+  equipment,
+  rng,
+  sets,
+  details,
+  exerciseIds,
+  maxContinuous,
+  zone = null,
+}) {
+  if (!pedagogyFlags().drills) return false;
+  const engageEq = !isEquipmentEngagementExempt(brief);
+  const built = buildArthurTechniqueBlock({
+    budget,
+    pool,
+    level,
+    objective: mapBriefToPedagogyObjective(brief, intent),
+    equipment: engageEq ? equipment || [] : [],
+    maxContinuous: maxContinuous ?? (level === "decouverte" ? 50 : 200),
+    rng,
+    zone,
+    papillonOk: canUsePapillon(brief),
+    engageEquipment: engageEq,
+  });
+  if (!built?.sets?.length) return false;
+  {
+    const th = formatTechniqueHeader(
+      built.drills.map((d) => d.name).filter(Boolean).join(" & ") || "Éducatifs",
+      "",
+    );
+    if (th) details.push(th);
+  }
+  for (const s of built.sets) {
+    sets.push(s);
+    exerciseIds.push(s.exerciseId);
+    if (s.continuous || (s.reps === 1 && !(s.restSec > 0))) {
+      details.push(`-${s.distancePerRep} m ${s.label}${s.cue ? ` — ${s.cue}` : ""}`);
+    } else {
+      details.push(
+        `-${s.reps} × ${s.distancePerRep} m ${s.label}${s.cue ? ` — ${s.cue}` : ""} — repos ${s.restSec || 20}s`,
+      );
+    }
+  }
+  return true;
+}
+
+/** Corps fun par objectif — fallback formats / banque existants. */
+function tryArthurFunCorps({
+  budget,
+  pool,
+  level,
+  brief,
+  intent,
+  rng,
+  maxContinuous,
+  zone = null,
+}) {
+  if (!pedagogyFlags().funMainSets) return null;
+  if (brief?.hardConstraints?.painProtection || brief?.taperShortQuality) return null;
+  if (brief?.taperLoad?.taperStage === "race_day") return null;
+  // Séances qualité : garder prep → quality → consolidation (rôles + headers)
+  if (brief?.qualitySession || intent?.quality) return null;
+  const intentId = String(intent?.id || brief?.sessionIntent || "").toLowerCase();
+  if (/^(vitesse|vo2|seuil|css|test)$/.test(intentId)) return null;
+  // Garder une part de formats classiques (variété setFormat / tests)
+  if (typeof rng === "function" && rng() < 0.35) return null;
+  return buildArthurFunMainBlock({
+    budget,
+    pool,
+    level,
+    objective: mapBriefToPedagogyObjective(brief, intent),
+    maxContinuous: maxContinuous ?? (level === "decouverte" ? 50 : 200),
+    rng,
+    zone,
+  });
+}
+
+/**
  * Remplit un quota : séries courtes par défaut ; continu seulement si ≤ maxContinuous.
  */
 function fillAccessibleVolume(targetM, pool, maxContinuous, opts) {
@@ -513,7 +762,7 @@ function fillAccessibleVolume(targetM, pool, maxContinuous, opts) {
   }
   // Corps / application : toujours préférer répétitions si > maxContinuous
   if (target > maxContinuous || opts.preferSeries) {
-    return buildRepeatedExact(target, unit, opts);
+    return buildRepeatedExact(target, unit, { ...opts, maxContinuous });
   }
   return [buildContinuous(target, opts)];
 }
@@ -551,6 +800,20 @@ function composeDecouverteSession(brief, rng) {
   const exerciseIds = [];
 
   // --- DÉPART ---
+  // Bascule warmups Arthur (flag) — sinon départ synthétique inchangé
+  const arthurDepartOk = tryArthurDepart({
+    budget: blocks.depart,
+    pool,
+    level: "decouverte",
+    brief,
+    strokeFocus,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous: maxCont,
+  });
+  if (!arthurDepartOk) {
   // Hard: jamais de continu > maxContinuous (même en échauffement)
   const departCandidates = filterExercises(inventory, brief, { block: "depart" }).filter(
     (ex) => !rejectsDecouverteComplexity(ex) && !rejectsMissingEquipment(ex, eqList),
@@ -583,6 +846,7 @@ function composeDecouverteSession(brief, rng) {
     details.push(formatSetLine(s, beginnerFriendly));
   }
   if (departEx) exerciseIds.push(departEx.id);
+  }
 
   // --- TECHNIQUE ---
   if (intent.id === "decouverte_4n" || isFourNSession(brief, strokeFocus)) {
@@ -598,6 +862,20 @@ function composeDecouverteSession(brief, rng) {
       exerciseIds,
     });
   } else {
+    const arthurTech = tryArthurTechnique({
+      budget: blocks.technique,
+      pool,
+      level: "decouverte",
+      brief,
+      intent,
+      equipment: eqList,
+      rng,
+      sets,
+      details,
+      exerciseIds,
+      maxContinuous: maxCont,
+    });
+    if (!arthurTech) {
     const techCandidates = filterExercises(inventory, brief, { block: "technique" });
     let techEx = pickOne(techCandidates, rng);
     if (!techEx) {
@@ -658,10 +936,11 @@ function composeDecouverteSession(brief, rng) {
       const isApply = /crawl facile|respiration sur le côté/i.test(ts.label);
       const mid = isApply
         ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
-        : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl souple`;
+        : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl facile`;
       details.push(`-${mid}${ts.cue && !isApply ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
     }
     exerciseIds.push(techEx.id);
+    }
   }
 
   // --- CORPS ---
@@ -695,12 +974,31 @@ function composeDecouverteSession(brief, rng) {
     preferSeries: true,
     unit: safeUnit,
   });
+  const arthurCorps = !isFourNSession(brief, strokeFocus)
+    ? tryArthurFunCorps({
+        budget: corpsTarget,
+        pool,
+        level: "decouverte",
+        brief,
+        intent,
+        rng,
+        maxContinuous: maxCont,
+      })
+    : null;
+  if (arthurCorps?.sets?.length) {
+    for (const cs of arthurCorps.sets) {
+      sets.push(cs);
+      exerciseIds.push(cs.exerciseId);
+    }
+    details.push(...arthurCorps.lines);
+  } else {
   for (const cs of corpsSets) {
     if (isFourNSession(brief, strokeFocus)) cs.stroke = "crawl";
     sets.push(cs);
     details.push(formatSetLine(cs, beginnerFriendly));
   }
   exerciseIds.push(corpsSets[0].exerciseId);
+  }
   if (fourNPortion) {
     for (const s of fourNPortion.sets) {
       sets.push(s);
@@ -711,6 +1009,21 @@ function composeDecouverteSession(brief, rng) {
 
   // --- FIN --- (respecte maxContinuous : pas de 100–150m continu si plafond 50)
   const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
+  const arthurFinOk = tryArthurFin({
+    budget: blocks.rac,
+    pool,
+    level: "decouverte",
+    brief,
+    intent,
+    equipment: eqList,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous: maxCont,
+    fourNages: isFourNSession(brief, strokeFocus),
+  });
+  if (!arthurFinOk) {
   let finSets;
   if (blocks.rac <= maxCont) {
     finSets = [
@@ -751,6 +1064,9 @@ function composeDecouverteSession(brief, rng) {
       details.push(formatSetLine(s, beginnerFriendly));
     }
   }
+  }
+
+  ensureObjectiveCueInDetails(details, brief, intent);
 
   const volumeSets = volumeFromSets(sets);
   const consistency = assertVolumeConsistency({
@@ -768,10 +1084,19 @@ function composeDecouverteSession(brief, rng) {
   }
 
   const usedEq = [];
-  if (matosNote) {
-    if (eqList.includes("palmes") && /palmes/i.test(matosNote)) usedEq.push("palmes");
-    if (eqList.includes("tuba") && /tuba/i.test(matosNote)) usedEq.push("tuba");
-    if (eqList.includes("planche") && /planche/i.test(matosNote)) usedEq.push("planche");
+  const joinedDetails = details.join("\n");
+  for (const e of eqList) {
+    if (e === "pull" && /pull/i.test(joinedDetails)) usedEq.push("pull");
+    else if (e === "palmes" && /palmes/i.test(joinedDetails)) usedEq.push("palmes");
+    else if (e === "tuba" && /tuba/i.test(joinedDetails)) usedEq.push("tuba");
+    else if (e === "planche" && /planche/i.test(joinedDetails)) usedEq.push("planche");
+    else if (e === "plaquettes" && /plaquette/i.test(joinedDetails)) usedEq.push("plaquettes");
+  }
+
+  // Engagement matos : inventaire non vide → annoter une ligne technique si rien de visible
+  if (eqList.length && !usedEq.length && !isEquipmentEngagementExempt(brief)) {
+    const applied = ensureEquipmentEngagement(details, eqList, brief);
+    usedEq.push(...applied);
   }
 
   const session = {
@@ -1003,7 +1328,7 @@ function techLabelsRegulier(primary) {
     rattrape: { label: "crawl rattrapé", cue: "bras dans l'axe, glisse", focus: "technique_catchup" },
     respiration: { label: "crawl en expirant continûment dans l'eau", cue: "expire sans t'arrêter", focus: "technique_respiration" },
     roulis: { label: "battements sur le côté", cue: "épaule qui sort, rotation douce", focus: "technique_roulis" },
-    jambes: { label: "battements crawl", cue: "battements souples", focus: "technique_jambes" },
+    jambes: { label: "battements crawl", cue: "battements sans forcer", focus: "technique_jambes" },
     chiens: { label: "grand chien", cue: "bras sous l'eau, traction large", focus: "technique_chiens" },
     virages: { label: "coulée après virage", cue: "rotation groupée, mains basses", focus: "technique_virages" },
     nage: { label: "crawl facile, respiration sur le côté habituel", cue: "mouvement propre", focus: null },
@@ -1094,8 +1419,21 @@ function composeRegulierSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  // DÉPART — jamais de continu > maxContinuous
+  // DÉPART — Arthur warmups (flag) ou synthétique actuel
   const departDist = blocks.depart;
+  const arthurDepartOk = tryArthurDepart({
+    budget: departDist,
+    pool,
+    level: "regulier",
+    brief,
+    strokeFocus,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous: maxCont,
+  });
+  if (!arthurDepartOk) {
   if (departDist <= maxCont) {
     const s = buildContinuous(departDist, {
       label: departLabel,
@@ -1122,6 +1460,7 @@ function composeRegulierSession(brief, rng) {
     }
   }
   exerciseIds.push("depart_regulier");
+  }
 
   // TECHNIQUE
   const techFocus =
@@ -1155,6 +1494,20 @@ function composeRegulierSession(brief, rng) {
       exerciseIds,
     });
   } else {
+    const arthurTech = tryArthurTechnique({
+      budget: blocks.technique,
+      pool,
+      level: "regulier",
+      brief,
+      intent,
+      equipment: eqList,
+      rng,
+      sets,
+      details,
+      exerciseIds,
+      maxContinuous: maxCont,
+    });
+    if (!arthurTech) {
     const fromBank = tryAppendTechniqueFromBank({
       inventory,
       techMeta,
@@ -1201,10 +1554,11 @@ function composeRegulierSession(brief, rng) {
         const isApply = ts.exerciseId === "tech_apply";
         const mid = isApply
           ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
-          : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl souple`;
+          : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl facile`;
         details.push(`-${mid}${!isApply && ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
       }
       exerciseIds.push(primary[0].exerciseId, "tech_apply");
+    }
     }
   }
 
@@ -1242,7 +1596,25 @@ function composeRegulierSession(brief, rng) {
 
   // Reprise intensité légère : block facile/modéré sans « soutenu »
   let corpsBuilt;
-  if (reprisePattern?.lightQuality) {
+  const arthurFunReg = !isFourNSession(brief, strokeFocus) && !reprisePattern?.lightQuality
+    ? tryArthurFunCorps({
+        budget: mainCorpsTarget,
+        pool,
+        level: "regulier",
+        brief,
+        intent,
+        rng,
+        maxContinuous: intent.id === "reprise" ? Math.min(maxCont, 100) : maxCont,
+      })
+    : null;
+  if (arthurFunReg?.sets?.length) {
+    corpsBuilt = {
+      sets: arthurFunReg.sets,
+      lines: arthurFunReg.lines,
+      displayLines: arthurFunReg.lines,
+      setFormat: arthurFunReg.setFormat || "arthur_fun",
+    };
+  } else if (reprisePattern?.lightQuality) {
     corpsBuilt = buildCorpsByFormat("block", mainCorpsTarget, {
       label: corpsLabel,
       altLabel,
@@ -1342,8 +1714,23 @@ function composeRegulierSession(brief, rng) {
     details.push(...fourNPortion.lines);
   }
 
-  // FIN — respect maxContinuous
+  // FIN — Arthur RAC (D10) ou FINS_SEMAINE
   const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
+  const arthurFinReg = tryArthurFin({
+    budget: blocks.rac,
+    pool,
+    level: "regulier",
+    brief,
+    intent,
+    equipment: eqList,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous: maxCont,
+    fourNages: isFourNSession(brief, strokeFocus),
+  });
+  if (!arthurFinReg) {
   let finSets;
   if (blocks.rac <= maxCont) {
     finSets = [
@@ -1379,6 +1766,22 @@ function composeRegulierSession(brief, rng) {
       details.push(formatSetLine(s, false));
     }
   }
+  }
+
+  ensureObjectiveCueInDetails(details, brief, intent);
+  const appliedEq = ensureEquipmentEngagement(details, eqList, brief);
+  // Uniquement le matos visible (sauf exempt récup/taper : pas de phantom / declared_unused)
+  const eqUsageFinal = {
+    ...eqUsage,
+    applied: appliedEq,
+    usage: appliedEq.length
+      ? "meaningful"
+      : isEquipmentEngagementExempt(brief)
+        ? eqUsage.usage || "none"
+        : eqList.length
+          ? "declared_unused"
+          : eqUsage.usage,
+  };
 
   const volumeSets = volumeFromSets(sets);
   const consistency = assertVolumeConsistency({
@@ -1430,8 +1833,8 @@ function composeRegulierSession(brief, rng) {
       sessionSpecificity,
       setFormat: corpsBuilt.setFormat,
       reprisePattern: reprisePattern?.id || null,
-      equipmentUsage: eqUsage.usage,
-      equipmentApplied: eqUsage.applied,
+      equipmentUsage: eqUsageFinal.usage,
+      equipmentApplied: eqUsageFinal.applied,
       papillonOk,
       qualitySession,
       maxContinuous: maxCont,
@@ -1443,8 +1846,8 @@ function composeRegulierSession(brief, rng) {
     volumeFromSets: volumeSets,
     trainingDistance: volumeSets,
     maxContinuousAllowed: maxCont,
-    equipmentRequired: eqUsage.applied || [],
-    equipmentUsed: eqUsage.applied || [],
+    equipmentRequired: eqUsageFinal.applied || [],
+    equipmentUsed: eqUsageFinal.applied || [],
   };
 
   if (!sessionFitsEquipment(session.details, equipment)) {
@@ -1705,10 +2108,23 @@ function composeSportifSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  // DÉPART Z1 — jamais de continu > maxContinuous crawl
+  // DÉPART — Arthur warmups (flag) ou Z1 synthétique actuel
   const departDist = blocks.depart;
   const depCue = cueFor("Z1", departDist, "échauffement facile");
   const departMaxCont = maxContCrawl;
+  const arthurDepartOk = tryArthurDepart({
+    budget: departDist,
+    pool,
+    level: isPerf ? "performance" : "sportif",
+    brief,
+    strokeFocus,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous: departMaxCont,
+  });
+  if (!arthurDepartOk) {
   if (departDist <= departMaxCont) {
     const s = buildContinuous(departDist, {
       label: departLabel,
@@ -1740,6 +2156,7 @@ function composeSportifSession(brief, rng) {
     }
   }
   exerciseIds.push("depart_sportif");
+  }
 
   // TECHNIQUE
   const techMatos = eqUsage.techNote || "";
@@ -1757,6 +2174,21 @@ function composeSportifSession(brief, rng) {
       exerciseIds,
     });
   } else {
+    const arthurTech = tryArthurTechnique({
+      budget: blocks.technique,
+      pool,
+      level: isPerf ? "performance" : "sportif",
+      brief,
+      intent,
+      equipment: eqList,
+      rng,
+      sets,
+      details,
+      exerciseIds,
+      maxContinuous: maxContCrawl,
+      zone: "Z2",
+    });
+    if (!arthurTech) {
     const fromBank = tryAppendTechniqueFromBank({
       inventory,
       techMeta,
@@ -1817,10 +2249,11 @@ function composeSportifSession(brief, rng) {
         const isApply = ts.exerciseId === "tech_apply";
         const mid = isApply
           ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
-          : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl souple`;
+          : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl facile`;
         details.push(`-${mid}${!isApply && ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
       }
       exerciseIds.push(primary[0].exerciseId, "tech_apply");
+    }
     }
   }
 
@@ -1849,6 +2282,43 @@ function composeSportifSession(brief, rng) {
   const corpsLabel = isFourNSession(brief, strokeFocus)
     ? labelWithEquipment("crawl", eqUsage)
     : swimLabel;
+
+  const arthurFunSp =
+    intent.id !== "test" && !isFourNSession(brief, strokeFocus)
+      ? tryArthurFunCorps({
+          budget: mainCorpsTarget,
+          pool,
+          level: isPerf ? "performance" : "sportif",
+          brief,
+          intent,
+          rng,
+          maxContinuous: maxContCrawl,
+          zone: ["Z3", "Z4"].includes(zone) ? zone : "Z2",
+        })
+      : null;
+
+  if (arthurFunSp?.sets?.length) {
+    if (fourNPortion && sessionSpecificity === "race_specific") {
+      for (const s of fourNPortion.sets) {
+        sets.push(s);
+        exerciseIds.push(s.exerciseId);
+      }
+      details.push(...fourNPortion.lines);
+    }
+    for (const s of arthurFunSp.sets) {
+      if (!s.zone) s.zone = ["Z3", "Z4"].includes(zone) ? zone : "Z2";
+      sets.push(s);
+      exerciseIds.push(s.exerciseId);
+    }
+    details.push(...arthurFunSp.lines);
+    if (fourNPortion && sessionSpecificity !== "race_specific") {
+      for (const s of fourNPortion.sets) {
+        sets.push(s);
+        exerciseIds.push(s.exerciseId);
+      }
+      details.push(...fourNPortion.lines);
+    }
+  } else {
 
   let preferredUnit = null;
   let corpsFormat = setFormat;
@@ -2198,10 +2668,27 @@ function composeSportifSession(brief, rng) {
       }
     }
   }
+  } // fin else arthurFunSp
 
-  // FIN Z1 — respect maxContinuous (taper / pain)
+  // FIN Z1 — Arthur RAC (D10) ou FINS_SEMAINE
   const finMaxCont = Math.min(maxContCrawl, brief.hardConstraints?.maxContinuousDistance || maxContCrawl);
   const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
+  const arthurFinSp = tryArthurFin({
+    budget: blocks.rac,
+    pool,
+    level: isPerf ? "performance" : "sportif",
+    brief,
+    intent,
+    equipment: eqList,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous: finMaxCont,
+    zone: "Z1",
+    fourNages: isFourNSession(brief, strokeFocus),
+  });
+  if (!arthurFinSp) {
   let finSets;
   if (blocks.rac <= finMaxCont) {
     const finSet = buildContinuous(blocks.rac, {
@@ -2234,13 +2721,29 @@ function composeSportifSession(brief, rng) {
     } else if (s.continuous || s.reps === 1) {
       const finIdx = parseInt(String(s.exerciseId).replace(/\D/g, ""), 10) || 0;
       const finText = FINS_SEMAINE[finIdx % FINS_SEMAINE.length](s.distancePerRep)
-        .replace(/\(Z1\)/i, "(Z1)")
+        .replace(/\(Z1\)/i, "(facile)")
         .replace(/\(RAC\)/i, "(récup)");
       details.push(finText.startsWith("-") ? finText : `-${finText}`);
     } else {
       details.push(formatSetLine(s, false));
     }
   }
+  }
+
+  ensureObjectiveCueInDetails(details, brief, intent);
+  const appliedEqSp = ensureEquipmentEngagement(details, eqList, brief);
+  // Uniquement le matos visible (sauf exempt récup/taper : pas de phantom / declared_unused)
+  const eqUsageFinalSp = {
+    ...eqUsage,
+    applied: appliedEqSp,
+    usage: appliedEqSp.length
+      ? "meaningful"
+      : isEquipmentEngagementExempt(brief)
+        ? eqUsage.usage || "none"
+        : eqList.length
+          ? "declared_unused"
+          : eqUsage.usage,
+  };
 
   const volumeSets = volumeFromSets(sets);
   const consistency = assertVolumeConsistency({
@@ -2337,8 +2840,8 @@ function composeSportifSession(brief, rng) {
       sessionSpecificity,
       setFormat: brief._lastSetFormat || setFormat,
       reprisePattern: reprisePattern?.id || null,
-      equipmentUsage: eqUsage.usage,
-      equipmentApplied: eqUsage.applied,
+      equipmentUsage: eqUsageFinalSp.usage,
+      equipmentApplied: eqUsageFinalSp.applied,
       papillonOk,
       qualitySession,
       zone,
@@ -2358,8 +2861,8 @@ function composeSportifSession(brief, rng) {
     trainingDistance: volumeSets,
     absoluteMetersByZone: byZone,
     maxContinuousAllowed: maxCont,
-    equipmentRequired: eqUsage.applied || [],
-    equipmentUsed: eqUsage.applied || [],
+    equipmentRequired: eqUsageFinalSp.applied || [],
+    equipmentUsed: eqUsageFinalSp.applied || [],
   };
 
   if (!sessionFitsEquipment(session.details, equipment)) {

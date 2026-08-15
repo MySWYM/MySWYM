@@ -10,8 +10,12 @@ alwaysApply: true
 Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif**, ou une règle métier natation :
 
 1. Appliquer le fix dans le code si demandé.
-2. **Documenter** dans `docs/natation-corrections.md` (tableau historique + section « erreurs récurrentes » si nouvelle règle).
-3. Ne pas refaire une erreur déjà listée dans ce fichier.
+2. **Documenter** dans la mémoire scindée :
+   - `docs/natation-regles-actives.md` et/ou `docs/natation-validation-seances.md` si règle durable ;
+   - `docs/natation-historique.md` (ligne datée + statut `✅ active` / `↩ remplacée` / `🧪 à vérifier`) ;
+   - `docs/natation-source-de-verite.md` si hiérarchie / architecture.
+3. Index : `docs/natation-corrections.md` (pointeurs uniquement).
+4. Ne pas réappliquer une entrée `↩ remplacée` ; ne pas refaire une erreur listée dans l’historique.
 
 ## Produit (rappels)
 
