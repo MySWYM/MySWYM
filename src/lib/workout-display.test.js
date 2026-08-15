@@ -21,8 +21,24 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 {
   const edu = matchEducatif("4×50m crawl — respiration 3 temps — repos 15s");
   assert.equal(edu?.id, "respiration_3t");
+  assert.equal(edu?.ficheSource, "catalog");
   assert.ok(getEducatifById("godille")?.name);
+  assert.equal(getEducatifById("godille")?.ficheSource, "arthur");
+  assert.ok(getEducatifById("godille")?.cue?.includes("balayages") || getEducatifById("godille")?.cue?.length > 40);
   assert.equal(matchEducatif("300m crawl souple"), null);
+
+  const fleche = matchEducatif("6×25m flèche avec palmes et tuba");
+  assert.equal(fleche?.ficheSource, "arthur");
+  assert.equal(fleche?.arthurId, "educatif_fleche");
+  assert.ok(fleche?.level);
+
+  const grand = matchEducatif("6×25m grand chien — facile");
+  assert.equal(grand?.arthurId, "educatif_grand_chien");
+  assert.equal(grand?.ficheSource, "arthur");
+
+  const arthurNew = matchEducatif("4×25m crawl avec tuba frontal");
+  assert.equal(arthurNew, null, "les 11 arthur_* ne doivent pas matcher automatiquement");
+  assert.equal(matchEducatif("6×25m rattrapé cuisse"), null, "rattrapé cuisse ≠ crawl rattrapé");
 }
 
 {
