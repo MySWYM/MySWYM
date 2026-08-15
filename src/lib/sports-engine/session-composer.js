@@ -783,6 +783,8 @@ function composeDecouverteSession(brief, rng) {
     level: "decouverte",
     phase: brief.phase,
     isKeySession: brief.keySession,
+    objectif: brief.objectif,
+    roleObjectif: brief.roleObjectif,
   });
   const blocks = blueprint.blocks;
   const pool = brief.pool || 50;
@@ -1356,6 +1358,8 @@ function composeRegulierSession(brief, rng) {
     level: "regulier",
     phase: brief.phase,
     isKeySession: brief.keySession,
+    objectif: brief.objectif,
+    roleObjectif: brief.roleObjectif,
   });
   const blocks = blueprint.blocks;
   const pool = brief.pool || 50;
@@ -1993,6 +1997,8 @@ function composeSportifSession(brief, rng) {
     level: isPerf ? "performance" : "sportif",
     phase: brief.phase,
     isKeySession: brief.keySession,
+    objectif: brief.objectif,
+    roleObjectif: brief.roleObjectif,
   });
   let blocks = { ...blueprint.blocks };
   const taperLoadEarly = brief.taperLoad || brief.performanceStrategy?.taperLoad || null;

@@ -37,7 +37,7 @@
 
 16. **Quality Gate** — Toute séance composée passe `validateComposedSession`. Arthur ne contourne pas le gate. Sous-volume > séance incohérente.
 
-17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre : sighting / lieu. Triathlon : cues course. MySWYM = générateur de séances, pas école de natation.
+17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre : sighting / lieu. Triathlon : cues course. Même niveau + même focus nage : l’objectif (`roleObjectif`) doit changer intent et proportions de blocs (pas seulement le libellé). MySWYM = générateur de séances, pas école de natation.
 
 18. **Sprint / seuil** — Sprint = récup complète entre reps. Seuil = effort soutenu et régulier (constance des temps).
 

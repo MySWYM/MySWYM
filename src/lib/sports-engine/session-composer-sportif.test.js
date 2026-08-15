@@ -24,6 +24,7 @@ import {
   MAX_PYRAMID_VOLUME,
   candidateSetFormats,
   ARTHUR_GOLD_TEST_FIXTURES,
+  resolveSportifIntent,
 } from "./index.js";
 import { calcDetailsDistance } from "../swim-session-generator.js";
 import {
@@ -653,6 +654,53 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
 {
   const c = effortCue({ zone: "Z3", distancePerRep: 200, brief: {} });
   assert(/seuil|soutenu/i.test(c), c);
+}
+
+// === Bug 2 : même focus 4n, objectifs différents → structures différentes ===
+{
+  const base = {
+    strokeFocus: "4n",
+    volumeTarget: 2200,
+    duration: 55,
+    seed: "obj-diff-4n",
+    papillonMastered: false,
+  };
+  const prog = briefFrom({
+    ...base,
+    sessionIntent: null,
+    objectif: "nager_progresser",
+  });
+  prog.roleObjectif = "progression_4_nages";
+  prog.objectif = "nager_progresser";
+  prog.strokeFocus = "4n";
+
+  const course = briefFrom({
+    ...base,
+    sessionIntent: null,
+    objectif: "course_piscine",
+  });
+  course.roleObjectif = "competition_maitre";
+  course.objectif = "course_piscine";
+  course.strokeFocus = "4n";
+
+  const iProg = resolveSportifIntent(prog);
+  const iCourse = resolveSportifIntent(course);
+  assert(iProg.id === "quatre_nages", `prog intent ${iProg.id}`);
+  assert(iCourse.id === "quatre_nages_course", `course intent ${iCourse.id}`);
+  assert(iCourse.quality === true, "course qualité");
+
+  const rProg = composeSession(prog);
+  const rCourse = composeSession(course);
+  assert(rProg.ok && rCourse.ok, `compose ${rProg.reason} / ${rCourse.reason}`);
+  const bProg = rProg.session.composerWhy.blocks;
+  const bCourse = rCourse.session.composerWhy.blocks;
+  assert(bProg && bCourse, "blocks présents");
+  const techDiff = Math.abs((bProg.technique || 0) - (bCourse.technique || 0));
+  const corpsDiff = Math.abs((bProg.corps || 0) - (bCourse.corps || 0));
+  assert(
+    techDiff >= 50 || corpsDiff >= 50 || iProg.id !== iCourse.id,
+    `structure trop proche: prog=${JSON.stringify(bProg)} course=${JSON.stringify(bCourse)}`,
+  );
 }
 
 console.log("session-composer-sportif.test.js: OK");

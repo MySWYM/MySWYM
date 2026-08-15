@@ -86,6 +86,8 @@ export function buildSessionBrief({
     level,
     phase: phaseName,
     isKeySession: !!role.isKeySession,
+    objectif,
+    roleObjectif: role.objectif || family,
   });
 
   const resolvedSeed =
@@ -132,7 +134,6 @@ export function buildSessionBrief({
     swimStyle: sport?.swimStyle || null,
     papillonMastered: !!sport?.papillonMastered,
     strokesMastered: sport?.strokesMastered || null,
-    preferredStroke: sport?.preferredStroke || null,
     wishHints,
     wishPreferEquipment: wishHints?.preferEquipment || [],
     sessionIntent: role.sessionIntent || sport?.sessionIntent || null,

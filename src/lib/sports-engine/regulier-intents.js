@@ -119,14 +119,27 @@ export function resolveRegulierIntent(brief = {}) {
   if (brief.sessionIntent && REGULIER_INTENTS[brief.sessionIntent]) {
     return REGULIER_INTENTS[brief.sessionIntent];
   }
+  const roleObj = String(brief.roleObjectif || brief.objectif || "").toLowerCase();
   if (brief.qualitySession) return REGULIER_INTENTS.qualite;
-  if (brief.objectif === "reprendre") return REGULIER_INTENTS.reprise;
-  if (brief.strokeFocus === "4n") return REGULIER_INTENTS.quatre_nages;
-  if (Number(brief.durationTarget) <= 30) return REGULIER_INTENTS.seance_courte;
-  if (brief.objectif === "triathlon") return REGULIER_INTENTS.triathlon;
-  if (brief.objectif === "eau_libre" || brief.family === "eau_libre") {
+  if (roleObj.includes("reprendre") || brief.objectif === "reprendre") {
+    return REGULIER_INTENTS.reprise;
+  }
+  if (roleObj.includes("triathlon") || brief.objectif === "triathlon") {
+    return REGULIER_INTENTS.triathlon;
+  }
+  if (roleObj.includes("eau_libre") || brief.objectif === "eau_libre" || brief.family === "eau_libre") {
     return REGULIER_INTENTS.eau_libre;
   }
+  if (
+    roleObj.includes("course") ||
+    roleObj.includes("compet") ||
+    roleObj.includes("compét") ||
+    brief.objectif === "course_piscine"
+  ) {
+    return REGULIER_INTENTS.allure_progressive;
+  }
+  if (brief.strokeFocus === "4n") return REGULIER_INTENTS.quatre_nages;
+  if (Number(brief.durationTarget) <= 30) return REGULIER_INTENTS.seance_courte;
   if (brief.family === "recuperation" || brief.intent === "recuperation") {
     return REGULIER_INTENTS.recuperation;
   }

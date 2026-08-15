@@ -106,6 +106,7 @@ export {
   splitSessionBlocksRegulier,
   splitSessionBlocksSportif,
   splitSessionBlocksPerformance,
+  biasBlocksForObjectif,
 } from "./volume.js";
 export {
   composeSessionBlueprint,

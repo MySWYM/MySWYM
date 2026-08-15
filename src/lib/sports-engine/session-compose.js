@@ -2,7 +2,7 @@
  * Composition séance : volume → architecture ; filtrage matériel / complexité.
  * Le rendu détaillé reste dans swim-session-generator (blocs Arthur).
  */
-import { splitSessionBlocks, splitSessionBlocksDecouverte, splitSessionBlocksRegulier, splitSessionBlocksSportif, splitSessionBlocksPerformance } from "./volume.js";
+import { splitSessionBlocks, splitSessionBlocksDecouverte, splitSessionBlocksRegulier, splitSessionBlocksSportif, splitSessionBlocksPerformance, biasBlocksForObjectif } from "./volume.js";
 import { EQUIPMENT_IDS } from "./types.js";
 
 const EQUIP_KEYWORDS = {
@@ -55,8 +55,10 @@ export function composeSessionBlueprint({
   level = "regulier",
   phase = "base",
   isKeySession = false,
+  objectif = null,
+  roleObjectif = null,
 }) {
-  const blocks =
+  let blocks =
     level === "decouverte"
       ? splitSessionBlocksDecouverte(volumeTarget)
       : level === "regulier"
@@ -66,14 +68,17 @@ export function composeSessionBlueprint({
           : level === "performance"
             ? splitSessionBlocksPerformance(volumeTarget)
             : splitSessionBlocks(volumeTarget);
+  const objKey = roleObjectif || objectif || family;
+  blocks = biasBlocksForObjectif(blocks, objKey, level);
   return {
     family,
     phase,
     isKeySession,
     level,
+    objectif: objKey,
     volumeTarget: blocks.total,
     blocks,
-    why: `${family} · ${blocks.depart}+${blocks.technique}+${blocks.corps}+${blocks.rac}m`,
+    why: `${family} · ${objKey || "—"} · ${blocks.depart}+${blocks.technique}+${blocks.corps}+${blocks.rac}m`,
   };
 }
 
