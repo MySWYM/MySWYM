@@ -19,6 +19,7 @@ Contrôles associés :
 
 - Pas de séries `Nx25 m` en bassin 50 (variantes 50 m / adaptation technique).
 - Source de vérité volume composeur = somme des séries / lignes, recoupée avec le détail affiché — pas la cible seule.
+- Découverte : `coherentVolumeForDecouverte` scale avec durée et cible moteur (comme Régulier/Sportif) ; `volumeHint` guide sans écrêter 1200–1400 m à ~700 m. Séances courtes (≤30 min / `seance_courte`) restent plafonnées bas. Tolérance produit typique ±150 m vs cible.
 - Feedback hebdo : ne jamais patcher seul `s.distance` sans `details` / `duration` — régénérer ou scale cohérent.
 - Pyramide : volume ≤ 1000 m ; paliers explicites ; pas de monolithe opaque.
 
