@@ -6394,8 +6394,8 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 47; // v47 = boucle séance unique aussi pour triathlon / eau libre / diplôme
-// Remettre false au prochain bump (demande Arthur : overwrite plans → boucle)
+const PLAN_VERSION = 48; // v48 = pédagogie Arthur composeur live (échauffements, RAC, éducatifs, fun)
+// Remettre false au prochain bump (demande Arthur 2026-08-15 : overwrite plans existants)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
