@@ -11,3 +11,8 @@ export {
   ARTHUR_DRAFT_DRILLS,
   DECOUVERTE_ALLOW,
 } from "./compose-draft.js";
+
+export {
+  parseArthurEducatifLevels,
+  PRODUCT_LEVELS,
+} from "./parse-arthur-educatif-levels.js";

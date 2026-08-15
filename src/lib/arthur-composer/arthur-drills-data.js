@@ -14,9 +14,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Se laisser glisser après chaque mouvement. L’engagement de la tête et des épaules doit entraîner la remontée du bassin.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": true,
     "isArthurAdd": true,
@@ -39,9 +39,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "L’index reste dans le prolongement de la main à l’entrée, puis s’oriente progressivement vers le fond lors de la prise d’appui. Conserver le reste de la main relâché.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -61,9 +61,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Pendant la pause, conserver un poignet souple, un corps aligné et un bassin aussi stable que possible.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -83,9 +83,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Le tapé intervient après la sortie de la main, bras tendu derrière, et avant le début du retour aérien.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -106,9 +106,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Le bras avant reste relâché et immobile, y compris pendant l’inspiration. Les jambes restent immergées et ne frappent pas la surface, afin de conserver une véritable position costale.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -131,9 +131,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Utiliser les repères visuels fixes du fond du bassin pour contrôler la stabilité de la tête et du corps.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -155,9 +155,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "La réalisation sur le ventre est prioritaire.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -179,9 +179,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Même principe que le rattrapé devant, mais le point de départ et de passage de relais se situe aux cuisses.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -201,9 +201,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Nager lentement pour marquer clairement les deux repères tactiles. Accompagner le retour du bras par le roulis, sans crisper l’épaule.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -224,9 +224,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Associer le retour relâché à une bonne rotation du corps. Le contact avec l’aisselle ou l’épaule sert de repère tactile et ne doit pas entraîner de crispation.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -246,9 +246,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Les mains doivent se placer plus profondément que la surface, approximativement sous le niveau du visage. Le déplacement reste horizontal : un mouvement vertical du corps révèle une traction mal orientée.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": true,
@@ -270,9 +270,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Accélérer progressivement le mouvement sous l’eau. Lors du retour en nage complète, observer la différence de sensations et d’efficacité avec les mains ouvertes.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -293,9 +293,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Ce n’est pas un éducatif technique. Il sert à remettre le nageur en action après une phase relâchée ou une récupération active.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -316,8 +316,8 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "sportif et performant",
     "notes": "Veiller à conserver une opposition croisée : bras gauche avec jambe droite immobiles, ou bras droit avec jambe gauche immobiles.",
     "levels": [
-      "performance",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -338,8 +338,8 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Sportif et performant",
     "notes": "La distance est choisie en fonction du niveau et de la capacité du nageur à rester relâché.",
     "levels": [
-      "performance",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -360,9 +360,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Le battement simple demande peu de maîtrise technique et permet de produire un effort cardiovasculaire. Les variations de profondeur transforment l’exercice en travail éducatif.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -405,8 +405,8 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Prioritaire pour les triathlètes et les nageurs en eau libre ; niveau : sportif et performant",
     "notes": "La tête doit rester fixe hors de l’eau. Son maintien dépend de battements fréquents et de l’absence de temps mort entre les bras. Les pratiquants de triathlon et d’eau libre doivent rencontrer cet exercice plus souvent que les autres nageurs.",
     "levels": [
-      "performance",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -428,9 +428,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Le pull-buoy permet de se concentrer sur les bras et la respiration. Pendant l’inspiration, conserver approximativement la moitié du visage dans l’eau. Le bras opposé reste tendu devant et les mains doivent se rejoindre après chaque mouvement, y compris lorsqu’on respire.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -472,7 +472,8 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Nageurs déjà à l’aise en crawl ; donc sportif et au delas",
     "notes": "Il est conseillé de maîtriser auparavant le costal jambes. À l’inspiration, le bras actif reste allongé devant et relâché. Rechercher une résistance de l’eau dans la main dès le début de l’appui vers l’arrière.",
     "levels": [
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -492,9 +493,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Le nageur doit pouvoir effleurer la surface tranquillement à chaque mouvement, y compris du côté de la respiration. Une accélération ou une perte de contact peut révéler une difficulté d’équilibre, de position ou de respiration.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -559,9 +560,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "La tête peut rester hors de l’eau ou la respiration s’effectuer de face ou sur le côté. Le retour sous-marin doit rester discret et serré. Tubas conseillé pour les découvertes et possible pour les autres niveaux",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -585,9 +586,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Le jet d’eau doit apparaître derrière la main avant le retour aérien. L’effort doit être nettement ressenti au niveau du triceps.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -607,9 +608,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Comparer les résultats sur une même distance. La diminution du nombre de coups de bras doit provenir d’une meilleure glisse et de tractions plus efficaces.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -629,10 +630,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "Sans matériel. Peut être réalisé avec le regard légèrement vers l’avant pour observer les mains, mais cette variante relève le buste : l’utiliser seulement pour comprendre le placement. Critère de réussite : sentir un appui solide et une légère propulsion malgré le mouvement court. Tubas conseillé pour les découvertes et possible pour les autres niveaux",
     "levels": [
-      "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -654,9 +654,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Expirer progressivement sous l’eau et maintenir une nage relâchée. La descente de la pyramide est optionnelle.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -677,9 +677,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Ne pas dépasser 90° de rotation. L’épaule immergée ne doit pas franchir l’axe du corps. Le corps tourne autour de son axe tandis que la tête reste fixe, sauf pendant la variante respiratoire. Rechercher le relâchement des deux côtés.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -699,10 +699,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "Garder le corps allongé, sans cambrer ni serpenter. La position exacte des bras reste à préciser. Avec des palmes surtout ça rend l'exo fun",
     "levels": [
-      "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -724,10 +723,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "Chercher à toucher la cuisse le plus loin possible vers l’arrière, sans dégrader la position du corps. Pull-buoy et/ou tuba.",
     "levels": [
-      "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -774,8 +772,8 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "sportif et performant",
     "notes": "Les deux bras restent toujours au-dessus de la surface. L’avancement dépend entièrement des jambes : les battements doivent être continus et énergiques.",
     "levels": [
-      "performance",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -818,9 +816,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "Régulier, sportif et performant",
     "notes": "Garder le corps gainé et allongé, avec le regard vers le fond. Les trois positions de godille ciblent des phases différentes du mouvement de bras.",
     "levels": [
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -840,8 +838,8 @@ export const ARTHUR_DRAFT_DRILLS = [
     "levelLabel": "sportif et performant",
     "notes": "Chaque mouvement s’achève lorsque le bras rejoint la verticale, à mi-chemin du retour aérien. Les battements doivent être suffisamment propulsifs pour soutenir la position.",
     "levels": [
-      "performance",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -863,9 +861,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Expirer sous l’eau afin de pouvoir inspirer dès le retour à la surface. La vitesse n’est pas prioritaire : rechercher surtout une ondulation ample.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -886,9 +884,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Pendant l’apprentissage, la tête accompagne volontairement la bascule pour amplifier le mouvement. Le rythme reste lent et non précipité. Pour revenir ensuite au papillon normal, orienter progressivement les bras vers l’avant plutôt que vers le fond.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
@@ -910,9 +908,9 @@ export const ARTHUR_DRAFT_DRILLS = [
     "notes": "Éviter les actions volontaires des jambes pendant la traction et juste après. Si le nageur descend profondément, quelques ondulations peuvent l’aider à retrouver la surface et la position initiale.",
     "levels": [
       "decouverte",
-      "performance",
       "regulier",
-      "sportif"
+      "sportif",
+      "performance"
     ],
     "recoveryOnly": false,
     "isArthurAdd": false,
