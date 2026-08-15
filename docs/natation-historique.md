@@ -18,8 +18,9 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-15 | Merge séance validée | Hotfix prod : `FORCE_PLAN_REGEN` ne bypass plus le merge. Séance `completed`/`skipped` conservée ; non validée régénérée ; semaine feedback/satisfaction intacte ; structure incompatible → fallback semaine. One-shot = `version < PLAN_VERSION` (option A), pas à chaque ouverture. | ✅ active |
 | 2026-08-15 | Niveaux Excel éducatifs | « niveau Arthur » = gate produit. `parseArthurEducatifLevels` : « adaptable à tous niveaux » n’ouvre plus la Découverte ; sélection = `levels.includes(niveau)` (+ allowlist Découverte règle 8). Petit chien / toucher cuisse / 6 battements hors Découverte ; grand chien reste via notes Excel. | ✅ active |
-| 2026-08-15 | Force regen v48 live | Demande Arthur : `PLAN_VERSION` 48 + `FORCE_PLAN_REGEN=true` — tous les plans existants reprennent la pédagogie Arthur (`composeSession` : échauffements, RAC, éducatifs, fun, volume Découverte). Progression écrasée. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ active |
+| 2026-08-15 | Force regen v48 live | Demande Arthur : `PLAN_VERSION` 48 + `FORCE_PLAN_REGEN=true` — tous les plans existants reprennent la pédagogie Arthur (`composeSession` : échauffements, RAC, éducatifs, fun, volume Découverte). Progression écrasée. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ↩ remplacée |
 | 2026-08-15 | Boucle tous objectifs | Triathlon, eau libre et diplôme = séance du jour (`usesSessionLoop` + `PLAN_VERSION` 47). Reprise / maître restent multi-semaines. | ✅ active |
 | 2026-08-15 | Bug D9 souple/Z1 | `attachFourNagesCoverage` et `buildConfirmeArchetypeSession` passent par `sanitizeSessionDetails`. Remplacements morts `(Z1)` remplacés par `humanizeArthurDisplayTerms`. Banques OW inchangées (filtre à la sortie). | ✅ active |
 | 2026-08-15 | Bug objectifs quasi-identiques | `resolve*Intent` lit `roleObjectif` avant le court-circuit `strokeFocus===4n`. `composeSessionBlueprint` + `biasBlocksForObjectif` varient les proportions départ/technique/corps selon l’objectif (progression vs compétition, triathlon, reprise…). | ✅ active |

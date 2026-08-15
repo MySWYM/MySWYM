@@ -22,6 +22,7 @@ import {
   missedSessionPolicy,
 } from "./lib/sports-engine/index.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
+import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress } from "./lib/plan-progress-merge.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -954,7 +955,6 @@ const formatDuration = (mins) => {
   return `${Math.floor(mins / 60)}h${mins % 60 ? (mins % 60).toString().padStart(2, "0") : ""}`;
 };
 
-const isSessionResolved = (s) => s.completed || !!s.skipped;
 const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
 const INSTAGRAM_MYSWYM = "https://www.instagram.com/myswym.app/";
 
@@ -1080,16 +1080,6 @@ const formatSessionPlainText = (session) => {
   lines.push("", "— MySWYM");
   return lines.join("\n");
 };
-
-// Garde une semaine existante dès qu'il y a du progrès, un feedback ou une satisfaction
-const shouldPreserveWeek = (week) => {
-  if (!week) return false;
-  if (week.feedback || week.satisfaction) return true;
-  return week.sessions?.some(isSessionResolved) ?? false;
-};
-
-const mergePreservingProgress = (oldWeeks, newWeeks) =>
-  newWeeks.map((week, i) => (shouldPreserveWeek(oldWeeks[i]) ? oldWeeks[i] : week));
 
 // Empreinte profil pour détecter les doublons cross-device (même objectif recréé avec un autre id)
 const planFingerprint = (entry) => {
@@ -6395,8 +6385,8 @@ const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
 const PLAN_VERSION = 48; // v48 = pédagogie Arthur composeur live (échauffements, RAC, éducatifs, fun)
-// Remettre false au prochain bump (demande Arthur 2026-08-15 : overwrite plans existants)
-const FORCE_PLAN_REGEN = true;
+// false : one-shot = version < PLAN_VERSION. Ne jamais s'en servir pour bypasser le merge.
+const FORCE_PLAN_REGEN = false;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
 const ACCESS_EPOCH_KEY = (userId) => `myswym_access_epoch_${userId}`;
@@ -11557,8 +11547,6 @@ export default function App() {
   const prevBadgesRef = useRef([]);
   const plansHydratedRef = useRef(false);
   const deletedPlanIdsRef = useRef(new Set());
-  /** Une seule passe FORCE_PLAN_REGEN par session (évite une boucle infinie). */
-  const forceRegenDoneRef = useRef(false);
   /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
   /** Reprise questionnaire → checkout / génération après auth ou Stripe (évite stale closures). */
@@ -12377,22 +12365,22 @@ export default function App() {
   }, [user?.id, isPremium, plans, activePlanId]);
 
 
-  // Migration : plans version < PLAN_VERSION — régénère le contenu, merge avec progression.
-  // FORCE_PLAN_REGEN = true : overwrite TOUS les plans déjà créés (1 fois / session), même version à jour.
+  // Migration : plans version < PLAN_VERSION — régénère le contenu, merge séance par séance.
+  // FORCE_PLAN_REGEN ne bypass plus le merge (hotfix 2026-08-15) : une séance validée est toujours conservée.
   // Aussi : objectifs boucle (progression / triathlon / eau libre / diplôme) multi-semaines → séance unique.
   useEffect(() => {
     if (plans.length === 0 || screen !== "app") return;
-    const forceAll = FORCE_PLAN_REGEN && !forceRegenDoneRef.current;
     const needsUpdate = plans.filter((e) => {
       if (!e.plan) return false;
-      if (forceAll) return true;
+      // Option A (hotfix 2026-08-15) : FORCE_PLAN_REGEN reste false — pas de regen à chaque ouverture.
+      // Un true fusionnerait tous les plans séance par séance, y compris version déjà à jour (option B).
+      if (FORCE_PLAN_REGEN) return true;
       if ((e.plan.version ?? 0) < PLAN_VERSION) return true;
       // Ancien plan multi-semaines → boucle séance unique
       if (usesSessionLoop(e.profile) && !e.plan.isSessionLoop) return true;
       return false;
     });
     if (needsUpdate.length === 0) return;
-    if (forceAll) forceRegenDoneRef.current = true;
 
     let cancelled = false;
     Promise.all(needsUpdate.map(async entry => {
@@ -12413,11 +12401,7 @@ export default function App() {
         originalStartDate || Date.now(),
         { skipDelay: true },
       );
-      // FORCE_PLAN_REGEN = overwrite total (progression perdue), comme v29/v31.
-      const forceOverwrite = !!FORCE_PLAN_REGEN;
-      const weeks = forceOverwrite
-        ? generated.weeks
-        : mergePreservingProgress(p.weeks ?? [], generated.weeks);
+      const weeks = mergePreservingProgress(p.weeks ?? [], generated.weeks);
       // Force boucle : conserve historique / compteurs freemium si déjà en session loop
       const updated = {
         ...generated,
@@ -12455,10 +12439,7 @@ export default function App() {
         profilePatch: { equipment },
       };
     })).then(results => {
-      if (cancelled) {
-        if (forceAll) forceRegenDoneRef.current = false;
-        return;
-      }
+      if (cancelled) return;
       setPlans(prev => prev.map(e => {
         const r = results.find(x => x.id === e.id);
         if (!r) return e;
@@ -12480,9 +12461,7 @@ export default function App() {
           }).then(() => {});
         });
       }
-    }).catch(() => {
-      if (forceAll) forceRegenDoneRef.current = false;
-    });
+    }).catch(() => {});
     return () => { cancelled = true; };
   }, [user?.id, screen, isPremium, plans.length]);
 
@@ -13559,8 +13538,8 @@ export default function App() {
     const planIdToUpdate = activePlanId;
     generatePlan({ ...newProfile, taste }, isPremium).then(async (newPlan) => {
       const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
-      // Semaines entamées (séance validée / skip / feedback) → conservées telles quelles.
-      // Semaines non entamées → nouvelle fréquence (séances ajoutées / retirées).
+      // Semaines : séances validées conservées, non validées régénérées (merge séance par séance).
+      // Si la fréquence change (nombre de séances différent) → fallback semaine entière.
       const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
       const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
       const now = new Date().toISOString();
