@@ -4,12 +4,13 @@
  * NE CALCULE PAS volume / composer / readiness / périodisation interne.
  * Délègue le contenu des séances à buildCoachPlanWeeks (swim-plan-bridge).
  *
- * Hors scope V1 : objectifs diplôme (BNSSA, BPJEPS, …) qui passent encore
- * par SESSION_TEMPLATES dans App.jsx — refuser clairement.
+ * Hors scope : boucle séance unique (progression / triathlon / eau libre / diplôme)
+ * et objectifs bien-être multi-semaines legacy — refuser clairement.
  */
 import {
   buildCoachPlanWeeks,
   shouldUseCoachGenerator,
+  usesSessionLoop,
 } from "../../swim-plan-bridge.js";
 import { loadSessionTemplates } from "../../session-templates-store.js";
 import { normalizeProfileEquipment } from "../types.js";
@@ -20,7 +21,7 @@ import {
 } from "./preserve-progress.js";
 
 /** Aligné App.jsx PLAN_VERSION — métadonnées uniquement. */
-export const ARTHUR_PLAN_VERSION = 46;
+export const ARTHUR_PLAN_VERSION = 47;
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -53,12 +54,12 @@ export async function generateArthurPlan(input = {}) {
   const profile = normalizeArthurProfile(input);
   const goal = profile.goal;
 
-  if (isProgressionGoal(goal)) {
+  if (isProgressionGoal(goal) || usesSessionLoop(profile)) {
     return {
       success: false,
       error: "unsupported_goal",
       message:
-        "Le mode « Nager & Progresser » (boucle séances) n’est pas généré via Arthur AI pour l’instant. Utilise l’app MySWYM.",
+        "Les programmes en séance du jour (Nager & Progresser, triathlon, eau libre, diplôme) se génèrent dans l’app MySWYM, pas via Arthur AI pour l’instant.",
     };
   }
 
@@ -67,7 +68,7 @@ export async function generateArthurPlan(input = {}) {
       success: false,
       error: "unsupported_goal",
       message:
-        "Cet objectif (diplôme / prépa) utilise encore le générateur App dédié. Crée le plan depuis MySWYM.",
+        "Cet objectif utilise encore le générateur App dédié. Crée le plan depuis MySWYM.",
     };
   }
 
