@@ -177,6 +177,8 @@ export function resolveDecouverteIntent(brief = {}) {
 
 /**
  * Volume cohérent : on peut BAISSER vs cible moteur, jamais gonfler artificiellement.
+ * Les plafonds durée / capacité scalent avec la durée et la cible (comme Régulier/Sportif) —
+ * `volumeHint` guide la fourchette typique mais ne doit plus écrêter 1200–1400 m à ~700 m.
  */
 export function coherentVolumeForDecouverte(brief = {}) {
   const engine = Math.max(400, Number(brief.volumeTarget) || 750);
@@ -185,13 +187,34 @@ export function coherentVolumeForDecouverte(brief = {}) {
   const [hintLo, hintHi] = intent.volumeHint || [600, 850];
   const maxCont = maxContinuousForDecouverte(brief);
 
-  const byCapacity = maxCont <= 50 ? Math.min(hintHi, 850) : Math.min(hintHi + 100, 1000);
-  const byDuration = Math.round((duration * 22) / 50) * 50;
-  const durationCap = duration <= 30 ? Math.min(700, byDuration + 100) : duration <= 40 ? 850 : 1000;
+  let durationCap = 1500;
+  if (duration <= 25) durationCap = 650;
+  else if (duration <= 30) durationCap = 750;
+  else if (duration <= 40) durationCap = 1100;
+  else if (duration <= 50) durationCap = 1400;
+  else durationCap = 1500;
 
-  const coherent = Math.min(engine, byCapacity, durationCap, hintHi);
-  const floored = Math.max(Math.min(hintLo, engine), Math.min(coherent, engine));
-  return Math.min(engine, Math.max(500, Math.round(floored / 50) * 50));
+  // Intents pédagogiquement courts : rester dans la fourchette basse
+  if (intent.id === "seance_courte") {
+    durationCap = Math.min(durationCap, hintHi);
+  } else if (intent.id === "reprise") {
+    durationCap = Math.min(durationCap, Math.max(hintHi, 800));
+  }
+
+  // hintHi = guide, pas plafond dur face à une cible supportée par la durée
+  const hintCeiling = Math.max(hintHi, Math.min(engine, durationCap));
+
+  // Capacité continue faible : frein doux (~5 %), pas un mur fixe 850/1000
+  const byCapacity =
+    maxCont <= 50
+      ? Math.min(hintCeiling, Math.max(hintHi, Math.round(Math.min(engine, durationCap) * 0.95)))
+      : hintCeiling;
+
+  const coherent = Math.min(engine, byCapacity, durationCap);
+  const floor = Math.min(hintLo, durationCap, engine);
+  const floored = Math.max(floor, Math.min(coherent, engine));
+  const minVol = duration <= 30 ? 500 : 600;
+  return Math.min(engine, Math.max(minVol, Math.round(floored / 50) * 50));
 }
 
 /** Scénarios Gold — métadonnées de référence pour tests (pas de séances figées). */
