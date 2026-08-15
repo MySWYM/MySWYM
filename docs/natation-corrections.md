@@ -180,7 +180,8 @@
 | 2026-08-13 | Engagement matériel | Inventaire non vide → ≥1 item matos visible / séance (hors récup / taper / course). QG `equipment_engagement`. Chip UI « Matos : … ». | ✅ |
 | 2026-08-14 | Matos pédagogique (Arthur) | Multi-select tous niveaux ; matos lié à l’éducatif (planche/jambes, palmes/roulis, tuba/alignement) ; interdit pull+palmes même séance ; beat/tempo ≠ tuba. | ✅ |
 | 2026-08-14 | 4 nages + IM | Compose 4 nages explicites + formats IM olympiques. Force regen v45 sur main. | ✅ |
-| 2026-08-15 | Beat/tempo ≠ tuba | Arthur : dès qu’on demande un beat/tempo (3T, 5T, 7T, 9T), le moteur ne **colle pas** de tuba. **Tuba OK** s’il est déjà noté dans l’Excel sur l’éducatif. Glue + sanitize + QG contre beat+tuba inventé. Pas de regen. | ✅ |
+| 2026-08-15 | Beat/tempo ≠ tuba | Arthur : dès qu’on demande un beat/tempo (3T, 5T, 7T, 9T), le moteur ne **colle pas** de tuba. **Tuba OK** s’il est déjà noté dans l’Excel sur l’éducatif. Glue + sanitize + QG contre beat+tuba inventé. | ✅ |
+| 2026-08-15 | Force regen v47 live | Demande Arthur : `PLAN_VERSION` 47 + `FORCE_PLAN_REGEN=true` — overwrite **tous** les plans pour appliquer beat/tempo ≠ tuba inventé. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ✅ |
 | 2026-08-14 | Distance moyenne + wish | Slider distance/séance + texte libre. Volume ancré `targetSessionDistance`. Wish → tags soft bias. `PLAN_VERSION` 46 + FORCE regen. | ✅ |
 | | | *Ajouter ici chaque nouvelle correction* | |
 

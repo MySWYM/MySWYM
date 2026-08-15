@@ -6390,8 +6390,8 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 46; // v46 = distance + wish + matos pédagogique + 4 nages
-// Remettre false au prochain bump (demande Arthur 2026-08-14 : overwrite plans)
+const PLAN_VERSION = 47; // v47 = beat/tempo (3T–9T) ≠ tuba inventé ; tuba Excel OK
+// Remettre false au prochain bump (demande Arthur 2026-08-15 : overwrite plans live)
 const FORCE_PLAN_REGEN = true;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
 const ACCESS_CLIENT_EPOCH = 2;
