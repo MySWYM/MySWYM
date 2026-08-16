@@ -349,10 +349,15 @@ function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk 
   if (objective === "technique") {
     pool = [...pool].sort((a, b) => Number(b.isArthurAdd) - Number(a.isArthurAdd));
   } else if (objective === "4_nages") {
-    const filtered = pool.filter(
-      (d) => /dos|brasse|papillon|4/i.test(d.stroke) || /dos|brasse|papillon/i.test(d.name),
-    );
-    if (filtered.length >= count) pool = filtered;
+    const tagged = pool.filter((d) => (d.objectiveTags || []).includes("4_nages"));
+    if (tagged.length >= count) {
+      pool = tagged;
+    } else {
+      const filtered = pool.filter(
+        (d) => /dos|brasse|papillon|4/i.test(d.stroke) || /dos|brasse|papillon/i.test(d.name),
+      );
+      if (filtered.length >= count) pool = filtered;
+    }
   }
 
   // Prefer drills that engage declared matos, then shuffle lightly
@@ -376,14 +381,19 @@ function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk 
   }
 
   if (level === "decouverte" && chosen.length) {
-    const must = ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"]
+    const mustIds =
+      objective === "4_nages"
+        ? ["nouveau_dos_deux_bras", "arthur_papillon_un_bras", "nouveau_papillon_baleine"]
+        : ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"];
+    const must = mustIds
       .map((id) =>
         ARTHUR_DRAFT_DRILLS.find(
           (d) =>
             d.id === id &&
             d.levels?.includes("decouverte") &&
             DECOUVERTE_ALLOW.has(d.id) &&
-            hasEquip(equipment, d.equipmentRequired),
+            hasEquip(equipment, d.equipmentRequired) &&
+            (papillonOk || !/papillon/i.test(`${d.name} ${d.stroke} ${d.id}`)),
         ),
       )
       .filter(Boolean);

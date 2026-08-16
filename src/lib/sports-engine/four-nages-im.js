@@ -37,7 +37,7 @@ function olympicCue(perStroke, variant, pool) {
     return `${formatSplitMeters(perStroke)} m par nage, dont 25 nage complète / 25 jambes`;
   }
   if (variant === "drill") {
-    return `${formatSplitMeters(perStroke)} m par nage, dont 25 nage complète / 25 éducatif libre`;
+    return `${formatSplitMeters(perStroke)} m par nage, dont 25 nage complète / 25 technique de la nage`;
   }
   return parts;
 }

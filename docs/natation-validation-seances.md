@@ -38,7 +38,7 @@ Autres règles de structure :
 - 1 numéro UI = 1 bloc ; titre avec éducatif nommé (jamais `600m respiration` / `6x50 technique`).
 - Lignes compactes `A · B · C — Z2` → sous-séries verticales à l’affichage.
 - Échauffement + retour au calme obligatoires (sauf OW déjà structuré autrement).
-- Éducatifs : le niveau utilisateur doit figurer dans `levels` dérivés du « niveau Arthur » Excel. « adaptable à tous niveaux » n’ouvre pas la Découverte ; Découverte reste aussi bornée à flèche + grand chien (+ allowlist).
+- Éducatifs : le niveau utilisateur doit figurer dans `levels` dérivés du « niveau Arthur » Excel. « adaptable à tous niveaux » n’ouvre pas la Découverte ; Découverte reste aussi bornée à flèche + grand chien (+ allowlist). Case 4 nages : mêmes niveaux Excel sur les éducatifs tagués `4_nages` (corps/IM gardent les 4 nages explicites).
 
 ---
 
