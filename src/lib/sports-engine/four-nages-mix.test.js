@@ -273,7 +273,7 @@ console.log("4N8 IM 200 / 400 + fun");
     brief4n({ level: "sportif", seed: "4n8-drill", pool: 25, volumeTarget: 2400, duration: 60, forcedImFormat: "im_400_drill" }),
   );
   assert(rDrill.ok, `4N8 drill ${rDrill.reason}`);
-  assert(/25 nage complète \/ 25 éducatif libre/i.test(rDrill.session.details.join("\n")), "4N8 éducatif libre");
+  assert(/25 nage complète \/ 25 technique de la nage/i.test(rDrill.session.details.join("\n")), "4N8 technique de la nage");
 }
 
 console.log("4N9 8×50 — 12,5 m par nage");

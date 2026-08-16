@@ -270,6 +270,78 @@ function appendFourNagesTechniqueBlock({
   return built.used;
 }
 
+/**
+ * 4 nages : éducatifs Excel (niveaux) + nages explicites pour tenir le mix.
+ * ~40 % éducatifs tagués 4_nages, reste en blocs nagés (crawl/dos/brasse/pap).
+ */
+function appendFourNagesTechniqueWithArthurDrills({
+  brief,
+  intent,
+  techniqueVolume,
+  pool,
+  restFor,
+  zone = null,
+  cue,
+  matosNote,
+  sets,
+  details,
+  exerciseIds,
+  equipment,
+  rng,
+  maxContinuous,
+  level,
+}) {
+  const unit = pool === 50 ? 50 : 25;
+  const total = Math.max(0, Number(techniqueVolume) || 0);
+  const eduShare = Math.max(unit * 2, roundTo(total * 0.4, unit));
+  const strokeShare = Math.max(0, total - eduShare);
+  const arthurOk = tryArthurTechnique({
+    budget: eduShare,
+    pool,
+    level,
+    brief,
+    intent,
+    equipment,
+    rng,
+    sets,
+    details,
+    exerciseIds,
+    maxContinuous,
+    zone,
+  });
+  const strokeVol = arthurOk ? strokeShare : total;
+  if (strokeVol >= unit * 2) {
+    appendFourNagesTechniqueBlock({
+      brief,
+      techniqueVolume: strokeVol,
+      pool,
+      restFor,
+      zone,
+      cue,
+      matosNote,
+      sets,
+      details,
+      exerciseIds,
+    });
+    return true;
+  }
+  if (!arthurOk) {
+    appendFourNagesTechniqueBlock({
+      brief,
+      techniqueVolume: total,
+      pool,
+      restFor,
+      zone,
+      cue,
+      matosNote,
+      sets,
+      details,
+      exerciseIds,
+    });
+  }
+  return arthurOk || strokeVol >= unit * 2;
+}
+
 function planFourNagesCorps({
   brief,
   sessionSpecificity,
@@ -856,8 +928,9 @@ function composeDecouverteSession(brief, rng) {
 
   // --- TECHNIQUE ---
   if (intent.id === "decouverte_4n" || isFourNSession(brief, strokeFocus)) {
-    appendFourNagesTechniqueBlock({
+    appendFourNagesTechniqueWithArthurDrills({
       brief,
+      intent,
       techniqueVolume: blocks.technique,
       pool,
       restFor: () => 15,
@@ -866,6 +939,10 @@ function composeDecouverteSession(brief, rng) {
       sets,
       details,
       exerciseIds,
+      equipment: eqList,
+      rng,
+      maxContinuous: maxCont,
+      level: "decouverte",
     });
   } else {
     const arthurTech = tryArthurTechnique({
@@ -1493,8 +1570,9 @@ function composeRegulierSession(brief, rng) {
   const techMatos = eqUsage.techNote || "";
 
   if (intent.techPrimary === "4n" || isFourNSession(brief, strokeFocus)) {
-    appendFourNagesTechniqueBlock({
+    appendFourNagesTechniqueWithArthurDrills({
       brief,
+      intent,
       techniqueVolume: blocks.technique,
       pool,
       restFor,
@@ -1503,6 +1581,10 @@ function composeRegulierSession(brief, rng) {
       sets,
       details,
       exerciseIds,
+      equipment: eqList,
+      rng,
+      maxContinuous: maxCont,
+      level: "regulier",
     });
   } else {
     const arthurTech = tryArthurTechnique({
@@ -2174,8 +2256,9 @@ function composeSportifSession(brief, rng) {
   // TECHNIQUE
   const techMatos = eqUsage.techNote || "";
   if (intent.techPrimary === "4n" || isFourNSession(brief, strokeFocus)) {
-    appendFourNagesTechniqueBlock({
+    appendFourNagesTechniqueWithArthurDrills({
       brief,
+      intent,
       techniqueVolume: blocks.technique,
       pool,
       restFor,
@@ -2185,6 +2268,10 @@ function composeSportifSession(brief, rng) {
       sets,
       details,
       exerciseIds,
+      equipment: eqList,
+      rng,
+      maxContinuous: maxContCrawl,
+      level: isPerf ? "performance" : "sportif",
     });
   } else {
     const arthurTech = tryArthurTechnique({

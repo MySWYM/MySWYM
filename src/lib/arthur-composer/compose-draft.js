@@ -176,18 +176,11 @@ function selectDrills(rng, { level, objective, equipment, count = 2, forRecovery
   if (objective === "technique") {
     pool = shuffle(rng, pool).sort((a, b) => Number(b.isArthurAdd) - Number(a.isArthurAdd));
   } else if (objective === "4_nages") {
-    pool = shuffle(
-      rng,
-      pool.filter((d) => /dos|brasse|papillon|4/i.test(d.stroke) || /dos|brasse|papillon/i.test(d.name)),
+    const tagged = pool.filter((d) => (d.objectiveTags || []).includes("4_nages"));
+    const byStroke = pool.filter(
+      (d) => /dos|brasse|papillon|4/i.test(d.stroke) || /dos|brasse|papillon/i.test(d.name),
     );
-    if (pool.length < count) {
-      pool = shuffle(
-        rng,
-        ARTHUR_DRAFT_DRILLS.filter(
-          (d) => drillAllowedForLevel(d, level) && hasEquip(equipment, d.equipmentRequired),
-        ),
-      );
-    }
+    pool = shuffle(rng, tagged.length >= count ? tagged : byStroke.length >= count ? byStroke : pool);
   } else {
     pool = shuffle(rng, pool);
   }
@@ -202,7 +195,10 @@ function selectDrills(rng, { level, objective, equipment, count = 2, forRecovery
   }
 
   if (level === "decouverte" && chosen.length) {
-    const must = ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"];
+    const must =
+      objective === "4_nages"
+        ? ["nouveau_dos_deux_bras", "arthur_papillon_un_bras", "nouveau_papillon_baleine"]
+        : ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"];
     const replace = must
       .map((id) =>
         ARTHUR_DRAFT_DRILLS.find(
