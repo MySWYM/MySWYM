@@ -246,8 +246,8 @@ export default function TarifsPage() {
 
   const trialHighlights = [
     "Acces Premium complet pendant 7 jours.",
-    "Carte requise · annule avant la fin = 0€.",
-    "Puis 4,99€/mois sans engagement.",
+    "Sans carte bancaire.",
+    "Ensuite l'app se gele jusqu'a l'abonnement.",
   ];
 
   const annualHighlights = [
@@ -259,15 +259,15 @@ export default function TarifsPage() {
 
   const monthlyHighlights = [
     "Acces Premium complet.",
-    "Essai 7 jours · carte requise · puis 4,99€/mois.",
-    "Sans engagement — annule pendant l'essai = 0€.",
+    "Essai 7 jours sans carte, puis 4,99€/mois.",
+    "Sans engagement — resilie quand tu veux.",
   ];
 
   const comparisonRows = [
-    ["Generation de programme", "Pendant l'essai", "Oui, a tout moment"],
-    ["Consultation des seances (detail)", "Apercu squelette", "Oui"],
-    ["Historique", "Lecture seule apres expiration", "Oui"],
-    ["Statistiques", "Basiques", "Completes + projection allures"],
+    ["Generation de programme", "7 jours puis gele", "Oui"],
+    ["Consultation des seances (detail)", "7 jours puis gele", "Oui"],
+    ["Historique", "Gele apres l'essai", "Oui"],
+    ["Statistiques", "Complet pendant l'essai", "Completes + projection allures"],
     ["Messages coach (Arthur)", false, true],
     ["Programme adaptatif (feedback)", false, true],
     ["Allures cibles T100", false, true],
@@ -305,15 +305,15 @@ export default function TarifsPage() {
   const faqItems = [
     {
       q: "Puis-je annuler a tout moment ?",
-      a: "Pendant l'essai 7 jours (carte requise) : oui, tu annules depuis Stripe et tu n'es pas preleve. Ensuite le mensuel (4,99€) reste sans engagement. L'annuel (39,99€) est un prepaiement : pas de remboursement une fois facture, hors cas legaux.",
+      a: "L'essai 7 jours ne demande pas de carte : il s'arrete tout seul et l'app se gele. Ensuite le mensuel (4,99€) reste sans engagement. L'annuel (39,99€) est un prepaiement : pas de remboursement une fois facture, hors cas legaux.",
     },
     {
       q: "Puis-je commencer gratuitement ?",
-      a: "Tu demarres par le questionnaire et un compte, puis un essai Premium de 7 jours avec carte (0€ pendant l'essai). Sans abo apres, tu gardes l'historique en lecture seule — pas de generation de nouveau plan.",
+      a: "Tu crees un compte et tu as 7 jours d'essai Premium sans carte. Ensuite l'app se gele : plus aucun plan ni seance visible, jusqu'a l'abonnement.",
     },
     {
       q: "Que se passe-t-il si j'arrete mon abonnement ?",
-      a: "Ton compte reste conserve. Tu gardes ton historique, ton profil et tes seances existantes, mais les fonctions Premium se verrouillent a la fin de la periode active.",
+      a: "Ton compte reste conserve. Apres l'essai ou la fin de periode payee, l'app se gele : tu ne vois plus tes plans ni tes seances tant que tu ne t'abonnes pas.",
     },
     {
       q: "Puis-je synchroniser Strava plus tard ?",
@@ -392,7 +392,7 @@ export default function TarifsPage() {
                   fontFamily: FONT,
                 }}
               >
-                Découvre MySWYM avec l’essai 7 jours (carte requise). Le Premium te donne un
+                Découvre MySWYM avec l’essai 7 jours sans carte. Le Premium te donne un
                 plan complet pour progresser sérieusement, suivre
                 précisément tes performances et rester régulier.
               </p>
@@ -465,7 +465,7 @@ export default function TarifsPage() {
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {[
-                  "Essai 7 jours · carte requise",
+                  "Essai 7 jours · sans carte",
                   "Mensuel sans engagement",
                   `Économise ${annualSavings}€ avec l'annuel`,
                 ].map((item) => (
@@ -642,7 +642,7 @@ export default function TarifsPage() {
                 7j
             </div>
             <div style={{ marginTop: 6, color: C.secondary, fontSize: 14, fontFamily: FONT }}>
-              Carte requise · puis 4,99€/mois · annule = 0€
+              Sans carte · puis 4,99€/mois · ensuite l'app se gèle
             </div>
             <Link
               to="/inscription"
@@ -781,7 +781,7 @@ export default function TarifsPage() {
               </span>
             </div>
             <div style={{ marginTop: 6, color: C.secondary, fontSize: 14, lineHeight: 1.55, fontFamily: FONT }}>
-              Essai 7 jours avec carte, puis 4,99€/mois sans engagement.
+              Essai 7 jours sans carte, puis 4,99€/mois sans engagement.
             </div>
             <button
               type="button"
@@ -943,9 +943,8 @@ export default function TarifsPage() {
               Le Premium te fait progresser.
             </h2>
             <p style={{ margin: 0, color: C.secondary, fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 760, marginInline: "auto" }}>
-              La comparaison doit être évidente : l’essai (carte requise) ouvre tout Premium pendant 7 jours,
-              puis le mensuel ou l’annuel devient le choix logique pour un vrai
-              suivi, un plan durable et des données utiles pour t’améliorer.
+              La comparaison doit être évidente : l’essai sans carte ouvre tout Premium pendant 7 jours,
+              puis le mensuel ou l’annuel devient le choix logique — sinon l’app se gèle.
             </p>
           </div>
 
@@ -1109,7 +1108,7 @@ export default function TarifsPage() {
                 Tu peux commencer sans risque.
               </h2>
               <p style={{ margin: 0, color: C.secondary, fontSize: 15, lineHeight: 1.65, fontFamily: FONT, maxWidth: 640 }}>
-                Decouvre MySWYM avec l'essai 7 jours (carte requise), choisis le
+                Decouvre MySWYM avec l'essai 7 jours sans carte, choisis le
                 mensuel si tu veux de la flexibilite ou l'annuel si tu veux la meilleure
                 valeur sur la duree.
               </p>
@@ -1123,7 +1122,7 @@ export default function TarifsPage() {
               }}
             >
               {[
-                "Essai 7 jours · carte",
+                "Essai 7 jours · sans carte",
                 "Paiement sécurisé",
                 "Données conservées",
               ].map((item) => (
@@ -1252,7 +1251,7 @@ export default function TarifsPage() {
             Garde Premium pour aller plus loin.
           </h2>
           <p style={{ margin: "0 auto 24px", color: "rgba(255,255,255,0.68)", fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 620 }}>
-            Active l’essai 7 jours (carte requise) pour découvrir MySWYM. Pour
+            Active l’essai 7 jours sans carte pour découvrir MySWYM. Pour
             vraiment progresser avec un plan personnalisé et un vrai suivi, garde Premium ensuite.
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12 }}>

@@ -13,19 +13,19 @@ interface Props {
 const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: string }> = {
   after_first_session: {
     title: 'Analyse terminée.',
-    subtitle: 'Essai 7 jours avec carte, puis 4,99 €/mois sans engagement. Annule avant la fin = 0 €.',
+    subtitle: 'Essai 7 jours sans carte, puis 4,99 €/mois sans engagement. Après l’essai, l’app se gèle.',
   },
   streak: {
     title: 'Ta progression est prête.',
-    subtitle: 'Garde ton coach : essai 7 jours avec carte, puis 4,99 €/mois.',
+    subtitle: 'Garde ton coach : 4,99 €/mois après l’essai sans carte.',
   },
   week_unlock: {
     title: 'Tes prochaines recommandations sont prêtes.',
-    subtitle: 'Débloque l’analyse complète avec l’essai Premium 7 jours (carte requise).',
+    subtitle: 'Débloque l’analyse complète : 4,99 €/mois après l’essai.',
   },
   generic: {
     title: 'Garde ton coach personnel.',
-    subtitle: 'Essai 7 jours · carte requise · puis 4,99 €/mois. Annule avant la fin = 0 €.',
+    subtitle: 'Essai 7 jours · sans carte · puis 4,99 €/mois. Après l’essai, l’app se gèle.',
   },
 }
 
@@ -57,7 +57,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
         <PlanCard
           title="Mensuel"
           price={monthly.label}
-          period="/ mois · essai 7j · carte"
+          period="/ mois · après l'essai"
           badge="Recommandé"
           highlight
           onClick={() => onSubscribe('monthly')}
@@ -80,7 +80,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
       </ul>
 
       <Button fullWidth variant="premium" className="cv:mt-6" onClick={() => onSubscribe('monthly')}>
-        Essai 7 jours — puis {monthly.label}/mois
+        Continuer — {monthly.label}/mois
       </Button>
       <button
         type="button"

@@ -145,7 +145,7 @@ export function isLegitimateHandoffDm(message: string): boolean {
 export function buildPricingReplyMessage(): string {
   const base = APP();
   return (
-    `Premium MySWYM : essai ${MYSWYM_PRICING.trialDays} jours (carte requise), ` +
+    `Premium MySWYM : essai ${MYSWYM_PRICING.trialDays} jours sans carte à l’inscription, ` +
     `puis ${MYSWYM_PRICING.monthlyLabel}/mois sans engagement, ` +
     `ou ${MYSWYM_PRICING.annualLabel}/an. ` +
     `Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs} — tu vises plutôt le mensuel flexible ou l’annuel ?`

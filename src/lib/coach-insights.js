@@ -103,24 +103,24 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "after_first_session":
       return {
         headline: "Ton coach a noté la séance",
-        subtitle: "Essai 7 jours avec carte pour que le plan s’adapte vraiment à toi — puis 4,99€/mois.",
+        subtitle: "Abonne-toi pour que le plan s’adapte vraiment à toi — 4,99€/mois sans engagement.",
       };
     case "trial_required":
       return {
         headline: weeks > 4
           ? `Ton plan ${weeks} semaines est prêt`
           : "Ton plan personnalisé est prêt",
-        subtitle: "Débloque les séances, les allures et l’adaptation coach. Essai 7 jours · carte requise · annule = 0€.",
+        subtitle: "7 jours offerts sans carte à l’inscription. Ensuite l’app se gèle — abonne-toi pour continuer.",
       };
     case "trial_expired":
       return {
-        headline: "Reprends ton coach",
-        subtitle: "Ton essai est terminé. Continue à 4,99€/mois sans engagement, ou choisis l’annuel.",
+        headline: "L’app est gelée",
+        subtitle: "Ton essai de 7 jours est terminé. Abonne-toi à 4,99€/mois sans engagement, ou choisis l’annuel, pour tout revoir.",
       };
     case "session_locked":
       return {
-        headline: "La séance est prête — détails verrouillés",
-        subtitle: "Active l’essai pour voir les blocs, les consignes et cocher ta séance.",
+        headline: "La séance n’est plus visible",
+        subtitle: "Abonne-toi pour voir les blocs, les consignes et cocher ta séance.",
       };
     case "feedback_adjust":
       return {
@@ -136,7 +136,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
       return {
         headline: "MySWYM Premium",
         subtitle: trialEligible
-          ? "Essai 7 jours avec carte, puis 4,99€/mois. Annule avant la fin = 0€."
+          ? "7 jours offerts sans carte à l’inscription, puis 4,99€/mois. Après l’essai, l’app se gèle."
           : "Continue à 4,99€/mois sans engagement, ou choisis l’annuel.",
       };
   }

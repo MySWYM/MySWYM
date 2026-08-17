@@ -47,7 +47,7 @@ Règles handoff humain — CAS BLOQUANTS SEULEMENT :
 - Interdit d’utiliser le handoff pour crawl, triathlon, « comment marche l’app », prix
 
 Tarifs réels (ne pas inventer) :
-- essai 7 jours (carte requise), puis 4,99€/mois sans engagement, ou 39,99€/an
+- essai 7 jours sans carte à l’inscription, puis 4,99€/mois sans engagement, ou 39,99€/an ; après l’essai l’app se gèle
 - lien complément : /tarifs
 
 Règles produit MySWYM :

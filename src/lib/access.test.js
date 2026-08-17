@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getAccessState, ACCESS_STATUS } from "./access.js";
+import { getAccessState, ACCESS_STATUS, isAccessMetadataPending } from "./access.js";
 
 function userWith(meta) {
   return { app_metadata: meta };
@@ -88,6 +88,36 @@ const nowSec = Math.floor(Date.now() / 1000);
     subscription_end: nowSec + 86400,
   }));
   assert.equal(premium.canUseMultiPlan, false, "even premium: single active plan only");
+}
+
+{
+  const state = getAccessState(userWith({
+    subscription: "free",
+    subscription_status: ACCESS_STATUS.EXPIRED,
+    trial_used: true,
+  }));
+  assert.equal(state.hasPremiumAccess, false);
+  assert.equal(state.isFrozen, true);
+}
+
+{
+  const pendingExpiredUnused = isAccessMetadataPending(userWith({
+    subscription_status: ACCESS_STATUS.EXPIRED,
+  }));
+  assert.equal(pendingExpiredUnused, true, "expired without trial_used can still receive cardless trial");
+}
+
+{
+  const notPending = isAccessMetadataPending(userWith({
+    subscription_status: ACCESS_STATUS.EXPIRED,
+    trial_used: true,
+  }));
+  assert.equal(notPending, false);
+}
+
+{
+  const noUser = getAccessState(null);
+  assert.equal(noUser.isFrozen, false);
 }
 
 console.log("access.test.js OK");

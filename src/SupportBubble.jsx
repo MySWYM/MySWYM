@@ -18,12 +18,12 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `Pour accéder à ton plan : questionnaire, compte, puis essai Premium ${TRIAL_DAYS} jours avec carte (0€ pendant l'essai). Ensuite mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Annule pendant l'essai = 0€. Sans abo : historique en lecture seule. Détails sur la page Tarifs.`,
+      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite l'app se gèle (plus rien de visible) jusqu'à l'abonnement. Mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Détails sur la page Tarifs.`,
   },
   {
     keys: ["annul", "résili", "resili", "stop", "désabon", "desabon", "rembours"],
     answer:
-      "Pendant l'essai 7 jours : annule depuis l'espace client Stripe → pas de prélèvement. Ensuite, mensuel 4,99€ sans engagement (accès jusqu'à la fin de période payée). Annuel 39,99€ : prépaiement, pas de remboursement une fois facturé (hors cas légaux).",
+      "L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et l'app se gèle. Ensuite, mensuel 4,99€ sans engagement (accès jusqu'à la fin de période payée). Annuel 39,99€ : prépaiement, pas de remboursement une fois facturé (hors cas légaux).",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -60,7 +60,7 @@ const FAQ_RULES = [
   {
     keys: ["allure", "t100", "temps 100", "pace", "@", "mm:ss", "chron"],
     answer:
-      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau) — plus de T400. Premium affiche @mm:ss à côté des zones. Sans abo : aperçu squelette, sans tags d'allure. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
+      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau) — plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, l'app est gelée. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
   },
   {
     keys: ["d…", "d...", "r…", "r...", "d ou r", "départ chron", "depart chron", "repos ", "intervalle fixe", "chronométré", "chronometre"],

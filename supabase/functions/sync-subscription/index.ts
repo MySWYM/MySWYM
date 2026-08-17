@@ -2,10 +2,10 @@ import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   ACCESS_STATUS,
-  buildExpiredState,
   buildSubscriptionStateFromStripe,
   getAccessState,
   persistAccessState,
+  resolveAccessWithoutStripeSub,
   type AccessStateRow,
   type AuthUser,
 } from "../_shared/access-state.ts";
@@ -88,19 +88,16 @@ Deno.serve(async (req) => {
     const currentState = await getAccessState(supabaseAdmin, user.id);
     let nextState: AccessStateRow;
 
-    // Plus d'essai gratuit sans carte : Premium uniquement via abo Stripe (trialing / active).
+    // Abo Stripe actif → Stripe gagne. Sinon essai 7j sans carte (1×) puis gel.
     if (customerId) {
       const sub = await findActiveSubscription(customerId);
       if (sub) {
         nextState = buildSubscriptionStateFromStripe(user.id, currentState, customerId, sub);
       } else {
-        nextState = buildExpiredState(user.id, {
-          ...currentState,
-          stripe_customer_id: customerId ?? currentState?.stripe_customer_id ?? null,
-        });
+        nextState = resolveAccessWithoutStripeSub(user.id, currentState, customerId);
       }
     } else {
-      nextState = buildExpiredState(user.id, currentState);
+      nextState = resolveAccessWithoutStripeSub(user.id, currentState, null);
     }
 
     const persisted = await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);

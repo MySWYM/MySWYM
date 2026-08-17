@@ -558,12 +558,12 @@ export function CgvPage() {
         "les fonctionnalités Premium listées sur la page Tarifs au moment de la commande.",
       ]} />
       <P>
-        Sans abonnement actif (ni essai), le compte peut conserver un historique / aperçu en lecture limitée.
+        Sans essai en cours ni abonnement actif, l’application est gelée : aucun plan ni séance n’est visible.
       </P>
 
       <H>3. Offres et prix (TTC)</H>
       <Ul items={[
-        "Essai 7 jours (tunnel mensuel) : carte bancaire requise via Stripe Checkout ; 0 € pendant l’essai ; résiliation pendant l’essai = aucun prélèvement. Une seule fois par compte (anti-abus).",
+        "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est gelé (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
         "Mensuel : 4,99 € TTC / mois après l’essai — sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
         "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — prépaiement 12 mois (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
         "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée éventuellement proposée via un identifiant de prix Stripe dédié. Elle n’est pas nécessairement affichée sur la page Tarifs grand public. Les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables ; une clause d’« engagement » ne peut pas supprimer ces droits.",
@@ -579,19 +579,20 @@ export function CgvPage() {
       <Ul items={[
         "Le paiement est traité exclusivement par Stripe (carte bancaire).",
         "Avant redirection vers Stripe Checkout, l’application présente le prix, la périodicité, le renouvellement automatique et les liens CGU/CGV.",
-        "La validation du paiement / de l’essai vaut commande.",
+        "La validation du paiement vaut commande. L’essai sans carte ne constitue pas une commande payante.",
         "Un e-mail / reçu Stripe confirme la transaction ; un e-mail de confirmation d’abonnement peut également être envoyé par MySWYM.",
       ]} />
 
       <H>5. Exécution et accès</H>
       <P>
-        L’accès Premium est ouvert dès validation du paiement ou du démarrage de l’essai (sous réserve du bon
+        L’essai de 7 jours est ouvert dès la première connexion après création du compte, sans carte.
+        L’accès Premium payant est ouvert dès validation du paiement (sous réserve du bon
         fonctionnement des webhooks Stripe). En cas de retard technique, contactez <Mail to={supportEmail} />.
       </P>
 
       <H>6. Renouvellement et résiliation</H>
       <Ul items={[
-        "Pendant l’essai 7 jours : résiliation via « Gérer mon abonnement » (portail Stripe) avant la fin de l’essai → aucun prélèvement.",
+        "Pendant l’essai 7 jours sans carte : aucune résiliation Stripe n’est nécessaire ; l’accès s’arrête automatiquement au bout de 7 jours et l’application est gelée.",
         "Mensuel : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
         "Annuel / biennal : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période.",
         "Résiliation : depuis Profil → Paramètres → « Gérer mon abonnement » (portail Stripe), ou via les outils Stripe Customer Portal.",

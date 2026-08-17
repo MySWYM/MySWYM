@@ -34,9 +34,9 @@
 | Pays | France (documents / droit applicable FR) — adresse siège manquante |
 | Activité | SaaS web : générateur **rule-based** de plans / séances de natation |
 | Public | Consommateurs (nageurs) ; B2C |
-| Gratuit | Aperçu squelette / lecture limitée sans abo |
+| Gratuit | Essai 7 jours sans carte à l’inscription, puis gel total |
 | Payant | Premium via Stripe Checkout |
-| Essai | 7 jours, carte requise, tunnel **mensuel uniquement**, 1×/compte |
+| Essai | 7 jours, **sans carte**, 1×/compte ; ensuite app gelée |
 | Mensuel | 4,99 € TTC / mois, reconduction tacite |
 | Annuel | 39,99 € TTC / an, prépayé, sans essai sur ce tunnel |
 | Biennal | Price ID présent (29,99 € / 24 mois) — **non affiché** sur page Tarifs |

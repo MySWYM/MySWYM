@@ -14,6 +14,9 @@ export const SIGNUP_AGE_LABEL =
 export const SIGNUP_TERMS_LABEL_PREFIX =
   "J’accepte les";
 
+export const CARDLESS_TRIAL_NOTE =
+  "7 jours d’essai offerts à la création du compte, sans carte. Ensuite l’app est gelée jusqu’à l’abonnement.";
+
 export const CHECKOUT_RENEWAL_NOTICE =
   "Abonnement à reconduction tacite. Tu peux résilier à tout moment via « Gérer mon abonnement » (portail Stripe) ; l’accès reste actif jusqu’à la fin de la période déjà payée.";
 

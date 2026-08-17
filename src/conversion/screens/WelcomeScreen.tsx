@@ -57,7 +57,7 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
             </Button>
           ) : null}
           <p className="cv:text-center cv:text-[12px] cv:text-cv-ink-tertiary">
-            Essai Premium 7 jours · carte requise · puis 4,99€/mois
+            Essai Premium 7 jours · sans carte · puis 4,99€/mois
           </p>
         </motion.div>
       </motion.div>

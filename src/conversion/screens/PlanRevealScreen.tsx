@@ -80,7 +80,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
             <motion.div variants={fadeUp} className="cv:mt-8 cv:space-y-3">
               <MetaRow icon={<Target size={18} />} label="Objectif" value={goalLabel} />
               <MetaRow icon={<Waves size={18} />} label="Niveau" value={levelLabel} />
-              <MetaRow icon={<CalendarDays size={18} />} label="Essai Premium" value="7 jours · carte requise" />
+              <MetaRow icon={<CalendarDays size={18} />} label="Essai Premium" value="7 jours · sans carte" />
             </motion.div>
 
             {/* Mini timeline — value before paywall */}
