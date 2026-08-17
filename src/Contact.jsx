@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import StickyCta from "./marketing/StickyCta.jsx";
+import { usePageSeo } from "./lib/seo.js";
 
 const C = {
   bg: "#f8f9fc",
@@ -36,6 +39,7 @@ const FAQ_ITEMS = [
 ];
 
 export default function ContactPage() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,8 +47,13 @@ export default function ContactPage() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("idle"); // idle | sending | ok | error
   const [errorMsg, setErrorMsg] = useState("");
-  const [sentTo, setSentTo] = useState("");
   const isMobile = useIsMobile();
+
+  usePageSeo({
+    title: "Contact — MySWYM",
+    description: "Une question sur ton plan natation ? Écris-nous — réponse sous 24–48 h ouvrées.",
+    path: "/contact",
+  });
 
   const sendContact = async (e) => {
     e.preventDefault();
@@ -68,12 +77,12 @@ export default function ContactPage() {
       if (!res.ok || !data.ok) {
         throw new Error(data.error || "Envoi impossible");
       }
-      setSentTo(payload.email);
       setStatus("ok");
       setName("");
       setEmail("");
       setSubject("");
       setMessage("");
+      navigate("/merci", { replace: true });
     } catch (err) {
       setStatus("error");
       setErrorMsg(
@@ -97,7 +106,7 @@ export default function ContactPage() {
               Nous sommes à votre écoute !
             </h1>
             <p style={{ color: C.secondary, fontSize: isMobile ? 16 : 18, lineHeight: 1.65, marginTop: 14, maxWidth: 560 }}>
-              Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrjours ouvrés).
+              Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrées.
             </p>
             <p style={{ color: C.secondary, fontSize: 14, marginTop: 10 }}>
               Direct : <a href="mailto:support@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>support@myswym.app</a>
@@ -150,33 +159,7 @@ export default function ContactPage() {
               Remplis le formulaire — ton message arrive directement dans notre boîte.
             </p>
 
-            {status === "ok" ? (
-              <div style={{ marginTop: 18, padding: 16, borderRadius: 14, background: "#e6f8f1", color: "#0f5c40", fontSize: 15, lineHeight: 1.55, fontWeight: 600 }}>
-                Message envoyé. On te répond sous 24–48 h sur {sentTo || "ton email"}.
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatus("idle");
-                    setSentTo("");
-                  }}
-                  style={{
-                    display: "block",
-                    marginTop: 12,
-                    border: "none",
-                    background: "none",
-                    color: C.accentText,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    padding: 0,
-                    fontFamily: FONT,
-                    fontSize: 14,
-                  }}
-                >
-                  Envoyer un autre message
-                </button>
-              </div>
-            ) : (
-              <form
+            <form
                 onSubmit={sendContact}
                 style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}
               >
@@ -227,11 +210,11 @@ export default function ContactPage() {
                   {status === "sending" ? "Envoi…" : "Envoyer"}
                 </button>
               </form>
-            )}
           </section>
         </div>
       </main>
       <Footer />
+      <StickyCta />
     </div>
   );
 }

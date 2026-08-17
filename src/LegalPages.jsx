@@ -1,5 +1,7 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import { usePageSeo } from "./lib/seo.js";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
 
 const C = {
@@ -18,11 +20,17 @@ const host = {
   website: "https://vercel.com",
 };
 
-function LegalLayout({ title, subtitle, children }) {
+function LegalLayout({ title, subtitle, path, description, children }) {
+  usePageSeo({
+    title: `${title} — MySWYM`,
+    description: description || subtitle,
+    path,
+  });
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Lexend', sans-serif" }}>
       <PublicNav />
       <main style={{ maxWidth: 920, margin: "0 auto", padding: "96px 20px 56px" }}>
+        <Breadcrumb items={[{ label: "Accueil", href: "/accueil" }, { label: title }]} />
         <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{title}</h1>
         <p style={{ color: C.inkLight, marginTop: 0, marginBottom: 8 }}>{subtitle}</p>
         <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>Dernière mise à jour : {LEGAL_ENTITY.lastUpdated}</p>
@@ -106,7 +114,7 @@ function MediatorBlock() {
 export function MentionsLegalesPage() {
   const { tradeName, commercialName, publisher, email, site, supportEmail, subprocessors } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Mentions légales" subtitle={`Informations légales — ${site.replace("https://", "")}`}>
+    <LegalLayout title="Mentions légales" subtitle={`Informations légales — ${site.replace("https://", "")}`} path="/mentions-legales" description="Éditeur, hébergeur et mentions légales du site MySWYM.">
       <P>
         Conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique (LCEN),
         les informations suivantes sont portées à la connaissance des utilisateurs.
@@ -159,7 +167,7 @@ export function MentionsLegalesPage() {
 export function PolitiqueConfidentialitePage() {
   const { tradeName, publisher, email, supportEmail, dpoEmail, site } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Politique de confidentialité" subtitle={`Traitement des données personnelles — ${tradeName}`}>
+    <LegalLayout title="Politique de confidentialité" subtitle={`Traitement des données personnelles — ${tradeName}`} path="/politique-confidentialite" description="Données collectées, finalités, droits RGPD et contact pour MySWYM.">
       <P>
         La présente politique décrit comment {publisher} ({tradeName}) traite vos données personnelles
         lorsque vous utilisez {site} et l’application associée, conformément au Règlement (UE) 2016/679 (RGPD)
@@ -281,6 +289,15 @@ export function PolitiqueConfidentialitePage() {
         "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
       ]} />
 
+      <H3>2.12 Avis publics (landing)</H3>
+      <Ul items={[
+        "Données : prénom, note (1–5), texte de l’avis, e-mail facultatif (non publié).",
+        "Finalité : afficher des avis réels sur le site après modération manuelle ; aucun avis n’est publié automatiquement.",
+        "Base légale : intérêt légitime (art. 6.1.f) pour la preuve sociale, ou consentement du dépôt du formulaire.",
+        "Durée : jusqu’à suppression de l’avis ou du compte / sur demande.",
+        "Pas de Google Analytics : la mesure d’audience reste PostHog (si consentement cookies).",
+      ]} />
+
       <H>3. Destinataires / sous-traitants</H>
       <Ul items={[
         <>Supabase — auth, base de données, stockage avatars — DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
@@ -365,7 +382,7 @@ export function PolitiqueConfidentialitePage() {
 export function CguPage() {
   const { tradeName, email, supportEmail, site, publisher } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="CGU" subtitle={`Conditions générales d'utilisation — ${tradeName}`}>
+    <LegalLayout title="CGU" subtitle={`Conditions générales d'utilisation — ${tradeName}`} path="/cgu" description="Conditions générales d'utilisation de l'application MySWYM.">
       <P>
         Les présentes Conditions générales d’utilisation (CGU) régissent l’accès et l’utilisation de {site}
         et de l’application {tradeName}, édités par {publisher}.
@@ -536,7 +553,7 @@ export function CguPage() {
 export function CgvPage() {
   const { tradeName, email, supportEmail, site } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="CGV" subtitle={`Conditions générales de vente — offre Premium ${tradeName}`}>
+    <LegalLayout title="CGV" subtitle={`Conditions générales de vente — offre Premium ${tradeName}`} path="/cgv" description="Conditions générales de vente de l'offre Premium MySWYM.">
       <P>
         Les présentes Conditions générales de vente (CGV) s’appliquent aux abonnements Premium souscrits sur {site}
         par des consommateurs. Elles complètent les CGU. En cas de contradiction sur un point commercial,
@@ -681,7 +698,7 @@ export function CgvPage() {
 export function PolitiqueCookiesPage() {
   const { email, tradeName } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Politique de cookies" subtitle={`Cookies et traceurs — ${tradeName}`}>
+    <LegalLayout title="Politique de cookies" subtitle={`Cookies et traceurs — ${tradeName}`} path="/politique-cookies" description="Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics.">
       <P>
         Cette politique décrit les cookies et traceurs utilisés sur {tradeName}, conformément aux lignes directrices
         CNIL relatives aux cookies et autres traceurs.

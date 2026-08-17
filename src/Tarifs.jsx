@@ -16,6 +16,8 @@ import { track, trackEvent } from "./lib/analytics.js";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import StickyCta from "./marketing/StickyCta.jsx";
+import { usePageSeo } from "./lib/seo.js";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 
 const C = {
@@ -165,8 +167,13 @@ export default function TarifsPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
 
+  usePageSeo({
+    title: "Tarifs — MySWYM",
+    description: "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés.",
+    path: "/tarifs",
+  });
+
   useEffect(() => {
-    document.title = "Tarifs MySWYM";
     window.scrollTo(0, 0);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
@@ -1298,6 +1305,7 @@ export default function TarifsPage() {
       </section>
 
       <Footer />
+      <StickyCta />
     </div>
   );
 }

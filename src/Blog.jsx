@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import { usePageSeo } from "./lib/seo.js";
 import {
   BLOG_CATEGORIES,
   PAGE_SIZE,
@@ -163,8 +164,13 @@ export default function Blog() {
   const [pageCount, setPageCount] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  usePageSeo({
+    title: "Blog MySWYM — Conseils natation et entraînement",
+    description: "Articles natation : technique, plans, eau libre et vocabulaire de bassin — sans jargon inutile.",
+    path: "/blog",
+  });
+
   useEffect(() => {
-    document.title = "Blog MySWYM — Conseils natation & entraînement";
     document.body.style.background = C.bg;
     document.body.style.fontFamily = FONT;
     window.scrollTo(0, 0);

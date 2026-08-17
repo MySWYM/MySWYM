@@ -11,6 +11,8 @@ import ContactPage from './Contact.jsx'
 import Blog from './Blog.jsx'
 import BlogPost from './BlogPost.jsx'
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from './LegalPages.jsx'
+import MerciPage from './Merci.jsx'
+import NotFoundPage from './NotFound.jsx'
 import CookieBanner from './CookieBanner.jsx'
 import { COOKIE_CONSENT_KEY } from './lib/cookie-consent.js'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
@@ -73,12 +75,12 @@ createRoot(document.getElementById('root')).render(
         {/* Landing marketing */}
         <Route path="/accueil" element={<Landing />} />
         <Route path="/comment-ca-marche" element={<Landing />} />
-        <Route path="/objectifs" element={<Landing />} />
-        <Route path="/conformite" element={<Landing />} />
+        <Route path="/objectifs" element={<Navigate to={{ pathname: "/accueil", hash: "pourquoi" }} replace />} />
+        <Route path="/conformite" element={<Navigate to={{ pathname: "/accueil", hash: "seance" }} replace />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/tarifs" element={<TarifsPage />} />
-        {/* Alias (ancien lien) */}
-        <Route path="/homepage" element={<Landing />} />
+        <Route path="/homepage" element={<Navigate to="/accueil" replace />} />
+        <Route path="/merci" element={<MerciPage />} />
 
         {/* Blog */}
         <Route path="/blog" element={<Blog />} />
@@ -90,6 +92,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/politique-cookies" element={<PolitiqueCookiesPage />} />
         <Route path="/cgu" element={<CguPage />} />
         <Route path="/cgv" element={<CgvPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <CookieBanner />
       <ConsentedSpeedInsights />

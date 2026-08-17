@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import { usePageSeo } from "./lib/seo.js";
 import {
   fetchArticleBySlug,
   fetchRelatedArticles,
@@ -35,6 +36,15 @@ function useIsMobile(bp = 640) {
     return () => window.removeEventListener("resize", fn);
   }, [bp]);
   return mobile;
+}
+
+function ArticleSeo({ article }) {
+  usePageSeo({
+    title: article ? `${article.titre} — MySWYM` : "Article — MySWYM",
+    description: article?.extrait || article?.titre || "Article natation MySWYM",
+    path: article?.slug ? `/blog/${article.slug}` : "/blog",
+  });
+  return null;
 }
 
 function FontLoader() {
@@ -122,14 +132,6 @@ export default function BlogPost() {
       if (cancelled) return;
       setArticle(data);
       if (data) {
-        document.title = `${data.titre} — MySWYM`;
-        let meta = document.querySelector('meta[name="description"]');
-        if (!meta) {
-          meta = document.createElement("meta");
-          meta.name = "description";
-          document.head.appendChild(meta);
-        }
-        meta.content = data.extrait || data.titre;
         const rel = await fetchRelatedArticles(data.slug, data.categorie, 2);
         if (!cancelled) setRelated(rel);
       }
@@ -160,6 +162,7 @@ export default function BlogPost() {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
+      <ArticleSeo article={article} />
       <PublicNav />
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "88px 16px 0" : "104px 20px 0" }}>

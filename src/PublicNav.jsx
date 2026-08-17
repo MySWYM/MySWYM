@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import BrandLogo from "./BrandLogo.jsx";
@@ -15,6 +16,7 @@ const C = {
 
 export default function PublicNav() {
   const { t } = useTranslation("common");
+  const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
@@ -65,11 +67,15 @@ export default function PublicNav() {
 
           {!isMobile && (
             <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-              {links.map(([label, href]) => (
-                <a key={href} href={href} style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", fontFamily: "'Lexend', sans-serif" }}>
+              {links.map(([label, href]) => {
+                const pathOnly = href.split("#")[0];
+                const isHere = pathOnly !== "/accueil" && pathOnly === pathname;
+                return (
+                <a key={href} href={href} aria-current={isHere ? "page" : undefined} style={{ color: isHere ? C.ink : C.secondary, fontSize: 14, fontWeight: isHere ? 700 : 500, textDecoration: "none", fontFamily: "'Lexend', sans-serif" }}>
                   {label}
                 </a>
-              ))}
+                );
+              })}
             </div>
           )}
 
