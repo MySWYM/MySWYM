@@ -3,6 +3,8 @@
 > Ancien fichier monolithique **scindé** le 2026-08-15.  
 > L’agent doit lire les fichiers ci-dessous **avant** de modifier le contenu des séances.
 
+Orientation produit (pas des règles de séance) : [`revue-orientation-2026-08-17.md`](./revue-orientation-2026-08-17.md) — audit code + plan de sujets ; ne pas implémenter sans décision écrite.
+
 | Fichier | Rôle |
 | --- | --- |
 | [`natation-regles-actives.md`](./natation-regles-actives.md) | ≤ 20 règles non négociables |
