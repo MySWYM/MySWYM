@@ -1,6 +1,9 @@
 {
   "meta": {
-    "title": "MySWYM — Plan d'entraînement natation personnalisé"
+    "title": "MySWYM — Plan d'entraînement natation personnalisé",
+    "description": "Génère un plan natation calé sur ton objectif, ton niveau et ta date. Essai Premium 7 jours. Bassins 25 m et 50 m.",
+    "howTitle": "Comment ça marche — MySWYM",
+    "howDescription": "Objectif, date, niveau, fréquence : 4 étapes pour obtenir un plan de natation structuré."
   },
   "hero": {
     "titleLine1": "Ton plan de natation",
@@ -145,7 +148,9 @@
     "q3": "Comment fonctionne l'abonnement ?",
     "a3": "À la création du compte, tu as 7 jours d'essai Premium sans carte. Ensuite l'app se gèle : plus aucun plan ni séance visible. Pour continuer : 4,99€/mois sans engagement, ou annuel 39,99€ (pas de remboursement). Paiement via Stripe.",
     "q4": "Puis-je annuler à tout moment ?",
-    "a4": "L'essai 7 jours ne demande pas de carte : il s'arrête tout seul, l'app se gèle. Ensuite, le mensuel (4,99€) reste sans engagement (accès jusqu'à la fin de période payée). L'annuel (39,99€) est un prépaiement sans remboursement une fois facturé, hors cas légaux."
+    "a4": "L'essai 7 jours ne demande pas de carte : il s'arrête tout seul, l'app se gèle. Ensuite, le mensuel (4,99€) reste sans engagement (accès jusqu'à la fin de période payée). L'annuel (39,99€) est un prépaiement sans remboursement une fois facturé, hors cas légaux.",
+    "q5": "Ça marche en bassin 25 m et 50 m ?",
+    "a5": "Oui. Tu indiques la longueur au questionnaire ; les distances des blocs sont des multiples du bassin."
   },
   "finalCta": {
     "titleLine1": "Si tu vises un objectif,",

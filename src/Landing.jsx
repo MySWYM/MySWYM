@@ -6,10 +6,16 @@ import {
   Waves, Target, Calendar, Gauge, Clock, ArrowRight, Check, ChevronDown,
   Zap, Shield, Layers, Timer, Dumbbell,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
+import StickyCta from "./marketing/StickyCta.jsx";
+import LandingReviews from "./marketing/LandingReviews.jsx";
+import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
+import { CASE_STUDIES } from "./content/case-studies.js";
+import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
 
 // ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
 const C = {
@@ -929,6 +935,22 @@ function CoachSection() {
         </FadeIn>
 
         <FadeIn delay={0.1}>
+          <img
+            src="/coach.JPG"
+            alt="Arthur Noël, coach MySWYM"
+            width={640}
+            height={800}
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              height: "auto",
+              aspectRatio: "4 / 5",
+              objectFit: "cover",
+              borderRadius: 24,
+              marginBottom: 16,
+              display: "block",
+            }}
+          />
           <blockquote style={{
             margin: 0,
             background: "rgba(255,255,255,0.04)",
@@ -1353,6 +1375,7 @@ function FAQ() {
     { q: t("faq.q2"), a: t("faq.a2") },
     { q: t("faq.q3"), a: t("faq.a3") },
     { q: t("faq.q4"), a: t("faq.a4") },
+    { q: t("faq.q5"), a: t("faq.a5") },
   ];
 
   return (
@@ -1451,27 +1474,74 @@ function FinalCTA() {
   );
 }
 
+function CaseStudies() {
+  return (
+    <section id="etudes-de-cas" style={{ background: C.white, padding: "clamp(56px,8vw,96px) 20px" }}>
+      <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+        <FadeIn style={{ textAlign: "center", marginBottom: 36 }}>
+          <SectionLabel text="ÉTUDES DE CAS" />
+          <h2 style={{
+            fontFamily: FONT_DISPLAY, fontSize: "clamp(32px, 4.5vw, 48px)",
+            fontWeight: 800, color: C.ink, margin: 0, textTransform: "uppercase",
+          }}>
+            Parcours nageurs
+          </h2>
+          <p style={{ color: C.inkLight, fontSize: 16, maxWidth: 480, margin: "12px auto 0", fontFamily: FONT, lineHeight: 1.6 }}>
+            Exemples réels à venir — pas de chiffres inventés.
+          </p>
+        </FadeIn>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: 12,
+        }}>
+          {CASE_STUDIES.map((item, i) => (
+            <FadeIn key={item.id} delay={i * 0.05}>
+              <article style={{
+                background: C.bg, border: `1px dashed ${C.borderMid}`,
+                borderRadius: 20, padding: "22px 20px", minHeight: 160,
+              }}>
+                <p style={{
+                  margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
+                  color: C.primary, fontFamily: FONT,
+                }}>À VENIR</p>
+                <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.ink, margin: "10px 0 8px" }}>{item.title}</h3>
+                <p style={{ color: C.inkLight, fontSize: 14, lineHeight: 1.55, margin: 0, fontFamily: FONT }}>{item.summary}</p>
+              </article>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Landing() {
   const { t, i18n } = useTranslation("landing");
+  const { pathname } = useLocation();
+  const reviews = usePublishedReviews();
+  const isHow = pathname === "/comment-ca-marche";
+
+  usePageSeo({
+    title: isHow ? t("meta.howTitle") : t("meta.title"),
+    description: isHow ? t("meta.howDescription") : t("meta.description"),
+    path: isHow ? "/comment-ca-marche" : "/accueil",
+    jsonLd: [organizationJsonLd(), softwareApplicationJsonLd(reviews)],
+  });
 
   useEffect(() => {
     track("landing_viewed", { source: "accueil" }, { onceKey: "landing_viewed" });
   }, []);
 
   useEffect(() => {
-    document.title = t("meta.title");
     document.body.style.background = C.bg;
     document.body.style.fontFamily = FONT;
 
     const scrollToTarget = () => {
       const path = window.location.pathname;
       const hash = window.location.hash?.replace("#", "");
-      const sectionId = hash
-        || (path === "/comment-ca-marche" ? "how"
-          : path === "/objectifs" ? "pourquoi"
-          : path === "/conformite" ? "seance"
-          : null);
+      const sectionId = hash || (path === "/comment-ca-marche" ? "how" : null);
       if (!sectionId) return;
       requestAnimationFrame(() => {
         const el = document.getElementById(sectionId);
@@ -1495,11 +1565,13 @@ export default function Landing() {
       <CoachSection />
       <Includes />
       <Trust />
+      <CaseStudies />
       <Pricing />
-      {/* Reviews : section commentée — activer dès les premiers avis réels */}
+      <LandingReviews />
       <FAQ />
       <FinalCTA />
       <Footer />
+      <StickyCta />
     </div>
   );
 }

@@ -1,6 +1,9 @@
 {
   "meta": {
-    "title": "MySWYM — Personalized swim training plan"
+    "title": "MySWYM — Personalized swim training plan",
+    "description": "Build a swim plan around your goal, level, and race date. 7-day Premium trial. 25 m and 50 m pools.",
+    "howTitle": "How it works — MySWYM",
+    "howDescription": "Goal, date, level, frequency: four steps to a structured swim plan."
   },
   "hero": {
     "titleLine1": "Your swim plan",
@@ -145,7 +148,9 @@
     "q3": "How does the subscription work?",
     "a3": "When you create an account, you get a 7-day Premium trial with no card. Then the app freezes: no plans or sessions stay visible. To continue: €4.99/month with no commitment, or €39.99/year (non-refundable). Checkout via Stripe.",
     "q4": "Can I cancel anytime?",
-    "a4": "The 7-day trial needs no card — it simply ends and the app freezes. After that, monthly (€4.99) stays cancel-anytime. Annual (€39.99) is prepaid and non-refundable once charged, except where required by law."
+    "a4": "The 7-day trial needs no card — it simply ends and the app freezes. After that, monthly (€4.99) stays cancel-anytime. Annual (€39.99) is prepaid and non-refundable once charged, except where required by law.",
+    "q5": "Does it work in 25 m and 50 m pools?",
+    "a5": "Yes. You set pool length in the questionnaire; block distances are multiples of that length."
   },
   "finalCta": {
     "titleLine1": "If you have a goal,",
