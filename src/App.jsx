@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState } from "./lib/access.js";
+import { ACCESS_STATUS, getAccessState, isAccessMetadataPending } from "./lib/access.js";
 import {
   track,
   trackEvent,
@@ -89,6 +89,7 @@ import {
   LEGAL_LINKS,
   SIGNUP_AGE_LABEL,
   SIGNUP_TERMS_LABEL_PREFIX,
+  CARDLESS_TRIAL_NOTE,
   SPORT_SAFETY_SHORT,
   ACCOUNT_DELETE_WARNING,
 } from "./lib/legal-copy.js";
@@ -700,6 +701,20 @@ const SWIM_STYLES = [
   { id: "4_nages", label: "4 nages", desc: "Je veux varier papillon, dos, brasse et crawl" },
 ];
 
+/** Triathlon / eau libre : pas de 4 nages (aucun niveau) — ne pas le proposer. */
+const goalHidesFourNages = (profile = {}) => {
+  const cat = String(profile.category || "");
+  const goal = String(profile.goal || "");
+  return (
+    cat === "triathlon" ||
+    cat === "eau_libre" ||
+    cat === "open_water" ||
+    goal.startsWith("triathlon") ||
+    goal.startsWith("open_water") ||
+    goal.startsWith("eau_libre")
+  );
+};
+
 /** Nage préférée (stroke) */
 const PREFERRED_STROKES = [
   { id: "crawl", label: "Crawl" },
@@ -807,8 +822,8 @@ const buildAccessNotifications = (user, accessState) => {
       type: "billing",
       title: accessState.trialDaysLeft === 1 ? "Dernier jour d'essai" : `Essai Premium : ${accessState.trialDaysLeft} jours restants`,
       body: accessState.trialDaysLeft === 1
-        ? "Ton essai se termine aujourd'hui. Si tu gardes Premium, tes plans complets restent actifs."
-        : "Ton essai Premium arrive a sa fin. Pense a verifier ton abonnement avant la coupure.",
+        ? "Ton essai se termine aujourd'hui. Sans abonnement, l'app sera gelée — tu ne pourras plus rien voir."
+        : "Ton essai Premium arrive a sa fin. Abonne-toi pour garder tes plans, sinon l'app se gèle.",
       createdAt: (accessState.accessEndsMs || Date.now()) - (accessState.trialDaysLeft * DAY_MS),
     });
   }
@@ -825,8 +840,8 @@ const buildAccessNotifications = (user, accessState) => {
     items.push({
       id: `subscription-expired:${accessState.subscriptionEndsAt || accessState.trialEndsAt || "expired"}`,
       type: "security",
-      title: "Acces Premium interrompu",
-      body: "Ton acces Premium n'est plus actif. Si c'est une erreur ou un souci de compte, restaure les achats dans le menu.",
+      title: "Essai terminé — app gelée",
+      body: "Ton essai de 7 jours est fini. L'application est gelée. Abonne-toi pour retrouver tes plans et séances.",
       createdAt: parseNotificationTime(accessState.subscriptionEndsAt || accessState.trialEndsAt, Date.now()),
     });
   }
@@ -4018,7 +4033,7 @@ const SettingsDrawer = ({
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Gestion de l&apos;abonnement</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai 7 jours · carte requise · puis 4,99€/mois"}</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé — abonne-toi pour dégeler l’app"}</div>
             </div>
           </div>
           {isPremium ? (
@@ -4027,7 +4042,7 @@ const SettingsDrawer = ({
             </button>
           ) : (
             <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
-              Essai 7 jours — carte requise
+              S’abonner — 4,99€/mois
             </button>
           )}
           {isPremium ? (
@@ -4651,7 +4666,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
     password: "Connecte-toi avec Google ou ton email.",
     register: referralCode
       ? `Code parrain ${referralCode} — −20% sur ta 1ère facture Premium.`
-      : "Crée ton compte avec Google ou un email.",
+      : "7 jours d’essai offerts, sans carte. Ensuite l’app se gèle.",
     reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
   };
   const ctaMap = {
@@ -4706,6 +4721,9 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
               </span>
             </label>
             <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
+              {CARDLESS_TRIAL_NOTE}
+            </p>
+            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
               {SPORT_SAFETY_SHORT}
             </p>
           </div>
@@ -5547,15 +5565,32 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
 };
 
 /** Nages préférées — style (crawl / 4 nages) + nage favorite */
-const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStroke, onNext, onBack, isLast = false }) => {
-  const canNext = !!swimStyle && !!preferredStroke;
+const StepSwimPrefs = ({
+  swimStyle,
+  preferredStroke,
+  onChangeStyle,
+  onChangeStroke,
+  onNext,
+  onBack,
+  isLast = false,
+  hideFourNages = false,
+}) => {
+  useEffect(() => {
+    if (hideFourNages && swimStyle !== "crawl") onChangeStyle("crawl");
+  }, [hideFourNages, swimStyle, onChangeStyle]);
+
+  const canNext = hideFourNages ? !!preferredStroke : !!swimStyle && !!preferredStroke;
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Tes nages</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        Dis-nous ce que tu préfères — on orientera tes séances.
+        {hideFourNages
+          ? "Dis-nous ta nage préférée — en triathlon et en eau libre, on travaille surtout le crawl."
+          : "Dis-nous ce que tu préfères — on orientera tes séances."}
       </p>
 
+      {!hideFourNages && (
+        <>
       <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
         Style préféré
       </div>
@@ -5579,6 +5614,8 @@ const StepSwimPrefs = ({ swimStyle, preferredStroke, onChangeStyle, onChangeStro
           );
         })}
       </div>
+        </>
+      )}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
         Nage préférée
@@ -5914,6 +5951,7 @@ const OnboardingWizard = ({
         <StepSwimPrefs
           swimStyle={profile.swimStyle}
           preferredStroke={profile.preferredStroke}
+          hideFourNages={goalHidesFourNages(profile)}
           onChangeStyle={(v) => update("swimStyle", v)}
           onChangeStroke={(v) => update("preferredStroke", v)}
           onNext={() => (noDate ? setStep(13) : setStep(6))}
@@ -6184,7 +6222,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
         </p>
         {!isPremium && (
           <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 28, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
-            Aperçu coach : trop dur → volume −12 % la semaine suivante. Débloque l’essai pour appliquer.
+            Aperçu coach : trop dur → volume −12 % la semaine suivante. Abonne-toi pour appliquer.
           </p>
         )}
 
@@ -6265,7 +6303,7 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
         </p>
         {!isPremium && (
           <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 20, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
-            Aperçu coach : 1er retour « trop dur » → micro −3 % volume. Débloque l’essai pour appliquer.
+            Aperçu coach : 1er retour « trop dur » → micro −3 % volume. Abonne-toi pour appliquer.
           </p>
         )}
 
@@ -6376,7 +6414,7 @@ const BadgeToast = ({ badgeId }) => {
 };
 
 // ── ACCÈS ──────────────────────────────────────────────────────────────────
-// Modèle live = trial-first (aperçu squelette → essai Stripe 7j → Premium).
+// Modèle live = essai 7j sans carte à l'inscription, puis gel total (abonnement pour dégeler).
 // FREE_* ci-dessous : remnants / helpers legacy — ne gate plus l’UX (voir access.js).
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
@@ -6441,16 +6479,16 @@ const clearPendingOnboarding = () => {
 };
 
 const FREE_TIER_LINES = [
-  "Aperçu du plan (squelette)",
-  "Profil et stats de base",
-  "Séances verrouillées sans essai",
+  "Après 7 jours : app gelée",
+  "Plus aucun plan ni séance visible",
+  "Abonnement requis pour dégeler",
 ];
 
 const countCompletedSessions = (p) =>
   (p?.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0);
 
 const PREMIUM_TIER_LINES = [
-  "Essai 7 jours · carte requise · puis 4,99€/mois",
+  "Essai 7 jours sans carte, puis 4,99€/mois",
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
@@ -6460,7 +6498,7 @@ const PREMIUM_TIER_LINES = [
 const PlanTierComparison = ({ compact = false }) => (
   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 8 : 10, marginBottom: compact ? 0 : 20 }}>
     <div style={{ border: `1px solid ${G.greyLight}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.surface }}>
-      <div style={{ fontSize: 10, fontWeight: 800, color: G.grey, letterSpacing: "0.08em", marginBottom: 8 }}>SANS ABO</div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: G.grey, letterSpacing: "0.08em", marginBottom: 8 }}>APRÈS L’ESSAI</div>
       {FREE_TIER_LINES.map((line, i) => (
         <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < FREE_TIER_LINES.length - 1 ? 6 : 0 }}>
           <Check size={11} color={G.greyMid} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -6500,15 +6538,15 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Ton abonnement</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Essai requis</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Essai terminé</div>
           <div style={{ fontSize: 12, color: G.grey, marginTop: 4 }}>
             {totalWeeks > 0
-              ? `Plan prêt · ${totalWeeks} semaine${totalWeeks > 1 ? "s" : ""} · séances verrouillées`
-              : "Active l’essai 7 jours (carte requise) pour débloquer"}
+              ? `L’app est gelée · ${totalWeeks} semaine${totalWeeks > 1 ? "s" : ""} à débloquer`
+              : "Abonne-toi pour dégeler tes plans et séances"}
           </div>
         </div>
         <button onClick={onUpgrade} style={{ padding: "9px 14px", borderRadius: 10, border: "none", background: G.blue, color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-          Essai 7j
+          S’abonner
         </button>
       </div>
       <PlanTierComparison compact />
@@ -6654,7 +6692,7 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
             {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-            Débloque les séances et l’adaptation coach — essai 7 jours (carte requise). Annule avant la fin = 0€.
+            Débloque les séances et l’adaptation coach — 7 jours offerts sans carte à l’inscription. Ensuite l’app se gèle.
           </p>
         </div>
 
@@ -6711,7 +6749,7 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
 
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleContinue} disabled={loading}>
-          {loading ? "Redirection…" : "Essai 7 jours — débloquer mon coach"}
+          {loading ? "Redirection…" : "S’abonner — débloquer mon coach"}
         </Btn>
         <button type="button" onClick={onDismiss} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
           Voir l’aperçu sans activer
@@ -6762,7 +6800,62 @@ const CancelSurveySheet = ({ onChoose, onSkip }) => {
   );
 };
 
-const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true, planWeeks = 0 }) => {
+const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="freeze-title"
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 400,
+      background: G.bg,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "28px 20px",
+      paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+    }}
+  >
+    <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
+      <div style={{
+        width: 64, height: 64, borderRadius: 20, background: G.ink,
+        display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px",
+      }}>
+        <Lock size={28} color={G.gold} />
+      </div>
+      <h1 id="freeze-title" style={{
+        fontFamily: "'Barlow Condensed', sans-serif", fontSize: 36, fontWeight: 800,
+        textTransform: "uppercase", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
+      }}>
+        Ton essai est terminé
+      </h1>
+      <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 28px" }}>
+        L’application est gelée. Tes plans et séances ne sont plus visibles.
+        Abonne-toi pour tout retrouver — 4,99€/mois sans engagement, ou 39,99€/an.
+      </p>
+      <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
+        Choisir un abonnement
+      </Btn>
+      <button
+        type="button"
+        onClick={onSignOut}
+        style={{
+          width: "100%", marginTop: 12, padding: 14, border: "none", background: "none",
+          color: G.grey, fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44,
+        }}
+      >
+        Se déconnecter
+      </button>
+      <p style={{ fontSize: 12, color: G.greyMid, marginTop: 16, lineHeight: 1.45 }}>
+        Besoin d’aide ? <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>support@myswym.app</a>
+      </p>
+    </div>
+  </div>
+);
+
+const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true, planWeeks = 0, canDismiss = true }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const [period, setPeriod] = useState("monthly");
@@ -6781,7 +6874,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   }, [legalReady]);
 
   const hasReferral = Boolean(resolveReferralCode(user));
-  const showTrialOffer = trialEligible && period === "monthly";
+  const showTrialOffer = false;
   const isAnnual = period === "annual";
   const trialEnded = softContext === "trial_expired" || !!weeksBlocked;
   const resolvedContext = trialEnded && softContext !== "trial_expired" ? "trial_expired" : softContext;
@@ -6854,7 +6947,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         : "Démarrer — 4,99€/mois";
 
   return (
-    <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="sheet-overlay" onClick={e => canDismiss && e.target === e.currentTarget && onClose()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
@@ -6911,7 +7004,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         {showTrialOffer && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", lineHeight: 1.4, textAlign: "center" }}>
-              7 jours offerts · carte requise · annule avant la fin = 0€
+              7 jours offerts sans carte à l’inscription · ensuite l’app se gèle
             </span>
           </div>
         )}
@@ -6961,9 +7054,11 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
-        <button type="button" onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
-          Plus tard
-        </button>
+        {canDismiss && (
+          <button type="button" onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
+            Retour
+          </button>
+        )}
       </div>
     </div>
   );
@@ -7030,7 +7125,7 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
           <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 14 }}>+ {extra} autre{extra > 1 ? "s" : ""} semaine{extra > 1 ? "s" : ""} ensuite</p>
         )}
         <button type="button" onClick={onUpgrade} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px rgba(53,93,163,0.28)" }}>
-          Essai 7 jours — carte requise
+          S’abonner pour dégeler
         </button>
       </div>
     </div>
@@ -7598,7 +7693,7 @@ const SessionCard = ({
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               }}>
                 <Lock size={12} color={G.greyMid} />
-                Active l’essai pour accéder à la séance
+                Abonne-toi pour accéder à la séance
               </div>
             </button>
           ) : (
@@ -8099,7 +8194,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
             Limite atteinte
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
-            Pour générer de nouvelles séances, active Premium : essai 7 jours avec carte, puis 4,99€/mois sans engagement.
+            Pour générer de nouvelles séances, abonne-toi à Premium : 4,99€/mois sans engagement.
           </p>
         </>
       ) : (
@@ -8108,7 +8203,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
             Continue avec Premium
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
-            Pour de nouvelles séances personnalisées : essai 7 jours avec carte (0€ pendant l’essai), puis 4,99€/mois. Annule avant la fin = 0€.
+            Pour de nouvelles séances personnalisées : 4,99€/mois sans engagement, ou 39,99€/an.
           </p>
           <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
             {[
@@ -8125,7 +8220,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
           </ul>
         </>
       )}
-      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>Essai 7 jours — carte requise</Btn>
+      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>S’abonner — 4,99€/mois</Btn>
       {onClose && (
         <button type="button" onClick={onClose} style={{
           width: "100%", border: "none", background: "transparent", color: G.grey,
@@ -8258,7 +8353,7 @@ const ProgressionLoopView = ({
             accent={{ bg: (TYPE_META[session.type] || TYPE_META.ENDURANCE).bg, color: (TYPE_META[session.type] || TYPE_META.ENDURANCE).color }}
             isPremium={isPremium}
             showStart={!resolved}
-            startLabel={isPremium ? "Commencer la séance" : "Activer l’essai pour nager"}
+            startLabel={isPremium ? "Commencer la séance" : "S’abonner pour nager"}
             onUpgrade={onUpgrade}
             onStart={() => {
               if (!isPremium) {
@@ -8326,9 +8421,9 @@ const ProgressionLoopView = ({
             border: `1px solid rgba(53,93,163,0.15)`,
           }}>
             <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
-              Active ton essai 7 jours (carte requise) pour débloquer ta séance et continuer avec ton coach. Annule avant la fin = 0€.
+              Ton essai est terminé. Abonne-toi pour dégeler ta séance et continuer avec ton coach.
             </p>
-            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>Essai 7 jours — carte requise</Btn>
+            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>S’abonner — 4,99€/mois</Btn>
           </div>
         )}
 
@@ -8354,7 +8449,7 @@ const ProgressionLoopView = ({
           </button>
           {!isPremium && (
             <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.45, textAlign: "center" }}>
-              Régénération illimitée avec l’essai Premium (carte requise).
+              Régénération illimitée avec Premium.
             </p>
           )}
         </div>
@@ -9220,7 +9315,7 @@ const calcSessionDistance = (details = []) => {
   return total;
 };
 
-// Eau libre & triathlon : priorité crawl/dos — pas les blocs perf « 4 nages » lourds en brasse
+// Eau libre & triathlon : crawl uniquement, tous niveaux — jamais de 4 nages
 const isOpenWaterGoal = (g) => g?.startsWith("open_water") || g?.startsWith("eau_libre");
 const isTriathlonGoal = (g) => g?.startsWith("triathlon");
 const shouldUsePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
@@ -10807,12 +10902,12 @@ const SESSION_TEMPLATES = {
             ],
           },
           {
-            title: "Enchaînement 4 nages léger",
-            intensity: "Modéré — 1 tour IM, volume brasse minimal",
+            title: "Nage en ligne & orientation",
+            intensity: "Faible — prépa mer / triathlon",
             details: [
               `Échauffement : ${repR}m crawl + ${repR}m dos`,
-              `${Math.max(2, Math.round(nPerBlock * 0.5))}×${4*P}m 4 nages (${P}m pap · ${P}m dos · ${P}m crawl · ${P}m crawl) — R30" — fluidité`,
-              `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — repose sur le crawl`,
+              `${nPerBlock}×${repR}m crawl sighting — R15" — lève la tête tous les 6–8 bras, sans casser l'allure`,
+              `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — rythme régulier, respiration bilatérale`,
               `Retour calme : ${repR}m dos lent`,
             ],
           },
@@ -11539,6 +11634,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const [accessSynced, setAccessSynced] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
@@ -11597,6 +11693,8 @@ export default function App() {
 
   // Valeurs dérivées du plan actif
   const accessState = getAccessState(user);
+  const waitingForAccess = Boolean(user && isAccessMetadataPending(user) && !accessSynced);
+  const isFrozen = Boolean(user && !accessState.hasPremiumAccess && !isAccessMetadataPending(user));
   const canGenerateProgram = !!user && accessState.canGenerateProgram;
   const canUpdateProgram = !!user && accessState.canUpdateProgram;
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
@@ -11896,6 +11994,7 @@ export default function App() {
       setUser(u);
       setIsPremium(checkIsPremium(u));
       if (u) {
+        setAccessSynced(!isAccessMetadataPending(u));
         // Si on est sur /connexion alors qu’une session existe, renvoyer à l’app
         // (ne jamais laisser loadUserData coller le quiz sous l’URL auth).
         if (isAuthPath(locationRef.current.pathname)) {
@@ -11965,14 +12064,17 @@ export default function App() {
                   }
                 }
               }
-            });
+            })
+            .finally(() => setAccessSynced(true));
         }
       } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) {
+        setAccessSynced(false);
         setScreen("auth");
         setAuthLoading(false);
       } else {
         plansHydratedRef.current = false;
         resetAnalytics();
+        setAccessSynced(false);
         setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setPlanHistory([]); setAddingPlan(false); setQuestionnaireMode("full"); setTasteProfile(blankTaste()); setAuthLoading(false);
       }
     });
@@ -12302,12 +12404,14 @@ export default function App() {
         if (u) {
           setUser(u);
           setIsPremium(checkIsPremium(u));
+          setAccessSynced(true);
         }
       } catch {
         const { data } = await supabase.auth.getUser();
         if (data?.user) {
           setUser(data.user);
           setIsPremium(checkIsPremium(data.user));
+          setAccessSynced(true);
         }
       }
     };
@@ -12636,7 +12740,7 @@ export default function App() {
   const startMonthlyCheckout = async () => {
     if (planReadyLoading) return;
     setPlanReadyLoading(true);
-    showToast("Redirection vers l'essai 7 jours (carte requise)…");
+    showToast("Redirection vers le paiement…");
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
       const session = refreshData?.session;
@@ -13828,7 +13932,7 @@ export default function App() {
   );
 
   // L'AuthScreen s'affiche quand l'utilisateur le demande explicitement
-  // ou quand l'app doit rattacher le programme et l'essai Premium à un compte.
+  // ou quand l'app doit rattacher le programme et l'essai 7j à un compte.
   if (screen === "auth") return (
     <>
       <style>{css}</style><FontLoader />
@@ -13846,7 +13950,28 @@ export default function App() {
     </>
   );
 
-  if (screen === "loading") return <><style>{css}</style><FontLoader /><Loading /></>;
+  if (screen === "loading" || waitingForAccess) return <><style>{css}</style><FontLoader /><Loading /></>;
+
+  if (isFrozen) return (
+    <>
+      <style>{css}</style>
+      <FontLoader />
+      <TrialExpiredFreeze
+        onSubscribe={() => openUpgrade("trial_expired")}
+        onSignOut={handleSignOut}
+      />
+      {showUpgrade && (
+        <UpgradeModal
+          onClose={closeUpgrade}
+          softContext="trial_expired"
+          weeksBlocked={null}
+          planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
+          trialEligible={false}
+          canDismiss
+        />
+      )}
+    </>
+  );
 
   if (screen === "onboarding") return (
     <>
@@ -13893,7 +14018,7 @@ export default function App() {
     <>
       <style>{css}</style><FontLoader />
       <div className="myswym-app">
-        {/* Compte sans plan : nudge inscription (génération = essai Stripe avec carte). */}
+        {/* Compte sans plan : nudge inscription (l’essai 7j sans carte démarre au compte). */}
         {!user && plans.length > 0 && (
           <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
@@ -13911,11 +14036,11 @@ export default function App() {
             <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: "#1E40AF" }}>
               <span style={{ flex: 1, lineHeight: 1.35 }}>
                 {accessState.trialDaysLeft === 1
-                  ? "Dernier jour d’essai — annule avant minuit = 0 €, ou continue à 4,99 €/mois."
-                  : `Plus que ${accessState.trialDaysLeft} jours d’essai Premium.`}
+                  ? "Dernier jour d’essai — demain l’app se gèle. Abonne-toi pour garder tes plans."
+                  : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite l’app se gèle.`}
               </span>
-              <button type="button" onClick={handlePortal} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-                Gérer
+              <button type="button" onClick={() => openUpgrade("trial_expired")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                S’abonner
               </button>
             </div>
           </div>

@@ -154,6 +154,37 @@ export function buildTrialState(userId: string, current?: Partial<AccessStateRow
   } satisfies AccessStateRow;
 }
 
+/** Un essai sans carte par compte, à la première connexion. */
+export function shouldGrantCardlessTrial(current?: Partial<AccessStateRow> | null) {
+  if (!current) return true;
+  return current.trial_used !== true;
+}
+
+/**
+ * Pas d'abo Stripe actif : garder un essai encore valide, accorder l'essai
+ * sans carte une fois, sinon geler (expired).
+ */
+export function resolveAccessWithoutStripeSub(
+  userId: string,
+  current: AccessStateRow | null,
+  stripeCustomerId: string | null,
+): AccessStateRow {
+  const withCustomer = {
+    ...(current ?? {}),
+    stripe_customer_id: stripeCustomerId ?? current?.stripe_customer_id ?? null,
+  };
+  if (current && hasEntitlement(current)) {
+    return {
+      ...current,
+      stripe_customer_id: withCustomer.stripe_customer_id,
+    } satisfies AccessStateRow;
+  }
+  if (shouldGrantCardlessTrial(current)) {
+    return buildTrialState(userId, withCustomer);
+  }
+  return buildExpiredState(userId, withCustomer);
+}
+
 export function buildExpiredState(userId: string, current?: Partial<AccessStateRow> | null) {
   return {
     user_id: userId,

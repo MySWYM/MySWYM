@@ -1,6 +1,5 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getAccessState } from "../_shared/access-state.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -269,16 +268,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Essai 7j uniquement sur le mensuel, une seule fois (carte obligatoire).
-    let trialAlreadyUsed = sourceUser.app_metadata?.trial_used === true;
-    try {
-      const accessRow = await getAccessState(supabaseAdmin, user.id);
-      if (accessRow?.trial_used === true) trialAlreadyUsed = true;
-    } catch (accessErr) {
-      console.warn("[create-checkout] access state read failed, using app_metadata:", accessErr);
-    }
-    const grantTrial = price === PRICE_MONTHLY && !trialAlreadyUsed;
-
+    // L'essai 7j est sans carte (à l'inscription). Checkout = paiement immédiat.
     // Fenêtre 2 min : double-clic / refresh ne créent pas 2 sessions Stripe.
     const idempotencyKey = `checkout:${user.id}:${price}:${Math.floor(Date.now() / 120_000)}`;
 
@@ -296,10 +286,8 @@ Deno.serve(async (req) => {
         supabase_user_id: user.id,
         ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
         ...(referredByUserId ? { referred_by: referredByUserId } : {}),
-        ...(grantTrial ? { trial_days: "7" } : {}),
       },
       subscription_data: {
-        ...(grantTrial ? { trial_period_days: 7 } : {}),
         metadata: {
           supabase_user_id: user.id,
           ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
@@ -320,7 +308,7 @@ Deno.serve(async (req) => {
       properties: {
         price_id: price,
         has_referral: !!couponId || !!referredByUserId,
-        trial_granted: grantTrial,
+        trial_granted: false,
         session_id: session.id,
       },
       created_at: new Date().toISOString(),

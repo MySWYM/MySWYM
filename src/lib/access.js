@@ -68,6 +68,7 @@ export function getAccessState(user) {
     cancelAtPeriodEnd,
     entitledByStatus,
     hasPremiumAccess,
+    isFrozen: Boolean(user) && !hasPremiumAccess,
     canGenerateProgram: hasPremiumAccess,
     canUpdateProgram: hasPremiumAccess,
     canUseCoach: hasPremiumAccess,
@@ -82,17 +83,26 @@ export function getAccessState(user) {
   };
 }
 
+/** Pas d'essai encore consommé : attendre le sync (il peut accorder 7 jours) avant de geler. */
+export function isAccessMetadataPending(user) {
+  if (!user) return false;
+  const meta = user.app_metadata ?? {};
+  if (meta.subscription === "premium") return false;
+  if (meta.trial_used === true) return false;
+  return true;
+}
+
 export function getAccessLabel(accessState) {
   switch (accessState?.status) {
     case ACCESS_STATUS.TRIAL:
       return accessState.trialDaysLeft > 0
         ? `Essai Premium · ${accessState.trialDaysLeft} jour${accessState.trialDaysLeft > 1 ? "s" : ""} restant${accessState.trialDaysLeft > 1 ? "s" : ""}`
-        : "Essai Premium terminé";
+        : "Essai terminé — accès gelé";
     case ACCESS_STATUS.ACTIVE:
       return "Premium actif";
     case ACCESS_STATUS.CANCELED:
       return "Premium annulé";
     default:
-      return "Accès Premium expiré";
+      return "Essai terminé — accès gelé";
   }
 }

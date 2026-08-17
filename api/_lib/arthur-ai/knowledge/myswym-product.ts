@@ -31,7 +31,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_how_it_works",
       title: "Fonctionnement de l’app",
       content:
-        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). L’essai Premium ${MYSWYM_PRODUCT.trialDays} jours (carte requise) débloque plans complets et adaptation. Sans abo : aperçu / lecture limitée. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
+        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). À la création du compte : essai Premium ${MYSWYM_PRODUCT.trialDays} jours sans carte. Ensuite l’app se gèle (plus aucun plan ni séance visible) jusqu’à l’abonnement. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
       tags: [
         "fonctionne",
         "application",
@@ -48,7 +48,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_pricing",
       title: "Tarifs Premium",
       content:
-        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours avec carte (0€ pendant l’essai), puis ${MYSWYM_PRODUCT.monthly}/mois sans engagement, ou ${MYSWYM_PRODUCT.annual}/an. Annule pendant l’essai = 0€. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
+        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis ${MYSWYM_PRODUCT.monthly}/mois sans engagement, ou ${MYSWYM_PRODUCT.annual}/an. Après l’essai, l’app se gèle. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
       tags: ["prix", "tarif", "abonnement", "premium", "essai", "mensuel", "annuel"],
       intent_hints: ["subscription", "myswym_question"],
       priority: 100,
@@ -57,7 +57,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Résiliation via le portail client Stripe depuis le compte. Pendant l’essai : annule avant la fin = aucun prélèvement. Mensuel : sans engagement, accès jusqu’à la fin de période payée. Annuel : prépaiement, pas de remboursement au prorata hors cas légaux.",
+        "Résiliation via le portail client Stripe depuis le compte. L’essai 7 jours sans carte s’arrête tout seul : l’app se gèle, aucun prélèvement. Mensuel : sans engagement, accès jusqu’à la fin de période payée. Annuel : prépaiement, pas de remboursement au prorata hors cas légaux.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,
@@ -66,7 +66,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_features",
       title: "Fonctionnalités Premium",
       content:
-        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Freemium trial-first : aperçu squelette sans abo, essai Stripe 7j pour tester vraiment.",
+        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Essai 7 jours sans carte à l’inscription ; ensuite l’app se gèle jusqu’à l’abonnement.",
       tags: ["fonctionnalité", "premium", "plan", "allure", "adaptation"],
       intent_hints: ["myswym_question", "plan_request", "subscription"],
       priority: 85,

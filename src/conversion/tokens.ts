@@ -46,10 +46,10 @@ export const tokens = {
     freeFreqMax: 5,
     softPaywallAfterSessions: 1,
     hardPaywallAtWeek: 0,
-    trialRequiresCard: true,
+    trialRequiresCard: false,
   },
   pricing: {
-    monthly: { label: '4,99 €', period: '/ mois', trialNote: '7 jours offerts · carte requise' },
+    monthly: { label: '4,99 €', period: '/ mois', trialNote: '7 jours offerts · sans carte' },
     annual: { label: '39,99 €', period: '/ an', perMonth: '3,33 €' },
     biennial: { label: '29,99 €', period: '/ 2 ans' },
   },
@@ -84,10 +84,9 @@ export const LEVELS: { id: LevelId; title: string; subtitle: string }[] = [
 ]
 
 export const FREE_FEATURES = [
-  'Historique conservé',
-  'Quelques statistiques',
-  'Consultation des séances existantes',
-  'Fonctionnalités de base',
+  'Après 7 jours, l’app est gelée',
+  'Plus aucun plan ni séance visible',
+  'Abonnement requis pour tout revoir',
 ] as const
 
 export const PREMIUM_FEATURES = [

@@ -6,27 +6,27 @@ Module code : `src/conversion/`
 
 ---
 
-## Modèle live (août 2026) — trial-first
+## Modèle live (août 2026) — essai 7j sans carte, puis gel
 
 ```
-Onboarding (questionnaire)
-  → Génération du plan (contenu premium-mode)
-  → PlanReadySheet (insights coach + CTA essai)
-  → Stripe essai 7 jours (carte requise)
-  → OU dismiss → aperçu squelette / UpgradeModal contextuel
+Création de compte
+  → essai Premium 7 jours (sans carte, 1× par compte)
+  → accès complet (plans, séances, adaptation)
+  → J+7 : app gelée (rien de visible) jusqu’à abonnement Stripe payant
 ```
 
-**Sans abo :** squelette (titre / type / distance), pas de validation de séance.  
-**Essai / Premium :** séances complètes, allures, `adjustPlan`, multi-plans, coach card.
+**Pendant l’essai / Premium :** séances complètes, allures, `adjustPlan`, multi-plans, coach card.  
+**Après l’essai sans abo :** overlay de gel — aucun plan, aucune séance.
 
 Entitlements : `src/lib/access.js` (`subscription_status` trial/active/canceled/expired).  
+Grant essai : `sync-subscription` → `resolveAccessWithoutStripeSub`.  
 Insights paywall : `src/lib/coach-insights.js`.
 
 ### Pricing
 
 | Offre | Prix |
 |-------|------|
-| Essai | 7 jours · carte requise · 0€ si annulation avant fin |
+| Essai | 7 jours · sans carte · puis gel |
 | Mensuel | 4,99€ / mois |
 | Annuel | 39,99€ / an · pas de remboursement |
 
@@ -44,7 +44,7 @@ Insights paywall : `src/lib/coach-insights.js`.
 
 ## Prototype `/prototype/conversion`
 
-Tokens alignés trial-first (`freeWeeks: 0`, `hardPaywallAtWeek: 0`).  
+Tokens alignés essai sans carte (`trialRequiresCard: false`, `freeWeeks: 0`).  
 Écrans Soft/Hard paywall, celebration, habit home — **pas** le shell production (`App.jsx`).
 
 ---
@@ -77,7 +77,7 @@ Voir `tokens.ts` + `conversion.css`.
 1. ~~Tester le prototype `/prototype/conversion`~~
 2. ✅ Remplacé l’ouverture auto du paywall post-génération
 3. ✅ Soft paywall legacy (code présent, flux live = trial)
-4. ✅ **Trial-first** : PlanReadySheet + skeleton lock + access.js
+4. ✅ **Essai 7j sans carte** + gel total après expiration
 5. ✅ Insights coach pré-checkout + CoachCard monté (Premium)
 6. ✅ Paywalls contextuels (`getUpgradeCopy`)
 7. ✅ Emails essai J1/J3/J6 (`scripts/setup-resend-automations-v3-trial-drip.mjs` → `npm run email:setup-trial-drip`)
