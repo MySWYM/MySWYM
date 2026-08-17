@@ -56,10 +56,11 @@ export default function LandingReviews() {
     setErrorMsg("");
     const honey = e.currentTarget.elements.company?.value || "";
     try {
-      const res = await fetch("/api/landing-review", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          kind: "landing-review",
           name: name.trim(),
           rating,
           body: body.trim(),

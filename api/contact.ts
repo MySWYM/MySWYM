@@ -1,12 +1,16 @@
 /**
- * POST /api/contact — public contact form (self-contained, Vercel ESM-safe).
+ * POST /api/contact — formulaire contact + avis landing (même fonction Vercel).
+ * Hobby = 12 fonctions max : ne pas ajouter api/landing-review.ts.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
 const MAX_NAME = 120;
+const MAX_REVIEW_NAME = 80;
 const MAX_SUBJECT = 200;
 const MAX_MESSAGE = 5000;
+const MAX_REVIEW_BODY = 800;
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -36,6 +40,77 @@ function fromAddress(): string {
   return process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
 }
 
+function isLandingReview(body: Record<string, unknown>): boolean {
+  const kind = asString(body.kind || body.type).trim();
+  return kind === "landing-review" || kind === "review";
+}
+
+async function handleLandingReview(
+  body: Record<string, unknown>,
+  res: VercelResponse,
+) {
+  const name = asString(body.name).trim();
+  const text = asString(body.body).trim();
+  const email = asString(body.email).trim();
+  const rating = Number(body.rating);
+
+  if (!name || name.length > MAX_REVIEW_NAME) {
+    return res.status(400).json({ ok: false, error: "Prénom invalide" });
+  }
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ ok: false, error: "Note invalide" });
+  }
+  if (!text || text.length > MAX_REVIEW_BODY) {
+    return res.status(400).json({ ok: false, error: "Avis invalide" });
+  }
+  if (email && !isValidEmail(email)) {
+    return res.status(400).json({ ok: false, error: "Email invalide" });
+  }
+
+  const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim();
+  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (url && serviceKey) {
+    const admin = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await admin.from("landing_reviews").insert({
+      author_name: name,
+      rating,
+      body: text,
+      contact_email: email || null,
+      status: "pending",
+    });
+    if (error) {
+      console.error("[api/contact] review insert:", error.message);
+      return res.status(500).json({ ok: false, error: "Enregistrement impossible pour le moment." });
+    }
+  } else {
+    console.warn("[api/contact] Supabase admin missing — e-mail only for review");
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey) {
+    try {
+      const resend = new Resend(apiKey);
+      await resend.emails.send({
+        from: fromAddress(),
+        to: [contactInbox()],
+        replyTo: email || undefined,
+        subject: `[Avis] ${name} — ${rating}/5`,
+        html: `<p>Nouvel avis en relecture (ne pas publier tel quel).</p>
+          <p><strong>${escapeHtml(name)}</strong> — ${rating}/5</p>
+          <p style="white-space:pre-wrap">${escapeHtml(text)}</p>
+          <p>Publier : table <code>landing_reviews</code> → status = published.</p>`,
+        tags: [{ name: "category", value: "landing-review" }],
+      });
+    } catch (err) {
+      console.error("[api/contact] review mail:", err instanceof Error ? err.message : err);
+    }
+  }
+
+  return res.status(200).json({ ok: true });
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -46,6 +121,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const honey = asString(body.company || body.website).trim();
   if (honey) {
     return res.status(200).json({ ok: true, id: "ignored" });
+  }
+
+  if (isLandingReview(body)) {
+    return handleLandingReview(body, res);
   }
 
   const name = asString(body.name).trim();
