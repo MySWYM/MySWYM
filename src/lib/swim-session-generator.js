@@ -284,10 +284,8 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const depart = scaleDepartBlock(pick(departPool, "depart")(), isTest ? Math.min(mult, 0.85) : mult);
   lignes.push(depart.text);
 
-  // Technique rotative — adapter Nx25m si bassin 50
-  // Découverte : flèche / grand chien (FOCUS_CYCLE_DECOUVERTE)
-  const techKey = (isBeginner && TECHNIQUE[techniqueFocusKey]) ? techniqueFocusKey
-    : (isBeginner ? "technique_fleche" : techniqueFocusKey);
+  // Technique rotative
+  const techKey = TECHNIQUE[techniqueFocusKey] ? techniqueFocusKey : "technique_fleche";
   const techBlock = TECHNIQUE[techKey] || TECHNIQUE.technique_fleche;
   const techPicked = adaptTechBlockForPool(
     pick(techBlock.drills, "tech_semaine_"+techKey),

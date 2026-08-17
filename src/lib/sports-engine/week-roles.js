@@ -12,6 +12,73 @@ const FAMILY_FROM_ROLE = {
   Z4: "vitesse",
 };
 
+const HOT_INTENTS = /^(qualite|vitesse|vo2|seuil|css|allure_specifique|test|race|repos)$/i;
+const EDUCATIF_INTENTS = /^(technique_endurance|nage_spe|technique)$/i;
+const GOAL_KEEP_INTENTS = /^(triathlon|eau_libre|quatre_nages)$/i;
+
+function roleIntent(role = {}) {
+  return String(role.sessionIntent || role.intent || "").toLowerCase();
+}
+
+/** Séance du jour dédiée aux éducatifs / corrections (1×/semaine). */
+export function isEducatifSession(role = {}) {
+  if (!role || role.isRaceDay || role.isRestDay) return false;
+  if (role.educatifSession === false) return false;
+  if (role.educatifSession === true) return true;
+  if (role.qualitySession) return false;
+  const intent = roleIntent(role);
+  if (EDUCATIF_INTENTS.test(intent)) return true;
+  if (role.family === "technique" && intent !== "quatre_nages") return true;
+  return false;
+}
+
+function canBecomeEducatif(role) {
+  if (!role || role.isRaceDay || role.isRestDay || role.qualitySession) return false;
+  const intent = roleIntent(role);
+  if (HOT_INTENTS.test(intent)) return false;
+  return true;
+}
+
+function copyRoleArrayMeta(from, to) {
+  if (!from || !to) return to;
+  for (const key of ["raceAnalysis", "performanceStrategy", "taperLoad"]) {
+    if (from[key] !== undefined) {
+      Object.defineProperty(to, key, {
+        value: from[key],
+        enumerable: false,
+        configurable: true,
+      });
+    }
+  }
+  return to;
+}
+
+/**
+ * Une séance éducatif par semaine : beaucoup de mouvements / corrections.
+ * Les autres jours restent Échauffement / Corps / Retour au calme, sans bloc technique.
+ * Triathlon / eau libre : l’éducatif prend un autre slot (même catalogue que les autres plans).
+ */
+export function ensureWeeklyEducatif(roles) {
+  if (!Array.isArray(roles) || roles.length === 0) return roles;
+  const existing = roles
+    .map((r, i) => ({ r, i, edu: isEducatifSession({ ...r, educatifSession: r.educatifSession === true ? true : undefined }) }))
+    .filter((x) => x.edu && canBecomeEducatif(x.r));
+  let keep = existing[0]?.i ?? -1;
+  if (keep < 0) {
+    keep = roles.findIndex(
+      (r) => canBecomeEducatif(r) && (r.family === "technique" || EDUCATIF_INTENTS.test(roleIntent(r))),
+    );
+  }
+  if (keep < 0) {
+    keep = roles.findIndex((r) => canBecomeEducatif(r) && !GOAL_KEEP_INTENTS.test(roleIntent(r)));
+  }
+  if (keep < 0) {
+    keep = roles.findIndex((r) => canBecomeEducatif(r));
+  }
+  const out = roles.map((r, i) => ({ ...r, educatifSession: keep >= 0 && i === keep }));
+  return copyRoleArrayMeta(roles, out);
+}
+
 /**
  * Enrichit les rôles COSD avec famille V1 + flag séance clé.
  * @param {Array<{objectif:string, zone:string}>} roles
@@ -58,10 +125,12 @@ export function decouverteWeekRoles(n) {
     { objectif: "endurance", zone: "Z2", family: "endurance", intent: "endurance", qualitySession: false },
     { objectif: "technique_respiration", zone: "Z1", family: "technique", intent: "technique", qualitySession: false },
   ];
-  return Array.from({ length: Math.max(1, n) }, (_, i) => ({
-    ...templates[i % templates.length],
-    isKeySession: i === 1 || (n === 1 && i === 0),
-  }));
+  return ensureWeeklyEducatif(
+    Array.from({ length: Math.max(1, n) }, (_, i) => ({
+      ...templates[i % templates.length],
+      isKeySession: i === 1 || (n === 1 && i === 0),
+    })),
+  );
 }
 
 /**
@@ -183,20 +252,22 @@ export function regulierWeekRoles(n, ctx = {}) {
   const roles = Array.from({ length: count }, (_, i) => ({ ...templates[i % templates.length] }));
 
   let seenQuality = false;
-  return roles.map((r) => {
-    if (r.qualitySession) {
-      if (seenQuality) {
-        return {
-          ...r,
-          qualitySession: false,
-          sessionIntent: "endurance",
-          intent: "endurance",
-        };
+  return ensureWeeklyEducatif(
+    roles.map((r) => {
+      if (r.qualitySession) {
+        if (seenQuality) {
+          return {
+            ...r,
+            qualitySession: false,
+            sessionIntent: "endurance",
+            intent: "endurance",
+          };
+        }
+        seenQuality = true;
       }
-      seenQuality = true;
-    }
-    return r;
-  });
+      return r;
+    }),
+  );
 }
 
 /**
@@ -460,5 +531,5 @@ export function sportifWeekRoles(n, ctx = {}) {
     }
   }
 
-  return out;
+  return ensureWeeklyEducatif(out);
 }

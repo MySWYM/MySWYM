@@ -26,21 +26,8 @@ const DEFAULT_VOLUME = {
   performance: 3000,
 };
 
-/** Découverte : éducatifs autorisés (tableur Arthur + règle produit flèche/grand chien). */
-const DECOUVERTE_ALLOW = new Set([
-  "educatif_fleche",
-  "educatif_grand_chien",
-  "arthur_crawl_avec_tuba_frontal",
-  "arthur_battements_bras_en_opposition",
-  "nouveau_dos_deux_bras",
-  "arthur_papillon_un_bras",
-  "nouveau_jet_eau",
-  "nouveau_ondule_tete",
-  "nouveau_pousse_tete",
-  "nouveau_papillon_baleine",
-  "educatif_jambes_crawl",
-  "educatif_jambes_dos",
-]);
+/** Découverte : plus d’allowlist — tout le catalogue (export conservé pour imports). */
+const DECOUVERTE_ALLOW = new Set(ARTHUR_DRAFT_DRILLS.map((d) => d.id).filter((id) => id !== "ui_catalog_progressif"));
 
 function normLevel(raw) {
   const t = String(raw || "")
@@ -158,8 +145,8 @@ function formatDrillSet(rng, { pool, level, budget }) {
 
 function drillAllowedForLevel(d, level) {
   if (!d || d.id === "ui_catalog_progressif") return false;
+  if (level === "decouverte") return true;
   if (!Array.isArray(d.levels) || !d.levels.includes(level)) return false;
-  if (level === "decouverte" && !DECOUVERTE_ALLOW.has(d.id)) return false;
   return true;
 }
 
@@ -192,27 +179,6 @@ function selectDrills(rng, { level, objective, equipment, count = 2, forRecovery
     if (used.has(d.id)) continue;
     chosen.push(d);
     used.add(d.id);
-  }
-
-  if (level === "decouverte" && chosen.length) {
-    const must =
-      objective === "4_nages"
-        ? ["nouveau_dos_deux_bras", "arthur_papillon_un_bras", "nouveau_papillon_baleine"]
-        : ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"];
-    const replace = must
-      .map((id) =>
-        ARTHUR_DRAFT_DRILLS.find(
-          (d) => d.id === id && drillAllowedForLevel(d, "decouverte") && hasEquip(equipment, d.equipmentRequired),
-        ),
-      )
-      .filter(Boolean);
-    if (replace.length) {
-      chosen[0] = replace[Math.floor(rng() * replace.length)];
-      if (chosen.length > 1 && chosen[1].id === chosen[0].id) {
-        const alt = pool.find((d) => d.id !== chosen[0].id);
-        if (alt) chosen[1] = alt;
-      }
-    }
   }
 
   return chosen.slice(0, count);
@@ -392,7 +358,7 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
       const reps = Math.max(4, Math.min(10, Math.floor(budget / dist)));
       add(
         reps * dist,
-        `${reps} × ${dist} m crawl — allure tenable, focus économie — ${restCue(level)}`,
+        `${reps} × ${dist} m crawl — allure tenable — ${restCue(level)}`,
       );
       const left = budget - distance;
       if (left >= p * 4) {

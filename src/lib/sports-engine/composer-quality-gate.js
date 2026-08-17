@@ -9,6 +9,10 @@ import {
   minFourNageBodyShare,
 } from "./composer-constraints.js";
 import { MAX_PYRAMID_VOLUME } from "./set-formats.js";
+import {
+  maxPyramidVolume,
+  pyramidVariantsFromSets,
+} from "./pyramid-recipes.js";
 import { isEquipmentEngagementExempt } from "./equipment-usage.js";
 import { hasPullPalmesConflict } from "./session-compose.js";
 
@@ -430,17 +434,8 @@ export function validateComposedSession(session, brief = {}, constraints = null)
     brief._qualityGateForceSafe ||
     intentNow === "recuperation" ||
     intentNow === "repos" ||
-    c.level === "decouverte";
-  if (!skipObjCue && objectif === "eau_libre") {
-    if (!/sighting|visée|orientation|navigation|lève|repér|draft/i.test(text)) {
-      errors.push("objectif eau_libre: cue sighting/orientation absent du corps");
-    }
-  }
-  if (!skipObjCue && objectif === "triathlon" && /triathlon|seuil|aerobie|endurance|allure/i.test(intentNow)) {
-    if (!/triathlon|économie|draft|sighting|allure régulière|allure course|énergie/i.test(text)) {
-      errors.push("objectif triathlon: cue spécifique absent");
-    }
-  }
+    c.level === "decouverte" ||
+    brief.educatifSession === true;
   if (
     !skipObjCue &&
     objectif === "course_piscine" &&
@@ -461,10 +456,20 @@ export function validateComposedSession(session, brief = {}, constraints = null)
   const pyramidStepVol = setsArr
     .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
     .reduce((a, s) => a + (Number(s.reps) || 0) * (Number(s.distancePerRep) || 0), 0);
-  if (pyramidStepVol > MAX_PYRAMID_VOLUME) {
-    errors.push(`pyramide trop longue: ${pyramidStepVol}m > max ${MAX_PYRAMID_VOLUME}m`);
+  const pyramidVariants = pyramidVariantsFromSets(setsArr);
+  const corpsPhysioVol = setsArr
+    .filter((s) => !s.block || s.block === "corps")
+    .reduce((a, s) => a + (Number(s.reps) || 0) * (Number(s.distancePerRep) || 0), 0);
+  const pyramidCap = maxPyramidVolume({
+    pyramidVariants,
+    level: c.level || brief.level,
+    corpsPhysioVolume: corpsPhysioVol,
+  });
+  if (pyramidStepVol > pyramidCap) {
+    errors.push(`pyramide trop longue: ${pyramidStepVol}m > max ${pyramidCap}m`);
   }
   // Affichage opaque « Xm pyramide » sans paliers (ex. « 1750m pyramide ») = erreur
+  // (inchangé : un bloc opaque n'a pas de variantes — plafond simple 1000 m)
   if (/pyramide/i.test(text)) {
     const opaque = text.match(/-(\d+)\s*m\s+pyramide\b(?![^:\n]*→)/gi) || [];
     for (const m of opaque) {
@@ -628,15 +633,17 @@ export function composeWithQualityGate(brief, composeOnce) {
   };
 }
 
-function buildMinimalSafeSession(brief, constraints) {
+export function buildMinimalSafeSession(brief, constraints) {
   const level = brief.level || "regulier";
   const maxVol = Math.min(
     constraints.maxVolume ?? 900,
     Number(brief.volumeTarget) || 900,
     level === "decouverte" ? 600 : 900,
   );
-  const maxCont = Math.min(constraints.maxContinuousDistance || 50, 50);
-  const unit = Math.min(50, maxCont);
+  const maxCont = Number(constraints.maxContinuousDistance) > 0
+    ? Number(constraints.maxContinuousDistance)
+    : (level === "decouverte" ? 50 : 200);
+  const unit = maxCont >= 100 ? Math.min(100, maxCont) : Math.min(50, maxCont);
   const zone = constraints.painProtection || level === "decouverte" ? "Z1" : "Z1";
   const sets = [];
   const details = [];
@@ -676,9 +683,8 @@ function buildMinimalSafeSession(brief, constraints) {
   // J3: même en fallback minimal, garder un cue objectif si compatible (pas douleur stricte)
   const obj = String(brief.objectif || brief.goalFamily || "").toLowerCase();
   let corpsCue = "très facile — Z1";
-  if (!constraints.painProtection) {
-    if (/eau_libre|open_water/.test(obj)) corpsCue = "très facile — Z1 — sighting + allure régulière";
-    else if (/triathlon/.test(obj)) corpsCue = "très facile — Z1 — économie d'énergie — allure régulière";
+  if (!constraints.painProtection && !brief.educatifSession) {
+    if (/course_piscine/.test(obj)) corpsCue = "très facile — Z1";
   }
   while (remain >= unit * 2 && sets.filter((s) => s.block === "corps").length < 4) {
     const reps = Math.min(constraints.maxRepsPerSet || 12, Math.floor(remain / unit));

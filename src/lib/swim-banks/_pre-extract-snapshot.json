@@ -1108,72 +1108,72 @@
     ],
     "eau_libre": [
       {
-        "text": "8x100m, visée toutes les 6 coups (sighting) R20''",
+        "text": "8x100m crawl allure tenable R20''",
         "distance": 800,
         "repDist": 100
       },
       {
-        "text": "6x150m continu, focus navigation R30''",
+        "text": "6x150m continu, allure régulière R30''",
         "distance": 900,
         "repDist": 150
       },
       {
-        "text": "4x200m, simulation peloton (drafting mental) R30''",
+        "text": "4x200m crawl aérobie R30''",
         "distance": 800,
         "repDist": 200
       },
       {
-        "text": "2x400m allure course, sighting régulier R1'",
+        "text": "2x400m allure course R1'",
         "distance": 800,
         "repDist": 400
       },
       {
-        "text": "5x100m avec départ groupé simulé R20''",
+        "text": "5x100m crawl régulier R20''",
         "distance": 500,
         "repDist": 100
       },
       {
-        "text": "3x300m continu, sighting toutes les 8 coups R30''",
+        "text": "3x300m continu, allure tenable R30''",
         "distance": 900,
         "repDist": 300
       },
       {
-        "text": "10x100m, visée toutes les 8 coups R15''",
+        "text": "10x100m crawl allure confortable R15''",
         "distance": 1000,
         "repDist": 100
       },
       {
-        "text": "4x300m continu, sighting régulier R30''",
+        "text": "4x300m continu, rythme régulier R30''",
         "distance": 1200,
         "repDist": 300
       },
       {
-        "text": "2x600m allure course, sighting toutes les 10 coups R1'",
+        "text": "2x600m allure course R1'",
         "distance": 1200,
         "repDist": 600
       },
       {
-        "text": "6x100m départ groupé simulé, sighting immédiat R15''",
+        "text": "6x100m crawl départ franc R15''",
         "distance": 600,
         "repDist": 100
       },
       {
-        "text": "3x400m continu, navigation autonome R45''",
+        "text": "3x400m continu, allure autonome R45''",
         "distance": 1200,
         "repDist": 400
       },
       {
-        "text": "8x150m, alternance sighting/technique R20''",
+        "text": "8x150m crawl allure régulière R20''",
         "distance": 1200,
         "repDist": 150
       },
       {
-        "text": "1x800m allure course continue, sighting toutes les 8 coups",
+        "text": "1x800m allure course continue",
         "distance": 800,
         "repDist": 800
       },
       {
-        "text": "5x200m simulation peloton (drafting mental) R25''",
+        "text": "5x200m crawl aérobie R25''",
         "distance": 1000,
         "repDist": 200
       }
@@ -1338,14 +1338,14 @@
     "technique_jambes"
   ],
   "focusDecouverte": [
-    "technique_fleche",
-    "technique_grand_chien",
-    "technique_fleche",
-    "technique_grand_chien",
-    "technique_fleche",
-    "technique_grand_chien",
-    "technique_fleche",
-    "technique_grand_chien"
+    "technique_jambes",
+    "technique_respiration",
+    "technique_roulis",
+    "technique_jambes",
+    "technique_catchup",
+    "technique_virages",
+    "technique_chiens",
+    "technique_jambes"
   ],
   "owCount": 18,
   "ow": [
@@ -1358,7 +1358,7 @@
         "Échauffement : 400m crawl/dos par 50m — Z1, alterne à chaque longueur",
         "4×50m grand chien + tuba frontal — le plus lentement possible — R20\" — un bras tendu devant, échange complet, sens la prise d'eau",
         "4×50m palmes + tuba roulis — R20\" — rotation du bassin, talons à la surface",
-        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — garde la technique des éducatifs, sighting tous les 8 bras",
+        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — garde la technique des éducatifs",
         "Retour au calme : 200"
       ]
     },
@@ -1506,13 +1506,13 @@
     },
     {
       "i": 12,
-      "title": "Sighting avancé & navigation",
+      "title": "Endurance appliquée",
       "type": "ENDURANCE",
-      "intensity": "Z2 — sighting fréquent, nage appliquée",
+      "intensity": "Z2 — nage appliquée, allure régulière",
       "details": [
         "Échauffement : 400m crawl palmes — Z1",
-        "4×50m sighting tous les 4 bras — R15\" — lève les yeux sans casser le rythme",
-        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — sighting tous les 6-8 bras, garde le cap",
+        "4×50m crawl facile — R15\" — rythme régulier, sans casser la nage",
+        "10×50m crawl — R0'30\" — respiration 3 temps, nage appliquée — allure tenable",
         "Retour au calme : 200"
       ]
     },
@@ -1581,74 +1581,58 @@
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m Grand chien avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
-        "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
-        "-7 × 50 m crawl / dos facile — garde un rythme facile entre chaque longueur — repos 20s",
-        "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-4 × 50 m crawl avec tuba frontal — lent — focus glisse — repos 20s",
+        "-4 × 50 m crawl — moyen — respiration — repos 20s",
+        "-4 × 50 m crawl — vite — fluide — repos 40s",
+        "-Retour au calme : 2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
       ]
     },
     "decouverte|nager_progresser|case2-decouverte-ow-45": {
       "ok": true,
-      "distance": "950m",
+      "distance": "900m",
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m flèche avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
-        "-2 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
-        "-3 × 50 m crawl — lent — focus glisse — repos 20s",
-        "-3 × 50 m crawl — moyen — respiration — repos 20s",
-        "-2 × 50 m crawl — vite — fluide — repos 40s",
-        "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-6 × 50 m crawl / dos facile avec tuba frontal — garde un rythme facile entre chaque longueur — repos 20s",
+        "-6 × 50 m crawl / dos facile — garde un rythme facile entre chaque longueur — 2e bloc, contraste — repos 20s",
+        "-Retour au calme : 2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
       ]
     },
     "decouverte|nager_progresser|case3-regulier": {
       "ok": true,
-      "distance": "950m",
+      "distance": "900m",
       "title": "Découverte · enchaîner un peu plus longtemps",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m flèche avec tuba frontal et palmes — facile, sans forcer — focus geste — repos 15s",
-        "-2 × 50 m Battements bras en opposition avec tuba frontal — facile, sans forcer — focus geste — repos 15s",
-        "-3 × 50 m crawl — lent — focus glisse — repos 20s",
-        "-3 × 50 m crawl — moyen — respiration — repos 20s",
-        "-2 × 50 m crawl — vite — fluide — repos 40s",
-        "-2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-6 × 50 m crawl / dos facile avec tuba frontal — garde un rythme facile entre chaque longueur — repos 20s",
+        "-6 × 50 m crawl / dos facile — garde un rythme facile entre chaque longueur — 2e bloc, contraste — repos 20s",
+        "-Retour au calme : 2 × 50 m dos à deux bras — facile, sans forcer — repos 15s"
       ]
     },
     "regulier|nager_progresser|case1-decouverte-np-30": {
-      "ok": true,
-      "distance": "1350m",
-      "title": "Régulier · construire l'endurance",
-      "type": "ENDURANCE",
-      "details": [
-        "-2 × 100 m (50 m crawl + 50 m autre nage) — mise en route, facile",
-        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-3 × 50 m Nager avec un pull-buoy entre les cuisses — facile, sans forcer — focus geste — repos 20s",
-        "-100 m crawl — repos 25s",
-        "-150 m crawl — repos 30s",
-        "-200 m crawl — régulier — repos 30s",
-        "-150 m crawl — repos 30s",
-        "-100 m crawl — repos 25s",
-        "-100 m dos à deux bras — facile, sans forcer",
-        "-50 m crawl facile — retour au calme, sans forcer"
-      ]
-    },
-    "regulier|nager_progresser|case2-decouverte-ow-45": {
       "ok": true,
       "distance": "1400m",
       "title": "Régulier · construire l'endurance",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-3 × 50 m flèche avec tuba frontal — facile, sans forcer — focus geste — repos 20s",
-        "-5 × 50 m crawl — lent — repos 20s",
-        "-5 × 50 m crawl — moyen — repos 25s",
-        "-5 × 50 m crawl — vite — repos 35s",
-        "-100 m dos à deux bras — facile, sans forcer",
+        "-Échauffement : 2 × 100 m (50 m crawl + 50 m autre nage) — mise en route, facile",
+        "-7 × 150 m crawl avec tuba frontal — allure confortable et constante — repos 20s",
+        "-Retour au calme : 100 m dos à deux bras — facile, sans forcer",
+        "-50 m crawl facile — retour au calme, sans forcer"
+      ]
+    },
+    "regulier|nager_progresser|case2-decouverte-ow-45": {
+      "ok": true,
+      "distance": "1350m",
+      "title": "Régulier · construire l'endurance",
+      "type": "ENDURANCE",
+      "details": [
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-5 × 200 m crawl avec tuba frontal — allure confortable et constante — repos 25s",
+        "-Retour au calme : 100 m dos à deux bras — facile, sans forcer",
         "-50 m crawl facile — retour au calme, sans forcer"
       ]
     },
@@ -1658,62 +1642,47 @@
       "title": "Régulier · construire l'endurance",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-3 × 50 m Crawl avec tuba frontal — facile, sans forcer — focus geste — repos 20s",
-        "-100 m crawl — repos 25s",
-        "-150 m crawl — repos 30s",
-        "-200 m crawl — régulier — repos 30s",
-        "-150 m crawl — repos 30s",
-        "-100 m crawl — repos 25s",
-        "-100 m dos à deux bras — facile, sans forcer",
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-5 × 200 m crawl avec tuba frontal — allure confortable et constante — repos 25s",
+        "-Retour au calme : 100 m dos à deux bras — facile, sans forcer",
         "-50 m crawl facile — retour au calme, sans forcer"
       ]
     },
     "sportif|eau_libre|case1-decouverte-np-30": {
       "ok": true,
-      "distance": "1900m",
-      "title": "Sportif · endurance + orientation",
+      "distance": "1800m",
+      "title": "Sportif · construire l'endurance",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-3 × 50 m Nager avec un pull-buoy entre les cuisses — facile, sans forcer — focus geste — repos 20s",
-        "-6 × 200 m crawl — visée toutes les 8 coups — repos 25s",
-        "-100 m dos à deux bras — facile, sans forcer",
-        "-100 m crawl facile — retour au calme, sans forcer"
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-7 × 200 m crawl avec tuba frontal — crawl allure confortable — repos 25s",
+        "-Retour au calme : 200 m crawl facile — retour au calme, sans forcer"
       ]
     },
     "sportif|eau_libre|case2-decouverte-ow-45": {
       "ok": true,
       "distance": "1800m",
-      "title": "Sportif · endurance + orientation",
+      "title": "Sportif · construire l'endurance",
       "type": "ENDURANCE",
       "details": [
-        "-4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
-        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-3 × 50 m Crawl rattrapé avec pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-4 × 200 m crawl — allure tenable, focus économie — repos 25s — sighting + allure régulière",
-        "-3 × 50 m jambes crawl — confortable — repos 20s",
-        "-3 × 50 m crawl facile — sans forcer — repos 20s",
-        "-100 m dos à deux bras — facile, sans forcer",
-        "-100 m crawl facile — retour au calme, sans forcer"
+        "-Échauffement : 4 × 50 m (25 m crawl + 25 m dos) — mise en route, facile",
+        "-5 × 200 m crawl avec tuba frontal — allure tenable — repos 25s",
+        "-4 × 50 m jambes crawl — confortable — repos 20s",
+        "-4 × 50 m crawl facile — sans forcer — repos 20s",
+        "-Retour au calme : 200 m crawl facile — retour au calme, sans forcer"
       ]
     },
     "sportif|eau_libre|case3-regulier": {
       "ok": true,
       "distance": "1800m",
-      "title": "Sportif · endurance + orientation",
+      "title": "Sportif · construire l'endurance",
       "type": "ENDURANCE",
       "details": [
-        "-2 × 100 m (50 m crawl + 50 m dos) — mise en route, facile",
-        "-3 × 50 m Toucher cuisse avec tuba frontal et pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-3 × 50 m Crawl rattrapé avec pull-buoy — facile, sans forcer — focus geste — repos 20s",
-        "-4 × 200 m crawl — allure tenable, focus économie — repos 25s — sighting + allure régulière",
-        "-3 × 50 m jambes crawl — confortable — repos 20s",
-        "-3 × 50 m crawl facile — sans forcer — repos 20s",
-        "-100 m dos à deux bras — facile, sans forcer",
-        "-100 m crawl facile — retour au calme, sans forcer"
+        "-Échauffement : 2 × 100 m (50 m crawl + 50 m dos) — mise en route, facile",
+        "-5 × 200 m crawl avec tuba frontal — allure tenable — repos 25s",
+        "-4 × 50 m jambes crawl — confortable — repos 20s",
+        "-4 × 50 m crawl facile — sans forcer — repos 20s",
+        "-Retour au calme : 200 m crawl facile — retour au calme, sans forcer"
       ]
     }
   }

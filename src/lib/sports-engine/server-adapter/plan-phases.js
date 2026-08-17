@@ -32,8 +32,36 @@ export const PLAN_TIPS = {
     "Réduis le volume de 40 % mais maintiens 2–3 accélérations par séance pour garder la réactivité musculaire.",
   competition:
     "Dernière semaine avant l'événement : 1–2 séances courtes, volume bas, rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
+  recup:
+    "Après la course : nage facile, volume bas, pas de reconstruction. On fête le jour J, on récupère, puis on reprend doucement.",
   test: "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
 };
+
+/** Semaines après le jour J — récup ~10 j puis reprise. Ne pas voler les semaines d'avant-course. */
+export const POST_RACE_PHASES = Object.freeze([
+  {
+    phase: "bilan",
+    focus: "Récupération après la course",
+    progression: 0.55,
+    tipKey: "recup",
+    isBilan: true,
+    isPostRace: true,
+  },
+  {
+    phase: "base",
+    focus: "Reprise douce",
+    progression: 0.85,
+    tipKey: "debut",
+    isPostRace: true,
+  },
+]);
+
+export function withPostRacePhases(phases) {
+  if (!Array.isArray(phases) || phases.length === 0) return phases || [];
+  if (phases.some((p) => p.isPostRace)) return phases;
+  if (!phases.some((p) => p.phase === "competition" || p.phase === "race")) return phases;
+  return [...phases, ...POST_RACE_PHASES];
+}
 
 export function buildWellnessPhases(totalWeeks) {
   const phases = [];
@@ -255,6 +283,6 @@ export function buildPhaseListForProfile(profile, referenceTime = Date.now(), we
   const rawWeeks = computePlanTotalWeeks(profile, referenceTime, weeksOverride);
   const phaseList = isWellnessGoal(profile?.goal)
     ? buildWellnessPhases(rawWeeks)
-    : buildPlanPhases(rawWeeks);
+    : withPostRacePhases(buildPlanPhases(rawWeeks));
   return { rawWeeks, phaseList };
 }

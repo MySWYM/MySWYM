@@ -169,6 +169,24 @@ export function humanizeArthurDisplayTerms(text) {
   out = out.replace(/\bsouple\s*—/gi, "facile —");
   out = out.replace(/\bsouple\b/gi, "facile");
 
+  // Pas de sighting / économie affichés (triathlon / eau libre).
+  out = out.replace(/\s*[—,-]\s*sighting\s*\+\s*allure régulière/gi, "");
+  out = out.replace(/\s*[—,-]\s*économie d['’]énergie(?:\s*[—-]\s*allure (?:régulière|tenable))?/gi, "");
+  out = out.replace(/\s*[—,-]\s*focus économie\b/gi, "");
+  out = out.replace(/\béconomie d['’]énergie\b/gi, "");
+  out = out.replace(/\béconomie de nage\b/gi, "qualité de nage");
+  out = out.replace(/\bsighting\s+tous les \d+(?:\s*[–\-]\s*\d+)?\s*bras\b/gi, "");
+  out = out.replace(/\bsighting\s+toutes les \d+\s*coups\b/gi, "");
+  out = out.replace(/\bvisée\s+toutes les \d+\s*coups(?:\s*\(\s*sighting\s*\))?/gi, "");
+  out = out.replace(/\bsighting\s+(?:régulier|immédiat|fréquent)\b/gi, "");
+  out = out.replace(/\balternance\s+sighting\s*\/\s*technique\b/gi, "allure régulière");
+  out = out.replace(/\bcrawl\s+sighting\b/gi, "crawl");
+  out = out.replace(/\borientation\s*\/\s*sighting\b/gi, "aérobie régulier");
+  out = out.replace(/\bsighting\b/gi, "");
+  out = out.replace(/\s{2,}/g, " ");
+  out = out.replace(/\s+—\s+—/g, " —");
+  out = out.replace(/\s+—\s*$/g, "");
+
   return out;
 }
 

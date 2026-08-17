@@ -42,7 +42,11 @@ export function resolveTechPrimaryForComposer(brief = {}, intent = {}) {
   if (primary === "4n" || brief.strokeFocus === "4n") return "4n";
   if (primary === "nage" && (intent.id === "recuperation" || intent.id === "reprise")) return "nage";
   const level = brief.level || "regulier";
-  if (level === "decouverte") return primary || "flèche";
+  if (level === "decouverte") {
+    const cycle = COMPOSER_FOCUS_CYCLE_REGULIER;
+    const idx = (Number(brief.weekIndex) || 0) * 3 + (Number(brief.sessionIndex) || 0);
+    return primary || cycle[((idx % cycle.length) + cycle.length) % cycle.length];
+  }
   const cycle = level === "regulier" ? COMPOSER_FOCUS_CYCLE_REGULIER : COMPOSER_FOCUS_CYCLE_SPORTIF;
   const idx = (Number(brief.weekIndex) || 0) * 3 + (Number(brief.sessionIndex) || 0);
   return cycle[((idx % cycle.length) + cycle.length) % cycle.length];

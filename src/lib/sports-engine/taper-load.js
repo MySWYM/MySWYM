@@ -496,38 +496,57 @@ export function buildRestDaySession(ctx = {}) {
   };
 }
 
+/** Carte jour J (échauffement de course, pas un entraînement volume). */
+export function isRaceDaySession(session) {
+  if (!session || typeof session !== "object") return false;
+  if (session.isRaceDay) return true;
+  if (session.type === "RACE") return true;
+  const intent = String(session.sessionIntent || session.intent || "");
+  return intent === "race";
+}
+
 /**
  * Séance jour de course (pas un entraînement volume).
+ * Affiche un échauffement 400–800 m + touches allure + 2–4 accélérations.
  */
 export function buildRaceDaySession(ctx = {}) {
   const target = ctx.raceTarget || null;
   const distance = Number(target?.distance || ctx.raceDistance) || 0;
   const stroke = target?.stroke || ctx.strokeFocus || "crawl";
+  const pool = Number(ctx.pool) === 25 ? 25 : 50;
   const timeLabel =
     target?.targetTimeSec != null
       ? `Objectif ${formatTime(target.targetTimeSec)}`
       : "Objectif : donner le meilleur le jour J";
+  const accelLine =
+    pool === 25
+      ? `4×25m accélération — R30" — 2 à 4 accélérations, qualité`
+      : `2×50m accélération — R30" — 2 à 4 accélérations, qualité`;
 
   const details = [
-    `→ Jour de course`,
-    distance ? `Épreuve : ${distance}m ${stroke}` : `Épreuve : course`,
+    "Échauffement : 200m nage facile — mise en route, sans forcer",
+    "Échauffement : 200m nage facile — un peu plus d'amplitude",
+    `Corps : 4×50m allure course — R30" — juste le feeling`,
+    `Corps : ${accelLine}`,
+    "Retour au calme : 100m nage facile",
+    distance ? `Épreuve : ${distance}m ${stroke}` : "Épreuve : course",
     timeLabel,
-    "Échauffement libre selon tes habitudes — pas de nouveau matériel ni nouvelle technique.",
-    "Fais confiance au travail déjà fait.",
+    "Ce n'est pas un entraînement. Fais confiance au travail déjà fait.",
   ];
 
   return {
     type: "RACE",
-    title: "Performance · Course",
-    intensity: "Course",
+    title: "Jour J",
+    intensity: "Course — échauffement seulement",
     details,
-    distance: distance ? `${distance}m` : "course",
-    duration: 0,
+    distance: "800m",
+    duration: 25,
     completed: false,
     skipped: null,
     isRaceDay: true,
     raceTarget: target,
     family: "race",
+    sessionIntent: "race",
     qualitySession: false,
     volumeFromSets: 0,
     trainingDistance: 0,
@@ -579,8 +598,8 @@ export const TAPER_GOLD_SCENARIOS = Object.freeze([
   { id: "TG3", distance: 400, focus: "spécifique modéré", j7: "spécifique modérée", j4: "100 race pace", j2: "léger" },
   { id: "TG4", distance: 1500, focus: "endurance spécifique courte", j7: "ES courte", j4: "race pace courte", j2: "activation" },
   { id: "TG5", distance: 200, stroke: "4n", focus: "transitions, pas de gros volume" },
-  { id: "TG6", objectif: "eau_libre", focus: "sighting + allure courte" },
-  { id: "TG7", objectif: "triathlon", focus: "économie + allure courte" },
+  { id: "TG6", objectif: "eau_libre", focus: "endurance + allure courte" },
+  { id: "TG7", objectif: "triathlon", focus: "endurance + allure courte" },
 ]);
 
 /**

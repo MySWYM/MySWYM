@@ -14,6 +14,8 @@ import {
   buildCorpsByFormat,
   volumeFromSets,
   MAX_PYRAMID_VOLUME,
+  PYRAMID_EXTENDED_CORPS_SHARE_MAX,
+  PYRAMID_RECIPES,
 } from "./index.js";
 import { resolveTaperLoad, taperStageFromDays } from "./taper-load.js";
 import { resolveEffectiveWeekPhase } from "./week-orchestration.js";
@@ -413,7 +415,7 @@ function z4Meters(session) {
       { reps: 4, distancePerRep: 50, restSec: 30, zone: "Z3", block: "corps", blockRole: "specific", continuous: false },
       { reps: 1, distancePerRep: 100, restSec: 0, continuous: true, zone: "Z1", block: "fin" },
     ],
-    details: ["-600m crawl — sighting + allure régulière", "arthur light"],
+    details: ["-600m crawl — allure régulière", "arthur light"],
     distance: "1100m",
   };
   light.volumeFromSets = volumeFromSets(light.sets);
@@ -551,6 +553,86 @@ function z4Meters(session) {
   console.log("Q16 PASS");
 }
 
+// ── Q16b : pyramide variée ≥ 2 dimensions — au-delà de 1000 m, pas tout le corps ──
+{
+  const variants = ["nage", "allure"];
+  const built = buildCorpsByFormat("pyramid", 1750, {
+    label: "crawl",
+    cue: "économie",
+    restFor: () => 20,
+    maxContinuous: 400,
+    pool: 50,
+    intentId: "endurance",
+    level: "sportif",
+    pyramidVariants: variants,
+  });
+  const pyrVol = built.sets
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  const corpsVol = built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(pyrVol > MAX_PYRAMID_VOLUME, `Q16b étendue ${pyrVol}m > 1000`);
+  assert(pyrVol <= Math.round(corpsVol * PYRAMID_EXTENDED_CORPS_SHARE_MAX), `Q16b ≤ 70% corps ${pyrVol}/${corpsVol}`);
+  assert(pyrVol < corpsVol, "Q16b pas tout le corps");
+  const okSession = {
+    details: built.displayLines,
+    sets: built.sets.map((s) => ({ ...s, block: "corps", zone: "Z2" })),
+    volumeFromSets: volumeFromSets(built.sets),
+    trainingDistance: volumeFromSets(built.sets),
+    distance: `${volumeFromSets(built.sets)}m`,
+  };
+  const brief = briefBase({
+    level: "sportif",
+    volumeTarget: 3200,
+    sessionIntent: "endurance",
+    seed: "q16b-var",
+  });
+  const gateOk = validateComposedSession(okSession, brief, resolveHardConstraints(brief));
+  assert(
+    !gateOk.errors.some((e) => /pyramide/i.test(e)),
+    `Q16b sportif OK: ${gateOk.errors.join(";")}`,
+  );
+
+  const gateDec = validateComposedSession(okSession, briefBase({
+    level: "decouverte",
+    goal: "progression",
+    volumeTarget: 1400,
+    sessionIntent: "endurance",
+    seed: "q16b-dec",
+    maxContinuousDistance: 50,
+  }), resolveHardConstraints(briefBase({
+    level: "decouverte",
+    goal: "progression",
+    volumeTarget: 1400,
+    sessionIntent: "endurance",
+    maxContinuousDistance: 50,
+  })));
+  assert(
+    gateDec.errors.some((e) => /pyramide trop longue/i.test(e)),
+    `Q16b découverte reste 1000: ${gateDec.errors.join(";")}`,
+  );
+
+  const painBrief = briefBase({
+    level: "sportif",
+    painFlag: true,
+    volumeTarget: 2100,
+    sessionIntent: "endurance",
+    seed: "q16b-pain",
+  });
+  const gatePain = validateComposedSession(
+    { ...okSession, details: ["-50m crawl — pyramide variée", ...(okSession.details || [])] },
+    painBrief,
+    resolveHardConstraints(painBrief),
+  );
+  assert(
+    gatePain.errors.some((e) => /pyramide interdite/i.test(e)),
+    `Q16b douleur inchangée: ${gatePain.errors.join(";")}`,
+  );
+
+  const tagged = PYRAMID_RECIPES.filter((r) => Array.isArray(r.pyramidVariants));
+  assert(tagged.length >= 6, `Q16b recettes taguées ${tagged.length}`);
+  console.log("Q16b PASS (pyramidVariants)");
+}
+
 // ── Bonus : compose réel pain sans Z3 ──
 {
   const brief = briefBase({
@@ -611,7 +693,7 @@ function textOf(session) {
   console.log("Q17 PASS (threshold→Z3)");
 }
 
-// Q18 — eau libre → sighting réel
+// Q18 — eau libre : pas de cue sighting
 {
   const brief = briefBase({
     level: "sportif",
@@ -625,13 +707,13 @@ function textOf(session) {
   const r = composeSession(brief);
   assert(r.ok, `Q18 compose: ${r.reason}`);
   assert(
-    /sighting|visée|orientation|navigation|lève|repér/i.test(textOf(r.session)),
-    `Q18 sighting absent\n${textOf(r.session)}`,
+    !/sighting|visée|économie d['’]énergie/i.test(textOf(r.session)),
+    `Q18 encore du sighting/économie\n${textOf(r.session)}`,
   );
-  console.log("Q18 PASS (OW sighting)");
+  console.log("Q18 PASS (OW sans sighting)");
 }
 
-// Q19 — triathlon → cue triathlon
+// Q19 — triathlon : pas de cue économie / sighting
 {
   const brief = briefBase({
     level: "sportif",
@@ -645,10 +727,10 @@ function textOf(session) {
   const r = composeSession(brief);
   assert(r.ok, `Q19 compose: ${r.reason}`);
   assert(
-    /triathlon|économie|draft|sighting|allure régulière|énergie/i.test(textOf(r.session)),
-    `Q19 cue triathlon absent\n${textOf(r.session)}`,
+    !/sighting|visée|économie d['’]énergie/i.test(textOf(r.session)),
+    `Q19 encore du sighting/économie\n${textOf(r.session)}`,
   );
-  console.log("Q19 PASS (triathlon cue)");
+  console.log("Q19 PASS (triathlon sans économie/sighting)");
 }
 
 // Q20 — course piscine → race pace / spécifique

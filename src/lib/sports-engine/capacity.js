@@ -5,6 +5,7 @@
  */
 import { normalizeUiLevel } from "./types.js";
 import { estimateReadinessModifier, readinessHistoryWeight } from "./readiness.js";
+import { DECOUVERTE_CONTINUOUS_SELF_REPORT_CONFIDENCE } from "./decouverte-continuous-report.js";
 
 const LEVEL_BASE = {
   decouverte: 0.35,
@@ -134,7 +135,7 @@ export function estimateCapacity(sportProfile, history = {}) {
     confidence < 0.4 ||
     !!(readinessMod && readinessW > 0.45 && readinessMod.conservative);
 
-  return {
+  const result = {
     score,
     confidence,
     volumeFactor,
@@ -146,6 +147,22 @@ export function estimateCapacity(sportProfile, history = {}) {
       ? { ...readinessMod, weight: readinessW, applied: readinessW > 0 }
       : null,
   };
+
+  // Découverte only : relais de l'auto-report (known + confiance). N'invente rien.
+  if (level === "decouverte") {
+    const known = Number(history.maxContinuousDistance) || 0;
+    if (known > 0) {
+      result.maxContinuousDistance = known;
+      const selfConf =
+        Number(history.maxContinuousConfidence) || DECOUVERTE_CONTINUOUS_SELF_REPORT_CONFIDENCE;
+      // 0.7 : auto-report honnête mais imprécis — passe 0.35 / 0.45, pas un T100.
+      if (!sportProfile.hasPainConstraint && !history.painProtection) {
+        result.confidence = Math.max(result.confidence, Math.min(0.8, Math.max(0.6, selfConf)));
+      }
+    }
+  }
+
+  return result;
 }
 
 function clamp01(n, lo = 0.15, hi = 1) {

@@ -209,3 +209,35 @@ export function biasBlocksForObjectif(blocks, objectif = "", level = "regulier")
   if (drift !== 0) corps = Math.max(100, corps + drift);
   return { depart, technique, corps, rac, total: depart + technique + corps + rac };
 }
+
+/**
+ * Forme de séance : nage = Échauffement / Corps / RAC (technique = 0).
+ * Séance éducatif = gros volume de drills + un peu de nage appliquée.
+ */
+export function applySessionShape(blocks, { educatif = false } = {}) {
+  if (!blocks || !Number(blocks.total)) return blocks;
+  const t = Number(blocks.total);
+  const depart = Math.max(50, Number(blocks.depart) || 0);
+  const rac = Math.max(50, Number(blocks.rac) || 0);
+  let middle = t - depart - rac;
+  if (middle < 100) middle = Math.max(100, t - depart - rac);
+  const round50 = (n) => Math.round(n / 50) * 50;
+
+  if (educatif) {
+    let technique = Math.max(100, round50(middle * 0.7));
+    let corps = middle - technique;
+    if (corps < 50) {
+      corps = 50;
+      technique = Math.max(50, middle - corps);
+    }
+    const drift = t - (depart + technique + corps + rac);
+    if (drift !== 0) corps = Math.max(50, corps + drift);
+    return { depart, technique, corps, rac, total: depart + technique + corps + rac };
+  }
+
+  const technique = 0;
+  let corps = middle;
+  const drift = t - (depart + technique + corps + rac);
+  if (drift !== 0) corps = Math.max(100, corps + drift);
+  return { depart, technique, corps, rac, total: depart + technique + corps + rac };
+}

@@ -18,9 +18,20 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-18 | Rendu nageur D9 | Filet d’affichage : jamais `souple`/`Z1`/`@2` visibles. Pastille intensité sportif/perf : `Z1` → `Facile`. Vocabulaire : godilles / rattrapé / coulée. L’UI sanitize aussi à l’affichage (pas seulement le composeur). | ✅ active |
+| 2026-08-18 | Après jour J | Le plan continue après la course (récup ~10 j puis reprise). Jour J = échauffement, pas un entraînement. Valider ouvre fête + feedback course + évaluation de l’app. Pas de regen silencieuse des semaines déjà nagées : on ajoute 2 semaines à la fin. | ✅ active |
+| 2026-08-18 | Pyramide variée vs plafond 1000 m | Plafond 1000 m **seulement** si `pyramidVariants.length < 2` ou Découverte. ≥ 2 dimensions (nage / allure / respiration / exercice) → jusqu’à 65–70 % du corps physio, régulier+. Douleur / affûtage et paliers explicites inchangés. Pas de filler étendu. | ✅ active |
+| 2026-08-18 | Série longue vs `— suite` | `— suite` et pyramide filler restent interdits. Exception : 1 bloc jusqu’à 20 reps **structuré** (paliers / stimulus tous les 4–5), seulement endurance / seuil / sortie longue / prépa fractionnée, régulier+ (Découverte exclue), ≤ 1× / 4 séances, après les formats normaux. | ✅ active |
+| 2026-08-18 | Découverte `maxContinuous` filets | Fallback QG et `resolveHardConstraints` suivent la formule (0,75 au palier 200). Corps préfère 100 m dès plafond ≥ 100. 1re question = 4 séances + 3 semaines depuis le début de plan. | ✅ active |
+| 2026-08-18 | Découverte `maxContinuous` stuck 50 m | Auto-report optionnel en fin de séance (longueurs, cadence 4 séances + ~3 sem) écrit `_engineHistory.maxContinuousDistance` + confiance 0,7. Seuils `maxContinuousForDecouverte` inchangés. Anti yo-yo = max des 2 dernières, baisse si 2–3 réponses consécutives plus basses. | ✅ active |
+| 2026-08-18 | Affûtage J-14 → jour J | Pas une race week plate ni un coeff unique. J-14–J-8 dernière vraie semaine (grosse spécifique). J-7–J-4 volume −30–50 %, allure course courte. J-3/J-2 court et propre (sortir en forme). J-1 repos. Jour J : échauffement 400–800 m + touches allure + 2–4 accélérations — pas un entraînement. QG : pas de gros volume / gros Z3 trop près du jour J. | ✅ active |
+| 2026-08-17 | Plus de sighting / économie | Sighting, visée et économie d’énergie sortis de toute l’app (composeur, banques, intents, QG, fallback App, FAQ). Triathlon / eau libre nagent comme les autres plans. Filet d’affichage `humanizeArthurDisplayTerms` pour les vieux templates. | ✅ active |
+| 2026-08-17 | Éducatifs triathlon / eau libre | Pas d’éducatifs dédiés économie / sighting. Le jour éducatif utilise le même catalogue que les autres plans. | ↩ remplacée |
+| 2026-08-17 | Découverte tous éducatifs | Découverte a accès à tout le catalogue (plus d’allowlist flèche + grand chien). Le composeur n’applique plus le filtre Excel « niveau Arthur » pour bloquer la Découverte. Papillon toujours conditionné à la maîtrise / case 4 nages. | ✅ active |
+| 2026-08-17 | Structure 3 parties + éducatif hebdo | Séances = Échauffement / Corps / Retour au calme. Une séance par semaine = éducatif (beaucoup de drills / corrections). Plus de bloc technique sur chaque séance. Triathlon / eau libre : la séance de nage spécifique reste ; l’éducatif prend un autre slot (**contenu** = mêmes drills que les autres plans, voir entrée du même jour). 4 nages : 1 jour drills, le jour IM reste nage. | ✅ active |
 | 2026-08-15 | Merge séance validée | Hotfix prod : `FORCE_PLAN_REGEN` ne bypass plus le merge. Séance `completed`/`skipped` conservée ; non validée régénérée ; semaine feedback/satisfaction intacte ; structure incompatible → fallback semaine. One-shot = `version < PLAN_VERSION` (option A), pas à chaque ouverture. | ✅ active |
-| 2026-08-16 | Éducatifs 4 nages Excel | Séances `strokeFocus=4n` : ~40 % technique = éducatifs Arthur tagués `4_nages` filtrés par « niveau Arthur » ; ~60 % = nages explicites (mix). Découverte 4n : dos à deux bras / papillon un bras / papillon baleine — pas flèche forcée. Plus d’« éducatif libre » inventé dans l’IM drill. | ✅ active |
-| 2026-08-15 | Niveaux Excel éducatifs | « niveau Arthur » = gate produit. `parseArthurEducatifLevels` : « adaptable à tous niveaux » n’ouvre plus la Découverte ; sélection = `levels.includes(niveau)` (+ allowlist Découverte règle 8). Petit chien / toucher cuisse / 6 battements hors Découverte ; grand chien reste via notes Excel. | ✅ active |
+| 2026-08-16 | Éducatifs 4 nages Excel | Séances `strokeFocus=4n` : ~40 % technique = éducatifs Arthur tagués `4_nages` filtrés par « niveau Arthur » ; ~60 % = nages explicites (mix). Découverte 4n : plus de forçage flèche/chien. | ↩ remplacée |
+| 2026-08-15 | Niveaux Excel éducatifs | « niveau Arthur » = gate produit **hors Découverte**. `parseArthurEducatifLevels` : « adaptable à tous niveaux » n’ajoute pas Découverte dans les tags Excel. Le composeur Découverte n’utilise plus ce filtre (règle 8 du 2026-08-17). | ↩ remplacée |
 | 2026-08-15 | Force regen v48 live | Demande Arthur : `PLAN_VERSION` 48 + `FORCE_PLAN_REGEN=true` — tous les plans existants reprennent la pédagogie Arthur (`composeSession` : échauffements, RAC, éducatifs, fun, volume Découverte). Progression écrasée. Remettre `FORCE_PLAN_REGEN=false` au prochain bump. | ↩ remplacée |
 | 2026-08-15 | Boucle tous objectifs | Triathlon, eau libre et diplôme = séance du jour (`usesSessionLoop` + `PLAN_VERSION` 47). Reprise / maître restent multi-semaines. | ✅ active |
 | 2026-08-15 | Bug D9 souple/Z1 | `attachFourNagesCoverage` et `buildConfirmeArchetypeSession` passent par `sanitizeSessionDetails`. Remplacements morts `(Z1)` remplacés par `humanizeArthurDisplayTerms`. Banques OW inchangées (filtre à la sortie). | ✅ active |
@@ -50,12 +61,12 @@
 | 2026-08-14 | Éducatifs + matos | Cycle ~3/8 jambes, chiens rare ; matos pédagogique lié à l’éducatif. | ✅ active |
 | 2026-08-14 | Composeur corps banque | Aérobie = `CORPS_PHYSIO` scalé, pas 2× série clone. | ✅ active |
 | 2026-08-14 | Complétion → planned_sessions | `markSessionStatus("completed")` dès `handleComplete`. | ✅ active |
-| 2026-08-14 | Composeur technique banque | Vraies lignes `TECHNIQUE` ; bassin 50 : Nx25 → volume en 50 ; Découverte = flèche + grand chien. | ✅ active |
+| 2026-08-14 | Composeur technique banque | Vraies lignes `TECHNIQUE` ; bassin 50 : Nx25 → volume en 50. | ✅ active |
 | 2026-08-14 | Matos pédagogique (Arthur) | Multi-select ; matos lié éducatif ; interdit pull+palmes. | ✅ active |
 | 2026-08-14 | Distance moyenne + wish | Slider distance/séance + wish ; `PLAN_VERSION` 46 + FORCE regen. | ✅ active |
 | 2026-08-13 | Engagement matériel | Inventaire non vide → ≥1 item matos visible / séance (hors récup / taper / course). QG `equipment_engagement`. | ↩ remplacée |
 | 2026-08-10 | Composeur J3 (qualité) | Intensité réelle Z3/Z4 ; anti-filler ; cues objectif ; taper/post_race ; QG Q16–Q29. | ✅ active |
-| 2026-08-10 | Pyramide Ironman | Cap `MAX_PYRAMID_VOLUME=1000` ; paliers explicites ; QG refuse pyramide opaque. | ✅ active |
+| 2026-08-10 | Pyramide Ironman | Cap `MAX_PYRAMID_VOLUME=1000` ; paliers explicites ; QG refuse pyramide opaque. | ↩ remplacée |
 | 2026-08-10 | Restitution coach | `coach-restitution.js` : strip headlines, pyramides décomposées, matos sur ligne nageable. | ✅ active |
 | 2026-08-10 | Force regen v44 live | `PLAN_VERSION` 44 + FORCE — restitution coach. | ✅ active |
 | 2026-08-08 | Composeur Sportif D | `sportif` dans `SESSION_COMPOSER_ENABLED_LEVELS` ; polarisation A/B/C. | ✅ active |
@@ -79,7 +90,7 @@
 | 2026-08-04 | Questionnaire | Âge, poids, taille, blessure, fréquence, style, nage préférée. | ✅ active |
 | 2026-08-04 | Distances × bassin | Plus de totaux impossibles (ex. 320 m). `block()` = somme des lignes + **arrondi ×25**. Virages 15 m → 25 m. `PLAN_VERSION` 39. | ↩ remplacée |
 | 2026-08-04 | Nager & Progresser | Boucle séance unique (`isSessionLoop`) ; freemium 8 + 2/sem. | ✅ active |
-| 2026-08-03 | Découverte flèche/chien | Éducatifs = flèche + grand chien (+ palmes / tuba). | ✅ active |
+| 2026-08-03 | Découverte flèche/chien | Éducatifs = flèche + grand chien (+ palmes / tuba). | ↩ remplacée |
 | 2026-08-03 | Force regen Découverte v28 | Overwrite uniquement découverte/beginner. | ✅ active |
 | 2026-08-03 | Découverte sans T100 | Pas de T100 onboarding/profil en découverte. | ✅ active |
 | 2026-08-03 | Semaine compétition easy | 1 ou 2 séances ; touches ≤12,5 m ; phrase rassurance. | ✅ active |
@@ -135,10 +146,10 @@
 Les items ci-dessous restent des garde-fous. Si une formulation contredit [`natation-regles-actives.md`](./natation-regles-actives.md), **la règle active gagne**.
 
 1. **BNSSA** : oublier le volet sauvetage (sortie bassin, enchaînement, chrono 100 m examen).
-2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. Éducatifs = flèche + grand chien (+ palmes/tuba) seulement. **Ne pas demander de T100.**
+2. **Découverte** : pas de seuil/vitesse précoce ni jargon cru. **Ne pas demander de T100.** Éducatifs = tout le catalogue (plus seulement flèche/chien).
 3. **Matériel** : pas de matos aléatoire sur le titre ; jamais pull-buoy + palmes dans la même séance ; disponibilité ≠ obligation (~~inventaire déclaré → matos obligatoire~~ ↩ remplacée).
-4. **Eau libre + Performance** : ne pas appliquer le bloc IM plein de brasse — crawl/sighting (`usePoolIMBlock`).
-5. **Eau libre** : pas uniquement des `8×100 m` bassin sans sighting / lieu.
+4. **Eau libre + Performance** : ne pas appliquer le bloc IM plein de brasse (`usePoolIMBlock`). Pas de cues sighting / économie.
+5. **Eau libre** : nage d’endurance comme les autres plans — ~~pas uniquement des `8×100 m` bassin sans sighting / lieu~~ ↩ remplacée (plus de sighting).
 6. **Allures** : T100 seul ; Premium only pour `@mm:ss`.
 7. **Distance** : volume affiché = somme exacte des blocs ; total final …00 ou …50 ; jamais arrondi silencieux ni `block()` qui « corrige » par ×25.
 8. **Cohérence blocs** : chaque bloc a une distance ; une consigne ×25 m doit coller à la distance annoncée ; pas d’incohérence d’unité.
@@ -151,16 +162,16 @@ Les items ci-dessous restent des garde-fous. Si une formulation contredit [`nata
 15. **Sportif vitesse** : préparation → qualité → consolidation.
 16. **Continu 4N** : `maxContinuous` stroke-aware.
 17. **Arthur tests** : ne valider que si templates prêts ; ne pas scaler en ne touchant que `session.distance`.
-18. **Taper Performance** : pas de coeff uniforme ; Race Day ≠ volume.
+18. **Affûtage** : J-14–J-8 on travaille encore ; J-7 on allège ; J-3 court ; J-1 repos ; jour J = échauffement (400–800 m), pas un entraînement. Pas de coeff uniforme. ~~Race Day ≠ volume~~ précisé le 2026-08-18.
 19. **Feedback / adaptation** : un signal ≠ crash/boom ; pain = sécurité ; pas de double séance manquée.
 20. **Quality Gate** : toujours `validateComposedSession` ; Arthur ne contourne pas.
-21. **Pyramide** : ≤ 1000 m ; paliers nageables.
+21. **Pyramide** : paliers nageables. ≤ 1000 m si < 2 variantes ou Découverte ; ≥ 2 variantes → jusqu’à 65–70 % du corps physio (régulier+). Douleur / affûtage = interdit.
 22. **Restitution coach** : pas de headlines moteur / marketing.
 23. **Intent = intensité réelle** : seuil ⇒ mètres Z3/Z4 réels.
-24. **Anti-filler** : pas de suite / pyramide opaque pour coller le volume.
-25. **Objectif dans le corps** : OW → sighting ; tri → économie ; course → race pace ; 4N → part réelle multi-nages.
+24. **Anti-filler** : pas de `— suite` / pyramide opaque pour coller le volume. Série longue jusqu’à 20 OK si un seul bloc **structuré** (voir validation 2026-08-18) ; Découverte exclue.
+25. **Objectif dans le corps** : course → race pace ; 4N → part réelle multi-nages. ~~OW → sighting ; tri → économie~~ ↩ remplacée.
 26. **Post-race borné** : `daysToComp ∈ [-10, 0[`.
-27. **Technique composeur** : lignes Arthur variées ; éducatif puis nage appliquée ; Découverte = flèche + grand chien.
+27. **Technique composeur** : 1 séance éducatif / semaine (beaucoup de drills) ; les autres = nage sans bloc technique. Découverte = tout le catalogue d’éducatifs.
 28. **Complétion vs feedback** : completed dès `handleComplete`.
 29. **Corps composeur** : pas deux séries clones ; `CORPS_PHYSIO` / formats d’intensité.
 30. **Fun / anti-répétition** : pas 2 séries même allure ; pas de monolithes.

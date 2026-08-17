@@ -197,6 +197,9 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   });
   assert(s.isRaceDay && s.type === "RACE", "t6 session");
   assert(s.volumeFromSets === 0, "t6 not training volume");
+  assert(s.title === "Jour J", "t6 title");
+  assert(s.details.some((d) => /échauffement/i.test(d)), "t6 warmup");
+  assert(s.details.some((d) => /allure course/i.test(d)), "t6 race pace");
 }
 
 // T7 — 100 m

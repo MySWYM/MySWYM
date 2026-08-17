@@ -7,21 +7,6 @@
 import { humanizeArthurDisplayTerms, explicitEducatifLabel } from "./session-labels.js";
 import { ARTHUR_DRAFT_DRILLS } from "../arthur-composer/arthur-drills-data.js";
 
-const DECOUVERTE_ALLOW = new Set([
-  "educatif_fleche",
-  "educatif_grand_chien",
-  "arthur_crawl_avec_tuba_frontal",
-  "arthur_battements_bras_en_opposition",
-  "nouveau_dos_deux_bras",
-  "arthur_papillon_un_bras",
-  "nouveau_jet_eau",
-  "nouveau_ondule_tete",
-  "nouveau_pousse_tete",
-  "nouveau_papillon_baleine",
-  "educatif_jambes_crawl",
-  "educatif_jambes_dos",
-]);
-
 function roundTo(m, pool) {
   const p = pool === 50 ? 50 : 25;
   return Math.max(p, Math.round(Number(m) / p) * p);
@@ -157,6 +142,8 @@ export function mapBriefToPedagogyObjective(brief = {}, intent = {}) {
   ) {
     return "4_nages";
   }
+  // Jour éducatif : même catalogue que les autres plans.
+  if (brief.educatifSession) return "technique";
   if (/vo2|sprint/.test(id)) return "sprint";
   if (/vitesse|allure_specifique|course_piscine/.test(id)) return "vitesse";
   if (/seuil|qualite|allure_progressive|css|test/.test(id)) return "seuil";
@@ -336,10 +323,10 @@ export function buildArthurCooldownForBudget({
 function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk = false }) {
   let pool = ARTHUR_DRAFT_DRILLS.filter((d) => {
     if (d.id === "ui_catalog_progressif") return false;
-    // Excel « niveau Arthur » : l’éducatif doit lister le niveau utilisateur.
-    if (!Array.isArray(d.levels) || !d.levels.includes(level)) return false;
-    // Découverte : allowlist pédagogique (règle 8) en plus des niveaux Excel.
-    if (level === "decouverte" && !DECOUVERTE_ALLOW.has(d.id)) return false;
+    // Découverte : tout le catalogue. Autres niveaux : tag Excel « niveau Arthur ».
+    if (level !== "decouverte") {
+      if (!Array.isArray(d.levels) || !d.levels.includes(level)) return false;
+    }
     if (d.recoveryOnly && (level === "sportif" || level === "performance")) return false;
     if (!hasEquip(equipment, d.equipmentRequired)) return false;
     if (!papillonOk && /papillon/i.test(`${d.name} ${d.stroke} ${d.id}`)) return false;
@@ -380,29 +367,29 @@ function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk 
     used.add(d.id);
   }
 
-  if (level === "decouverte" && chosen.length) {
-    const mustIds =
-      objective === "4_nages"
-        ? ["nouveau_dos_deux_bras", "arthur_papillon_un_bras", "nouveau_papillon_baleine"]
-        : ["educatif_fleche", "educatif_grand_chien", "arthur_crawl_avec_tuba_frontal"];
-    const must = mustIds
-      .map((id) =>
-        ARTHUR_DRAFT_DRILLS.find(
-          (d) =>
-            d.id === id &&
-            d.levels?.includes("decouverte") &&
-            DECOUVERTE_ALLOW.has(d.id) &&
-            hasEquip(equipment, d.equipmentRequired) &&
-            (papillonOk || !/papillon/i.test(`${d.name} ${d.stroke} ${d.id}`)),
-        ),
-      )
-      .filter(Boolean);
-    if (must.length) {
-      chosen[0] = pick(rng, must);
-    }
-  }
-
   return chosen.slice(0, count);
+}
+
+function drillMentions(d, re) {
+  const t = `${d.name || ""} ${d.id || ""} ${(d.equipmentRequired || []).join(" ")} ${(d.equipmentOptional || []).join(" ")}`;
+  return re.test(t);
+}
+
+/** Jamais pull-buoy + palmes dans la même série d'éducatifs. */
+function filterPullPalmesConflict(drills) {
+  const out = [];
+  let usedPalmes = false;
+  let usedPull = false;
+  for (const d of drills) {
+    const pal = drillMentions(d, /palmes?/);
+    const pull = drillMentions(d, /pull/);
+    if (pal && usedPull) continue;
+    if (pull && usedPalmes) continue;
+    if (pal) usedPalmes = true;
+    if (pull) usedPull = true;
+    out.push(d);
+  }
+  return out;
 }
 
 /**
@@ -419,19 +406,30 @@ export function buildArthurTechniqueBlock({
   zone = null,
   papillonOk = false,
   engageEquipment = true,
+  drillCount = null,
 } = {}) {
   const target = roundTo(budget, pool);
   if (!target || target < 50) return null;
 
   const p = pool === 50 ? 50 : 25;
   const unit = Math.min(p, maxContinuous);
-  const drills = selectDrills(rng, {
-    level,
-    objective,
-    equipment,
-    papillonOk,
-    count: target >= unit * 6 ? 2 : level === "decouverte" ? 2 : 1,
-  });
+  const count =
+    Number(drillCount) > 0
+      ? Math.max(1, Math.min(6, Number(drillCount)))
+      : target >= unit * 6
+        ? 2
+        : level === "decouverte"
+          ? 2
+          : 1;
+  const drills = filterPullPalmesConflict(
+    selectDrills(rng, {
+      level,
+      objective,
+      equipment,
+      papillonOk,
+      count,
+    }),
+  );
   if (!drills.length) return null;
   // Découverte : toujours 2 formats (variété pédagogique)
   if (level === "decouverte" && drills.length === 1) {
@@ -440,6 +438,8 @@ export function buildArthurTechniqueBlock({
     );
     if (alt) drills.push(alt);
   }
+  const safeDrills = filterPullPalmesConflict(drills);
+  if (safeDrills.length) drills.splice(0, drills.length, ...safeDrills);
 
   const sets = [];
   const lines = [];
@@ -545,7 +545,10 @@ export function buildArthurFunMainBlock({
   if (!target || target < 150) return null;
 
   const p = pool === 50 ? 50 : 25;
-  const unit = Math.min(Math.max(p, 25), maxContinuous);
+  const unit =
+    level === "decouverte" && maxContinuous >= 100
+      ? Math.min(100, maxContinuous)
+      : Math.min(Math.max(p, 25), maxContinuous);
   const longRest = level === "decouverte" ? "repos 40s" : "repos 45s";
   const sets = [];
   const lines = [];
@@ -674,7 +677,7 @@ export function buildArthurFunMainBlock({
   } else if (obj === "endurance" && (level === "sportif" || level === "performance")) {
     const dist = Math.min(p * 4, maxContinuous);
     const reps = Math.max(4, Math.min(10, Math.floor((target * 0.75) / dist)));
-    filled += pushSeries(reps, dist, "crawl", "allure tenable, focus économie", 25, "corps_end_main");
+    filled += pushSeries(reps, dist, "crawl", "allure tenable", 25, "corps_end_main");
     const left = target - filled;
     if (left >= unit * 4) {
       const cycles = Math.max(2, Math.min(4, Math.floor(left / (unit * 2))));

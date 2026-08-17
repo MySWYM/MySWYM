@@ -30,15 +30,16 @@ alwaysApply: false
 - **Cohérence** : chaque bloc a une distance ; volume affiché = somme des blocs ; pas d’incohérence d’unité.
 - **Matériel** : disponibilité ≠ obligation ; matos utilisé = visible sur la ligne ; jamais pull + palmes ; lié à l’éducatif.
 - **4 nages** : crawl = plus grande part (40/20/20/20 ; préf. crawl 50/17/17/16 ; autre préf. 40/30/15/15).
-- **Éducatifs** : jambes + nage appliquée prioritaires ; chiens rares (~1/8).
-- **Découverte** : flèche + grand chien (+ palmes/tuba) ; pas de T100.
+- **Éducatifs** : 1 séance / semaine (drills + corrections). Autres jours = nage, sans bloc technique. Découverte = tout le catalogue. Triathlon / eau libre = **mêmes éducatifs et mêmes jours de nage** (pas sighting / économie). Chien rare (~1/8).
+- **Découverte** : wording allégé ; pas de T100 ; éducatifs ouverts. Auto-report optionnel (longueurs sans arrêt) alimente `maxContinuous` — voir validation.
 - **BNSSA / pompiers** : sauvetage, pas endurance générique seule.
 - **BPJEPS** : 400 m NL, distinct de BNSSA.
-- **Eau libre** : sighting / lieu ; **Triathlon** : cues course.
-- Toujours échauffement + retour au calme (sauf OW déjà structuré).
+- **Eau libre / triathlon** : pas de cues sighting / économie ; mêmes séances de nage que les autres plans.
+- Toujours **Échauffement / Corps / Retour au calme** (sauf OW déjà structuré).
 - Premium : `D…` + allure si `pace100`. Gratuit : `R…`.
 - Sprint = récup complète. Affichage : jamais `souple` ni `Z1`.
-- **Fun partout** : contrastes ; pas 2 séries d’affilée à la même allure ; pas de monolithes.
+- **Affûtage** : J-14–J-8 dernière vraie semaine ; J-7–J-4 volume −30–50 % ; J-3/J-2 court ; J-1 repos ; jour J = échauffement 400–800 m, pas un entraînement. Après le jour J : le plan continue (récup puis reprise) ; valider le jour J = fête + feedback course + note de l’app.
+- **Fun partout** : contrastes ; pas 2 séries d’affilée à la même allure ; pas de monolithes identiques (`18×25`, `20×50` plats). Série longue jusqu’à 20 OK **si** un seul bloc avec paliers visibles, régulier+, pas Découverte — voir validation (anti-filler).
 
 ## LLM : Arthur lui apprend à entraîner
 

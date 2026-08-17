@@ -126,7 +126,7 @@ const TECHNIQUE_RAW = {
   ]}
 };
 
-const FOCUS_CYCLE = [
+export const FOCUS_CYCLE = [
   "technique_jambes",
   "technique_respiration",
   "technique_roulis",
@@ -137,20 +137,10 @@ const FOCUS_CYCLE = [
   "technique_jambes",
 ];
 
-/** Découverte : uniquement flèche + grand chien (pas de catch-up / roulis / virages…). */
-const FOCUS_CYCLE_DECOUVERTE = [
-  "technique_fleche",
-  "technique_grand_chien",
-  "technique_fleche",
-  "technique_grand_chien",
-  "technique_fleche",
-  "technique_grand_chien",
-  "technique_fleche",
-  "technique_grand_chien",
-];
+/** Découverte : même cycle que les autres niveaux (tout le catalogue). */
+export const FOCUS_CYCLE_DECOUVERTE = FOCUS_CYCLE;
 
 export const TECHNIQUE = TECHNIQUE_RAW;
-export { FOCUS_CYCLE, FOCUS_CYCLE_DECOUVERTE };
 
 export const TECHNIQUE_FOCUS_KEYS = Object.keys(TECHNIQUE);
 

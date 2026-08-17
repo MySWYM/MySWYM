@@ -257,4 +257,22 @@ function phases(n, pattern) {
   console.log("offline compat PASS");
 }
 
+{
+  const hist = rebuildEngineHistory({
+    plan: {
+      _engineHistory: {
+        maxContinuousDistance: 100,
+        maxContinuousConfidence: 0.7,
+        maxContinuousAnswers: [{ meters: 100, bandId: "4to8", pool: 25 }],
+        maxContinuousLastAskedAt: "2026-08-18T00:00:00.000Z",
+        maxContinuousLastAskedCompleted: 4,
+      },
+    },
+  });
+  assert(hist.maxContinuousDistance === 100, "rebuild keeps known");
+  assert(hist.maxContinuousConfidence === 0.7, "rebuild keeps confidence");
+  assert(hist.maxContinuousAnswers.length === 1, "rebuild keeps answers");
+  console.log("K maxContinuous blob PASS");
+}
+
 console.log("\n✅ Étape K persistence tests passed (K1–K10, K12–K14; K11=RLS SQL; K15=externe)");

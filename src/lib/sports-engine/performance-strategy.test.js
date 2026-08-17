@@ -257,7 +257,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
     competitionDate: in5w,
   });
   assert(
-    ["aerobic_capacity", "open_water_specificity", "threshold", "race_pace", "sighting"].includes(
+    ["aerobic_capacity", "open_water_specificity", "threshold", "race_pace", "technical_efficiency"].includes(
       roles.performanceStrategy.primaryQuality,
     ),
     `t7 ${roles.performanceStrategy.primaryQuality}`,
@@ -271,8 +271,9 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
     objectifV1: "triathlon",
     phase: "development",
   });
-  assert(["aerobic_capacity", "economy", "threshold", "race_pace"].includes(roles.performanceStrategy.primaryQuality), `t8 ${roles.performanceStrategy.primaryQuality}`);
-  assert(roles.some((r) => r.sessionIntent === "triathlon"), `t8 ${roleIntents(roles)}`);
+  assert(["aerobic_capacity", "threshold", "race_pace", "technical_efficiency"].includes(roles.performanceStrategy.primaryQuality), `t8 ${roles.performanceStrategy.primaryQuality}`);
+  assert(roles.filter((r) => r.educatifSession).length === 1, "t8 1 éducatif");
+  assert(roles.filter((r) => r.qualitySession).length === 1, "t8 1 qualité");
 }
 
 // 9 — avec chrono

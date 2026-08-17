@@ -7,12 +7,12 @@
 export const ARTHUR_GOLD_TEST_FIXTURES = [
   {
     slug: "arthur-ow-aerobie-01",
-    title: "OW · Endurance orientation",
+    title: "OW · Endurance aérobie",
     type: "ENDURANCE",
     intensity: "Z2",
     details: [
       "-400m crawl facile — Z1",
-      "-8 × 100m crawl — orientation / sighting — repos 20s",
+      "-8 × 100m crawl — aérobie régulier — repos 20s",
       "-6 × 200m crawl — aérobie régulier — repos 25s",
       "-200m au choix — récup",
     ],
@@ -20,7 +20,7 @@ export const ARTHUR_GOLD_TEST_FIXTURES = [
     niveaux: ["sportif", "performance"],
     objectifs: ["eau_libre"],
     phases: ["base", "development"],
-    focus_tags: ["endurance", "orientation"],
+    focus_tags: ["endurance"],
     role: "endurance",
     week_slot: "A",
     archetype_index: 0,

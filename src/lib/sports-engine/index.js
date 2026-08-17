@@ -21,6 +21,15 @@ export {
   confidenceFromSampleCount,
 } from "./capacity.js";
 export {
+  DECOUVERTE_CONTINUOUS_SELF_REPORT_CONFIDENCE,
+  shouldAskDecouverteContinuous,
+  decouverteContinuousPrompt,
+  applyDecouverteContinuousResponse,
+  previousSessionContextFromContinuous,
+  pickContinuousHistoryFields,
+  metersFromContinuousBand,
+} from "./decouverte-continuous-report.js";
+export {
   estimateReadinessModifier,
   normalizeReadinessProfile,
   readinessHistoryWeight,
@@ -35,6 +44,8 @@ export {
   decouverteWeekRoles,
   regulierWeekRoles,
   sportifWeekRoles,
+  isEducatifSession,
+  ensureWeeklyEducatif,
 } from "./week-roles.js";
 export { performanceWeekRoles } from "./performance-week-roles.js";
 export {
@@ -54,6 +65,7 @@ export {
   raceWeekDayPlan,
   taperRacePaceTouch,
   buildRaceDaySession,
+  isRaceDaySession,
   buildRestDaySession,
   buildRaceResultStub,
   arthurFitsTaper,
@@ -107,6 +119,7 @@ export {
   splitSessionBlocksSportif,
   splitSessionBlocksPerformance,
   biasBlocksForObjectif,
+  applySessionShape,
 } from "./volume.js";
 export {
   composeSessionBlueprint,
@@ -197,6 +210,15 @@ export { SPORTIF_GOLD_SCENARIOS } from "./sportif-intents.js";
 export { GOLD_SCENARIOS, DECOUVERTE_INTENTS } from "./decouverte-intents.js";
 export { REGULIER_GOLD_SCENARIOS, REGULIER_INTENTS } from "./regulier-intents.js";
 export { buildCorpsByFormat, MAX_PYRAMID_VOLUME } from "./set-formats.js";
+export {
+  PYRAMID_RECIPES,
+  PYRAMID_VARIANT_KEYS,
+  PYRAMID_EXTENDED_CORPS_SHARE,
+  PYRAMID_EXTENDED_CORPS_SHARE_MAX,
+  maxPyramidVolume,
+  isExtendedPyramidJustified,
+  resolvePyramidRecipe,
+} from "./pyramid-recipes.js";
 export { collapseSetsToDisplayLinesExact, collapseSetsToDisplayLines } from "./display-sets.js";
 export {
   toCoachDetailLines,

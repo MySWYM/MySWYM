@@ -13,13 +13,13 @@
 
 4. **`block()`** — Calcule le volume exact depuis les lignes. Il ne corrige pas une incohérence par un arrondi. Une séance invalide doit être rejetée ou recomposée.
 
-5. **Structure** — Chaque séance structurée : échauffement + retour au calme (sauf eau libre déjà structurée autrement).
+5. **Structure** — Chaque séance : **Échauffement / Corps de séance / Retour au calme** (sauf eau libre déjà structurée autrement). Pas de bloc technique collé sur toutes les séances.
 
-6. **Fun partout** — Du fun dans tout l’entraînement et tous les entraînements. Blocs progressifs / contrastés ; jamais 2 séries d’affilée à la même allure ; pas de monolithes type 18×25 ou 20×50 empilés.
+6. **Fun partout** — Du fun dans tout l’entraînement et tous les entraînements. Blocs progressifs / contrastés ; jamais 2 séries d’affilée à la même allure ; pas de monolithes type 18×25 ou 20×50 **identiques**. Série longue (jusqu’à 20) seulement si un seul bloc avec paliers visibles, régulier+, pas Découverte — détail : validation anti-filler.
 
-7. **Éducatifs / jambes** — Bloc milieu : privilégier jambes et nage appliquée. Grand/petit chien = rare (≈1 séance sur 8), pas dominant. Focus jambes = éducatif court puis série jambes — jamais deux blocs battements d’affilée.
+7. **Éducatifs** — **Une séance par semaine** est une séance éducatif : beaucoup de mouvements, corrections et drills. Découverte a accès à **tout** le catalogue d’éducatifs (pas seulement flèche / grand chien). **Triathlon / eau libre : mêmes éducatifs et mêmes jours de nage que les autres plans** — pas de drills ni de cues sighting / économie. Les autres séances = nage appliquée dans le corps, sans bloc technique. Jambes prioritaires sur les chiens ; grand/petit chien = rare (≈1 séance sur 8). Focus jambes = éducatif court puis série jambes — jamais deux blocs battements d’affilée.
 
-8. **Découverte** — Éducatifs uniquement : flèche + grand chien, avec palmes + tuba frontal. Pas de catch-up / roulis / virages / petit chien. Pas de demande T100. Wording allégé. Les niveaux Excel (« niveau Arthur ») filtrent aussi : un éducatif absent de Découverte n’entre pas dans un programme Découverte (« adaptable à tous niveaux » ≠ « Tous niveaux »). En case 4 nages : éducatifs Excel tagués 4n compatibles Découverte (dos à deux bras, papillon un bras, papillon baleine…), pas le forçage flèche/chien.
+8. **Découverte** — Wording allégé. Pas de demande T100. Pas de seuil / vitesse précoce. **Éducatifs : tout le catalogue** (rattrapé, godilles, roulis, jambes, chiens, 4 nages…). Papillon seulement si maîtrisé ou case 4 nages. Le composeur n’applique plus l’allowlist flèche/chien ni le filtre Excel « niveau Arthur » pour bloquer la Découverte.
 
 9. **Matériel** — Le matériel déclaré indique ce que le nageur peut utiliser, jamais ce qu’il doit utiliser. Une séance peut être sans matériel même si l’inventaire est rempli. Lorsqu’un matériel est utilisé, il doit être affiché explicitement sur la ligne d’exercice concernée. Jamais pull-buoy + palmes dans une même séance ; matériel lié à l’éducatif, jamais tiré au sort.
 
@@ -37,7 +37,7 @@
 
 16. **Quality Gate** — Toute séance composée passe `validateComposedSession`. Arthur ne contourne pas le gate. Sous-volume > séance incohérente.
 
-17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre : sighting / lieu. Triathlon : cues course. Même niveau + même focus nage : l’objectif (`roleObjectif`) doit changer intent et proportions de blocs (pas seulement le libellé). MySWYM = générateur de séances, pas école de natation.
+17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre / triathlon : **pas de cues sighting / économie** — mêmes séances de nage que les autres plans. Même niveau + même focus nage : l’objectif (`roleObjectif`) doit changer intent et proportions de blocs (pas seulement le libellé). MySWYM = générateur de séances, pas école de natation.
 
 18. **Sprint / seuil** — Sprint = récup complète entre reps. Seuil = effort soutenu et régulier (constance des temps).
 

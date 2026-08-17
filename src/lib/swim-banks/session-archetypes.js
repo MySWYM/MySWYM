@@ -68,7 +68,7 @@ const OW_BASE_SESSIONS_RAW = [
         tuba
           ? `${n50}×${P}m palmes + tuba roulis — R20" — rotation du bassin, talons à la surface`
           : `${n50}×${P}m palmes crawl — R20" — jambes actives, corps à plat`,
-        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl, opts)} — garde la technique des éducatifs, sighting tous les 8 bras`,
+        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl, opts)} — garde la technique des éducatifs`,
         `Retour au calme : ${rac}`,
       ],
     };
@@ -258,18 +258,18 @@ const OW_BASE_SESSIONS_RAW = [
       ],
     };
   },
-  // S5.1 — Sighting avancé & navigation
+  // S5.1 — Endurance appliquée
   (P, level, opts = {}) => {
     const lvl = owLvlIndex(level);
     const w = owM(400, level, P), n50 = owRep(4, level), nMain = owRep(10, level, 5), rac = owM(200, level, P, P);
     return {
       type: "ENDURANCE",
-      title: "Sighting avancé & navigation",
-      intensity: "Z2 — sighting fréquent, nage appliquée",
+      title: "Endurance appliquée",
+      intensity: "Z2 — nage appliquée, allure régulière",
       details: [
         `Échauffement : ${w}m crawl palmes — Z1`,
-        `${n50}×${P}m sighting tous les 4 bras — R15" — lève les yeux sans casser le rythme`,
-        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl, opts)} — sighting tous les 6-8 bras, garde le cap`,
+        `${n50}×${P}m crawl facile — R15" — rythme régulier, sans casser la nage`,
+        `${nMain}×${P}m crawl — ${ow50Int(P, level, lvl, opts)} — allure tenable`,
         `Retour au calme : ${rac}`,
       ],
     };

@@ -30,57 +30,59 @@ const FOCUS_META = {
     incompatibilities: [],
   },
   technique_chiens: {
-    minLevel: "regulier",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["chien", "aisance"],
     complexity: 2,
-    incompatibilities: ["decouverte"], // petit chien interdit Découverte
+    incompatibilities: [],
   },
   technique_jambes: {
-    minLevel: "regulier",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["jambes", "gainage"],
     complexity: 2,
-    incompatibilities: ["decouverte"],
+    incompatibilities: [],
   },
   technique_catchup: {
-    minLevel: "regulier",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["rattrape", "glisse"],
     complexity: 3,
-    incompatibilities: ["decouverte"],
+    incompatibilities: [],
   },
   technique_roulis: {
-    minLevel: "regulier",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["roulis", "rotation"],
     complexity: 3,
-    incompatibilities: ["decouverte"],
+    incompatibilities: [],
   },
   technique_respiration: {
-    minLevel: "regulier",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["respiration"],
     complexity: 3,
-    incompatibilities: ["decouverte"], // apnée / 5T / 7T trop avancés
+    incompatibilities: [],
   },
   technique_croisement: {
-    minLevel: "regulier",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["alignement", "entree_main"],
     complexity: 2,
-    incompatibilities: ["decouverte"],
+    incompatibilities: [],
   },
   technique_virages: {
-    minLevel: "sportif",
+    minLevel: "decouverte",
     maxLevel: "performance",
     technicalGoals: ["virage", "culbute"],
     complexity: 4,
-    incompatibilities: ["decouverte", "regulier"],
+    incompatibilities: [],
   },
 };
 
 const ADVANCED_RE = /Z3|Z4|CSS|seuil|VO2|hypoxie|apnée|apnee|7T|9T|chrono|sprint|à bloc|depart plongé|culbute|petit chien|rattrapé|catch-up|plaquettes/i;
+/** Intensité / formats dangereux — pas les noms d’éducatifs (Découverte a tout le catalogue). */
+const DECOUVERTE_UNSAFE_RE = /Z3|Z4|CSS|seuil|VO2|hypoxie|apnée|apnee|7T|9T|chrono|sprint|à bloc|depart plongé|plaquettes/i;
 const COMPLEX_SERIES_RE = /\d+\s*[x×]\s*\(\s*\d+\s*[x×]/i;
 
 function inferComplexity(text, base = 2) {
@@ -101,12 +103,7 @@ function inferIntensityRange(text) {
 
 function inferIncompatibilities(focusKey, text, meta) {
   const out = new Set(meta.incompatibilities || []);
-  if (ADVANCED_RE.test(text) || /petit chien/i.test(text)) out.add("decouverte");
-  if (/culbute|virage/i.test(text)) {
-    out.add("decouverte");
-    out.add("regulier");
-  }
-  if (focusKey === "technique_respiration" && /apnée|7T|9T/i.test(text)) out.add("decouverte");
+  if (DECOUVERTE_UNSAFE_RE.test(text)) out.add("decouverte");
   return [...out];
 }
 
@@ -224,7 +221,7 @@ export function buildExerciseInventory() {
       const requiredEquipment = detectEquipmentInDetails([text]);
       const complexity = inferComplexity(text, poolKey === "test" || poolKey === "vitesse" ? 4 : 2);
       const incompat = [];
-      if (complexity >= 3 || /Z3|CSS|chrono|sprint|à bloc|sighting|drafting/i.test(text)) {
+      if (complexity >= 3 || /Z3|CSS|chrono|sprint|à bloc|drafting/i.test(text)) {
         incompat.push("decouverte");
       }
       if (poolKey === "test" || poolKey === "vitesse") {
@@ -347,8 +344,7 @@ export function filterExercises(catalog, brief, opts = {}) {
     if (level === "decouverte" && intensity && zoneRank(exMax) > zoneRank(intensity) + 1) return false;
 
     if (level === "decouverte") {
-      if (ex.complexity > 2) return false;
-      if (ADVANCED_RE.test(ex.instructions.join(" "))) return false;
+      if (DECOUVERTE_UNSAFE_RE.test(ex.instructions.join(" "))) return false;
       if (COMPLEX_SERIES_RE.test(ex.instructions.join(" "))) return false;
     }
 
@@ -378,9 +374,7 @@ export function rejectsDecouverteComplexity(exerciseOrText) {
   const text = typeof exerciseOrText === "string"
     ? exerciseOrText
     : (exerciseOrText?.instructions || []).join(" ");
-  const complexity = typeof exerciseOrText === "object" ? exerciseOrText.complexity : inferComplexity(text);
-  if (complexity > 2) return true;
-  if (ADVANCED_RE.test(text)) return true;
+  if (DECOUVERTE_UNSAFE_RE.test(text)) return true;
   if (COMPLEX_SERIES_RE.test(text)) return true;
   return false;
 }

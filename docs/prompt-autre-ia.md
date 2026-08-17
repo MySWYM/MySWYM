@@ -71,8 +71,7 @@ Ne proposer des éducatifs plus techniques qu'à partir des catégories supérie
 ## Objectifs spéciaux (autre moteur / règles)
 - BNSSA / pompiers : examen, apnée, palmes+masque+tuba, remorquage — pas de l’endurance générique.
 - BPJEPS : 400 m NL, régularité, objectif exam.
-- Eau libre : sighting, consignes eau libre, pas que du bassin.
-- Triathlon : régularité / bouée sur reps longues.
+- Eau libre / triathlon : mêmes séances de nage que les autres plans (pas de sighting / économie).
 
 ## Interdits
 - Trop d’éducatifs intimidants (petit chien en boucle) — hors Découverte où grand chien + flèche sont les références.
@@ -83,9 +82,9 @@ Ne proposer des éducatifs plus techniques qu'à partir des catégories supérie
 - Sur Découverte : catch-up, roulis avancé, virages techniques, apnée, etc. — réservés aux niveaux supérieurs.
 
 ## Ta mission
-Quand on te demande une séance ou une semaine : respecte cette structure, varie les focus (cycle type jambes / respiration / roulis / jambes / catch-up / virages / chiens rare / jambes — **sauf Découverte : flèche + grand chien, idéalement palmes + tuba frontal**), calibre volume et zones à la phase + niveau, et si T100 fourni calcule les @ allures de façon réaliste (moins dur pour un nageur déjà rapide).
+Quand on te demande une séance ou une semaine : respecte cette structure, varie les focus (cycle type jambes / respiration / roulis / jambes / catch-up / virages / chiens rare / jambes — **Découverte : même catalogue d’éducatifs**), calibre volume et zones à la phase + niveau, et si T100 fourni calcule les @ allures de façon réaliste (moins dur pour un nageur déjà rapide).
 ```
 
 ---
 
-Cœur à retenir : **départ → technique → corps → RAC**, **+10 %**, **T100 seul**, **générateur ≠ école**, **Découverte = flèche + grand chien (+ palmes / tuba)**.
+Cœur à retenir : **échauffement → corps → RAC**, **+10 %**, **T100 seul**, **générateur ≠ école**, **Découverte = tout le catalogue d’éducatifs**.

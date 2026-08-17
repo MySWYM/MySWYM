@@ -108,14 +108,9 @@ function briefFrom({
   return brief;
 }
 
-function hasFourBlocks(details) {
+function hasSessionParts(details) {
   const hasDepart = details.some((l) =>
     /échauffement|souple|dos|tranquillement|brasse|mise en route/i.test(l),
-  );
-  const hasTech = details.some((l) =>
-    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile|focus geste|éducatif/i.test(
-      l,
-    ),
   );
   const hasCorps = details.some(
     (l) =>
@@ -127,7 +122,7 @@ function hasFourBlocks(details) {
   const hasFin = details.some((l) =>
     /récup|rac|au choix|relâché|dos à deux bras|retour au calme|sans forcer/i.test(l),
   );
-  return hasDepart && hasTech && hasCorps && hasFin;
+  return hasDepart && hasCorps && hasFin;
 }
 
 function assertSportDecouverte(session, brief) {
@@ -147,7 +142,11 @@ function assertSportDecouverte(session, brief) {
   assert(!/Aujourd'hui :/i.test(session.details.join("\n")), "pas de headline narratif");
   assert(session.details.length >= 3 || /Découverte ·/i.test(session.title), "contenu");
   const techSets = (session.sets || []).filter((s) => s.block === "technique");
-  assert(techSets.length >= 2, "variété technique minimale");
+  if (brief.educatifSession) {
+    assert(techSets.length >= 2, "séance éducatif : variété de drills");
+  } else {
+    assert(techSets.length === 0, "hors éducatif : pas de bloc technique");
+  }
   assert(!/Technique ·/i.test(session.details.join("\n")), "pas de header Technique ·");
   const hard = validateDecouverteHard(session, {
     maxContinuous: maxCont,
@@ -194,7 +193,7 @@ assert(canUsePapillon({ level: "decouverte", papillonMastered: true }), "papillo
   const r = composeSession(brief);
   assert(r.ok, `cas1 fail: ${r.reason}`);
   const s = r.session;
-  assert(hasFourBlocks(s.details), "cas1: 4 blocs");
+  assert(hasSessionParts(s.details), "cas1: échauffement + corps + RAC");
   const cons = assertVolumeConsistency({ sets: s.sets, details: s.details, announcedDistance: s.distance });
   assert(cons.ok, `cas1 volume: ${cons.errors.join("; ")}`);
   // Soft volume : 30 min ne force pas 1000 m

@@ -12,6 +12,7 @@ import {
   isComposerEnabledForLevel,
   SESSION_COMPOSER_ENABLED_LEVELS,
   regulierWeekRoles,
+  isEducatifSession,
   REGULIER_GOLD_SCENARIOS,
   rejectExerciseForBrief,
   getExerciseInventory,
@@ -166,7 +167,8 @@ assert(isComposerEnabledForLevel("sportif"), "Sportif enabled");
   const r = composeSession(brief);
   assert(r.ok, `cas2: ${r.reason}`);
   assertRegulierSport(r.session, brief);
-  assert(/visée|tête|orientation|endurance/i.test(r.session.details.join(" ") + r.session.title), "cas2 OW");
+  assert(/endurance|crawl|allure/i.test(r.session.details.join(" ") + r.session.title), "cas2 OW");
+  assert(!/sighting|visée|économie d['’]énergie/i.test(r.session.details.join(" ") + r.session.title), "cas2 sans sighting");
 }
 
 // === Cas 3 : triathlon + 60 ===
@@ -260,6 +262,7 @@ assert(isComposerEnabledForLevel("sportif"), "Sportif enabled");
       family: role.family,
       volumeTarget: 1600 + si * 50,
     });
+    if (role.educatifSession) brief.educatifSession = true;
     const r = composeSession(brief);
     assert(r.ok, `cas8 s${si}: ${r.reason}`);
     return r.session;
@@ -448,6 +451,76 @@ for (const g of REGULIER_GOLD_SCENARIOS) {
   assert(c.includes("mixed") && c.includes("alternating"), "récup candidats");
   assert(!c.includes("repeated") || c[0] !== "repeated", "récup pas default repeated");
   assert(selectSetFormat({ forcedFormat: "pyramid" }, () => 0) === "pyramid", "force format");
+}
+
+{
+  const roles = regulierWeekRoles(3, { objectifV1: "nager_progresser", strokeFocus: "crawl" });
+  assert(roles.filter((r) => r.educatifSession).length === 1, "1 éducatif / semaine régulier");
+  assert(isEducatifSession(roles.find((r) => r.educatifSession)), "flag éducatif");
+  const tri = regulierWeekRoles(3, { objectifV1: "triathlon", strokeFocus: "crawl" });
+  assert(tri.filter((r) => r.educatifSession).length === 1, "1 éducatif triathlon");
+  assert(tri[0].sessionIntent === "triathlon", "A reste triathlon");
+  const n4 = regulierWeekRoles(3, { objectifV1: "nager_progresser", strokeFocus: "4n", weekIndex: 0 });
+  assert(n4.filter((r) => r.educatifSession).length === 1, "1 éducatif 4n");
+}
+
+{
+  const tri = regulierWeekRoles(3, { objectifV1: "triathlon", strokeFocus: "crawl" });
+  const eduRole = tri.find((r) => r.educatifSession);
+  const triEdu = briefFrom({
+    seed: "edu-tri-same-drills",
+    objectif: "triathlon",
+    sessionIntent: eduRole.sessionIntent,
+    family: eduRole.family,
+    volumeTarget: 1700,
+  });
+  triEdu.educatifSession = true;
+  const rTri = composeSession(triEdu);
+  assert(rTri.ok, `éducatif triathlon: ${rTri.reason}`);
+  const triText = (rTri.session.details || []).join("\n");
+  assert((rTri.session.sets || []).some((x) => x.block === "technique"), "éducatif triathlon : drills");
+  assert(!/sighting|visée|économie|orientation|navigation/i.test(triText), `éducatif triathlon sans sighting/économie\n${triText}`);
+
+  const ow = regulierWeekRoles(3, { objectifV1: "eau_libre", strokeFocus: "crawl" });
+  const owRole = ow.find((r) => r.educatifSession);
+  const owEdu = briefFrom({
+    seed: "edu-ow-same-drills",
+    objectif: "eau_libre",
+    sessionIntent: owRole.sessionIntent,
+    family: owRole.family,
+    volumeTarget: 1700,
+  });
+  owEdu.educatifSession = true;
+  const rOw = composeSession(owEdu);
+  assert(rOw.ok, `éducatif OW: ${rOw.reason}`);
+  const owText = (rOw.session.details || []).join("\n");
+  assert((rOw.session.sets || []).some((x) => x.block === "technique"), "éducatif OW : drills");
+  assert(!/sighting|visée|économie|orientation|navigation/i.test(owText), `éducatif OW sans sighting/économie\n${owText}`);
+}
+
+{
+  const roles = regulierWeekRoles(3, { objectifV1: "nager_progresser", strokeFocus: "crawl" });
+  const composed = roles.map((role, si) => {
+    const brief = briefFrom({
+      seed: `edu-shape-${si}`,
+      sessionIntent: role.sessionIntent,
+      qualitySession: role.qualitySession,
+      family: role.family,
+      volumeTarget: 1700,
+    });
+    brief.educatifSession = !!role.educatifSession;
+    const r = composeSession(brief);
+    assert(r.ok, `edu-shape s${si}: ${r.reason}`);
+    return r.session;
+  });
+  const withTech = composed.filter((s) => (s.sets || []).some((x) => x.block === "technique"));
+  assert(withTech.length === 1, `une séance drills, got ${withTech.length}`);
+  assert(withTech[0].sets.filter((x) => x.block === "technique").length >= 3, "éducatif : plusieurs drills");
+  for (const s of composed) {
+    const text = (s.details || []).join("\n");
+    assert(/Échauffement\s*:/i.test(text), "échauffement nommé");
+    assert(/Retour au calme\s*:/i.test(text), "RAC nommé");
+  }
 }
 
 console.log("session-composer-regulier.test.js: OK");

@@ -13,7 +13,7 @@ import {
   sessionAnalyticsProps,
 } from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop, appendPostRaceWeeks, isRaceDaySession, withPostRacePhases } from "./lib/swim-plan-bridge.js";
 import { StepSessionDistance, StepTrainingWish } from "./OnboardingDistanceWish.jsx";
 import { parseTrainingWish } from "./lib/sports-engine/training-wish.js";
 import {
@@ -21,6 +21,10 @@ import {
   normalizeFeedbackRating,
   missedSessionPolicy,
 } from "./lib/sports-engine/index.js";
+import {
+  decouverteContinuousPrompt,
+  applyDecouverteContinuousResponse,
+} from "./lib/sports-engine/decouverte-continuous-report.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
 import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress } from "./lib/plan-progress-merge.js";
 import {
@@ -59,6 +63,15 @@ import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js
 
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
+
+const persistAppRating = (userId, { stars, source = "post_race" } = {}) => {
+  if (!stars) return;
+  const payload = { stars, source, at: new Date().toISOString() };
+  try {
+    localStorage.setItem(`myswym_app_rating_${userId || "anon"}`, JSON.stringify(payload));
+  } catch { /* ignore */ }
+  track("app_rated", { magnitude: stars, source, context: source }, { onceKey: `app_rated:${userId || "anon"}:${source}` });
+};
 
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
@@ -274,6 +287,7 @@ const TYPE_META = {
   VITESSE:      { bg: G_LIGHT.coralLight,  color: G_LIGHT.coral,   Icon: Zap,      tooltip: "Sprints courts et intenses — récup complète entre chaque. Développe ta puissance." },
   TECHNIQUE:    { bg: G_LIGHT.waterLight,  color: "#0097A7",       Icon: Target,   tooltip: "On travaille la façon de nager — position, bras, jambes. Moins d'effort, plus d'efficacité." },
   RÉCUPÉRATION: { bg: G_LIGHT.mintLight,   color: "#00897B",       Icon: Droplets, tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer — c'est là que le corps progresse." },
+  RACE:         { bg: G_LIGHT.goldLight,   color: G_LIGHT.gold,    Icon: Trophy,   tooltip: "Jour de course : échauffement, touches d'allure, quelques accélérations. Ce n'est pas un entraînement." },
 };
 
 const css = `
@@ -1415,14 +1429,15 @@ const scaleSessionVolume = (s, factor) => {
 };
 
 const phaseListForAdjust = (profile, plan) => {
-  const rawWeeks = plan.totalRealWeeks || plan.weeks.length;
   const n = plan.weeks.length;
   const goal = profile.goal;
-  const full = isProgressionGoal(goal)
-    ? buildProgressionPhases().slice(0, rawWeeks)
-    : isWellnessGoal(goal)
-      ? buildWellnessPhases(rawWeeks)
-      : buildPlanPhases(rawWeeks);
+  if (isProgressionGoal(goal)) return buildProgressionPhases().slice(0, n);
+  if (isWellnessGoal(goal)) return buildWellnessPhases(n);
+  const existing = plan.weeks || [];
+  const preRace = existing.some((w) => w.isPostRace)
+    ? existing.filter((w) => !w.isPostRace).length || Math.max(1, n - 2)
+    : (plan.postRaceWeeksAppended ? Math.max(1, n - 2) : n);
+  const full = withPostRacePhases(buildPlanPhases(preRace));
   return full.slice(0, n);
 };
 
@@ -1480,6 +1495,7 @@ const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { s
         volumeAdj: effectiveAdj,
         taste: plan.taste || profile.taste,
         _engineHistory: {
+          ...(plan._engineHistory || {}),
           hardStreak: signals.filter((s) => s === "hard").length >= 2 ? 2 : (legacy === "hard" ? 1 : 0),
           easyStreak: legacy === "easy" ? 1 : 0,
           unfinishedRecent: finished ? 0 : 1,
@@ -6257,10 +6273,12 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
   );
 };
 
-const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremium, healthConsent = false }) => {
+const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremium, healthConsent = false, continuousPrompt = null }) => {
   const [rating, setRating] = useState(initial?.rating ?? null);
   const [tags, setTags] = useState(() => Array.isArray(initial?.tags) ? [...initial.tags] : []);
   const [comment, setComment] = useState(initial?.comment ?? "");
+  const [continuousBandId, setContinuousBandId] = useState(null);
+  const [continuousSkipped, setContinuousSkipped] = useState(false);
   const availableTags = healthConsent
     ? SESSION_FEEDBACK_TAGS
     : SESSION_FEEDBACK_TAGS.filter((t) => t !== "douleur / gêne");
@@ -6277,6 +6295,8 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
       rating,
       tags,
       comment: comment.trim() || null,
+      continuousBandId: continuousPrompt && !continuousSkipped ? continuousBandId : null,
+      continuousSkipped: !!(continuousPrompt && (continuousSkipped || !continuousBandId)),
     });
   };
 
@@ -6374,6 +6394,53 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
           }}
         />
 
+        {continuousPrompt && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: G.ink, marginBottom: 6, lineHeight: 1.4 }}>
+              {continuousPrompt.copy}
+            </p>
+            <p style={{ fontSize: 12, color: G.grey, marginBottom: 10, lineHeight: 1.4 }}>
+              Juste un ressenti, pas un chrono. Tu peux passer.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+              {continuousPrompt.options.map((opt) => {
+                const on = continuousBandId === opt.id && !continuousSkipped;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => {
+                      setContinuousSkipped(false);
+                      setContinuousBandId(opt.id);
+                    }}
+                    style={{
+                      padding: "8px 12px", borderRadius: 100, cursor: "pointer",
+                      border: `1.5px solid ${on ? G.blue : G.greyLight}`,
+                      background: on ? G.blueLight : G.surface,
+                      color: on ? G.blue : G.grey, fontSize: 12, fontWeight: 600,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setContinuousBandId(null);
+                setContinuousSkipped(true);
+              }}
+              style={{
+                background: "none", border: "none", padding: 0, cursor: "pointer",
+                color: G.greyMid, fontSize: 13, fontWeight: 500, textDecoration: "underline",
+              }}
+            >
+              Passer
+            </button>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={save}
@@ -6391,6 +6458,160 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
         <button type="button" onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
           Passer
         </button>
+      </div>
+    </div>
+  );
+};
+
+const RACE_FEELING_OPTS = [
+  { id: "great", rating: "easy", Face: FaceGood, label: "Génial", sub: "Tout s'est aligné", color: "#00C48C", bg: "#E6FFF6" },
+  { id: "as_expected", rating: "ok", Face: FaceMid, label: "Comme prévu", sub: "Le travail a payé", color: "#FF9F0A", bg: "#FFF8EE" },
+  { id: "tough", rating: "hard", Face: FaceTired, label: "Dur", sub: "La course a demandé beaucoup", color: "#FF3B30", bg: "#FFF0EF" },
+];
+
+const RaceDaySheet = ({ sessionTitle, onSubmit, onSkip }) => {
+  const [step, setStep] = useState(0);
+  const [feeling, setFeeling] = useState(null);
+  const [comment, setComment] = useState("");
+  const [stars, setStars] = useState(0);
+
+  const finish = ({ skipApp = false } = {}) => {
+    const opt = RACE_FEELING_OPTS.find((o) => o.id === feeling);
+    if (navigator.vibrate) navigator.vibrate(40);
+    onSubmit({
+      rating: opt?.rating || "ok",
+      tags: ["course"],
+      comment: comment.trim() || null,
+      raceFeeling: feeling,
+      appStars: skipApp ? null : (stars || null),
+    });
+  };
+
+  return (
+    <div className="sheet-overlay">
+      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+
+        {step === 0 && (
+          <>
+            <div style={{ width: 64, height: 64, borderRadius: 20, background: G.goldLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <Trophy size={32} color={G.gold} />
+            </div>
+            <p style={{ fontSize: 11, fontWeight: 700, color: G.gold, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+              Jour J
+            </p>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 8 }}>
+              Bravo, c'était le grand jour
+            </h3>
+            <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 8, lineHeight: 1.5 }}>
+              {sessionTitle ? `${sessionTitle}. ` : ""}Le travail est derrière toi. Le plan continue après la course — récupération, puis reprise douce.
+            </p>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              style={{ width: "100%", padding: "14px", minHeight: 48, borderRadius: 14, border: "none", background: G.blue, color: G.white, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 12 }}
+            >
+              Continuer
+            </button>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+              Retour de course
+            </p>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 20 }}>
+              Comment s'est passée la course ?
+            </h3>
+            <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+              {RACE_FEELING_OPTS.map((o) => {
+                const isActive = feeling === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => setFeeling(o.id)}
+                    style={{
+                      flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                      padding: "14px 6px", minHeight: 88, borderRadius: 18,
+                      border: `2px solid ${isActive ? o.color : G.greyLight}`,
+                      background: isActive ? o.bg : G.surface,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <o.Face size={36} color={isActive ? o.color : G.greyMid} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isActive ? o.color : G.ink }}>{o.label}</span>
+                    <span style={{ fontSize: 10, color: G.grey, textAlign: "center", lineHeight: 1.3 }}>{o.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Un mot sur la course (optionnel)"
+              rows={3}
+              style={{ width: "100%", borderRadius: 12, border: `1px solid ${G.greyLight}`, padding: 12, fontSize: 16, fontFamily: "inherit", marginBottom: 16, resize: "vertical", color: G.ink, background: G.surface }}
+            />
+            <button
+              type="button"
+              onClick={() => feeling && setStep(2)}
+              disabled={!feeling}
+              style={{ width: "100%", padding: "14px", minHeight: 48, borderRadius: 14, border: "none", background: feeling ? G.blue : G.greyLight, color: feeling ? G.white : G.greyMid, fontSize: 15, fontWeight: 700, cursor: feeling ? "pointer" : "not-allowed" }}
+            >
+              Continuer
+            </button>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+              Ton avis
+            </p>
+            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 8 }}>
+              MySWYM t'a aidé jusqu'ici ?
+            </h3>
+            <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.45 }}>
+              Une note pour l'app — ça nous aide à l'améliorer.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`${n} étoile${n > 1 ? "s" : ""}`}
+                  onClick={() => setStars(n)}
+                  style={{ width: 48, height: 48, borderRadius: 14, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Star size={28} color={n <= stars ? G.gold : G.greyLight} fill={n <= stars ? G.gold : "none"} />
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => finish({ skipApp: false })}
+              disabled={!stars}
+              style={{ width: "100%", padding: "14px", minHeight: 48, borderRadius: 14, border: "none", background: stars ? G.blue : G.greyLight, color: stars ? G.white : G.greyMid, fontSize: 15, fontWeight: 700, cursor: stars ? "pointer" : "not-allowed", marginBottom: 8 }}
+            >
+              Envoyer
+            </button>
+            <button
+              type="button"
+              onClick={() => finish({ skipApp: true })}
+              style={{ width: "100%", padding: "11px", minHeight: 44, background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}
+            >
+              Plus tard
+            </button>
+          </>
+        )}
+
+        {step === 0 && (
+          <button type="button" onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
+            Passer
+          </button>
+        )}
       </div>
     </div>
   );
@@ -6486,6 +6707,20 @@ const FREE_TIER_LINES = [
 
 const countCompletedSessions = (p) =>
   (p?.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0);
+
+const countLoopCompletedSessions = (plan, extraCompleted = false) =>
+  (plan?.history || []).filter((s) => s.completed).length + (extraCompleted ? 1 : 0);
+
+const mergeEngineHistory = (entry, nextHist) => {
+  if (!entry || !nextHist) return entry;
+  const profileHist = { ...(entry.profile?._engineHistory || {}), ...nextHist };
+  const planHist = { ...(entry.plan?._engineHistory || {}), ...nextHist };
+  return {
+    ...entry,
+    profile: { ...entry.profile, _engineHistory: profileHist },
+    plan: { ...entry.plan, _engineHistory: planHist },
+  };
+};
 
 const PREMIUM_TIER_LINES = [
   "Essai 7 jours sans carte, puis 4,99€/mois",
@@ -7577,7 +7812,7 @@ const SessionCard = ({
                   }}
                 >
                   {[
-                    { id: "done", label: "Séance faite", icon: Check, color: G.mint },
+                    { id: "done", label: isRaceDaySession(session) ? "C'est fait" : "Séance faite", icon: Check, color: G.mint },
                     { id: "missed", label: "Oubliée", icon: RotateCcw, color: G.gold },
                     { id: "not_done", label: "Pas faite", icon: X, color: G.grey },
                   ].map(opt => (
@@ -9708,11 +9943,11 @@ const SESSION_TEMPLATES = {
         },
         {
           title: isOpenWater ? "Séance eau libre — test combinaison" : "Reps longues",
-          intensity: isOpenWater ? "Découverte OW — flottaison, navigation, sighting" : "Endurance — gestion sur la distance",
+          intensity: isOpenWater ? "Découverte OW — flottaison, nage continue" : "Endurance — gestion sur la distance",
           details: isOpenWater ? [
             `À faire en eau libre (lac, rivière calme, mer protégée)`,
             `10' d'adaptation : nage lente avec la combi — ressens la flottaison`,
-            `3×5' de nage continue — récup 2' — sighting toutes les 6–8 bras`,
+            `3×5' de nage continue — récup 2' — allure conversation`,
             `Effort : allure conversation, objectif orientation`,
             `Récup : retour au départ en crawl ou dos très lent`,
           ] : [
@@ -9728,7 +9963,7 @@ const SESSION_TEMPLATES = {
           details: isOpenWater ? [
             `À faire en eau libre`,
             `Échauffement : 10' de nage lente, teste tes repères visuels`,
-            `20–30' de nage continue — sighting toutes les 8 bras, gère ton allure de A à Z`,
+            `20–30' de nage continue — gère ton allure de A à Z`,
             `Si combi : teste les transitions (enlever la combi en 2')`,
             `Récup : 5' de crawl ou dos très lent`,
           ] : [
@@ -9766,10 +10001,10 @@ const SESSION_TEMPLATES = {
         },
         isOpenWater ? {
           title: "Prépa eau libre — crawl en bassin",
-          intensity: "Endurance OW — sighting et allure tenue",
+          intensity: "Endurance OW — allure tenue",
           details: [
-            `Échauffement : 300m crawl progressif + 4×${P}m sighting (tête hors de l'eau tous les 6 bras)`,
-            `${nR3b}×${r3}m crawl — R20" — sighting tous les 8 bras, allure tenue${goalCue}`,
+            `Échauffement : 300m crawl progressif + 4×${P}m crawl facile`,
+            `${nR3b}×${r3}m crawl — R20" — allure tenue${goalCue}`,
             `${Math.max(2, Math.round(nR2b * 0.7))}×${r2}m crawl — R20" — respiration bilatérale, même allure`,
             `${nFill}×${r1}m dos — R15" — récup active`,
             `Retour calme : 200m crawl très lent`,
@@ -10192,7 +10427,7 @@ const SESSION_TEMPLATES = {
           intensity: "Soutenu — prépa eau libre en bassin",
           details: [
             `Échauffement : 200m crawl + 100m dos + 4×${P}m accélérations`,
-            `${nR2S}×${r2S}m crawl — ${dep(r2S, lvl, 'threshold')} — allure tenue, sighting tous les 8 bras`,
+            `${nR2S}×${r2S}m crawl — ${dep(r2S, lvl, 'threshold')} — allure tenue`,
             `${nFillS}×${2*P}m dos — R20"`,
             `Retour calme : 200m dos lent`,
           ],
@@ -10815,11 +11050,11 @@ const SESSION_TEMPLATES = {
             ],
           },
           {
-            title: "Catch-up drill & DPS",
+            title: "Rattrapé & DPS",
             intensity: "Faible — distance par cycle (DPS)",
             details: [
               `Échauffement : ${repR}m NL + ${repR}m palmes + tuba frontal`,
-              `${nPerBlock}×${repR}m catch-up drill — R10" — bras tendu devant, attend la main adverse avant de repartir`,
+              `${nPerBlock}×${repR}m rattrapé — R10" — bras tendu devant, attend la main adverse avant de repartir`,
               `${nPerBlock}×${repR}m DPS comptage — R10" — vise 18–22 cycles/longueur`,
               `${nInteg}×${repR}m NL — ${dep(repR,lvl,'easy')} — réduis d'1 cycle/longueur vs ta normale, même vitesse`,
               `Retour au calme : ${repR}m dos lent`,
@@ -10862,7 +11097,7 @@ const SESSION_TEMPLATES = {
       };
     }
 
-    // ── PERF eau libre / triathlon : technique crawl & sighting ───────────
+    // ── PERF eau libre / triathlon : technique crawl ───────────
     if (isAdv && !shouldUsePoolIMBlock(goal)) {
       const v = rot(6);
       return {
@@ -10870,29 +11105,29 @@ const SESSION_TEMPLATES = {
         ...[
           {
             title: "Technique crawl — prise & rotation",
-            intensity: "Faible — qualité de nage OW",
+            intensity: "Faible — qualité de nage",
             details: [
               `Échauffement : ${repR}m crawl + ${repR}m dos`,
-              `${nPerBlock}×${repR}m catch-up drill — R10" — allongement, attente la main adverse`,
-              `${nPerBlock}×${repR}m sighting tous les 6 bras — R15" — tête stable, vise un repère au fond`,
-              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — intègre sighting + allongement`,
+              `${nPerBlock}×${repR}m rattrapé — R10" — allongement, attente la main adverse`,
+              `${nPerBlock}×${repR}m crawl rattrapé — R15" — glisse, tête dans l'axe`,
+              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — intègre l'allongement`,
               `Retour calme : ${repR}m dos lent`,
             ],
           },
           {
-            title: "Sighting & respiration",
-            intensity: "Faible — prépa navigation eau libre",
+            title: "Respiration bilatérale",
+            intensity: "Faible — rythme de nage",
             details: [
               `Échauffement : ${repR}m crawl progressif`,
               `${nPerBlock}×${repR}m crawl respiration bilatérale — R10" — 3 bras / 5 bras en alternance`,
-              `${nPerBlock}×${repR}m crawl sighting — R15" — lève la tête sans casser l'allure`,
+              `${nPerBlock}×${repR}m crawl — R15" — rythme régulier, sans casser l'allure`,
               `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — même effort, technique propre`,
               `Retour calme : ${repR}m dos lent`,
             ],
           },
           {
             title: "Allonge & DPS",
-            intensity: "Faible — économie de nage",
+            intensity: "Faible — qualité de nage",
             details: [
               `Échauffement : ${repR}m crawl + ${repR}m palmes`,
               `${nPerBlock}×${repR}m DPS comptage — R10" — vise moins de cycles à même allure`,
@@ -10902,12 +11137,12 @@ const SESSION_TEMPLATES = {
             ],
           },
           {
-            title: "Nage en ligne & orientation",
-            intensity: "Faible — prépa mer / triathlon",
+            title: "Nage régulière",
+            intensity: "Faible — allure tenable",
             details: [
               `Échauffement : ${repR}m crawl + ${repR}m dos`,
-              `${nPerBlock}×${repR}m crawl sighting — R15" — lève la tête tous les 6–8 bras, sans casser l'allure`,
-              `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — rythme régulier, respiration bilatérale`,
+              `${nPerBlock}×${repR}m crawl — R15" — rythme régulier, sans casser l'allure`,
+              `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — respiration bilatérale`,
               `Retour calme : ${repR}m dos lent`,
             ],
           },
@@ -10929,7 +11164,7 @@ const SESSION_TEMPLATES = {
               `Échauffement : ${repR}m crawl + ${repR}m dos`,
               `${nPerBlock}×${repR}m crawl — R10" — compte tes cycles par longueur`,
               `${nPerBlock}×${repR}m crawl — ${dep(repR,lvl,'easy')} — même cycles, un peu plus vite`,
-              `${nInteg}×${repR}m crawl sighting — ${dep(repR,lvl,'easy')} — intègre la tête haute`,
+              `${nInteg}×${repR}m crawl — ${dep(repR,lvl,'easy')} — rythme régulier`,
               `Retour calme : ${repR}m dos lent`,
             ],
           },
@@ -11219,7 +11454,8 @@ const TIPS = {
   vitesse:     "Récupération complète entre chaque sprint. Sans ça, tu travailles l'endurance, pas la vitesse. Qualité absolue > quantité.",
   volume:      "Semaine de charge maximale. Mange +15 % de glucides, vise 8 h de sommeil — c'est pendant la récupération que le corps s'adapte.",
   affutage:    "Réduis le volume de 40 % mais maintiens 2–3 accélérations par séance pour garder la réactivité musculaire.",
-  competition: "Dernière semaine avant l'événement : 1–2 séances courtes, volume bas, rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
+  competition: "Semaine de course : séances courtes, puis le jour J. Après l'épreuve, le plan continue — récupération, puis reprise douce.",
+  recup:       "Après la course : nage facile, volume bas. On récupère, puis on reprend doucement. Tu n'es pas lâché dans le vide.",
   test:        "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
 };
 
@@ -11519,7 +11755,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   const rawWeeks = computePlanTotalWeeks(profile, referenceTime);
 
   const baseDist = BASE_DISTANCES[level] || BASE_DISTANCES.régulier;
-  const phaseList = wellness ? buildWellnessPhases(rawWeeks) : buildPlanPhases(rawWeeks);
+  const phaseList = wellness ? buildWellnessPhases(rawWeeks) : withPostRacePhases(buildPlanPhases(rawWeeks));
   // Résolution du levelKey pour les patterns : priorité aux nouveaux niveaux, fallback anciens
   const levelKey = (PHASE_PATTERNS[level] ? level : (level === "advanced" ? "performance" : level === "beginner" ? "régulier" : level === "intermediate" ? "sportif" : "régulier"));
   // WELLNESS_PATTERNS sont indexés par "beginner"/"intermediate"/"advanced"
@@ -11541,12 +11777,13 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
         feedback: null,
         isBilan: phase.isBilan ?? false,
         isTest: phase.isTest ?? false,
+        isPostRace: phase.isPostRace ?? false,
         sessions: buildCompetitionSessions(pool, n, wi + 1, phase.focus, isBeg),
       };
     }
-    const types = patterns[phase.phase]?.[f] || patterns.base[f] || ["endurance"];
+    const types = patterns[phase.phase]?.[f] || (phase.phase === "bilan" ? patterns.taper?.[f] : null) || patterns.base[f] || ["endurance"];
     return {
-      number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false, isTest: phase.isTest ?? false,
+      number: wi + 1, focus: phase.focus, tip: TIPS[phase.tipKey], feedback: null, isBilan: phase.isBilan ?? false, isTest: phase.isTest ?? false, isPostRace: phase.isPostRace ?? false,
       sessions: types.map((type, si) => {
         const distBase = Math.round(baseDist[type] * phase.progression / 50) * 50;
         let sessionData = SESSION_TEMPLATES[type](distBase, pool, level, wi * 10 + si, goal);
@@ -11571,7 +11808,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   const allWeeks = shouldUseCoachGenerator(goal)
     ? buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, 5)
     : buildWeeks(phaseList);
-  return { weeks: allWeeks, previewWeeks: [], totalRealWeeks: rawWeeks, isPremium, isProgression: false, isSessionLoop: false, startDate: Date.now(), version: PLAN_VERSION };
+  return { weeks: allWeeks, previewWeeks: [], totalRealWeeks: allWeeks.length, isPremium, isProgression: false, isSessionLoop: false, startDate: Date.now(), version: PLAN_VERSION, postRaceWeeksAppended: phaseList.some((p) => p.isPostRace) };
 };
 
 /** Peut-on générer une nouvelle séance (boucle gratuit) ? */
@@ -12448,6 +12685,22 @@ export default function App() {
     save();
   }, [plans, activePlanId, planHistory, user]);
 
+  useEffect(() => {
+    if (!plansHydratedRef.current || !isPremium) return;
+    setPlans((prev) => {
+      let changed = false;
+      const next = prev.map((entry) => {
+        const p = entry.plan;
+        if (!p || p.isSessionLoop) return entry;
+        const unlocked = appendPostRaceWeeks(p, entry.profile, isPremium, TIPS);
+        if (unlocked === p) return entry;
+        changed = true;
+        return { ...entry, plan: unlocked };
+      });
+      return changed ? next : prev;
+    });
+  }, [activePlanId, isPremium, plans.length]);
+
   // Re-sync au retour sur l'app : fusionne cache local + Supabase (ne jamais écraser un plan d'un autre appareil)
   useEffect(() => {
     if (!user) return;
@@ -12560,7 +12813,7 @@ export default function App() {
       if (generated.isSessionLoop && p.isSessionLoop) {
         const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
         const { week } = buildProgressionLoopSession(
-          { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj },
+          { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj, raceDayCompleted: !!p.raceDayCompleted },
           cursor,
           premium,
         );
@@ -12630,7 +12883,7 @@ export default function App() {
     const hist = alreadyInHist ? (plan.history || []) : [...(plan.history || []), { ...archived, archivedAt: new Date().toISOString() }];
     const nextCursor = (plan.sessionCursor ?? 0) + 1;
     const { week } = buildProgressionLoopSession(
-      { ...entry.profile, sessionsPerWeek: 1, taste: plan.taste || tasteProfile, volumeAdj: plan.volumeAdj },
+      { ...entry.profile, sessionsPerWeek: 1, taste: plan.taste || tasteProfile, volumeAdj: plan.volumeAdj, raceDayCompleted: !!plan.raceDayCompleted },
       nextCursor,
       isPremium,
     );
@@ -12961,8 +13214,9 @@ export default function App() {
       return { ...base, weeks: entryPlan.weeks, loopBlocked: gate.reason };
     }
     const nextCursor = (entryPlan.sessionCursor ?? 0) + 1;
+    const raceDone = !!(entryPlan.raceDayCompleted || isRaceDaySession(archivedSession));
     const { week } = buildProgressionLoopSession(
-      { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
+      { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj, raceDayCompleted: raceDone },
       nextCursor,
       isPremium,
     );
@@ -12971,6 +13225,7 @@ export default function App() {
       sessionCursor: nextCursor,
       weeks: [week],
       loopBlocked: null,
+      raceDayCompleted: raceDone,
     };
     next = withLoopGenerationCounters(next, isPremium);
     return next;
@@ -13002,7 +13257,7 @@ export default function App() {
       // Nouveau seed sans archiver — cursor bump pour variété
       const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
       const { week } = buildProgressionLoopSession(
-        { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+        { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj, raceDayCompleted: !!entry.plan.raceDayCompleted },
         nextCursor,
         true,
       );
@@ -13017,6 +13272,27 @@ export default function App() {
     }));
     setToast("Nouvelle séance générée");
     setTimeout(() => setToast(null), 2200);
+  };
+
+  const buildDecouverteContinuousPrompt = (entry, completedSessions) =>
+    decouverteContinuousPrompt({
+      level: entry?.profile?.level,
+      pool: entry?.profile?.pool,
+      history: entry?.plan?._engineHistory || entry?.profile?._engineHistory || {},
+      completedSessions,
+      planStartDate: entry?.plan?.planStartDate || entry?.plan?._engineHistory?.planStartDate,
+    });
+
+  const applyContinuousStampToEntry = (entry, { completedSessions, bandId = null, skipped = false } = {}) => {
+    if (!entry) return entry;
+    const nextHist = applyDecouverteContinuousResponse({
+      history: entry.plan?._engineHistory || entry.profile?._engineHistory || {},
+      completedSessions,
+      pool: entry.profile?.pool,
+      bandId: skipped ? null : bandId,
+      skipped: !!skipped || !bandId,
+    });
+    return mergeEngineHistory(entry, nextHist);
   };
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
@@ -13137,7 +13413,19 @@ export default function App() {
           }).then(() => {});
         }
         // Feedback d'abord — avance à la fermeture du sheet
-        setSessionFeedbackTarget({ weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived });
+        const loopCompleted = countLoopCompletedSessions(active.plan, true);
+        const loopPrompt = isRaceDaySession(archived) ? null : buildDecouverteContinuousPrompt(active, loopCompleted);
+        setSessionFeedbackTarget({
+          weekIndex: 0,
+          sessionIndex: 0,
+          promptWeekAfter: false,
+          loopMode: true,
+          archived,
+          askContinuous: !!loopPrompt,
+          completedSessions: loopCompleted,
+          continuousPrompt: loopPrompt,
+          isRaceDay: isRaceDaySession(archived),
+        });
       } else {
         finishLoopSessionAndAdvance(archived);
       }
@@ -13205,7 +13493,14 @@ export default function App() {
       ) {
         setTimeout(() => setFeedbackWeek(weekIndex), 700);
       }
-      return { ...entry, plan: newPlan };
+      let planOut = newPlan;
+      if (resolvedStatus === "done") {
+        const doneSess = newPlan.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+        if (isRaceDaySession(doneSess)) {
+          planOut = appendPostRaceWeeks(newPlan, entry.profile, isPremium, TIPS);
+        }
+      }
+      return { ...entry, plan: planOut };
     }));
     if (resolvedStatus === "done") {
       // Statut completed en base dès la validation — indépendant de la fiche de retour
@@ -13217,7 +13512,20 @@ export default function App() {
           status: "completed",
         }).then(() => {});
       }
-      setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: true });
+      const alreadyDone = plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex]?.completed;
+      const classicCompleted = countCompletedSessions(plan) + (alreadyDone ? 0 : 1);
+      const classicEntry = plans.find((e) => e.id === activePlanId);
+      const raceSess = plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+      const classicPrompt = isRaceDaySession(raceSess) ? null : buildDecouverteContinuousPrompt(classicEntry, classicCompleted);
+      setSessionFeedbackTarget({
+        weekIndex,
+        sessionIndex,
+        promptWeekAfter: true,
+        askContinuous: !!classicPrompt,
+        completedSessions: classicCompleted,
+        continuousPrompt: classicPrompt,
+        isRaceDay: isRaceDaySession(raceSess),
+      });
     }
   };
 
@@ -13237,6 +13545,31 @@ export default function App() {
   const closeSessionFeedbackSheet = () => {
     const target = sessionFeedbackTarget;
     setSessionFeedbackTarget(null);
+    if (target?.askContinuous) {
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        const stamped = applyContinuousStampToEntry(e, {
+          completedSessions: target.completedSessions,
+          skipped: true,
+        });
+        if (target.loopMode && target.archived) {
+          const markedPlan = {
+            ...stamped.plan,
+            weeks: [{
+              ...stamped.plan.weeks[0],
+              sessions: [{ ...target.archived }],
+            }],
+          };
+          return {
+            ...stamped,
+            plan: advanceProgressionLoop(markedPlan, stamped.profile, target.archived),
+          };
+        }
+        return stamped;
+      }));
+      if (target.promptWeekAfter && !target.loopMode) maybePromptWeekFeedback(target.weekIndex);
+      return;
+    }
     if (target?.loopMode && target.archived) {
       finishLoopSessionAndAdvance(target.archived);
       return;
@@ -13260,29 +13593,34 @@ export default function App() {
     return normalized;
   };
 
-  const handleSessionFeedback = ({ rating, tags, comment }) => {
+  const handleSessionFeedback = ({ rating, tags, comment, continuousBandId = null, continuousSkipped = false, appStars = null, raceFeeling = null }) => {
     if (!sessionFeedbackTarget) return;
-    const { weekIndex, sessionIndex, promptWeekAfter, loopMode, archived } = sessionFeedbackTarget;
+    const { weekIndex, sessionIndex, promptWeekAfter, loopMode, archived, askContinuous, completedSessions } = sessionFeedbackTarget;
     const prevSession = archived || plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
     const isFirstFeedback = !prevSession?.feedback;
     const legacyRating = normalizeFeedbackRating(rating);
     const hasPainTag = Array.isArray(tags) && tags.some((t) => /douleur|gêne|gene/i.test(t));
-    const shouldNudge = isPremium && isFirstFeedback && (legacyRating === "easy" || legacyRating === "hard" || rating === "too_hard" || hasPainTag);
+    const isRace = !!(sessionFeedbackTarget.isRaceDay || isRaceDaySession(prevSession));
+    const shouldNudge = !isRace && isPremium && isFirstFeedback && (legacyRating === "easy" || legacyRating === "hard" || rating === "too_hard" || hasPainTag);
 
-    const nextTaste = applySessionFeedbackToTaste(tasteProfile, {
-      rating: normalizeFeedbackRating(rating),
-      tags,
-      comment,
-      sessionType: prevSession?.type ?? null,
-    });
-    persistTaste(nextTaste);
+    const nextTaste = isRace
+      ? tasteProfile
+      : applySessionFeedbackToTaste(tasteProfile, {
+          rating: normalizeFeedbackRating(rating),
+          tags,
+          comment,
+          sessionType: prevSession?.type ?? null,
+        });
+    if (!isRace) persistTaste(nextTaste);
 
     const feedback = {
       rating,
       tags: Array.isArray(tags) ? tags : [],
       comment: comment || null,
       at: new Date().toISOString(),
+      ...(raceFeeling ? { raceFeeling } : {}),
     };
+    if (appStars) persistAppRating(user?.id, { stars: appStars, source: "post_race" });
 
     track("feedback_submitted", {
       difficulty: rating,
@@ -13304,16 +13642,27 @@ export default function App() {
       }
       setPlans((prev) => prev.map((e) => {
         if (e.id !== activePlanId) return e;
+        let entry = e;
+        if (askContinuous) {
+          entry = applyContinuousStampToEntry(entry, {
+            completedSessions,
+            bandId: continuousBandId,
+            skipped: continuousSkipped || !continuousBandId,
+          });
+        }
         const markedPlan = {
-          ...e.plan,
+          ...entry.plan,
           taste: nextTaste,
           volumeAdj,
           weeks: [{
-            ...e.plan.weeks[0],
+            ...entry.plan.weeks[0],
             sessions: [{ ...archivedWithFb }],
           }],
         };
-        return { ...e, plan: advanceProgressionLoop(markedPlan, { ...e.profile, taste: nextTaste }, archivedWithFb) };
+        return {
+          ...entry,
+          plan: advanceProgressionLoop(markedPlan, { ...entry.profile, taste: nextTaste }, archivedWithFb),
+        };
       }));
       setSessionFeedbackTarget(null);
       if (user) {
@@ -13414,6 +13763,17 @@ export default function App() {
         }
       }
 
+      if (askContinuous) {
+        const nextHist = applyDecouverteContinuousResponse({
+          history: base._engineHistory || e.profile?._engineHistory || {},
+          completedSessions,
+          pool: e.profile?.pool,
+          bandId: continuousBandId,
+          skipped: continuousSkipped || !continuousBandId,
+        });
+        base = { ...base, _engineHistory: { ...(base._engineHistory || {}), ...nextHist } };
+      }
+
       return {
         ...e,
         profile: sportsPersistence.attachEngineHistoryToProfile(e.profile, {
@@ -13498,7 +13858,8 @@ export default function App() {
   };
 
   const handleEditSessionFeedback = (weekIndex, sessionIndex) => {
-    setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: false });
+    const sess = plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
+    setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: false, isRaceDay: isRaceDaySession(sess) });
   };
 
   const handleFeedback = ({ rating, motivation, pain, comment }) => {
@@ -14096,6 +14457,17 @@ export default function App() {
         {sessionFeedbackTarget !== null && (() => {
           const s = sessionFeedbackTarget.archived
             || plan?.weeks?.[sessionFeedbackTarget.weekIndex]?.sessions?.[sessionFeedbackTarget.sessionIndex];
+          const isRace = sessionFeedbackTarget.isRaceDay || isRaceDaySession(s);
+          if (isRace) {
+            return (
+              <RaceDaySheet
+                key={`race-${sessionFeedbackTarget.weekIndex}-${sessionFeedbackTarget.sessionIndex}-${s?.feedback?.at || "new"}`}
+                sessionTitle={s?.title}
+                onSubmit={handleSessionFeedback}
+                onSkip={closeSessionFeedbackSheet}
+              />
+            );
+          }
           return (
             <SessionFeedbackSheet
               key={`${sessionFeedbackTarget.weekIndex}-${sessionFeedbackTarget.sessionIndex}-${s?.feedback?.at || "new"}`}
@@ -14105,6 +14477,7 @@ export default function App() {
               onSkip={closeSessionFeedbackSheet}
               isPremium={isPremium}
               healthConsent={hasHealthConsent(activeProfile) || hasHealthConsent(user)}
+              continuousPrompt={sessionFeedbackTarget.continuousPrompt || null}
             />
           );
         })()}

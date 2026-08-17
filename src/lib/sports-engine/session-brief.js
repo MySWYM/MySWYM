@@ -5,8 +5,8 @@ import { composeSessionBlueprint } from "./session-compose.js";
 import { explainSessionWhy } from "./types.js";
 import { normalizeStrokeFocus } from "./stroke-focus.js";
 import { resolveHardConstraints } from "./composer-constraints.js";
-
-const FOCUS_DECOUVERTE = ["technique_fleche", "technique_grand_chien"];
+import { isEducatifSession } from "./week-roles.js";
+import { FOCUS_CYCLE } from "../swim-banks/technique-drills.js";
 
 /**
  * @typedef {object} SessionBrief
@@ -70,16 +70,17 @@ export function buildSessionBrief({
   const wishHints = sport?.trainingWishHints || null;
 
   let primaryTechnicalGoal = "technique_fleche";
-  if (level === "decouverte") {
-    primaryTechnicalGoal = FOCUS_DECOUVERTE[(weekIndex + sessionIndex) % FOCUS_DECOUVERTE.length];
-  } else if (role.objectif?.startsWith("technique_")) {
+  if (role.objectif?.startsWith("technique_")) {
     primaryTechnicalGoal = role.objectif;
   } else if (wishHints?.preferTech?.includes("virages") && level !== "decouverte") {
     primaryTechnicalGoal = "technique_virages";
-  } else if (wishHints?.preferTech?.includes("rattrape") && level !== "decouverte") {
+  } else if (wishHints?.preferTech?.includes("rattrape")) {
     primaryTechnicalGoal = "technique_catchup";
+  } else {
+    primaryTechnicalGoal = FOCUS_CYCLE[(weekIndex + sessionIndex) % FOCUS_CYCLE.length];
   }
 
+  const educatifSession = role.educatifSession === true || isEducatifSession(role);
   const blueprint = composeSessionBlueprint({
     volumeTarget,
     family,
@@ -88,6 +89,8 @@ export function buildSessionBrief({
     isKeySession: !!role.isKeySession,
     objectif,
     roleObjectif: role.objectif || family,
+    educatifSession,
+    sessionIntent: role.sessionIntent || sport?.sessionIntent || null,
   });
 
   const resolvedSeed =
@@ -123,9 +126,27 @@ export function buildSessionBrief({
     }),
     maxIntensityZone: weekCtx?.maxZone || (level === "decouverte" ? "Z2" : "Z4"),
     roleObjectif: role.objectif || family,
-    capacity: sport?.capacity || weekCtx?.capacity || null,
+    capacity: (() => {
+      const base = sport?.capacity || weekCtx?.capacity || null;
+      const fromPrev = previousSessionContext?.capacity || null;
+      if (!base && !fromPrev) return null;
+      return {
+        ...base,
+        ...fromPrev,
+        maxContinuousDistance:
+          fromPrev?.maxContinuousDistance ??
+          base?.maxContinuousDistance ??
+          previousSessionContext?.maxContinuousDistance ??
+          null,
+        confidence:
+          Number(fromPrev?.confidence) ||
+          Number(base?.confidence) ||
+          0,
+      };
+    })(),
     maxContinuousDistance:
       previousSessionContext?.maxContinuousDistance ??
+      previousSessionContext?.capacity?.maxContinuousDistance ??
       sport?.capacity?.maxContinuousDistance ??
       weekCtx?.capacity?.maxContinuousDistance ??
       null,
@@ -137,6 +158,7 @@ export function buildSessionBrief({
     wishHints,
     wishPreferEquipment: wishHints?.preferEquipment || [],
     sessionIntent: role.sessionIntent || sport?.sessionIntent || null,
+    educatifSession,
     qualitySession: !!role.qualitySession,
     sessionSpecificity: role.sessionSpecificity || sport?.sessionSpecificity || null,
     racePaceTouches: !!(role.racePaceTouches || sport?.racePaceTouches),

@@ -70,12 +70,12 @@ const FAQ_RULES = [
   {
     keys: ["structure", "échauff", "echauff", "retour calme", "rac", "bloc", "départ", "depart", "corps de séance", "corps de seance"],
     answer:
-      "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison) — pas seulement des reps bassin.",
+      "Séance type MySWYM : échauffement → corps de séance → retour au calme. Une séance par semaine porte les éducatifs ; les autres jours, tu nages vraiment (aérobie, qualité, 4 nages).",
   },
   {
     keys: ["godille", "sculling", "scull"],
     answer:
-      "Les godilles (pas « sculling ») : petits mouvements de main pour sentir l'appui et l'eau, souvent en début de séance en Z1. Objectif sensation / échauffement, pas vitesse.",
+      "Les godilles (pas « sculling ») : petits mouvements de main pour sentir l'appui et l'eau, souvent en début de séance, nage facile. Objectif sensation / échauffement, pas vitesse.",
   },
   {
     keys: ["grand chien", "petit chien", "chien"],
@@ -108,9 +108,9 @@ const FAQ_RULES = [
       "Au seuil (souvent Z3) : effort soutenu mais régulier — vise la constance des temps sur les reps, pas un coup de collier puis un crash.",
   },
   {
-    keys: ["sighting", "eau libre", "bouée", "bouee", "combinaison", "open water", "ow"],
+    keys: ["eau libre", "bouée", "bouee", "combinaison", "open water", "ow"],
     answer:
-      "Eau libre : repères (sighting), combinaison, allure course. Les séances le mentionnent explicitement (« À faire en eau libre »). Triathlon : cues régularité / bouée sur les reps longues. Pas uniquement du fractionné bassin générique.",
+      "Eau libre : nage en lac / mer, combinaison si tu en as une. Les séances le mentionnent (« À faire en eau libre ») quand c’est le cas. Triathlon : même structure que les autres plans — endurance, qualité, un jour éducatif.",
   },
   {
     keys: ["bnssa", "pompier", "sauvetage", "remorquage", "palmes", "tuba", "masque"],

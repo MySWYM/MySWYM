@@ -2,7 +2,8 @@
  * Composition séance : volume → architecture ; filtrage matériel / complexité.
  * Le rendu détaillé reste dans swim-session-generator (blocs Arthur).
  */
-import { splitSessionBlocks, splitSessionBlocksDecouverte, splitSessionBlocksRegulier, splitSessionBlocksSportif, splitSessionBlocksPerformance, biasBlocksForObjectif } from "./volume.js";
+import { splitSessionBlocks, splitSessionBlocksDecouverte, splitSessionBlocksRegulier, splitSessionBlocksSportif, splitSessionBlocksPerformance, biasBlocksForObjectif, applySessionShape } from "./volume.js";
+import { isEducatifSession } from "./week-roles.js";
 import { EQUIPMENT_IDS } from "./types.js";
 
 const EQUIP_KEYWORDS = {
@@ -57,7 +58,9 @@ export function composeSessionBlueprint({
   isKeySession = false,
   objectif = null,
   roleObjectif = null,
-}) {
+  educatifSession = null,
+  sessionIntent = null,
+} = {}) {
   let blocks =
     level === "decouverte"
       ? splitSessionBlocksDecouverte(volumeTarget)
@@ -70,6 +73,11 @@ export function composeSessionBlueprint({
             : splitSessionBlocks(volumeTarget);
   const objKey = roleObjectif || objectif || family;
   blocks = biasBlocksForObjectif(blocks, objKey, level);
+  const educatif =
+    educatifSession === true ||
+    (educatifSession == null &&
+      isEducatifSession({ family, sessionIntent: sessionIntent || objKey, intent: sessionIntent }));
+  blocks = applySessionShape(blocks, { educatif });
   return {
     family,
     phase,
@@ -77,6 +85,7 @@ export function composeSessionBlueprint({
     level,
     objectif: objKey,
     volumeTarget: blocks.total,
+    educatifSession: !!educatif,
     blocks,
     why: `${family} · ${objKey || "—"} · ${blocks.depart}+${blocks.technique}+${blocks.corps}+${blocks.rac}m`,
   };
@@ -94,10 +103,10 @@ export function displayIntensity(zone, level, beginnerFriendly = false) {
     if (/Z2/.test(zone || "") && !/Z3|Z4/.test(zone || "")) return "Modéré";
     return "Soutenu";
   }
-  // Sportif / Performance : zones réelles
+  // Sportif / Performance : zones réelles sauf Z1 (D9 — jamais Z1 visible)
   if (!zone) return "Z2";
   if (/Z4/.test(zone)) return "Z4";
   if (/Z3/.test(zone)) return "Z3";
   if (/Z2/.test(zone)) return "Z2";
-  return "Z1";
+  return "Facile";
 }

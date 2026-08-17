@@ -42,7 +42,7 @@ describe("buildProgressionLoopSession families", () => {
       0,
       false,
     );
-    assert.ok(/eau libre|douce|Sighting|Technique/i.test(focus));
+    assert.ok(/eau libre|douce|Technique|Endurance|Sensations/i.test(focus));
     assert.ok(session.distance);
   });
 
@@ -56,17 +56,41 @@ describe("buildProgressionLoopSession families", () => {
     assert.ok(focus);
   });
 
-  it("rotates variants so consecutive cursors differ", () => {
-    const a = buildProgressionLoopSession(
-      { goal: "triathlon_olympic", category: "triathlon", level: "sportif", pool: 50 },
-      3,
+  it("shows Jour J when event date is today or past", () => {
+    const today = new Date();
+    const iso = today.toISOString().slice(0, 10);
+    const { session, focus } = buildProgressionLoopSession(
+      {
+        goal: "triathlon_sprint",
+        category: "triathlon",
+        level: "sportif",
+        pool: 25,
+        eventDate: iso,
+        raceDayCompleted: false,
+      },
+      5,
       true,
     );
-    const b = buildProgressionLoopSession(
-      { goal: "triathlon_olympic", category: "triathlon", level: "sportif", pool: 50 },
-      4,
+    assert.equal(session.type, "RACE");
+    assert.equal(session.isRaceDay, true);
+    assert.equal(focus, "Jour J");
+  });
+
+  it("does not repeat Jour J after it is completed", () => {
+    const today = new Date();
+    const iso = today.toISOString().slice(0, 10);
+    const { session } = buildProgressionLoopSession(
+      {
+        goal: "triathlon_sprint",
+        category: "triathlon",
+        level: "sportif",
+        pool: 25,
+        eventDate: iso,
+        raceDayCompleted: true,
+      },
+      5,
       true,
     );
-    assert.notEqual(a.focus, b.focus);
+    assert.notEqual(session.type, "RACE");
   });
 });

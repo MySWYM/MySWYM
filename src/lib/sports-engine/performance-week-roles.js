@@ -7,6 +7,7 @@
 import { OBJECTIF_V1 } from "./types.js";
 import { resolvePerformanceStrategy } from "./performance-strategy.js";
 import { taperWeekRoleIntents, buildRaceDaySession, buildRestDaySession } from "./taper-load.js";
+import { ensureWeeklyEducatif } from "./week-roles.js";
 
 function baseRole(partial) {
   return {
@@ -303,7 +304,7 @@ export function performanceWeekRoles(n, ctx = {}) {
           }),
     );
     attachMeta(out, strategy);
-    return out;
+    return ensureWeeklyEducatif(out);
   }
 
   let A;
@@ -394,7 +395,7 @@ export function performanceWeekRoles(n, ctx = {}) {
   });
 
   attachMeta(out, strategy);
-  return out;
+  return ensureWeeklyEducatif(out);
 }
 
 function attachMeta(out, strategy) {

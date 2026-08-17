@@ -190,14 +190,29 @@ export function resolveHardConstraints(brief = {}) {
     raceTarget: brief.raceTarget,
   });
 
-  let maxContinuous =
+  const known =
     Number(brief.maxContinuousDistance) ||
     Number(brief.capacity?.maxContinuousDistance) ||
     0;
-  if (!maxContinuous) {
-    if (level === "decouverte") maxContinuous = maxContinuousForDecouverte(brief);
-    else if (level === "regulier") maxContinuous = maxContinuousForRegulier(brief);
-    else maxContinuous = maxContinuousForSportif(brief, { stroke: "crawl" });
+  // Découverte : toujours passer par la formule (paliers + facteur 0,75), jamais known brut.
+  // Confiance plancher 0,45 si known est déjà là (auto-report / test) pour ouvrir les paliers.
+  let maxContinuous = 0;
+  if (level === "decouverte") {
+    const conf = Number(brief.capacity?.confidence) || 0;
+    maxContinuous = maxContinuousForDecouverte({
+      ...brief,
+      maxContinuousDistance: known,
+      capacity: {
+        ...(brief.capacity || {}),
+        confidence: Math.max(conf, known > 0 ? 0.45 : 0),
+      },
+    });
+  } else if (known) {
+    maxContinuous = known;
+  } else if (level === "regulier") {
+    maxContinuous = maxContinuousForRegulier(brief);
+  } else {
+    maxContinuous = maxContinuousForSportif(brief, { stroke: "crawl" });
   }
   if (taperConstraints?.maxContinuous) {
     maxContinuous = Math.min(maxContinuous, taperConstraints.maxContinuous);

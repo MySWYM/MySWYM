@@ -47,14 +47,14 @@ assert.deepEqual(
 assert.ok(!levelsOf("educatif_petit_chien").includes("decouverte"));
 assert.ok(!levelsOf("educatif_toucher_cuisse").includes("decouverte"));
 assert.ok(!levelsOf("educatif_six_battements_par_roulis").includes("decouverte"));
-assert.ok(levelsOf("educatif_grand_chien").includes("decouverte"));
 assert.ok(levelsOf("educatif_fleche").includes("decouverte"));
 assert.ok(levelsOf("nouveau_dos_deux_bras").includes("decouverte"));
 assert.ok(!levelsOf("nouveau_dos_soldat").includes("decouverte"));
 assert.ok(!levelsOf("nouveau_brasse_opposition").includes("regulier"));
 assert.ok(levelsOf("nouveau_brasse_opposition").includes("sportif"));
 
-// Sélection live : pas de petit chien / toucher cuisse / six battements en Découverte
+// Sélection live : Découverte a accès à tout le catalogue (pas seulement flèche/chien)
+const seen = new Set();
 for (let i = 0; i < 20; i += 1) {
   const block = buildArthurTechniqueBlock({
     budget: 200,
@@ -65,14 +65,23 @@ for (let i = 0; i < 20; i += 1) {
   });
   assert.ok(block, `technique block seed ${i}`);
   const ids = (block.drills || []).map((d) => d.id);
-  assert.ok(!ids.includes("educatif_petit_chien"), `petit chien seed ${i}`);
-  assert.ok(!ids.includes("educatif_toucher_cuisse"), `toucher cuisse seed ${i}`);
-  assert.ok(!ids.includes("educatif_six_battements_par_roulis"), `6 battements seed ${i}`);
-  assert.ok(!ids.includes("educatif_crawl_rattrape"), `rattrapé seed ${i}`);
-  assert.ok(!ids.includes("educatif_roulis"), `roulis seed ${i}`);
+  ids.forEach((id) => seen.add(id));
 }
+assert.ok(seen.size >= 2, `Découverte doit varier les éducatifs, got ${[...seen].join(",")}`);
+assert.ok(
+  [...seen].some((id) =>
+    [
+      "educatif_toucher_cuisse",
+      "educatif_petit_chien",
+      "educatif_crawl_rattrape",
+      "educatif_roulis",
+      "educatif_six_battements_par_roulis",
+    ].includes(id),
+  ),
+  `Découverte doit sortir du duo flèche/chien, got ${[...seen].join(",")}`,
+);
 
-// 4 nages : éducatifs Excel tagués, filtrés par niveau
+// 4 nages : Découverte peut piocher dans tout le catalogue 4n
 for (let i = 0; i < 15; i += 1) {
   const block = buildArthurTechniqueBlock({
     budget: 200,
@@ -84,15 +93,7 @@ for (let i = 0; i < 15; i += 1) {
     rng: () => (i * 0.041) % 1,
   });
   assert.ok(block, `4n decouverte seed ${i}`);
-  const ids = (block.drills || []).map((d) => d.id);
-  assert.ok(!ids.includes("nouveau_dos_soldat"), `dos soldat hors Découverte ${i}`);
-  assert.ok(!ids.includes("nouveau_brasse_opposition"), `brasse opposition hors Découverte ${i}`);
-  assert.ok(
-    ids.some((id) =>
-      ["nouveau_dos_deux_bras", "arthur_papillon_un_bras", "nouveau_papillon_baleine"].includes(id),
-    ),
-    `éducatif 4n Découverte attendu ${i}: ${ids.join(",")}`,
-  );
+  assert.ok((block.drills || []).length > 0, `4n decouverte drills ${i}`);
 }
 
 for (let i = 0; i < 12; i += 1) {

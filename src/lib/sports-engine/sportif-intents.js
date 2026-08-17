@@ -114,7 +114,7 @@ export const SPORTIF_INTENTS = Object.freeze({
   endurance: {
     id: "endurance",
     headline: "Aujourd'hui : construire l'endurance",
-    learnCue: "économie de nage",
+    learnCue: "nage appliquée, rythme régulier",
     applyCue: "allure aérobie constante",
     techPrimary: "respiration",
     quality: false,
@@ -123,9 +123,9 @@ export const SPORTIF_INTENTS = Object.freeze({
   },
   eau_libre: {
     id: "eau_libre",
-    headline: "Aujourd'hui : endurance + orientation",
-    learnCue: "respiration + visée",
-    applyCue: "sighting + allure régulière",
+    headline: "Aujourd'hui : construire l'endurance",
+    learnCue: "respiration régulière",
+    applyCue: "allure aérobie constante",
     techPrimary: "respiration",
     quality: false,
     zone: "Z2",
@@ -133,9 +133,9 @@ export const SPORTIF_INTENTS = Object.freeze({
   },
   triathlon: {
     id: "triathlon",
-    headline: "Aujourd'hui : nager économique (triathlon)",
+    headline: "Aujourd'hui : construire l'endurance",
     learnCue: "respiration régulière",
-    applyCue: "économie d'énergie — allure tenable",
+    applyCue: "allure tenable",
     techPrimary: "respiration",
     quality: false,
     zone: "Z2",

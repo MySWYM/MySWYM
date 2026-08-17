@@ -209,8 +209,8 @@ Réutilise les modules Race — **pas** de 2e diagnostic.
 
 | Objectif | Qualités |
 |----------|----------|
-| eau_libre | aerobic, specific_endurance, sighting, open_water_specificity, speed_change… |
-| triathlon | aerobic, economy, race_pace, pacing… |
+| eau_libre | aerobic, specific_endurance, open_water_specificity, speed_change… |
+| triathlon | aerobic, race_pace, pacing… |
 | course_piscine | selon distance |
 
 Échéance → taper réel (Étape G) : `far` (>8w) · `build_specific` (4–8) · `specific_dominant` (2–4) · `pre_race` (<2 → **TAPER** via `taper-load.js`).
@@ -267,6 +267,6 @@ Tests :
 
 - Diplômes inchangés  
 - `mergePreservingProgress` / pas de regen silencieuse  
-- Découverte : flèche + grand chien, pas T100, pas Z3/Z4/CSS/hypoxie  
+- Découverte : tout le catalogue d’éducatifs, pas T100, pas Z3/Z4/CSS/hypoxie  
 - Matériel : ne jamais exiger un matos non déclaré (si inventaire renseigné)  
 - Volume affiché = `volumeFromSets` (pas une cible décorative)

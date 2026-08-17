@@ -14,6 +14,8 @@ import { tasteToGeneratorHints, biasRolesForTaste } from "./user-taste.js";
 import { pickArthurBankSession } from "./session-templates-store.js";
 import {
   buildSportProfile,
+  estimateCapacity,
+  previousSessionContextFromContinuous,
   prepareWeekContext,
   enrichWeekRoles,
   decouverteWeekRoles,
@@ -29,7 +31,9 @@ import {
   logComposerFallback,
   arthurFitsTaper,
   buildRaceDaySession,
+  isRaceDaySession,
   buildRestDaySession,
+  daysToCompetition,
   applyPainSafetyToRoles,
   biasWeekRolesForTaste,
   sumTrainingDistance,
@@ -44,6 +48,13 @@ import {
   sessionDistancePhaseScale,
 } from "./sports-engine/session-distance-pref.js";
 import { sessionTemplatesReady } from "./session-templates-store.js";
+import {
+  withPostRacePhases,
+  POST_RACE_PHASES,
+  PLAN_TIPS,
+  isWellnessGoal,
+  isProgressionGoal,
+} from "./sports-engine/server-adapter/plan-phases.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -257,13 +268,13 @@ export function competitionSessionCount(freq) {
 }
 
 const COMPETITION_TIP =
-  "Dernière semaine avant l'événement : séances courtes, volume bas, juste quelques rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.";
+  "Semaine de course : séances courtes, puis le jour J (échauffement seulement). Après l'épreuve, le plan continue en récupération — tu n'es pas lâché dans le vide.";
 
 /**
  * Séances ultra-légères J-7 → event : fraîcheur + touches vitesse ≤12,5 m.
  * Pas de volume, pas de seuil — activation neuromusculaire seulement.
  */
-export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel, beginnerFriendly = false) {
+export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel, beginnerFriendly = false, extra = {}) {
   const n = Math.max(1, Math.min(2, nbSeances));
   const easy = beginnerFriendly ? "(facile)" : "(Z1)";
   const fast = beginnerFriendly ? "(rapide, frais)" : "(Z4 — touché court)";
@@ -294,14 +305,14 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
     },
   ];
 
-  return Array.from({ length: n }, (_, si) => {
+  const sessions = Array.from({ length: n }, (_, si) => {
     const v = variants[si % variants.length];
     // Toujours multiple de 50 (annonce XX00 / XX50)
     const dist = Math.max(50, Math.round(v.distance / 50) * 50);
     return {
       type: si === 0 && n > 1 ? "VITESSE" : "ENDURANCE",
       title: `${focusLabel} S${weekNumber}.${si + 1}`,
-      intensity: beginnerFriendly ? "Facile + touches rapides" : "Z1 + touches Z4 (12,5 m)",
+      intensity: beginnerFriendly ? "Facile + touches rapides" : "Facile + touches rapides (12,5 m)",
       details: v.details,
       distance: `${dist}m`,
       duration: v.duration,
@@ -309,6 +320,14 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
       skipped: null,
     };
   });
+  const last = sessions.length - 1;
+  sessions[last] = buildRaceDaySession({
+    raceTarget: extra.raceTarget || null,
+    raceDistance: extra.raceDistance,
+    strokeFocus: extra.strokeFocus,
+    pool,
+  });
+  return sessions;
 }
 
 function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false, uiLevel = null) {
@@ -388,6 +407,10 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     easyStreak: Number(hist.easyStreak) || 0,
     finishedRate: hist.finishedRate,
     maxContinuousDistance: hist.maxContinuousDistance,
+    maxContinuousConfidence: hist.maxContinuousConfidence,
+    maxContinuousAnswers: hist.maxContinuousAnswers,
+    maxContinuousLastAskedAt: hist.maxContinuousLastAskedAt,
+    maxContinuousLastAskedCompleted: hist.maxContinuousLastAskedCompleted,
     level: sport.level,
     weeklyAdaptation: hist.weeklyAdaptation || profile._weeklyAdaptation || null,
     postRaceRecovery: !!(hist.postRaceRecovery || profile.postRaceRecovery),
@@ -400,7 +423,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     tasteVolumeMul: tasteHints.volumeMul || 1,
   };
 
-  return phaseList.map((phase, wi) => {
+  const weeks = phaseList.map((phase, wi) => {
     const wiInPhase = weekIndexInPhase(phaseList, wi);
     const focusLabel = phase.focus || PHASE_MAP[phase.phase] || "Séance";
     const isCompetition = phase.phase === "competition";
@@ -531,13 +554,18 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
           return buildRaceDaySession({
             raceTarget: sport.raceTarget,
             strokeFocus: sport.strokeFocus,
+            pool,
           });
         }
         return buildRestDaySession({ taperRestPreferred: true, taperStage: "race_day" });
       });
       // Soft fallback for non-perf competition weeks
       if (sport.level !== "performance") {
-        const comps = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly);
+        const comps = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly, {
+          raceTarget: sport.raceTarget,
+          strokeFocus: sport.strokeFocus,
+          pool,
+        });
         prevWeekDistance = sumTrainingDistance(comps);
         return {
           number: wi + 1,
@@ -573,7 +601,11 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
     }
 
     if (isCompetition && sport.level !== "performance") {
-      const sessions = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly);
+      const sessions = buildCompetitionSessions(pool, weekFreq, wi + 1, focusLabel, beginnerFriendly, {
+        raceTarget: sport.raceTarget,
+        strokeFocus: sport.strokeFocus,
+        pool,
+      });
       prevWeekDistance = sumTrainingDistance(sessions);
       return {
         number: wi + 1,
@@ -670,6 +702,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
             raceTarget: roles.performanceStrategy?.raceAnalysis?.target || sport.raceTarget,
             raceDistance: sport.raceDistance,
             strokeFocus: sport.strokeFocus,
+            pool,
           });
         } else if (
           sport.level === "performance" &&
@@ -780,6 +813,10 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
             sessionIndex: si,
             durationTarget,
             seed: `${sport.level}|${sport.objectifV1}|${effectivePhase}|w${wi}|s${si}|${volumeTarget}|${role.sessionIntent || ""}`,
+            previousSessionContext:
+              sport.level === "decouverte"
+                ? previousSessionContextFromContinuous(historyBase, weekCtx.capacity)
+                : null,
           });
           const result = composeSession(brief);
           if (!result.ok) {
@@ -885,6 +922,63 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
         : {}),
     };
   });
+  return weeks.map((week, wi) => ({
+    ...week,
+    isPostRace: !!(phaseList[wi]?.isPostRace || week.isPostRace),
+    isBilan: !!(phaseList[wi]?.isBilan || week.isBilan),
+  }));
+}
+
+export function planHasPostRaceWeeks(plan) {
+  return !!(plan?.postRaceWeeksAppended || (plan?.weeks || []).some((w) => w.isPostRace));
+}
+
+export function shouldUnlockPostRaceWeeks(plan) {
+  const weeks = plan?.weeks || [];
+  if (!weeks.length || planHasPostRaceWeeks(plan)) return false;
+  const hasCompletedRace = weeks.some((w) =>
+    (w.sessions || []).some((s) => isRaceDaySession(s) && (s.completed || s.skipped)),
+  );
+  if (hasCompletedRace) return true;
+  const last = weeks[weeks.length - 1];
+  const sessions = last.sessions || [];
+  if (!sessions.length) return false;
+  const allResolved = sessions.every((s) => s.completed || s.skipped);
+  if (!allResolved) return false;
+  const focus = `${last.focus || ""} ${last.effectivePhase || ""}`.toLowerCase();
+  return /compétition|competition|course|race|jour j/.test(focus) || sessions.some(isRaceDaySession);
+}
+
+/**
+ * Ajoute 2 semaines après le jour J sans retoucher les semaines déjà nagées.
+ */
+export function appendPostRaceWeeks(plan, profile, isPremium, tips = PLAN_TIPS) {
+  if (!plan || plan.isSessionLoop) return plan;
+  if (planHasPostRaceWeeks(plan)) return plan;
+  if (!shouldUnlockPostRaceWeeks(plan)) return plan;
+  if (isWellnessGoal(profile?.goal) || isProgressionGoal(profile?.goal)) return plan;
+
+  const stub = (plan.weeks || []).map((w) => ({
+    phase: w.effectivePhase || w.phase || (w.isBilan ? "bilan" : "base"),
+    focus: w.focus || "Séance",
+    progression: 1,
+    tipKey: "debut",
+  }));
+  const phaseList = [...stub, ...POST_RACE_PHASES];
+  const generated = buildCoachPlanWeeks(profile, phaseList, isPremium, tips, 5);
+  const extra = generated.slice(stub.length).map((w, i) => ({
+    ...w,
+    number: (plan.weeks?.length || 0) + i + 1,
+    isPostRace: true,
+    isBilan: i === 0 || !!w.isBilan,
+  }));
+  if (!extra.length) return plan;
+  return {
+    ...plan,
+    weeks: [...plan.weeks, ...extra],
+    totalRealWeeks: (plan.weeks?.length || 0) + extra.length,
+    postRaceWeeksAppended: true,
+  };
 }
 
 /**
@@ -907,16 +1001,16 @@ const LOOP_VARIANTS_BY_FAMILY = {
   ],
   triathlon: [
     { id: "tri_aero", focus: "Endurance triathlon", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Allure régulière", "Respiration stable"] },
-    { id: "tri_sight", focus: "Sighting & trajectoire", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Repères fréquents", "Ligne droite"] },
-    { id: "tri_tech", focus: "Technique crawl efficace", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Traction longue", "Économie d'énergie"] },
+    { id: "tri_sight", focus: "Endurance crawl", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Rythme régulier", "Nage appliquée"] },
+    { id: "tri_tech", focus: "Technique crawl efficace", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Traction longue", "Glisse"] },
     { id: "tri_seuil", focus: "Allure compétition", role: { objectif: "mixte", zone: "Z3" }, objectives: ["Régularité des temps", "Tenir l'effort"] },
     { id: "tri_start", focus: "Départ & premiers mètres", role: { objectif: "vitesse", zone: "Z4" }, objectives: ["Accélération courte", "Retour à l'allure course"] },
     { id: "tri_jambes", focus: "Jambes économes", role: { objectif: "technique_jambes", zone: "Z1" }, objectives: ["Battements utiles", "Préserver les jambes pour le vélo"] },
-    { id: "tri_ow", focus: "Simulation eau libre", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Sighting", "Nage sans ligne"] },
+    { id: "tri_ow", focus: "Endurance continue", role: { objectif: "endurance", zone: "Z2" }, objectives: ["Nage continue", "Allure tenable"] },
     { id: "tri_mix", focus: "Séance mixte course", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Variété d'allures", "Gestion d'effort"] },
   ],
   eau_libre: [
-    { id: "ow_sight", focus: "Sighting & orientation", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Repères toutes les 6–8 tractions", "Trajectoire"] },
+    { id: "ow_sight", focus: "Endurance crawl", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Allure tenable", "Rythme régulier"] },
     { id: "ow_aero", focus: "Endurance eau libre", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Volume confortable", "Respiration calme"] },
     { id: "ow_tech", focus: "Crawl efficace", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Glisse", "Respiration bilatérale"] },
     { id: "ow_seuil", focus: "Allure course", role: { objectif: "eau_libre", zone: "Z3" }, objectives: ["Régularité", "Tenir sans s'écrouler"] },
@@ -940,7 +1034,7 @@ const LOOP_EASY_BY_FAMILY = {
   ],
   eau_libre: [
     { id: "ow_easy1", focus: "Première séance eau libre — douce", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
-    { id: "ow_easy2", focus: "Sighting facile", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Repères calmes", "Plaisir"] },
+    { id: "ow_easy2", focus: "Sensations faciles", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Respiration calme", "Plaisir"] },
     { id: "ow_easy3", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
   ],
 };
@@ -1218,7 +1312,28 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
  */
 export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false) {
   const c = Math.max(0, Number(cursor) || 0);
-  const easyPhase = c < 3;
+  const eventDate = profile.eventDate || profile.competitionDate || profile.raceTarget?.competitionDate;
+  const days = daysToCompetition(eventDate);
+  if (!profile.raceDayCompleted && eventDate && days != null && days <= 0) {
+    const session = buildRaceDaySession({
+      raceTarget: profile.raceTarget || { competitionDate: eventDate, distance: profile.raceDistance },
+      raceDistance: profile.raceDistance,
+      strokeFocus: profile.strokeFocus || profile.preferredStroke,
+      pool: profile.pool,
+    });
+    const week = {
+      number: 1,
+      focus: "Jour J",
+      tip: PLAN_TIPS.recup,
+      feedback: null,
+      isBilan: false,
+      isTest: false,
+      sessions: [session],
+    };
+    return { session, focus: "Jour J", week };
+  }
+  const postRaceEasy = !!(profile.raceDayCompleted && days != null && days < 0 && days >= -10);
+  const easyPhase = c < 3 || postRaceEasy;
   const family = loopFamilyFromProfile(profile);
 
   // Diplôme : templates examen (pas le générateur coach générique)
@@ -1244,7 +1359,14 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
 
   const niveauKey = mapNiveau(profile);
   const profilObj = mapObjectifProfil(profile);
-  const sport = buildSportProfile(profile);
+  const loopHist = profile._engineHistory || {};
+  let sport = buildSportProfile(profile);
+  let previousSessionContext = null;
+  if (sport.level === "decouverte") {
+    const capacity = estimateCapacity(sport, loopHist);
+    sport = buildSportProfile(profile, { capacity });
+    previousSessionContext = previousSessionContextFromContinuous(loopHist, capacity);
+  }
   const ref100 = isPremium ? secToPaceStr(profile.pace100) : "";
   const tasteHints = tasteToGeneratorHints(profile.taste);
   const simplifyWording =
@@ -1317,6 +1439,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
         },
         phaseKey,
         effectivePhase: easyPhase ? "base" : "development",
+        capacity: sport.capacity || null,
       },
       role: {
         ...role,
@@ -1329,6 +1452,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       sessionIndex: 0,
       durationTarget: Number(profile.sessionDuration || profile.duration) || (easyPhase ? 35 : 45),
       seed: `loop|${sport.level}|c${c}|${variant.id}|${volumeTarget}`,
+      previousSessionContext,
     });
     const result = composeSession(brief);
     if (result.ok && result.session) {
@@ -1446,4 +1570,4 @@ export function isoWeekKey(date = new Date()) {
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
-export { mapNiveau, mapObjectifProfil, cosdRolesForWeek, COMPETITION_TIP };
+export { mapNiveau, mapObjectifProfil, cosdRolesForWeek, COMPETITION_TIP, isRaceDaySession, withPostRacePhases };

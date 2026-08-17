@@ -8,6 +8,7 @@
 import { calcDetailsDistance } from "../swim-session-generator.js";
 import { FINS_SEMAINE } from "../swim-session-generator.js";
 import { composeSessionBlueprint, displayIntensity, sessionFitsEquipment } from "./session-compose.js";
+import { isEducatifSession } from "./week-roles.js";
 import { validateSession } from "./validate.js";
 import {
   getExerciseInventory,
@@ -57,6 +58,7 @@ import {
 } from "./four-nages-mix.js";
 import { buildFourNagesImSets } from "./four-nages-im.js";
 import { selectSetFormat, buildCorpsByFormat as buildCorpsByFormatRaw } from "./set-formats.js";
+import { isExtendedPyramidJustified } from "./pyramid-recipes.js";
 import { collapseSetsToDisplayLinesExact } from "./display-sets.js";
 import { restSecFor } from "./recovery.js";
 import { resolveEquipmentUsage, labelWithEquipment, isEquipmentEngagementExempt } from "./equipment-usage.js";
@@ -64,7 +66,7 @@ import { resolveSessionSpecificity } from "./session-specificity.js";
 import { composeWithQualityGate } from "./composer-quality-gate.js";
 import { resolveHardConstraints } from "./composer-constraints.js";
 
-/** buildCorpsByFormat + hard constraints (maxReps / maxContinuous). */
+/** buildCorpsByFormat + hard constraints (maxReps / maxContinuous) + recette pyramide. */
 function buildCorpsByFormat(format, corpsTarget, opts = {}, brief = null) {
   const hc = brief?.hardConstraints || {};
   return buildCorpsByFormatRaw(format, corpsTarget, {
@@ -74,6 +76,11 @@ function buildCorpsByFormat(format, corpsTarget, opts = {}, brief = null) {
       opts.maxContinuous ?? 400,
       hc.maxContinuousDistance || opts.maxContinuous || 400,
     ),
+    intentId: opts.intentId || brief?.sessionIntent || "",
+    level: opts.level || brief?.level || hc.level || "",
+    strokeFocus: opts.strokeFocus || brief?.strokeFocus || "",
+    painSafe: opts.painSafe ?? !!(hc.painProtection || brief?.painProtection),
+    taperSafe: opts.taperSafe ?? !!(hc.forbidPyramidFiller || hc.forbidComplexFormats),
   });
 }
 import { selectReprisePattern } from "./reprise-patterns.js";
@@ -200,6 +207,58 @@ function formatSetLine(set, _beginnerFriendly) {
   return `-${set.reps} × ${set.distancePerRep}m ${set.label || "nage"}${cueTxt}${rest}`;
 }
 
+function asEchauffementLine(line) {
+  const body = String(line || "").replace(/^-+\s*/, "");
+  if (/^échauffement\s*:/i.test(body)) return `-${body}`;
+  return `-Échauffement : ${body}`;
+}
+
+function asRetourCalmeLine(line) {
+  const body = String(line || "").replace(/^-+\s*/, "");
+  if (/^retour au calme\s*:/i.test(body)) return `-${body}`;
+  return `-Retour au calme : ${body}`;
+}
+
+function drillCountForBrief(brief) {
+  if (!brief?.educatifSession) return null;
+  return 4;
+}
+
+function resolveEducatifFlag(brief = {}) {
+  return brief.educatifSession === true || isEducatifSession(brief);
+}
+
+/** Jour éducatif triathlon / eau libre : mêmes consignes que les autres plans. */
+function neutralizeEducatifGoalIntent(intent, brief) {
+  if (!intent || !brief?.educatifSession) return intent;
+  if (brief.strokeFocus === "4n" || /quatre_nages|4n|decouverte_4n/.test(String(intent.id || ""))) {
+    return intent;
+  }
+  return {
+    ...intent,
+    headline: "Aujourd'hui : technique puis endurance",
+    learnCue: "conserve le mouvement travaillé",
+    applyCue: "garde la sensation sur toute la série",
+    techPrimary: intent.techPrimary === "4n" ? "4n" : "rattrape",
+  };
+}
+
+function annotateStandardSections(details) {
+  if (!Array.isArray(details) || !details.length) return;
+  const first = details.findIndex((l) => /^-/.test(String(l)));
+  if (first >= 0) details[first] = asEchauffementLine(details[first]);
+  let rac = details.findIndex((l, i) => i > first && /dos à deux bras/i.test(l));
+  if (rac < 0) {
+    rac = details.findIndex(
+      (l, i) =>
+        i > first &&
+        /au choix \(récup\)|retour au calme/i.test(l) &&
+        !/^-\s*échauffement/i.test(String(l)),
+    );
+  }
+  if (rac >= 0) details[rac] = asRetourCalmeLine(details[rac]);
+}
+
 /** Ancien header « Technique · … : » — plus exposé au nageur (reste dispo pour debug). */
 function formatTechniqueHeader(exerciseName, equipmentNote) {
   void exerciseName;
@@ -293,7 +352,9 @@ function appendFourNagesTechniqueWithArthurDrills({
 }) {
   const unit = pool === 50 ? 50 : 25;
   const total = Math.max(0, Number(techniqueVolume) || 0);
-  const eduShare = Math.max(unit * 2, roundTo(total * 0.4, unit));
+  const eduShare = brief?.educatifSession
+    ? Math.max(unit * 2, roundTo(total * 0.7, unit))
+    : Math.max(unit * 2, roundTo(total * 0.4, unit));
   const strokeShare = Math.max(0, total - eduShare);
   const arthurOk = tryArthurTechnique({
     budget: eduShare,
@@ -457,58 +518,13 @@ function equipmentNoteForDecouverte(equipment) {
  * Plafond de nage continue — voir decouverte-intents.js (réexporté).
  * Intention pédagogique — résolue via resolveDecouverteIntent.
  */
-/** J3 : cue objectif injecté dans le corps (pas seulement le titre). */
-function objectiveBodyCue(brief = {}, intent = {}) {
-  if (brief.painProtection || brief.hasPainConstraint || brief._qualityGateForceSafe) return null;
-  const obj = brief.objectif || "";
-  const existing = `${intent.applyCue || ""} ${intent.headline || ""}`;
-  if (obj === "eau_libre") {
-    if (/sighting|visée|orientation|navigation/i.test(existing)) return null;
-    return "sighting + allure régulière";
-  }
-  if (obj === "triathlon") {
-    if (/triathlon|économie|draft|énergie/i.test(existing)) return null;
-    return "économie d\'énergie — allure régulière";
-  }
-  if (obj === "course_piscine") {
-    if (/allure course|seuil|race|spécifique/i.test(existing)) return null;
-    return null; // intensité gérée via Z3 block
-  }
+/** Ancien filet J3 sighting / économie — plus utilisé (Arthur 2026-08-17). */
+function objectiveBodyCue() {
   return null;
 }
 
-/** Injecte cue objectif sur une ligne corps si absent (QG eau libre / triathlon). */
-function ensureObjectiveCueInDetails(details, brief, intent) {
-  void intent;
-  const joined = details.join("\n");
-  if (
-    (brief.objectif === "eau_libre" || brief.family === "eau_libre") &&
-    !/sighting|visée|orientation|navigation|lève|repér/i.test(joined)
-  ) {
-    const objCue = "sighting + allure régulière";
-    const corpsIdx = details.findIndex(
-      (l) =>
-        /^-\d/.test(l) &&
-        /crawl|jambes|nage/i.test(l) &&
-        !/mise en route|dos à deux|retour au calme|focus geste/i.test(l),
-    );
-    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
-    else details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
-  }
-  if (
-    (brief.objectif === "triathlon" || brief.family === "triathlon") &&
-    !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)
-  ) {
-    const objCue = "économie d'énergie — allure régulière";
-    const corpsIdx = details.findIndex(
-      (l) =>
-        /^-\d/.test(l) &&
-        /crawl|jambes/i.test(l) &&
-        !/mise en route|dos à deux|focus geste/i.test(l),
-    );
-    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
-  }
-}
+/** Plus d’injection sighting / économie (Arthur 2026-08-17). */
+function ensureObjectiveCueInDetails() {}
 
 /** Matos visible dans les détails → liste appliquée (engagement QG). */
 function harvestEquipmentFromDetails(details, inventory = []) {
@@ -575,7 +591,7 @@ export function validateDecouverteHard(sessionLike, opts = {}) {
   if (/\bCSS\b/i.test(text)) errors.push("CSS interdit Découverte");
   if (/hypoxie|apnée|apnee/i.test(text)) errors.push("hypoxie/apnée interdit Découverte");
   if (COMPLEX_SERIES_RE.test(text)) errors.push("séries complexes interdites Découverte");
-  if (/seuil|VO2|sprint|à bloc|culbute|petit chien|rattrapé|lactate/i.test(text)) {
+  if (/seuil|VO2|sprint|à bloc|lactate/i.test(text)) {
     errors.push("contenu avancé interdit Découverte");
   }
   if (/sans pause[^\n]*repos|repos[^\n]*sans pause/i.test(text)) {
@@ -630,9 +646,9 @@ function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exercis
   const rest = Math.max(1, Number(restSec) || 20);
   const cap = Math.max(4, Number(maxReps) || 12);
   const maxU = Number(maxContinuous) > 0 ? Number(maxContinuous) : Infinity;
-  const unitsTry = [unit, 50, 100, 200]
-    .filter((u, i, a) => u > 0 && u <= maxU && a.indexOf(u) === i)
-    .sort((a, b) => a - b);
+  // Unité demandée d'abord (sinon 100 m retombait en 50). Puis plus grand → plus petit.
+  const unitsTry = [unit, 200, 100, 50, 25]
+    .filter((u, i, a) => u > 0 && u <= maxU && a.indexOf(u) === i);
   for (const u of unitsTry) {
     const reps = Math.round(target / u);
     if (reps >= 2 && reps <= cap && Math.abs(reps * u - target) <= u) {
@@ -696,7 +712,7 @@ function tryArthurDepart({ budget, pool, level, brief, strokeFocus, rng, sets, d
   });
   if (!built) return false;
   sets.push(built.set);
-  details.push(built.detailLine);
+  details.push(asEchauffementLine(built.detailLine));
   exerciseIds.push(built.recipeId);
   return true;
 }
@@ -733,7 +749,9 @@ function tryArthurFin({
     if (fourNages && /crawl/i.test(s.label || "")) s.stroke = "crawl";
     sets.push(s);
   }
-  details.push(...built.lines);
+  const lines = [...(built.lines || [])];
+  if (lines[0]) lines[0] = asRetourCalmeLine(lines[0]);
+  details.push(...lines);
   exerciseIds.push(built.recipeId);
   return true;
 }
@@ -766,6 +784,7 @@ function tryArthurTechnique({
     zone,
     papillonOk: canUsePapillon(brief),
     engageEquipment: engageEq,
+    drillCount: drillCountForBrief(brief),
   });
   if (!built?.sets?.length) return false;
   {
@@ -858,15 +877,21 @@ function composeDecouverteSession(brief, rng) {
     isKeySession: brief.keySession,
     objectif: brief.objectif,
     roleObjectif: brief.roleObjectif,
+    educatifSession: resolveEducatifFlag(brief),
+    sessionIntent: brief.sessionIntent,
   });
   const blocks = blueprint.blocks;
+  brief.educatifSession = !!blueprint.educatifSession;
   const pool = brief.pool || 50;
   const beginnerFriendly = true;
   const equipment = brief.equipment;
   const matosNote = equipmentNoteForDecouverte(equipment);
   const eqList = Array.isArray(equipment) ? equipment : [];
-  const maxCont = maxContinuousForDecouverte(brief);
-  const intent = resolveDecouverteIntent(brief);
+  const maxCont =
+    Number(brief.hardConstraints?.maxContinuousDistance) > 0
+      ? Number(brief.hardConstraints.maxContinuousDistance)
+      : maxContinuousForDecouverte(brief);
+  const intent = neutralizeEducatifGoalIntent(resolveDecouverteIntent(brief), brief);
   const strokeFocus = brief.strokeFocus || "mixte";
   const papillonOk = canUsePapillon(brief);
   const techUnit = 25;
@@ -926,7 +951,8 @@ function composeDecouverteSession(brief, rng) {
   if (departEx) exerciseIds.push(departEx.id);
   }
 
-  // --- TECHNIQUE ---
+  // --- TECHNIQUE --- (séance éducatif seulement)
+  if (Number(blocks.technique) >= 50) {
   if (intent.id === "decouverte_4n" || isFourNSession(brief, strokeFocus)) {
     appendFourNagesTechniqueWithArthurDrills({
       brief,
@@ -965,7 +991,6 @@ function composeDecouverteSession(brief, rng) {
       const soft = inventory.filter(
         (ex) =>
           ex.type === "technique" &&
-          (ex.focusKey === "technique_fleche" || ex.focusKey === "technique_grand_chien") &&
           !rejectsMissingEquipment(ex, eqList),
       );
       techEx = pickOne(soft, rng);
@@ -1025,10 +1050,11 @@ function composeDecouverteSession(brief, rng) {
     exerciseIds.push(techEx.id);
     }
   }
+  }
 
   // --- CORPS ---
   const corpsUnit =
-    intent.preferLongerReps && maxCont >= 100 ? 100 : pool === 25 ? 25 : 50;
+    maxCont >= 100 ? Math.min(100, maxCont) : pool === 25 ? 25 : 50;
   const safeUnit = corpsUnit >= 75 && maxCont < 100 ? (pool === 25 ? 25 : 50) : corpsUnit;
   let corpsTarget = blocks.corps;
   let fourNPortion = null;
@@ -1152,6 +1178,7 @@ function composeDecouverteSession(brief, rng) {
   }
   }
 
+  annotateStandardSections(details);
   ensureObjectiveCueInDetails(details, brief, intent);
 
   const volumeSets = volumeFromSets(sets);
@@ -1438,13 +1465,16 @@ function composeRegulierSession(brief, rng) {
     isKeySession: brief.keySession,
     objectif: brief.objectif,
     roleObjectif: brief.roleObjectif,
+    educatifSession: resolveEducatifFlag(brief),
+    sessionIntent: brief.sessionIntent,
   });
   const blocks = blueprint.blocks;
+  brief.educatifSession = !!blueprint.educatifSession;
   const pool = brief.pool || 50;
   const equipment = brief.equipment;
   const eqList = Array.isArray(equipment) ? equipment : [];
   const maxCont = maxContinuousForRegulier(brief);
-  let intent = resolveRegulierIntent(brief);
+  let intent = neutralizeEducatifGoalIntent(resolveRegulierIntent(brief), brief);
   const qualitySession = !!(brief.qualitySession || intent.quality);
   const strokeFocus = brief.strokeFocus || "mixte";
   const papillonOk = canUsePapillon({ ...brief, level: "regulier" });
@@ -1461,6 +1491,7 @@ function composeRegulierSession(brief, rng) {
       techPrimary: reprisePattern.techPrimary,
     };
   }
+  intent = neutralizeEducatifGoalIntent(intent, brief);
 
   const techPrimary = resolveTechPrimaryForComposer({ ...brief, level: "regulier" }, intent);
   const techMeta = techLabelsRegulier(techPrimary);
@@ -1490,6 +1521,10 @@ function composeRegulierSession(brief, rng) {
       corpsTarget: blocks.corps,
       allowContinuous: intent.id !== "reprise" && intent.id !== "recuperation",
       forcedFormat: brief.forcedSetFormat || reprisePattern?.setFormat || null,
+      level: "regulier",
+      taperSafe: !!(brief.hardConstraints?.forbidComplexFormats || brief.hardConstraints?.forbidPyramidFiller),
+      painSafe: !!(brief.hardConstraints?.painProtection || brief.painProtection),
+      forbidComplexFormats: !!brief.hardConstraints?.forbidComplexFormats,
     },
     rng,
   );
@@ -1550,7 +1585,8 @@ function composeRegulierSession(brief, rng) {
   exerciseIds.push("depart_regulier");
   }
 
-  // TECHNIQUE
+  // TECHNIQUE (séance éducatif seulement)
+  if (Number(blocks.technique) >= 50) {
   const techFocus =
     intent.techPrimary === "4n" || strokeFocus === "4n"
       ? null
@@ -1653,6 +1689,7 @@ function composeRegulierSession(brief, rng) {
       exerciseIds.push(primary[0].exerciseId, "tech_apply");
     }
     }
+  }
   }
 
   // CORPS
@@ -1861,6 +1898,7 @@ function composeRegulierSession(brief, rng) {
   }
   }
 
+  annotateStandardSections(details);
   ensureObjectiveCueInDetails(details, brief, intent);
   const appliedEq = ensureEquipmentEngagement(details, eqList, brief);
   // Uniquement le matos visible (sauf exempt récup/taper : pas de phantom / declared_unused)
@@ -2082,8 +2120,11 @@ function composeSportifSession(brief, rng) {
     isKeySession: brief.keySession,
     objectif: brief.objectif,
     roleObjectif: brief.roleObjectif,
+    educatifSession: resolveEducatifFlag(brief),
+    sessionIntent: brief.sessionIntent,
   });
   let blocks = { ...blueprint.blocks };
+  brief.educatifSession = !!blueprint.educatifSession;
   const taperLoadEarly = brief.taperLoad || brief.performanceStrategy?.taperLoad || null;
   // Taper : densifier moins — réduire coquille (départ/tech/rac) pour coller au volume cible
   if (
@@ -2095,7 +2136,7 @@ function composeSportifSession(brief, rng) {
     const dens = Math.min(1, Number(taperLoadEarly.densityFactor) || 0.5);
     const round50 = (n) => Math.max(50, Math.round(n / 50) * 50);
     let depart = round50(blocks.depart * dens);
-    let technique = round50(blocks.technique * dens);
+    let technique = Number(blocks.technique) > 0 ? round50(blocks.technique * dens) : 0;
     let rac = round50(blocks.rac * dens);
     let corps = Math.max(150, coherentVolume - depart - technique - rac);
     corps = Math.round(corps / 50) * 50;
@@ -2116,7 +2157,7 @@ function composeSportifSession(brief, rng) {
     brief.strokeFocus === "4n" || brief.sessionIntent === "quatre_nages"
       ? maxCont4n
       : maxContCrawl;
-  let intent = resolveSportifIntent(brief);
+  let intent = neutralizeEducatifGoalIntent(resolveSportifIntent(brief), brief);
   const qualitySession = !!(brief.qualitySession || intent.quality);
   const strokeFocus = brief.strokeFocus || "mixte";
   const papillonOk = canUsePapillon({ ...brief, level: isPerf ? "performance" : "sportif" });
@@ -2135,6 +2176,7 @@ function composeSportifSession(brief, rng) {
       techPrimary: reprisePattern.techPrimary,
     };
   }
+  intent = neutralizeEducatifGoalIntent(intent, brief);
 
   const techPrimary = resolveTechPrimaryForComposer(
     { ...brief, level: isPerf ? "performance" : "sportif" },
@@ -2253,7 +2295,8 @@ function composeSportifSession(brief, rng) {
   exerciseIds.push("depart_sportif");
   }
 
-  // TECHNIQUE
+  // TECHNIQUE (séance éducatif seulement)
+  if (Number(blocks.technique) >= 50) {
   const techMatos = eqUsage.techNote || "";
   if (intent.techPrimary === "4n" || isFourNSession(brief, strokeFocus)) {
     appendFourNagesTechniqueWithArthurDrills({
@@ -2355,6 +2398,7 @@ function composeSportifSession(brief, rng) {
       exerciseIds.push(primary[0].exerciseId, "tech_apply");
     }
     }
+  }
   }
 
   // CORPS
@@ -2606,9 +2650,19 @@ function composeSportifSession(brief, rng) {
           z3Budget = Math.max(100, roundTo(z3Budget * Math.max(0.35, intensityRetain), 50));
         }
         preferredUnit = z3Budget <= 300 ? 50 : z3Budget <= 600 ? 100 : mainCorpsTarget >= 1600 ? 200 : 100;
-        // J3 : formats filler interdits pour intensité réelle
+        // J3 : formats filler interdits pour intensité réelle — pyramide étendue (variées) OK au seuil
+        const keepExtendedPyramid =
+          setFormat === "pyramid" &&
+          isExtendedPyramidJustified({
+            intentId: intent.id,
+            level: isPerf ? "performance" : "sportif",
+            painSafe: painBlocked,
+            taperSafe: !!(hc.forbidPyramidFiller || hc.forbidComplexFormats),
+          });
         corpsFormat = brief._qualityGateShortTouch
           ? "race_pace"
+          : keepExtendedPyramid
+            ? "pyramid"
           : ["block", "progressive", "pyramid", "broken", "mixed"].includes(setFormat)
             ? "repeated"
             : setFormat === "race_pace"
@@ -2830,6 +2884,7 @@ function composeSportifSession(brief, rng) {
   }
   }
 
+  annotateStandardSections(details);
   ensureObjectiveCueInDetails(details, brief, intent);
   const appliedEqSp = ensureEquipmentEngagement(details, eqList, brief);
   // Uniquement le matos visible (sauf exempt récup/taper : pas de phantom / declared_unused)
@@ -2858,33 +2913,6 @@ function composeSportifSession(brief, rng) {
       reason: `volume incohérent: ${consistency.errors.join("; ")}`,
       debug: consistency,
     };
-  }
-
-  // J3 safety-net : cue objectif visible même si collapse a mangé le cue set
-  {
-    const objCue = objectiveBodyCue(brief, intent);
-    const joined = details.join("\n");
-    if (objCue && brief.objectif === "eau_libre" && !/sighting|visée|orientation|navigation|lève|repér/i.test(joined)) {
-      // Annoter la première ligne corps
-      const corpsIdx = details.findIndex((l) => /^-\d/.test(l) && !/Technique|souple —|échauff/i.test(l) && details.indexOf(l) > 0);
-      if (corpsIdx >= 0) {
-        details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
-      } else {
-        details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
-      }
-    }
-    if (brief.objectif === "triathlon" && !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)) {
-      const triCue = objCue || "économie d'énergie — allure régulière";
-      const corpsIdx = details.findIndex(
-        (l) =>
-          /^-\d/.test(l) &&
-          !/souple|échauff|récup|au choix|Technique/i.test(l) &&
-          (/\(Z[23]\)|Z[23]\s*@/.test(l) || /\d+\s*[×x]\s*(100|200|400)\s*m/i.test(l)),
-      );
-      const fallbackIdx = details.findIndex((l) => /^-\d/.test(l) && !/souple|Technique/i.test(l));
-      const idx = corpsIdx >= 0 ? corpsIdx : fallbackIdx;
-      if (idx >= 0) details[idx] = `${details[idx]} — ${triCue}`;
-    }
   }
 
   // Polarisation check soft: majority Z1/Z2 on non-quality

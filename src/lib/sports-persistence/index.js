@@ -123,6 +123,14 @@ export function rebuildEngineHistory({
           source: raceResults[0].source,
         }
       : blobHist.recentRaceResult || null,
+    // Auto-report Découverte (blob plan — pas de table dédiée ; suit mergePlanLists)
+    maxContinuousDistance: blobHist.maxContinuousDistance ?? null,
+    maxContinuousConfidence: blobHist.maxContinuousConfidence ?? null,
+    maxContinuousAnswers: Array.isArray(blobHist.maxContinuousAnswers)
+      ? blobHist.maxContinuousAnswers
+      : [],
+    maxContinuousLastAskedAt: blobHist.maxContinuousLastAskedAt || null,
+    maxContinuousLastAskedCompleted: blobHist.maxContinuousLastAskedCompleted ?? null,
     // Marqueur K : history reconstruite
     _fromSportsFacts: true,
     _factsVersion: 1,

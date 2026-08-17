@@ -22,6 +22,7 @@ import {
   collapseSetsToDisplayLinesExact,
   buildCorpsByFormat,
   MAX_PYRAMID_VOLUME,
+  PYRAMID_EXTENDED_CORPS_SHARE_MAX,
   candidateSetFormats,
   ARTHUR_GOLD_TEST_FIXTURES,
   resolveSportifIntent,
@@ -169,6 +170,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
       family: role.family,
       volumeTarget: 2200 + si * 50,
     });
+    if (role.educatifSession) brief.educatifSession = true;
     const r = composeSession(brief);
     assert(r.ok, `s1 si${si}: ${r.reason}`);
     assertSportif(r.session, brief);
@@ -190,7 +192,8 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
     }),
   );
   assert(r.ok, `s2: ${r.reason}`);
-  assert(/orientation|sighting|visée|endurance/i.test(r.session.details.join(" ") + r.session.title), "OW");
+  assert(/endurance|crawl|aérobie|allure/i.test(r.session.details.join(" ") + r.session.title), "OW");
+  assert(!/sighting|visée|économie d['’]énergie/i.test(r.session.details.join(" ") + r.session.title), "OW sans sighting");
 }
 
 // 3 — triathlon
@@ -199,7 +202,8 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
     briefFrom({ objectif: "triathlon", sessionIntent: "triathlon", seed: "s3", duration: 60 }),
   );
   assert(r.ok, `s3: ${r.reason}`);
-  assert(/économie|triathlon|aérobie|crawl/i.test(r.session.details.join(" ") + r.session.title), "tri");
+  assert(/aérobie|crawl|endurance|allure/i.test(r.session.details.join(" ") + r.session.title), "tri");
+  assert(!/sighting|visée|économie d['’]énergie/i.test(r.session.details.join(" ") + r.session.title), "tri sans économie");
 }
 
 // 4 — course_piscine
@@ -541,7 +545,8 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   });
   assert(picked, "sélection compatible");
   assert(picked.templateSlug, "slug");
-  assert(/orientation|sighting|aérobie|crawl/i.test(picked.details.join(" ")), "contenu OW");
+  assert(/aérobie|crawl/i.test(picked.details.join(" ")), "contenu OW");
+  assert(!/sighting|visée/i.test(picked.details.join(" ")), "OW gold sans sighting");
 
   const baseDist = 2400;
   const original = pickArthurBankSession("eau_libre", 0, {
@@ -648,6 +653,58 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
     maxContinuous: 400,
   });
   assert(smallTri.includes("pyramid"), `pyramide OK si court: ${smallTri}`);
+
+  const bigAero = candidateSetFormats({
+    intentId: "aerobie",
+    level: "sportif",
+    corpsTarget: 1750,
+    maxContinuous: 400,
+  });
+  assert(bigAero.includes("pyramid"), `pyramide étendue endurance gros corps: ${bigAero}`);
+  assert(bigAero[0] !== "pyramid", "pyramide étendue pas en tête (pas filler)");
+
+  const bigSeuil = candidateSetFormats({
+    intentId: "seuil",
+    level: "sportif",
+    corpsTarget: 1750,
+    maxContinuous: 400,
+  });
+  assert(!bigSeuil.includes("pyramid"), `seuil reste séries/allure, pas filler pyramide: ${bigSeuil}`);
+
+  const bigVitesse = candidateSetFormats({
+    intentId: "vitesse",
+    level: "sportif",
+    corpsTarget: 1750,
+    maxContinuous: 400,
+  });
+  assert(!bigVitesse.includes("pyramid"), `pas de pyramide vitesse: ${bigVitesse}`);
+
+  const painFmt = candidateSetFormats({
+    intentId: "endurance",
+    level: "sportif",
+    corpsTarget: 1750,
+    maxContinuous: 400,
+    painSafe: true,
+  });
+  assert(!painFmt.includes("pyramid"), `pas de pyramide douleur: ${painFmt}`);
+
+  const builtVar = buildCorpsByFormat("pyramid", 1750, {
+    label: "crawl",
+    cue: "allure confortable",
+    restFor: () => 20,
+    exerciseId: "pyr_var",
+    maxContinuous: 400,
+    pool: 50,
+    intentId: "endurance",
+    level: "sportif",
+    pyramidVariants: ["exercice", "allure"],
+  });
+  const pyrVar = builtVar.sets
+    .filter((s) => (s.meta?.pyramidStep ?? s.pyramidStep) != null)
+    .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  const corpsVar = builtVar.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
+  assert(pyrVar > MAX_PYRAMID_VOLUME, `étendue ${pyrVar}m`);
+  assert(pyrVar <= Math.round(corpsVar * PYRAMID_EXTENDED_CORPS_SHARE_MAX), `70% ${pyrVar}/${corpsVar}`);
 }
 
 // effortCue sans pace
@@ -701,6 +758,49 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
     techDiff >= 50 || corpsDiff >= 50 || iProg.id !== iCourse.id,
     `structure trop proche: prog=${JSON.stringify(bProg)} course=${JSON.stringify(bCourse)}`,
   );
+}
+
+{
+  const tri = sportifWeekRoles(3, { objectifV1: "triathlon", phase: "base" });
+  assert(tri[0].sessionIntent === "triathlon", "A triathlon");
+  assert(tri.filter((r) => r.educatifSession).length === 1, "1 éducatif triathlon sportif");
+  const ow = sportifWeekRoles(3, { objectifV1: "eau_libre", phase: "base", weekIndex: 0 });
+  assert(ow[0].sessionIntent === "eau_libre", "A eau libre");
+  assert(ow.filter((r) => r.educatifSession).length === 1, "1 éducatif OW");
+}
+
+{
+  const tri = sportifWeekRoles(3, { objectifV1: "triathlon", phase: "base" });
+  const eduRole = tri.find((r) => r.educatifSession);
+  const triEdu = briefFrom({
+    seed: "edu-tri-sportif",
+    objectif: "triathlon",
+    sessionIntent: eduRole.sessionIntent,
+    family: eduRole.family,
+    volumeTarget: 2200,
+  });
+  triEdu.educatifSession = true;
+  const rTri = composeSession(triEdu);
+  assert(rTri.ok, `éducatif triathlon sportif: ${rTri.reason}`);
+  const triText = (rTri.session.details || []).join("\n");
+  assert((rTri.session.sets || []).some((x) => x.block === "technique"), "éducatif triathlon sportif : drills");
+  assert(!/sighting|visée|économie|orientation|navigation/i.test(triText), `éducatif triathlon sportif sans sighting/économie\n${triText}`);
+
+  const ow = sportifWeekRoles(3, { objectifV1: "eau_libre", phase: "base", weekIndex: 0 });
+  const owRole = ow.find((r) => r.educatifSession);
+  const owEdu = briefFrom({
+    seed: "edu-ow-sportif",
+    objectif: "eau_libre",
+    sessionIntent: owRole.sessionIntent,
+    family: owRole.family,
+    volumeTarget: 2200,
+  });
+  owEdu.educatifSession = true;
+  const rOw = composeSession(owEdu);
+  assert(rOw.ok, `éducatif OW sportif: ${rOw.reason}`);
+  const owText = (rOw.session.details || []).join("\n");
+  assert((rOw.session.sets || []).some((x) => x.block === "technique"), "éducatif OW sportif : drills");
+  assert(!/sighting|visée|économie|orientation|navigation/i.test(owText), `éducatif OW sportif sans sighting/économie\n${owText}`);
 }
 
 console.log("session-composer-sportif.test.js: OK");

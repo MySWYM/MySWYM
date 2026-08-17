@@ -143,11 +143,11 @@ console.log("TB7 nage appliquée réservée");
     targetVol: 200,
     pool: 50,
     swimLabel: "crawl",
-    applyCue: "économie d'énergie — allure tenable",
+    applyCue: "allure tenable",
   });
   assert(built.usedBank, "TB7 bank");
   assert(built.sets.some((s) => /_apply$/.test(s.exerciseId)), "TB7 apply set");
-  assert(/économie/.test(built.lines.join(" ")), "TB7 cue apply");
+  assert(/allure tenable/.test(built.lines.join(" ")), "TB7 cue apply");
   assert(
     built.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0) === 200,
     "TB7 volume 200",

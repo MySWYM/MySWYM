@@ -72,7 +72,7 @@ export interface OnboardingState {
 export const GOALS: { id: GoalId; title: string; subtitle: string }[] = [
   { id: 'progress', title: 'Nager & progresser', subtitle: 'Technique, endurance, plaisir' },
   { id: 'triathlon', title: 'Triathlon', subtitle: 'De la piscine au jour J' },
-  { id: 'openwater', title: 'Eau libre', subtitle: 'Lacs, mer, sighting' },
+  { id: 'openwater', title: 'Eau libre', subtitle: 'Lacs, mer, endurance' },
   { id: 'diploma', title: 'Prépa diplôme', subtitle: 'BNSSA, BPJEPS, pompiers' },
 ]
 

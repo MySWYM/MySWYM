@@ -26,8 +26,8 @@ console.log("CB1 parse");
   assert(b.kind === "nested" && b.blocks === 2 && b.innerReps === 4 && b.distancePerRep === 100, "nested");
   const c = parseArthurCorpsLine("400m continu (sans pause)");
   assert(c.kind === "continuous" && c.distance === 400, "continu");
-  const d = parseArthurCorpsLine("8x100m, visée toutes les 6 coups (sighting) R20''");
-  assert(/sighting/.test(d.cue), "sighting cue");
+  const d = parseArthurCorpsLine("8x100m, allure tenable R20''");
+  assert(/allure tenable/.test(d.cue), "cue allure");
 }
 
 console.log("CB2 cue sans mètres parasites");

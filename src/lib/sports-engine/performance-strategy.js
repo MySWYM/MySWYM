@@ -98,12 +98,11 @@ export function qualitiesForObjectif(objectifV1) {
         "race_pace",
         "pacing",
         "technical_efficiency",
-        "sighting",
         "open_water_specificity",
         "speed_change",
       ];
     case "triathlon":
-      return ["aerobic_capacity", "specific_endurance", "race_pace", "technical_efficiency", "economy", "pacing"];
+      return ["aerobic_capacity", "specific_endurance", "race_pace", "technical_efficiency", "pacing"];
     case "course_piscine":
       return null; // selon distance
     default:
@@ -117,6 +116,9 @@ function clampQualityToAllowed(quality, allowed) {
   // Fallbacks
   if ((quality === "speed" || quality === "specific_speed") && allowed.includes("threshold")) return "threshold";
   if (quality === "specific_endurance" && allowed.includes("threshold")) return "threshold";
+  if (quality === "sighting" || quality === "economy") {
+    if (allowed.includes("aerobic_capacity")) return "aerobic_capacity";
+  }
   if (allowed.includes("aerobic_capacity")) return "aerobic_capacity";
   return allowed[0];
 }
@@ -126,11 +128,10 @@ function secondaryFor(primary, phase, horizon, objectif) {
   if (primary === "threshold" || primary === "specific_endurance") return "aerobic_capacity";
   if (primary === "speed" || primary === "specific_speed") return "race_pace";
   if (primary === "race_pace" || primary === "pacing") return "aerobic_capacity";
-  if (primary === "sighting" || primary === "open_water_specificity") return "aerobic_capacity";
-  if (primary === "economy") return "aerobic_capacity";
+  if (primary === "open_water_specificity") return "aerobic_capacity";
   if (primary === "weak_stroke") return "threshold";
   if (primary === "technical_efficiency") return phase === "base" ? "aerobic_capacity" : "race_pace";
-  if (objectif === "eau_libre") return "sighting";
+  if (objectif === "eau_libre") return "technical_efficiency";
   if (horizon === "far") return "aerobic_capacity";
   return "aerobic_capacity";
 }
@@ -222,8 +223,8 @@ export function resolvePerformanceStrategy(ctx = {}) {
       primary = horizon === "specific_dominant" || horizon === "pre_race" ? "open_water_specificity" : "aerobic_capacity";
       rationale = "no race chrono — prudent OW strategy from phase/horizon";
     } else if (objectif === "triathlon") {
-      primary = horizon === "far" || phase === "base" ? "aerobic_capacity" : "economy";
-      rationale = "no race chrono — prudent triathlon swim economy/aerobic";
+      primary = "aerobic_capacity";
+      rationale = "no race chrono — prudent triathlon swim aerobic";
     } else if (distance && distance >= 400) {
       primary = "aerobic_capacity";
       rationale = "no current time — long-distance prudent aerobic_capacity";

@@ -140,7 +140,7 @@ function briefFor(level, over = {}) {
   });
 }
 
-console.log("L7 composeur : titres propres");
+console.log("L7 composeur : titres propres + structure 3 parties");
 {
   for (const level of ["decouverte", "regulier", "sportif"]) {
     const r = composeSession(briefFor(level, { seed: `lab-${level}` }));
@@ -149,10 +149,22 @@ console.log("L7 composeur : titres propres");
     assert(check.ok, `${level} ${check.bad.join(" | ")}`);
     const text = (r.session.details || []).join("\n");
     noForbiddenIntensity(text, `L7 ${level}`);
+    assert(/Échauffement\s*:/i.test(text), `${level} a un échauffement`);
+    assert(/Retour au calme\s*:/i.test(text), `${level} a un retour au calme`);
+  }
+  for (const level of ["decouverte", "regulier", "sportif"]) {
+    const r = composeSession(
+      briefFor(level, {
+        seed: `lab-${level}-edu`,
+        sessionIntent: "technique_endurance",
+        family: "technique",
+      }),
+    );
+    assert(r.ok, `${level} éducatif compose ${r.reason}`);
     const techLines = (r.session.details || []).filter((l) =>
       /technique|respir|roulis|appuis|rattrap|flèche|chien|battement|expir|côté|3T|5T|bilatéral|godille|un bras/i.test(l),
     );
-    assert(techLines.length > 0, `${level} a un bloc technique`);
+    assert(techLines.length > 0, `${level} éducatif a des drills`);
     for (const line of techLines) {
       assert(!isVagueVolumeThemeTitle(line), `${level} vague: ${line}`);
       assert(hasEducatifOrConcreteSwim(line), `${level} sans éducatif: ${line}`);
@@ -215,6 +227,10 @@ console.log("L11 D9 — jamais souple ni Z1 à l'affichage");
     assert(!/\bZ1\b/.test(out), `Z1 restant: ${raw} → ${out}`);
   }
   const hum = humanizeArthurDisplayTerms("-200m dos très facile — Z1");
+  assert(/retour au calme|facile/i.test(hum), `fin Z1: ${hum}`);
+  assert(!/\bZ1\b/.test(hum), hum);
+  const noSight = humanizeArthurDisplayTerms("-8 × 100 m crawl — sighting + allure régulière — économie d'énergie");
+  assert(!/sighting|économie d['’]énergie/i.test(noSight), `sighting restant: ${noSight}`);
   assert(/retour au calme|facile/i.test(hum), `fin Z1: ${hum}`);
   assert(!/\bZ1\b/.test(hum), hum);
   const clean = assertDisplayLabelsClean(samples.map((s) => sanitizeSessionDetailLine(s)));
