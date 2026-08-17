@@ -9,7 +9,7 @@ import {
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
-import CheckoutLegalGates, { checkoutGatesReady } from "./CheckoutLegalGates.jsx";
+import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 
 // ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
 const C = {
@@ -1117,7 +1117,7 @@ function Pricing() {
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
-      alert("Coche les cases CGV et rétractation avant de continuer.");
+      alert(checkoutGatesError(acceptTerms, acceptWithdrawal) || "Coche les cases CGV et rétractation avant de continuer.");
       document.getElementById("landing-checkout-legal-gates")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }

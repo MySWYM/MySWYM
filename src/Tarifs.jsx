@@ -16,7 +16,7 @@ import { track, trackEvent } from "./lib/analytics.js";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
-import CheckoutLegalGates, { checkoutGatesReady } from "./CheckoutLegalGates.jsx";
+import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 
 const C = {
   bg: "#f8f9fc",
@@ -195,7 +195,7 @@ export default function TarifsPage() {
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
-      alert("Coche les cases CGV et rétractation avant de continuer.");
+      alert(checkoutGatesError(acceptTerms, acceptWithdrawal) || "Coche les cases CGV et rétractation avant de continuer.");
       document.getElementById("checkout-legal-gates")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }

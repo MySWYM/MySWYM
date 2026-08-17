@@ -84,7 +84,7 @@ import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import BuddyMatching from "./BuddyMatching.jsx";
-import CheckoutLegalGates, { checkoutGatesReady } from "./CheckoutLegalGates.jsx";
+import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 import {
   LEGAL_LINKS,
   SIGNUP_AGE_LABEL,
@@ -1573,7 +1573,7 @@ const createShareCanvas = (session, goalLabel) => {
 const Btn = ({ children, onClick, variant = "primary", disabled, style: s }) => {
   const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "'Lexend', sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
   const styles = { primary: { background: G.ink, color: G.inverse }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0,87,255,0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
-  return <button onClick={disabled ? undefined : onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
+  return <button type="button" disabled={!!disabled} onClick={onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
 };
 
 const Progress = ({ step, total }) => (
@@ -6615,7 +6615,32 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
   const insights = buildPlanReadyInsights(plan, profile);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
+  const [err, setErr] = useState(null);
   const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
+
+  useEffect(() => {
+    if (legalReady) setErr(null);
+  }, [legalReady]);
+
+  const handleAcceptTerms = (checked) => {
+    setAcceptTerms(checked);
+    setErr(null);
+  };
+
+  const handleAcceptWithdrawal = (checked) => {
+    setAcceptWithdrawal(checked);
+    setErr(null);
+  };
+
+  const handleContinue = () => {
+    const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
+    if (gateError) {
+      setErr(gateError);
+      return;
+    }
+    setErr(null);
+    onContinue?.();
+  };
 
   return (
     <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onDismiss?.()}>
@@ -6677,13 +6702,15 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
 
         <CheckoutLegalGates
           acceptTerms={acceptTerms}
-          onAcceptTerms={setAcceptTerms}
+          onAcceptTerms={handleAcceptTerms}
           acceptWithdrawal={acceptWithdrawal}
-          onAcceptWithdrawal={setAcceptWithdrawal}
+          onAcceptWithdrawal={handleAcceptWithdrawal}
           ink={G.ink}
+          idPrefix="plan-ready-legal"
         />
 
-        <Btn variant="blue" onClick={onContinue} disabled={loading || !legalReady}>
+        {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
+        <Btn variant="blue" onClick={handleContinue} disabled={loading}>
           {loading ? "Redirection…" : "Essai 7 jours — débloquer mon coach"}
         </Btn>
         <button type="button" onClick={onDismiss} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
@@ -6742,11 +6769,16 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   const [user, setUser] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
+  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
 
   useEffect(() => {
     captureReferralFromUrl();
     supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
   }, []);
+
+  useEffect(() => {
+    if (legalReady) setErr(null);
+  }, [legalReady]);
 
   const hasReferral = Boolean(resolveReferralCode(user));
   const showTrialOffer = trialEligible && period === "monthly";
@@ -6759,7 +6791,16 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   });
   const headline = copy.headline;
   const subtitle = copy.subtitle;
-  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
+
+  const handleAcceptTerms = (checked) => {
+    setAcceptTerms(checked);
+    setErr(null);
+  };
+
+  const handleAcceptWithdrawal = (checked) => {
+    setAcceptWithdrawal(checked);
+    setErr(null);
+  };
 
   const callFunction = async (fnName, body) => {
     const { data: refreshData } = await supabase.auth.refreshSession();
@@ -6775,8 +6816,9 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 
   const handleCheckout = async () => {
     if (loading) return;
-    if (!legalReady) {
-      setErr("Accepte les CGV/CGU et confirme la demande d’accès immédiat pour continuer.");
+    const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
+    if (gateError) {
+      setErr(gateError);
       return;
     }
     setLoading(true); setErr(null);
@@ -6908,14 +6950,15 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 
         <CheckoutLegalGates
           acceptTerms={acceptTerms}
-          onAcceptTerms={setAcceptTerms}
+          onAcceptTerms={handleAcceptTerms}
           acceptWithdrawal={acceptWithdrawal}
-          onAcceptWithdrawal={setAcceptWithdrawal}
+          onAcceptWithdrawal={handleAcceptWithdrawal}
           ink={G.ink}
+          idPrefix="upgrade-modal-legal"
         />
 
         {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
-        <Btn variant="blue" onClick={handleCheckout} disabled={loading || !legalReady}>
+        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
         <button type="button" onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
