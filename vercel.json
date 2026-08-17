@@ -49,6 +49,6 @@
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
-    { "source": "/((?!api|assets|favicon).*)", "destination": "/index.html" }
+    { "source": "/((?!api|assets|favicon|robots\\.txt|sitemap\\.xml|og-share\\.png).*)", "destination": "/index.html" }
   ]
 }

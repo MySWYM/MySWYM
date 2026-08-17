@@ -127,6 +127,8 @@ Pas de système custom. Dans PostHog Retention :
 `trackEvent(...)` continue d’écrire dans Supabase `conversion_events` (funnels historiques).  
 Les nouveaux parcours produit passent par `track(...)` → PostHog.
 
+**Pas de Google Analytics (gtag / GA4)** — volontaire. Un seul tracker produit : PostHog, après consentement cookies. Ne pas dupliquer avec GA.
+
 ---
 
 ## Tests

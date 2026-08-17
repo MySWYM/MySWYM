@@ -1,0 +1,27 @@
+# MySWYM — crawlers : marketing oui, app privée non.
+# `Disallow: /$` = uniquement la racine `/` (webapp), pas tout le site.
+
+User-agent: *
+Allow: /accueil
+Allow: /comment-ca-marche
+Allow: /tarifs
+Allow: /contact
+Allow: /blog
+Allow: /mentions-legales
+Allow: /politique-confidentialite
+Allow: /politique-cookies
+Allow: /cgu
+Allow: /cgv
+
+Disallow: /$
+Disallow: /app
+Disallow: /app/
+Disallow: /connexion
+Disallow: /inscription
+Disallow: /login
+Disallow: /register
+Disallow: /admin
+Disallow: /prototype
+Disallow: /merci
+
+Sitemap: https://myswym.app/sitemap.xml
