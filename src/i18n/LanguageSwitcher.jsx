@@ -5,12 +5,12 @@ import { setAppLanguage } from "./index.js";
  * Compact FR | EN language toggle.
  * @param {'nav' | 'settings' | 'footer'} variant
  */
-export default function LanguageSwitcher({ variant = "nav" }) {
+export default function LanguageSwitcher({ variant = "nav", onDark = false }) {
   const { t, i18n } = useTranslation("common");
   const lng = i18n.language?.startsWith("en") ? "en" : "fr";
 
   const isSettings = variant === "settings";
-  const isFooter = variant === "footer";
+  const isFooter = variant === "footer" || onDark;
 
   const wrap = {
     display: "inline-flex",

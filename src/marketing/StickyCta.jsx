@@ -29,10 +29,10 @@ export default function StickyCta({ href = "/inscription" }) {
           bottom: 0,
           zIndex: 180,
           padding: "10px 16px max(12px, env(safe-area-inset-bottom))",
-          background: "rgba(255,255,255,0.94)",
+          background: "rgba(11,21,36,0.94)",
           backdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(53,93,163,0.12)",
-          boxShadow: "0 -8px 28px rgba(25,28,30,0.08)",
+          borderTop: "1px solid rgba(142,179,255,0.16)",
+          boxShadow: "0 -8px 28px rgba(0,0,0,0.35)",
         }}
       >
         <a
@@ -44,7 +44,7 @@ export default function StickyCta({ href = "/inscription" }) {
             minHeight: 48,
             borderRadius: 14,
             background: "#8eb3ff",
-            color: "#154388",
+            color: "#0b1524",
             fontWeight: 700,
             fontSize: 15,
             fontFamily: FONT,

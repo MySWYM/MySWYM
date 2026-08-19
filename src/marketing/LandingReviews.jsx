@@ -1,18 +1,9 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { usePublishedReviews } from "./usePublishedReviews.js";
+import { C } from "../design/marketing-tokens.js";
 
 const FONT = "'Lexend', sans-serif";
-const C = {
-  ink: "#191c1e",
-  inkLight: "#434751",
-  secondary: "#5d5e61",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  border: "rgba(53,93,163,0.12)",
-  white: "#ffffff",
-  bgSoft: "#edeef1",
-};
 
 function StarRow({ value, onChange, readOnly = false }) {
   return (
@@ -85,8 +76,8 @@ export default function LandingReviews() {
     <section id="avis" style={{ background: C.bgSoft, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 800, margin: "0 auto", fontFamily: FONT }}>
         <p style={{
-          display: "inline-flex", background: "#d8e2ff", borderRadius: 100,
-          padding: "5px 14px", color: "#355da3", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
+          display: "inline-flex", background: C.primaryFix, borderRadius: 100,
+          padding: "5px 14px", color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
         }}>AVIS</p>
         <h2 style={{
           fontFamily: "'Barlow Condensed', sans-serif", fontSize: "clamp(32px, 4.5vw, 48px)",
@@ -100,7 +91,7 @@ export default function LandingReviews() {
 
         {reviews.length === 0 ? (
           <p style={{
-            background: C.white, border: `1px dashed ${C.border}`, borderRadius: 16,
+            background: C.bgCard, border: `1px dashed ${C.border}`, borderRadius: 16,
             padding: 20, color: C.secondary, fontSize: 15, lineHeight: 1.55, marginBottom: 24,
           }}>
             Les premiers avis publiés apparaîtront ici.
@@ -109,7 +100,7 @@ export default function LandingReviews() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
             {reviews.map((r) => (
               <article key={r.id} style={{
-                background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, padding: 18,
+                background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, padding: 18,
               }}>
                 <StarRow value={r.rating} readOnly />
                 <p style={{ margin: "8px 0 6px", color: C.ink, fontSize: 15, lineHeight: 1.6 }}>{r.body}</p>
@@ -129,7 +120,7 @@ export default function LandingReviews() {
           </p>
         ) : (
           <form onSubmit={submit} style={{
-            background: C.white, border: `1px solid ${C.border}`, borderRadius: 20, padding: 20,
+            background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 20, padding: 20,
             display: "flex", flexDirection: "column", gap: 12,
           }}>
             <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true"
@@ -137,7 +128,7 @@ export default function LandingReviews() {
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Prénom *</span>
               <input required value={name} onChange={(e) => setName(e.target.value)} maxLength={80}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44 }} />
+                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44, background: C.fill, color: C.ink }} />
             </label>
             <div>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Note *</span>
@@ -146,12 +137,12 @@ export default function LandingReviews() {
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Ton avis *</span>
               <textarea required value={body} onChange={(e) => setBody(e.target.value)} maxLength={800} rows={4}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT }} />
+                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, background: C.fill, color: C.ink }} />
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Email (non publié)</span>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44 }} />
+                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44, background: C.fill, color: C.ink }} />
             </label>
             {status === "error" ? <p style={{ margin: 0, color: "#b42318", fontSize: 13, fontWeight: 600 }}>{errorMsg}</p> : null}
             <button type="submit" disabled={status === "sending"} style={{

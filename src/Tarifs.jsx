@@ -19,25 +19,7 @@ import BrandLogo from "./BrandLogo.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import { usePageSeo } from "./lib/seo.js";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
-
-const C = {
-  bg: "#f8f9fc",
-  bgSoft: "#edeef1",
-  bgCard: "#f2f3f6",
-  ink: "#191c1e",
-  secondary: "#5d5e61",
-  primary: "#355da3",
-  primaryDeep: "#154388",
-  primaryFix: "#d8e2ff",
-  outlineVar: "#c3c6d2",
-  white: "#ffffff",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  border: "rgba(53,93,163,0.08)",
-  shadow: "0 2px 12px rgba(142,179,255,0.10)",
-  shadowLg: "0 20px 60px rgba(12,26,46,0.18)",
-  night: "#0c1a2e",
-};
+import { C } from "./design/marketing-tokens.js";
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
@@ -111,7 +93,7 @@ function CheckItem({ children, dark = false }) {
 
 function FeatureCell({ value, premium = false }) {
   if (value === false) {
-    return <X size={16} color="rgba(93,94,97,0.55)" aria-hidden />;
+    return <X size={16} color={C.outline} aria-hidden />;
   }
   if (value === true) {
     return <Check size={16} color={premium ? C.primaryDeep : C.primary} aria-hidden />;
@@ -142,10 +124,10 @@ function CompactTableValue({ value, premium = false }) {
         padding: "8px 10px",
         borderRadius: 12,
         background: premium
-          ? "rgba(53,93,163,0.10)"
+          ? "rgba(142,179,255,0.16)"
           : positive
-            ? "rgba(53,93,163,0.08)"
-            : "#f4f5f7",
+            ? "rgba(142,179,255,0.10)"
+            : "rgba(255,255,255,0.06)",
         color: premium ? C.primaryDeep : C.ink,
         fontSize: 13,
         lineHeight: 1.3,
@@ -335,7 +317,7 @@ export default function TarifsPage() {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
-      <PublicNav />
+      <PublicNav onDark />
 
       <section
         style={{
@@ -343,7 +325,7 @@ export default function TarifsPage() {
           overflow: "hidden",
           padding: isMobile ? "96px 16px 48px" : "112px 20px 72px",
           background: `
-            linear-gradient(180deg, rgba(12,26,46,0.96) 0%, rgba(21,67,136,0.92) 44%, rgba(248,249,252,1) 100%),
+            linear-gradient(180deg, rgba(12,26,46,0.96) 0%, rgba(21,67,136,0.92) 44%, #0b1524 100%),
             linear-gradient(140deg, #0c1a2e 0%, #154388 46%, #8eb3ff 100%)
           `,
         }}
@@ -632,7 +614,7 @@ export default function TarifsPage() {
         >
           <div
             style={{
-              background: C.white,
+              background: C.bgCard,
               border: `1px solid ${C.border}`,
               borderRadius: 28,
               padding: isMobile ? 22 : 28,
@@ -766,7 +748,7 @@ export default function TarifsPage() {
 
           <div
             style={{
-              background: C.white,
+              background: C.bgCard,
               border: `1px solid ${C.border}`,
               borderRadius: 28,
               padding: isMobile ? 22 : 28,
@@ -827,7 +809,7 @@ export default function TarifsPage() {
             style={{
               maxWidth: 560,
               margin: "0 auto",
-              background: C.white,
+              background: C.bgCard,
               border: `1px solid ${C.border}`,
               borderRadius: 20,
               padding: isMobile ? 16 : 20,
@@ -843,6 +825,7 @@ export default function TarifsPage() {
               acceptWithdrawal={acceptWithdrawal}
               onAcceptWithdrawal={setAcceptWithdrawal}
               ink={C.ink}
+              onDark
             />
           </div>
         </section>
@@ -853,7 +836,7 @@ export default function TarifsPage() {
           style={{
             maxWidth: 1120,
             margin: "0 auto",
-            background: C.white,
+            background: C.bgCard,
             border: `1px solid ${C.border}`,
             borderRadius: 24,
             boxShadow: C.shadow,
@@ -912,8 +895,8 @@ export default function TarifsPage() {
                 alignItems: "center",
                 borderBottom: index === 3 ? "none" : `1px solid ${C.border}`,
                 background: premiumValue === "Oui" || premiumValue === "Complet" || premiumValue === "Jusqu'à 52 semaines"
-                  ? "linear-gradient(90deg, #ffffff 0%, #ffffff 66%, rgba(216,226,255,0.32) 100%)"
-                  : C.white,
+                  ? C.primaryFix
+                  : C.bgCard,
               }}
             >
               <div style={{ color: C.ink, fontSize: 14, fontWeight: 600, lineHeight: 1.4, fontFamily: FONT }}>
@@ -957,7 +940,7 @@ export default function TarifsPage() {
 
           <div
             style={{
-              background: C.white,
+              background: C.bgCard,
               border: `1px solid ${C.border}`,
               borderRadius: 28,
               overflow: "hidden",
@@ -993,7 +976,7 @@ export default function TarifsPage() {
                   padding: isMobile ? "16px 14px" : "18px 24px",
                   gap: 12,
                   alignItems: "center",
-                  background: index % 2 === 0 ? C.white : "#fbfcff",
+                  background: index % 2 === 0 ? C.bgCard : C.bgSoft,
                   borderBottom:
                     index === comparisonRows.length - 1 ? "none" : `1px solid ${C.border}`,
                 }}
@@ -1046,7 +1029,7 @@ export default function TarifsPage() {
               <div
                 key={item.title}
                 style={{
-                  background: C.white,
+                  background: C.bgCard,
                   border: `1px solid ${C.border}`,
                   borderRadius: 24,
                   padding: isMobile ? 22 : 24,
@@ -1084,7 +1067,7 @@ export default function TarifsPage() {
           style={{
             maxWidth: 1120,
             margin: "0 auto",
-            background: C.white,
+            background: C.bgCard,
             border: `1px solid ${C.border}`,
             borderRadius: 28,
             padding: isMobile ? 24 : 32,
@@ -1183,7 +1166,7 @@ export default function TarifsPage() {
                 <div
                   key={item.q}
                   style={{
-                    background: isOpen ? C.bgSoft : C.white,
+                    background: isOpen ? C.bgSoft : C.bgCard,
                     border: `1px solid ${isOpen ? `${C.primary}33` : C.border}`,
                     borderRadius: 20,
                     boxShadow: isOpen ? C.shadow : "none",

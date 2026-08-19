@@ -3,21 +3,6 @@ import { checkoutGatesReady, checkoutGatesError } from "./lib/checkout-legal.js"
 
 export { checkoutGatesReady, checkoutGatesError };
 
-const linkStyle = { color: "#154388", fontWeight: 700, textDecoration: "none" };
-const boxStyle = {
-  display: "flex",
-  gap: 10,
-  alignItems: "flex-start",
-  marginBottom: 10,
-  fontSize: 12,
-  lineHeight: 1.45,
-  color: "#434751",
-};
-
-/**
- * Cases à cocher pré-checkout (rétractation + acceptation CGV/CGU).
- * Requis avant redirection Stripe.
- */
 export default function CheckoutLegalGates({
   acceptTerms,
   onAcceptTerms,
@@ -25,17 +10,32 @@ export default function CheckoutLegalGates({
   onAcceptWithdrawal,
   ink = "#191c1e",
   idPrefix = "checkout-legal",
+  onDark = false,
 }) {
   const termsId = `${idPrefix}-terms`;
   const withdrawalId = `${idPrefix}-withdrawal`;
+  const muted = onDark ? "rgba(238,243,251,0.55)" : "#5d5e61";
+  const body = onDark ? "rgba(238,243,251,0.78)" : "#434751";
+  const link = onDark ? "#8eb3ff" : "#154388";
 
   const stopLinkToggle = (event) => {
     event.stopPropagation();
   };
 
+  const boxStyle = {
+    display: "flex",
+    gap: 10,
+    alignItems: "flex-start",
+    marginBottom: 10,
+    fontSize: 12,
+    lineHeight: 1.45,
+    color: body,
+  };
+  const linkStyle = { color: link, fontWeight: 700, textDecoration: "none" };
+
   return (
     <div style={{ marginBottom: 14 }}>
-      <p style={{ fontSize: 11, color: "#5d5e61", lineHeight: 1.45, margin: "0 0 10px" }}>
+      <p style={{ fontSize: 11, color: muted, lineHeight: 1.45, margin: "0 0 10px" }}>
         {CHECKOUT_RENEWAL_NOTICE}
       </p>
       <label htmlFor={termsId} style={boxStyle}>

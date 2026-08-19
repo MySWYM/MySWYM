@@ -1,0 +1,42 @@
+/** Direction artistique MySWYM — Fluid Athleticism, fond bassin nuit. */
+export const C = {
+  bg: "#0b1524",
+  bgSoft: "#102038",
+  bgCard: "#17304a",
+  ink: "#eef3fb",
+  inkLight: "rgba(238,243,251,0.68)",
+  primary: "#8eb3ff",
+  primaryDeep: "#c5d6ff",
+  primaryFix: "rgba(142,179,255,0.16)",
+  accent: "#8eb3ff",
+  accentText: "#0b1524",
+  secondary: "rgba(238,243,251,0.55)",
+  outline: "rgba(238,243,251,0.38)",
+  outlineVar: "rgba(142,179,255,0.28)",
+  surfHigh: "#1c3a58",
+  white: "#ffffff",
+  night: "#07101c",
+  fill: "#0a1628",
+  border: "rgba(142,179,255,0.14)",
+  borderMid: "rgba(142,179,255,0.22)",
+  shadow: "0 2px 16px rgba(0,0,0,0.28)",
+  shadowMd: "0 8px 32px rgba(0,0,0,0.38)",
+  shadowLg: "0 20px 60px rgba(0,0,0,0.45)",
+};
+
+/** Aperçu dans les mockups téléphone — l’app nageur n’est pas encore en DA sombre. */
+export const PREVIEW = {
+  bg: "#f8f9fc",
+  bgCard: "#f2f3f6",
+  ink: "#191c1e",
+  inkLight: "#434751",
+  white: "#ffffff",
+  primary: "#355da3",
+  primaryDeep: "#154388",
+  primaryFix: "#d8e2ff",
+  accent: "#8eb3ff",
+  accentText: "#154388",
+  secondary: "#5d5e61",
+  outline: "#737782",
+  border: "rgba(53,93,163,0.12)",
+};

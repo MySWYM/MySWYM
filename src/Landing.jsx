@@ -16,31 +16,7 @@ import LandingReviews from "./marketing/LandingReviews.jsx";
 import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
 import { CASE_STUDIES } from "./content/case-studies.js";
 import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
-
-// ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
-const C = {
-  bg:          "#f8f9fc",
-  bgSoft:      "#edeef1",
-  bgCard:      "#f2f3f6",
-  ink:         "#191c1e",
-  inkLight:    "#434751",
-  primary:     "#355da3",
-  primaryDeep: "#154388",
-  primaryFix:  "#d8e2ff",
-  accent:      "#8eb3ff",
-  accentText:  "#154388",
-  secondary:   "#5d5e61",
-  outline:     "#737782",
-  outlineVar:  "#c3c6d2",
-  surfHigh:    "#e7e8eb",
-  white:       "#ffffff",
-  night:       "#0c1a2e",
-  border:      "rgba(53,93,163,0.08)",
-  borderMid:   "rgba(53,93,163,0.14)",
-  shadow:      "0 2px 12px rgba(142,179,255,0.10)",
-  shadowMd:    "0 8px 32px rgba(142,179,255,0.18)",
-  shadowLg:    "0 20px 60px rgba(142,179,255,0.22)",
-};
+import { C, PREVIEW as P } from "./design/marketing-tokens.js";
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
@@ -79,11 +55,13 @@ function useInView(threshold = 0.12) {
 
 function FadeIn({ children, delay = 0, style = {} }) {
   const [ref, visible] = useInView();
+  const reduceMotion = typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
   return (
     <div ref={ref} style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? "translateY(0)" : "translateY(24px)",
-      transition: `opacity 0.6s ease ${delay}s, transform 0.6s ease ${delay}s`,
+      opacity: (visible || reduceMotion) ? 1 : 0,
+      transform: (visible || reduceMotion) ? "translateY(0)" : "translateY(24px)",
+      transition: reduceMotion ? "none" : `opacity 0.6s ease ${delay}s, transform 0.6s ease ${delay}s`,
       ...style,
     }}>
       {children}
@@ -212,7 +190,7 @@ function PhoneFrame({ children, width = 260, darkStatus = true, style = {} }) {
         <div style={{
           position: "relative", width: "100%", height: "100%",
           borderRadius: screenRadius, overflow: "hidden",
-          background: darkStatus ? C.ink : C.white,
+          background: darkStatus ? P.ink : P.white,
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
         }}>
           {/* Status bar + Dynamic Island */}
@@ -225,7 +203,7 @@ function PhoneFrame({ children, width = 260, darkStatus = true, style = {} }) {
           }}>
             <span style={{
               fontSize: Math.round(width * 0.048), fontWeight: 600,
-              color: darkStatus ? "#fff" : C.ink, fontFamily: FONT,
+              color: darkStatus ? "#fff" : P.ink, fontFamily: FONT,
               letterSpacing: "-0.02em", minWidth: 36,
             }}>9:41</span>
 
@@ -248,14 +226,14 @@ function PhoneFrame({ children, width = 260, darkStatus = true, style = {} }) {
 
             <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 36, justifyContent: "flex-end" }}>
               {/* Signal */}
-              <svg width={Math.round(width * 0.055)} height={Math.round(width * 0.04)} viewBox="0 0 17 12" fill={darkStatus ? "#fff" : C.ink}>
+              <svg width={Math.round(width * 0.055)} height={Math.round(width * 0.04)} viewBox="0 0 17 12" fill={darkStatus ? "#fff" : P.ink}>
                 <rect x="0" y="8" width="3" height="4" rx="0.6" />
                 <rect x="4.5" y="5.5" width="3" height="6.5" rx="0.6" />
                 <rect x="9" y="3" width="3" height="9" rx="0.6" />
                 <rect x="13.5" y="0" width="3" height="12" rx="0.6" opacity="0.35" />
               </svg>
               {/* Wifi */}
-              <svg width={Math.round(width * 0.055)} height={Math.round(width * 0.04)} viewBox="0 0 16 12" fill={darkStatus ? "#fff" : C.ink}>
+              <svg width={Math.round(width * 0.055)} height={Math.round(width * 0.04)} viewBox="0 0 16 12" fill={darkStatus ? "#fff" : P.ink}>
                 <path d="M8 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" />
                 <path d="M4.2 7.2a5.4 5.4 0 017.6 0l-1.1 1.1a3.8 3.8 0 00-5.4 0L4.2 7.2z" opacity="0.7" />
                 <path d="M1.5 4.5a9 9 0 0113 0l-1.1 1.1a7.4 7.4 0 00-10.8 0L1.5 4.5z" opacity="0.4" />
@@ -268,7 +246,7 @@ function PhoneFrame({ children, width = 260, darkStatus = true, style = {} }) {
               }}>
                 <div style={{
                   width: "75%", height: "100%", borderRadius: 1.5,
-                  background: darkStatus ? "#fff" : C.ink,
+                  background: darkStatus ? "#fff" : P.ink,
                 }} />
                 <div style={{
                   position: "absolute", right: -3, top: "50%", transform: "translateY(-50%)",
@@ -317,14 +295,14 @@ function OnboardingMockup({ width = 240, step = 0 }) {
       stepLabel: t("mock.stepOf", { n: 1 }),
       title: t("mock.goalTitle"),
       body: (
-        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 7, background: C.bg, flex: 1 }}>
+        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 7, background: P.bg, flex: 1 }}>
           {goals.map((label, i) => (
             <div key={label} style={{
-              background: i === 0 ? C.primaryFix : C.white,
-              border: `1.5px solid ${i === 0 ? C.accent : C.border}`,
+              background: i === 0 ? P.primaryFix : P.white,
+              border: `1.5px solid ${i === 0 ? P.accent : P.border}`,
               borderRadius: 12, padding: "11px 12px",
               fontFamily: FONT, fontSize: 12, fontWeight: 600,
-              color: i === 0 ? C.primaryDeep : C.inkLight,
+              color: i === 0 ? P.primaryDeep : P.inkLight,
             }}>{label}</div>
           ))}
         </div>
@@ -334,21 +312,21 @@ function OnboardingMockup({ width = 240, step = 0 }) {
       stepLabel: t("mock.stepOf", { n: 2 }),
       title: t("mock.dateTitle"),
       body: (
-        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, background: C.bg, flex: 1 }}>
+        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, background: P.bg, flex: 1 }}>
           <div style={{
-            background: C.white, borderRadius: 14, border: `1.5px solid ${C.border}`,
+            background: P.white, borderRadius: 14, border: `1.5px solid ${P.border}`,
             padding: "12px 14px", textAlign: "center",
           }}>
-            <div style={{ fontSize: 10, color: C.outline, fontWeight: 700, letterSpacing: "0.06em", fontFamily: FONT, marginBottom: 4 }}>{t("mock.event")}</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.1), fontWeight: 800, color: C.ink, textTransform: "uppercase" }}>{t("mock.eventDate")}</div>
-            <div style={{ marginTop: 6, fontSize: 12, color: C.primary, fontWeight: 600, fontFamily: FONT }}>{t("mock.inWeeks")}</div>
+            <div style={{ fontSize: 10, color: P.outline, fontWeight: 700, letterSpacing: "0.06em", fontFamily: FONT, marginBottom: 4 }}>{t("mock.event")}</div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.1), fontWeight: 800, color: P.ink, textTransform: "uppercase" }}>{t("mock.eventDate")}</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: P.primary, fontWeight: 600, fontFamily: FONT }}>{t("mock.inWeeks")}</div>
           </div>
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4,
-            background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: 10,
+            background: P.white, borderRadius: 14, border: `1px solid ${P.border}`, padding: 10,
           }}>
             {(Array.isArray(weekdays) ? weekdays : ["L","M","M","J","V","S","D"]).map((d, i) => (
-              <div key={`${d}${i}`} style={{ fontSize: 9, textAlign: "center", color: C.outline, fontFamily: FONT, fontWeight: 600 }}>{d}</div>
+              <div key={`${d}${i}`} style={{ fontSize: 9, textAlign: "center", color: P.outline, fontFamily: FONT, fontWeight: 600 }}>{d}</div>
             ))}
             {Array.from({ length: 28 }, (_, i) => {
               const day = i + 1;
@@ -358,8 +336,8 @@ function OnboardingMockup({ width = 240, step = 0 }) {
                   aspectRatio: "1", borderRadius: 8,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 10, fontFamily: FONT, fontWeight: selected ? 700 : 500,
-                  background: selected ? C.accent : "transparent",
-                  color: selected ? C.accentText : C.inkLight,
+                  background: selected ? P.accent : "transparent",
+                  color: selected ? P.accentText : P.inkLight,
                 }}>{day}</div>
               );
             })}
@@ -371,20 +349,20 @@ function OnboardingMockup({ width = 240, step = 0 }) {
       stepLabel: t("mock.stepOf", { n: 3 }),
       title: t("mock.levelTitle"),
       body: (
-        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8, background: C.bg, flex: 1 }}>
+        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8, background: P.bg, flex: 1 }}>
           {levels.map((row, i) => (
             <div key={row.label} style={{
-              background: i === 1 ? C.primaryFix : C.white,
-              border: `1.5px solid ${i === 1 ? C.accent : C.border}`,
+              background: i === 1 ? P.primaryFix : P.white,
+              border: `1.5px solid ${i === 1 ? P.accent : P.border}`,
               borderRadius: 14, padding: "12px 14px",
             }}>
               <div style={{
                 fontFamily: FONT, fontSize: 13, fontWeight: 700,
-                color: i === 1 ? C.primaryDeep : C.ink, marginBottom: 2,
+                color: i === 1 ? P.primaryDeep : P.ink, marginBottom: 2,
               }}>{row.label}</div>
               <div style={{
                 fontSize: 11, fontFamily: FONT,
-                color: i === 1 ? C.primary : C.outline, fontWeight: 600,
+                color: i === 1 ? P.primary : P.outline, fontWeight: 600,
               }}>{row.vol} {t("mock.perSession")}</div>
             </div>
           ))}
@@ -395,31 +373,31 @@ function OnboardingMockup({ width = 240, step = 0 }) {
       stepLabel: t("mock.stepOf", { n: 4 }),
       title: t("mock.freqTitle"),
       body: (
-        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, background: C.bg, flex: 1 }}>
-          <div style={{ fontSize: 11, color: C.secondary, fontFamily: FONT, textAlign: "center" }}>
+        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, background: P.bg, flex: 1 }}>
+          <div style={{ fontSize: 11, color: P.secondary, fontFamily: FONT, textAlign: "center" }}>
             {t("mock.freqAsk")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
             {[1, 2, 3, 4].map((n) => (
               <div key={n} style={{
-                background: n === 3 ? C.primaryFix : C.white,
-                border: `1.5px solid ${n === 3 ? C.accent : C.border}`,
+                background: n === 3 ? P.primaryFix : P.white,
+                border: `1.5px solid ${n === 3 ? P.accent : P.border}`,
                 borderRadius: 14, padding: "16px 10px", textAlign: "center",
               }}>
                 <div style={{
                   fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 800,
-                  color: n === 3 ? C.primaryDeep : C.ink, lineHeight: 1,
+                  color: n === 3 ? P.primaryDeep : P.ink, lineHeight: 1,
                 }}>{n}</div>
                 <div style={{
                   fontSize: 10, marginTop: 4, fontFamily: FONT, fontWeight: 600,
-                  color: n === 3 ? C.primary : C.outline,
+                  color: n === 3 ? P.primary : P.outline,
                 }}>{n === 1 ? t("mock.sessionOne") : t("mock.sessionMany")}</div>
               </div>
             ))}
           </div>
           <div style={{
-            background: C.white, borderRadius: 12, border: `1px solid ${C.border}`,
-            padding: "10px 12px", fontSize: 11, color: C.inkLight, fontFamily: FONT, lineHeight: 1.4,
+            background: P.white, borderRadius: 12, border: `1px solid ${P.border}`,
+            padding: "10px 12px", fontSize: 11, color: P.inkLight, fontFamily: FONT, lineHeight: 1.4,
           }}>
             {t("mock.freqHint")}
           </div>
@@ -432,9 +410,9 @@ function OnboardingMockup({ width = 240, step = 0 }) {
 
   return (
     <PhoneFrame width={width} darkStatus>
-      <div style={{ background: C.ink, padding: "10px 14px 12px", flexShrink: 0 }}>
+      <div style={{ background: P.ink, padding: "10px 14px 12px", flexShrink: 0 }}>
         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", letterSpacing: "0.08em", fontFamily: FONT, marginBottom: 4 }}>{screen.stepLabel}</div>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.09), fontWeight: 800, color: C.white, textTransform: "uppercase", lineHeight: 1.05 }}>{screen.title}</div>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.09), fontWeight: 800, color: P.white, textTransform: "uppercase", lineHeight: 1.05 }}>{screen.title}</div>
       </div>
       {screen.body}
     </PhoneFrame>
@@ -445,23 +423,23 @@ function SessionMockup({ width = 260 }) {
   const { t } = useTranslation("landing");
   return (
     <PhoneFrame width={width} darkStatus>
-      <div style={{ background: C.ink, padding: "10px 14px 12px", flexShrink: 0 }}>
+      <div style={{ background: P.ink, padding: "10px 14px 12px", flexShrink: 0 }}>
         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", letterSpacing: "0.08em", fontFamily: FONT, marginBottom: 3 }}>{t("mock.weekSession")}</div>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.09), fontWeight: 800, color: C.white, textTransform: "uppercase", lineHeight: 1 }}>{t("mock.endurance")}</div>
-        <div style={{ marginTop: 5, fontSize: 12, color: C.accent, fontWeight: 600, fontFamily: FONT }}>{t("mock.sessionMeta")}</div>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: Math.round(width * 0.09), fontWeight: 800, color: P.white, textTransform: "uppercase", lineHeight: 1 }}>{t("mock.endurance")}</div>
+        <div style={{ marginTop: 5, fontSize: 12, color: P.accent, fontWeight: 600, fontFamily: FONT }}>{t("mock.sessionMeta")}</div>
       </div>
-      <div style={{ background: C.bg, padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 7, flex: 1, overflow: "hidden" }}>
+      <div style={{ background: P.bg, padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 7, flex: 1, overflow: "hidden" }}>
         {[
           { label: t("mock.warm"), text: t("mock.warmText") },
           { label: t("mock.main"), text: t("mock.mainText") },
           { label: t("mock.cool"), text: t("mock.coolText") },
         ].map((b) => (
-          <div key={b.label} style={{ background: C.white, borderRadius: 11, padding: "9px 11px", border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: C.primary, letterSpacing: "0.06em", marginBottom: 2, fontFamily: FONT }}>{b.label.toUpperCase()}</div>
-            <div style={{ fontSize: 11, color: C.inkLight, lineHeight: 1.35, fontFamily: FONT }}>{b.text}</div>
+          <div key={b.label} style={{ background: P.white, borderRadius: 11, padding: "9px 11px", border: `1px solid ${P.border}` }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: P.primary, letterSpacing: "0.06em", marginBottom: 2, fontFamily: FONT }}>{b.label.toUpperCase()}</div>
+            <div style={{ fontSize: 11, color: P.inkLight, lineHeight: 1.35, fontFamily: FONT }}>{b.text}</div>
           </div>
         ))}
-        <div style={{ fontSize: 10, color: C.secondary, fontFamily: FONT, lineHeight: 1.4, padding: "2px 2px 0" }}>
+        <div style={{ fontSize: 10, color: P.secondary, fontFamily: FONT, lineHeight: 1.4, padding: "2px 2px 0" }}>
           {t("mock.coachTip")}
         </div>
       </div>
@@ -648,7 +626,7 @@ function WhyMyswym() {
           {benefits.map((b, i) => (
             <FadeIn key={b.title} delay={i * 0.08}>
               <div style={{
-                background: C.white, border: `1px solid ${C.border}`,
+                background: C.bgCard, border: `1px solid ${C.border}`,
                 borderRadius: 24, overflow: "hidden", height: "100%",
                 boxShadow: C.shadow, display: "flex", flexDirection: "column",
               }}>
@@ -743,7 +721,7 @@ function HowItWorks() {
                 <OnboardingMockup width={200} step={active} />
                 <div style={{
                   position: "absolute", bottom: -14, left: "50%", transform: "translateX(-50%)",
-                  background: C.ink, color: C.white, fontSize: 12, fontWeight: 600,
+                  background: C.fill, color: C.white, fontSize: 12, fontWeight: 600,
                   padding: "8px 14px", borderRadius: 100, fontFamily: FONT, whiteSpace: "nowrap",
                   boxShadow: C.shadowMd, display: "flex", alignItems: "center", gap: 6, zIndex: 3,
                 }}>
@@ -765,7 +743,7 @@ function HowItWorks() {
                   aria-pressed={isActive}
                   style={{
                     textAlign: "left", cursor: "pointer",
-                    background: isActive ? C.white : "transparent",
+                    background: isActive ? C.bgCard : "transparent",
                     border: `1.5px solid ${isActive ? C.accent : C.border}`,
                     borderRadius: 18, padding: isMobile ? "14px 16px" : "16px 18px",
                     boxShadow: isActive ? C.shadow : "none",
@@ -798,7 +776,7 @@ function HowItWorks() {
                 <OnboardingMockup width={240} step={active} />
                 <div style={{
                   position: "absolute", bottom: -14, left: "50%", transform: "translateX(-50%)",
-                  background: C.ink, color: C.white, fontSize: 12, fontWeight: 600,
+                  background: C.fill, color: C.white, fontSize: 12, fontWeight: 600,
                   padding: "8px 14px", borderRadius: 100, fontFamily: FONT, whiteSpace: "nowrap",
                   boxShadow: C.shadowMd, display: "flex", alignItems: "center", gap: 6, zIndex: 3,
                 }}>
@@ -851,7 +829,7 @@ function SessionPreview() {
             </div>
 
             <div style={{
-              background: C.white, border: `1.5px solid ${C.border}`,
+              background: C.bgCard, border: `1.5px solid ${C.border}`,
               borderRadius: 24, padding: isMobile ? 20 : 28, boxShadow: C.shadow,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
@@ -1009,7 +987,7 @@ function Includes() {
           {items.map((item, i) => (
             <FadeIn key={item.title} delay={i * 0.05}>
               <div style={{
-                background: C.white, border: `1px solid ${C.border}`,
+                background: C.bgCard, border: `1px solid ${C.border}`,
                 borderRadius: 20, padding: "22px 20px", height: "100%",
                 boxShadow: C.shadow, boxSizing: "border-box",
               }}>
@@ -1206,7 +1184,7 @@ function Pricing() {
 
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 4,
-            background: C.white, border: `1.5px solid ${C.border}`,
+            background: C.bgCard, border: `1.5px solid ${C.border}`,
             borderRadius: 100, padding: 4, boxShadow: C.shadow,
           }}>
             {[
@@ -1221,7 +1199,7 @@ function Pricing() {
                   border: "none", cursor: "pointer", fontFamily: FONT,
                   fontWeight: 700, fontSize: 13, padding: "10px 18px",
                   borderRadius: 100, minHeight: 40,
-                  background: billing === opt.id ? C.ink : "transparent",
+                  background: billing === opt.id ? C.fill : "transparent",
                   color: billing === opt.id ? C.white : C.secondary,
                   transition: "all 0.2s",
                 }}
@@ -1244,7 +1222,7 @@ function Pricing() {
         }}>
           <FadeIn>
             <div style={{
-              background: C.white, border: `1px solid ${C.border}`,
+              background: C.bgCard, border: `1px solid ${C.border}`,
               borderRadius: 28, padding: isMobile ? 24 : 32, boxShadow: C.shadow,
               height: "100%", display: "flex", flexDirection: "column",
             }}>
@@ -1275,7 +1253,7 @@ function Pricing() {
 
           <FadeIn delay={0.1}>
             <div style={{
-              background: C.ink, borderRadius: 28, padding: isMobile ? 24 : 32,
+              background: C.fill, borderRadius: 28, padding: isMobile ? 24 : 32,
               boxShadow: "0 20px 60px rgba(25,28,30,0.18)",
               height: "100%", display: "flex", flexDirection: "column", position: "relative",
             }}>
@@ -1325,7 +1303,7 @@ function Pricing() {
                     onAcceptTerms={setAcceptTerms}
                     acceptWithdrawal={acceptWithdrawal}
                     onAcceptWithdrawal={setAcceptWithdrawal}
-                    ink={C.ink}
+                    ink="#191c1e"
                   />
                 </div>
               )}
@@ -1397,7 +1375,7 @@ function FAQ() {
             return (
               <FadeIn key={item.q} delay={i * 0.04}>
                 <div style={{
-                  background: isOpen ? C.bgSoft : C.white,
+                  background: isOpen ? C.bgSoft : C.bgCard,
                   border: `1px solid ${isOpen ? `${C.accent}60` : C.border}`,
                   borderRadius: 18, overflow: "hidden",
                   boxShadow: isOpen ? C.shadow : "none",
@@ -1476,7 +1454,7 @@ function FinalCTA() {
 
 function CaseStudies() {
   return (
-    <section id="etudes-de-cas" style={{ background: C.white, padding: "clamp(56px,8vw,96px) 20px" }}>
+    <section id="etudes-de-cas" style={{ background: C.bgCard, padding: "clamp(56px,8vw,96px) 20px" }}>
       <div style={{ maxWidth: 1040, margin: "0 auto" }}>
         <FadeIn style={{ textAlign: "center", marginBottom: 36 }}>
           <SectionLabel text="ÉTUDES DE CAS" />
@@ -1537,6 +1515,7 @@ export default function Landing() {
   useEffect(() => {
     document.body.style.background = C.bg;
     document.body.style.fontFamily = FONT;
+    document.documentElement.style.colorScheme = "dark";
 
     const scrollToTarget = () => {
       const path = window.location.pathname;
@@ -1551,13 +1530,16 @@ export default function Landing() {
 
     scrollToTarget();
     window.addEventListener("hashchange", scrollToTarget);
-    return () => window.removeEventListener("hashchange", scrollToTarget);
+    return () => {
+      window.removeEventListener("hashchange", scrollToTarget);
+      document.documentElement.style.colorScheme = "";
+    };
   }, [t, i18n.language]);
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
-      <PublicNav />
+      <PublicNav onDark />
       <Hero />
       <WhyMyswym />
       <HowItWorks />
