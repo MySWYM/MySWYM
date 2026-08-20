@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { COOKIE_CONSENT_KEY } from "./lib/cookie-consent.js";
+import { BRAND, FONT } from "./theme/brand.js";
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -40,22 +41,22 @@ export default function CookieBanner() {
         right: 16,
         bottom: 16,
         zIndex: 999,
-        background: "#ffffff",
-        border: "1px solid rgba(53,93,163,0.12)",
+        background: BRAND.card,
+        border: `1px solid ${BRAND.border}`,
         borderRadius: 16,
         padding: "14px 14px",
-        boxShadow: "0 12px 36px rgba(25,28,30,0.14)",
-        fontFamily: "'Lexend', sans-serif",
+        boxShadow: BRAND.shadowMd,
+        fontFamily: FONT,
         maxWidth: 560,
         margin: "0 auto",
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#434751" }}>
-        Nous utilisons des cookies et un stockage local <strong>nécessaires</strong> au fonctionnement
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: BRAND.inkLight }}>
+        Nous utilisons des cookies et un stockage local <strong style={{ color: BRAND.ink }}>nécessaires</strong> au fonctionnement
         (session, sécurité, préférences). Avec ton accord, nous mesurons aussi l’usage produit via{" "}
-        <strong>PostHog</strong> et les performances via <strong>Vercel Speed Insights</strong>
+        <strong style={{ color: BRAND.ink }}>PostHog</strong> et les performances via <strong style={{ color: BRAND.ink }}>Vercel Speed Insights</strong>
         {" "}(événements sans contenu de séance ni notes personnelles).{" "}
-        <Link to="/politique-cookies" style={{ color: "#154388", fontWeight: 700, textDecoration: "none" }}>
+        <Link to="/politique-cookies" style={{ color: BRAND.primaryDeep, fontWeight: 700, textDecoration: "none" }}>
           En savoir plus
         </Link>
       </p>
@@ -65,11 +66,11 @@ export default function CookieBanner() {
           onClick={() => saveChoice("refused")}
           style={{
             background: "none",
-            border: "1px solid #c3c6d2",
+            border: `1px solid ${BRAND.outlineVar}`,
             borderRadius: 10,
             padding: "8px 12px",
             fontSize: 12,
-            color: "#5d5e61",
+            color: BRAND.inkLight,
             cursor: "pointer",
             fontWeight: 600,
           }}
@@ -80,12 +81,12 @@ export default function CookieBanner() {
           type="button"
           onClick={() => saveChoice("accepted")}
           style={{
-            background: "#8eb3ff",
+            background: BRAND.primary,
             border: "none",
             borderRadius: 10,
             padding: "8px 12px",
             fontSize: 12,
-            color: "#154388",
+            color: BRAND.accentText,
             cursor: "pointer",
             fontWeight: 700,
           }}

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-
-const FONT = "'Lexend', sans-serif";
+import { BRAND, FONT } from "../theme/brand.js";
 
 /** CTA mobile collé en bas — option B (en plus du bouton header). */
 export default function StickyCta({ href = "/inscription" }) {
@@ -29,10 +28,10 @@ export default function StickyCta({ href = "/inscription" }) {
           bottom: 0,
           zIndex: 180,
           padding: "10px 16px max(12px, env(safe-area-inset-bottom))",
-          background: "rgba(255,255,255,0.94)",
+          background: "rgba(0, 5, 20, 0.92)",
           backdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(53,93,163,0.12)",
-          boxShadow: "0 -8px 28px rgba(25,28,30,0.08)",
+          borderTop: `1px solid ${BRAND.border}`,
+          boxShadow: "0 -8px 28px rgba(0,0,0,0.35)",
         }}
       >
         <a
@@ -43,8 +42,8 @@ export default function StickyCta({ href = "/inscription" }) {
             justifyContent: "center",
             minHeight: 48,
             borderRadius: 14,
-            background: "#8eb3ff",
-            color: "#154388",
+            background: BRAND.primary,
+            color: BRAND.accentText,
             fontWeight: 700,
             fontSize: 15,
             fontFamily: FONT,

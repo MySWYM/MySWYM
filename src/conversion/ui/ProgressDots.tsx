@@ -26,7 +26,7 @@ export function ProgressDots({ step, total, label }: Props) {
               key={i}
               animate={{
                 width: active && i === step - 1 ? 20 : 6,
-                backgroundColor: active ? '#355da3' : 'rgba(15,20,25,0.12)',
+                backgroundColor: active ? '#006bfd' : 'rgba(0,107,253,0.22)',
               }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className="cv:h-1.5 cv:rounded-full"

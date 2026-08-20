@@ -2,16 +2,16 @@ import { useState } from "react";
 import { Star } from "lucide-react";
 import { usePublishedReviews } from "./usePublishedReviews.js";
 
-const FONT = "'Lexend', sans-serif";
+const FONT = "var(--lp-sans, Geist, sans-serif)";
 const C = {
-  ink: "#191c1e",
-  inkLight: "#434751",
-  secondary: "#5d5e61",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  border: "rgba(53,93,163,0.12)",
-  white: "#ffffff",
-  bgSoft: "#edeef1",
+  ink: "var(--lp-fg, #f4f8fa)",
+  inkLight: "var(--lp-muted, #9bb4c4)",
+  secondary: "var(--lp-muted, #9bb4c4)",
+  accent: "var(--lp-primary, #006bfd)",
+  accentText: "var(--lp-primary-fg, #ffffff)",
+  border: "var(--lp-border, rgba(0,107,253,0.22))",
+  white: "var(--lp-card, #06101f)",
+  bgSoft: "transparent",
 };
 
 function StarRow({ value, onChange, readOnly = false }) {
@@ -82,15 +82,15 @@ export default function LandingReviews() {
   };
 
   return (
-    <section id="avis" style={{ background: C.bgSoft, padding: "clamp(56px,8vw,96px) 20px" }}>
+    <section id="avis" style={{ background: C.bgSoft, padding: "clamp(40px, 8vw, 96px) 16px" }}>
       <div style={{ maxWidth: 800, margin: "0 auto", fontFamily: FONT }}>
         <p style={{
-          display: "inline-flex", background: "#d8e2ff", borderRadius: 100,
-          padding: "5px 14px", color: "#355da3", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
+          display: "inline-flex", background: "color-mix(in srgb, var(--lp-primary, #006bfd) 14%, transparent)", borderRadius: 100,
+          padding: "5px 14px", color: "var(--lp-primary, #006bfd)", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
         }}>AVIS</p>
         <h2 style={{
-          fontFamily: "'Barlow Condensed', sans-serif", fontSize: "clamp(32px, 4.5vw, 48px)",
-          fontWeight: 800, color: C.ink, margin: "16px 0 12px", textTransform: "uppercase",
+          fontFamily: "var(--lp-display, 'Space Grotesk', sans-serif)", fontSize: "clamp(1.5rem, 6vw, 2.25rem)",
+          fontWeight: 700, color: C.ink, margin: "16px 0 12px",
         }}>
           Ce qu’en disent les nageurs
         </h2>
@@ -137,7 +137,7 @@ export default function LandingReviews() {
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Prénom *</span>
               <input required value={name} onChange={(e) => setName(e.target.value)} maxLength={80}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44 }} />
+                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44, background: "var(--lp-bg, #000514)", color: C.ink }} />
             </label>
             <div>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Note *</span>
@@ -146,12 +146,12 @@ export default function LandingReviews() {
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Ton avis *</span>
               <textarea required value={body} onChange={(e) => setBody(e.target.value)} maxLength={800} rows={4}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT }} />
+                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, background: "var(--lp-bg, #000514)", color: C.ink }} />
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Email (non publié)</span>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44 }} />
+                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44, background: "var(--lp-bg, #000514)", color: C.ink }} />
             </label>
             {status === "error" ? <p style={{ margin: 0, color: "#b42318", fontSize: 13, fontWeight: 600 }}>{errorMsg}</p> : null}
             <button type="submit" disabled={status === "sending"} style={{

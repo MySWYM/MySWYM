@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
 
 const SUPPORT_EMAIL = "contact@myswym.app";
-const FONT = "'Lexend', sans-serif";
+const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
 
 const QUICK_PROMPTS = [
@@ -237,7 +237,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
           height: 54,
           borderRadius: "50%",
           border: "none",
-          background: "#355da3",
+          background: "#006bfd",
           color: "#fff",
           boxShadow: "0 8px 28px rgba(53,93,163,0.35)",
           cursor: "pointer",
@@ -268,7 +268,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             className="sheet-panel"
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "#fff",
+              background: "#06101f",
               borderRadius: 24,
               padding: view === "chat" ? "16px 16px 14px" : "22px 20px 20px",
               boxShadow: "0 20px 60px rgba(53,93,163,0.22)",
@@ -286,16 +286,16 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     type="button"
                     aria-label="Retour"
                     onClick={() => setView("home")}
-                    style={{ background: "#f2f3f6", border: "none", borderRadius: 10, width: 40, height: 40, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}
+                    style={{ background: "#0a162c", border: "none", borderRadius: 10, width: 40, height: 40, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}
                   >
-                    <ArrowLeft size={17} color="#434751" />
+                    <ArrowLeft size={17} color="#9bb0c8" />
                   </button>
                 )}
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#737782", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9bb0c8", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
                     Support
                   </div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#191c1e", lineHeight: 1.2 }}>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f4f8fa", lineHeight: 1.2 }}>
                     {view === "chat" ? "Assistance rapide" : view === "contact" ? "Contacter l'équipe" : "Besoin d'aide ?"}
                   </h3>
                 </div>
@@ -304,15 +304,15 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                 type="button"
                 aria-label="Fermer"
                 onClick={close}
-                style={{ background: "#f2f3f6", border: "none", borderRadius: 10, width: 44, height: 44, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                style={{ background: "#0a162c", border: "none", borderRadius: 10, width: 44, height: 44, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               >
-                <X size={18} color="#434751" />
+                <X size={18} color="#9bb0c8" />
               </button>
             </div>
 
             {view === "home" && (
               <>
-                <p style={{ fontSize: 15, color: "#434751", lineHeight: 1.55, margin: "0 0 18px" }}>
+                <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
                   Questions produit ou vocabulaire natation — réponses immédiates, ou message direct à l'équipe.
                 </p>
 
@@ -327,7 +327,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     padding: "14px 16px",
                     minHeight: 56,
                     borderRadius: 14,
-                    background: "#355da3",
+                    background: "#006bfd",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 15,
@@ -358,8 +358,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     padding: "14px 16px",
                     minHeight: 56,
                     borderRadius: 14,
-                    background: "#f2f3f6",
-                    color: "#191c1e",
+                    background: "#0a162c",
+                    color: "#f4f8fa",
                     fontWeight: 700,
                     fontSize: 15,
                     border: "none",
@@ -368,10 +368,10 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     textAlign: "left",
                   }}
                 >
-                  <Mail size={18} color="#355da3" style={{ flexShrink: 0 }} />
+                  <Mail size={18} color="#006bfd" style={{ flexShrink: 0 }} />
                   <span>
                     Contacter l'équipe
-                    <span style={{ display: "block", fontWeight: 500, fontSize: 12, color: "#737782", marginTop: 2 }}>
+                    <span style={{ display: "block", fontWeight: 500, fontSize: 12, color: "#9bb0c8", marginTop: 2 }}>
                       {SUPPORT_EMAIL}
                     </span>
                   </span>
@@ -381,7 +381,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
 
             {view === "contact" && (
               <>
-                <p style={{ fontSize: 15, color: "#434751", lineHeight: 1.55, margin: "0 0 18px" }}>
+                <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
                   Question sur une séance, suggestion ou souci technique — l'équipe répond sous 24–48 h ouvrjours ouvrés) à {SUPPORT_EMAIL}.
                 </p>
                 <a
@@ -396,7 +396,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     padding: "14px 16px",
                     minHeight: 48,
                     borderRadius: 14,
-                    background: "#355da3",
+                    background: "#006bfd",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 15,
@@ -431,8 +431,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       style={{
                         alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
                         maxWidth: "88%",
-                        background: msg.role === "user" ? "#355da3" : "#f2f3f6",
-                        color: msg.role === "user" ? "#fff" : "#191c1e",
+                        background: msg.role === "user" ? "#006bfd" : "#0a162c",
+                        color: msg.role === "user" ? "#fff" : "#f4f8fa",
                         borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
                         padding: "10px 13px",
                         fontSize: 14,
@@ -447,8 +447,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     <div
                       style={{
                         alignSelf: "flex-start",
-                        background: "#f2f3f6",
-                        color: "#737782",
+                        background: "#0a162c",
+                        color: "#9bb0c8",
                         borderRadius: "14px 14px 14px 4px",
                         padding: "10px 14px",
                         fontSize: 13,
@@ -471,8 +471,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       onClick={() => send(p)}
                       style={{
                         border: "1px solid rgba(53,93,163,0.22)",
-                        background: "#fff",
-                        color: "#154388",
+                        background: "#06101f",
+                        color: "#3d8fff",
                         borderRadius: 999,
                         padding: "7px 12px",
                         fontSize: 12,
@@ -505,13 +505,13 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       flex: 1,
                       minHeight: 44,
                       borderRadius: 12,
-                      border: "1.5px solid rgba(53,93,163,0.18)",
+                      border: "1.5px solid rgba(0,107,253,0.28)",
                       padding: "10px 14px",
                       fontSize: 15,
                       fontFamily: FONT,
-                      color: "#191c1e",
+                      color: "#f4f8fa",
                       outline: "none",
-                      background: "#f8f9fc",
+                      background: "#06101f",
                     }}
                   />
                   <button
@@ -523,7 +523,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       height: 44,
                       borderRadius: 12,
                       border: "none",
-                      background: input.trim() && !typing ? "#355da3" : "#d8e2ff",
+                      background: input.trim() && !typing ? "#006bfd" : "rgba(0,107,253,0.22)",
                       color: "#fff",
                       cursor: input.trim() && !typing ? "pointer" : "default",
                       display: "flex",
@@ -546,7 +546,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     minHeight: 40,
                     background: "none",
                     border: "none",
-                    color: "#355da3",
+                    color: "#006bfd",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",

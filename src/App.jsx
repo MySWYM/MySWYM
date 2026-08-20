@@ -119,7 +119,7 @@ const FontLoader = () => {
   useEffect(() => {
     const l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
+    l.href = "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap";
     document.head.appendChild(l);
   }, []);
   return null;
@@ -131,15 +131,15 @@ const THEME_LAST_KEY = "myswym_theme_last";
 const THEME_LEGACY_KEY = "myswym_theme"; // ancien stockage global (migré)
 
 const G_LIGHT = {
-  bg: "#f8f9fc",
+  bg: "#f4f8fa",
   surface: "#FFFFFF",
-  ink: "#191c1e",
-  inkLight: "#434751",
+  ink: "#06101f",
+  inkLight: "#3d4f66",
   inverse: "#FFFFFF",
-  blue: "#355da3",
-  blueLight: "#d8e2ff",
-  blueMid: "#8eb3ff",
-  blueDeep: "#154388",
+  blue: "#006bfd",
+  blueLight: "#d6e7ff",
+  blueMid: "#3d8fff",
+  blueDeep: "#0056d6",
   water: "#00B4D8",
   waterLight: "#E0F7FA",
   coral: "#FF4757",
@@ -150,25 +150,25 @@ const G_LIGHT = {
   goldLight: "#FEF3C7",
   purple: "#7C3AED",
   purpleLight: "#EDE9FE",
-  grey: "#737782",
-  greyMid: "#9CA3AF",
-  greyLight: "#e1e2e5",
-  greyXLight: "#f2f3f6",
+  grey: "#5d6b7d",
+  greyMid: "#9bb0c8",
+  greyLight: "#d7e3f0",
+  greyXLight: "#eef3f8",
   white: "#FFFFFF",
   glass: "rgba(255,255,255,0.95)",
   navGlass: "rgba(255,255,255,0.94)",
 };
 
 const G_DARK = {
-  bg: "#0c0e12",
-  surface: "#161a22",
-  ink: "#f0f2f5",
-  inkLight: "#c5c9d2",
-  inverse: "#0c0e12",
-  blue: "#7aa2ef",
-  blueLight: "#1a2744",
-  blueMid: "#8eb3ff",
-  blueDeep: "#a8c5ff",
+  bg: "#000514",
+  surface: "#06101f",
+  ink: "#f4f8fa",
+  inkLight: "#9bb0c8",
+  inverse: "#000514",
+  blue: "#006bfd",
+  blueLight: "#0a162c",
+  blueMid: "#3d8fff",
+  blueDeep: "#3d8fff",
   water: "#22c3e0",
   waterLight: "#0c2a32",
   coral: "#FF6B78",
@@ -179,17 +179,17 @@ const G_DARK = {
   goldLight: "#3a2a0a",
   purple: "#a78bfa",
   purpleLight: "#241a3d",
-  grey: "#9aa0ad",
-  greyMid: "#6b7280",
-  greyLight: "#2a303c",
-  greyXLight: "#1c212b",
+  grey: "#9bb0c8",
+  greyMid: "#6b7c90",
+  greyLight: "rgba(0, 107, 253, 0.22)",
+  greyXLight: "#0a162c",
   white: "#FFFFFF",
-  glass: "rgba(12,14,18,0.92)",
-  navGlass: "rgba(22,26,34,0.94)",
+  glass: "rgba(0, 5, 20, 0.92)",
+  navGlass: "rgba(6, 16, 31, 0.94)",
 };
 
 /** Palette active — mutée par applyTheme pour que les styles inline suivent le thème. */
-const G = { ...G_LIGHT };
+const G = { ...G_DARK };
 
 const normalizeTheme = (value) => (value === "dark" ? "dark" : "light");
 
@@ -203,7 +203,7 @@ const getStoredTheme = (userId = null) => {
     const legacy = localStorage.getItem(THEME_LEGACY_KEY);
     if (legacy === "dark" || legacy === "light") return legacy;
   } catch { /* ignore */ }
-  return "light";
+  return "dark";
 };
 
 const resolveThemeForUser = (user) => {
@@ -235,8 +235,15 @@ const applyTheme = (theme, { userId = null, persist = true } = {}) => {
   root.style.setProperty("--myswym-bg", next.bg);
   root.style.setProperty("--myswym-surface", next.surface);
   root.style.setProperty("--myswym-ink", next.ink);
+  root.style.setProperty("--myswym-ink-light", next.inkLight);
   root.style.setProperty("--myswym-blue", next.blue);
+  root.style.setProperty("--myswym-blue-light", next.blueLight);
+  root.style.setProperty("--myswym-blue-mid", next.blueMid);
+  root.style.setProperty("--myswym-blue-deep", next.blueDeep);
+  root.style.setProperty("--myswym-grey", next.grey);
+  root.style.setProperty("--myswym-grey-mid", next.greyMid);
   root.style.setProperty("--myswym-grey-light", next.greyLight);
+  root.style.setProperty("--myswym-grey-xlight", next.greyXLight);
   root.style.setProperty("--myswym-nav-bg", next.navGlass);
   root.style.setProperty("--myswym-nav-border", next.greyLight);
   root.style.setProperty("--myswym-glass", next.glass);
@@ -261,9 +268,9 @@ const persistThemeToAccount = (theme, user) => {
 // Dernier thème affiché (évite un flash) — remplacé dès que le compte est connu
 applyTheme((() => {
   try {
-    return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || localStorage.getItem(THEME_LEGACY_KEY));
+    return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || localStorage.getItem(THEME_LEGACY_KEY) || "dark");
   } catch {
-    return "light";
+    return "dark";
   }
 })(), { persist: false });
 
@@ -278,14 +285,16 @@ const TYPE_META = {
 
 const css = `
   :root {
-    --myswym-bg: ${G_LIGHT.bg};
-    --myswym-surface: ${G_LIGHT.surface};
-    --myswym-ink: ${G_LIGHT.ink};
-    --myswym-blue: ${G_LIGHT.blue};
-    --myswym-grey-light: ${G_LIGHT.greyLight};
-    --myswym-nav-bg: ${G_LIGHT.navGlass};
-    --myswym-nav-border: ${G_LIGHT.greyLight};
-    --myswym-glass: ${G_LIGHT.glass};
+    --myswym-bg: ${G_DARK.bg};
+    --myswym-surface: ${G_DARK.surface};
+    --myswym-ink: ${G_DARK.ink};
+    --myswym-ink-light: ${G_DARK.inkLight};
+    --myswym-blue: ${G_DARK.blue};
+    --myswym-blue-light: ${G_DARK.blueLight};
+    --myswym-grey-light: ${G_DARK.greyLight};
+    --myswym-nav-bg: ${G_DARK.navGlass};
+    --myswym-nav-border: ${G_DARK.greyLight};
+    --myswym-glass: ${G_DARK.glass};
     --bottom-nav-h: 64px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-top: env(safe-area-inset-top, 0px);
@@ -299,7 +308,7 @@ const css = `
   body {
     background: var(--myswym-bg);
     color: var(--myswym-ink);
-    font-family: 'Lexend', sans-serif;
+    font-family: Geist, ui-sans-serif, system-ui, sans-serif;
     overscroll-behavior: none;
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
@@ -307,9 +316,9 @@ const css = `
     transition: background-color 0.25s ease, color 0.2s ease;
   }
   #root { min-height: 100dvh; }
-  h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; text-transform: uppercase; font-weight: 800; }
+  h1, h2, h3 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
   h4 { letter-spacing: -0.01em; }
-  .syne { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; font-weight: 800; text-transform: uppercase; }
+  .syne { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; font-weight: 700; text-transform: none; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
@@ -352,8 +361,8 @@ const css = `
     vertical-align: top;
   }
   input[type="checkbox"]:checked {
-    background-color: #355da3;
-    border-color: #111827;
+    background-color: #006bfd;
+    border-color: #006bfd;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E");
   }
   input[type="checkbox"]:disabled {
@@ -361,7 +370,7 @@ const css = `
     cursor: not-allowed;
   }
   input[type="checkbox"]:focus-visible {
-    outline: 2px solid #355da3;
+    outline: 2px solid #006bfd;
     outline-offset: 2px;
   }
 
@@ -465,15 +474,15 @@ const css = `
     }
     body {
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(142,179,255,0.22), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(142,179,255,0.10), transparent 50%),
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,107,253,0.22), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,107,253,0.10), transparent 50%),
         var(--myswym-bg);
       background-attachment: fixed;
     }
     html[data-theme="dark"] body {
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(122,162,239,0.12), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(122,162,239,0.06), transparent 50%),
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,107,253,0.16), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,107,253,0.08), transparent 50%),
         var(--myswym-bg);
       background-attachment: fixed;
     }
@@ -495,14 +504,14 @@ const css = `
       transform: translateX(-50%);
       bottom: var(--nav-lift);
       border-radius: 22px;
-      border: 1px solid rgba(142,179,255,0.18);
-      border-top: 1px solid rgba(142,179,255,0.18);
-      box-shadow: 0 12px 40px rgba(53,93,163,0.18);
+      border: 1px solid rgba(0,107,253,0.22);
+      border-top: 1px solid rgba(0,107,253,0.22);
+      box-shadow: 0 12px 40px rgba(0,107,253,0.18);
       padding-bottom: 0;
       overflow: hidden;
     }
     html[data-theme="dark"] .bottom-nav {
-      border-color: rgba(142,179,255,0.12);
+      border-color: rgba(0,107,253,0.22);
       box-shadow: 0 12px 40px rgba(0,0,0,0.45);
     }
     .myswym-app {
@@ -1586,7 +1595,7 @@ const createShareCanvas = (session, goalLabel) => {
 
 // ── PRIMITIVES ────────────────────────────────────────────────────────────
 const Btn = ({ children, onClick, variant = "primary", disabled, style: s }) => {
-  const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "'Lexend', sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
+  const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
   const styles = { primary: { background: G.ink, color: G.inverse }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0,87,255,0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
   return <button type="button" disabled={!!disabled} onClick={onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
 };
@@ -1619,7 +1628,7 @@ const StatPill = ({ icon: Icon, value, label, color, bg }) => (
     <div style={{ width: 40, height: 40, borderRadius: 12, background: bg || G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Icon size={20} color={color || G.blue} />
     </div>
-    <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Lexend', sans-serif", letterSpacing: "-0.02em", color: color || G.blue, lineHeight: 1 }}>{value}</span>
+    <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", letterSpacing: "-0.02em", color: color || G.blue, lineHeight: 1 }}>{value}</span>
     <span style={{ fontSize: 10, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", textAlign: "center" }}>{label}</span>
   </div>
 );
@@ -1709,7 +1718,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
       <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
         </div>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 14, lineHeight: 1.45 }}>
           Courbe de progression de tes chronos sur les semaines d’entraînement — réservé aux membres Premium.
@@ -1729,7 +1738,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
             <TrendingUp size={16} color={G.blue} />
           </div>
           <div>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
             <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection sur ton plan</p>
           </div>
         </div>
@@ -1782,7 +1791,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           <TrendingUp size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>T100 — projection sur {totalWeeks} semaines</p>
         </div>
       </div>
@@ -1820,7 +1829,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
         ].map((c, i) => (
           <div key={i} style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
             <div style={{ fontSize: 10, color: G.grey, fontWeight: 600, marginBottom: 4 }}>{c.label}</div>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 800, color: c.color }}>{c.value}</div>
+            <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 15, fontWeight: 800, color: c.color }}>{c.value}</div>
           </div>
         ))}
       </div>
@@ -1863,7 +1872,7 @@ const PaceProjectionCard = ({ pace100 }) => {
           <TrendingUp size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
             Projection de performance
           </h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>
@@ -1904,7 +1913,7 @@ const PaceProjectionCard = ({ pace100 }) => {
           return (
             <div key={t.dist} style={{ background: `${t.color}0D`, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.color}22` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginBottom: 4, letterSpacing: "0.04em" }}>{t.label}</div>
-              <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
+              <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
                 {fmtTime(Math.round(raw))}
               </div>
               <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{paceStr}</div>
@@ -1942,7 +1951,7 @@ const PaceZonesCard = ({ pace100, onSave }) => {
           <Gauge size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton T100 (départ dans l&apos;eau)</p>
         </div>
       </div>
@@ -1969,10 +1978,10 @@ const PaceZonesCard = ({ pace100, onSave }) => {
             return (
               <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
+                  <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
                   <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{z.desc}</div>
                 </div>
-                <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
                   {fmtZone(ps)}
                 </div>
               </div>
@@ -2033,7 +2042,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
       <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
         </div>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Adapte le nombre de séances{isDecouverteLevel ? "" : " et ton allure"} — réservé aux membres Premium.</p>
 
@@ -2076,7 +2085,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             <div style={{
               width: "100%", padding: "12px 48px 12px 14px",
               fontSize: 16, fontWeight: 700, color: G.greyMid,
-              fontFamily: "'Lexend', sans-serif", boxSizing: "border-box",
+              fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", boxSizing: "border-box",
             }}>
               {paceRaw || "ex: 2:10"}
             </div>
@@ -2101,7 +2110,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
 
   return (
     <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-      <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
+      <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
       <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Tes semaines déjà entamées et tes séances validées sont conservées. La nouvelle fréquence s&apos;applique aux semaines pas encore commencées.</p>
 
       {/* Fréquence */}
@@ -2157,7 +2166,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             width: "100%", padding: "12px 48px 12px 14px", borderRadius: 12,
             border: `1.5px solid ${pace100 ? G.blue : G.greyLight}`,
             fontSize: 16, fontWeight: 700, color: G.ink,
-            fontFamily: "'Lexend', sans-serif", background: G.surface,
+            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", background: G.surface,
             outline: "none", boxSizing: "border-box",
           }}
         />
@@ -3022,7 +3031,7 @@ const StravaSection = ({
         <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && setHealthGateOpen(false)}>
           <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
-            <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 10 }}>
+            <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 10 }}>
               {HEALTH_CONSENT_TITLE}
             </h3>
             <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEALTH_CONSENT_BODY}</p>
@@ -4202,7 +4211,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
       background: G.glass, backdropFilter: "blur(16px)",
       WebkitBackdropFilter: "blur(16px)",
       borderBottom: `1px solid ${G.greyLight}`,
-      boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
+      boxShadow: "0 1px 16px rgba(0,107,253,0.12)",
       paddingTop: "var(--safe-top)",
     }}>
       <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
@@ -4217,7 +4226,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
               </div>
             </button>
           ) : null}
-          <BrandLogo variant="wordmark" height={16} style={{ maxWidth: "100%" }} />
+          <BrandLogo variant="wordmark" height={18} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark"} style={{ maxWidth: "100%" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <div ref={notifRef} style={{ position: "relative" }}>
@@ -4372,7 +4381,7 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
 
-const authInpStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none", boxSizing: "border-box" };
+const authInpStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", background: G.surface, color: G.ink, outline: "none", boxSizing: "border-box" };
 
 const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "current-password" }) => {
   const [visible, setVisible] = useState(false);
@@ -4494,7 +4503,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
   const btnBase = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
     width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-    fontFamily: "'Lexend', sans-serif", cursor: busy ? "not-allowed" : "pointer",
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", cursor: busy ? "not-allowed" : "pointer",
     opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
   };
 
@@ -4568,11 +4577,11 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <BrandLogo variant="wordmark" height={22} />
+          <BrandLogo variant="wordmark" height={22} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
+        <h2 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
         {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
@@ -4683,7 +4692,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
             <div style={{ display: "flex", alignItems: "center" }}>
-              <BrandLogo variant="wordmark" height={24} />
+              <BrandLogo variant="wordmark" height={24} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
             </div>
           ) : <div />}
           {onBack && (
@@ -4694,7 +4703,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
+        <h2 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
           {titleMap[mode]}
         </h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
@@ -4843,11 +4852,11 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
   const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
   const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Lexend', sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
   return (
     <div className="fade-up">
       <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
+      <h2 style={{ fontSize: 30, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
         <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
@@ -4880,7 +4889,7 @@ const dateSelectStyle = {
   background: G.greyXLight,
   fontSize: 15,
   fontWeight: 600,
-  fontFamily: "'Lexend', sans-serif",
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
   color: G.ink,
   cursor: "pointer",
   outline: "none",
@@ -4962,7 +4971,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 5 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
+      <h2 style={{ fontSize: 38, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
       <div style={{ background: G.surface, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
         <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>Date de l'événement</label>
@@ -5043,7 +5052,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
                   borderRadius: 10,
                   fontSize: 14,
                   fontWeight: isSel ? 700 : 500,
-                  fontFamily: "'Lexend', sans-serif",
+                  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
                   cursor: disabled ? "not-allowed" : "pointer",
                   background: isSel ? G.blue : today ? G.blueLight : "transparent",
                   color: isSel ? G.white : disabled ? G.greyMid : G.ink,
@@ -5086,36 +5095,74 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
 };
 
 
-const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6, disabledLevels = [] }) => (
+const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevels = [] }) => (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 20, lineHeight: 1.1 }}>Ton niveau</h2>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Ton niveau</h2>
+    <p style={{ fontSize: 14, color: G.inkLight, lineHeight: 1.5, marginBottom: 20 }}>
+      Choisis celui qui te décrit le mieux aujourd’hui — pas celui que tu vises.
+    </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
       {LEVELS.map(l => {
         const isActive = value === l.id;
         const isDisabled = disabledLevels.includes(l.id);
         return (
           <button key={l.id}
+            type="button"
             onClick={() => !isDisabled && onChange(l.id)}
             disabled={isDisabled}
             style={{
               padding: "14px 16px", borderRadius: 14,
-              border: `2px solid ${isDisabled ? G.greyLight : isActive ? l.color : G.greyLight}`,
-              background: isDisabled ? G.greyXLight : isActive ? l.bg : G.surface,
+              border: `2px solid ${isDisabled ? G.greyLight : isActive ? G.blue : G.greyLight}`,
+              background: isDisabled ? G.greyXLight : isActive ? G.blueLight : G.surface,
               cursor: isDisabled ? "default" : "pointer", textAlign: "left", opacity: isDisabled ? 0.55 : 1,
             }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? l.color : G.ink }}>{l.label}</div>
-            {!isDisabled && <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{l.desc}</div>}
+            <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? G.blue : G.ink }}>{l.label}</div>
+            {!isDisabled && <div style={{ fontSize: 13, color: isActive ? G.inkLight : G.grey, marginTop: 2 }}>{l.desc}</div>}
           </button>
         );
       })}
     </div>
+    <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
+    <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
+  </div>
+);
+
+const Step3_Pool = ({ value, onChange, onNext, onBack }) => (
+  <div className="fade-up">
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Ton bassin</h2>
+    <p style={{ fontSize: 16, fontWeight: 600, color: G.ink, lineHeight: 1.35, marginBottom: 8 }}>
+      Quelle est la longueur de la piscine où tu nages ?
+    </p>
+    <p style={{ fontSize: 14, color: G.inkLight, lineHeight: 1.5, marginBottom: 20 }}>
+      25&nbsp;m, c’est le bassin le plus courant. 50&nbsp;m, c’est le grand bassin (souvent olympique). Tes séances seront calées sur cette longueur.
+    </p>
     <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-      {POOLS.map(p => (
-        <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.surface, color: pool === p.id ? G.inverse : G.ink, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{p.label}</button>
-      ))}
+      {POOLS.map(p => {
+        const isActive = Number(value) === p.id;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onChange(p.id)}
+            style={{
+              flex: 1,
+              padding: "16px 14px",
+              borderRadius: 14,
+              border: `2px solid ${isActive ? G.blue : G.greyLight}`,
+              background: isActive ? G.blueLight : G.surface,
+              color: isActive ? G.blue : G.ink,
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            {p.label}
+          </button>
+        );
+      })}
     </div>
     <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
-    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
+    <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
   </div>
 );
 
@@ -5182,7 +5229,7 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
         style={{
           width: "100%", boxSizing: "border-box",
           padding: "16px 14px", fontSize: 24,
-          fontFamily: "'Lexend', sans-serif", fontWeight: 700,
+          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
           textAlign: "center", letterSpacing: "0.06em",
           border: `2px solid ${err ? "#FF3B30" : value && !disabled ? G.blue : G.greyLight}`,
           borderRadius: 14, outline: "none",
@@ -5243,7 +5290,7 @@ const onboardingNumInp = {
   borderRadius: 12,
   border: `1.5px solid ${G.greyLight}`,
   fontSize: 18,
-  fontFamily: "'Lexend', sans-serif",
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
   fontWeight: 700,
   color: G.ink,
   background: G.surface,
@@ -5750,17 +5797,17 @@ const OnboardingWizard = ({
 
   const totalSteps = isGoalMode
     ? (isProgression ? 2 : 4)
-    : (isProgression ? 8 : isDiplome ? 9 : 10);
+    : (isProgression ? 9 : isDiplome ? 10 : 11);
 
-  const stepBefore5 = isDiplome ? 2 : 3;
+  const stepBefore5 = 4;
   const progressStep = (() => {
     if (isGoalMode) {
       if (isProgression) return ({ 1: 1, 13: 2 })[step] || 1;
       return ({ 1: 1, 2: 2, 6: 3, 13: 4 })[step] || 1;
     }
-    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 12: 6, 9: 7, 13: 8 })[step] || 1;
-    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 12: 6, 9: 7, 6: 8, 13: 9 })[step] || 1;
-    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 6: 9, 13: 10 })[step] || 1;
+    if (isProgression) return ({ 3: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 13: 9 })[step] || 1;
+    if (isDiplome) return ({ 2: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 6: 9, 13: 10 })[step] || 1;
+    return ({ 2: 1, 3: 2, 4: 3, 5: 4, 7: 5, 8: 6, 10: 7, 12: 8, 9: 9, 6: 10, 13: 11 })[step] || 1;
   })();
 
   const goAfterCategory = (cat) => {
@@ -5783,7 +5830,7 @@ const OnboardingWizard = ({
     }
     if (isDiplome) {
       patchProfile({ goal: goalId, level: "sportif" });
-      setStep(5);
+      setStep(4);
     } else {
       update("goal", goalId);
       setStep(3);
@@ -5838,14 +5885,21 @@ const OnboardingWizard = ({
       {!isGoalMode && step === 3 && !isDiplome && (
         <Step3_Level
           value={profile.level} onChange={v => update("level", v)}
-          pool={profile.pool} onPoolChange={v => update("pool", v)}
           total={totalSteps}
           disabledLevels={disabledLevels}
           onNext={() => {
             update("pace100", null);
-            setStep(5);
+            setStep(4);
           }}
           onBack={() => isProgression ? setStep(1) : setStep(2)} />
+      )}
+
+      {!isGoalMode && step === 4 && (
+        <Step3_Pool
+          value={profile.pool}
+          onChange={v => update("pool", v)}
+          onNext={() => setStep(5)}
+          onBack={() => setStep(isDiplome ? 2 : 3)} />
       )}
 
       {!isGoalMode && step === 5 && (
@@ -6020,13 +6074,17 @@ const OnboardingWizard = ({
 };
 
 // ── LOADING ───────────────────────────────────────────────────────────────
-/** Boot loader Apple-like — wordmark + spinner fin + Loading. Styles dans index.html. */
+/** Boot loader — logo + barre. Styles dans index.html. */
 const Loading = () => (
   <div className="myswym-boot" role="status" aria-live="polite" aria-busy="true">
     <div className="myswym-boot-inner">
-      <p className="myswym-boot-mark">MySWYM</p>
-      <div className="myswym-boot-spinner" aria-hidden="true" />
-      <p className="myswym-boot-label">Loading</p>
+      <div className="myswym-boot-icon-wrap">
+        <img className="myswym-boot-icon" src="/apple-touch-icon.png" alt="" width={88} height={88} />
+      </div>
+      <img className="myswym-boot-wordmark" src="/logo-myswym-banner-blanc.png" alt="mySWYM" height={28} width={192} />
+      <p className="myswym-boot-status">Préparation de votre espace nageur</p>
+      <div className="myswym-boot-track" aria-hidden="true"><div className="myswym-boot-bar" /></div>
+      <p className="myswym-boot-label">Un instant</p>
     </div>
   </div>
 );
@@ -6051,14 +6109,14 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
+        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
         <div style={{ background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(142,179,255,0.15)" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
             <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
-          <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
+          <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 12 }}>
             {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
               <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px" }}>
@@ -6155,7 +6213,7 @@ const ConfirmSheet = ({
       <h3
         id="confirm-sheet-title"
         style={{
-          fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800,
+          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800,
           color: G.ink, textAlign: "center", marginBottom: 8,
         }}
       >
@@ -6212,7 +6270,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Semaine {weekNumber} terminée
         </p>
-        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment tu t'es senti·e ?
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: isPremium ? 28 : 12, lineHeight: 1.5 }}>
@@ -6288,7 +6346,7 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Retour séance
         </p>
-        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment c'était ?
         </h3>
         {sessionTitle && (
@@ -6688,7 +6746,7 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Check size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
             {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
@@ -6744,6 +6802,8 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
           acceptWithdrawal={acceptWithdrawal}
           onAcceptWithdrawal={handleAcceptWithdrawal}
           ink={G.ink}
+          muted={G.inkLight}
+          linkColor={G.blueMid}
           idPrefix="plan-ready-legal"
         />
 
@@ -6770,7 +6830,7 @@ const CancelSurveySheet = ({ onChoose, onSkip }) => {
     <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8, textAlign: "center" }}>
+        <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8, textAlign: "center" }}>
           Avant de partir
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
@@ -6826,7 +6886,7 @@ const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
         <Lock size={28} color={G.gold} />
       </div>
       <h1 id="freeze-title" style={{
-        fontFamily: "'Barlow Condensed', sans-serif", fontSize: 36, fontWeight: 800,
+        fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 36, fontWeight: 800,
         textTransform: "uppercase", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
       }}>
         Ton essai est terminé
@@ -6954,7 +7014,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
             {headline}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
@@ -6985,7 +7045,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
               }}>−20%</div>
             )}
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
+            <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
             <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois · sans engagement</div>
           </button>
 
@@ -6996,14 +7056,14 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
             transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>39,99€</div>
+            <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>39,99€</div>
             <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · pas de remboursement*</div>
           </button>
         </div>
 
         {showTrialOffer && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", lineHeight: 1.4, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
               7 jours offerts sans carte à l’inscription · ensuite l’app se gèle
             </span>
           </div>
@@ -7047,6 +7107,8 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           acceptWithdrawal={acceptWithdrawal}
           onAcceptWithdrawal={handleAcceptWithdrawal}
           ink={G.ink}
+          muted={G.inkLight}
+          linkColor={G.blueMid}
           idPrefix="upgrade-modal-legal"
         />
 
@@ -7082,7 +7144,7 @@ const PremiumTeaser = ({ onUpgrade }) => (
 );
 
 const PremiumBanner = ({ onUpgrade, weeks = 0 }) => (
-  <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #355da3 0%, #8eb3ff 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+  <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #006bfd 0%, #003d99 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>
@@ -7537,7 +7599,7 @@ const SessionCard = ({
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -8858,7 +8920,7 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{
-            fontFamily: "'Lexend', sans-serif",
+            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
             fontSize: 18, fontWeight: 800, color: G.ink,
             margin: "0 0 6px", lineHeight: 1.25, letterSpacing: "-0.02em",
           }}>
@@ -8909,7 +8971,7 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
             style={{
               display: "block", width: "100%", boxSizing: "border-box",
               padding: "16px 14px", fontSize: 24,
-              fontFamily: "'Lexend', sans-serif", fontWeight: 700,
+              fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
               textAlign: "center", letterSpacing: "0.06em",
               border: `2px solid ${G.greyLight}`,
               borderRadius: 14, outline: "none",
@@ -9175,7 +9237,7 @@ const BadgesTab = ({ plan }) => {
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
         <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
@@ -9188,7 +9250,7 @@ const BadgesTab = ({ plan }) => {
       <div style={{ padding: "20px 16px 0" }}>
         {earned.length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
                 <div key={b.id} className="scale-in" style={{ background: G.surface, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
@@ -9204,7 +9266,7 @@ const BadgesTab = ({ plan }) => {
         )}
         {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
                 <div key={b.id} style={{ background: G.greyXLight, borderRadius: 16, padding: 16, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
@@ -13982,7 +14044,7 @@ export default function App() {
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={22} />
+                <BrandLogo variant="wordmark" height={22} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
               </div>
             </div>
             <OnboardingWizard
@@ -14032,8 +14094,8 @@ export default function App() {
           </div>
         )}
         {user && isPremium && accessState.status === "trial" && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 2 && (
-          <div style={{ background: "#EFF6FF", borderBottom: "1px solid #BFDBFE", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: "#1E40AF" }}>
+          <div style={{ background: G.blueLight, borderBottom: `1px solid ${G.greyLight}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: G.blue }}>
               <span style={{ flex: 1, lineHeight: 1.35 }}>
                 {accessState.trialDaysLeft === 1
                   ? "Dernier jour d’essai — demain l’app se gèle. Abonne-toi pour garder tes plans."

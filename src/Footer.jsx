@@ -4,7 +4,7 @@ import { resetCookieConsent } from "./lib/cookie-consent.js";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 
-const FONT = "'Lexend', sans-serif";
+import { BRAND, FONT } from "./theme/brand.js";
 
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
@@ -50,8 +50,8 @@ export default function Footer({ aboveBottomNav = false }) {
     <footer
       id="contact"
       style={{
-        background: "#191c1e",
-        borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+        background: BRAND.bg,
+        borderTop: `1px solid ${BRAND.border}`,
         padding: isMobile ? "32px 20px" : "36px 24px",
         marginBottom: aboveBottomNav
           ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + var(--nav-lift, 0px))"
@@ -72,8 +72,8 @@ export default function Footer({ aboveBottomNav = false }) {
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8, maxWidth: 260 }}>
-          <BrandLogo height={52} onDark />
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.5, fontFamily: FONT }}>
+          <BrandLogo variant="wordmark" height={28} onDark />
+          <p style={{ margin: 0, color: BRAND.inkLight, fontSize: 13, lineHeight: 1.5, fontFamily: FONT }}>
             {t("footer.tagline")}
           </p>
           <a

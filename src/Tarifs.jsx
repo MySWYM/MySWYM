@@ -19,35 +19,18 @@ import BrandLogo from "./BrandLogo.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import { usePageSeo } from "./lib/seo.js";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
+import { BRAND, FONT, FONT_DISPLAY, FONT_HREF } from "./theme/brand.js";
+import "./theme/public.css";
 
 const C = {
-  bg: "#f8f9fc",
-  bgSoft: "#edeef1",
-  bgCard: "#f2f3f6",
-  ink: "#191c1e",
-  secondary: "#5d5e61",
-  primary: "#355da3",
-  primaryDeep: "#154388",
-  primaryFix: "#d8e2ff",
-  outlineVar: "#c3c6d2",
-  white: "#ffffff",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  border: "rgba(53,93,163,0.08)",
-  shadow: "0 2px 12px rgba(142,179,255,0.10)",
-  shadowLg: "0 20px 60px rgba(12,26,46,0.18)",
-  night: "#0c1a2e",
+  ...BRAND,
 };
-
-const FONT = "'Lexend', sans-serif";
-const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
 
 function FontLoader() {
   useEffect(() => {
     const l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href =
-      "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
+    l.href = FONT_HREF;
     document.head.appendChild(l);
   }, []);
   return null;
@@ -74,7 +57,7 @@ function SectionEyebrow({ children, dark = false }) {
         gap: 8,
         padding: "7px 14px",
         borderRadius: 999,
-        background: dark ? "rgba(142,179,255,0.14)" : C.primaryFix,
+        background: dark ? "rgba(0,107,253,0.16)" : C.primaryFix,
         color: dark ? C.accent : C.primary,
         fontSize: 12,
         fontWeight: 800,
@@ -142,10 +125,10 @@ function CompactTableValue({ value, premium = false }) {
         padding: "8px 10px",
         borderRadius: 12,
         background: premium
-          ? "rgba(53,93,163,0.10)"
+          ? "rgba(0,107,253,0.18)"
           : positive
-            ? "rgba(53,93,163,0.08)"
-            : "#f4f5f7",
+            ? "rgba(0,107,253,0.12)"
+            : "#0a162c",
         color: premium ? C.primaryDeep : C.ink,
         fontSize: 13,
         lineHeight: 1.3,
@@ -333,7 +316,7 @@ export default function TarifsPage() {
   ];
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
+    <div className="ms-root" style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
       <PublicNav />
 
@@ -343,8 +326,8 @@ export default function TarifsPage() {
           overflow: "hidden",
           padding: isMobile ? "96px 16px 48px" : "112px 20px 72px",
           background: `
-            linear-gradient(180deg, rgba(12,26,46,0.96) 0%, rgba(21,67,136,0.92) 44%, rgba(248,249,252,1) 100%),
-            linear-gradient(140deg, #0c1a2e 0%, #154388 46%, #8eb3ff 100%)
+            linear-gradient(180deg, rgba(0,5,20,0.2) 0%, rgba(0,5,20,0.55) 70%, #000514 100%),
+            linear-gradient(140deg, #000514 0%, #06101f 46%, #0a162c 100%)
           `,
         }}
       >
@@ -354,7 +337,7 @@ export default function TarifsPage() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(circle at 20% 20%, rgba(142,179,255,0.28), transparent 35%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.12), transparent 30%)",
+              "radial-gradient(circle at 20% 20%, rgba(0,107,253,0.22), transparent 35%), radial-gradient(circle at 80% 30%, rgba(0,107,253,0.08), transparent 30%)",
             pointerEvents: "none",
           }}
         />
@@ -380,7 +363,7 @@ export default function TarifsPage() {
                   fontWeight: 800,
                   color: C.white,
                   margin: "18px 0 16px",
-                  textTransform: "uppercase",
+                  textTransform: "none",
                 }}
               >
                 Le Premium transforme
@@ -422,7 +405,7 @@ export default function TarifsPage() {
                     fontSize: 16,
                     fontFamily: FONT,
                     cursor: "pointer",
-                    boxShadow: "0 10px 30px rgba(142,179,255,0.35)",
+                    boxShadow: "0 10px 30px rgba(0,107,253,0.35)",
                   }}
                 >
                   Passer Premium <ArrowRight size={16} />
@@ -537,7 +520,7 @@ export default function TarifsPage() {
                       fontSize: 28,
                       fontWeight: 800,
                       fontFamily: FONT_DISPLAY,
-                      textTransform: "uppercase",
+                      textTransform: "none",
                       lineHeight: 1,
                       marginTop: 6,
                     }}
@@ -632,7 +615,7 @@ export default function TarifsPage() {
         >
           <div
             style={{
-              background: C.white,
+              background: C.card,
               border: `1px solid ${C.border}`,
               borderRadius: 28,
               padding: isMobile ? 22 : 28,
@@ -642,7 +625,7 @@ export default function TarifsPage() {
             <div style={{ fontSize: 12, color: C.secondary, fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
               ESSAI
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "none", marginTop: 8 }}>
               7 jours Premium
             </div>
             <div style={{ fontSize: 54, lineHeight: 1, color: C.ink, fontWeight: 800, fontFamily: FONT_DISPLAY, marginTop: 16 }}>
@@ -692,7 +675,7 @@ export default function TarifsPage() {
                 position: "absolute",
                 inset: 0,
                 background:
-                  "radial-gradient(circle at top right, rgba(142,179,255,0.28), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0))",
+                  "radial-gradient(circle at top right, rgba(0,107,253,0.28), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0))",
               }}
             />
             <div style={{ position: "relative", zIndex: 1 }}>
@@ -716,7 +699,7 @@ export default function TarifsPage() {
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
                 PREMIUM ANNUEL
               </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: C.white, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8, lineHeight: 1 }}>
+              <div style={{ fontSize: 30, fontWeight: 800, color: C.white, fontFamily: FONT_DISPLAY, textTransform: "none", marginTop: 8, lineHeight: 1 }}>
                 Le meilleur choix pour progresser
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginTop: 16 }}>
@@ -766,7 +749,7 @@ export default function TarifsPage() {
 
           <div
             style={{
-              background: C.white,
+              background: C.card,
               border: `1px solid ${C.border}`,
               borderRadius: 28,
               padding: isMobile ? 22 : 28,
@@ -776,7 +759,7 @@ export default function TarifsPage() {
             <div style={{ fontSize: 12, color: C.secondary, fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
               PREMIUM MENSUEL
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "none", marginTop: 8 }}>
               Flexible
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginTop: 16 }}>
@@ -827,7 +810,7 @@ export default function TarifsPage() {
             style={{
               maxWidth: 560,
               margin: "0 auto",
-              background: C.white,
+              background: C.card,
               border: `1px solid ${C.border}`,
               borderRadius: 20,
               padding: isMobile ? 16 : 20,
@@ -843,6 +826,8 @@ export default function TarifsPage() {
               acceptWithdrawal={acceptWithdrawal}
               onAcceptWithdrawal={setAcceptWithdrawal}
               ink={C.ink}
+              muted={C.inkLight}
+              linkColor={C.primaryDeep}
             />
           </div>
         </section>
@@ -853,7 +838,7 @@ export default function TarifsPage() {
           style={{
             maxWidth: 1120,
             margin: "0 auto",
-            background: C.white,
+            background: C.card,
             border: `1px solid ${C.border}`,
             borderRadius: 24,
             boxShadow: C.shadow,
@@ -881,7 +866,7 @@ export default function TarifsPage() {
               gridTemplateColumns: isMobile ? "1.2fr 0.9fr 0.95fr" : "1.5fr 0.9fr 1fr",
               gap: 10,
               padding: isMobile ? "14px 16px" : "14px 22px",
-              background: "#fbfcff",
+              background: C.cardAlt,
               borderBottom: `1px solid ${C.border}`,
             }}
           >
@@ -912,8 +897,8 @@ export default function TarifsPage() {
                 alignItems: "center",
                 borderBottom: index === 3 ? "none" : `1px solid ${C.border}`,
                 background: premiumValue === "Oui" || premiumValue === "Complet" || premiumValue === "Jusqu'à 52 semaines"
-                  ? "linear-gradient(90deg, #ffffff 0%, #ffffff 66%, rgba(216,226,255,0.32) 100%)"
-                  : C.white,
+                  ? "linear-gradient(90deg, #06101f 0%, #06101f 66%, rgba(0,107,253,0.16) 100%)"
+                  : C.card,
               }}
             >
               <div style={{ color: C.ink, fontSize: 14, fontWeight: 600, lineHeight: 1.4, fontFamily: FONT }}>
@@ -940,7 +925,7 @@ export default function TarifsPage() {
                 fontFamily: FONT_DISPLAY,
                 fontSize: "clamp(34px, 5vw, 54px)",
                 fontWeight: 800,
-                textTransform: "uppercase",
+                textTransform: "none",
                 lineHeight: 0.98,
                 color: C.ink,
               }}
@@ -957,7 +942,7 @@ export default function TarifsPage() {
 
           <div
             style={{
-              background: C.white,
+              background: C.card,
               border: `1px solid ${C.border}`,
               borderRadius: 28,
               overflow: "hidden",
@@ -993,7 +978,7 @@ export default function TarifsPage() {
                   padding: isMobile ? "16px 14px" : "18px 24px",
                   gap: 12,
                   alignItems: "center",
-                  background: index % 2 === 0 ? C.white : "#fbfcff",
+                  background: index % 2 === 0 ? C.card : C.cardAlt,
                   borderBottom:
                     index === comparisonRows.length - 1 ? "none" : `1px solid ${C.border}`,
                 }}
@@ -1019,7 +1004,7 @@ export default function TarifsPage() {
                 fontFamily: FONT_DISPLAY,
                 fontSize: "clamp(34px, 5vw, 52px)",
                 fontWeight: 800,
-                textTransform: "uppercase",
+                textTransform: "none",
                 lineHeight: 0.98,
                 color: C.ink,
               }}
@@ -1046,7 +1031,7 @@ export default function TarifsPage() {
               <div
                 key={item.title}
                 style={{
-                  background: C.white,
+                  background: C.card,
                   border: `1px solid ${C.border}`,
                   borderRadius: 24,
                   padding: isMobile ? 22 : 24,
@@ -1084,7 +1069,7 @@ export default function TarifsPage() {
           style={{
             maxWidth: 1120,
             margin: "0 auto",
-            background: C.white,
+            background: C.card,
             border: `1px solid ${C.border}`,
             borderRadius: 28,
             padding: isMobile ? 24 : 32,
@@ -1107,7 +1092,7 @@ export default function TarifsPage() {
                   fontFamily: FONT_DISPLAY,
                   fontSize: "clamp(30px, 4.6vw, 48px)",
                   fontWeight: 800,
-                  textTransform: "uppercase",
+                  textTransform: "none",
                   lineHeight: 0.98,
                   color: C.ink,
                 }}
@@ -1167,7 +1152,7 @@ export default function TarifsPage() {
                 fontFamily: FONT_DISPLAY,
                 fontSize: "clamp(32px, 5vw, 50px)",
                 fontWeight: 800,
-                textTransform: "uppercase",
+                textTransform: "none",
                 lineHeight: 0.98,
                 color: C.ink,
               }}
@@ -1183,7 +1168,7 @@ export default function TarifsPage() {
                 <div
                   key={item.q}
                   style={{
-                    background: isOpen ? C.bgSoft : C.white,
+                    background: isOpen ? C.cardAlt : C.card,
                     border: `1px solid ${isOpen ? `${C.primary}33` : C.border}`,
                     borderRadius: 20,
                     boxShadow: isOpen ? C.shadow : "none",
@@ -1248,7 +1233,7 @@ export default function TarifsPage() {
               fontFamily: FONT_DISPLAY,
               fontSize: "clamp(36px, 5vw, 58px)",
               fontWeight: 800,
-              textTransform: "uppercase",
+              textTransform: "none",
               lineHeight: 0.95,
               color: C.white,
             }}

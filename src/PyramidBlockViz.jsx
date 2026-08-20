@@ -70,7 +70,7 @@ export default function PyramidBlockViz({
   rest = null,
   label = "crawl",
   volume,
-  accent = "#355da3",
+  accent = "#006bfd",
 }) {
   if (!steps?.length) return null;
   const max = Math.max(...steps);

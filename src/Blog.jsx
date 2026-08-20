@@ -10,25 +10,10 @@ import {
   fetchPublishedArticles,
   formatArticleDate,
 } from "./blogData.js";
+import { BRAND, FONT, FONT_HREF } from "./theme/brand.js";
+import "./theme/public.css";
 
-const FONT = "'Lexend', sans-serif";
-
-const C = {
-  bg: "#f8f9fc",
-  bgCard: "#ffffff",
-  bgSoft: "#edeef1",
-  ink: "#191c1e",
-  inkLight: "#434751",
-  primary: "#355da3",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  primaryFix: "#d8e2ff",
-  secondary: "#5d5e61",
-  outline: "#737782",
-  border: "rgba(53,93,163,0.08)",
-  shadow: "0 2px 12px rgba(142,179,255,0.10)",
-  shadowMd: "0 8px 32px rgba(142,179,255,0.18)",
-};
+const C = { ...BRAND };
 
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
@@ -44,7 +29,7 @@ function FontLoader() {
   useEffect(() => {
     const l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
+    l.href = FONT_HREF;
     document.head.appendChild(l);
   }, []);
   return null;
@@ -212,7 +197,7 @@ export default function Blog() {
   };
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
+    <div className="ms-root" style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <FontLoader />
       <PublicNav />
 
@@ -223,7 +208,7 @@ export default function Blog() {
           paddingLeft: 20,
           paddingRight: 20,
           textAlign: "center",
-          background: `radial-gradient(circle at top center, #eef2ff 0%, ${C.bg} 60%)`,
+          background: `radial-gradient(circle at top center, rgba(0,107,253,0.16) 0%, ${C.bg} 60%)`,
         }}
       >
         <div

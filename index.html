@@ -6,7 +6,7 @@
     <link rel="icon" type="image/png" href="/favicon.png?v=2" sizes="1024x1024" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#355da3" />
+    <meta name="theme-color" content="#000514" />
     <title>MySWYM — Plan d'entraînement natation personnalisé</title>
     <meta name="description" content="Génère un plan natation calé sur ton objectif, ton niveau et ta date. Essai Premium 7 jours. Bassins 25 m et 50 m." />
     <meta property="og:type" content="website" />
@@ -25,7 +25,7 @@
       html, body, #root {
         margin: 0;
         min-height: 100%;
-        background: #355da3;
+        background: #000514;
       }
       .myswym-boot {
         position: fixed;
@@ -35,54 +35,86 @@
         align-items: center;
         justify-content: center;
         padding: 24px;
-        background:
-          radial-gradient(120% 90% at 50% 28%, #4670b8 0%, #355da3 52%, #2a4d8c 100%);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+        background: #000514;
+        font-family: Geist, ui-sans-serif, system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
-        color: #fff;
+        color: #f4f8fa;
       }
       .myswym-boot-inner {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 28px;
-        animation: myswym-boot-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+        width: min(280px, 86vw);
+        animation: myswym-boot-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
       }
-      .myswym-boot-mark {
-        margin: 0;
-        font-size: 21px;
-        font-weight: 600;
-        letter-spacing: 0.14em;
-        line-height: 1;
-        color: rgba(255, 255, 255, 0.96);
+      .myswym-boot-icon-wrap {
+        width: 88px;
+        height: 88px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 0 48px rgba(0, 107, 253, 0.42);
       }
-      .myswym-boot-spinner {
-        width: 28px;
+      .myswym-boot-icon {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .myswym-boot-wordmark {
+        display: block;
         height: 28px;
-        border-radius: 50%;
-        border: 1.5px solid rgba(255, 255, 255, 0.2);
-        border-top-color: rgba(255, 255, 255, 0.95);
-        animation: myswym-boot-spin 0.92s linear infinite;
+        width: auto;
+        max-width: 200px;
+        margin-top: 22px;
+        object-fit: contain;
+      }
+      .myswym-boot-status {
+        margin: 18px 0 0;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.4;
+        text-align: center;
+        color: #9bb0c8;
+      }
+      .myswym-boot-track {
+        width: 168px;
+        height: 4px;
+        margin-top: 28px;
+        border-radius: 999px;
+        background: rgba(0, 107, 253, 0.18);
+        overflow: hidden;
+      }
+      .myswym-boot-bar {
+        height: 100%;
+        width: 22%;
+        border-radius: inherit;
+        background: #006bfd;
+        animation: myswym-boot-bar 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
       }
       .myswym-boot-label {
-        margin: 0;
-        font-size: 13px;
-        font-weight: 400;
-        letter-spacing: 0.06em;
-        color: rgba(255, 255, 255, 0.7);
-      }
-      @keyframes myswym-boot-spin {
-        to { transform: rotate(360deg); }
+        margin: 36px 0 0;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(155, 176, 200, 0.7);
       }
       @keyframes myswym-boot-in {
-        from { opacity: 0; transform: translateY(6px); }
+        from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes myswym-boot-bar {
+        0% { width: 10%; }
+        45% { width: 58%; }
+        100% { width: 86%; }
       }
       @media (prefers-reduced-motion: reduce) {
         .myswym-boot-inner,
-        .myswym-boot-spinner {
+        .myswym-boot-bar {
           animation: none !important;
         }
+        .myswym-boot-bar { width: 40%; }
       }
     </style>
   </head>
@@ -90,9 +122,13 @@
     <div id="root">
       <div class="myswym-boot" role="status" aria-live="polite" aria-busy="true">
         <div class="myswym-boot-inner">
-          <p class="myswym-boot-mark">MySWYM</p>
-          <div class="myswym-boot-spinner" aria-hidden="true"></div>
-          <p class="myswym-boot-label">Loading</p>
+          <div class="myswym-boot-icon-wrap">
+            <img class="myswym-boot-icon" src="/apple-touch-icon.png" alt="" width="88" height="88" />
+          </div>
+          <img class="myswym-boot-wordmark" src="/logo-myswym-banner-blanc.png" alt="mySWYM" height="28" width="192" />
+          <p class="myswym-boot-status">Préparation de votre espace nageur</p>
+          <div class="myswym-boot-track" aria-hidden="true"><div class="myswym-boot-bar"></div></div>
+          <p class="myswym-boot-label">Un instant</p>
         </div>
       </div>
     </div>

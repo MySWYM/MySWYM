@@ -97,7 +97,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
                       className="cv:flex-1 cv:rounded-t-md"
                       style={{
                         height: h,
-                        background: '#355da3',
+                        background: '#006bfd',
                         opacity: 0.35 + (i / Math.min(12, totalWeeks)) * 0.65,
                       }}
                       title={`Semaine ${i + 1}`}

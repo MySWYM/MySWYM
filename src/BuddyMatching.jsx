@@ -57,17 +57,17 @@ import {
 } from "./lib/buddy-connections.js";
 
 const G = {
-  bg: "#f8f9fc",
-  surface: "#FFFFFF",
-  ink: "#191c1e",
-  grey: "#737782",
-  greyMid: "#9CA3AF",
-  greyLight: "#e1e2e5",
-  greyXLight: "#f2f3f6",
-  blue: "#355da3",
-  blueLight: "#d8e2ff",
-  blueMid: "#8eb3ff",
-  blueDeep: "#154388",
+  bg: "var(--myswym-bg, #000514)",
+  surface: "var(--myswym-surface, #06101f)",
+  ink: "var(--myswym-ink, #f4f8fa)",
+  grey: "var(--myswym-grey, #9bb0c8)",
+  greyMid: "var(--myswym-grey-mid, #6b7c90)",
+  greyLight: "var(--myswym-grey-light, rgba(0, 107, 253, 0.22))",
+  greyXLight: "var(--myswym-grey-xlight, #0a162c)",
+  blue: "var(--myswym-blue, #006bfd)",
+  blueLight: "var(--myswym-blue-light, #0a162c)",
+  blueMid: "var(--myswym-blue-mid, #3d8fff)",
+  blueDeep: "var(--myswym-blue-deep, #3d8fff)",
   water: "#00B4D8",
   waterLight: "#E0F7FA",
   coral: "#FF4757",
@@ -75,7 +75,7 @@ const G = {
   mint: "#00C48C",
   mintLight: "#E6FFF6",
   white: "#FFFFFF",
-  glass: "rgba(255,255,255,0.95)",
+  glass: "var(--myswym-glass, rgba(0, 5, 20, 0.92))",
 };
 
 const inp = {
@@ -293,7 +293,7 @@ function BuddyTopBar({ user, onOpenMenu, onTabChange }) {
               </div>
             </button>
           )}
-          <BrandLogo variant="wordmark" height={16} style={{ maxWidth: "100%" }} />
+          <BrandLogo variant="wordmark" height={16} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} style={{ maxWidth: "100%" }} />
         </div>
         <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44 }}>
           <Settings size={20} color={G.grey} />

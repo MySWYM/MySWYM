@@ -23,3 +23,7 @@ exports/
 
 # Backups d’install skills
 .claude/_to_delete/
+
+# Maquettes v0 (Next.js) — source visuelle, l’app live reste Vite
+/myswym/
+/design-v0-app/

@@ -5,12 +5,12 @@ import { setAppLanguage } from "./index.js";
  * Compact FR | EN language toggle.
  * @param {'nav' | 'settings' | 'footer'} variant
  */
-export default function LanguageSwitcher({ variant = "nav" }) {
+export default function LanguageSwitcher({ variant = "nav", onDark = false }) {
   const { t, i18n } = useTranslation("common");
   const lng = i18n.language?.startsWith("en") ? "en" : "fr";
 
   const isSettings = variant === "settings";
-  const isFooter = variant === "footer";
+  const isFooter = variant === "footer" || onDark;
 
   const wrap = {
     display: "inline-flex",
@@ -35,11 +35,11 @@ export default function LanguageSwitcher({ variant = "nav" }) {
     minHeight: isSettings ? 36 : 28,
     minWidth: isSettings ? 44 : 36,
     background: active
-      ? (isFooter ? "rgba(142,179,255,0.35)" : "#8eb3ff")
+      ? (isFooter ? "#006bfd" : "#006bfd")
       : "transparent",
     color: active
-      ? (isFooter ? "#fff" : "#154388")
-      : (isFooter ? "rgba(255,255,255,0.45)" : "#5d5e61"),
+      ? (isFooter ? "#fff" : "#ffffff")
+      : (isFooter ? "rgba(255,255,255,0.45)" : "#5d6b7d"),
     transition: "background 0.15s, color 0.15s",
     WebkitTapHighlightColor: "transparent",
   });

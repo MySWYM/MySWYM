@@ -3,7 +3,7 @@ import { checkoutGatesReady, checkoutGatesError } from "./lib/checkout-legal.js"
 
 export { checkoutGatesReady, checkoutGatesError };
 
-const linkStyle = { color: "#154388", fontWeight: 700, textDecoration: "none" };
+const linkStyle = { fontWeight: 700, textDecoration: "none" };
 const boxStyle = {
   display: "flex",
   gap: 10,
@@ -11,7 +11,6 @@ const boxStyle = {
   marginBottom: 10,
   fontSize: 12,
   lineHeight: 1.45,
-  color: "#434751",
 };
 
 /**
@@ -24,6 +23,8 @@ export default function CheckoutLegalGates({
   acceptWithdrawal,
   onAcceptWithdrawal,
   ink = "#191c1e",
+  muted = "#5d5e61",
+  linkColor = "#154388",
   idPrefix = "checkout-legal",
 }) {
   const termsId = `${idPrefix}-terms`;
@@ -35,10 +36,10 @@ export default function CheckoutLegalGates({
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <p style={{ fontSize: 11, color: "#5d5e61", lineHeight: 1.45, margin: "0 0 10px" }}>
+      <p style={{ fontSize: 11, color: muted, lineHeight: 1.45, margin: "0 0 10px" }}>
         {CHECKOUT_RENEWAL_NOTICE}
       </p>
-      <label htmlFor={termsId} style={boxStyle}>
+      <label htmlFor={termsId} style={{ ...boxStyle, color: muted }}>
         <input
           id={termsId}
           type="checkbox"
@@ -48,9 +49,9 @@ export default function CheckoutLegalGates({
         />
         <span>
           {CHECKOUT_CGV_LABEL_PREFIX}{" "}
-          <a href={LEGAL_LINKS.cgv} target="_blank" rel="noopener noreferrer" style={linkStyle} onClick={stopLinkToggle}>CGV</a>
+          <a href={LEGAL_LINKS.cgv} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: linkColor }} onClick={stopLinkToggle}>CGV</a>
           {" "}et les{" "}
-          <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={linkStyle} onClick={stopLinkToggle}>CGU</a>.
+          <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: linkColor }} onClick={stopLinkToggle}>CGU</a>.
         </span>
       </label>
       <label htmlFor={withdrawalId} style={boxStyle}>

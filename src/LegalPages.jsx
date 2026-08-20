@@ -3,16 +3,10 @@ import Footer from "./Footer.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import { usePageSeo } from "./lib/seo.js";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
+import { BRAND, FONT, FONT_DISPLAY } from "./theme/brand.js";
+import "./theme/public.css";
 
-const C = {
-  bg: "#f8f9fc",
-  card: "#ffffff",
-  ink: "#191c1e",
-  inkLight: "#434751",
-  border: "rgba(53,93,163,0.12)",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-};
+const C = { ...BRAND };
 
 const host = {
   name: "Vercel Inc.",
@@ -27,11 +21,11 @@ function LegalLayout({ title, subtitle, path, description, children }) {
     path,
   });
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Lexend', sans-serif" }}>
+    <div className="ms-root" style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
       <PublicNav />
       <main style={{ maxWidth: 920, margin: "0 auto", padding: "96px 20px 56px" }}>
         <Breadcrumb items={[{ label: "Accueil", href: "/accueil" }, { label: title }]} />
-        <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{title}</h1>
+        <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: FONT_DISPLAY, textTransform: "none", letterSpacing: "-0.03em" }}>{title}</h1>
         <p style={{ color: C.inkLight, marginTop: 0, marginBottom: 8 }}>{subtitle}</p>
         <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>Dernière mise à jour : {LEGAL_ENTITY.lastUpdated}</p>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: "24px 22px", color: C.ink, lineHeight: 1.7, fontSize: 14 }}>
@@ -68,7 +62,7 @@ function Strong({ children }) {
 }
 
 function Mail({ to }) {
-  return <a href={`mailto:${to}`} style={{ color: C.accentText }}>{to}</a>;
+  return <a href={`mailto:${to}`} style={{ color: C.primaryDeep }}>{to}</a>;
 }
 
 function PublisherBlock() {
@@ -102,7 +96,7 @@ function MediatorBlock() {
   return (
     <Ul items={[
       <>Médiateur : {mediatorName}</>,
-      mediatorWebsite ? <>Site : <a href={mediatorWebsite} style={{ color: C.accentText }}>{mediatorWebsite}</a></> : null,
+      mediatorWebsite ? <>Site : <a href={mediatorWebsite} style={{ color: C.primaryDeep }}>{mediatorWebsite}</a></> : null,
       mediatorAddress ? <>Adresse : {mediatorAddress}</> : null,
     ].filter(Boolean)} />
   );
@@ -128,9 +122,9 @@ export function MentionsLegalesPage() {
 
       <H>2. Hébergement et sous-traitants techniques</H>
       <Ul items={[
-        <>Front / CDN : <Strong>{host.name}</Strong> — {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.accentText }}>vercel.com/legal/dpa</a>.</>,
-        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
-        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.accentText }}>stripe.com/legal/dpa</a>.</>,
+        <>Front / CDN : <Strong>{host.name}</Strong> — {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.primaryDeep }}>vercel.com/legal/dpa</a>.</>,
+        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.primaryDeep }}>supabase.com/legal/dpa</a>.</>,
+        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.primaryDeep }}>stripe.com/legal/dpa</a>.</>,
       ]} />
       {(subprocessors || []).length > 0 && (
         <P>
@@ -152,10 +146,10 @@ export function MentionsLegalesPage() {
 
       <H>5. Documents connexes</H>
       <Ul items={[
-        <a key="cgu" href="/cgu" style={{ color: C.accentText }}>Conditions générales d’utilisation (CGU)</a>,
-        <a key="cgv" href="/cgv" style={{ color: C.accentText }}>Conditions générales de vente (CGV)</a>,
-        <a key="priv" href="/politique-confidentialite" style={{ color: C.accentText }}>Politique de confidentialité</a>,
-        <a key="cook" href="/politique-cookies" style={{ color: C.accentText }}>Politique de cookies</a>,
+        <a key="cgu" href="/cgu" style={{ color: C.primaryDeep }}>Conditions générales d’utilisation (CGU)</a>,
+        <a key="cgv" href="/cgv" style={{ color: C.primaryDeep }}>Conditions générales de vente (CGV)</a>,
+        <a key="priv" href="/politique-confidentialite" style={{ color: C.primaryDeep }}>Politique de confidentialité</a>,
+        <a key="cook" href="/politique-cookies" style={{ color: C.primaryDeep }}>Politique de cookies</a>,
       ]} />
     </LegalLayout>
   );
@@ -300,9 +294,9 @@ export function PolitiqueConfidentialitePage() {
 
       <H>3. Destinataires / sous-traitants</H>
       <Ul items={[
-        <>Supabase — auth, base de données, stockage avatars — DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
-        <>Stripe — paiement et portail client — DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.accentText }}>stripe.com/legal/dpa</a>.</>,
-        <>Vercel — hébergement front — DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.accentText }}>vercel.com/legal/dpa</a>.</>,
+        <>Supabase — auth, base de données, stockage avatars — DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.primaryDeep }}>supabase.com/legal/dpa</a>.</>,
+        <>Stripe — paiement et portail client — DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.primaryDeep }}>stripe.com/legal/dpa</a>.</>,
+        <>Vercel — hébergement front — DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.primaryDeep }}>vercel.com/legal/dpa</a>.</>,
         "PostHog — analytics produit (si consentement cookies) — sans données de santé.",
         "Resend — envoi d’e-mails.",
         "Google — OAuth (si choisi) et Google Fonts.",
@@ -388,7 +382,7 @@ export function CguPage() {
         et de l’application {tradeName}, édités par {publisher}.
         En créant un compte ou en utilisant le service, vous acceptez ces CGU.
         Les conditions commerciales de l’abonnement Premium sont détaillées dans les{" "}
-        <a href="/cgv" style={{ color: C.accentText }}>CGV</a>.
+        <a href="/cgv" style={{ color: C.primaryDeep }}>CGV</a>.
       </P>
 
       <H>1. Objet du service</H>

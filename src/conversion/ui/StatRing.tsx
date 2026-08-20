@@ -18,7 +18,7 @@ export function StatRing({
   stroke = 8,
   label,
   sublabel,
-  color = '#355da3',
+  color = '#006bfd',
 }: Props) {
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
