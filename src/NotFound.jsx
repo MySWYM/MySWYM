@@ -29,7 +29,7 @@ export default function NotFoundPage() {
           Ce lien ne mène nulle part. Tu peux revenir à l’accueil ou créer ton plan.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <Link to="/accueil" style={{
+          <Link to="/" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, background: "#8eb3ff", color: "#154388", fontWeight: 700, textDecoration: "none",
           }}>

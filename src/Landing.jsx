@@ -1526,7 +1526,7 @@ export default function Landing() {
   usePageSeo({
     title: isHow ? t("meta.howTitle") : t("meta.title"),
     description: isHow ? t("meta.howDescription") : t("meta.description"),
-    path: isHow ? "/comment-ca-marche" : "/accueil",
+    path: isHow ? "/comment-ca-marche" : "/",
     jsonLd: [organizationJsonLd(), softwareApplicationJsonLd(reviews)],
   });
 

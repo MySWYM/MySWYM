@@ -30,7 +30,7 @@ function LegalLayout({ title, subtitle, path, description, children }) {
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Lexend', sans-serif" }}>
       <PublicNav />
       <main style={{ maxWidth: 920, margin: "0 auto", padding: "96px 20px 56px" }}>
-        <Breadcrumb items={[{ label: "Accueil", href: "/accueil" }, { label: title }]} />
+        <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: title }]} />
         <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{title}</h1>
         <p style={{ color: C.inkLight, marginTop: 0, marginBottom: 8 }}>{subtitle}</p>
         <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>Dernière mise à jour : {LEGAL_ENTITY.lastUpdated}</p>

@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import './i18n/index.js'
 import './index.css'
@@ -23,6 +23,12 @@ import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
 import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
 import ArthurShadowAdmin from './ArthurShadowAdmin.jsx'
 import VersionGate from './VersionGate.jsx'
+
+/** Ancienne home marketing `/accueil` → `/` en conservant hash et query. */
+function RedirectToHome() {
+  const { hash, search } = useLocation();
+  return <Navigate to={{ pathname: "/", hash, search }} replace />;
+}
 
 /** Speed Insights = mesure perf tierce → uniquement après consentement cookies. */
 function ConsentedSpeedInsights() {
@@ -51,8 +57,15 @@ createRoot(document.getElementById('root')).render(
     <VersionGate>
     <BrowserRouter>
       <Routes>
-        {/* App = racine du site */}
-        <Route path="/" element={<App />} />
+        {/* Landing = racine du site */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/accueil" element={<RedirectToHome />} />
+        <Route path="/homepage" element={<RedirectToHome />} />
+        <Route path="/comment-ca-marche" element={<Landing />} />
+        <Route path="/objectifs" element={<Navigate to={{ pathname: "/", hash: "pourquoi" }} replace />} />
+        <Route path="/conformite" element={<Navigate to={{ pathname: "/", hash: "seance" }} replace />} />
+
+        {/* App (questionnaire + plans) */}
         <Route path="/app" element={<App />} />
         <Route path="/app/*" element={<App />} />
         <Route path="/connexion" element={<App />} />
@@ -72,14 +85,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/admin/arthur-readiness" element={<ArthurReadinessAdmin />} />
         <Route path="/admin/arthur-shadow" element={<ArthurShadowAdmin />} />
 
-        {/* Landing marketing */}
-        <Route path="/accueil" element={<Landing />} />
-        <Route path="/comment-ca-marche" element={<Landing />} />
-        <Route path="/objectifs" element={<Navigate to={{ pathname: "/accueil", hash: "pourquoi" }} replace />} />
-        <Route path="/conformite" element={<Navigate to={{ pathname: "/accueil", hash: "seance" }} replace />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/tarifs" element={<TarifsPage />} />
-        <Route path="/homepage" element={<Navigate to="/accueil" replace />} />
         <Route path="/merci" element={<MerciPage />} />
 
         {/* Blog */}

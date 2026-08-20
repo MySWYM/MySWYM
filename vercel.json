@@ -46,6 +46,10 @@
       ]
     }
   ],
+  "redirects": [
+    { "source": "/accueil", "destination": "/", "permanent": true },
+    { "source": "/homepage", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },

@@ -3919,7 +3919,7 @@ const SettingsDrawer = ({
             <ChevronRight size={18} color={G.greyMid} />
           </button>
           <a
-            href="/accueil"
+            href="/"
             onClick={onClose}
             style={{ ...menuRow, textDecoration: "none" }}
           >
@@ -11701,18 +11701,6 @@ export default function App() {
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
 
-  // Back button → landing page
-  useEffect(() => {
-    const handlePop = () => {
-      const p = window.location.pathname;
-      if (!p.startsWith("/app") && !isAuthPath(p)) {
-        window.location.replace("/");
-      }
-    };
-    window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
-  }, []);
-
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
   useEffect(() => {
@@ -11731,7 +11719,7 @@ export default function App() {
       if (user) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
-        navigate("/", { replace: true });
+        navigate("/app", { replace: true });
         return;
       }
       authOpenedFromUrlRef.current = true;
@@ -11798,18 +11786,18 @@ export default function App() {
     authOpenedFromUrlRef.current = false;
     if (plans.length > 0) {
       setScreen("app");
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     if (user) {
       setScreen("app");
       setActiveTab("plan");
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion → landing
     setScreen("onboarding");
-    navigate(openedFromUrl ? "/accueil" : "/", { replace: true });
+    navigate(openedFromUrl ? "/" : "/app", { replace: true });
   };
 
   const handleAuthSuccess = (u) => {
@@ -11821,7 +11809,7 @@ export default function App() {
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   useEffect(() => {
@@ -12000,7 +11988,7 @@ export default function App() {
         if (isAuthPath(locationRef.current.pathname)) {
           forceAuthRef.current = false;
           authOpenedFromUrlRef.current = false;
-          navigate("/", { replace: true });
+          navigate("/app", { replace: true });
         } else {
           forceAuthRef.current = false;
         }

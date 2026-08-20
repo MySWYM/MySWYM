@@ -22,10 +22,10 @@ export default function PublicNav() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
 
   const links = [
-    [t("nav.why"), "/accueil#pourquoi"],
+    [t("nav.why"), "/#pourquoi"],
     [t("nav.how"), "/comment-ca-marche"],
     [t("nav.pricing"), "/tarifs"],
-    [t("nav.faq"), "/accueil#faq"],
+    [t("nav.faq"), "/#faq"],
     [t("nav.blog"), "/blog"],
     [t("nav.contact"), "/contact"],
   ];
@@ -61,7 +61,7 @@ export default function PublicNav() {
           padding: "0 20px", height: 64,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <a href="/accueil" style={{ textDecoration: "none", display: "flex", alignItems: "center", flexShrink: 0 }} aria-label={t("nav.homeAria")}>
+          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", flexShrink: 0 }} aria-label={t("nav.homeAria")}>
             <BrandLogo variant="wordmark" height={22} />
           </a>
 
@@ -69,7 +69,7 @@ export default function PublicNav() {
             <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
               {links.map(([label, href]) => {
                 const pathOnly = href.split("#")[0];
-                const isHere = pathOnly !== "/accueil" && pathOnly === pathname;
+                const isHere = pathOnly !== "/" && pathOnly === pathname;
                 return (
                 <a key={href} href={href} aria-current={isHere ? "page" : undefined} style={{ color: isHere ? C.ink : C.secondary, fontSize: 14, fontWeight: isHere ? 700 : 500, textDecoration: "none", fontFamily: "'Lexend', sans-serif" }}>
                   {label}

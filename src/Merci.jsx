@@ -28,7 +28,7 @@ export default function MerciPage() {
           Ton message est bien parti. On te répond sous 24–48 h ouvrées.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <Link to="/accueil" style={{
+          <Link to="/" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, background: "#8eb3ff", color: "#154388", fontWeight: 700, textDecoration: "none",
           }}>

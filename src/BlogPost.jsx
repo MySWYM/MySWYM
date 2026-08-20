@@ -167,7 +167,7 @@ export default function BlogPost() {
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "88px 16px 0" : "104px 20px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 24, fontSize: 13, color: C.outline, flexWrap: "wrap" }}>
-          <Link to="/accueil" style={{ color: C.outline, textDecoration: "none" }}>
+          <Link to="/" style={{ color: C.outline, textDecoration: "none" }}>
             Accueil
           </Link>
           <ChevronRight size={12} />
@@ -269,7 +269,7 @@ export default function BlogPost() {
             Crée ton plan natation personnalisé en 2 minutes — adapté à ton niveau et à ton objectif.
           </p>
           <Link
-            to="/"
+            to="/inscription"
             style={{
               display: "inline-flex",
               alignItems: "center",

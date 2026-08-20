@@ -29,11 +29,11 @@ export default function Footer({ aboveBottomNav = false }) {
   const year = new Date().getFullYear();
 
   const explorerLinks = [
-    [t("footer.home"), "/accueil"],
-    [t("footer.why"), "/accueil#pourquoi"],
+    [t("footer.home"), "/"],
+    [t("footer.why"), "/#pourquoi"],
     [t("footer.how"), "/comment-ca-marche"],
     [t("footer.pricing"), "/tarifs"],
-    [t("footer.faq"), "/accueil#faq"],
+    [t("footer.faq"), "/#faq"],
     [t("footer.blog"), "/blog"],
     [t("footer.contact"), "/contact"],
   ];

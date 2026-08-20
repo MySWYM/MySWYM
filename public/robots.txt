@@ -1,8 +1,7 @@
 # MySWYM — crawlers : marketing oui, app privée non.
-# `Disallow: /$` = uniquement la racine `/` (webapp), pas tout le site.
 
 User-agent: *
-Allow: /accueil
+Allow: /
 Allow: /comment-ca-marche
 Allow: /tarifs
 Allow: /contact
@@ -13,7 +12,6 @@ Allow: /politique-cookies
 Allow: /cgu
 Allow: /cgv
 
-Disallow: /$
 Disallow: /app
 Disallow: /app/
 Disallow: /connexion

@@ -22,7 +22,7 @@ function upsertMeta(attr, key, content) {
 export function usePageSeo({
   title,
   description,
-  path = "/accueil",
+  path = "/",
   image = DEFAULT_OG_IMAGE,
   noIndex = false,
   jsonLd = null,
@@ -94,7 +94,7 @@ export function softwareApplicationJsonLd(reviews = []) {
     name: "MySWYM",
     applicationCategory: "HealthApplication",
     operatingSystem: "Web",
-    url: `${SITE_ORIGIN}/accueil`,
+    url: `${SITE_ORIGIN}/`,
     description:
       "Générateur de plans d'entraînement natation personnalisés — niveau, objectif, bassin 25 m ou 50 m.",
     offers: {
