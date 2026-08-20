@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import './i18n/index.js'
 import './index.css'
@@ -30,6 +30,24 @@ function RedirectToHome() {
   return <Navigate to={{ pathname: "/", hash, search }} replace />;
 }
 
+/** Anciens liens `?auth=login|register` (ils pointaient vers `/`). */
+function LegacyQueryRedirects() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const auth = params.get("auth");
+    if (auth === "login" && location.pathname !== "/connexion") {
+      navigate("/connexion", { replace: true });
+      return;
+    }
+    if (auth === "register" && location.pathname !== "/inscription") {
+      navigate("/inscription", { replace: true });
+    }
+  }, [location.pathname, location.search, navigate]);
+  return null;
+}
+
 /** Speed Insights = mesure perf tierce → uniquement après consentement cookies. */
 function ConsentedSpeedInsights() {
   const [ok, setOk] = useState(false);
@@ -56,12 +74,13 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <VersionGate>
     <BrowserRouter>
+      <LegacyQueryRedirects />
       <Routes>
         {/* Landing = racine du site */}
         <Route path="/" element={<Landing />} />
         <Route path="/accueil" element={<RedirectToHome />} />
         <Route path="/homepage" element={<RedirectToHome />} />
-        <Route path="/comment-ca-marche" element={<Landing />} />
+        <Route path="/comment-ca-marche" element={<Navigate to={{ pathname: "/", hash: "how" }} replace />} />
         <Route path="/objectifs" element={<Navigate to={{ pathname: "/", hash: "pourquoi" }} replace />} />
         <Route path="/conformite" element={<Navigate to={{ pathname: "/", hash: "seance" }} replace />} />
 

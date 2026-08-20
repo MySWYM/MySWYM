@@ -4,6 +4,7 @@ import { Menu, X, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { useAuthSession, usePublicCta } from "./lib/use-auth-session.js";
 
 const C = {
   ink: "#191c1e",
@@ -23,12 +24,14 @@ export default function PublicNav() {
 
   const links = [
     [t("nav.why"), "/#pourquoi"],
-    [t("nav.how"), "/comment-ca-marche"],
+    [t("nav.how"), "/#how"],
     [t("nav.pricing"), "/tarifs"],
     [t("nav.faq"), "/#faq"],
     [t("nav.blog"), "/blog"],
     [t("nav.contact"), "/contact"],
   ];
+  const { isLoggedIn } = useAuthSession();
+  const cta = usePublicCta();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -81,18 +84,18 @@ export default function PublicNav() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, minWidth: 0 }}>
             {!isMobile && <LanguageSwitcher variant="nav" />}
-            {!isMobile && (
+            {!isMobile && !isLoggedIn && (
               <a href="/connexion" style={{ color: C.secondary, fontSize: 14, fontWeight: 500, textDecoration: "none", padding: "8px 12px", fontFamily: "'Lexend', sans-serif" }}>
                 {t("nav.login")}
               </a>
             )}
-            <a href="/inscription" style={{
+            <a href={cta.href} style={{
               background: C.accent, color: C.accentText, fontSize: isMobile ? 13 : 14, fontWeight: 700,
               padding: isMobile ? "8px 14px" : "10px 22px", borderRadius: 100, textDecoration: "none",
               fontFamily: "'Lexend', sans-serif", boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
               whiteSpace: "nowrap", lineHeight: 1.2, flexShrink: 0,
             }}>
-              {isMobile ? t("nav.ctaShort") : t("nav.cta")}
+              {isMobile ? t(cta.shortKey) : t(cta.labelKey)}
             </a>
             {isMobile && (
               <button onClick={() => setMenuOpen((o) => !o)} aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "8px 4px", marginLeft: 4, color: C.ink, flexShrink: 0 }}>
@@ -120,12 +123,14 @@ export default function PublicNav() {
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
               <LanguageSwitcher variant="nav" />
-              <a href="/inscription" onClick={() => setMenuOpen(false)} style={{ display: "block", width: "100%", textAlign: "center", padding: "13px", borderRadius: 16, color: C.accentText, fontSize: 15, fontWeight: 700, textDecoration: "none", background: C.accent, fontFamily: "'Lexend', sans-serif", boxSizing: "border-box", boxShadow: "0 4px 16px rgba(142,179,255,0.35)" }}>
-                {t("nav.cta")}
+              <a href={cta.href} onClick={() => setMenuOpen(false)} style={{ display: "block", width: "100%", textAlign: "center", padding: "13px", borderRadius: 16, color: C.accentText, fontSize: 15, fontWeight: 700, textDecoration: "none", background: C.accent, fontFamily: "'Lexend', sans-serif", boxSizing: "border-box", boxShadow: "0 4px 16px rgba(142,179,255,0.35)" }}>
+                {t(cta.labelKey)}
               </a>
+              {!isLoggedIn && (
               <a href="/connexion" onClick={() => setMenuOpen(false)} style={{ display: "block", width: "100%", textAlign: "center", padding: "13px", borderRadius: 16, border: "1.5px solid #c3c6d2", color: C.ink, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "#f2f3f6", fontFamily: "'Lexend', sans-serif", boxSizing: "border-box" }}>
                 {t("nav.login")}
               </a>
+              )}
             </div>
           </div>
         </div>

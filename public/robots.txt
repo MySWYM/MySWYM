@@ -2,7 +2,6 @@
 
 User-agent: *
 Allow: /
-Allow: /comment-ca-marche
 Allow: /tarifs
 Allow: /contact
 Allow: /blog

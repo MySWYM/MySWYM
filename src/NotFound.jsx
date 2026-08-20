@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import { usePageSeo } from "./lib/seo.js";
@@ -7,10 +7,11 @@ const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
 
 export default function NotFoundPage() {
+  const { pathname } = useLocation();
   usePageSeo({
     title: "Page introuvable — MySWYM",
     description: "Cette page n’existe pas. Retrouve l’accueil MySWYM ou démarre ton essai.",
-    path: "/404",
+    path: pathname || "/",
     noIndex: true,
   });
 

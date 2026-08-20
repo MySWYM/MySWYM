@@ -31,7 +31,7 @@ export default function Footer({ aboveBottomNav = false }) {
   const explorerLinks = [
     [t("footer.home"), "/"],
     [t("footer.why"), "/#pourquoi"],
-    [t("footer.how"), "/comment-ca-marche"],
+    [t("footer.how"), "/#how"],
     [t("footer.pricing"), "/tarifs"],
     [t("footer.faq"), "/#faq"],
     [t("footer.blog"), "/blog"],

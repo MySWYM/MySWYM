@@ -47,8 +47,61 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.myswym.app" }],
+      "destination": "https://myswym.app/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.myswym.app" }],
+      "destination": "https://myswym.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "auth", "value": "login" }],
+      "destination": "/connexion",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "auth", "value": "register" }],
+      "destination": "/inscription",
+      "permanent": false
+    },
+    {
+      "source": "/accueil",
+      "has": [{ "type": "query", "key": "auth", "value": "login" }],
+      "destination": "/connexion",
+      "permanent": false
+    },
+    {
+      "source": "/accueil",
+      "has": [{ "type": "query", "key": "auth", "value": "register" }],
+      "destination": "/inscription",
+      "permanent": false
+    },
+    {
+      "source": "/app",
+      "has": [{ "type": "query", "key": "auth", "value": "login" }],
+      "destination": "/connexion",
+      "permanent": false
+    },
+    {
+      "source": "/app",
+      "has": [{ "type": "query", "key": "auth", "value": "register" }],
+      "destination": "/inscription",
+      "permanent": false
+    },
     { "source": "/accueil", "destination": "/", "permanent": true },
-    { "source": "/homepage", "destination": "/", "permanent": true }
+    { "source": "/homepage", "destination": "/", "permanent": true },
+    { "source": "/login", "destination": "/connexion", "permanent": true },
+    { "source": "/register", "destination": "/inscription", "permanent": true },
+    { "source": "/comment-ca-marche", "destination": "/?s=how", "permanent": true },
+    { "source": "/objectifs", "destination": "/?s=pourquoi", "permanent": true },
+    { "source": "/conformite", "destination": "/?s=seance", "permanent": true }
   ],
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
