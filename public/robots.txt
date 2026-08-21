@@ -2,14 +2,18 @@
 
 User-agent: *
 Allow: /
-Allow: /tarifs
+Allow: /fr
+Allow: /fr/
+Allow: /how-it-works
+Allow: /pricing
+Allow: /faq
 Allow: /contact
 Allow: /blog
-Allow: /mentions-legales
-Allow: /politique-confidentialite
-Allow: /politique-cookies
-Allow: /cgu
-Allow: /cgv
+Allow: /legal-notice
+Allow: /privacy
+Allow: /cookies
+Allow: /terms
+Allow: /terms-of-sale
 
 Disallow: /app
 Disallow: /app/
@@ -19,6 +23,8 @@ Disallow: /login
 Disallow: /register
 Disallow: /admin
 Disallow: /prototype
+Disallow: /thanks
+Disallow: /fr/merci
 Disallow: /merci
 
 Sitemap: https://myswym.app/sitemap.xml

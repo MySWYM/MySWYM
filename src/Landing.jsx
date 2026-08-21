@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { useTranslation } from "react-i18next";
 import { supabase } from "./supabase.js";
 import { track, trackEvent } from "./lib/analytics.js";
@@ -123,10 +125,10 @@ function SectionLabel({ text, dark = false }) {
 
 function PrimaryCta({ href, children, style = {}, onClick }) {
   const cta = usePublicCta();
-  const Tag = onClick ? "button" : "a";
+  const Tag = onClick ? "button" : Link;
   const props = onClick
     ? { type: "button", onClick }
-    : { href: href || cta.href };
+    : { to: href || cta.href };
   return (
     <Tag
       {...props}
@@ -809,6 +811,11 @@ function HowItWorks() {
             </div>
           )}
         </div>
+        <p style={{ textAlign: "center", margin: "32px 0 0" }}>
+          <LocalizedLink to="/comment-ca-marche" style={{ color: C.accentText, fontWeight: 700, textDecoration: "none", fontFamily: FONT, fontSize: 15 }}>
+            {t("howPage.seePage")}
+          </LocalizedLink>
+        </p>
       </div>
     </section>
   );
@@ -1136,7 +1143,7 @@ function Pricing() {
       } catch { /* ignore */ }
       trackEvent("signup_started", { source: "landing_pricing" }, { essential: true });
       track("signup_started", { source: "landing_pricing" }, { onceKey: "signup_started:landing_pricing" });
-      window.location.href = "/inscription";
+      window.location.href = "/app";
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
@@ -1355,7 +1362,7 @@ function Pricing() {
         </p>
         <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: C.outline, fontFamily: FONT }}>
           {t("pricing.moreLink")}{" "}
-          <a href="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</a>.
+          <LocalizedLink to="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</LocalizedLink>.
         </p>
       </div>
     </section>
@@ -1373,9 +1380,7 @@ function FAQ() {
   const [open, setOpen] = useState(null);
   const items = [
     { q: t("faq.q1"), a: t("faq.a1") },
-    { q: t("faq.q2"), a: t("faq.a2") },
     { q: t("faq.q3"), a: t("faq.a3") },
-    { q: t("faq.q4"), a: t("faq.a4") },
     { q: t("faq.q5"), a: t("faq.a5") },
   ];
 
@@ -1436,6 +1441,11 @@ function FAQ() {
             );
           })}
         </div>
+        <p style={{ textAlign: "center", margin: "28px 0 0" }}>
+          <LocalizedLink to="/faq" style={{ color: C.accentText, fontWeight: 700, textDecoration: "none", fontFamily: FONT, fontSize: 15 }}>
+            {t("faq.seeAll")}
+          </LocalizedLink>
+        </p>
       </div>
     </section>
   );

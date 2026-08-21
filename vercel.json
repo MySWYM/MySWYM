@@ -68,7 +68,7 @@
     {
       "source": "/",
       "has": [{ "type": "query", "key": "auth", "value": "register" }],
-      "destination": "/inscription",
+      "destination": "/app",
       "permanent": false
     },
     {
@@ -80,7 +80,7 @@
     {
       "source": "/accueil",
       "has": [{ "type": "query", "key": "auth", "value": "register" }],
-      "destination": "/inscription",
+      "destination": "/app",
       "permanent": false
     },
     {
@@ -89,19 +89,38 @@
       "destination": "/connexion",
       "permanent": false
     },
-    {
-      "source": "/app",
-      "has": [{ "type": "query", "key": "auth", "value": "register" }],
-      "destination": "/inscription",
-      "permanent": false
-    },
-    { "source": "/accueil", "destination": "/", "permanent": true },
+    { "source": "/accueil", "destination": "/fr", "permanent": true },
     { "source": "/homepage", "destination": "/", "permanent": true },
     { "source": "/login", "destination": "/connexion", "permanent": true },
     { "source": "/register", "destination": "/inscription", "permanent": true },
-    { "source": "/comment-ca-marche", "destination": "/?s=how", "permanent": true },
-    { "source": "/objectifs", "destination": "/?s=pourquoi", "permanent": true },
-    { "source": "/conformite", "destination": "/?s=seance", "permanent": true }
+    { "source": "/objectifs", "destination": "/fr?s=pourquoi", "permanent": true },
+    { "source": "/conformite", "destination": "/fr?s=seance", "permanent": true },
+    { "source": "/tarifs", "destination": "/fr/tarifs", "permanent": true },
+    { "source": "/comment-ca-marche", "destination": "/fr/comment-ca-marche", "permanent": true },
+    { "source": "/mentions-legales", "destination": "/fr/mentions-legales", "permanent": true },
+    { "source": "/politique-confidentialite", "destination": "/fr/politique-confidentialite", "permanent": true },
+    { "source": "/politique-cookies", "destination": "/fr/politique-cookies", "permanent": true },
+    { "source": "/cgu", "destination": "/fr/cgu", "permanent": true },
+    { "source": "/cgv", "destination": "/fr/cgv", "permanent": true },
+    { "source": "/merci", "destination": "/fr/merci", "permanent": true },
+    { "source": "/en", "destination": "/", "permanent": true },
+    { "source": "/en/", "destination": "/", "permanent": true },
+    { "source": "/en/tarifs", "destination": "/pricing", "permanent": true },
+    { "source": "/en/comment-ca-marche", "destination": "/how-it-works", "permanent": true },
+    { "source": "/en/faq", "destination": "/faq", "permanent": true },
+    { "source": "/en/contact", "destination": "/contact", "permanent": true },
+    { "source": "/en/blog", "destination": "/blog", "permanent": true },
+    { "source": "/en/blog/:slug", "destination": "/blog/:slug", "permanent": true },
+    { "source": "/en/mentions-legales", "destination": "/legal-notice", "permanent": true },
+    { "source": "/en/politique-confidentialite", "destination": "/privacy", "permanent": true },
+    { "source": "/en/politique-cookies", "destination": "/cookies", "permanent": true },
+    { "source": "/en/cgu", "destination": "/terms", "permanent": true },
+    { "source": "/en/cgv", "destination": "/terms-of-sale", "permanent": true },
+    { "source": "/en/merci", "destination": "/thanks", "permanent": true },
+    { "source": "/en/accueil", "destination": "/", "permanent": true },
+    { "source": "/en/homepage", "destination": "/", "permanent": true },
+    { "source": "/en/objectifs", "destination": "/?s=pourquoi", "permanent": true },
+    { "source": "/en/conformite", "destination": "/?s=seance", "permanent": true }
   ],
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },

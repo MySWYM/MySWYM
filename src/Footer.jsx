@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { useTranslation } from "react-i18next";
 import { resetCookieConsent } from "./lib/cookie-consent.js";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 
 const FONT = "'Lexend', sans-serif";
+const MUTED = "rgba(255,255,255,0.4)";
 
 function useIsMobile(bp = 640) {
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
@@ -22,22 +24,53 @@ function useIsMobile(bp = 640) {
   return mobile;
 }
 
+function Col({ title, links, center }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: center ? "center" : "flex-start", gap: 4 }}>
+      <span style={{
+        color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em",
+        textTransform: "uppercase", fontFamily: FONT, marginBottom: 6,
+      }}>
+        {title}
+      </span>
+      {links.map(([label, href]) => (
+        <LocalizedLink
+          key={href}
+          to={href}
+          style={{
+            color: MUTED, fontSize: 13, textDecoration: "none", fontFamily: FONT,
+            minHeight: 36, display: "inline-flex", alignItems: "center",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = MUTED; }}
+        >
+          {label}
+        </LocalizedLink>
+      ))}
+    </div>
+  );
+}
+
 /** Footer marketing — afficher sur toutes les pages publiques et l'app. */
 export default function Footer({ aboveBottomNav = false }) {
   const { t } = useTranslation("common");
   const isMobile = useIsMobile();
   const year = new Date().getFullYear();
 
-  const explorerLinks = [
+  const productLinks = [
     [t("footer.home"), "/"],
-    [t("footer.why"), "/#pourquoi"],
-    [t("footer.how"), "/#how"],
+    [t("footer.how"), "/comment-ca-marche"],
     [t("footer.pricing"), "/tarifs"],
-    [t("footer.faq"), "/#faq"],
     [t("footer.blog"), "/blog"],
+  ];
+  const helpLinks = [
+    [t("footer.faq"), "/faq"],
     [t("footer.contact"), "/contact"],
   ];
-
+  const accountLinks = [
+    [t("nav.login"), "/connexion"],
+    [t("nav.cta"), "/app"],
+  ];
   const legalLinks = [
     [t("footer.legalMentions"), "/mentions-legales"],
     [t("footer.privacy"), "/politique-confidentialite"],
@@ -48,7 +81,6 @@ export default function Footer({ aboveBottomNav = false }) {
 
   return (
     <footer
-      id="contact"
       style={{
         background: "#191c1e",
         borderTop: "1px solid rgba(255, 255, 255, 0.06)",
@@ -62,78 +94,54 @@ export default function Footer({ aboveBottomNav = false }) {
         style={{
           maxWidth: 1080,
           margin: "0 auto",
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          flexWrap: "wrap",
-          justifyContent: isMobile ? "center" : "space-between",
-          alignItems: "center",
-          gap: isMobile ? 20 : 16,
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(180px, 1.1fr) repeat(4, minmax(0, 1fr))",
+          gap: isMobile ? 28 : 24,
+          alignItems: "start",
           textAlign: isMobile ? "center" : "left",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8, maxWidth: 260 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
           <BrandLogo height={52} onDark />
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.5, fontFamily: FONT }}>
+          <p style={{ margin: 0, color: MUTED, fontSize: 13, lineHeight: 1.5, fontFamily: FONT, maxWidth: 260 }}>
             {t("footer.tagline")}
           </p>
           <a
             href="https://www.instagram.com/myswym.app/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "none", fontFamily: FONT }}
+            style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, textDecoration: "none", fontFamily: FONT, minHeight: 36, display: "inline-flex", alignItems: "center" }}
           >
             Instagram
           </a>
         </div>
-        <div style={{ display: "flex", gap: isMobile ? 18 : 30, flexWrap: "wrap", justifyContent: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
-            <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              {t("footer.explore")}
-            </span>
-            {explorerLinks.map(([l, h]) => (
-              <a
-                key={h}
-                href={h}
-                style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
-              >
-                {l}
-              </a>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
-            <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
-              {t("footer.legal")}
-            </span>
-            {legalLinks.map(([l, h]) => (
-              <a
-                key={h}
-                href={h}
-                style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
-              >
-                {l}
-              </a>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-end", gap: 10 }}>
-          <LanguageSwitcher variant="footer" />
-          <button
-            type="button"
-            onClick={() => resetCookieConsent()}
-            style={{
-              background: "none", border: "none", padding: 0, cursor: "pointer",
-              color: "rgba(255,255,255,0.4)", fontSize: 13, fontFamily: FONT, textDecoration: "underline",
-            }}
-          >
-            {t("footer.manageCookies")}
-          </button>
-          <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>
-            {t("footer.rights", { year })}
-          </div>
+
+        <Col title={t("footer.product")} links={productLinks} center={isMobile} />
+        <Col title={t("footer.help")} links={helpLinks} center={isMobile} />
+        <Col title={t("footer.account")} links={accountLinks} center={isMobile} />
+        <Col title={t("footer.legal")} links={legalLinks} center={isMobile} />
+      </div>
+
+      <div style={{
+        maxWidth: 1080, margin: "24px auto 0", paddingTop: 20,
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        display: "flex", flexDirection: isMobile ? "column" : "row",
+        alignItems: "center", justifyContent: isMobile ? "center" : "space-between",
+        gap: 12,
+      }}>
+        <LanguageSwitcher variant="footer" />
+        <button
+          type="button"
+          onClick={() => resetCookieConsent()}
+          style={{
+            background: "none", border: "none", padding: 0, cursor: "pointer",
+            color: MUTED, fontSize: 13, fontFamily: FONT, textDecoration: "underline", minHeight: 36,
+          }}
+        >
+          {t("footer.manageCookies")}
+        </button>
+        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: FONT }}>
+          {t("footer.rights", { year })}
         </div>
       </div>
     </footer>

@@ -3,7 +3,11 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import { LocalizedLink, useActiveLocale } from "./i18n/locale-routing.jsx";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
+import { useTranslation } from "react-i18next";
 import {
   fetchArticleBySlug,
   fetchRelatedArticles,
@@ -39,10 +43,17 @@ function useIsMobile(bp = 640) {
 }
 
 function ArticleSeo({ article }) {
+  const { t } = useTranslation("common");
+  const crumbs = [
+    { label: t("footer.home"), href: "/" },
+    { label: t("nav.blog"), href: "/blog" },
+    { label: article?.titre || t("nav.blog") },
+  ];
   usePageSeo({
     title: article ? `${article.titre} — MySWYM` : "Article — MySWYM",
     description: article?.extrait || article?.titre || "Article natation MySWYM",
     path: article?.slug ? `/blog/${article.slug}` : "/blog",
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
   return null;
 }
@@ -119,6 +130,8 @@ function ArticleBody({ contenu }) {
 
 export default function BlogPost() {
   const { slug } = useParams();
+  const locale = useActiveLocale();
+  const { t } = useTranslation("common");
   const isMobile = useIsMobile();
   const [article, setArticle] = useState(undefined); // undefined = loading, null = not found
   const [related, setRelated] = useState([]);
@@ -152,12 +165,12 @@ export default function BlogPost() {
       <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
         <FontLoader />
         <PublicNav />
-        <p style={{ textAlign: "center", color: C.secondary, padding: "120px 20px" }}>Chargement de l&apos;article…</p>
+        <p style={{ textAlign: "center", color: C.secondary, padding: "120px 20px" }}>{t("pages.blogLoading")}</p>
       </div>
     );
   }
 
-  if (!article) return <Navigate to="/blog" replace />;
+  if (!article) return <Navigate to={withLocalePrefix("/blog", locale)} replace />;
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
@@ -166,19 +179,15 @@ export default function BlogPost() {
       <PublicNav />
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "88px 16px 0" : "104px 20px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 24, fontSize: 13, color: C.outline, flexWrap: "wrap" }}>
-          <Link to="/" style={{ color: C.outline, textDecoration: "none" }}>
-            Accueil
-          </Link>
-          <ChevronRight size={12} />
-          <Link to="/blog" style={{ color: C.outline, textDecoration: "none" }}>
-            Blog
-          </Link>
-          <ChevronRight size={12} />
-          <span style={{ color: C.primary }}>{article.categorie}</span>
-        </div>
+        <Breadcrumb
+          items={[
+            { label: t("footer.home"), href: "/" },
+            { label: t("nav.blog"), href: "/blog" },
+            { label: article.titre },
+          ]}
+        />
 
-        <Link
+        <LocalizedLink
           to="/blog"
           style={{
             display: "inline-flex",
@@ -192,7 +201,7 @@ export default function BlogPost() {
           }}
         >
           <ArrowLeft size={14} /> Retour au blog
-        </Link>
+        </LocalizedLink>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           <span
@@ -269,7 +278,7 @@ export default function BlogPost() {
             Crée ton plan natation personnalisé en 2 minutes — adapté à ton niveau et à ton objectif.
           </p>
           <Link
-            to="/inscription"
+            to="/app"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -294,7 +303,7 @@ export default function BlogPost() {
           <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 16 }}>À lire aussi</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {related.map((p) => (
-              <Link key={p.slug} to={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
+              <LocalizedLink key={p.slug} to={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
                 <div
                   style={{
                     background: C.bgCard,
@@ -342,7 +351,7 @@ export default function BlogPost() {
                     </span>
                   </div>
                 </div>
-              </Link>
+              </LocalizedLink>
             ))}
           </div>
         </div>

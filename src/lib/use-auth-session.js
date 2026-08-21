@@ -26,11 +26,11 @@ export function useAuthSession() {
   };
 }
 
-/** CTA public : inscription si anonyme, app si déjà connecté. */
+/** CTA public : quiz si anonyme (inscription à la fin du questionnaire), app si déjà connecté. */
 export function usePublicCta() {
   const { isLoggedIn } = useAuthSession();
   if (isLoggedIn) {
     return { href: "/app", labelKey: "nav.openApp", shortKey: "nav.openAppShort" };
   }
-  return { href: "/inscription", labelKey: "nav.cta", shortKey: "nav.ctaShort" };
+  return { href: "/app", labelKey: "nav.cta", shortKey: "nav.ctaShort" };
 }

@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import { LocalizedLink, useActiveLocale } from "./i18n/locale-routing.jsx";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 
 const C = {
   bg: "#f8f9fc",
@@ -32,14 +36,11 @@ function FontLoader() {
   return null;
 }
 
-const FAQ_ITEMS = [
-  { q: "Qu'est-ce que MySWYM ?", a: "MySWYM génère des plans natation structurés selon ton niveau, ton objectif et ta fréquence d'entraînement." },
-  { q: "Comment fonctionne la personnalisation ?", a: "Tu renseignes ton profil sportif (objectif, niveau, disponibilité), puis le plan est ajusté automatiquement semaine par semaine." },
-  { q: "Pour qui est fait MySWYM ?", a: "Débutants, nageurs loisirs, triathlètes et candidats aux diplômes aquatiques qui veulent un cadre clair et progressif." },
-];
-
 export default function ContactPage() {
   const navigate = useNavigate();
+  const locale = useActiveLocale();
+  const { t } = useTranslation("landing");
+  const { t: tc } = useTranslation("common");
   const [open, setOpen] = useState(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -48,11 +49,14 @@ export default function ContactPage() {
   const [status, setStatus] = useState("idle"); // idle | sending | ok | error
   const [errorMsg, setErrorMsg] = useState("");
   const isMobile = useIsMobile();
+  const crumbs = [{ label: tc("footer.home"), href: "/" }, { label: tc("nav.contact") }];
+  const faqItems = [1, 2, 3].map((n) => ({ q: t(`faq.q${n}`), a: t(`faq.a${n}`) }));
 
   usePageSeo({
-    title: "Contact — MySWYM",
-    description: "Une question sur ton plan natation ? Écris-nous — réponse sous 24–48 h ouvrées.",
+    title: t("contactPage.metaTitle"),
+    description: t("contactPage.metaDescription"),
     path: "/contact",
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
 
   const sendContact = async (e) => {
@@ -82,12 +86,11 @@ export default function ContactPage() {
       setEmail("");
       setSubject("");
       setMessage("");
-      navigate("/merci", { replace: true });
+      navigate(withLocalePrefix("/merci", locale), { replace: true });
     } catch (err) {
       setStatus("error");
       setErrorMsg(
-        err?.message ||
-          "Envoi impossible. Réessaie ou écris à contact@myswym.app.",
+        err?.message || t("contactPage.sendError"),
       );
     }
   };
@@ -97,27 +100,28 @@ export default function ContactPage() {
       <FontLoader />
       <PublicNav />
       <main style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "88px 16px 44px" : "104px 20px 56px" }}>
+        <Breadcrumb items={crumbs} />
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 16 : 22, alignItems: "start" }}>
           <section>
             <div style={{ display: "inline-flex", alignItems: "center", background: "#d8e2ff", borderRadius: 999, padding: "5px 12px", marginBottom: 12 }}>
-              <span style={{ color: "#355da3", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>CONTACT</span>
+              <span style={{ color: "#355da3", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>{t("contactPage.eyebrow")}</span>
             </div>
             <h1 style={{ margin: 0, color: C.ink, fontSize: "clamp(34px,5.2vw,56px)", fontWeight: 800, lineHeight: 1.02, letterSpacing: "-0.02em", fontFamily: FONT_DISPLAY, textTransform: "uppercase" }}>
-              Nous sommes à votre écoute !
+              {t("contactPage.h1")}
             </h1>
             <p style={{ color: C.secondary, fontSize: isMobile ? 16 : 18, lineHeight: 1.65, marginTop: 14, maxWidth: 560 }}>
-              Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrées.
+              {t("contactPage.lead")}
             </p>
             <p style={{ color: C.secondary, fontSize: 14, marginTop: 10 }}>
-              Direct : <a href="mailto:support@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>support@myswym.app</a>
+              {t("contactPage.direct")} <a href="mailto:support@myswym.app" style={{ color: C.accentText, fontWeight: 700 }}>support@myswym.app</a>
             </p>
 
             <div style={{ marginTop: isMobile ? 24 : 34, background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 22, boxShadow: "0 2px 12px rgba(142,179,255,0.10)" }}>
               <h2 style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secondary, marginBottom: 12, fontFamily: FONT }}>
-                FAQ
+                {tc("nav.faq")}
               </h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {FAQ_ITEMS.map((item, i) => {
+                {faqItems.map((item, i) => {
                   const isOpen = open === i;
                   return (
                     <div key={item.q} style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -150,13 +154,18 @@ export default function ContactPage() {
                   );
                 })}
               </div>
+              <p style={{ margin: "14px 0 0", fontSize: 14 }}>
+                <LocalizedLink to="/faq" style={{ color: C.accentText, fontWeight: 700, textDecoration: "none" }}>
+                  {t("contactPage.allFaq")}
+                </LocalizedLink>
+              </p>
             </div>
           </section>
 
           <section style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 24, boxShadow: "0 8px 24px rgba(142,179,255,0.18)" }}>
-            <h2 style={{ margin: 0, color: C.ink, fontFamily: FONT_DISPLAY, fontSize: isMobile ? 34 : 42, fontWeight: 800, lineHeight: 1.05, textTransform: "uppercase", letterSpacing: "0" }}>Parlons de votre entraînement</h2>
+            <h2 style={{ margin: 0, color: C.ink, fontFamily: FONT_DISPLAY, fontSize: isMobile ? 34 : 42, fontWeight: 800, lineHeight: 1.05, textTransform: "uppercase", letterSpacing: "0" }}>{t("contactPage.formTitle")}</h2>
             <p style={{ color: C.secondary, fontSize: 16, lineHeight: 1.6, marginTop: 12 }}>
-              Remplis le formulaire — ton message arrive directement dans notre boîte.
+              {t("contactPage.formLead")}
             </p>
 
             <form
@@ -173,11 +182,11 @@ export default function ContactPage() {
                   style={{ position: "absolute", left: "-9999px", height: 0, width: 0, opacity: 0 }}
                 />
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(180px, 1fr))", gap: 10 }}>
-                  <Field label="Nom complet *" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} required disabled={status === "sending"} />
-                  <Field label="Email *" type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={status === "sending"} />
+                  <Field label={t("contactPage.name")} placeholder={t("contactPage.namePh")} value={name} onChange={(e) => setName(e.target.value)} required disabled={status === "sending"} />
+                  <Field label={t("contactPage.email")} type="email" placeholder={t("contactPage.emailPh")} value={email} onChange={(e) => setEmail(e.target.value)} required disabled={status === "sending"} />
                 </div>
-                <Field label="Objet du message *" placeholder="Sujet" value={subject} onChange={(e) => setSubject(e.target.value)} required disabled={status === "sending"} />
-                <Field label="Message *" as="textarea" placeholder="Explique-nous ton contexte ou ta question." value={message} onChange={(e) => setMessage(e.target.value)} required disabled={status === "sending"} />
+                <Field label={t("contactPage.subject")} placeholder={t("contactPage.subjectPh")} value={subject} onChange={(e) => setSubject(e.target.value)} required disabled={status === "sending"} />
+                <Field label={t("contactPage.message")} as="textarea" placeholder={t("contactPage.messagePh")} value={message} onChange={(e) => setMessage(e.target.value)} required disabled={status === "sending"} />
 
                 {status === "error" && (
                   <p style={{ margin: 0, color: "#b42318", fontSize: 13, lineHeight: 1.55, fontWeight: 600 }}>
@@ -186,7 +195,7 @@ export default function ContactPage() {
                 )}
 
                 <p style={{ margin: 0, color: C.secondary, fontSize: 13, lineHeight: 1.55 }}>
-                  Ton message est envoyé à contact@myswym.app. On ne le stocke pas dans l’app.
+                  {t("contactPage.privacy")}
                 </p>
 
                 <button
@@ -207,7 +216,7 @@ export default function ContactPage() {
                     opacity: status === "sending" ? 0.7 : 1,
                   }}
                 >
-                  {status === "sending" ? "Envoi…" : "Envoyer"}
+                  {status === "sending" ? t("contactPage.sending") : t("contactPage.send")}
                 </button>
               </form>
           </section>

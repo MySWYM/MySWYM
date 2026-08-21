@@ -1,6 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { usePageSeo } from "./lib/seo.js";
 
 const FONT = "'Lexend', sans-serif";
@@ -8,9 +10,10 @@ const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
 
 export default function NotFoundPage() {
   const { pathname } = useLocation();
+  const { t } = useTranslation("common");
   usePageSeo({
-    title: "Page introuvable — MySWYM",
-    description: "Cette page n’existe pas. Retrouve l’accueil MySWYM ou démarre ton essai.",
+    title: t("pages.notFoundMetaTitle"),
+    description: t("pages.notFoundMetaDesc"),
     path: pathname || "/",
     noIndex: true,
   });
@@ -24,23 +27,23 @@ export default function NotFoundPage() {
           fontFamily: FONT_DISPLAY, fontSize: "clamp(36px,5vw,52px)", fontWeight: 800,
           textTransform: "uppercase", margin: "0 0 16px",
         }}>
-          Page introuvable
+          {t("pages.notFoundTitle")}
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.65, color: "#5d5e61", margin: "0 0 28px" }}>
-          Ce lien ne mène nulle part. Tu peux revenir à l’accueil ou créer ton plan.
+          {t("pages.notFoundBody")}
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <Link to="/" style={{
+          <LocalizedLink to="/" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, background: "#8eb3ff", color: "#154388", fontWeight: 700, textDecoration: "none",
           }}>
-            Accueil
-          </Link>
-          <Link to="/inscription" style={{
+            {t("footer.home")}
+          </LocalizedLink>
+          <Link to="/app" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, border: "1.5px solid #c3c6d2", color: "#191c1e", fontWeight: 700, textDecoration: "none",
           }}>
-            Démarrer l’essai
+            {t("pages.startTrial")}
           </Link>
         </div>
       </main>

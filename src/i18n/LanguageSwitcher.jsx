@@ -1,13 +1,20 @@
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { setAppLanguage } from "./index.js";
+import { isAppPath, stripLocalePrefix, withLocalePrefix } from "./locale-path.js";
 
 /**
  * Compact FR | EN language toggle.
+ * Sur le site marketing : change l’URL (`/pricing` ↔ `/fr/tarifs`).
+ * Dans l’app : change seulement la langue (pas de `/fr` sur `/app`).
  * @param {'nav' | 'settings' | 'footer'} variant
  */
 export default function LanguageSwitcher({ variant = "nav" }) {
   const { t, i18n } = useTranslation("common");
+  const location = useLocation();
   const lng = i18n.language?.startsWith("en") ? "en" : "fr";
+  const marketing = !isAppPath(location.pathname);
+  const bare = stripLocalePrefix(location.pathname);
 
   const isSettings = variant === "settings";
   const isFooter = variant === "footer";
@@ -42,7 +49,46 @@ export default function LanguageSwitcher({ variant = "nav" }) {
       : (isFooter ? "rgba(255,255,255,0.45)" : "#5d5e61"),
     transition: "background 0.15s, color 0.15s",
     WebkitTapHighlightColor: "transparent",
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   });
+
+  const target = (next) => ({
+    pathname: withLocalePrefix(bare, next),
+    search: location.search,
+    hash: location.hash,
+  });
+
+  const control = (next, label, aria) => {
+    const active = lng === next;
+    const style = btn(active);
+    if (marketing) {
+      return (
+        <Link
+          to={target(next)}
+          aria-pressed={active}
+          aria-label={aria}
+          onClick={() => setAppLanguage(next)}
+          style={style}
+        >
+          {label}
+        </Link>
+      );
+    }
+    return (
+      <button
+        type="button"
+        aria-pressed={active}
+        aria-label={aria}
+        onClick={() => setAppLanguage(next)}
+        style={style}
+      >
+        {label}
+      </button>
+    );
+  };
 
   return (
     <div
@@ -50,24 +96,8 @@ export default function LanguageSwitcher({ variant = "nav" }) {
       aria-label={t("lang.label")}
       style={wrap}
     >
-      <button
-        type="button"
-        aria-pressed={lng === "fr"}
-        aria-label={t("lang.switchToFr")}
-        onClick={() => setAppLanguage("fr")}
-        style={btn(lng === "fr")}
-      >
-        {t("lang.fr")}
-      </button>
-      <button
-        type="button"
-        aria-pressed={lng === "en"}
-        aria-label={t("lang.switchToEn")}
-        onClick={() => setAppLanguage("en")}
-        style={btn(lng === "en")}
-      >
-        {t("lang.en")}
-      </button>
+      {control("fr", t("lang.fr"), t("lang.switchToFr"))}
+      {control("en", t("lang.en"), t("lang.switchToEn"))}
     </div>
   );
 }

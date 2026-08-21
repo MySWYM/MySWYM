@@ -8,8 +8,8 @@
     "blog": "Blog",
     "contact": "Contact",
     "login": "Log in",
-    "cta": "Create account",
-    "ctaShort": "7-day trial",
+    "cta": "Get started",
+    "ctaShort": "Get started",
     "openApp": "My plan",
     "openAppShort": "My plan",
     "openMenu": "Open menu",
@@ -17,6 +17,9 @@
   },
   "footer": {
     "tagline": "Personalized swim training plan — ready in 2 minutes.",
+    "product": "Product",
+    "help": "Help",
+    "account": "Account",
     "explore": "Explore",
     "legal": "Legal",
     "home": "Home",
@@ -26,6 +29,7 @@
     "faq": "FAQ",
     "blog": "Blog",
     "contact": "Contact",
+    "signup": "Create account",
     "legalMentions": "Legal notice",
     "privacy": "Privacy policy",
     "cookies": "Cookie policy",
@@ -40,5 +44,29 @@
     "en": "EN",
     "switchToFr": "Passer en français",
     "switchToEn": "Switch to English"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "pages": {
+    "startTrial": "Start your trial",
+    "trial7": "7-day trial",
+    "notFoundMetaTitle": "Page not found — MySWYM",
+    "notFoundMetaDesc": "This page doesn’t exist. Go back to MySWYM home or start your trial.",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "This link doesn’t go anywhere. You can go home or create your plan.",
+    "thanksMetaTitle": "Message sent — MySWYM",
+    "thanksMetaDesc": "We’ve received your message. We’ll reply within 24–48 business hours.",
+    "thanksTitle": "Thank you",
+    "thanksBody": "Your message is on its way. We’ll reply within 24–48 business hours.",
+    "thanksHome": "Back to home",
+    "legalUpdated": "Last updated: {{date}}",
+    "legalFrNotice": "These legal documents are issued in French (French company).",
+    "blogMetaTitle": "MySWYM blog — Swim training tips",
+    "blogMetaDesc": "Swim articles: technique, plans, open water, and pool vocabulary — without extra jargon.",
+    "blogHeading": "Swim tips",
+    "blogHeading2": "& training",
+    "blogLead": "Methods, technique, mindset — articles to progress in the water.",
+    "blogLoading": "Loading article…"
   }
 }

@@ -6,6 +6,8 @@ import './i18n/index.js'
 import './index.css'
 import App from './App.jsx'
 import Landing from './Landing.jsx'
+import HowItWorksPage from './HowItWorksPage.jsx'
+import FaqPage from './FaqPage.jsx'
 import TarifsPage from './Tarifs.jsx'
 import ContactPage from './Contact.jsx'
 import Blog from './Blog.jsx'
@@ -23,11 +25,102 @@ import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
 import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
 import ArthurShadowAdmin from './ArthurShadowAdmin.jsx'
 import VersionGate from './VersionGate.jsx'
+import { LocaleSync } from './i18n/locale-routing.jsx'
+import { localeFromPathname, withLocalePrefix } from './i18n/locale-path.js'
 
-/** Ancienne home marketing `/accueil` → `/` en conservant hash et query. */
+/** Ancienne home marketing `/accueil` → `/fr` ; `/homepage` → `/`. */
 function RedirectToHome() {
-  const { hash, search } = useLocation();
-  return <Navigate to={{ pathname: "/", hash, search }} replace />;
+  const { hash, search, pathname } = useLocation();
+  const locale = pathname.startsWith("/fr") ? "fr" : localeFromPathname(pathname);
+  return <Navigate to={{ pathname: withLocalePrefix("/", locale), hash, search }} replace />;
+}
+
+function RedirectHomeSection({ hash }) {
+  return <Navigate to={{ pathname: "/fr", hash }} replace />;
+}
+
+function LegacyEnRedirect() {
+  const { pathname, search, hash } = useLocation();
+  const rest = pathname.replace(/^\/en\/?/, "/") || "/";
+  return <Navigate to={{ pathname: withLocalePrefix(rest, "en"), search, hash }} replace />;
+}
+
+function frMarketingRoutes() {
+  return (
+    <>
+      <Route index element={<Landing />} />
+      <Route path="accueil" element={<RedirectToHome />} />
+      <Route path="homepage" element={<Navigate to="/" replace />} />
+      <Route path="comment-ca-marche" element={<HowItWorksPage />} />
+      <Route path="faq" element={<FaqPage />} />
+      <Route path="objectifs" element={<RedirectHomeSection hash="pourquoi" />} />
+      <Route path="conformite" element={<RedirectHomeSection hash="seance" />} />
+      <Route path="contact" element={<ContactPage />} />
+      <Route path="tarifs" element={<TarifsPage />} />
+      <Route path="merci" element={<MerciPage />} />
+      <Route path="blog" element={<Blog />} />
+      <Route path="blog/:slug" element={<BlogPost />} />
+      <Route path="mentions-legales" element={<MentionsLegalesPage />} />
+      <Route path="politique-confidentialite" element={<PolitiqueConfidentialitePage />} />
+      <Route path="politique-cookies" element={<PolitiqueCookiesPage />} />
+      <Route path="cgu" element={<CguPage />} />
+      <Route path="cgv" element={<CgvPage />} />
+      <Route path="how-it-works" element={<Navigate to="/how-it-works" replace />} />
+      <Route path="pricing" element={<Navigate to="/pricing" replace />} />
+      <Route path="thanks" element={<Navigate to="/thanks" replace />} />
+      <Route path="legal-notice" element={<Navigate to="/legal-notice" replace />} />
+      <Route path="privacy" element={<Navigate to="/privacy" replace />} />
+      <Route path="cookies" element={<Navigate to="/cookies" replace />} />
+      <Route path="terms" element={<Navigate to="/terms" replace />} />
+      <Route path="terms-of-sale" element={<Navigate to="/terms-of-sale" replace />} />
+      <Route path="app" element={<Navigate to="/app" replace />} />
+      <Route path="app/*" element={<Navigate to="/app" replace />} />
+      <Route path="connexion" element={<Navigate to="/connexion" replace />} />
+      <Route path="inscription" element={<Navigate to="/inscription" replace />} />
+      <Route path="login" element={<Navigate to="/connexion" replace />} />
+      <Route path="register" element={<Navigate to="/inscription" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </>
+  );
+}
+
+function enMarketingRoutes() {
+  return (
+    <>
+      <Route index element={<Landing />} />
+      <Route path="homepage" element={<RedirectToHome />} />
+      <Route path="how-it-works" element={<HowItWorksPage />} />
+      <Route path="faq" element={<FaqPage />} />
+      <Route path="contact" element={<ContactPage />} />
+      <Route path="pricing" element={<TarifsPage />} />
+      <Route path="thanks" element={<MerciPage />} />
+      <Route path="blog" element={<Blog />} />
+      <Route path="blog/:slug" element={<BlogPost />} />
+      <Route path="legal-notice" element={<MentionsLegalesPage />} />
+      <Route path="privacy" element={<PolitiqueConfidentialitePage />} />
+      <Route path="cookies" element={<PolitiqueCookiesPage />} />
+      <Route path="terms" element={<CguPage />} />
+      <Route path="terms-of-sale" element={<CgvPage />} />
+      <Route path="tarifs" element={<Navigate to="/fr/tarifs" replace />} />
+      <Route path="comment-ca-marche" element={<Navigate to="/fr/comment-ca-marche" replace />} />
+      <Route path="mentions-legales" element={<Navigate to="/fr/mentions-legales" replace />} />
+      <Route path="politique-confidentialite" element={<Navigate to="/fr/politique-confidentialite" replace />} />
+      <Route path="politique-cookies" element={<Navigate to="/fr/politique-cookies" replace />} />
+      <Route path="cgu" element={<Navigate to="/fr/cgu" replace />} />
+      <Route path="cgv" element={<Navigate to="/fr/cgv" replace />} />
+      <Route path="merci" element={<Navigate to="/fr/merci" replace />} />
+      <Route path="accueil" element={<Navigate to="/fr" replace />} />
+      <Route path="objectifs" element={<Navigate to="/fr?s=pourquoi" replace />} />
+      <Route path="conformite" element={<Navigate to="/fr?s=seance" replace />} />
+      <Route path="app" element={<Navigate to="/app" replace />} />
+      <Route path="app/*" element={<Navigate to="/app" replace />} />
+      <Route path="connexion" element={<Navigate to="/connexion" replace />} />
+      <Route path="inscription" element={<Navigate to="/inscription" replace />} />
+      <Route path="login" element={<Navigate to="/connexion" replace />} />
+      <Route path="register" element={<Navigate to="/inscription" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </>
+  );
 }
 
 /** Anciens liens `?auth=login|register` (ils pointaient vers `/`). */
@@ -41,8 +134,8 @@ function LegacyQueryRedirects() {
       navigate("/connexion", { replace: true });
       return;
     }
-    if (auth === "register" && location.pathname !== "/inscription") {
-      navigate("/inscription", { replace: true });
+    if (auth === "register" && location.pathname !== "/app") {
+      navigate("/app", { replace: true });
     }
   }, [location.pathname, location.search, navigate]);
   return null;
@@ -74,51 +167,32 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <VersionGate>
     <BrowserRouter>
+      <LocaleSync />
       <LegacyQueryRedirects />
       <Routes>
-        {/* Landing = racine du site */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/accueil" element={<RedirectToHome />} />
-        <Route path="/homepage" element={<RedirectToHome />} />
-        <Route path="/comment-ca-marche" element={<Navigate to={{ pathname: "/", hash: "how" }} replace />} />
-        <Route path="/objectifs" element={<Navigate to={{ pathname: "/", hash: "pourquoi" }} replace />} />
-        <Route path="/conformite" element={<Navigate to={{ pathname: "/", hash: "seance" }} replace />} />
-
-        {/* App (questionnaire + plans) */}
+        {/* App (questionnaire + plans) — pas de préfixe /fr */}
         <Route path="/app" element={<App />} />
         <Route path="/app/*" element={<App />} />
         <Route path="/connexion" element={<App />} />
         <Route path="/inscription" element={<App />} />
-        {/* Alias anglais → routes FR */}
         <Route path="/login" element={<Navigate to="/connexion" replace />} />
         <Route path="/register" element={<Navigate to="/inscription" replace />} />
 
-        {/* Prototype parcours conversion (design + UX) */}
         <Route path="/prototype/conversion" element={<ConversionFlow />} />
         <Route path="/prototype/session-pyramid" element={<SessionPyramidPreview />} />
 
-        {/* Admin Arthur */}
         <Route path="/admin/arthur-growth" element={<ArthurGrowthAdmin />} />
         <Route path="/admin/arthur-followups" element={<ArthurFollowupsAdmin />} />
         <Route path="/admin/arthur-optimize" element={<ArthurOptimizeAdmin />} />
         <Route path="/admin/arthur-readiness" element={<ArthurReadinessAdmin />} />
         <Route path="/admin/arthur-shadow" element={<ArthurShadowAdmin />} />
 
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/tarifs" element={<TarifsPage />} />
-        <Route path="/merci" element={<MerciPage />} />
-
-        {/* Blog */}
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:slug" element={<BlogPost />} />
-
-        {/* Pages legales */}
-        <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
-        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialitePage />} />
-        <Route path="/politique-cookies" element={<PolitiqueCookiesPage />} />
-        <Route path="/cgu" element={<CguPage />} />
-        <Route path="/cgv" element={<CgvPage />} />
-        <Route path="*" element={<NotFoundPage />} />
+        {/* Marketing EN : /, /pricing, … */}
+        {/* Marketing FR : /fr, /fr/tarifs, … */}
+        <Route path="/en" element={<Navigate to="/" replace />} />
+        <Route path="/en/*" element={<LegacyEnRedirect />} />
+        <Route path="/fr">{frMarketingRoutes()}</Route>
+        {enMarketingRoutes()}
       </Routes>
       <CookieBanner />
       <ConsentedSpeedInsights />

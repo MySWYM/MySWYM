@@ -5,11 +5,14 @@ import { fileURLToPath, URL } from 'node:url'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { POSTS } from './src/posts.js'
+import { withLocalePrefix } from './src/i18n/locale-path.js'
 
 const SITE = 'https://myswym.app'
 
 const STATIC_PATHS = [
   ['/', 'weekly', '1.0'],
+  ['/comment-ca-marche', 'monthly', '0.8'],
+  ['/faq', 'monthly', '0.7'],
   ['/tarifs', 'monthly', '0.9'],
   ['/contact', 'monthly', '0.7'],
   ['/blog', 'weekly', '0.8'],
@@ -51,8 +54,14 @@ function sitemapPlugin() {
       const slugs = new Set(POSTS.map((p) => p.slug))
       for (const slug of await remoteBlogSlugs()) slugs.add(slug)
       const urls = [
-        ...STATIC_PATHS.map(([path, freq, pri]) => locXml(path, freq, pri)),
-        ...[...slugs].sort().map((slug) => locXml(`/blog/${slug}`, 'monthly', '0.6')),
+        ...STATIC_PATHS.flatMap(([path, freq, pri]) => [
+          locXml(withLocalePrefix(path, "en"), freq, pri),
+          locXml(withLocalePrefix(path, "fr"), freq, pri),
+        ]),
+        ...[...slugs].sort().flatMap((slug) => [
+          locXml(withLocalePrefix(`/blog/${slug}`, "en"), "monthly", "0.6"),
+          locXml(withLocalePrefix(`/blog/${slug}`, "fr"), "monthly", "0.6"),
+        ]),
       ]
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
       const outDir = join(dirname(fileURLToPath(import.meta.url)), 'dist')

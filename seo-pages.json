@@ -1,37 +1,89 @@
 {
   "/": {
+    "title": "MySWYM — Personalized swim training plan",
+    "description": "Build a swim plan around your goal, level, and race date. 7-day Premium trial. 25 m and 50 m pools."
+  },
+  "/fr": {
     "title": "MySWYM — Plan d'entraînement natation personnalisé",
     "description": "Génère un plan natation calé sur ton objectif, ton niveau et ta date. Essai Premium 7 jours. Bassins 25 m et 50 m."
   },
-  "/tarifs": {
+  "/how-it-works": {
+    "title": "How it works — MySWYM",
+    "description": "Goal, date, level, frequency: four steps to a structured swim plan. 7-day trial, no card."
+  },
+  "/fr/comment-ca-marche": {
+    "title": "Comment ça marche — MySWYM",
+    "description": "Objectif, date, niveau, fréquence : 4 étapes pour obtenir un plan de natation structuré. Essai 7 jours sans carte."
+  },
+  "/faq": {
+    "title": "FAQ — MySWYM",
+    "description": "7-day trial, subscription, 25 m / 50 m pools, changing your goal: answers to start your swim plan."
+  },
+  "/fr/faq": {
+    "title": "FAQ — MySWYM",
+    "description": "Essai 7 jours, abonnement, bassin 25 m / 50 m, changement d'objectif : les réponses pour démarrer ton plan natation."
+  },
+  "/pricing": {
+    "title": "Pricing — MySWYM",
+    "description": "7-day Premium trial, then €4.99/month with no commitment or €39.99/year. Personalized swim plans."
+  },
+  "/fr/tarifs": {
     "title": "Tarifs — MySWYM",
     "description": "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés."
   },
   "/contact": {
     "title": "Contact — MySWYM",
+    "description": "A question about your swim plan? Write to us — we reply within 24–48 business hours."
+  },
+  "/fr/contact": {
+    "title": "Contact — MySWYM",
     "description": "Une question sur ton plan natation ? Écris-nous — réponse sous 24–48 h ouvrées."
   },
   "/blog": {
+    "title": "MySWYM Blog — Swim training tips",
+    "description": "Swim articles: technique, plans, open water and pool vocabulary — without the jargon."
+  },
+  "/fr/blog": {
     "title": "Blog MySWYM — Conseils natation et entraînement",
     "description": "Articles natation : technique, plans, eau libre et vocabulaire de bassin — sans jargon inutile."
   },
-  "/mentions-legales": {
+  "/legal-notice": {
+    "title": "Legal notice — MySWYM",
+    "description": "Publisher, host and legal notices for the MySWYM website."
+  },
+  "/fr/mentions-legales": {
     "title": "Mentions légales — MySWYM",
     "description": "Éditeur, hébergeur et mentions légales du site MySWYM."
   },
-  "/politique-confidentialite": {
+  "/privacy": {
+    "title": "Privacy policy — MySWYM",
+    "description": "Data collected, purposes, GDPR rights and contact for MySWYM."
+  },
+  "/fr/politique-confidentialite": {
     "title": "Politique de confidentialité — MySWYM",
     "description": "Données collectées, finalités, droits RGPD et contact pour MySWYM."
   },
-  "/politique-cookies": {
+  "/cookies": {
+    "title": "Cookie policy — MySWYM",
+    "description": "Cookies, PostHog and consent management on MySWYM. No Google Analytics."
+  },
+  "/fr/politique-cookies": {
     "title": "Politique de cookies — MySWYM",
     "description": "Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics."
   },
-  "/cgu": {
+  "/terms": {
+    "title": "Terms of use — MySWYM",
+    "description": "Terms of use for the MySWYM application."
+  },
+  "/fr/cgu": {
     "title": "CGU — MySWYM",
     "description": "Conditions générales d'utilisation de l'application MySWYM."
   },
-  "/cgv": {
+  "/terms-of-sale": {
+    "title": "Terms of sale — MySWYM",
+    "description": "Terms of sale for the MySWYM Premium offer."
+  },
+  "/fr/cgv": {
     "title": "CGV — MySWYM",
     "description": "Conditions générales de vente de l'offre Premium MySWYM."
   },

@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import { usePageSeo } from "./lib/seo.js";
@@ -7,9 +9,10 @@ const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
 
 export default function MerciPage() {
+  const { t } = useTranslation("common");
   usePageSeo({
-    title: "Message envoyé — MySWYM",
-    description: "Nous avons bien reçu ton message. Réponse sous 24–48 h ouvrées.",
+    title: t("pages.thanksMetaTitle"),
+    description: t("pages.thanksMetaDesc"),
     path: "/merci",
     noIndex: true,
   });
@@ -22,23 +25,23 @@ export default function MerciPage() {
           fontFamily: FONT_DISPLAY, fontSize: "clamp(36px,5vw,52px)", fontWeight: 800,
           textTransform: "uppercase", margin: "0 0 16px",
         }}>
-          Merci
+          {t("pages.thanksTitle")}
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.65, color: "#5d5e61", margin: "0 0 28px" }}>
-          Ton message est bien parti. On te répond sous 24–48 h ouvrées.
+          {t("pages.thanksBody")}
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <Link to="/" style={{
+          <LocalizedLink to="/" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, background: "#8eb3ff", color: "#154388", fontWeight: 700, textDecoration: "none",
           }}>
-            Retour à l’accueil
-          </Link>
-          <Link to="/inscription" style={{
+            {t("pages.thanksHome")}
+          </LocalizedLink>
+          <Link to="/app" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, border: "1.5px solid #c3c6d2", color: "#191c1e", fontWeight: 700, textDecoration: "none",
           }}>
-            Démarrer l’essai
+            {t("pages.startTrial")}
           </Link>
         </div>
       </main>

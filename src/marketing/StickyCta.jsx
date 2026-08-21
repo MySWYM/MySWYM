@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePublicCta } from "../lib/use-auth-session.js";
 
@@ -39,8 +40,8 @@ export default function StickyCta({ href }) {
           boxShadow: "0 -8px 28px rgba(25,28,30,0.08)",
         }}
       >
-        <a
-          href={resolvedHref}
+        <Link
+          to={resolvedHref}
           style={{
             display: "flex",
             alignItems: "center",
@@ -56,7 +57,7 @@ export default function StickyCta({ href }) {
           }}
         >
           {label}
-        </a>
+        </Link>
       </div>
     </>
   );
