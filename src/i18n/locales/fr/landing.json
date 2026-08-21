@@ -1,8 +1,8 @@
 {
   "meta": {
-    "title": "MySWYM — Plan d'entraînement natation personnalisé",
+    "title": "MySWYM | Plan d'entraînement natation personnalisé",
     "description": "Génère un plan natation calé sur ton objectif, ton niveau et ta date. Essai Premium 7 jours. Bassins 25 m et 50 m.",
-    "howTitle": "Comment ça marche — MySWYM",
+    "howTitle": "Comment ça marche | MySWYM",
     "howDescription": "Objectif, date, niveau, fréquence : 4 étapes pour obtenir un plan de natation structuré."
   },
   "hero": {
@@ -10,7 +10,7 @@
     "title": "Ta prochaine séance de natation, prête en 10 secondes.",
     "titleLine1": "Ta prochaine séance de natation,",
     "titleAccent": "prête en 10 secondes",
-    "subtitle": "MySWYM génère des séances sur-mesure selon ton niveau, ton matériel et ton objectif — ou construit un plan complet jusqu’au jour J. Fini les séances au hasard.",
+    "subtitle": "MySWYM génère des séances sur-mesure selon ton niveau, ton matériel et ton objectif, ou construit un plan complet jusqu’au jour J. Fini les séances au hasard.",
     "cta": "Générer une séance",
     "ctaSecondary": "Créer mon plan",
     "freeNote": "Essai 7 jours · sans carte · puis 4,99€/mois",
@@ -58,15 +58,15 @@
     "eyebrow": "Créé par un nageur, pour les nageurs",
     "titleLine1": "Deviens le nageur",
     "titleLine2": "que tu veux être",
-    "body": "MySWYM structure ton entraînement comme un carnet de coach : objectif, date, niveau, fréquence — puis des séances claires avant d'entrer dans l'eau. La technique et les tips, c'est aussi sur Instagram.",
-    "quote": "La progression, c'est l'analyse, la répétition, et l'envie d'y arriver — pas l'improvisation au bord du bassin.",
+    "body": "MySWYM structure ton entraînement comme un carnet de coach : objectif, date, niveau, fréquence, puis des séances claires avant d'entrer dans l'eau. La technique et les tips, c'est aussi sur Instagram.",
+    "quote": "La progression, c'est l'analyse, la répétition, et l'envie d'y arriver. Pas l'improvisation au bord du bassin.",
     "igCta": "Voir @arthurnatation",
     "igHref": "https://www.instagram.com/arthurnatation/"
   },
   "includes": {
     "label": "CE QUI EST INCLUS",
     "title": "Tout pour progresser",
-    "subtitle": "Essai Premium 7 jours sans carte — puis abonne-toi pour garder le coach.",
+    "subtitle": "Essai Premium 7 jours sans carte, puis abonne-toi pour garder le coach.",
     "i1Title": "Plan personnalisé",
     "i1Desc": "Calé sur ton objectif, ton niveau et ta date d'événement.",
     "i2Title": "Séances structurées",
@@ -85,7 +85,7 @@
   "why": {
     "label": "POURQUOI MYSWYM",
     "title": "Pourquoi utiliser MySWYM ?",
-    "subtitle": "Tout ce qu'il faut pour structurer ton entraînement — rien de superflu.",
+    "subtitle": "Tout ce qu'il faut pour structurer ton entraînement, rien de superflu.",
     "uiPreview": "Aperçu UI",
     "b1Title": "6 types de séances",
     "b1Stat": "Endurance · Seuil · Vitesse · Technique · Pyramide · Récup",
@@ -98,7 +98,7 @@
     "b3Desc": "Suis ta progression jusqu'à ton objectif, sans improviser.",
     "b4Title": "Plan prêt en 2 minutes",
     "b4Stat": "Génération instantanée",
-    "b4Desc": "Sans attente, sans IA externe — ton plan est prêt tout de suite."
+    "b4Desc": "Sans attente, sans IA externe. Ton plan est prêt tout de suite."
   },
   "how": {
     "label": "COMMENT ÇA MARCHE",
@@ -109,34 +109,34 @@
     "s2Title": "On génère",
     "s2Desc": "Une séance structurée : échauffement, corps de séance, retour au calme.",
     "s3Title": "Tu nages, tu ajustes",
-    "s3Desc": "Pas inspiré ? Le plan s’adapte — et tu peux relancer jusqu’à trouver la bonne séance.",
+    "s3Desc": "Pas inspiré ? Le plan s’adapte, et tu peux relancer jusqu’à trouver la bonne séance.",
     "s4Title": "Fréquence hebdo",
     "s4Desc": "Choisis un planning réaliste selon ton emploi du temps."
   },
   "session": {
     "label": "APERÇU DE SÉANCE",
     "title": "Clair avant d'entrer dans l'eau",
-    "subtitle": "Chaque séance a une structure coach : échauffement, corps, retour au calme — plus un conseil concret.",
+    "subtitle": "Chaque séance a une structure coach : échauffement, corps, retour au calme, plus un conseil concret.",
     "type": "Endurance",
     "heading": "Séries confortables",
     "meta": "2 200 m · ~50 min",
     "warmLabel": "Échauffement",
-    "warmContent": "400 m nage libre — accélération progressive sur les 100 derniers mètres.",
+    "warmContent": "400 m nage libre, accélération progressive sur les 100 derniers mètres.",
     "mainLabel": "Corps de séance",
-    "mainContent": "5 × 300 m crawl à allure endurance — 30 s de repos. Respiration régulière, glisse après chaque coulée.",
+    "mainContent": "5 × 300 m crawl à allure endurance, 30 s de repos. Respiration régulière, glisse après chaque coulée.",
     "coolLabel": "Retour au calme",
-    "coolContent": "300 m mixte très lent — dos et brasse pour relâcher les épaules.",
-    "tip": "Conseil coach : allure conversation. Si tu ne peux plus parler, tu vas trop vite — allonge le repos."
+    "coolContent": "300 m mixte très lent, dos et brasse pour relâcher les épaules.",
+    "tip": "Conseil coach : allure conversation. Si tu ne peux plus parler, tu vas trop vite. Allonge le repos."
   },
   "trust": {
     "label": "CRÉDIBILITÉ",
     "titleLine1": "Un coaching structuré,",
     "titleLine2": "pas une improvisation",
-    "subtitle": "MySWYM s'appuie sur des règles d'entraînement claires — pas sur des prompts aléatoires.",
+    "subtitle": "MySWYM s'appuie sur des règles d'entraînement claires, pas sur des prompts aléatoires.",
     "p1Title": "Génération locale, fiable",
-    "p1Desc": "Ton plan est calculé dans l'app — sans dépendre d'une IA externe ni d'un délai de réponse. Résultat immédiat, reproductible.",
+    "p1Desc": "Ton plan est calculé dans l'app, sans dépendre d'une IA externe ni d'un délai de réponse. Résultat immédiat, reproductible.",
     "p2Title": "Structure pro",
-    "p2Desc": "Échauffement, corps de séance, retour au calme, types d'effort (endurance, seuil, vitesse…) — l'approche des plans d'entraînement structurés.",
+    "p2Desc": "Échauffement, corps de séance, retour au calme, types d'effort (endurance, seuil, vitesse…). C'est l'approche des plans d'entraînement structurés.",
     "p3Title": "Pensé pour le bassin",
     "p3Desc": "Volumes par niveau, matériel optionnel, bassin 25 m ou 50 m. Des séances lisibles avant d'entrer dans l'eau."
   },
@@ -162,7 +162,7 @@
     "billedAnnual": "Facturé {{price}}/an",
     "billedMonthly": "Sans engagement",
     "saveBadge": "−33%",
-    "unlockCta": "S'abonner — 4,99€/mois",
+    "unlockCta": "S'abonner, 4,99€/mois",
     "premF1": "Coach personnel et programme adaptatif",
     "premF2": "Allures T100 et projection de progression",
     "premF3": "Adaptation après chaque feedback",
@@ -177,7 +177,7 @@
     "label": "FAQ",
     "title": "Questions fréquentes",
     "q1": "Je n'ai jamais fait de plan structuré, c'est adapté ?",
-    "a1": "Oui si tu sais déjà nager. Le niveau débutant propose des volumes simples et un langage clair. MySWYM structure tes séances — ce n'est pas une école pour apprendre le geste de A à Z.",
+    "a1": "Oui si tu sais déjà nager. Le niveau débutant propose des volumes simples et un langage clair. MySWYM structure tes séances. Ce n'est pas une école pour apprendre le geste de A à Z.",
     "q2": "Puis-je changer mon objectif en cours de route ?",
     "a2": "Oui. Depuis le profil, tu peux relancer l'onboarding pour un nouvel objectif et régénérer un plan. Avec Premium, tu peux aussi gérer plusieurs plans en parallèle.",
     "q3": "Comment fonctionne l'abonnement ?",
@@ -192,7 +192,7 @@
     "title": "Plonge dans ta première séance",
     "titleLine1": "Plonge dans ta",
     "titleLine2": "première séance",
-    "subtitle": "Essai 7 jours, sans carte. Génère ton plan maintenant — après 7 jours, abonne-toi pour continuer.",
+    "subtitle": "Essai 7 jours, sans carte. Génère ton plan maintenant. Après 7 jours, abonne-toi pour continuer.",
     "cta": "Commencer",
     "signoff": "À bientôt dans le bassin."
   },
@@ -232,10 +232,16 @@
     "warm": "Échauffement",
     "warmText": "400 m nage libre progressive",
     "main": "Corps",
-    "mainText": "5 × 300 m crawl — R30\"",
+    "mainText": "5 × 300 m crawl, R30\"",
     "cool": "Retour au calme",
     "coolText": "300 m mixte très lent",
-    "coachTip": "Coach : allure conversation — tu pourrais encore parler."
+    "coachTip": "Coach : allure conversation. Tu pourrais encore parler."
+  },
+  "cases": {
+    "label": "ÉTUDES DE CAS",
+    "title": "Parcours nageurs",
+    "subtitle": "Exemples réels à venir, pas de chiffres inventés.",
+    "coming": "À VENIR"
   },
   "howPage": {
     "nextLabel": "ENSUITE",
@@ -243,7 +249,7 @@
     "n1Title": "Compte + essai 7 jours",
     "n1Desc": "Tu crées un compte sans carte. Pendant 7 jours, tu as l’accès Premium : plan complet, séances, plusieurs objectifs.",
     "n2Title": "Tes séances dans l’app",
-    "n2Desc": "Chaque séance affiche échauffement, corps, retour au calme et un conseil coach — avant d’entrer dans l’eau.",
+    "n2Desc": "Chaque séance affiche échauffement, corps, retour au calme et un conseil coach, avant d’entrer dans l’eau.",
     "n3Title": "Tu ajustes selon tes retours",
     "n3Desc": "Après une séance trop dure ou trop facile, le plan s’adapte. Pas besoin de tout reconstruire à la main.",
     "cta": "Commencer",
@@ -251,14 +257,14 @@
     "seePage": "Le détail des 4 étapes"
   },
   "faqPage": {
-    "metaTitle": "FAQ — MySWYM",
+    "metaTitle": "FAQ | MySWYM",
     "metaDescription": "Essai 7 jours, abonnement, bassin 25 m / 50 m, changement d'objectif : les réponses pour démarrer ton plan natation.",
-    "intro": "Les questions qu’on reçoit le plus — essai, prix, bassin, changement d’objectif.",
+    "intro": "Les questions qu’on reçoit le plus : essai, prix, bassin, changement d’objectif.",
     "moreTitle": "Encore une question ?",
     "moreCta": "Écrire au support"
   },
   "pricingPage": {
-    "metaTitle": "Tarifs — MySWYM",
+    "metaTitle": "Tarifs | MySWYM",
     "metaDescription": "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés.",
     "eyebrow": "PAGE TARIFS",
     "h1a": "Le Premium transforme",
@@ -274,14 +280,14 @@
     "chooseAnnual": "Choisir Premium annuel"
   },
   "contactPage": {
-    "metaTitle": "Contact — MySWYM",
-    "metaDescription": "Une question sur ton plan natation ? Écris-nous — réponse sous 24–48 h ouvrées.",
+    "metaTitle": "Contact | MySWYM",
+    "metaDescription": "Une question sur ton plan natation ? Écris-nous. Réponse sous 24-48 h ouvrées.",
     "eyebrow": "CONTACT",
     "h1": "Nous sommes à votre écoute !",
-    "lead": "Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrées.",
+    "lead": "Une suggestion d'amélioration ? Une question ? Écris-nous. On répond sous 24-48 h ouvrées.",
     "direct": "Direct :",
     "formTitle": "Parlons de votre entraînement",
-    "formLead": "Remplis le formulaire — ton message arrive directement dans notre boîte.",
+    "formLead": "Remplis le formulaire. Ton message arrive directement dans notre boîte.",
     "name": "Nom complet *",
     "namePh": "Votre nom",
     "email": "Email *",

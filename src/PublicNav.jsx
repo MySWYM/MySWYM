@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { stripLocalePrefix } from "./i18n/locale-path.js";
-import { usePublicCta } from "./lib/use-auth-session.js";
+import { useAuthSession, usePublicCta } from "./lib/use-auth-session.js";
 import "./theme/public.css";
 
 export default function PublicNav() {
@@ -15,13 +15,15 @@ export default function PublicNav() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const { isLoggedIn } = useAuthSession();
   const cta = usePublicCta();
+  const onQuiz = pathBare === "/app" || pathBare.startsWith("/app/");
+  const onAuth = pathBare === "/connexion" || pathBare === "/inscription";
+  const showStartCta = isLoggedIn || (!onQuiz && !onAuth);
+  const showLogin = !isLoggedIn && !onAuth;
 
   const links = [
-    [t("nav.why"), { pathname: "/", hash: "pourquoi" }],
     [t("nav.how"), "/comment-ca-marche"],
-    [t("nav.pricing"), "/tarifs"],
-    [t("nav.faq"), "/faq"],
     [t("nav.blog"), "/blog"],
     [t("nav.contact"), "/contact"],
   ];
@@ -70,22 +72,23 @@ export default function PublicNav() {
           )}
 
           <div className="ms-header-actions">
-            {!isMobile && <LanguageSwitcher variant="nav" onDark />}
-            {!isMobile && (
-              <a href="/connexion" className="ms-link-quiet">
+            <LanguageSwitcher variant="nav" />
+            {!isMobile && showLogin && (
+              <Link to="/connexion" className="ms-link-quiet">
                 {t("nav.login")}
-              </a>
+              </Link>
             )}
-            {!isMobile && (
-              <a href={cta.href} className="ms-btn">
+            {!isMobile && showStartCta && (
+              <Link to={cta.href} className="ms-btn">
                 {t(cta.labelKey)}
-              </a>
+              </Link>
             )}
             {isMobile && (
               <button
                 type="button"
                 className="ms-icon-btn"
                 onClick={() => setMenuOpen((o) => !o)}
+                aria-expanded={menuOpen}
                 aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
               >
                 {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -117,13 +120,16 @@ export default function PublicNav() {
               </LocalizedLink>
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-              <LanguageSwitcher variant="nav" onDark />
-              <a href={cta.href} className="ms-drawer-cta" onClick={() => setMenuOpen(false)}>
-                {t(cta.labelKey)}
-              </a>
-              <a href="/connexion" className="ms-drawer-ghost" onClick={() => setMenuOpen(false)}>
-                {t("nav.login")}
-              </a>
+              {showStartCta && (
+                <Link to={cta.href} className="ms-drawer-cta" onClick={() => setMenuOpen(false)}>
+                  {t(cta.labelKey)}
+                </Link>
+              )}
+              {showLogin && (
+                <Link to="/connexion" className="ms-drawer-ghost" onClick={() => setMenuOpen(false)}>
+                  {t("nav.login")}
+                </Link>
+              )}
             </div>
           </div>
         </div>

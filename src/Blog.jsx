@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import { usePageSeo } from "./lib/seo.js";
 import {
   BLOG_CATEGORIES,
   PAGE_SIZE,
   fetchPublishedArticles,
-  formatArticleDate,
 } from "./blogData.js";
 import { BRAND, FONT, FONT_HREF } from "./theme/brand.js";
 import "./theme/public.css";
@@ -36,7 +37,7 @@ function FontLoader() {
   return null;
 }
 
-function ArticleCard({ article, isMobile }) {
+function ArticleCard({ article, isMobile, t }) {
   return (
     <LocalizedLink to={`/blog/${article.slug}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
       <article
@@ -100,12 +101,6 @@ function ArticleCard({ article, isMobile }) {
           >
             {article.titre}
           </h2>
-          <time
-            dateTime={article.date_publication}
-            style={{ color: C.outline, fontSize: 12, marginBottom: 10, display: "block" }}
-          >
-            {formatArticleDate(article.date_publication)}
-          </time>
           <p
             style={{
               color: C.inkLight,
@@ -131,7 +126,7 @@ function ArticleCard({ article, isMobile }) {
               fontSize: 13,
             }}
           >
-            Lire l&apos;article <ArrowRight size={14} />
+            {t("pages.blogRead")} <ArrowRight size={14} />
           </span>
         </div>
       </article>
@@ -140,6 +135,7 @@ function ArticleCard({ article, isMobile }) {
 }
 
 export default function Blog() {
+  const { t } = useTranslation("common");
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const categorie = searchParams.get("categorie") || null;
@@ -151,8 +147,8 @@ export default function Blog() {
   const [loading, setLoading] = useState(true);
 
   usePageSeo({
-    title: "Blog MySWYM — Conseils natation et entraînement",
-    description: "Articles natation : technique, plans, eau libre et vocabulaire de bassin — sans jargon inutile.",
+    title: t("pages.blogMetaTitle"),
+    description: t("pages.blogMetaDesc"),
     path: "/blog",
   });
 
@@ -212,6 +208,9 @@ export default function Blog() {
           background: `radial-gradient(circle at top center, rgba(0,107,253,0.16) 0%, ${C.bg} 60%)`,
         }}
       >
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "left" }}>
+          <Breadcrumb items={[{ label: t("footer.home"), href: "/" }, { label: t("nav.blog") }]} onDark />
+        </div>
         <div
           style={{
             display: "inline-block",
@@ -221,7 +220,7 @@ export default function Blog() {
             marginBottom: 20,
           }}
         >
-          <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>BLOG</span>
+          <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>{t("nav.blog")}</span>
         </div>
         <h1
           style={{
@@ -234,12 +233,12 @@ export default function Blog() {
             lineHeight: 1.1,
           }}
         >
-          Conseils natation
+          {t("pages.blogHeading")}
           <br />
-          &amp; entraînement
+          {t("pages.blogHeading2")}
         </h1>
         <p style={{ color: C.inkLight, fontSize: 17, maxWidth: 480, margin: "0 auto", lineHeight: 1.6 }}>
-          Méthodes, technique, mental — des articles pour progresser dans l&apos;eau.
+          {t("pages.blogLead")}
         </p>
       </div>
 
@@ -257,16 +256,16 @@ export default function Blog() {
             WebkitOverflowScrolling: "touch",
           }}
           role="tablist"
-          aria-label="Filtrer par catégorie"
+          aria-label={t("pages.blogFilterAria")}
         >
-          <FilterChip active={!categorie} onClick={() => setCategorie(null)} label="Tous" />
+          <FilterChip active={!categorie} onClick={() => setCategorie(null)} label={t("pages.blogAll")} />
           {BLOG_CATEGORIES.map((cat) => (
             <FilterChip key={cat} active={categorie === cat} onClick={() => setCategorie(cat)} label={cat} />
           ))}
         </div>
 
         {loading ? (
-          <p style={{ textAlign: "center", color: C.secondary, padding: "48px 0" }}>Chargement des articles…</p>
+          <p style={{ textAlign: "center", color: C.secondary, padding: "48px 0" }}>{t("pages.blogListLoading")}</p>
         ) : articles.length === 0 ? (
           <div
             style={{
@@ -277,9 +276,9 @@ export default function Blog() {
               border: `1px solid ${C.border}`,
             }}
           >
-            <p style={{ color: C.ink, fontWeight: 700, fontSize: 17, margin: "0 0 8px" }}>Aucun article dans cette catégorie</p>
+            <p style={{ color: C.ink, fontWeight: 700, fontSize: 17, margin: "0 0 8px" }}>{t("pages.blogEmptyTitle")}</p>
             <p style={{ color: C.secondary, fontSize: 14, margin: 0 }}>
-              Les articles seront ajoutés manuellement. Réessaie avec « Tous » ou une autre catégorie.
+              {t("pages.blogEmptyBody")}
             </p>
           </div>
         ) : (
@@ -292,7 +291,7 @@ export default function Blog() {
               }}
             >
               {articles.map((article) => (
-                <ArticleCard key={article.id || article.slug} article={article} isMobile={isMobile} />
+                <ArticleCard key={article.id || article.slug} article={article} isMobile={isMobile} t={t} />
               ))}
             </div>
 
@@ -314,11 +313,11 @@ export default function Blog() {
                   disabled={page <= 1}
                   style={pagerBtn(page <= 1)}
                 >
-                  <ChevronLeft size={16} /> Précédent
+                  <ChevronLeft size={16} /> {t("pages.blogPrev")}
                 </button>
                 <span style={{ color: C.secondary, fontSize: 14, fontWeight: 600 }}>
-                  Page {page} / {pageCount}
-                  <span style={{ fontWeight: 500, color: C.outline }}> · {total} article{total > 1 ? "s" : ""}</span>
+                  {t("pages.blogPage", { page, count: pageCount })}
+                  <span style={{ fontWeight: 500, color: C.outline }}> · {t("pages.blogArticleCount", { count: total })}</span>
                 </span>
                 <button
                   type="button"
@@ -326,14 +325,14 @@ export default function Blog() {
                   disabled={page >= pageCount}
                   style={pagerBtn(page >= pageCount)}
                 >
-                  Suivant <ChevronRight size={16} />
+                  {t("pages.blogNext")} <ChevronRight size={16} />
                 </button>
               </nav>
             )}
 
             {pageCount === 1 && total > 0 && total <= PAGE_SIZE && (
               <p style={{ textAlign: "center", color: C.outline, fontSize: 13, marginTop: 28 }}>
-                {total} article{total > 1 ? "s" : ""}
+                {t("pages.blogArticleCount", { count: total })}
               </p>
             )}
           </>

@@ -82,8 +82,8 @@ export default function LandingReviews() {
   };
 
   return (
-    <section id="avis" style={{ background: C.bgSoft, padding: "clamp(40px, 8vw, 96px) 24px" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto", fontFamily: FONT }}>
+    <section id="avis" className="lp-section">
+      <div className="lp-wrap" style={{ maxWidth: 800, fontFamily: FONT }}>
         <p style={{
           display: "inline-flex", background: "color-mix(in srgb, var(--lp-primary, #006bfd) 14%, transparent)", borderRadius: 100,
           padding: "5px 14px", color: "var(--lp-primary, #006bfd)", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
@@ -124,8 +124,8 @@ export default function LandingReviews() {
         </p>
 
         {status === "ok" ? (
-          <p style={{ background: "#e6f8f1", color: "#0f5c40", borderRadius: 14, padding: 16, fontWeight: 600 }}>
-            Merci. Ton avis est en relecture — il s’affichera s’il est publié.
+          <p style={{ background: "rgba(0, 107, 253, 0.16)", color: "#f4f8fa", borderRadius: 14, padding: 16, fontWeight: 600 }}>
+            Merci. Ton avis est en relecture. Il s’affichera s’il est publié.
           </p>
         ) : (
           <form onSubmit={submit} style={{

@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BRAND, FONT } from "../theme/brand.js";
-import { usePublicCta } from "../lib/use-auth-session.js";
+import { stripLocalePrefix } from "../i18n/locale-path.js";
+import { useAuthSession, usePublicCta } from "../lib/use-auth-session.js";
 
 /** CTA mobile collé en bas — option B (en plus du bouton header). */
 export default function StickyCta({ href }) {
   const { t } = useTranslation("common");
+  const { pathname } = useLocation();
+  const pathBare = stripLocalePrefix(pathname);
+  const { isLoggedIn } = useAuthSession();
   const cta = usePublicCta();
   const dest = href || cta.href;
+  const onQuiz = pathBare === "/app" || pathBare.startsWith("/app/");
+  const onAuth = pathBare === "/connexion" || pathBare === "/inscription";
+  const showStartCta = isLoggedIn || (!onQuiz && !onAuth);
   const [mobile, setMobile] = useState(
     () => typeof window !== "undefined" && window.innerWidth < 768,
   );
@@ -18,7 +26,7 @@ export default function StickyCta({ href }) {
     return () => window.removeEventListener("resize", apply);
   }, []);
 
-  if (!mobile) return null;
+  if (!mobile || !showStartCta) return null;
 
   return (
     <>
@@ -30,15 +38,15 @@ export default function StickyCta({ href }) {
           right: 0,
           bottom: 0,
           zIndex: 180,
-          padding: "10px 16px max(12px, env(safe-area-inset-bottom))",
+          padding: "12px max(1.5rem, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left))",
           background: "rgba(0, 5, 20, 0.92)",
           backdropFilter: "blur(12px)",
           borderTop: `1px solid ${BRAND.border}`,
           boxShadow: "0 -8px 28px rgba(0,0,0,0.35)",
         }}
       >
-        <a
-          href={dest}
+        <Link
+          to={dest}
           style={{
             display: "flex",
             alignItems: "center",
@@ -54,7 +62,7 @@ export default function StickyCta({ href }) {
           }}
         >
           {t(href ? "nav.cta" : cta.labelKey)}
-        </a>
+        </Link>
       </div>
     </>
   );

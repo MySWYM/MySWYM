@@ -154,7 +154,7 @@ export function softwareApplicationJsonLd(reviews = []) {
     operatingSystem: "Web",
     url: `${SITE_ORIGIN}/`,
     description:
-      "Générateur de plans d'entraînement natation personnalisés — niveau, objectif, bassin 25 m ou 50 m.",
+      "Générateur de plans d'entraînement natation personnalisés : niveau, objectif, bassin 25 m ou 50 m.",
     offers: {
       "@type": "Offer",
       price: "4.99",

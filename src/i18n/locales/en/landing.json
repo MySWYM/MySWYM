@@ -1,8 +1,8 @@
 {
   "meta": {
-    "title": "MySWYM — Personalized swim training plan",
+    "title": "MySWYM | Personalized swim training plan",
     "description": "Build a swim plan around your goal, level, and race date. 7-day Premium trial. 25 m and 50 m pools.",
-    "howTitle": "How it works — MySWYM",
+    "howTitle": "How it works | MySWYM",
     "howDescription": "Goal, date, level, frequency: four steps to a structured swim plan."
   },
   "hero": {
@@ -10,7 +10,7 @@
     "title": "Your next swim session, ready in 10 seconds.",
     "titleLine1": "Your next swim session,",
     "titleAccent": "ready in 10 seconds",
-    "subtitle": "MySWYM builds sessions around your level, gear, and goal — or a full plan through race day. No more guessing at the pool.",
+    "subtitle": "MySWYM builds sessions around your level, gear, and goal, or a full plan through race day. No more guessing at the pool.",
     "cta": "Generate a session",
     "ctaSecondary": "Create my plan",
     "freeNote": "7-day trial · no card · then €4.99/month",
@@ -23,7 +23,7 @@
   },
   "objectives": {
     "title": "What's your goal?",
-    "subtitle": "Pick a direction — we adapt the session. Each goal changes the structure, intensity, and set types.",
+    "subtitle": "Pick a direction, we adapt the session. Each goal changes the structure, intensity, and set types.",
     "o1Label": "Getting fit",
     "o1Short": "Feel-good fitness",
     "o1Desc": "Move, feel better, keep a rhythm without burning out.",
@@ -58,15 +58,15 @@
     "eyebrow": "Built by a swimmer, for swimmers",
     "titleLine1": "Become the swimmer",
     "titleLine2": "you want to be",
-    "body": "MySWYM structures your training like a coach's logbook: goal, date, level, frequency — then clear sessions before you hit the water. Technique tips also live on Instagram.",
-    "quote": "Progress is analysis, repetition, and the drive to get there — not improvising poolside.",
+    "body": "MySWYM structures your training like a coach's logbook: goal, date, level, frequency, then clear sessions before you hit the water. Technique tips also live on Instagram.",
+    "quote": "Progress is analysis, repetition, and the drive to get there. Not improvising poolside.",
     "igCta": "See @arthurnatation",
     "igHref": "https://www.instagram.com/arthurnatation/"
   },
   "includes": {
     "label": "WHAT'S INCLUDED",
     "title": "Everything to progress",
-    "subtitle": "7-day Premium trial with no card — then subscribe to keep the coach.",
+    "subtitle": "7-day Premium trial with no card, then subscribe to keep the coach.",
     "i1Title": "Personalized plan",
     "i1Desc": "Built around your goal, level, and event date.",
     "i2Title": "Structured sessions",
@@ -85,7 +85,7 @@
   "why": {
     "label": "WHY MYSWYM",
     "title": "Why use MySWYM?",
-    "subtitle": "Everything you need to structure your training — nothing extra.",
+    "subtitle": "Everything you need to structure your training, nothing extra.",
     "uiPreview": "UI preview",
     "b1Title": "6 session types",
     "b1Stat": "Endurance · Threshold · Speed · Technique · Pyramid · Recovery",
@@ -95,10 +95,10 @@
     "b2Desc": "A plan that fits your level and the equipment you have.",
     "b3Title": "Progression to race day",
     "b3Stat": "Week after week",
-    "b3Desc": "Follow your progress to your goal — no improvising.",
+    "b3Desc": "Follow your progress to your goal, no improvising.",
     "b4Title": "Plan ready in 2 minutes",
     "b4Stat": "Instant generation",
-    "b4Desc": "No waiting, no external AI — your plan is ready right away."
+    "b4Desc": "No waiting, no external AI. Your plan is ready right away."
   },
   "how": {
     "label": "HOW IT WORKS",
@@ -109,34 +109,34 @@
     "s2Title": "We generate",
     "s2Desc": "A structured session: warm-up, main set, cool-down.",
     "s3Title": "You swim, you tweak",
-    "s3Desc": "Not feeling it? The plan adapts — regenerate until it clicks.",
+    "s3Desc": "Not feeling it? The plan adapts. Regenerate until it clicks.",
     "s4Title": "Weekly frequency",
-    "s4Desc": "Choose a realistic schedule for your life. MySWYM builds weeks you can stick to — not a plan you quit in 10 days."
+    "s4Desc": "Choose a realistic schedule for your life. MySWYM builds weeks you can stick to, not a plan you quit in 10 days."
   },
   "session": {
     "label": "SESSION PREVIEW",
     "title": "Clear before you hit the water",
-    "subtitle": "Every session has a coach structure: warm-up, main set, cool-down — plus a concrete tip.",
+    "subtitle": "Every session has a coach structure: warm-up, main set, cool-down, plus a concrete tip.",
     "type": "Endurance",
     "heading": "Comfortable sets",
     "meta": "2,200 m · ~50 min",
     "warmLabel": "Warm-up",
-    "warmContent": "400 m freestyle — progressive build over the last 100 meters.",
+    "warmContent": "400 m freestyle, progressive build over the last 100 meters.",
     "mainLabel": "Main set",
-    "mainContent": "5 × 300 m freestyle at endurance pace — 30 s rest. Steady breathing, glide after each push-off.",
+    "mainContent": "5 × 300 m freestyle at endurance pace, 30 s rest. Steady breathing, glide after each push-off.",
     "coolLabel": "Cool-down",
-    "coolContent": "300 m easy mixed — backstroke and breaststroke to loosen the shoulders.",
-    "tip": "Coach tip: conversational pace. If you can't talk anymore, you're going too fast — lengthen the rest."
+    "coolContent": "300 m easy mixed, backstroke and breaststroke to loosen the shoulders.",
+    "tip": "Coach tip: conversational pace. If you can't talk anymore, you're going too fast. Lengthen the rest."
   },
   "trust": {
     "label": "CREDIBILITY",
     "titleLine1": "Structured coaching,",
     "titleLine2": "not improvisation",
-    "subtitle": "MySWYM is built on clear training rules — not random prompts.",
+    "subtitle": "MySWYM is built on clear training rules, not random prompts.",
     "p1Title": "Local, reliable generation",
-    "p1Desc": "Your plan is computed in the app — no external AI, no waiting. Immediate, reproducible results.",
+    "p1Desc": "Your plan is computed in the app, no external AI, no waiting. Immediate, reproducible results.",
     "p2Title": "Pro structure",
-    "p2Desc": "Warm-up, main set, cool-down, effort types (endurance, threshold, speed…) — the approach of structured training plans.",
+    "p2Desc": "Warm-up, main set, cool-down, effort types (endurance, threshold, speed…). The approach of structured training plans.",
     "p3Title": "Built for the pool",
     "p3Desc": "Volumes by level, optional gear, 25 m or 50 m pool. Sessions you can read before you dive in."
   },
@@ -162,7 +162,7 @@
     "billedAnnual": "Billed {{price}}/year",
     "billedMonthly": "No commitment",
     "saveBadge": "−33%",
-    "unlockCta": "Subscribe — €4.99/month",
+    "unlockCta": "Subscribe, €4.99/month",
     "premF1": "Personal coach and adaptive program",
     "premF2": "T100 paces and progress projection",
     "premF3": "Adaptation after every feedback",
@@ -176,14 +176,14 @@
   "faq": {
     "label": "FAQ",
     "title": "Frequently asked questions",
-    "q1": "I've never followed a structured plan — is it for me?",
-    "a1": "Yes if you already know how to swim. Beginner level uses simple volumes and clear language. MySWYM structures your sessions — it's not a learn-to-swim school.",
+    "q1": "I've never followed a structured plan. Is it for me?",
+    "a1": "Yes if you already know how to swim. Beginner level uses simple volumes and clear language. MySWYM structures your sessions. It's not a learn-to-swim school.",
     "q2": "Can I change my goal along the way?",
     "a2": "Yes. From your profile, you can restart onboarding for a new goal and regenerate a plan. With Premium, you can also manage several plans in parallel.",
     "q3": "How does the subscription work?",
     "a3": "When you create an account, you get a 7-day Premium trial with no card. Then the app freezes: no plans or sessions stay visible. To continue: €4.99/month with no commitment, or €39.99/year (non-refundable). Checkout via Stripe.",
     "q4": "Can I cancel anytime?",
-    "a4": "The 7-day trial needs no card — it simply ends and the app freezes. After that, monthly (€4.99) stays cancel-anytime. Annual (€39.99) is prepaid and non-refundable once charged, except where required by law.",
+    "a4": "The 7-day trial needs no card. It simply ends and the app freezes. After that, monthly (€4.99) stays cancel-anytime. Annual (€39.99) is prepaid and non-refundable once charged, except where required by law.",
     "q5": "Does it work in 25 m and 50 m pools?",
     "a5": "Yes. You set pool length in the questionnaire; block distances are multiples of that length.",
     "seeAll": "All questions"
@@ -192,7 +192,7 @@
     "title": "Dive into your first session",
     "titleLine1": "Dive into your",
     "titleLine2": "first session",
-    "subtitle": "7-day trial, no card. Generate your plan now — subscribe after 7 days to keep going.",
+    "subtitle": "7-day trial, no card. Generate your plan now. Subscribe after 7 days to keep going.",
     "cta": "Get started",
     "signoff": "See you in the pool."
   },
@@ -232,10 +232,16 @@
     "warm": "Warm-up",
     "warmText": "400 m progressive freestyle",
     "main": "Main set",
-    "mainText": "5 × 300 m freestyle — R30\"",
+    "mainText": "5 × 300 m freestyle, R30\"",
     "cool": "Cool-down",
     "coolText": "300 m very easy mixed",
-    "coachTip": "Coach: conversational pace — you could still talk."
+    "coachTip": "Coach: conversational pace. You could still talk."
+  },
+  "cases": {
+    "label": "CASE STUDIES",
+    "title": "Swimmer journeys",
+    "subtitle": "Real stories coming, no made-up numbers.",
+    "coming": "COMING SOON"
   },
   "howPage": {
     "nextLabel": "THEN",
@@ -243,7 +249,7 @@
     "n1Title": "Account + 7-day trial",
     "n1Desc": "Create an account with no card. For 7 days you get full Premium: complete plan, sessions, multiple goals.",
     "n2Title": "Your sessions in the app",
-    "n2Desc": "Every session shows warm-up, main set, cool-down and a coach tip — before you hit the water.",
+    "n2Desc": "Every session shows warm-up, main set, cool-down and a coach tip, before you hit the water.",
     "n3Title": "You adjust from your feedback",
     "n3Desc": "After a session that felt too hard or too easy, the plan adapts. No need to rebuild everything by hand.",
     "cta": "Get started",
@@ -251,14 +257,14 @@
     "seePage": "The 4 steps in detail"
   },
   "faqPage": {
-    "metaTitle": "FAQ — MySWYM",
+    "metaTitle": "FAQ | MySWYM",
     "metaDescription": "7-day trial, subscription, 25 m / 50 m pools, changing your goal: answers to start your swim plan.",
-    "intro": "The questions we get most — trial, price, pool length, changing your goal.",
+    "intro": "The questions we get most: trial, price, pool length, changing your goal.",
     "moreTitle": "Still have a question?",
     "moreCta": "Write to support"
   },
   "pricingPage": {
-    "metaTitle": "Pricing — MySWYM",
+    "metaTitle": "Pricing | MySWYM",
     "metaDescription": "7-day Premium trial, then €4.99/month with no commitment or €39.99/year. Personalized swim plans.",
     "eyebrow": "PRICING",
     "h1a": "Premium turns",
@@ -274,14 +280,14 @@
     "chooseAnnual": "Choose annual Premium"
   },
   "contactPage": {
-    "metaTitle": "Contact — MySWYM",
-    "metaDescription": "A question about your swim plan? Write to us — we reply within 24–48 business hours.",
+    "metaTitle": "Contact | MySWYM",
+    "metaDescription": "A question about your swim plan? Write to us. We reply within 24-48 business hours.",
     "eyebrow": "CONTACT",
     "h1": "We’re here to help",
-    "lead": "A suggestion? A question? Write to us — we reply within 24–48 business hours.",
+    "lead": "A suggestion? A question? Write to us. We reply within 24-48 business hours.",
     "direct": "Direct:",
     "formTitle": "Let’s talk about your training",
-    "formLead": "Fill in the form — your message goes straight to our inbox.",
+    "formLead": "Fill in the form. Your message goes straight to our inbox.",
     "name": "Full name *",
     "namePh": "Your name",
     "email": "Email *",

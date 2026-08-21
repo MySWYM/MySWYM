@@ -1,114 +1,114 @@
 {
   "/": {
-    "title": "MySWYM — Personalized swim training plan",
+    "title": "MySWYM | Personalized swim training plan",
     "description": "Build a swim plan around your goal, level, and race date. 7-day Premium trial. 25 m and 50 m pools."
   },
   "/fr": {
-    "title": "MySWYM — Plan d'entraînement natation personnalisé",
+    "title": "MySWYM | Plan d'entraînement natation personnalisé",
     "description": "Génère un plan natation calé sur ton objectif, ton niveau et ta date. Essai Premium 7 jours. Bassins 25 m et 50 m."
   },
   "/how-it-works": {
-    "title": "How it works — MySWYM",
+    "title": "How it works | MySWYM",
     "description": "Goal, date, level, frequency: four steps to a structured swim plan. 7-day trial, no card."
   },
   "/fr/comment-ca-marche": {
-    "title": "Comment ça marche — MySWYM",
+    "title": "Comment ça marche | MySWYM",
     "description": "Objectif, date, niveau, fréquence : 4 étapes pour obtenir un plan de natation structuré. Essai 7 jours sans carte."
   },
   "/faq": {
-    "title": "FAQ — MySWYM",
+    "title": "FAQ | MySWYM",
     "description": "7-day trial, subscription, 25 m / 50 m pools, changing your goal: answers to start your swim plan."
   },
   "/fr/faq": {
-    "title": "FAQ — MySWYM",
+    "title": "FAQ | MySWYM",
     "description": "Essai 7 jours, abonnement, bassin 25 m / 50 m, changement d'objectif : les réponses pour démarrer ton plan natation."
   },
   "/pricing": {
-    "title": "Pricing — MySWYM",
+    "title": "Pricing | MySWYM",
     "description": "7-day Premium trial, then €4.99/month with no commitment or €39.99/year. Personalized swim plans."
   },
   "/fr/tarifs": {
-    "title": "Tarifs — MySWYM",
+    "title": "Tarifs | MySWYM",
     "description": "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés."
   },
   "/contact": {
-    "title": "Contact — MySWYM",
-    "description": "A question about your swim plan? Write to us — we reply within 24–48 business hours."
+    "title": "Contact | MySWYM",
+    "description": "A question about your swim plan? Write to us. We reply within 24-48 business hours."
   },
   "/fr/contact": {
-    "title": "Contact — MySWYM",
-    "description": "Une question sur ton plan natation ? Écris-nous — réponse sous 24–48 h ouvrées."
+    "title": "Contact | MySWYM",
+    "description": "Une question sur ton plan natation ? Écris-nous. Réponse sous 24-48 h ouvrées."
   },
   "/blog": {
-    "title": "MySWYM Blog — Swim training tips",
-    "description": "Swim articles: technique, plans, open water and pool vocabulary — without the jargon."
+    "title": "MySWYM Blog | Swim training tips",
+    "description": "Swim articles: technique, plans, open water and pool vocabulary, without the jargon."
   },
   "/fr/blog": {
-    "title": "Blog MySWYM — Conseils natation et entraînement",
-    "description": "Articles natation : technique, plans, eau libre et vocabulaire de bassin — sans jargon inutile."
+    "title": "Blog MySWYM | Conseils natation et entraînement",
+    "description": "Articles natation : technique, plans, eau libre et vocabulaire de bassin, sans jargon inutile."
   },
   "/legal-notice": {
-    "title": "Legal notice — MySWYM",
+    "title": "Legal notice | MySWYM",
     "description": "Publisher, host and legal notices for the MySWYM website."
   },
   "/fr/mentions-legales": {
-    "title": "Mentions légales — MySWYM",
+    "title": "Mentions légales | MySWYM",
     "description": "Éditeur, hébergeur et mentions légales du site MySWYM."
   },
   "/privacy": {
-    "title": "Privacy policy — MySWYM",
+    "title": "Privacy policy | MySWYM",
     "description": "Data collected, purposes, GDPR rights and contact for MySWYM."
   },
   "/fr/politique-confidentialite": {
-    "title": "Politique de confidentialité — MySWYM",
+    "title": "Politique de confidentialité | MySWYM",
     "description": "Données collectées, finalités, droits RGPD et contact pour MySWYM."
   },
   "/cookies": {
-    "title": "Cookie policy — MySWYM",
+    "title": "Cookie policy | MySWYM",
     "description": "Cookies, PostHog and consent management on MySWYM. No Google Analytics."
   },
   "/fr/politique-cookies": {
-    "title": "Politique de cookies — MySWYM",
+    "title": "Politique de cookies | MySWYM",
     "description": "Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics."
   },
   "/terms": {
-    "title": "Terms of use — MySWYM",
+    "title": "Terms of use | MySWYM",
     "description": "Terms of use for the MySWYM application."
   },
   "/fr/cgu": {
-    "title": "CGU — MySWYM",
+    "title": "CGU | MySWYM",
     "description": "Conditions générales d'utilisation de l'application MySWYM."
   },
   "/terms-of-sale": {
-    "title": "Terms of sale — MySWYM",
+    "title": "Terms of sale | MySWYM",
     "description": "Terms of sale for the MySWYM Premium offer."
   },
   "/fr/cgv": {
-    "title": "CGV — MySWYM",
+    "title": "CGV | MySWYM",
     "description": "Conditions générales de vente de l'offre Premium MySWYM."
   },
   "/blog/personnalisation-100m-natation": {
-    "title": "Pourquoi ton meilleur 100m change tout à ton entraînement — MySWYM",
+    "title": "Pourquoi ton meilleur 100m change tout à ton entraînement | MySWYM",
     "description": "Un seul temps suffit pour que ton plan devienne vraiment le tien. Départs calculés à la seconde, zones d'intensité réelles, allures cibles."
   },
   "/blog/programme-natation-triathlon": {
-    "title": "Programme natation pour triathlon : comment vraiment progresser — MySWYM",
-    "description": "Découvre comment structurer ton entraînement natation pour le triathlon — phases de préparation, séances CSS, travail au seuil et open water."
+    "title": "Programme natation pour triathlon : comment vraiment progresser | MySWYM",
+    "description": "Découvre comment structurer ton entraînement natation pour le triathlon : phases de préparation, séances CSS, travail au seuil et open water."
   },
   "/blog/comment-reussir-bnssa": {
-    "title": "Comment réussir le BNSSA : le programme natation complet — MySWYM",
-    "description": "Tout ce qu'il faut savoir pour préparer les épreuves de natation du BNSSA — 100m sauvetage, 250m palmes, apnée et remorquage."
+    "title": "Comment réussir le BNSSA : le programme natation complet | MySWYM",
+    "description": "Tout ce qu'il faut savoir pour préparer les épreuves de natation du BNSSA : 100m sauvetage, 250m palmes, apnée et remorquage."
   },
   "/blog/plan-natation-debutant": {
-    "title": "Plan natation débutant : 8 semaines pour nager sans s'arrêter — MySWYM",
+    "title": "Plan natation débutant : 8 semaines pour nager sans s'arrêter | MySWYM",
     "description": "Tu reprends la natation ou tu débutes ? Un plan progressif de 8 semaines pour nager 1 000m sans t'arrêter."
   },
   "/blog/depart-interval-natation": {
-    "title": "D1'45\" : c'est quoi un départ à la montre en natation ? — MySWYM",
+    "title": "D1'45\" : c'est quoi un départ à la montre en natation ? | MySWYM",
     "description": "Comment lire l'horloge de bassin, pourquoi on n'utilise pas la montre pour les récups, et comment nager les séries."
   },
   "/blog/glossaire-natation": {
-    "title": "Glossaire natation : tous les termes de l'app expliqués — MySWYM",
+    "title": "Glossaire natation : tous les termes de l'app expliqués | MySWYM",
     "description": "RAC, godilles, grand chien, Z2, D1'45\", rattrapé, flèche : le vocabulaire de bassin expliqué simplement."
   }
 }

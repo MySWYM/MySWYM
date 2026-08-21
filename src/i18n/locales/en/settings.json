@@ -8,8 +8,8 @@
     "section": "Appearance",
     "dark": "Dark background",
     "light": "Light background",
-    "darkHint": "Night mode — less glare",
-    "lightHint": "Day mode — white background",
+    "darkHint": "Night mode, less glare",
+    "lightHint": "Day mode, white background",
     "switchToLight": "Switch to light background",
     "switchToDark": "Switch to dark background"
   },

@@ -35,7 +35,7 @@ const FAQ_RULES = [
   {
     keys: ["début", "debut", "débutant", "debutant", "jamais", "apprendre", "savoir nager", "école"],
     answer:
-      "MySWYM convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z — l'app génère et structure tes séances.",
+      "MySWYM convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z. L'app génère et structure tes séances.",
   },
   {
     keys: ["comment ça marche", "comment ca marche", "fonctionn", "personnalis", "générateur", "generateur"],
@@ -45,7 +45,7 @@ const FAQ_RULES = [
   {
     keys: ["contact", "humain", "équipe", "equipe", "écrire", "ecrire", "mail", "email", "support"],
     answer:
-      `Pour une question perso ou un souci sur une séance, écris à ${SUPPORT_EMAIL} — l'équipe répond sous 24–48 h (jours ouvrés).`,
+      `Pour une question perso ou un souci sur une séance, écris à ${SUPPORT_EMAIL}. L'équipe répond sous 24-48 h (jours ouvrés).`,
   },
   {
     keys: ["compte", "connexion", "mot de passe", "inscription", "supprimer"],
@@ -62,17 +62,17 @@ const FAQ_RULES = [
   {
     keys: ["allure", "t100", "temps 100", "pace", "@", "mm:ss", "chron"],
     answer:
-      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau) — plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, l'app est gelée. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
+      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau), plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, l'app est gelée. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
   },
   {
     keys: ["d…", "d...", "r…", "r...", "d ou r", "départ chron", "depart chron", "repos ", "intervalle fixe", "chronométré", "chronometre"],
     answer:
-      "R… = repos simple entre reps (ex. R30\"). D… = départ chronométré (ex. D1'30) : tu repartis à intervalle fixe — Premium, avec allure cible si T100 connu. Sur un sprint, la récup doit rester complète : sinon c'est de l'endurance déguisée.",
+      "R… = repos simple entre reps (ex. R30\"). D… = départ chronométré (ex. D1'30) : tu repartis à intervalle fixe. Premium affiche l'allure cible si T100 connu. Sur un sprint, la récup doit rester complète : sinon c'est de l'endurance déguisée.",
   },
   {
     keys: ["structure", "échauff", "echauff", "retour calme", "rac", "bloc", "départ", "depart", "corps de séance", "corps de seance"],
     answer:
-      "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison) — pas seulement des reps bassin.",
+      "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison), pas seulement des reps bassin.",
   },
   {
     keys: ["godille", "sculling", "scull"],
@@ -87,27 +87,27 @@ const FAQ_RULES = [
   {
     keys: ["rattrapé", "rattrape", "catch-up", "catch up", "catchup"],
     answer:
-      "Le rattrapé : un bras attend dans l'axe des épaules (pas mains qui se touchent) pendant que l'autre tire. Éducatif de timing et d'alignement — pas un exercice de vitesse.",
+      "Le rattrapé : un bras attend dans l'axe des épaules (pas mains qui se touchent) pendant que l'autre tire. Éducatif de timing et d'alignement, pas un exercice de vitesse.",
   },
   {
     keys: ["coulée", "coulee", "virage", "apnée", "apnee", "glisse"],
     answer:
-      "Après un virage, on parle de coulée (glisse sous l'eau), pas de « sortie en apnée ». Sur BNSSA / pompiers, l'apnée dynamique et le matériel (palmes, masque, tuba) servent au parcours examen — c'est un autre contexte.",
+      "Après un virage, on parle de coulée (glisse sous l'eau), pas de « sortie en apnée ». Sur BNSSA / pompiers, l'apnée dynamique et le matériel (palmes, masque, tuba) servent au parcours examen. C'est un autre contexte.",
   },
   {
     keys: ["jambes", "battement", "kick"],
     answer:
-      "Focus jambes = éducatif court puis série jambes — jamais deux gros blocs battements d'affilée. Si la séance est déjà centrée jambes, le départ ne rajoute pas encore du kick.",
+      "Focus jambes = éducatif court puis série jambes. Jamais deux gros blocs battements d'affilée. Si la séance est déjà centrée jambes, le départ ne rajoute pas encore du kick.",
   },
   {
     keys: ["sprint", "vitesse", "récup complète", "recup complete"],
     answer:
-      "Sprint / vitesse : récup longue et complète entre les reps (souvent 1:3 à 1:6). Si tu raccourcis le repos, tu bascules en endurance — ce n'est plus le même stimulus.",
+      "Sprint / vitesse : récup longue et complète entre les reps (souvent 1:3 à 1:6). Si tu raccourcis le repos, tu bascules en endurance. Ce n'est plus le même stimulus.",
   },
   {
     keys: ["seuil", "régular", "regular", "constance"],
     answer:
-      "Au seuil (souvent Z3) : effort soutenu mais régulier — vise la constance des temps sur les reps, pas un coup de collier puis un crash.",
+      "Au seuil (souvent Z3) : effort soutenu mais régulier. Vise la constance des temps sur les reps, pas un coup de collier puis un crash.",
   },
   {
     keys: ["sighting", "eau libre", "bouée", "bouee", "combinaison", "open water", "ow"],
@@ -117,27 +117,27 @@ const FAQ_RULES = [
   {
     keys: ["bnssa", "pompier", "sauvetage", "remorquage", "palmes", "tuba", "masque"],
     answer:
-      "BNSSA / tests pompiers : séances orientées examen — apnée, palmes + masque + tuba, remorquage, simulations parcours (sortie eau, enchaînements). Ce n'est pas de l'endurance loisir générique.",
+      "BNSSA / tests pompiers : séances orientées examen (apnée, palmes + masque + tuba, remorquage, simulations parcours). Ce n'est pas de l'endurance loisir générique.",
   },
   {
     keys: ["bpjeps", "400 m", "400m", "7'40", "7:40"],
     answer:
-      "BPJEPS AAN : focus 400 m NL (repère examen souvent < 7'40\"), fractionné et régularité des temps — distinct du parcours sauvetage BNSSA.",
+      "BPJEPS AAN : focus 400 m NL (repère examen souvent < 7'40\"), fractionné et régularité des temps. Distinct du parcours sauvetage BNSSA.",
   },
   {
     keys: ["palme", "plaquette", "roulis", "rotation"],
     answer:
-      "Sur roulis / rotation du corps : palmes OK, plaquettes non — elles faussent l'appui. Les plaquettes servent plutôt d'autres blocs (force / traction), pas le travail de rotation.",
+      "Sur roulis / rotation du corps : palmes OK, plaquettes non. Elles faussent l'appui. Les plaquettes servent plutôt d'autres blocs (force / traction), pas le travail de rotation.",
   },
   {
     keys: ["volume", "+10", "10 %", "10%", "progression", "charge", "trop dur", "trop facile", "feedback", "easy", "hard"],
     answer:
-      "Le volume monte ~+10 % max d'une semaine à l'autre. Après une semaine, le feedback (facile / ok / dur) ajuste les semaines futures encore vierges (borné). Une séance trop dure ? Dis-le dans le retour — Premium peut aussi micro-ajuster au premier feedback séance.",
+      "Le volume monte ~+10 % max d'une semaine à l'autre. Après une semaine, le feedback (facile / ok / dur) ajuste les semaines futures encore vierges (borné). Une séance trop dure ? Dis-le dans le retour. Premium peut aussi micro-ajuster au premier feedback séance.",
   },
   {
     keys: ["affûtage", "affutage", "taper", "semaine test", "chrono", "décharge", "decharge"],
     answer:
-      "Décharges ~toutes les 4 semaines. Semaines test : chronos 100/200/400 pour mesurer l'évolution. Affûtage avant l'échéance (1 sem. dès 6 sem. de plan, 2 dès 10) : volume ↓, touches vitesse. Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume très bas, rappels ≤12,5 m — le travail est déjà fait.",
+      "Décharges ~toutes les 4 semaines. Semaines test : chronos 100/200/400 pour mesurer l'évolution. Affûtage avant l'échéance (1 sem. dès 6 sem. de plan, 2 dès 10) : volume ↓, touches vitesse. Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume très bas, rappels ≤12,5 m. Le travail est déjà fait.",
   },
   {
     keys: ["bassin", "25 m", "25m", "50 m", "50m", "longueur"],
@@ -175,7 +175,7 @@ function matchFaq(text) {
 
 const WELCOME = {
   role: "bot",
-  text: "Bonjour — assistance MySWYM. Questions produit ou natation (zones, allures, D…/R…, éducatifs…) : pose la tienne ou tape une suggestion.",
+  text: "Bonjour, assistance MySWYM. Questions produit ou natation (zones, allures, D…/R…, éducatifs…) : pose la tienne ou tape une suggestion.",
 };
 
 /**
@@ -315,7 +315,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             {view === "home" && (
               <>
                 <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
-                  Questions produit ou vocabulaire natation — réponses immédiates, ou message direct à l'équipe.
+                  Questions produit ou vocabulaire natation : réponses immédiates, ou message direct à l'équipe.
                 </p>
 
                 <button
@@ -384,7 +384,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             {view === "contact" && (
               <>
                 <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
-                  Question sur une séance, suggestion ou souci technique — l'équipe répond sous 24–48 h ouvrjours ouvrés) à {SUPPORT_EMAIL}.
+                  Question sur une séance, suggestion ou souci technique. L'équipe répond sous 24-48 h ouvrées à {SUPPORT_EMAIL}.
                 </p>
                 <a
                   href={withLocalePrefix("/contact", getStoredLanguage())}

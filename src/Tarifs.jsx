@@ -256,7 +256,7 @@ export default function TarifsPage() {
   const monthlyHighlights = [
     "Acces Premium complet.",
     "Essai 7 jours sans carte, puis 4,99€/mois.",
-    "Sans engagement — resilie quand tu veux.",
+    "Sans engagement. Résilie quand tu veux.",
   ];
 
   const comparisonRows = [
@@ -941,7 +941,7 @@ export default function TarifsPage() {
             </h2>
             <p style={{ margin: 0, color: C.secondary, fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 760, marginInline: "auto" }}>
               La comparaison doit être évidente : l’essai sans carte ouvre tout Premium pendant 7 jours,
-              puis le mensuel ou l’annuel devient le choix logique — sinon l’app se gèle.
+              puis le mensuel ou l’annuel devient le choix logique. Sinon l’app se gèle.
             </p>
           </div>
 

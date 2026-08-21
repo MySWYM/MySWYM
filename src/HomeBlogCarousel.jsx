@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen } from "lucide-react";
-import { fetchPublishedArticles, formatArticleDate } from "./blogData.js";
+import { fetchPublishedArticles } from "./blogData.js";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { getStoredLanguage } from "./i18n/index.js";
 
@@ -103,12 +103,6 @@ function BlogCard({ article, colors, width }) {
           >
             {article.titre}
           </h3>
-          <time
-            dateTime={article.date_publication}
-            style={{ color: colors.greyMid, fontSize: 11, display: "block" }}
-          >
-            {formatArticleDate(article.date_publication)}
-          </time>
           <span
             style={{
               marginTop: "auto",

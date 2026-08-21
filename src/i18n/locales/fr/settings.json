@@ -8,8 +8,8 @@
     "section": "Apparence",
     "dark": "Fond sombre",
     "light": "Fond clair",
-    "darkHint": "Mode nuit — moins d'éblouissement",
-    "lightHint": "Mode jour — fond blanc",
+    "darkHint": "Mode nuit, moins d'éblouissement",
+    "lightHint": "Mode jour, fond blanc",
     "switchToLight": "Passer en fond clair",
     "switchToDark": "Passer en fond sombre"
   },

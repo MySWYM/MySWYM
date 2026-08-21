@@ -11,7 +11,6 @@ import { useTranslation } from "react-i18next";
 import {
   fetchArticleBySlug,
   fetchRelatedArticles,
-  formatArticleDate,
 } from "./blogData.js";
 import { BRAND, FONT, FONT_HREF } from "./theme/brand.js";
 import "./theme/public.css";
@@ -36,7 +35,7 @@ function ArticleSeo({ article }) {
     { label: article?.titre || t("nav.blog") },
   ];
   usePageSeo({
-    title: article ? `${article.titre} — MySWYM` : "Article — MySWYM",
+    title: article ? `${article.titre} | MySWYM` : "Article | MySWYM",
     description: article?.extrait || article?.titre || "Article natation MySWYM",
     path: article?.slug ? `/blog/${article.slug}` : "/blog",
     jsonLd: breadcrumbJsonLd(crumbs),
@@ -171,6 +170,7 @@ export default function BlogPost() {
             { label: t("nav.blog"), href: "/blog" },
             { label: article.titre },
           ]}
+          onDark
         />
 
         <LocalizedLink
@@ -202,9 +202,6 @@ export default function BlogPost() {
           >
             {article.categorie}
           </span>
-          <time dateTime={article.date_publication} style={{ color: C.outline, fontSize: 14 }}>
-            {formatArticleDate(article.date_publication)}
-          </time>
         </div>
 
         <h1
@@ -258,10 +255,10 @@ export default function BlogPost() {
           }}
         >
           <h3 style={{ fontFamily: FONT, fontSize: 20, fontWeight: 800, color: C.ink, margin: "0 0 10px" }}>
-            Passe à l&apos;entraînement structuré
+            {t("pages.blogCtaTitle")}
           </h3>
           <p style={{ color: C.secondary, fontSize: 14, lineHeight: 1.65, margin: "0 0 22px", maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
-            Crée ton plan natation personnalisé en 2 minutes — adapté à ton niveau et à ton objectif.
+            {t("pages.blogCtaLead")}
           </p>
           <Link
             to="/app"
@@ -276,17 +273,18 @@ export default function BlogPost() {
               padding: "12px 24px",
               borderRadius: 100,
               textDecoration: "none",
-              boxShadow: "0 4px 16px rgba(142,179,255,0.35)",
+              boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)",
+              minHeight: 48,
             }}
           >
-            Créer mon plan <ArrowRight size={15} />
+            {t("pages.blogCta")} <ArrowRight size={15} />
           </Link>
         </div>
       </article>
 
       {related.length > 0 && (
         <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "0 16px 72px" : "0 20px 80px" }}>
-          <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 16 }}>À lire aussi</h3>
+          <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 16 }}>{t("pages.blogRelated")}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {related.map((p) => (
               <LocalizedLink key={p.slug} to={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
@@ -333,7 +331,7 @@ export default function BlogPost() {
                       {p.titre}
                     </h4>
                     <span style={{ fontSize: 12, color: C.primary, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      Lire l&apos;article <ChevronRight size={12} />
+                      {t("pages.blogRead")} <ChevronRight size={12} />
                     </span>
                   </div>
                 </div>
