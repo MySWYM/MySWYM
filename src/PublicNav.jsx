@@ -3,20 +3,25 @@ import { useLocation } from "react-router-dom";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { stripLocalePrefix } from "./i18n/locale-path.js";
+import { usePublicCta } from "./lib/use-auth-session.js";
 import "./theme/public.css";
 
 export default function PublicNav() {
   const { t } = useTranslation("common");
   const { pathname } = useLocation();
+  const pathBare = stripLocalePrefix(pathname);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const cta = usePublicCta();
 
   const links = [
-    [t("nav.why"), "/accueil#pourquoi"],
+    [t("nav.why"), { pathname: "/", hash: "pourquoi" }],
     [t("nav.how"), "/comment-ca-marche"],
     [t("nav.pricing"), "/tarifs"],
-    [t("nav.faq"), "/accueil#faq"],
+    [t("nav.faq"), "/faq"],
     [t("nav.blog"), "/blog"],
     [t("nav.contact"), "/contact"],
   ];
@@ -41,24 +46,24 @@ export default function PublicNav() {
     <>
       <nav className={`ms-header${scrolled || menuOpen ? " is-solid" : ""}`}>
         <div className="ms-header-inner">
-          <a href="/accueil" className="ms-brand" aria-label={t("nav.homeAria")}>
+          <LocalizedLink to="/" className="ms-brand" aria-label={t("nav.homeAria")}>
             <img
               src="/logo-myswym-banner-blanc.png"
               alt="mySWYM"
               height={26}
               width={178}
             />
-          </a>
+          </LocalizedLink>
 
           {!isMobile && (
             <div className="ms-nav">
               {links.map(([label, href]) => {
-                const pathOnly = href.split("#")[0];
-                const isHere = pathOnly !== "/accueil" && pathOnly === pathname;
+                const pathOnly = typeof href === "string" ? href : href.pathname;
+                const isHere = pathOnly !== "/" && pathBare === pathOnly;
                 return (
-                  <a key={href} href={href} aria-current={isHere ? "page" : undefined}>
+                  <LocalizedLink key={label} to={href} aria-current={isHere ? "page" : undefined}>
                     {label}
-                  </a>
+                  </LocalizedLink>
                 );
               })}
             </div>
@@ -72,8 +77,8 @@ export default function PublicNav() {
               </a>
             )}
             {!isMobile && (
-              <a href="/inscription" className="ms-btn">
-                {t("nav.cta")}
+              <a href={cta.href} className="ms-btn">
+                {t(cta.labelKey)}
               </a>
             )}
             {isMobile && (
@@ -106,15 +111,15 @@ export default function PublicNav() {
             }}
           >
             {links.map(([label, href]) => (
-              <a key={href} href={href} className="ms-drawer-link" onClick={() => setMenuOpen(false)}>
+              <LocalizedLink key={label} to={href} className="ms-drawer-link" onClick={() => setMenuOpen(false)}>
                 {label}
                 <ChevronRight size={16} color="#9bb0c8" />
-              </a>
+              </LocalizedLink>
             ))}
             <div style={{ padding: "20px 24px 0", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
               <LanguageSwitcher variant="nav" onDark />
-              <a href="/inscription" className="ms-drawer-cta" onClick={() => setMenuOpen(false)}>
-                {t("nav.cta")}
+              <a href={cta.href} className="ms-drawer-cta" onClick={() => setMenuOpen(false)}>
+                {t(cta.labelKey)}
               </a>
               <a href="/connexion" className="ms-drawer-ghost" onClick={() => setMenuOpen(false)}>
                 {t("nav.login")}

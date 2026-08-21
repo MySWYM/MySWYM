@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { getStoredLanguage } from "./i18n/index.js";
 
 const SUPPORT_EMAIL = "contact@myswym.app";
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
@@ -385,7 +387,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                   Question sur une séance, suggestion ou souci technique — l'équipe répond sous 24–48 h ouvrjours ouvrés) à {SUPPORT_EMAIL}.
                 </p>
                 <a
-                  href="/contact"
+                  href={withLocalePrefix("/contact", getStoredLanguage())}
                   onClick={close}
                   style={{
                     display: "flex",

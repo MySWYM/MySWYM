@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { LocalizedLink } from "../i18n/locale-routing.jsx";
 import { BRAND, FONT } from "../theme/brand.js";
 
 /**
@@ -17,9 +17,9 @@ export default function Breadcrumb({ items }) {
               {last || !item.href ? (
                 <span style={{ color: BRAND.ink, fontWeight: 600 }}>{item.label}</span>
               ) : (
-                <Link to={item.href} style={{ color: BRAND.primaryDeep, textDecoration: "none", fontWeight: 600 }}>
+                <LocalizedLink to={item.href} style={{ color: BRAND.primaryDeep, textDecoration: "none", fontWeight: 600 }}>
                   {item.label}
-                </Link>
+                </LocalizedLink>
               )}
             </li>
           );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
@@ -37,7 +38,7 @@ function FontLoader() {
 
 function ArticleCard({ article, isMobile }) {
   return (
-    <Link to={`/blog/${article.slug}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+    <LocalizedLink to={`/blog/${article.slug}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
       <article
         style={{
           background: C.bgCard,
@@ -134,7 +135,7 @@ function ArticleCard({ article, isMobile }) {
           </span>
         </div>
       </article>
-    </Link>
+    </LocalizedLink>
   );
 }
 

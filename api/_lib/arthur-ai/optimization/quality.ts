@@ -22,7 +22,7 @@ export interface QualityScoreResult {
 
 const CTA_PATTERNS: Array<{ type: string; re: RegExp }> = [
   { type: "inscription", re: /myswym\.app\/inscription/i },
-  { type: "tarifs", re: /myswym\.app\/tarifs/i },
+  { type: "tarifs", re: /myswym\.app\/(?:fr\/)?tarifs|myswym\.app\/pricing/i },
   { type: "accueil", re: /myswym\.app(\/accueil|\/\s|$|\?)/i },
   { type: "generic_link", re: /myswym\.app/i },
   { type: "suggest_action", re: /suggested_action_placeholder_never/i },

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import { usePageSeo } from "./lib/seo.js";
@@ -27,18 +27,18 @@ export default function MerciPage() {
           Ton message est bien parti. On te répond sous 24–48 h ouvrées.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <Link to="/accueil" style={{
+          <LocalizedLink to="/" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, background: BRAND.primary, color: BRAND.accentText, fontWeight: 700, textDecoration: "none",
           }}>
             Retour à l’accueil
-          </Link>
-          <Link to="/inscription" style={{
+          </LocalizedLink>
+          <a href="/app" style={{
             display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
             borderRadius: 14, border: `1.5px solid ${BRAND.outlineVar}`, color: BRAND.ink, fontWeight: 700, textDecoration: "none",
           }}>
             Démarrer l’essai
-          </Link>
+          </a>
         </div>
       </main>
       <Footer />

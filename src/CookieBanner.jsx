@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { COOKIE_CONSENT_KEY } from "./lib/cookie-consent.js";
 import { BRAND, FONT } from "./theme/brand.js";
 
@@ -56,9 +56,9 @@ export default function CookieBanner() {
         (session, sécurité, préférences). Avec ton accord, nous mesurons aussi l’usage produit via{" "}
         <strong style={{ color: BRAND.ink }}>PostHog</strong> et les performances via <strong style={{ color: BRAND.ink }}>Vercel Speed Insights</strong>
         {" "}(événements sans contenu de séance ni notes personnelles).{" "}
-        <Link to="/politique-cookies" style={{ color: BRAND.primaryDeep, fontWeight: 700, textDecoration: "none" }}>
+        <LocalizedLink to="/politique-cookies" style={{ color: BRAND.primaryDeep, fontWeight: 700, textDecoration: "none" }}>
           En savoir plus
-        </Link>
+        </LocalizedLink>
       </p>
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <button

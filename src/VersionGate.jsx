@@ -95,6 +95,10 @@ export default function VersionGate({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    const failOpen = setTimeout(() => {
+      if (cancelled) return;
+      setState((s) => (s.ready ? s : { ...s, ready: true, checking: false }));
+    }, 1500);
     (async () => {
       const result = await checkVersionGate();
       if (cancelled) return;
@@ -109,6 +113,7 @@ export default function VersionGate({ children }) {
     })();
     return () => {
       cancelled = true;
+      clearTimeout(failOpen);
     };
   }, []);
 

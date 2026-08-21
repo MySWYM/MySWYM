@@ -56,7 +56,7 @@ export async function trackCtaSent(
       channel: input.channel || "instagram",
       event_kind: "sent",
       cta_type: type,
-      destination_path: type === "tarifs" ? "/tarifs" : "/inscription",
+      destination_path: type === "tarifs" ? "/fr/tarifs" : "/inscription",
       reel_id: input.reelId || null,
       campaign: input.campaign || null,
       metadata: { detected_in_message: fromMsg.detected },

@@ -185,7 +185,8 @@
     "q4": "Puis-je annuler à tout moment ?",
     "a4": "L'essai 7 jours ne demande pas de carte : il s'arrête tout seul, l'app se gèle. Ensuite, le mensuel (4,99€) reste sans engagement (accès jusqu'à la fin de période payée). L'annuel (39,99€) est un prépaiement sans remboursement une fois facturé, hors cas légaux.",
     "q5": "Ça marche en bassin 25 m et 50 m ?",
-    "a5": "Oui. Tu indiques la longueur au questionnaire ; les distances des blocs sont des multiples du bassin."
+    "a5": "Oui. Tu indiques la longueur au questionnaire ; les distances des blocs sont des multiples du bassin.",
+    "seeAll": "Toutes les questions"
   },
   "finalCta": {
     "title": "Plonge dans ta première séance",
@@ -206,7 +207,15 @@
     "event": "ÉVÉNEMENT",
     "eventDate": "15 sept. 2026",
     "inWeeks": "Dans 8 semaines",
-    "weekdays": ["L", "M", "M", "J", "V", "S", "D"],
+    "weekdays": [
+      "L",
+      "M",
+      "M",
+      "J",
+      "V",
+      "S",
+      "D"
+    ],
     "levelTitle": "Ton niveau",
     "beginner": "Débutant",
     "intermediate": "Intermédiaire",
@@ -227,5 +236,64 @@
     "cool": "Retour au calme",
     "coolText": "300 m mixte très lent",
     "coachTip": "Coach : allure conversation — tu pourrais encore parler."
+  },
+  "howPage": {
+    "nextLabel": "ENSUITE",
+    "nextTitle": "Puis tu nages le plan",
+    "n1Title": "Compte + essai 7 jours",
+    "n1Desc": "Tu crées un compte sans carte. Pendant 7 jours, tu as l’accès Premium : plan complet, séances, plusieurs objectifs.",
+    "n2Title": "Tes séances dans l’app",
+    "n2Desc": "Chaque séance affiche échauffement, corps, retour au calme et un conseil coach — avant d’entrer dans l’eau.",
+    "n3Title": "Tu ajustes selon tes retours",
+    "n3Desc": "Après une séance trop dure ou trop facile, le plan s’adapte. Pas besoin de tout reconstruire à la main.",
+    "cta": "Commencer",
+    "toPricing": "Voir les tarifs",
+    "seePage": "Le détail des 4 étapes"
+  },
+  "faqPage": {
+    "metaTitle": "FAQ — MySWYM",
+    "metaDescription": "Essai 7 jours, abonnement, bassin 25 m / 50 m, changement d'objectif : les réponses pour démarrer ton plan natation.",
+    "intro": "Les questions qu’on reçoit le plus — essai, prix, bassin, changement d’objectif.",
+    "moreTitle": "Encore une question ?",
+    "moreCta": "Écrire au support"
+  },
+  "pricingPage": {
+    "metaTitle": "Tarifs — MySWYM",
+    "metaDescription": "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés.",
+    "eyebrow": "PAGE TARIFS",
+    "h1a": "Le Premium transforme",
+    "h1b": "ton envie de nager",
+    "h1c": "en vraie progression.",
+    "lead": "Découvre MySWYM avec l’essai 7 jours sans carte. Le Premium te donne un plan complet pour progresser sérieusement, suivre précisément tes performances et rester régulier.",
+    "goPremium": "Passer Premium",
+    "startTrial": "Démarrer l’essai",
+    "lastStep": "DERNIER PAS",
+    "lastTitleA": "Démarre avec l'essai.",
+    "lastTitleB": "Garde Premium pour aller plus loin.",
+    "lastLead": "Active l’essai 7 jours sans carte pour découvrir MySWYM. Pour vraiment progresser avec un plan personnalisé et un vrai suivi, garde Premium ensuite.",
+    "chooseAnnual": "Choisir Premium annuel"
+  },
+  "contactPage": {
+    "metaTitle": "Contact — MySWYM",
+    "metaDescription": "Une question sur ton plan natation ? Écris-nous — réponse sous 24–48 h ouvrées.",
+    "eyebrow": "CONTACT",
+    "h1": "Nous sommes à votre écoute !",
+    "lead": "Une suggestion d'amélioration ? Une question ? Écris-nous — on répond sous 24–48 h ouvrées.",
+    "direct": "Direct :",
+    "formTitle": "Parlons de votre entraînement",
+    "formLead": "Remplis le formulaire — ton message arrive directement dans notre boîte.",
+    "name": "Nom complet *",
+    "namePh": "Votre nom",
+    "email": "Email *",
+    "emailPh": "vous@exemple.com",
+    "subject": "Objet du message *",
+    "subjectPh": "Sujet",
+    "message": "Message *",
+    "messagePh": "Explique-nous ton contexte ou ta question.",
+    "privacy": "Ton message est envoyé à contact@myswym.app. On ne le stocke pas dans l’app.",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "sendError": "Envoi impossible. Réessaie ou écris à contact@myswym.app.",
+    "allFaq": "Toutes les questions"
   }
 }

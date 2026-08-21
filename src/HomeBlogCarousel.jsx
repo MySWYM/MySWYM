@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { fetchPublishedArticles, formatArticleDate } from "./blogData.js";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { getStoredLanguage } from "./i18n/index.js";
 
 const FONT = "'Lexend', sans-serif";
 
@@ -31,7 +33,7 @@ function useAppColors() {
 }
 
 function BlogCard({ article, colors, width }) {
-  const href = `/blog/${article.slug}`;
+  const href = withLocalePrefix(`/blog/${article.slug}`, getStoredLanguage());
   return (
     <a
       href={href}
@@ -220,7 +222,7 @@ export default function HomeBlogCarousel() {
           </div>
         </div>
         <a
-          href="/blog"
+          href={withLocalePrefix("/blog", getStoredLanguage())}
           target="_blank"
           rel="noopener noreferrer"
           style={{

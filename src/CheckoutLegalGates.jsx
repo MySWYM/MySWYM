@@ -1,5 +1,6 @@
 import { LEGAL_LINKS, CHECKOUT_RENEWAL_NOTICE, CHECKOUT_WITHDRAWAL_LABEL, CHECKOUT_CGV_LABEL_PREFIX } from "./lib/legal-copy.js";
 import { checkoutGatesReady, checkoutGatesError } from "./lib/checkout-legal.js";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 
 export { checkoutGatesReady, checkoutGatesError };
 
@@ -49,9 +50,9 @@ export default function CheckoutLegalGates({
         />
         <span>
           {CHECKOUT_CGV_LABEL_PREFIX}{" "}
-          <a href={LEGAL_LINKS.cgv} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: linkColor }} onClick={stopLinkToggle}>CGV</a>
+          <LocalizedLink to={LEGAL_LINKS.cgv} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: linkColor }} onClick={stopLinkToggle}>CGV</LocalizedLink>
           {" "}et les{" "}
-          <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: linkColor }} onClick={stopLinkToggle}>CGU</a>.
+          <LocalizedLink to={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: linkColor }} onClick={stopLinkToggle}>CGU</LocalizedLink>.
         </span>
       </label>
       <label htmlFor={withdrawalId} style={boxStyle}>

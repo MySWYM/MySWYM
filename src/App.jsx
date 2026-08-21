@@ -82,11 +82,14 @@ import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { getStoredLanguage } from "./i18n/index.js";
+import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import BuddyMatching from "./BuddyMatching.jsx";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 import {
-  LEGAL_LINKS,
+  legalHref,
   SIGNUP_AGE_LABEL,
   SIGNUP_TERMS_LABEL_PREFIX,
   CARDLESS_TRIAL_NOTE,
@@ -3928,7 +3931,7 @@ const SettingsDrawer = ({
             <ChevronRight size={18} color={G.greyMid} />
           </button>
           <a
-            href="/accueil"
+            href={withLocalePrefix("/", getStoredLanguage())}
             onClick={onClose}
             style={{ ...menuRow, textDecoration: "none" }}
           >
@@ -4596,7 +4599,8 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   );
 };
 
-const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", showBrandHeader = true }) => {
+const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode = "password", showBrandHeader = true }) => {
+  const locale = useActiveLocale();
   // mode :
   //   "password" — login classique avec mot de passe
   //   "register" — création de compte avec mot de passe
@@ -4724,9 +4728,9 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
               <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
               <span>
                 {SIGNUP_TERMS_LABEL_PREFIX}{" "}
-                <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>CGU</a>
+                <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>CGU</a>
                 {" "}et la{" "}
-                <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>politique de confidentialité</a>.
+                <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>politique de confidentialité</a>.
               </span>
             </label>
             <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
@@ -4787,7 +4791,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
           {mode === "password" && (
             <>
-              <button onClick={() => switchMode("register")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+              <button onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
                 Créer un compte
               </button>
             </>
@@ -11763,18 +11767,6 @@ export default function App() {
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
 
-  // Back button → landing page
-  useEffect(() => {
-    const handlePop = () => {
-      const p = window.location.pathname;
-      if (!p.startsWith("/app") && !isAuthPath(p)) {
-        window.location.replace("/");
-      }
-    };
-    window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
-  }, []);
-
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
   useEffect(() => {
@@ -11785,7 +11777,7 @@ export default function App() {
       return;
     }
     if (legacyAuth === "register") {
-      navigate("/inscription", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     if (isAuthPath(location.pathname)) {
@@ -11793,12 +11785,20 @@ export default function App() {
       if (user) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
-        navigate("/", { replace: true });
+        navigate("/app", { replace: true });
         return;
       }
       authOpenedFromUrlRef.current = true;
       forceAuthRef.current = true;
       setScreen("auth");
+      return;
+    }
+    // /connexion|/inscription → /app (CTA Commencer) : même composant App, il faut quitter l’écran auth
+    if (!user && location.pathname.startsWith("/app") && forceAuthRef.current) {
+      forceAuthRef.current = false;
+      authOpenedFromUrlRef.current = false;
+      setScreen("onboarding");
+      setStep(1);
     }
   }, [location.pathname, location.search, navigate, user]);
 
@@ -11850,6 +11850,14 @@ export default function App() {
     };
   }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
 
+  const exitAuthToQuiz = () => {
+    forceAuthRef.current = false;
+    authOpenedFromUrlRef.current = false;
+    setScreen("onboarding");
+    setStep(1);
+    navigate("/app");
+  };
+
   const handleAuthNavigateMode = (mode) => {
     navigate(mode === "register" ? "/inscription" : "/connexion", { replace: true });
   };
@@ -11860,18 +11868,18 @@ export default function App() {
     authOpenedFromUrlRef.current = false;
     if (plans.length > 0) {
       setScreen("app");
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     if (user) {
       setScreen("app");
       setActiveTab("plan");
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion → landing
     setScreen("onboarding");
-    navigate(openedFromUrl ? "/accueil" : "/", { replace: true });
+    navigate(openedFromUrl ? "/" : "/app", { replace: true });
   };
 
   const handleAuthSuccess = (u) => {
@@ -11883,7 +11891,7 @@ export default function App() {
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   useEffect(() => {
@@ -12062,7 +12070,7 @@ export default function App() {
         if (isAuthPath(locationRef.current.pathname)) {
           forceAuthRef.current = false;
           authOpenedFromUrlRef.current = false;
-          navigate("/", { replace: true });
+          navigate("/app", { replace: true });
         } else {
           forceAuthRef.current = false;
         }
@@ -14004,6 +14012,7 @@ export default function App() {
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
           onNavigateMode={handleAuthNavigateMode}
+          onStartQuiz={exitAuthToQuiz}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />

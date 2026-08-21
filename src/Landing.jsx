@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { stripLocalePrefix } from "./i18n/locale-path.js";
+import { usePublicCta } from "./lib/use-auth-session.js";
 import {
   ArrowRight,
   Target,
@@ -25,7 +28,6 @@ import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
 import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
 import "./landing/landing.css";
 
-const CTA_HREF = "/inscription";
 const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
 const PRICE_ANNUAL = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
 const PRICE_MONTHLY_LABEL = "4,99€";
@@ -58,30 +60,32 @@ function Header() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  const pathBare = stripLocalePrefix(pathname);
+  const cta = usePublicCta();
   const links = [
-    [t("nav.why"), "/accueil#pourquoi"],
+    [t("nav.why"), { pathname: "/", hash: "pourquoi" }],
     [t("nav.how"), "/comment-ca-marche"],
     [t("nav.pricing"), "/tarifs"],
-    [t("nav.faq"), "/accueil#faq"],
+    [t("nav.faq"), "/faq"],
   ];
 
   return (
     <header className="lp-header">
       <div className="lp-wrap lp-header-inner">
-        <a href="/accueil" className="lp-brand" aria-label={t("nav.homeAria")}>
+        <LocalizedLink to="/" className="lp-brand" aria-label={t("nav.homeAria")}>
           <img
             src="/logo-myswym-banner-blanc.png"
             alt="mySWYM"
             height={24}
             width={164}
           />
-        </a>
+        </LocalizedLink>
         <nav className="lp-nav" aria-label={t("nav.homeAria")}>
           {links.map(([label, href]) => {
-            const pathOnly = href.split("#")[0];
-            const isHere = pathOnly !== "/accueil" && pathOnly === pathname;
+            const pathOnly = typeof href === "string" ? href : href.pathname;
+            const isHere = pathOnly !== "/" && pathBare === pathOnly;
             return (
-              <a key={href} href={href} aria-current={isHere ? "page" : undefined}>{label}</a>
+              <LocalizedLink key={label} to={href} aria-current={isHere ? "page" : undefined}>{label}</LocalizedLink>
             );
           })}
         </nav>
@@ -90,7 +94,7 @@ function Header() {
             <LanguageSwitcher variant="nav" onDark />
           </span>
           <a href="/connexion" className="lp-link-quiet">{t("nav.login")}</a>
-          <a href={CTA_HREF} className="lp-btn lp-btn-header">{t("nav.ctaShort")}</a>
+          <a href={cta.href} className="lp-btn lp-btn-header">{t(cta.shortKey)}</a>
           <button
             type="button"
             className="lp-menu-btn"
@@ -108,14 +112,14 @@ function Header() {
           <div className="lp-drawer-backdrop" onClick={() => setMenuOpen(false)} />
           <div className="lp-drawer-panel">
             {links.map(([label, href]) => (
-              <a key={href} href={href} className="lp-drawer-link" onClick={() => setMenuOpen(false)}>
+              <LocalizedLink key={label} to={href} className="lp-drawer-link" onClick={() => setMenuOpen(false)}>
                 {label}
                 <ChevronRight size={16} color="var(--lp-muted)" />
-              </a>
+              </LocalizedLink>
             ))}
             <div className="lp-drawer-actions">
               <LanguageSwitcher variant="nav" onDark />
-              <a href={CTA_HREF} className="lp-btn" onClick={() => setMenuOpen(false)}>{t("nav.cta")}</a>
+              <a href={cta.href} className="lp-btn" onClick={() => setMenuOpen(false)}>{t(cta.labelKey)}</a>
               <a href="/connexion" className="lp-btn lp-btn-secondary" onClick={() => setMenuOpen(false)}>{t("nav.login")}</a>
             </div>
           </div>
@@ -127,6 +131,7 @@ function Header() {
 
 function Hero() {
   const { t } = useTranslation("landing");
+  const cta = usePublicCta();
   return (
     <section className="lp-hero">
       <div className="lp-hero-bg" aria-hidden>
@@ -141,14 +146,14 @@ function Hero() {
           <h1 className="lp-h1 lp-display">{t("hero.title")}</h1>
           <p className="lp-lead">{t("hero.subtitle")}</p>
           <div className="lp-cta-row">
-            <a href={CTA_HREF} className="lp-btn lp-btn-lg">
+            <a href={cta.href} className="lp-btn lp-btn-lg">
               {t("hero.cta")}
               <ArrowRight size={16} />
             </a>
-            <a href="/tarifs" className="lp-btn lp-btn-lg lp-btn-secondary">
+            <LocalizedLink to="/tarifs" className="lp-btn lp-btn-lg lp-btn-secondary">
               <Target size={16} />
               {t("hero.ctaSecondary")}
-            </a>
+            </LocalizedLink>
           </div>
           <dl className="lp-stats">
             {[
@@ -179,7 +184,7 @@ function Objectives() {
         </div>
         <div className="lp-grid-3">
           {OBJECTIVES.map((o) => (
-            <a key={o.id} href={CTA_HREF} className="lp-card">
+            <a key={o.id} href="/app" className="lp-card">
               <div className="lp-card-title">
                 {t(`objectives.${o.key}Label`)}
                 <ArrowRight size={16} color="var(--lp-muted)" />
@@ -271,7 +276,7 @@ function Pricing() {
       } catch { /* ignore */ }
       trackEvent("signup_started", { source: "landing_pricing" }, { essential: true });
       track("signup_started", { source: "landing_pricing" }, { onceKey: "signup_started:landing_pricing" });
-      window.location.href = "/inscription";
+      window.location.href = "/app";
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
@@ -333,7 +338,7 @@ function Pricing() {
             <div className="lp-display" style={{ fontSize: 22, fontWeight: 700 }}>{t("pricing.freeTitle")}</div>
             <div className="lp-display lp-price-display" style={{ margin: "12px 0 4px" }}>{t("pricing.freePrice")}</div>
             <p className="lp-muted" style={{ fontSize: 13, marginBottom: 22 }}>{t("pricing.freeMeta")}</p>
-            <a href={CTA_HREF} className="lp-btn lp-btn-secondary" style={{ width: "100%", marginBottom: 22 }}>{t("pricing.freeCta")}</a>
+            <a href="/app" className="lp-btn lp-btn-secondary" style={{ width: "100%", marginBottom: 22 }}>{t("pricing.freeCta")}</a>
             <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: "auto" }}>
               {freeFeatures.map((f) => (
                 <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -395,7 +400,7 @@ function Pricing() {
         <p className="lp-muted" style={{ textAlign: "center", marginTop: 16, fontSize: 12 }}>{t("pricing.compareNote")}</p>
         <p className="lp-muted" style={{ textAlign: "center", marginTop: 8, fontSize: 13 }}>
           {t("pricing.moreLink")}{" "}
-          <a href="/tarifs" style={{ color: "var(--lp-primary)", fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</a>.
+          <LocalizedLink to="/tarifs" style={{ color: "var(--lp-primary)", fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</LocalizedLink>.
         </p>
       </div>
     </section>
@@ -431,13 +436,14 @@ function FAQ() {
 
 function FinalCta() {
   const { t } = useTranslation("landing");
+  const cta = usePublicCta();
   return (
     <section className="lp-section" style={{ paddingTop: 0 }}>
       <div className="lp-wrap">
         <div className="lp-cta-box">
           <h2 className="lp-h2 lp-display">{t("finalCta.title")}</h2>
           <p className="lp-lead" style={{ marginLeft: "auto", marginRight: "auto" }}>{t("finalCta.subtitle")}</p>
-          <a href={CTA_HREF} className="lp-btn lp-btn-lg" style={{ marginTop: 24, width: "100%", maxWidth: 360 }}>
+          <a href={cta.href} className="lp-btn lp-btn-lg" style={{ marginTop: 24, width: "100%", maxWidth: 360 }}>
             {t("finalCta.cta")}
             <ArrowRight size={16} />
           </a>
@@ -449,6 +455,7 @@ function FinalCta() {
 
 function StickyCta() {
   const { t } = useTranslation("common");
+  const cta = usePublicCta();
   const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   useEffect(() => {
     const apply = () => setMobile(window.innerWidth < 768);
@@ -460,7 +467,7 @@ function StickyCta() {
     <>
       <div className="lp-sticky-spacer" aria-hidden />
       <div className="lp-sticky">
-        <a href={CTA_HREF} className="lp-btn" style={{ width: "100%", minHeight: 48 }}>{t("nav.cta")}</a>
+        <a href={cta.href} className="lp-btn" style={{ width: "100%", minHeight: 48 }}>{t(cta.labelKey)}</a>
       </div>
     </>
   );
@@ -470,12 +477,12 @@ export default function Landing() {
   const { t, i18n } = useTranslation("landing");
   const { pathname } = useLocation();
   const reviews = usePublishedReviews();
-  const isHow = pathname === "/comment-ca-marche";
+  const isHow = stripLocalePrefix(pathname) === "/comment-ca-marche";
 
   usePageSeo({
     title: isHow ? t("meta.howTitle") : t("meta.title"),
     description: isHow ? t("meta.howDescription") : t("meta.description"),
-    path: isHow ? "/comment-ca-marche" : "/accueil",
+    path: isHow ? "/comment-ca-marche" : "/",
     jsonLd: [organizationJsonLd(), softwareApplicationJsonLd(reviews)],
   });
 

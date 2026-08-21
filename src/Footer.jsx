@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { resetCookieConsent } from "./lib/cookie-consent.js";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 
 import { BRAND, FONT } from "./theme/brand.js";
 
@@ -29,11 +30,11 @@ export default function Footer({ aboveBottomNav = false }) {
   const year = new Date().getFullYear();
 
   const explorerLinks = [
-    [t("footer.home"), "/accueil"],
-    [t("footer.why"), "/accueil#pourquoi"],
+    [t("footer.home"), "/"],
+    [t("footer.why"), { pathname: "/", hash: "pourquoi" }],
     [t("footer.how"), "/comment-ca-marche"],
     [t("footer.pricing"), "/tarifs"],
-    [t("footer.faq"), "/accueil#faq"],
+    [t("footer.faq"), "/faq"],
     [t("footer.blog"), "/blog"],
     [t("footer.contact"), "/contact"],
   ];
@@ -91,15 +92,15 @@ export default function Footer({ aboveBottomNav = false }) {
               {t("footer.explore")}
             </span>
             {explorerLinks.map(([l, h]) => (
-              <a
-                key={h}
-                href={h}
+              <LocalizedLink
+                key={typeof h === "string" ? h : `${h.pathname}#${h.hash}`}
+                to={h}
                 style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
               >
                 {l}
-              </a>
+              </LocalizedLink>
             ))}
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "center" : "flex-start", gap: 8 }}>
@@ -107,15 +108,15 @@ export default function Footer({ aboveBottomNav = false }) {
               {t("footer.legal")}
             </span>
             {legalLinks.map(([l, h]) => (
-              <a
+              <LocalizedLink
                 key={h}
-                href={h}
+                to={h}
                 style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s", fontFamily: FONT }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
               >
                 {l}
-              </a>
+              </LocalizedLink>
             ))}
           </div>
         </div>

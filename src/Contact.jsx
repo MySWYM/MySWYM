@@ -5,6 +5,8 @@ import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import { usePageSeo } from "./lib/seo.js";
+import { useActiveLocale } from "./i18n/locale-routing.jsx";
+import { withLocalePrefix } from "./i18n/locale-path.js";
 
 import { BRAND, FONT, FONT_DISPLAY, FONT_HREF } from "./theme/brand.js";
 import "./theme/public.css";
@@ -29,6 +31,7 @@ const FAQ_ITEMS = [
 
 export default function ContactPage() {
   const navigate = useNavigate();
+  const locale = useActiveLocale();
   const [open, setOpen] = useState(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -71,7 +74,7 @@ export default function ContactPage() {
       setEmail("");
       setSubject("");
       setMessage("");
-      navigate("/merci", { replace: true });
+      navigate(withLocalePrefix("/merci", locale), { replace: true });
     } catch (err) {
       setStatus("error");
       setErrorMsg(

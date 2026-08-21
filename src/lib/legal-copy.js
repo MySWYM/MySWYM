@@ -1,4 +1,5 @@
 /** Microcopy juridique réutilisable (UX) — cohérent avec CGU/CGV. */
+import { withLocalePrefix } from "../i18n/locale-path.js";
 
 export const LEGAL_LINKS = {
   cgu: "/cgu",
@@ -7,6 +8,12 @@ export const LEGAL_LINKS = {
   cookies: "/politique-cookies",
   mentions: "/mentions-legales",
 };
+
+/** URL publique selon la langue (`/cgu` → `/fr/cgu` ou `/terms`). */
+export function legalHref(key, locale = "fr") {
+  const path = LEGAL_LINKS[key];
+  return path ? withLocalePrefix(path, locale) : "/";
+}
 
 export const SIGNUP_AGE_LABEL =
   "Je confirme avoir 18 ans révolus.";

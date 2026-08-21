@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
   BadgeCheck,
@@ -17,7 +18,8 @@ import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 import { BRAND, FONT, FONT_DISPLAY, FONT_HREF } from "./theme/brand.js";
 import "./theme/public.css";
@@ -144,6 +146,9 @@ function CompactTableValue({ value, premium = false }) {
 
 export default function TarifsPage() {
   const isMobile = useIsMobile();
+  const { t } = useTranslation("landing");
+  const { t: tc } = useTranslation("common");
+  const crumbs = [{ label: tc("footer.home"), href: "/" }, { label: tc("nav.pricing") }];
   const [openFaq, setOpenFaq] = useState(0);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -151,9 +156,10 @@ export default function TarifsPage() {
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
 
   usePageSeo({
-    title: "Tarifs — MySWYM",
-    description: "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés.",
+    title: t("pricingPage.metaTitle"),
+    description: t("pricingPage.metaDescription"),
     path: "/tarifs",
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
 
   useEffect(() => {
@@ -181,7 +187,7 @@ export default function TarifsPage() {
       }
       trackEvent("signup_started", { source: "pricing_page" }, { essential: true });
       track("signup_started", { source: "pricing_page" }, { onceKey: "signup_started:pricing_page" });
-      window.location.href = "/inscription";
+      window.location.href = "/app";
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
@@ -351,10 +357,11 @@ export default function TarifsPage() {
             }}
           >
             <div>
+              <Breadcrumb onDark items={crumbs} />
               <div style={{ marginBottom: 18 }}>
                 <BrandLogo variant="wordmark" height={isMobile ? 30 : 36} onDark />
               </div>
-              <SectionEyebrow dark>PAGE TARIFS</SectionEyebrow>
+              <SectionEyebrow dark>{t("pricingPage.eyebrow")}</SectionEyebrow>
               <h1
                 style={{
                   fontFamily: FONT_DISPLAY,
@@ -366,11 +373,11 @@ export default function TarifsPage() {
                   textTransform: "none",
                 }}
               >
-                Le Premium transforme
+                {t("pricingPage.h1a")}
                 <br />
-                ton envie de nager
+                {t("pricingPage.h1b")}
                 <br />
-                en vraie progression.
+                {t("pricingPage.h1c")}
               </h1>
               <p
                 style={{
@@ -382,9 +389,7 @@ export default function TarifsPage() {
                   fontFamily: FONT,
                 }}
               >
-                Découvre MySWYM avec l’essai 7 jours sans carte. Le Premium te donne un
-                plan complet pour progresser sérieusement, suivre
-                précisément tes performances et rester régulier.
+                {t("pricingPage.lead")}
               </p>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
                 <button
@@ -408,10 +413,10 @@ export default function TarifsPage() {
                     boxShadow: "0 10px 30px rgba(0,107,253,0.35)",
                   }}
                 >
-                  Passer Premium <ArrowRight size={16} />
+                  {t("pricingPage.goPremium")} <ArrowRight size={16} />
                 </button>
                 <Link
-                  to="/inscription"
+                  to="/app"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -429,10 +434,10 @@ export default function TarifsPage() {
                     backdropFilter: "blur(10px)",
                   }}
                 >
-                  Essai 7 jours
+                  {tc("pages.trial7")}
                 </Link>
                 <Link
-                  to="/inscription"
+                  to="/app"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -450,7 +455,7 @@ export default function TarifsPage() {
                     backdropFilter: "blur(10px)",
                   }}
                 >
-                  Creer mon compte
+                  {tc("nav.cta")}
                 </Link>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -635,7 +640,7 @@ export default function TarifsPage() {
               Sans carte · puis 4,99€/mois · ensuite l'app se gèle
             </div>
             <Link
-              to="/inscription"
+              to="/app"
               style={{
                 display: "block",
                 textAlign: "center",
@@ -651,7 +656,7 @@ export default function TarifsPage() {
                 fontFamily: FONT,
               }}
             >
-              Demarrer l'essai
+              {t("pricingPage.startTrial")}
             </Link>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
               {trialHighlights.map((item) => (
@@ -1226,7 +1231,7 @@ export default function TarifsPage() {
 
       <section style={{ background: C.night, padding: isMobile ? "48px 16px 56px" : "64px 20px 80px" }}>
         <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
-          <SectionEyebrow dark>DERNIER PAS</SectionEyebrow>
+          <SectionEyebrow dark>{t("pricingPage.lastStep")}</SectionEyebrow>
           <h2
             style={{
               margin: "18px 0 14px",
@@ -1238,13 +1243,12 @@ export default function TarifsPage() {
               color: C.white,
             }}
           >
-            Démarre avec l'essai.
+            {t("pricingPage.lastTitleA")}
             <br />
-            Garde Premium pour aller plus loin.
+            {t("pricingPage.lastTitleB")}
           </h2>
           <p style={{ margin: "0 auto 24px", color: "rgba(255,255,255,0.68)", fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 620 }}>
-            Active l’essai 7 jours sans carte pour découvrir MySWYM. Pour
-            vraiment progresser avec un plan personnalisé et un vrai suivi, garde Premium ensuite.
+            {t("pricingPage.lastLead")}
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12 }}>
             <button
@@ -1263,10 +1267,10 @@ export default function TarifsPage() {
                 cursor: "pointer",
               }}
             >
-              Choisir Premium annuel
+              {t("pricingPage.chooseAnnual")}
             </button>
             <Link
-              to="/inscription"
+              to="/app"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -1283,7 +1287,7 @@ export default function TarifsPage() {
                 fontFamily: FONT,
               }}
             >
-              Creer mon compte
+              {tc("nav.cta")}
             </Link>
           </div>
         </div>
