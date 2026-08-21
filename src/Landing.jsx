@@ -129,7 +129,9 @@ function Hero() {
   const { t } = useTranslation("landing");
   return (
     <section className="lp-hero">
-      <div className="lp-hero-bg" aria-hidden />
+      <div className="lp-hero-bg" aria-hidden>
+        <img src="/hero-pool.png" alt="" className="lp-hero-img" fetchPriority="high" />
+      </div>
       <div className="lp-wrap lp-hero-inner">
         <div className="lp-hero-copy">
           <span className="lp-badge">

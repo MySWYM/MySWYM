@@ -82,19 +82,19 @@ export default function LandingReviews() {
   };
 
   return (
-    <section id="avis" style={{ background: C.bgSoft, padding: "clamp(40px, 8vw, 96px) 16px" }}>
+    <section id="avis" style={{ background: C.bgSoft, padding: "clamp(40px, 8vw, 96px) 24px" }}>
       <div style={{ maxWidth: 800, margin: "0 auto", fontFamily: FONT }}>
         <p style={{
           display: "inline-flex", background: "color-mix(in srgb, var(--lp-primary, #006bfd) 14%, transparent)", borderRadius: 100,
           padding: "5px 14px", color: "var(--lp-primary, #006bfd)", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
         }}>AVIS</p>
         <h2 style={{
-          fontFamily: "var(--lp-display, 'Space Grotesk', sans-serif)", fontSize: "clamp(1.5rem, 6vw, 2.25rem)",
+          fontFamily: "var(--lp-display, 'Space Grotesk', sans-serif)", fontSize: "clamp(1.375rem, 5vw, 2.25rem)",
           fontWeight: 700, color: C.ink, margin: "16px 0 12px",
         }}>
           Ce qu’en disent les nageurs
         </h2>
-        <p style={{ color: C.secondary, fontSize: 16, lineHeight: 1.6, margin: "0 0 28px" }}>
+        <p style={{ color: C.secondary, fontSize: 15, lineHeight: 1.6, margin: "0 0 28px" }}>
           Uniquement des avis réels, publiés après relecture. Pas de témoignages inventés.
         </p>
 
