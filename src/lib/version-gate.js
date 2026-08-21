@@ -21,6 +21,7 @@ export async function fetchMinSupportedVersion(opts = {}) {
   const res = await fetchImpl(url, {
     method: "GET",
     cache: "no-store",
+    signal: opts.signal || AbortSignal.timeout(4000),
     headers: {
       Accept: "application/json",
       "Cache-Control": "no-cache",
