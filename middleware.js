@@ -64,8 +64,17 @@ function isSharedSlugPath(pathname) {
   return pathname.startsWith("/blog/");
 }
 
+/** Cookie header (Vite / Vercel Routing Middleware). `request.cookies` n’existe que sur NextRequest. */
+function getCookie(request, name) {
+  const fromNext = request.cookies?.get?.(name);
+  if (fromNext != null) return typeof fromNext === "string" ? fromNext : fromNext.value;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = (request.headers.get("cookie") || "").match(new RegExp(`(?:^|;\\s*)${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 function prefersFrench(request) {
-  const cookie = request.cookies.get(LANG_COOKIE)?.value;
+  const cookie = getCookie(request, LANG_COOKIE);
   if (cookie === "en") return false;
   if (cookie === "fr") return true;
   const country = (request.headers.get("x-vercel-ip-country") || "").toUpperCase();
