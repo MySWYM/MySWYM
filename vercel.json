@@ -49,18 +49,6 @@
   "redirects": [
     {
       "source": "/",
-      "has": [{ "type": "host", "value": "www.myswym.app" }],
-      "destination": "https://myswym.app/",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.myswym.app" }],
-      "destination": "https://myswym.app/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/",
       "has": [{ "type": "query", "key": "auth", "value": "login" }],
       "destination": "/connexion",
       "permanent": false
