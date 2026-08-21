@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { usePublicCta } from "../lib/use-auth-session.js";
 
 const FONT = "'Lexend', sans-serif";
 
 /** CTA mobile collé en bas — option B (en plus du bouton header). */
-export default function StickyCta({ href = "/inscription" }) {
+export default function StickyCta({ href }) {
   const { t } = useTranslation("common");
+  const cta = usePublicCta();
+  const resolvedHref = href || cta.href;
+  const label = href ? t("nav.cta") : t(cta.labelKey);
   const [mobile, setMobile] = useState(
     () => typeof window !== "undefined" && window.innerWidth < 768,
   );
@@ -35,8 +40,8 @@ export default function StickyCta({ href = "/inscription" }) {
           boxShadow: "0 -8px 28px rgba(25,28,30,0.08)",
         }}
       >
-        <a
-          href={href}
+        <Link
+          to={resolvedHref}
           style={{
             display: "flex",
             alignItems: "center",
@@ -51,8 +56,8 @@ export default function StickyCta({ href = "/inscription" }) {
             textDecoration: "none",
           }}
         >
-          {t("nav.cta")}
-        </a>
+          {label}
+        </Link>
       </div>
     </>
   );

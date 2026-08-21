@@ -16,7 +16,7 @@ export const MYSWYM_PRODUCT = {
   annual: "39,99€",
   trialDays: 7,
   paths: {
-    tarifs: "/tarifs",
+    tarifs: "/fr/tarifs",
     inscription: "/inscription",
     app: "/app",
     support: "contact@myswym.app",

@@ -17,3 +17,9 @@ supabase/.temp/
 .DS_Store
 *.log
 .vercel
+
+# Exports / lots pédagogiques locaux
+exports/
+
+# Backups d’install skills
+.claude/_to_delete/

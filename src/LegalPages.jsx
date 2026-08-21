@@ -1,7 +1,9 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { useTranslation } from "react-i18next";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
 
 const C = {
@@ -20,20 +22,35 @@ const host = {
   website: "https://vercel.com",
 };
 
+const LEGAL_TITLE_KEYS = {
+  "/mentions-legales": "footer.legalMentions",
+  "/politique-confidentialite": "footer.privacy",
+  "/politique-cookies": "footer.cookies",
+  "/cgu": "footer.cgu",
+  "/cgv": "footer.cgv",
+};
+
 function LegalLayout({ title, subtitle, path, description, children }) {
+  const { t, i18n } = useTranslation("common");
+  const displayTitle = LEGAL_TITLE_KEYS[path] ? t(LEGAL_TITLE_KEYS[path]) : title;
+  const crumbs = [{ label: t("footer.home"), href: "/" }, { label: displayTitle }];
   usePageSeo({
-    title: `${title} — MySWYM`,
+    title: `${displayTitle} — MySWYM`,
     description: description || subtitle,
     path,
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Lexend', sans-serif" }}>
       <PublicNav />
       <main style={{ maxWidth: 920, margin: "0 auto", padding: "96px 20px 56px" }}>
-        <Breadcrumb items={[{ label: "Accueil", href: "/accueil" }, { label: title }]} />
-        <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{title}</h1>
+        <Breadcrumb items={crumbs} />
+        <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{displayTitle}</h1>
         <p style={{ color: C.inkLight, marginTop: 0, marginBottom: 8 }}>{subtitle}</p>
-        <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>Dernière mise à jour : {LEGAL_ENTITY.lastUpdated}</p>
+        {i18n.language?.startsWith("en") ? (
+          <p style={{ color: C.inkLight, fontSize: 13, marginTop: 0, marginBottom: 8 }}>{t("pages.legalFrNotice")}</p>
+        ) : null}
+        <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>{t("pages.legalUpdated", { date: LEGAL_ENTITY.lastUpdated })}</p>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: "24px 22px", color: C.ink, lineHeight: 1.7, fontSize: 14 }}>
           {children}
         </div>
@@ -152,10 +169,10 @@ export function MentionsLegalesPage() {
 
       <H>5. Documents connexes</H>
       <Ul items={[
-        <a key="cgu" href="/cgu" style={{ color: C.accentText }}>Conditions générales d’utilisation (CGU)</a>,
-        <a key="cgv" href="/cgv" style={{ color: C.accentText }}>Conditions générales de vente (CGV)</a>,
-        <a key="priv" href="/politique-confidentialite" style={{ color: C.accentText }}>Politique de confidentialité</a>,
-        <a key="cook" href="/politique-cookies" style={{ color: C.accentText }}>Politique de cookies</a>,
+        <LocalizedLink key="cgu" to="/cgu" style={{ color: C.accentText }}>Conditions générales d’utilisation (CGU)</LocalizedLink>,
+        <LocalizedLink key="cgv" to="/cgv" style={{ color: C.accentText }}>Conditions générales de vente (CGV)</LocalizedLink>,
+        <LocalizedLink key="priv" to="/politique-confidentialite" style={{ color: C.accentText }}>Politique de confidentialité</LocalizedLink>,
+        <LocalizedLink key="cook" to="/politique-cookies" style={{ color: C.accentText }}>Politique de cookies</LocalizedLink>,
       ]} />
     </LegalLayout>
   );
@@ -388,7 +405,7 @@ export function CguPage() {
         et de l’application {tradeName}, édités par {publisher}.
         En créant un compte ou en utilisant le service, vous acceptez ces CGU.
         Les conditions commerciales de l’abonnement Premium sont détaillées dans les{" "}
-        <a href="/cgv" style={{ color: C.accentText }}>CGV</a>.
+        <LocalizedLink to="/cgv" style={{ color: C.accentText }}>CGV</LocalizedLink>.
       </P>
 
       <H>1. Objet du service</H>

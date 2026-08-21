@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { useTranslation } from "react-i18next";
 import { supabase } from "./supabase.js";
 import { track, trackEvent } from "./lib/analytics.js";
@@ -6,7 +8,6 @@ import {
   Waves, Target, Calendar, Gauge, Clock, ArrowRight, Check, ChevronDown,
   Zap, Shield, Layers, Timer, Dumbbell,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
@@ -16,6 +17,7 @@ import LandingReviews from "./marketing/LandingReviews.jsx";
 import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
 import { CASE_STUDIES } from "./content/case-studies.js";
 import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
+import { usePublicCta } from "./lib/use-auth-session.js";
 
 // ── Design tokens — MySwym "Fluid Athleticism" ─────────────────────────────
 const C = {
@@ -44,7 +46,6 @@ const C = {
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
-const CTA_HREF = "/inscription";
 
 // Doit matcher create-checkout ALLOWED_PRICE_IDS / App.jsx / Tarifs.jsx
 const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
@@ -122,11 +123,12 @@ function SectionLabel({ text, dark = false }) {
   );
 }
 
-function PrimaryCta({ href = CTA_HREF, children, style = {}, onClick }) {
-  const Tag = onClick ? "button" : "a";
+function PrimaryCta({ href, children, style = {}, onClick }) {
+  const cta = usePublicCta();
+  const Tag = onClick ? "button" : Link;
   const props = onClick
     ? { type: "button", onClick }
-    : { href };
+    : { to: href || cta.href };
   return (
     <Tag
       {...props}
@@ -809,6 +811,11 @@ function HowItWorks() {
             </div>
           )}
         </div>
+        <p style={{ textAlign: "center", margin: "32px 0 0" }}>
+          <LocalizedLink to="/comment-ca-marche" style={{ color: C.accentText, fontWeight: 700, textDecoration: "none", fontFamily: FONT, fontSize: 15 }}>
+            {t("howPage.seePage")}
+          </LocalizedLink>
+        </p>
       </div>
     </section>
   );
@@ -1110,6 +1117,7 @@ function Trust() {
 // ── 6. Tarif / Freemium (toggle annuel/mensuel façon mymoto) ────────────────
 function Pricing() {
   const { t } = useTranslation("landing");
+  const cta = usePublicCta();
   const isMobile = useIsMobile();
   const [billing, setBilling] = useState("annual"); // annual | monthly
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -1135,7 +1143,7 @@ function Pricing() {
       } catch { /* ignore */ }
       trackEvent("signup_started", { source: "landing_pricing" }, { essential: true });
       track("signup_started", { source: "landing_pricing" }, { onceKey: "signup_started:landing_pricing" });
-      window.location.href = "/inscription";
+      window.location.href = "/app";
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
@@ -1253,7 +1261,7 @@ function Pricing() {
               <div style={{ color: C.secondary, fontSize: 13, marginBottom: 22, fontFamily: FONT }}>
                 {t("pricing.freeMeta")}
               </div>
-              <a href={CTA_HREF} style={{
+              <a href={cta.href} style={{
                 display: "block", textAlign: "center",
                 border: `1.5px solid ${C.outlineVar}`, color: C.ink,
                 background: C.bgCard, fontWeight: 600, fontSize: 15,
@@ -1354,7 +1362,7 @@ function Pricing() {
         </p>
         <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: C.outline, fontFamily: FONT }}>
           {t("pricing.moreLink")}{" "}
-          <a href="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</a>.
+          <LocalizedLink to="/tarifs" style={{ color: C.primary, fontWeight: 600 }}>{t("pricing.moreLinkLabel")}</LocalizedLink>.
         </p>
       </div>
     </section>
@@ -1372,9 +1380,7 @@ function FAQ() {
   const [open, setOpen] = useState(null);
   const items = [
     { q: t("faq.q1"), a: t("faq.a1") },
-    { q: t("faq.q2"), a: t("faq.a2") },
     { q: t("faq.q3"), a: t("faq.a3") },
-    { q: t("faq.q4"), a: t("faq.a4") },
     { q: t("faq.q5"), a: t("faq.a5") },
   ];
 
@@ -1435,6 +1441,11 @@ function FAQ() {
             );
           })}
         </div>
+        <p style={{ textAlign: "center", margin: "28px 0 0" }}>
+          <LocalizedLink to="/faq" style={{ color: C.accentText, fontWeight: 700, textDecoration: "none", fontFamily: FONT, fontSize: 15 }}>
+            {t("faq.seeAll")}
+          </LocalizedLink>
+        </p>
       </div>
     </section>
   );
@@ -1519,14 +1530,12 @@ function CaseStudies() {
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Landing() {
   const { t, i18n } = useTranslation("landing");
-  const { pathname } = useLocation();
   const reviews = usePublishedReviews();
-  const isHow = pathname === "/comment-ca-marche";
 
   usePageSeo({
-    title: isHow ? t("meta.howTitle") : t("meta.title"),
-    description: isHow ? t("meta.howDescription") : t("meta.description"),
-    path: isHow ? "/comment-ca-marche" : "/accueil",
+    title: t("meta.title"),
+    description: t("meta.description"),
+    path: "/",
     jsonLd: [organizationJsonLd(), softwareApplicationJsonLd(reviews)],
   });
 
@@ -1539,13 +1548,18 @@ export default function Landing() {
     document.body.style.fontFamily = FONT;
 
     const scrollToTarget = () => {
-      const path = window.location.pathname;
       const hash = window.location.hash?.replace("#", "");
-      const sectionId = hash || (path === "/comment-ca-marche" ? "how" : null);
+      const sectionParam = new URLSearchParams(window.location.search).get("s");
+      const sectionId = hash || sectionParam;
       if (!sectionId) return;
+      if (sectionParam && !hash) {
+        const next = new URL(window.location.href);
+        next.searchParams.delete("s");
+        const qs = next.searchParams.toString();
+        window.history.replaceState({}, "", `${next.pathname}${qs ? `?${qs}` : ""}#${sectionId}`);
+      }
       requestAnimationFrame(() => {
-        const el = document.getElementById(sectionId);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     };
 

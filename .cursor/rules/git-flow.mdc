@@ -1,0 +1,29 @@
+---
+description: Branches MySWYM — develop → staging (test Arthur) → main (Arthur seulement)
+alwaysApply: true
+---
+
+# Git flow MySWYM
+
+## Branches
+
+| Branche | Rôle |
+| --- | --- |
+| `develop` | Base de travail. Toute feature part de `origin/develop`. |
+| `feat/…` `fix/…` | Un sujet par branche. Jamais depuis `main` ni une vieille branche agent. |
+| `staging` | Recette (`staging.myswym.app`). Merge **après validation**. Arthur teste. |
+| `main` | Production. **L’agent ne merge jamais vers `main`.** Arthur merge `staging` → `main`. |
+
+## Déroulé
+
+1. `git fetch origin && git checkout -b feat/… origin/develop`
+2. Travailler, committer.
+3. Quand c’est validé : merge vers `staging` (PR ou merge), **pas** vers `main`.
+4. Arthur teste sur staging, puis merge lui-même vers `main`.
+
+## Interdit
+
+- Brancher depuis `main`, `staging`, ou une branche `claude/*` / `cursor/*` déjà mergée.
+- Merger silencieusement vers `main`.
+- Mélanger deux sujets sur la même branche (ex. composeur + DA landing).
+- Commits « checkpoint before checkout » / dumps fourre-tout.

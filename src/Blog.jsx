@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import {
   BLOG_CATEGORIES,
   PAGE_SIZE,
@@ -52,7 +55,7 @@ function FontLoader() {
 
 function ArticleCard({ article, isMobile }) {
   return (
-    <Link to={`/blog/${article.slug}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+    <LocalizedLink to={`/blog/${article.slug}`} style={{ textDecoration: "none", display: "block", height: "100%" }}>
       <article
         style={{
           background: C.bgCard,
@@ -149,12 +152,13 @@ function ArticleCard({ article, isMobile }) {
           </span>
         </div>
       </article>
-    </Link>
+    </LocalizedLink>
   );
 }
 
 export default function Blog() {
   const isMobile = useIsMobile();
+  const { t } = useTranslation("common");
   const [searchParams, setSearchParams] = useSearchParams();
   const categorie = searchParams.get("categorie") || null;
   const page = Math.max(1, Number(searchParams.get("page") || 1) || 1);
@@ -165,9 +169,10 @@ export default function Blog() {
   const [loading, setLoading] = useState(true);
 
   usePageSeo({
-    title: "Blog MySWYM — Conseils natation et entraînement",
-    description: "Articles natation : technique, plans, eau libre et vocabulaire de bassin — sans jargon inutile.",
+    title: t("pages.blogMetaTitle"),
+    description: t("pages.blogMetaDesc"),
     path: "/blog",
+    jsonLd: breadcrumbJsonLd([{ label: t("footer.home"), href: "/" }, { label: t("nav.blog") }]),
   });
 
   useEffect(() => {
@@ -222,10 +227,13 @@ export default function Blog() {
           paddingBottom: 40,
           paddingLeft: 20,
           paddingRight: 20,
-          textAlign: "center",
           background: `radial-gradient(circle at top center, #eef2ff 0%, ${C.bg} 60%)`,
         }}
       >
+        <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "left" }}>
+          <Breadcrumb items={[{ label: t("footer.home"), href: "/" }, { label: t("nav.blog") }]} />
+        </div>
+        <div style={{ textAlign: "center" }}>
         <div
           style={{
             display: "inline-block",
@@ -248,13 +256,14 @@ export default function Blog() {
             lineHeight: 1.1,
           }}
         >
-          Conseils natation
+          {t("pages.blogHeading")}
           <br />
-          &amp; entraînement
+          {t("pages.blogHeading2")}
         </h1>
         <p style={{ color: C.inkLight, fontSize: 17, maxWidth: 480, margin: "0 auto", lineHeight: 1.6 }}>
-          Méthodes, technique, mental — des articles pour progresser dans l&apos;eau.
+          {t("pages.blogLead")}
         </p>
+        </div>
       </div>
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: `0 16px ${isMobile ? 64 : 80}px` }}>

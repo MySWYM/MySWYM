@@ -36,7 +36,7 @@ test("qualité pénalise spam + CTA trop tôt", () => {
 
 test("detect CTA types", () => {
   assert.equal(
-    detectCtaInMessage("Viens sur https://myswym.app/tarifs").cta_type,
+    detectCtaInMessage("Viens sur https://myswym.app/fr/tarifs").cta_type,
     "tarifs",
   );
   assert.equal(

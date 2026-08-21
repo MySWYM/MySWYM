@@ -9,7 +9,7 @@
     "titleLine1": "Your swim plan",
     "titleAccent": "personalized in 2 minutes",
     "subtitle": "Race, distance, or getting fit again — adapted to your level, schedule, and event date.",
-    "cta": "Create my account — 7 days free",
+    "cta": "Get started — 7 days free",
     "freeNote": "7-day trial · no card · then €4.99/month",
     "proof1Value": "2 min",
     "proof1Label": "to generate your plan",
@@ -77,6 +77,19 @@
     "s3Desc": "Beginner, intermediate, or advanced — volumes and intensities adapt (about 1,200–2,000 m, 2,000–3,500 m, or 3,000–5,000 m per session).",
     "s4Title": "Weekly frequency",
     "s4Desc": "Choose a realistic schedule for your life. MySWYM builds weeks you can stick to — not a plan you quit in 10 days."
+  },
+  "howPage": {
+    "nextLabel": "THEN",
+    "nextTitle": "Then you swim the plan",
+    "n1Title": "Account + 7-day trial",
+    "n1Desc": "Create an account with no card. For 7 days you get full Premium: complete plan, sessions, multiple goals.",
+    "n2Title": "Your sessions in the app",
+    "n2Desc": "Every session shows warm-up, main set, cool-down and a coach tip — before you hit the water.",
+    "n3Title": "You adjust from your feedback",
+    "n3Desc": "After a session that felt too hard or too easy, the plan adapts. No need to rebuild everything by hand.",
+    "cta": "Get started",
+    "toPricing": "See pricing",
+    "seePage": "The 4 steps in detail"
   },
   "session": {
     "label": "SESSION PREVIEW",
@@ -150,13 +163,21 @@
     "q4": "Can I cancel anytime?",
     "a4": "The 7-day trial needs no card — it simply ends and the app freezes. After that, monthly (€4.99) stays cancel-anytime. Annual (€39.99) is prepaid and non-refundable once charged, except where required by law.",
     "q5": "Does it work in 25 m and 50 m pools?",
-    "a5": "Yes. You set pool length in the questionnaire; block distances are multiples of that length."
+    "a5": "Yes. You set pool length in the questionnaire; block distances are multiples of that length.",
+    "seeAll": "All questions"
+  },
+  "faqPage": {
+    "metaTitle": "FAQ — MySWYM",
+    "metaDescription": "7-day trial, subscription, 25 m / 50 m pools, changing your goal: answers to start your swim plan.",
+    "intro": "The questions we get most — trial, price, pool length, changing your goal.",
+    "moreTitle": "Still have a question?",
+    "moreCta": "Write to support"
   },
   "finalCta": {
     "titleLine1": "If you have a goal,",
     "titleLine2": "we structure the rest",
     "subtitle": "2-minute questionnaire, 7-day trial with no card — then your plan through race day.",
-    "cta": "Create my account — 7 days free",
+    "cta": "Get started — 7 days free",
     "signoff": "See you in the pool."
   },
   "mock": {
@@ -191,5 +212,44 @@
     "cool": "Cool-down",
     "coolText": "300 m very easy mixed",
     "coachTip": "Coach: conversational pace — you could still talk."
+  },
+  "pricingPage": {
+    "metaTitle": "Pricing — MySWYM",
+    "metaDescription": "7-day Premium trial, then €4.99/month with no commitment or €39.99/year. Personalized swim plans.",
+    "eyebrow": "PRICING",
+    "h1a": "Premium turns",
+    "h1b": "wanting to swim",
+    "h1c": "into real progress.",
+    "lead": "Discover MySWYM with a 7-day trial and no card. Premium gives you a full plan to progress seriously, track your performance, and stay consistent.",
+    "goPremium": "Go Premium",
+    "startTrial": "Start your trial",
+    "lastStep": "LAST STEP",
+    "lastTitleA": "Try 7 days.",
+    "lastTitleB": "Keep Premium to go further.",
+    "lastLead": "Start the 7-day trial with no card to discover MySWYM. To really progress with a personalized plan and real tracking, keep Premium afterwards.",
+    "chooseAnnual": "Choose annual Premium"
+  },
+  "contactPage": {
+    "metaTitle": "Contact — MySWYM",
+    "metaDescription": "A question about your swim plan? Write to us — we reply within 24–48 business hours.",
+    "eyebrow": "CONTACT",
+    "h1": "We’re here to help",
+    "lead": "A suggestion? A question? Write to us — we reply within 24–48 business hours.",
+    "direct": "Direct:",
+    "formTitle": "Let’s talk about your training",
+    "formLead": "Fill in the form — your message goes straight to our inbox.",
+    "name": "Full name *",
+    "namePh": "Your name",
+    "email": "Email *",
+    "emailPh": "you@example.com",
+    "subject": "Subject *",
+    "subjectPh": "Topic",
+    "message": "Message *",
+    "messagePh": "Tell us your context or your question.",
+    "privacy": "Your message is sent to contact@myswym.app. We don’t store it in the app.",
+    "send": "Send",
+    "sending": "Sending…",
+    "sendError": "Couldn’t send. Try again or write to contact@myswym.app.",
+    "allFaq": "All questions"
   }
 }
