@@ -6,7 +6,7 @@
  */
 import posthog from "posthog-js";
 import { supabase } from "../supabase.js";
-import { COOKIE_CONSENT_KEY } from "./cookie-consent.js";
+import { hasAnalyticsConsent } from "./cookie-consent.js";
 
 const SESSION_KEY = "myswym_session_id_v1";
 const ONCE_PREFIX = "myswym_ph_once_";
@@ -113,13 +113,7 @@ function getSessionId() {
   }
 }
 
-export function hasAnalyticsConsent() {
-  try {
-    return localStorage.getItem(COOKIE_CONSENT_KEY) === "accepted";
-  } catch {
-    return false;
-  }
-}
+export { hasAnalyticsConsent };
 
 function envKey() {
   return import.meta.env.VITE_PUBLIC_POSTHOG_KEY || "";

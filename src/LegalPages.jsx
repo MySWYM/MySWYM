@@ -1,6 +1,7 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import CookiePreferencesPanel from "./marketing/CookiePreferences.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { usePageSeo } from "./lib/seo.js";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,7 @@ const host = {
   website: "https://vercel.com",
 };
 
-function LegalLayout({ title, subtitle, path, description, children }) {
+function LegalLayout({ title, subtitle, path, description, children, after }) {
   const { t } = useTranslation("common");
   usePageSeo({
     title: `${title} | MySWYM`,
@@ -35,6 +36,7 @@ function LegalLayout({ title, subtitle, path, description, children }) {
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: "24px 22px", color: C.ink, lineHeight: 1.7, fontSize: 14 }}>
           {children}
         </div>
+        {after}
       </main>
       <Footer />
     </div>
@@ -696,10 +698,21 @@ export function CgvPage() {
 export function PolitiqueCookiesPage() {
   const { email, tradeName } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Politique de cookies" subtitle={`Cookies et traceurs | ${tradeName}`} path="/politique-cookies" description="Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics.">
+    <LegalLayout
+      title="Politique de cookies"
+      subtitle={`Cookies et traceurs | ${tradeName}`}
+      path="/politique-cookies"
+      description="Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics."
+      after={<CookiePreferencesPanel />}
+    >
       <P>
         Cette politique décrit les cookies et traceurs utilisés sur {tradeName}, conformément aux lignes directrices
-        CNIL relatives aux cookies et autres traceurs.
+        de la CNIL relatives aux cookies et autres traceurs, à l’article 82 de la loi n° 78-17 du 6 janvier 1978
+        (« Informatique et Libertés ») et au règlement (UE) 2016/679 (RGPD).
+      </P>
+      <P>
+        Vous pouvez <a href="#parametrage-cookies" style={{ color: C.primaryDeep, fontWeight: 700 }}>paramétrer, accepter ou refuser</a> les
+        traceurs non essentiels à tout moment, en bas de cette page. Le refus est présenté de la même manière que l’acceptation.
       </P>
 
       <H>1. Qu’est-ce qu’un cookie / stockage local ?</H>
@@ -722,8 +735,8 @@ export function PolitiqueCookiesPage() {
         "Fournisseur : PostHog (hébergement EU configuré : eu.i.posthog.com).",
         "Finalité : comprendre l’usage du produit (funnel, rétention, bugs UX).",
         "Type : cookies / localStorage selon configuration posthog-js (persistence localStorage+cookie).",
-        "Dépôt : uniquement après « Accepter » sur la bannière.",
-        "Refus : bouton « Continuer sans cookies non essentiels » ; retrait via « Gérer les cookies » (footer).",
+        "Dépôt : uniquement après activation de la mesure d’audience (bannière, popup ou module en bas de cette page).",
+        "Refus : « Tout refuser », ou désactivation de la catégorie Mesure d’audience.",
         "Durée : selon configuration PostHog / jusqu’au retrait du consentement.",
       ]} />
 
@@ -739,7 +752,8 @@ export function PolitiqueCookiesPage() {
       <Ul items={[
         "Fournisseur : Vercel.",
         "Finalité : métriques de performance (Core Web Vitals).",
-        "Statut : mesure d’audience / performance : [À VALIDER] : activer uniquement après consentement ou désactiver si non indispensable.",
+        "Dépôt : uniquement après activation de la catégorie Performance.",
+        "Statut : mesure de performance soumise à consentement.",
       ]} />
 
       <H>4. Ce que MySWYM n’utilise pas (à date d’audit)</H>
@@ -751,13 +765,29 @@ export function PolitiqueCookiesPage() {
 
       <H>5. Gestion de votre choix</H>
       <P>
-        À la première visite, une bannière permet d’accepter ou de refuser les cookies non essentiels.
-        Votre choix est mémorisé localement (clé <code>myswym_cookie_consent_v1</code> = accepted | refused).
-        Pour le modifier : lien « Gérer les cookies » du pied de page (réaffiche la bannière).
+        Le consentement aux traceurs non essentiels est recueilli lors de votre première visite (bannière),
+        via le lien « Gérer les cookies » du pied de page, et via le <Strong>module de paramétrage</Strong> situé
+        en bas de la présente page. Ces trois points d’entrée ont la même valeur.
       </P>
       <P>
-        PostHog n’envoie des événements qu’après acceptation. Les événements funnel stockés en base Supabase
-        (conversion_events) sont distincts et documentés dans la politique de confidentialité.
+        Conformément aux recommandations de la CNIL, <Strong>accepter et refuser ont la même présentation</Strong>{" "}
+        (même couleur, même taille, même graisse). Vous pouvez aussi activer ou désactiver chaque finalité
+        (mesure d’audience, performance). Les cookies marketing ne sont pas utilisés : l’option correspondante
+        reste désactivée.
+      </P>
+      <P>
+        Vous pouvez retirer ou modifier votre consentement à tout moment, sans frais, aussi facilement que vous l’avez
+        donné. Le retrait n’affecte pas la licéité du traitement effectué avant ce retrait
+        (RGPD, article 7, paragraphe 3).
+      </P>
+      <P>
+        Votre choix est mémorisé localement (clé <code>myswym_cookie_consent_v1</code>). Les traceurs strictement
+        nécessaires ne sont pas soumis à consentement. PostHog n’envoie des événements qu’après acceptation de la
+        mesure d’audience. Les événements funnel stockés en base Supabase (<code>conversion_events</code>) sont
+        distincts et documentés dans la politique de confidentialité.
+      </P>
+      <P>
+        <a href="#parametrage-cookies" style={{ color: C.primaryDeep, fontWeight: 700 }}>Aller au paramétrage des cookies</a>
       </P>
 
       <H>6. Contact</H>

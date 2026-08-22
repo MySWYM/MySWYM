@@ -13,6 +13,7 @@ const STATIC_PATHS = [
   ['/', 'weekly', '1.0'],
   ['/comment-ca-marche', 'monthly', '0.8'],
   ['/faq', 'monthly', '0.7'],
+  ['/avis', 'monthly', '0.6'],
   ['/tarifs', 'monthly', '0.9'],
   ['/contact', 'monthly', '0.7'],
   ['/blog', 'weekly', '0.8'],

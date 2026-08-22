@@ -39,6 +39,14 @@
     "title": "Contact | MySWYM",
     "description": "Une question sur ton plan natation ? Écris-nous. Réponse sous 24-48 h ouvrées."
   },
+  "/reviews": {
+    "title": "Reviews | MySWYM",
+    "description": "Swimmer reviews of MySWYM. Real feedback only, published after moderation."
+  },
+  "/fr/avis": {
+    "title": "Avis | MySWYM",
+    "description": "Avis de nageurs sur MySWYM. Uniquement des retours réels, publiés après relecture."
+  },
   "/blog": {
     "title": "MySWYM Blog | Swim training tips",
     "description": "Swim articles: technique, plans, open water and pool vocabulary, without the jargon."

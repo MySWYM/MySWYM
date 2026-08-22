@@ -8,6 +8,7 @@ import App from './App.jsx'
 import Landing from './Landing.jsx'
 import HowItWorksPage from './HowItWorksPage.jsx'
 import FaqPage from './FaqPage.jsx'
+import ReviewsPage from './ReviewsPage.jsx'
 import TarifsPage from './Tarifs.jsx'
 import ContactPage from './Contact.jsx'
 import Blog from './Blog.jsx'
@@ -16,7 +17,7 @@ import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage
 import MerciPage from './Merci.jsx'
 import NotFoundPage from './NotFound.jsx'
 import CookieBanner from './CookieBanner.jsx'
-import { COOKIE_CONSENT_KEY } from './lib/cookie-consent.js'
+import { hasPerformanceConsent } from './lib/cookie-consent.js'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
 import SessionPyramidPreview from './SessionPyramidPreview.jsx'
 import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
@@ -53,6 +54,8 @@ function frMarketingRoutes() {
       <Route path="homepage" element={<Navigate to="/" replace />} />
       <Route path="comment-ca-marche" element={<HowItWorksPage />} />
       <Route path="faq" element={<FaqPage />} />
+      <Route path="avis" element={<ReviewsPage />} />
+      <Route path="reviews" element={<Navigate to="/reviews" replace />} />
       <Route path="objectifs" element={<RedirectHomeSection hash="pourquoi" />} />
       <Route path="conformite" element={<RedirectHomeSection hash="seance" />} />
       <Route path="contact" element={<ContactPage />} />
@@ -91,6 +94,7 @@ function enMarketingRoutes() {
       <Route path="homepage" element={<RedirectToHome />} />
       <Route path="how-it-works" element={<HowItWorksPage />} />
       <Route path="faq" element={<FaqPage />} />
+      <Route path="reviews" element={<ReviewsPage />} />
       <Route path="contact" element={<ContactPage />} />
       <Route path="pricing" element={<TarifsPage />} />
       <Route path="thanks" element={<MerciPage />} />
@@ -110,6 +114,7 @@ function enMarketingRoutes() {
       <Route path="cgv" element={<Navigate to="/fr/cgv" replace />} />
       <Route path="merci" element={<Navigate to="/fr/merci" replace />} />
       <Route path="accueil" element={<Navigate to="/fr" replace />} />
+      <Route path="avis" element={<Navigate to="/fr/avis" replace />} />
       <Route path="objectifs" element={<Navigate to="/fr?s=pourquoi" replace />} />
       <Route path="conformite" element={<Navigate to="/fr?s=seance" replace />} />
       <Route path="app" element={<Navigate to="/app" replace />} />
@@ -147,7 +152,7 @@ function ConsentedSpeedInsights() {
   useEffect(() => {
     const sync = () => {
       try {
-        setOk(localStorage.getItem(COOKIE_CONSENT_KEY) === "accepted");
+        setOk(hasPerformanceConsent());
       } catch {
         setOk(false);
       }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { resetCookieConsent } from "./lib/cookie-consent.js";
+import { openCookieManager } from "./lib/cookie-consent.js";
 import BrandLogo from "./BrandLogo.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import "./theme/public.css";
@@ -108,7 +108,7 @@ function LinkedinMark() {
 }
 
 const SOCIAL = [
-  { id: "facebook", href: "https://www.facebook.com/myswym.app", Icon: FacebookMark },
+  { id: "facebook", href: "https://www.facebook.com/myswymapp/", Icon: FacebookMark },
   { id: "instagram", href: "https://www.instagram.com/myswym.app/", Icon: InstagramMark },
   { id: "linkedin", href: "https://www.linkedin.com/company/myswym", Icon: LinkedinMark },
 ];
@@ -128,6 +128,7 @@ export default function Footer({ aboveBottomNav = false }) {
   ];
   const helpLinks = [
     [t("footer.faq"), "/faq"],
+    [t("footer.reviews"), "/avis"],
     [t("footer.contact"), "/contact"],
   ];
   const accountLinks = [
@@ -212,7 +213,7 @@ export default function Footer({ aboveBottomNav = false }) {
                 {label}
               </LocalizedLink>
             ))}
-            <button type="button" onClick={() => resetCookieConsent()}>
+            <button type="button" onClick={() => openCookieManager()}>
               {t("footer.manageCookies")}
             </button>
           </div>

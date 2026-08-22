@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
@@ -12,7 +12,8 @@ import {
   SlidersHorizontal,
   Repeat,
   ChevronDown,
-  Calendar,
+  ChevronLeft,
+  ChevronRight,
   Gauge,
   Clock,
   ShieldCheck,
@@ -28,16 +29,19 @@ import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib
 import { CASE_STUDIES } from "./content/case-studies.js";
 import "./landing/landing.css";
 
-const OBJECTIVES = [
-  { id: "fitness", key: "o1" },
-  { id: "endurance", key: "o2" },
-  { id: "speed", key: "o3" },
-  { id: "technique", key: "o4" },
-  { id: "competition", key: "o5" },
-  { id: "openwater", key: "o6" },
+const OBJECTIVE_TABS = [
+  { id: "progression", labelKey: "tabProgression", tagKey: "tagLevel", cards: ["p1", "p2", "p3", "p4"], media: "/nagerprogresser-objectif-landing.png" },
+  {
+    id: "triathlon",
+    labelKey: "tabTriathlon",
+    tagKey: "tagEvent",
+    cards: ["t1", "t2", "t3", "t4", "t5"],
+    media: "/Triathlon-obectif-landingpage.png",
+  },
+  { id: "openwater", labelKey: "tabOpenwater", tagKey: "tagDistance", cards: ["w1", "w2", "w3", "w4", "w5", "w6"], media: "/Eaulibre-objectif-landing.png" },
+  { id: "diploma", labelKey: "tabDiploma", tagKey: "tagDiploma", cards: ["d1", "d2", "d3"], media: "/Sauveteur-objectif-landing.png" },
 ];
 
-const HOW_ICONS = [SlidersHorizontal, Sparkles, Repeat, Calendar];
 const TRUST_ICONS = [Cpu, ShieldCheck, Waves];
 const INCLUDE_ICONS = [Target, Gauge, CalendarRange, Clock, Repeat, Sparkles];
 
@@ -51,10 +55,6 @@ function Hero() {
       </div>
       <div className="lp-wrap lp-hero-inner">
         <div className="lp-hero-copy">
-          <span className="lp-badge">
-            <Sparkles size={14} />
-            {t("hero.badge")}
-          </span>
           <h1 className="lp-h1 lp-display">{t("hero.title")}</h1>
           <p className="lp-lead">{t("hero.subtitle")}</p>
           <div className="lp-cta-row">
@@ -84,6 +84,41 @@ function Hero() {
 function Objectives() {
   const { t } = useTranslation("landing");
   const cta = usePublicCta();
+  const [tabId, setTabId] = useState("progression");
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+  const scrollerRef = useRef(null);
+  const tab = OBJECTIVE_TABS.find((item) => item.id === tabId) || OBJECTIVE_TABS[0];
+
+  const updateScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 12);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 12);
+  };
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return undefined;
+    el.scrollTo({ left: 0 });
+    const frame = requestAnimationFrame(updateScroll);
+    el.addEventListener("scroll", updateScroll, { passive: true });
+    window.addEventListener("resize", updateScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", updateScroll);
+      window.removeEventListener("resize", updateScroll);
+    };
+  }, [tabId]);
+
+  const scrollByCard = (dir) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const card = el.querySelector(".lp-obj-card");
+    const step = card ? card.getBoundingClientRect().width + 16 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+
   return (
     <section className="lp-section">
       <div className="lp-wrap">
@@ -91,17 +126,73 @@ function Objectives() {
           <h2 className="lp-h2 lp-display">{t("objectives.title")}</h2>
           <p className="lp-lead" style={{ marginTop: 12 }}>{t("objectives.subtitle")}</p>
         </div>
-        <div className="lp-grid-3">
-          {OBJECTIVES.map((o) => (
-            <Link key={o.id} to={cta.href} className="lp-card">
-              <div className="lp-card-title">
-                {t(`objectives.${o.key}Label`)}
-                <ArrowRight size={16} color="var(--lp-muted)" />
-              </div>
-              <p className="lp-card-kicker">{t(`objectives.${o.key}Short`)}</p>
-              <p>{t(`objectives.${o.key}Desc`)}</p>
-            </Link>
-          ))}
+        <div className="lp-obj-tabs" role="tablist" aria-label={t("objectives.tabsAria")}>
+          {OBJECTIVE_TABS.map((item) => {
+            const selected = item.id === tab.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                id={`lp-obj-tab-${item.id}`}
+                aria-selected={selected}
+                aria-controls="lp-obj-panel"
+                className={`lp-obj-tab${selected ? " is-active" : ""}`}
+                onClick={() => setTabId(item.id)}
+              >
+                {t(`objectives.${item.labelKey}`)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className={`lp-obj-stage${tab.media ? " has-media" : ""}`} data-obj={tab.id}>
+        {tab.media ? (
+          <div className="lp-obj-media" aria-hidden>
+            <img src={tab.media} alt="" />
+          </div>
+        ) : null}
+        <div className="lp-wrap lp-obj-stage-inner">
+        <div className="lp-obj-scroller-wrap">
+          <button
+            type="button"
+            className="lp-obj-nav lp-obj-nav-prev"
+            aria-label={t("objectives.scrollPrev")}
+            disabled={!canPrev}
+            onClick={() => scrollByCard(-1)}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div
+            className="lp-obj-grid"
+            role="tabpanel"
+            id="lp-obj-panel"
+            aria-labelledby={`lp-obj-tab-${tab.id}`}
+            ref={scrollerRef}
+          >
+            {tab.cards.map((key) => (
+              <Link key={key} to={cta.href} className="lp-obj-card">
+                <p className="lp-card-kicker">{t(`objectives.${tab.tagKey}`)}</p>
+                <h3 className="lp-obj-card-title">{t(`objectives.${key}Title`)}</h3>
+                <p className="lp-obj-card-meta">{t(`objectives.${key}Meta`)}</p>
+                <p className="lp-obj-card-desc">{t(`objectives.${key}Desc`)}</p>
+                <span className="lp-btn lp-obj-card-cta">
+                  {t("objectives.cta")}
+                  <ArrowRight size={16} />
+                </span>
+              </Link>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="lp-obj-nav lp-obj-nav-next"
+            aria-label={t("objectives.scrollNext")}
+            disabled={!canNext}
+            onClick={() => scrollByCard(1)}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
         </div>
       </div>
     </section>
@@ -130,40 +221,6 @@ function WhyMyswym() {
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  const { t } = useTranslation("landing");
-  const steps = [1, 2, 3, 4].map((n) => ({
-    icon: HOW_ICONS[n - 1],
-    title: t(`how.s${n}Title`),
-    text: t(`how.s${n}Desc`),
-  }));
-  return (
-    <section id="how" className="lp-section">
-      <div className="lp-wrap">
-        <p className="lp-kicker">{t("how.label")}</p>
-        <h2 className="lp-h2 lp-display">{t("how.title")}</h2>
-        <p className="lp-lead" style={{ marginTop: 12 }}>{t("how.subtitle")}</p>
-        <div className="lp-steps lp-steps-4">
-          {steps.map((s, i) => (
-            <div key={s.title} className="lp-step">
-              <span className="lp-step-n">0{i + 1}</span>
-              <s.icon size={28} color="var(--lp-primary)" strokeWidth={1.8} style={{ marginTop: 12 }} />
-              <h3>{s.title}</h3>
-              <p>{s.text}</p>
-            </div>
-          ))}
-        </div>
-        <p className="lp-see">
-          <LocalizedLink to="/comment-ca-marche" className="lp-see-link">
-            {t("howPage.seePage")}
-            <ArrowRight size={14} />
-          </LocalizedLink>
-        </p>
       </div>
     </section>
   );
@@ -440,7 +497,6 @@ export default function Landing() {
         <Hero />
         <Objectives />
         <WhyMyswym />
-        <HowItWorks />
         <SessionPreview />
         <CoachSection />
         <Includes />

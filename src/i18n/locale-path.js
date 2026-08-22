@@ -9,6 +9,7 @@ export const EN_SLUG_BY_FR = {
   "/comment-ca-marche": "/how-it-works",
   "/tarifs": "/pricing",
   "/merci": "/thanks",
+  "/avis": "/reviews",
   "/mentions-legales": "/legal-notice",
   "/politique-confidentialite": "/privacy",
   "/politique-cookies": "/cookies",
