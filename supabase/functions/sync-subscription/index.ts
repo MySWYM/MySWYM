@@ -4,6 +4,7 @@ import {
   ACCESS_STATUS,
   buildSubscriptionStateFromStripe,
   getAccessState,
+  hasEntitlement,
   persistAccessState,
   resolveAccessWithoutStripeSub,
   type AccessStateRow,
@@ -35,20 +36,17 @@ function corsHeaders(reqOrigin: string | null) {
   };
 }
 
-async function resolveCustomerId(user: AuthUser) {
+/** Uniquement l’id déjà rattaché au compte (checkout). Jamais de lookup e-mail : ça vole l’essai 7j. */
+async function resolveStoredCustomerId(user: AuthUser) {
   const stored = (user.app_metadata?.stripe_customer_id ?? user.user_metadata?.stripe_customer_id) as string | undefined;
-  if (stored) {
-    try {
-      const c = await stripe.customers.retrieve(stored);
-      if (!(c as { deleted?: boolean }).deleted) return stored;
-    } catch {
-      // ID périmé — recherche par email
-    }
+  if (!stored) return null;
+  try {
+    const c = await stripe.customers.retrieve(stored);
+    if (!(c as { deleted?: boolean }).deleted) return stored;
+  } catch {
+    // ID périmé — le checkout recréera un customer. Ne pas rattacher un autre compte par e-mail.
   }
-  if (!user.email) return null;
-  const list = await stripe.customers.list({ email: user.email, limit: 10 });
-  const match = list.data.find(c => !(c as { deleted?: boolean }).deleted);
-  return match?.id ?? null;
+  return null;
 }
 
 async function findActiveSubscription(customerId: string) {
@@ -84,20 +82,24 @@ Deno.serve(async (req) => {
     const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);
     const sourceUser = adminUser ?? user;
 
-    const customerId = await resolveCustomerId(sourceUser);
+    const customerId = await resolveStoredCustomerId(sourceUser);
     const currentState = await getAccessState(supabaseAdmin, user.id);
+    const grantOpts = { userCreatedAt: sourceUser.created_at ?? null };
     let nextState: AccessStateRow;
 
-    // Abo Stripe actif → Stripe gagne. Sinon essai 7j sans carte (1×) puis gel.
+    // Abo Stripe encore valide → Stripe gagne. Sinon essai 7j sans carte (1×) puis gel.
     if (customerId) {
       const sub = await findActiveSubscription(customerId);
       if (sub) {
-        nextState = buildSubscriptionStateFromStripe(user.id, currentState, customerId, sub);
+        const mapped = buildSubscriptionStateFromStripe(user.id, currentState, customerId, sub);
+        nextState = hasEntitlement(mapped)
+          ? mapped
+          : resolveAccessWithoutStripeSub(user.id, currentState, customerId, grantOpts);
       } else {
-        nextState = resolveAccessWithoutStripeSub(user.id, currentState, customerId);
+        nextState = resolveAccessWithoutStripeSub(user.id, currentState, customerId, grantOpts);
       }
     } else {
-      nextState = resolveAccessWithoutStripeSub(user.id, currentState, null);
+      nextState = resolveAccessWithoutStripeSub(user.id, currentState, null, grantOpts);
     }
 
     const persisted = await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);

@@ -108,11 +108,38 @@ const nowSec = Math.floor(Date.now() / 1000);
 }
 
 {
-  const notPending = isAccessMetadataPending(userWith({
+  const missingWindow = isAccessMetadataPending(userWith({
     subscription_status: ACCESS_STATUS.EXPIRED,
     trial_used: true,
   }));
-  assert.equal(notPending, false);
+  assert.equal(missingWindow, true, "trial_used without trial_ends_at is not a consumed trial");
+}
+
+{
+  const created = "2026-08-01T10:00:00.000Z";
+  const consumed = isAccessMetadataPending({
+    created_at: created,
+    app_metadata: {
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+      trial_started_at: created,
+      trial_ends_at: "2026-08-08T10:00:00.000Z",
+    },
+  });
+  assert.equal(consumed, false, "7-day window that started after signup is consumed");
+}
+
+{
+  const leftover = isAccessMetadataPending({
+    created_at: "2026-08-22T16:00:00.000Z",
+    app_metadata: {
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+      trial_started_at: "2026-08-01T10:00:00.000Z",
+      trial_ends_at: "2026-08-08T10:00:00.000Z",
+    },
+  });
+  assert.equal(leftover, true, "trial that ended before the account existed is not consumed");
 }
 
 {

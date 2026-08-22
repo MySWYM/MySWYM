@@ -86,9 +86,16 @@ export function getAccessState(user) {
 /** Pas d'essai encore consommé : attendre le sync (il peut accorder 7 jours) avant de geler. */
 export function isAccessMetadataPending(user) {
   if (!user) return false;
+  if (getAccessState(user).hasPremiumAccess) return false;
   const meta = user.app_metadata ?? {};
-  if (meta.subscription === "premium") return false;
-  if (meta.trial_used === true) return false;
+  if (meta.subscription === "premium" && meta.trial_used !== true) return false;
+  if (meta.trial_used === true) {
+    const trialEndsMs = parseMs(meta.trial_ends_at);
+    if (trialEndsMs == null) return true;
+    const createdMs = parseMs(user.created_at);
+    if (createdMs != null && trialEndsMs <= createdMs) return true;
+    return false;
+  }
   return true;
 }
 
