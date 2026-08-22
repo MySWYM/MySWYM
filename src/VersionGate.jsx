@@ -95,6 +95,10 @@ export default function VersionGate({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    const failOpen = setTimeout(() => {
+      if (cancelled) return;
+      setState((s) => (s.ready ? s : { ...s, ready: true, checking: false }));
+    }, 1500);
     (async () => {
       const result = await checkVersionGate();
       if (cancelled) return;
@@ -109,6 +113,7 @@ export default function VersionGate({ children }) {
     })();
     return () => {
       cancelled = true;
+      clearTimeout(failOpen);
     };
   }, []);
 
@@ -132,13 +137,16 @@ export default function VersionGate({ children }) {
   };
 
   if (!state.ready) {
-    // Même loader Apple que App / index.html — un seul écran.
     return (
       <div className="myswym-boot" role="status" aria-busy="true" aria-live="polite">
         <div className="myswym-boot-inner">
-          <p className="myswym-boot-mark">MySWYM</p>
-          <div className="myswym-boot-spinner" aria-hidden="true" />
-          <p className="myswym-boot-label">Loading</p>
+          <div className="myswym-boot-icon-wrap">
+            <img className="myswym-boot-icon" src="/apple-touch-icon.png" alt="" width={88} height={88} />
+          </div>
+          <img className="myswym-boot-wordmark" src="/logo-myswym-banner-blanc.png" alt="mySWYM" height={28} width={192} />
+          <p className="myswym-boot-status">Préparation de votre espace nageur</p>
+          <div className="myswym-boot-track" aria-hidden="true"><div className="myswym-boot-bar" /></div>
+          <p className="myswym-boot-label">Un instant</p>
         </div>
       </div>
     );

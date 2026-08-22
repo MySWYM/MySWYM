@@ -1,29 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Lexend:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss" prefix(cv);
 
 @theme {
-  /* Brand — mySWYM × Apple Fitness+ */
-  --color-cv-bg: #f5f7fb;
-  --color-cv-bg-elevated: #ffffff;
-  --color-cv-ink: #0f1419;
-  --color-cv-ink-secondary: #5b6570;
-  --color-cv-ink-tertiary: #8b95a1;
-  --color-cv-blue: #355da3;
-  --color-cv-blue-deep: #154388;
-  --color-cv-blue-mid: #5b82c4;
-  --color-cv-blue-soft: #e8effc;
-  --color-cv-blue-glow: #d0ddf7;
+  /* Brand — bassin nuit + bleu logo */
+  --color-cv-bg: #000514;
+  --color-cv-bg-elevated: #06101f;
+  --color-cv-ink: #f4f8fa;
+  --color-cv-ink-secondary: #9bb0c8;
+  --color-cv-ink-tertiary: #6b7c90;
+  --color-cv-blue: #006bfd;
+  --color-cv-blue-deep: #3d8fff;
+  --color-cv-blue-mid: #3d8fff;
+  --color-cv-blue-soft: #0a162c;
+  --color-cv-blue-glow: rgba(0, 107, 253, 0.22);
   --color-cv-mint: #1aad7a;
-  --color-cv-mint-soft: #e6f8f1;
+  --color-cv-mint-soft: #0c2a20;
   --color-cv-coral: #e85d4c;
   --color-cv-gold: #d4a017;
-  --color-cv-gold-soft: #fbf3dc;
-  --color-cv-border: rgba(15, 20, 25, 0.08);
-  --color-cv-border-strong: rgba(15, 20, 25, 0.14);
-  --color-cv-overlay: rgba(15, 20, 25, 0.45);
+  --color-cv-gold-soft: #3a2a0a;
+  --color-cv-border: rgba(0, 107, 253, 0.22);
+  --color-cv-border-strong: rgba(0, 107, 253, 0.34);
+  --color-cv-overlay: rgba(0, 5, 20, 0.55);
 
-  --font-cv-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
-  --font-cv-body: "Lexend", ui-sans-serif, system-ui, sans-serif;
+  --font-cv-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-cv-body: Geist, ui-sans-serif, system-ui, sans-serif;
 
   --radius-cv-sm: 10px;
   --radius-cv-md: 14px;
@@ -31,10 +30,10 @@
   --radius-cv-xl: 28px;
   --radius-cv-full: 9999px;
 
-  --shadow-cv-sm: 0 1px 2px rgba(15, 20, 25, 0.04);
-  --shadow-cv-md: 0 4px 16px rgba(15, 20, 25, 0.06);
-  --shadow-cv-lg: 0 12px 40px rgba(53, 93, 163, 0.14);
-  --shadow-cv-sheet: 0 -8px 40px rgba(15, 20, 25, 0.12);
+  --shadow-cv-sm: 0 1px 2px rgba(0, 5, 20, 0.35);
+  --shadow-cv-md: 0 8px 24px rgba(0, 107, 253, 0.22);
+  --shadow-cv-lg: 0 12px 40px rgba(0, 107, 253, 0.28);
+  --shadow-cv-sheet: 0 -8px 40px rgba(0, 5, 20, 0.4);
 
   --ease-cv-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-cv-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -57,7 +56,7 @@
 .cv-display {
   font-family: var(--font-cv-display);
   letter-spacing: -0.02em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {

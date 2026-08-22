@@ -6,16 +6,16 @@ import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
 
 const G = {
-  bg: "#f8f9fc",
-  surface: "#FFFFFF",
-  ink: "#191c1e",
-  inkLight: "#434751",
-  blue: "#355da3",
-  blueLight: "#d8e2ff",
-  grey: "#737782",
-  greyMid: "#9CA3AF",
-  greyLight: "#e1e2e5",
-  greyXLight: "#f2f3f6",
+  bg: "var(--myswym-bg, #000514)",
+  surface: "var(--myswym-surface, #06101f)",
+  ink: "var(--myswym-ink, #f4f8fa)",
+  inkLight: "var(--myswym-ink-light, #9bb0c8)",
+  blue: "var(--myswym-blue, #006bfd)",
+  blueLight: "var(--myswym-blue-light, #0a162c)",
+  grey: "var(--myswym-grey, #9bb0c8)",
+  greyMid: "var(--myswym-grey-mid, #6b7c90)",
+  greyLight: "var(--myswym-grey-light, rgba(0, 107, 253, 0.22))",
+  greyXLight: "var(--myswym-grey-xlight, #0a162c)",
   white: "#FFFFFF",
 };
 
@@ -46,7 +46,7 @@ export default function SessionLiveView({
   onFinishPool,
 }) {
   const [poolOpen, setPoolOpen] = useState(false);
-  const accent = { bg: "#d8e2ff", color: "#355da3" };
+  const accent = { bg: "var(--myswym-blue-light, #0a162c)", color: "var(--myswym-blue, #006bfd)" };
 
   return (
     <div>

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen } from "lucide-react";
-import { fetchPublishedArticles, formatArticleDate } from "./blogData.js";
+import { fetchPublishedArticles } from "./blogData.js";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { getStoredLanguage } from "./i18n/index.js";
 
-const FONT = "'Lexend', sans-serif";
+const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 
 /** Couleurs via tokens thème app (--myswym-*) + fallbacks light. */
 function useAppColors() {
@@ -20,18 +22,18 @@ function useAppColors() {
   return {
     surface: v("--myswym-surface", "#FFFFFF"),
     ink: v("--myswym-ink", "#191c1e"),
-    blue: v("--myswym-blue", "#355da3"),
-    greyLight: v("--myswym-grey-light", "#e1e2e5"),
-    blueLight: dark ? "#1a2744" : "#d8e2ff",
-    grey: dark ? "#9aa0ad" : "#737782",
-    greyMid: dark ? "#6b7280" : "#9CA3AF",
-    inkLight: dark ? "#c5c9d2" : "#434751",
-    greyXLight: dark ? "#1c212b" : "#f2f3f6",
+    blue: v("--myswym-blue", "#006bfd"),
+    greyLight: v("--myswym-grey-light", "rgba(0, 107, 253, 0.22)"),
+    blueLight: dark ? "#0a162c" : "#d6e7ff",
+    grey: dark ? "#9bb0c8" : "#5d6b7d",
+    greyMid: dark ? "#6b7c90" : "#9bb0c8",
+    inkLight: dark ? "#9bb0c8" : "#3d4f66",
+    greyXLight: dark ? "#0a162c" : "#eef3f8",
   };
 }
 
 function BlogCard({ article, colors, width }) {
-  const href = `/blog/${article.slug}`;
+  const href = withLocalePrefix(`/blog/${article.slug}`, getStoredLanguage());
   return (
     <a
       href={href}
@@ -101,12 +103,6 @@ function BlogCard({ article, colors, width }) {
           >
             {article.titre}
           </h3>
-          <time
-            dateTime={article.date_publication}
-            style={{ color: colors.greyMid, fontSize: 11, display: "block" }}
-          >
-            {formatArticleDate(article.date_publication)}
-          </time>
           <span
             style={{
               marginTop: "auto",
@@ -220,7 +216,7 @@ export default function HomeBlogCarousel() {
           </div>
         </div>
         <a
-          href="/blog"
+          href={withLocalePrefix("/blog", getStoredLanguage())}
           target="_blank"
           rel="noopener noreferrer"
           style={{

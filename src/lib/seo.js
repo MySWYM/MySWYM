@@ -1,8 +1,37 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { LEGAL_ENTITY } from "./legal-entity.js";
+import { localeFromPathname, stripLocalePrefix, withLocalePrefix } from "../i18n/locale-path.js";
 
 export const SITE_ORIGIN = "https://myswym.app";
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-share.png`;
+
+/** JSON-LD BreadcrumbList — items : { label, href? } (dernier cran sans href). */
+export function breadcrumbJsonLd(items = []) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.label,
+      ...(item.href ? { item: `${SITE_ORIGIN}${withLocalePrefix(item.href, localeFromPathname(typeof window !== "undefined" ? window.location.pathname : "/"))}` } : {}),
+    })),
+  };
+}
+
+/** JSON-LD FAQPage. */
+export function faqPageJsonLd(items = []) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map(({ q, a }) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
+}
 
 function upsertMeta(attr, key, content) {
   const selector = `meta[${attr}="${key}"]`;
@@ -15,22 +44,44 @@ function upsertMeta(attr, key, content) {
   el.setAttribute("content", content);
 }
 
+function upsertLink(rel, href, attrs = {}) {
+  const hreflang = attrs.hreflang;
+  const selector = hreflang
+    ? `link[rel="${rel}"][hreflang="${hreflang}"]`
+    : `link[rel="${rel}"]:not([hreflang])`;
+  let el = document.head.querySelector(selector);
+  if (!el) {
+    el = document.createElement("link");
+    el.rel = rel;
+    document.head.appendChild(el);
+  }
+  el.href = href;
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  el.setAttribute("data-myswym-seo", "1");
+  return el;
+}
+
 /**
  * Title + description + Open Graph / Twitter + canonical.
  * jsonLd : objet ou tableau d’objets schema.org (retiré au démontage).
+ * `path` est la route FR interne (`/tarifs`) ; le slug EN / préfixe `/fr` suivent l’URL.
  */
 export function usePageSeo({
   title,
   description,
-  path = "/accueil",
+  path = "/",
   image = DEFAULT_OG_IMAGE,
   noIndex = false,
   jsonLd = null,
 }) {
+  const { pathname } = useLocation();
+  const locale = localeFromPathname(pathname);
+  const localizedPath = withLocalePrefix(stripLocalePrefix(path), locale);
   const json = jsonLd ? JSON.stringify(jsonLd) : "";
 
   useEffect(() => {
-    const canonical = `${SITE_ORIGIN}${path}`;
+    const canonical = `${SITE_ORIGIN}${localizedPath === "/" ? "/" : localizedPath}`;
+    const bare = stripLocalePrefix(localizedPath);
     document.title = title;
     upsertMeta("name", "description", description);
     upsertMeta("name", "robots", noIndex ? "noindex, nofollow" : "index, follow");
@@ -39,20 +90,27 @@ export function usePageSeo({
     upsertMeta("property", "og:type", "website");
     upsertMeta("property", "og:url", canonical);
     upsertMeta("property", "og:image", image);
-    upsertMeta("property", "og:locale", "fr_FR");
+    upsertMeta("property", "og:locale", locale === "en" ? "en_US" : "fr_FR");
+    upsertMeta("property", "og:locale:alternate", locale === "en" ? "fr_FR" : "en_US");
     upsertMeta("property", "og:site_name", "MySWYM");
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", title);
     upsertMeta("name", "twitter:description", description);
     upsertMeta("name", "twitter:image", image);
 
-    let link = document.head.querySelector('link[rel="canonical"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "canonical";
-      document.head.appendChild(link);
+    upsertLink("canonical", canonical);
+
+    document.querySelectorAll('link[data-myswym-hreflang]').forEach((el) => el.remove());
+    if (!noIndex) {
+      const frUrl = `${SITE_ORIGIN}${withLocalePrefix(bare, "fr")}`;
+      const enUrl = `${SITE_ORIGIN}${withLocalePrefix(bare, "en")}`;
+      upsertLink("alternate", frUrl, { hreflang: "fr" });
+      upsertLink("alternate", enUrl, { hreflang: "en" });
+      upsertLink("alternate", enUrl, { hreflang: "x-default" });
+      document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => {
+        el.setAttribute("data-myswym-hreflang", "1");
+      });
     }
-    link.href = canonical;
 
     const scriptId = "myswym-jsonld";
     document.getElementById(scriptId)?.remove();
@@ -67,7 +125,7 @@ export function usePageSeo({
     return () => {
       document.getElementById(scriptId)?.remove();
     };
-  }, [title, description, path, image, noIndex, json]);
+  }, [title, description, localizedPath, locale, image, noIndex, json]);
 }
 
 export function organizationJsonLd() {
@@ -94,9 +152,9 @@ export function softwareApplicationJsonLd(reviews = []) {
     name: "MySWYM",
     applicationCategory: "HealthApplication",
     operatingSystem: "Web",
-    url: `${SITE_ORIGIN}/accueil`,
+    url: `${SITE_ORIGIN}/`,
     description:
-      "Générateur de plans d'entraînement natation personnalisés — niveau, objectif, bassin 25 m ou 50 m.",
+      "Générateur de plans d'entraînement natation personnalisés : niveau, objectif, bassin 25 m ou 50 m.",
     offers: {
       "@type": "Offer",
       price: "4.99",

@@ -6,9 +6,9 @@ const ASSETS = {
     ratio: 519 / 390,
   },
   wordmark: {
-    dark: "/logo-myswym.png",
+    dark: "/logo-myswym-banner-blanc.png",
     light: "/logo-myswym-on-light.png",
-    ratio: 804 / 117,
+    ratio: 192 / 28,
   },
 };
 

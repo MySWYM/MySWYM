@@ -38,7 +38,7 @@ export function renderFollowupMessage(
     case "signup_to_premium":
       return (
         `Tu as un compte MySWYM — l’essai Premium débloque plans complets + adaptation. ` +
-        `Si tu veux tester : ${link}/tarifs — sinon dis-moi ce qui bloque.`
+        `Si tu veux tester : ${link}/fr/tarifs — sinon dis-moi ce qui bloque.`
       );
     default:
       return `Reprise douce côté MySWYM : ${link}`;

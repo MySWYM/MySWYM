@@ -1,46 +1,45 @@
-import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import { usePageSeo } from "./lib/seo.js";
-
-const FONT = "'Lexend', sans-serif";
-const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
+import { useTranslation } from "react-i18next";
+import { usePublicCta } from "./lib/use-auth-session.js";
+import "./theme/public.css";
 
 export default function NotFoundPage() {
+  const { t } = useTranslation("common");
+  const cta = usePublicCta();
   usePageSeo({
-    title: "Page introuvable — MySWYM",
-    description: "Cette page n’existe pas. Retrouve l’accueil MySWYM ou démarre ton essai.",
+    title: t("pages.notFoundMetaTitle"),
+    description: t("pages.notFoundMetaDesc"),
     path: "/404",
     noIndex: true,
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8f9fc", fontFamily: FONT, color: "#191c1e" }}>
+    <div className="ms-root">
       <PublicNav />
-      <main style={{ maxWidth: 640, margin: "0 auto", padding: "120px 20px 64px", textAlign: "center" }}>
-        <p style={{ color: "#355da3", fontWeight: 800, letterSpacing: "0.08em", margin: "0 0 12px" }}>404</p>
-        <h1 style={{
-          fontFamily: FONT_DISPLAY, fontSize: "clamp(36px,5vw,52px)", fontWeight: 800,
-          textTransform: "uppercase", margin: "0 0 16px",
-        }}>
-          Page introuvable
-        </h1>
-        <p style={{ fontSize: 17, lineHeight: 1.65, color: "#5d5e61", margin: "0 0 28px" }}>
-          Ce lien ne mène nulle part. Tu peux revenir à l’accueil ou créer ton plan.
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <Link to="/accueil" style={{
-            display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
-            borderRadius: 14, background: "#8eb3ff", color: "#154388", fontWeight: 700, textDecoration: "none",
-          }}>
-            Accueil
-          </Link>
-          <Link to="/inscription" style={{
-            display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
-            borderRadius: 14, border: "1.5px solid #c3c6d2", color: "#191c1e", fontWeight: 700, textDecoration: "none",
-          }}>
-            Démarrer l’essai
-          </Link>
+      <main className="ms-404">
+        <div className="ms-404-card">
+          <img
+            className="ms-404-otter"
+            src="/loutre-404.webp"
+            alt={t("pages.notFoundAlt")}
+            width={1312}
+            height={1199}
+          />
+          <p className="ms-pricing-kicker">404</p>
+          <h1 className="ms-404-h1">{t("pages.notFoundTitle")}</h1>
+          <p className="ms-404-lead">{t("pages.notFoundBody")}</p>
+          <div className="ms-pricing-cta-row ms-404-cta">
+            <LocalizedLink to="/" className="ms-btn">
+              {t("pages.notFoundHome")}
+            </LocalizedLink>
+            <LocalizedLink to={cta.href} className="ms-btn ms-btn-ghost">
+              {t("pages.notFoundCta")} <ArrowRight size={15} aria-hidden />
+            </LocalizedLink>
+          </div>
         </div>
       </main>
       <Footer />

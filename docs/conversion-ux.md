@@ -27,8 +27,9 @@ Insights paywall : `src/lib/coach-insights.js`.
 | Offre | Prix |
 |-------|------|
 | Essai | 7 jours · sans carte · puis gel |
-| Mensuel | 4,99€ / mois |
-| Annuel | 39,99€ / an · pas de remboursement |
+| Mensuel sans engagement | 9,99€ / mois |
+| Mensuel engagement 12 mois | 4,99€ / mois |
+| Annuel | 52,99€ / an · paiement en 1 fois · pas de remboursement |
 
 ### Paywalls contextuels (`UpgradeModal` softContext)
 

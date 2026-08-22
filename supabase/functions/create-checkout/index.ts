@@ -3,21 +3,60 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
-const PRICE_MONTHLY = Deno.env.get("STRIPE_PRICE_MONTHLY") ?? "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-const PRICE_ANNUAL = Deno.env.get("STRIPE_PRICE_ANNUAL") ?? "price_1TudyVAS4mfgF2TwHiSo3Vrg";
-const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
-const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
-
-// Prix actifs + anciens IDs (sécurité si un client a encore un cache)
-const ALLOWED_PRICE_IDS = new Set([
-  PRICE_MONTHLY,
-  PRICE_ANNUAL,
-  PRICE_BIENNIAL,
-  Deno.env.get("STRIPE_PRICE_ID") ?? "",
+const LEGACY_PRICE_IDS = new Set([
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
-  // Anciens IDs (clients / cache)
+  "price_1TPjyeAS4mfgF2TwmSjSiidD",
+  "price_1TP5yOAVxucD4jHaRYk2cbHC",
+  "price_1TPKQfAVxucD4jHaUDssY5cs",
+]);
+
+function envPrice(name: string, fallback: string) {
+  const v = Deno.env.get(name);
+  if (v && !LEGACY_PRICE_IDS.has(v)) return v;
+  return fallback;
+}
+
+const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1U67kYAS4mfgF2Twaw269yaU");
+const PRICE_MONTHLY_COMMIT = envPrice(
+  "STRIPE_PRICE_MONTHLY_COMMIT",
+  envPrice("STRIPE_PRICE_MONTHLY", "price_1U67kZAS4mfgF2Twi5Px8ZvG"),
+);
+const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U67kaAS4mfgF2TwvUsVQ3vE");
+const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
+const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
+
+function planTierFromPrice(price: string): string | undefined {
+  if (
+    price === PRICE_MONTHLY_FLEX ||
+    price === "price_1U67kYAS4mfgF2Twaw269yaU"
+  ) return "monthly_flex";
+  if (
+    price === PRICE_MONTHLY_COMMIT ||
+    price === "price_1U67kZAS4mfgF2Twi5Px8ZvG"
+  ) return "monthly_commit";
+  if (
+    price === PRICE_ANNUAL ||
+    price === "price_1U67kaAS4mfgF2TwvUsVQ3vE"
+  ) return "annual";
+  if (price === PRICE_BIENNIAL) return "biennial";
+  return undefined;
+}
+
+// Offres actives + anciens IDs (abonnés / cache / secrets non encore mis à jour)
+const ALLOWED_PRICE_IDS = new Set([
+  PRICE_MONTHLY_FLEX,
+  PRICE_MONTHLY_COMMIT,
+  PRICE_ANNUAL,
+  PRICE_BIENNIAL,
+  Deno.env.get("STRIPE_PRICE_ID") ?? "",
+  "price_1U67kYAS4mfgF2Twaw269yaU",
+  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
+  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+  "price_1TudyVAS4mfgF2TwHiSo3Vrg",
+  "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
   "price_1TP5yOAVxucD4jHaRYk2cbHC",
   "price_1TPKQfAVxucD4jHaUDssY5cs",
@@ -271,6 +310,7 @@ Deno.serve(async (req) => {
     // L'essai 7j est sans carte (à l'inscription). Checkout = paiement immédiat.
     // Fenêtre 2 min : double-clic / refresh ne créent pas 2 sessions Stripe.
     const idempotencyKey = `checkout:${user.id}:${price}:${Math.floor(Date.now() / 120_000)}`;
+    const planTier = planTierFromPrice(price);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -284,13 +324,13 @@ Deno.serve(async (req) => {
       ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       metadata: {
         supabase_user_id: user.id,
-        ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
+        ...(planTier ? { plan_tier: planTier } : {}),
         ...(referredByUserId ? { referred_by: referredByUserId } : {}),
       },
       subscription_data: {
         metadata: {
           supabase_user_id: user.id,
-          ...(price === PRICE_BIENNIAL ? { plan_tier: "biennial" } : {}),
+          ...(planTier ? { plan_tier: planTier } : {}),
           ...(referredByUserId ? { referred_by: referredByUserId } : {}),
         },
       },

@@ -333,7 +333,7 @@ export function mockStructuredFromUserPayload(
     suggested_action = "ask_plan_confirmation";
   } else if (intent === "subscription") {
     message =
-      "Premium : essai 7 jours sans carte à l’inscription, puis 4,99€/mois sans engagement, ou 39,99€/an. Après l’essai, l’app se gèle. Détails : https://myswym.app/tarifs";
+      "Premium : essai 7 jours sans carte à l’inscription, puis 9,99€/mois sans engagement, 4,99€/mois avec engagement 12 mois, ou 52,99€/an en 1 fois. Après l’essai, l’app se gèle. Détails : https://myswym.app/fr/tarifs";
     suggested_action = "continue";
   } else if (intent === "other") {
     message = "";

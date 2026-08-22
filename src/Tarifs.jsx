@@ -1,191 +1,58 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Check,
-  Clock3,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  Waves,
-  X,
-} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { supabase } from "./supabase.js";
 import { track, trackEvent } from "./lib/analytics.js";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
-import BrandLogo from "./BrandLogo.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import Breadcrumb from "./marketing/Breadcrumb.jsx";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
+import { PRICE_IDS, PRICING } from "./lib/pricing.js";
+import { useAuthSession, usePublicCta } from "./lib/use-auth-session.js";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/lp-accordion.jsx";
+import "./theme/public.css";
 
-const C = {
-  bg: "#f8f9fc",
-  bgSoft: "#edeef1",
-  bgCard: "#f2f3f6",
-  ink: "#191c1e",
-  secondary: "#5d5e61",
-  primary: "#355da3",
-  primaryDeep: "#154388",
-  primaryFix: "#d8e2ff",
-  outlineVar: "#c3c6d2",
-  white: "#ffffff",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  border: "rgba(53,93,163,0.08)",
-  shadow: "0 2px 12px rgba(142,179,255,0.10)",
-  shadowLg: "0 20px 60px rgba(12,26,46,0.18)",
-  night: "#0c1a2e",
-};
-
-const FONT = "'Lexend', sans-serif";
-const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
-
-function FontLoader() {
-  useEffect(() => {
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.href =
-      "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
-    document.head.appendChild(l);
-  }, []);
-  return null;
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function useIsMobile(bp = 768) {
-  const [mobile, setMobile] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < bp,
-  );
-  useEffect(() => {
-    const fn = () => setMobile(window.innerWidth < bp);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
-  }, [bp]);
-  return mobile;
-}
-
-function SectionEyebrow({ children, dark = false }) {
-  return (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "7px 14px",
-        borderRadius: 999,
-        background: dark ? "rgba(142,179,255,0.14)" : C.primaryFix,
-        color: dark ? C.accent : C.primary,
-        fontSize: 12,
-        fontWeight: 800,
-        letterSpacing: "0.08em",
-        fontFamily: FONT,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function CheckItem({ children, dark = false }) {
-  return (
-    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-      <Check
-        size={16}
-        color={dark ? C.accent : C.primary}
-        style={{ marginTop: 2, flexShrink: 0 }}
-      />
-      <span
-        style={{
-          color: dark ? "rgba(255,255,255,0.86)" : C.secondary,
-          fontSize: 14,
-          lineHeight: 1.55,
-          fontFamily: FONT,
-        }}
-      >
-        {children}
-      </span>
-    </div>
-  );
-}
-
-function FeatureCell({ value, premium = false }) {
-  if (value === false) {
-    return <X size={16} color="rgba(93,94,97,0.55)" aria-hidden />;
-  }
-  if (value === true) {
-    return <Check size={16} color={premium ? C.primaryDeep : C.primary} aria-hidden />;
-  }
-  return (
-    <span
-      style={{
-        color: premium ? C.ink : C.secondary,
-        fontSize: 14,
-        lineHeight: 1.45,
-        fontWeight: premium ? 700 : 500,
-        fontFamily: FONT,
-      }}
-    >
-      {value}
-    </span>
-  );
-}
-
-function CompactTableValue({ value, premium = false }) {
-  const positive = value === "Oui" || value === "Complet" || value === "Jusqu'à 52 semaines";
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "8px 10px",
-        borderRadius: 12,
-        background: premium
-          ? "rgba(53,93,163,0.10)"
-          : positive
-            ? "rgba(53,93,163,0.08)"
-            : "#f4f5f7",
-        color: premium ? C.primaryDeep : C.ink,
-        fontSize: 13,
-        lineHeight: 1.3,
-        fontWeight: premium ? 800 : 600,
-        fontFamily: FONT,
-        textAlign: "center",
-      }}
-    >
-      {value}
-    </span>
-  );
-}
+const COMPARE_ROWS = ["r1", "r2", "r3", "r4", "r5", "r6", "r7"];
 
 export default function TarifsPage() {
-  const isMobile = useIsMobile();
-  const [openFaq, setOpenFaq] = useState(0);
+  const { t } = useTranslation("landing");
+  const { t: tc } = useTranslation("common");
+  const cta = usePublicCta();
+  const { isLoggedIn } = useAuthSession();
+  const crumbs = [{ label: tc("footer.home"), href: "/" }, { label: tc("nav.pricing") }];
   const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
 
   usePageSeo({
-    title: "Tarifs — MySWYM",
-    description: "Essai Premium 7 jours, puis 4,99€/mois sans engagement ou 39,99€/an. Plans natation personnalisés.",
+    title: t("pricingPage.metaTitle"),
+    description: t("pricingPage.metaDescription"),
     path: "/tarifs",
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setIsLoggedIn(!!session);
-    });
-    return () => subscription.unsubscribe();
   }, []);
+
+  const scrollToOffers = () => {
+    document.getElementById("offres")?.scrollIntoView({
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      block: "start",
+    });
+  };
 
   const handlePremium = async (priceId) => {
     if (checkoutBusy) return;
+    setCheckoutError("");
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -198,12 +65,15 @@ export default function TarifsPage() {
       }
       trackEvent("signup_started", { source: "pricing_page" }, { essential: true });
       track("signup_started", { source: "pricing_page" }, { onceKey: "signup_started:pricing_page" });
-      window.location.href = "/inscription";
+      window.location.href = cta.href;
       return;
     }
     if (!checkoutGatesReady(acceptTerms, acceptWithdrawal)) {
-      alert(checkoutGatesError(acceptTerms, acceptWithdrawal) || "Coche les cases CGV et rétractation avant de continuer.");
-      document.getElementById("checkout-legal-gates")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setCheckoutError(checkoutGatesError(acceptTerms, acceptWithdrawal) || t("pricingPage.gatesError"));
+      document.getElementById("checkout-legal-gates")?.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "center",
+      });
       return;
     }
     setCheckoutBusy(true);
@@ -237,1069 +107,224 @@ export default function TarifsPage() {
         window.location.href = data.url;
         return;
       }
-      alert(data.error || "Impossible d'ouvrir le paiement. Reessaie.");
+      setCheckoutError(data.error || t("pricing.checkoutError"));
       setCheckoutBusy(false);
     } catch {
-      alert("Impossible d'ouvrir le paiement. Reessaie.");
+      setCheckoutError(t("pricing.checkoutError"));
       setCheckoutBusy(false);
     }
   };
 
-  const PRICE_MONTHLY = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-  const PRICE_ANNUAL = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
-  const PRICE_MONTHLY_LABEL = "4,99€";
-  const PRICE_ANNUAL_LABEL = "39,99€";
-  const annualSavings = (4.99 * 12 - 39.99).toFixed(2).replace(".", ",");
-
-  const trialHighlights = [
-    "Acces Premium complet pendant 7 jours.",
-    "Sans carte bancaire.",
-    "Ensuite l'app se gele jusqu'a l'abonnement.",
-  ];
-
-  const annualHighlights = [
-    "Coach personnel et programme adaptatif jusqu'au jour J.",
-    "Allures T100, projection et adaptation apres feedback.",
-    "Strava, badges, adaptation coach et suivi semaine apres semaine.",
-    "39,99€/an · pas de remboursement (hors cas legaux).",
-  ];
-
-  const monthlyHighlights = [
-    "Acces Premium complet.",
-    "Essai 7 jours sans carte, puis 4,99€/mois.",
-    "Sans engagement — resilie quand tu veux.",
-  ];
-
-  const comparisonRows = [
-    ["Generation de programme", "7 jours puis gele", "Oui"],
-    ["Consultation des seances (detail)", "7 jours puis gele", "Oui"],
-    ["Historique", "Gele apres l'essai", "Oui"],
-    ["Statistiques", "Complet pendant l'essai", "Completes + projection allures"],
-    ["Messages coach (Arthur)", false, true],
-    ["Programme adaptatif (feedback)", false, true],
-    ["Allures cibles T100", false, true],
-    ["Prediction des chronos", "Apercu verrouille", true],
-    ["Adaptation apres chaque seance", false, true],
-    ["Multi-plans + modifier le programme", false, true],
-    ["Defis et badges", "Badges", "Badges"],
-    ["Synchronisation Strava", true, true],
-    ["Nouveautes futures", "Selon abo", true],
-  ];
-
-  const premiumBenefits = [
+  const plans = [
     {
-      icon: TrendingUp,
-      title: "Progresser plus vite",
-      text: "Le Premium t'aide a t'entrainer avec des allures plus precises, des reperes plus clairs et une progression visible semaine apres semaine.",
+      id: "flex",
+      featured: false,
+      priceId: PRICE_IDS.monthlyFlex,
+      name: t("pricingPage.flexName"),
+      title: t("pricingPage.flexTitle"),
+      price: PRICING.monthlyFlex.label,
+      period: t("pricingPage.perMonth"),
+      meta: t("pricingPage.flexMeta"),
+      cta: t("pricingPage.flexCta"),
+      features: [t("pricingPage.flexF1"), t("pricingPage.flexF2"), t("pricingPage.flexF3")],
     },
     {
-      icon: Clock3,
-      title: "Gagner du temps",
-      text: "Tu arretes d'improviser tes contenus de seances. Tout est deja structure, lisible et pret a etre nage.",
+      id: "commit",
+      featured: true,
+      badge: t("pricing.recommended"),
+      priceId: PRICE_IDS.monthlyCommit,
+      name: t("pricingPage.commitName"),
+      title: t("pricingPage.commitTitle"),
+      price: PRICING.monthlyCommit.label,
+      period: t("pricingPage.perMonth"),
+      meta: t("pricingPage.commitMeta"),
+      cta: t("pricingPage.commitCta"),
+      features: [t("pricingPage.commitF1"), t("pricingPage.commitF2"), t("pricingPage.commitF3")],
     },
     {
-      icon: Waves,
-      title: "Preparer un vrai objectif",
-      text: "Triathlon, eau libre, remise en forme ou performance: tu suis un plan complet, coherent, construit jusqu'au jour J.",
-    },
-    {
-      icon: Sparkles,
-      title: "Rester motive",
-      text: "Historique, badges, progression et suivi de tes efforts rendent l'entrainement beaucoup plus engageant dans la duree.",
+      id: "annual",
+      featured: false,
+      badge: t("pricingPage.annualBadge"),
+      priceId: PRICE_IDS.annual,
+      name: t("pricingPage.annualName"),
+      title: t("pricingPage.annualTitle"),
+      price: PRICING.annual.label,
+      period: t("pricingPage.perYear"),
+      meta: t("pricingPage.annualMeta"),
+      cta: t("pricingPage.annualCta"),
+      features: [t("pricingPage.annualF1"), t("pricingPage.annualF2"), t("pricingPage.annualF3")],
     },
   ];
 
   const faqItems = [
-    {
-      q: "Puis-je annuler a tout moment ?",
-      a: "L'essai 7 jours ne demande pas de carte : il s'arrete tout seul et l'app se gele. Ensuite le mensuel (4,99€) reste sans engagement. L'annuel (39,99€) est un prepaiement : pas de remboursement une fois facture, hors cas legaux.",
-    },
-    {
-      q: "Puis-je commencer gratuitement ?",
-      a: "Tu crees un compte et tu as 7 jours d'essai Premium sans carte. Ensuite l'app se gele : plus aucun plan ni seance visible, jusqu'a l'abonnement.",
-    },
-    {
-      q: "Que se passe-t-il si j'arrete mon abonnement ?",
-      a: "Ton compte reste conserve. Apres l'essai ou la fin de periode payee, l'app se gele : tu ne vois plus tes plans ni tes seances tant que tu ne t'abonnes pas.",
-    },
-    {
-      q: "Puis-je synchroniser Strava plus tard ?",
-      a: "Oui. La connexion Strava peut etre activee plus tard depuis ton compte, quand tu es pret.",
-    },
-    {
-      q: "Mes donnees sont-elles conservees ?",
-      a: "Oui. Tes donnees de compte, ton historique et tes preferences restent conservees selon les regles de confidentialite du service.",
-    },
+    { id: "p1", q: t("pricingPage.faqQ1"), a: t("pricingPage.faqA1") },
+    { id: "p2", q: t("faq.q3"), a: t("faq.a3") },
+    { id: "p3", q: t("faq.q4"), a: t("faq.a4") },
+    { id: "p4", q: t("pricingPage.faqQ2"), a: t("pricingPage.faqA2") },
+    { id: "p5", q: t("pricingPage.faqQ3"), a: t("pricingPage.faqA3") },
   ];
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
-      <FontLoader />
+    <div className="ms-root">
       <PublicNav />
 
-      <section
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          padding: isMobile ? "96px 16px 48px" : "112px 20px 72px",
-          background: `
-            linear-gradient(180deg, rgba(12,26,46,0.96) 0%, rgba(21,67,136,0.92) 44%, rgba(248,249,252,1) 100%),
-            linear-gradient(140deg, #0c1a2e 0%, #154388 46%, #8eb3ff 100%)
-          `,
-        }}
-      >
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(circle at 20% 20%, rgba(142,179,255,0.28), transparent 35%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.12), transparent 30%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div style={{ maxWidth: 1120, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.05fr) minmax(340px, 0.95fr)",
-              gap: isMobile ? 24 : 28,
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <div style={{ marginBottom: 18 }}>
-                <BrandLogo variant="wordmark" height={isMobile ? 30 : 36} onDark />
-              </div>
-              <SectionEyebrow dark>PAGE TARIFS</SectionEyebrow>
-              <h1
-                style={{
-                  fontFamily: FONT_DISPLAY,
-                  fontSize: "clamp(40px, 6vw, 68px)",
-                  lineHeight: 0.95,
-                  fontWeight: 800,
-                  color: C.white,
-                  margin: "18px 0 16px",
-                  textTransform: "uppercase",
-                }}
-              >
-                Le Premium transforme
-                <br />
-                ton envie de nager
-                <br />
-                en vraie progression.
-              </h1>
-              <p
-                style={{
-                  color: "rgba(255,255,255,0.74)",
-                  fontSize: isMobile ? 16 : 18,
-                  lineHeight: 1.65,
-                  margin: "0 0 24px",
-                  maxWidth: 580,
-                  fontFamily: FONT,
-                }}
-              >
-                Découvre MySWYM avec l’essai 7 jours sans carte. Le Premium te donne un
-                plan complet pour progresser sérieusement, suivre
-                précisément tes performances et rester régulier.
-              </p>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-                <button
-                  type="button"
-                  onClick={() => handlePremium(PRICE_ANNUAL)}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    minHeight: 50,
-                    padding: "14px 24px",
-                    borderRadius: 16,
-                    border: "none",
-                    background: C.accent,
-                    color: C.accentText,
-                    fontWeight: 800,
-                    fontSize: 16,
-                    fontFamily: FONT,
-                    cursor: "pointer",
-                    boxShadow: "0 10px 30px rgba(142,179,255,0.35)",
-                  }}
-                >
-                  Passer Premium <ArrowRight size={16} />
-                </button>
-                <Link
-                  to="/inscription"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 50,
-                    padding: "14px 22px",
-                    borderRadius: 16,
-                    textDecoration: "none",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    color: C.white,
-                    background: "rgba(255,255,255,0.08)",
-                    fontWeight: 700,
-                    fontSize: 15,
-                    fontFamily: FONT,
-                    backdropFilter: "blur(10px)",
-                  }}
-                >
-                  Essai 7 jours
-                </Link>
-                <Link
-                  to="/inscription"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 50,
-                    padding: "14px 22px",
-                    borderRadius: 16,
-                    textDecoration: "none",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    color: C.white,
-                    background: "rgba(255,255,255,0.08)",
-                    fontWeight: 700,
-                    fontSize: 15,
-                    fontFamily: FONT,
-                    backdropFilter: "blur(10px)",
-                  }}
-                >
-                  Creer mon compte
-                </Link>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {[
-                  "Essai 7 jours · sans carte",
-                  "Mensuel sans engagement",
-                  `Économise ${annualSavings}€ avec l'annuel`,
-                ].map((item) => (
-                  <span
-                    key={item}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      borderRadius: 999,
-                      padding: "10px 14px",
-                      background: "rgba(255,255,255,0.08)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      color: "rgba(255,255,255,0.82)",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      fontFamily: FONT,
-                    }}
-                  >
-                    <BadgeCheck size={14} color={C.accent} />
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.14)",
-                borderRadius: 28,
-                padding: isMobile ? 22 : 28,
-                boxShadow: C.shadowLg,
-                backdropFilter: "blur(18px)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  marginBottom: 18,
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,0.52)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      fontFamily: FONT,
-                    }}
-                  >
-                    PREMIUM ANNUEL
-                  </div>
-                  <div
-                    style={{
-                      color: C.white,
-                      fontSize: 28,
-                      fontWeight: 800,
-                      fontFamily: FONT_DISPLAY,
-                      textTransform: "uppercase",
-                      lineHeight: 1,
-                      marginTop: 6,
-                    }}
-                  >
-                    Le meilleur rapport qualite/prix
-                  </div>
-                </div>
-                <div
-                  style={{
-                    borderRadius: 999,
-                    padding: "8px 12px",
-                    background: C.accent,
-                    color: C.accentText,
-                    fontSize: 12,
-                    fontWeight: 800,
-                    letterSpacing: "0.04em",
-                    fontFamily: FONT,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Le plus populaire
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "rgba(12,26,46,0.45)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 24,
-                  padding: isMobile ? 18 : 20,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: 60,
-                      lineHeight: 0.95,
-                      fontFamily: FONT_DISPLAY,
-                      fontWeight: 800,
-                      color: C.white,
-                    }}
-                  >
-                    3,33€
-                  </span>
-                  <span
-                    style={{
-                      color: "rgba(255,255,255,0.72)",
-                      fontSize: 15,
-                      marginBottom: 10,
-                      fontFamily: FONT,
-                    }}
-                  >
-                    /mois
-                  </span>
-                </div>
-                <p
-                  style={{
-                    margin: "10px 0 0",
-                    color: "rgba(255,255,255,0.72)",
-                    fontSize: 14,
-                    lineHeight: 1.55,
-                    fontFamily: FONT,
-                  }}
-                >
-                  Paiement annuel a {PRICE_ANNUAL_LABEL} · pas de remboursement. Au lieu de 12 mois a{" "}
-                  {PRICE_MONTHLY_LABEL}, tu économises {annualSavings}€ par an.
-                </p>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
-                {annualHighlights.map((item) => (
-                  <CheckItem key={item} dark>
-                    {item}
-                  </CheckItem>
-                ))}
-              </div>
-            </div>
+      <section className="ms-pricing-hero">
+        <div className="ms-pricing-wrap">
+          <Breadcrumb onDark items={crumbs} />
+          <p className="ms-pricing-kicker">{t("pricingPage.eyebrow")}</p>
+          <h1 className="ms-pricing-h1">{t("pricingPage.h1")}</h1>
+          <p className="ms-pricing-lead">{t("pricingPage.lead")}</p>
+          <div className="ms-pricing-cta-row">
+            <LocalizedLink to={cta.href} className="ms-btn">
+              {t("pricingPage.startTrial")}
+              <ArrowRight size={16} aria-hidden />
+            </LocalizedLink>
+            <button type="button" className="ms-btn ms-btn-ghost" onClick={scrollToOffers}>
+              {t("pricingPage.seeOffers")}
+            </button>
           </div>
+          <ul className="ms-pricing-chips">
+            <li>{t("pricingPage.chipTrial")}</li>
+            <li>{t("pricingPage.chipFlex")}</li>
+            <li>{t("pricingPage.chipCommit")}</li>
+            <li>{t("pricingPage.chipAnnual")}</li>
+          </ul>
         </div>
       </section>
 
-      <section style={{ padding: isMobile ? "12px 16px 32px" : "0 20px 40px", marginTop: isMobile ? -18 : -44 }}>
-        <div
-          style={{
-            maxWidth: 1120,
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
-            gap: 16,
-            alignItems: "stretch",
-          }}
-        >
-          <div
-            style={{
-              background: C.white,
-              border: `1px solid ${C.border}`,
-              borderRadius: 28,
-              padding: isMobile ? 22 : 28,
-              boxShadow: C.shadow,
-            }}
-          >
-            <div style={{ fontSize: 12, color: C.secondary, fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
-              ESSAI
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8 }}>
-              7 jours Premium
-            </div>
-            <div style={{ fontSize: 54, lineHeight: 1, color: C.ink, fontWeight: 800, fontFamily: FONT_DISPLAY, marginTop: 16 }}>
-                7j
-            </div>
-            <div style={{ marginTop: 6, color: C.secondary, fontSize: 14, fontFamily: FONT }}>
-              Sans carte · puis 4,99€/mois · ensuite l'app se gèle
-            </div>
-            <Link
-              to="/inscription"
-              style={{
-                display: "block",
-                textAlign: "center",
-                marginTop: 22,
-                padding: "14px 18px",
-                borderRadius: 16,
-                textDecoration: "none",
-                background: C.bgCard,
-                border: `1px solid ${C.outlineVar}`,
-                color: C.ink,
-                fontSize: 15,
-                fontWeight: 700,
-                fontFamily: FONT,
-              }}
-            >
-              Demarrer l'essai
-            </Link>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
-              {trialHighlights.map((item) => (
-                <CheckItem key={item}>{item}</CheckItem>
-              ))}
-            </div>
-          </div>
-
-          <div
-            style={{
-              position: "relative",
-              background: C.night,
-              borderRadius: 28,
-              padding: isMobile ? 24 : 30,
-              boxShadow: C.shadowLg,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "radial-gradient(circle at top right, rgba(142,179,255,0.28), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0))",
-              }}
-            />
-            <div style={{ position: "relative", zIndex: 1 }}>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "7px 12px",
-                  borderRadius: 999,
-                  background: C.accent,
-                  color: C.accentText,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  fontFamily: FONT,
-                  marginBottom: 16,
-                }}
+      <section id="offres" className="ms-pricing-section">
+        <div className="ms-pricing-wrap">
+          <div className="ms-pricing-grid">
+            {plans.map((plan) => (
+              <article
+                key={plan.id}
+                className={`ms-pricing-card${plan.featured ? " is-featured" : ""}`}
               >
-                Le plus populaire
-              </div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
-                PREMIUM ANNUEL
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: C.white, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8, lineHeight: 1 }}>
-                Le meilleur choix pour progresser
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginTop: 16 }}>
-                <span style={{ fontSize: 60, lineHeight: 0.95, color: C.white, fontWeight: 800, fontFamily: FONT_DISPLAY }}>
-                  3,33€
-                </span>
-                <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 15, marginBottom: 10, fontFamily: FONT }}>
-                  /mois
-                </span>
-              </div>
-              <div style={{ marginTop: 6, color: "rgba(255,255,255,0.72)", fontSize: 14, lineHeight: 1.55, fontFamily: FONT }}>
-                {PRICE_ANNUAL_LABEL}/an · pas de remboursement. Tu économises {annualSavings}€ vs le mensuel.
-              </div>
-              <button
-                type="button"
-                onClick={() => handlePremium(PRICE_ANNUAL)}
-                style={{
-                  display: "inline-flex",
-                  width: "100%",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 22,
-                  minHeight: 52,
-                  padding: "14px 18px",
-                  borderRadius: 16,
-                  border: "none",
-                  background: C.accent,
-                  color: C.accentText,
-                  fontSize: 16,
-                  fontWeight: 800,
-                  fontFamily: FONT,
-                  cursor: "pointer",
-                }}
-              >
-                Choisir l'annuel <ArrowRight size={16} />
-              </button>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
-                {annualHighlights.map((item) => (
-                  <CheckItem key={item} dark>
-                    {item}
-                  </CheckItem>
-                ))}
-              </div>
-            </div>
+                <div className="ms-pricing-card-top">
+                  <p className="ms-pricing-card-name">{plan.name}</p>
+                  {plan.badge ? <span className="ms-pricing-badge">{plan.badge}</span> : null}
+                </div>
+                <h2 className="ms-pricing-card-title">{plan.title}</h2>
+                <p className="ms-pricing-price">
+                  {plan.price}
+                  <span>{plan.period}</span>
+                </p>
+                <p className="ms-pricing-meta">{plan.meta}</p>
+                <button
+                  type="button"
+                  className="ms-btn"
+                  disabled={checkoutBusy}
+                  onClick={() => handlePremium(plan.priceId)}
+                >
+                  {checkoutBusy ? t("pricingPage.checkoutBusy") : plan.cta}
+                </button>
+                <ul className="ms-pricing-features">
+                  {plan.features.map((item) => (
+                    <li key={item}>
+                      <Check size={16} aria-hidden />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
           </div>
-
-          <div
-            style={{
-              background: C.white,
-              border: `1px solid ${C.border}`,
-              borderRadius: 28,
-              padding: isMobile ? 22 : 28,
-              boxShadow: C.shadow,
-            }}
-          >
-            <div style={{ fontSize: 12, color: C.secondary, fontWeight: 700, letterSpacing: "0.08em", fontFamily: FONT }}>
-              PREMIUM MENSUEL
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: C.ink, fontFamily: FONT_DISPLAY, textTransform: "uppercase", marginTop: 8 }}>
-              Flexible
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginTop: 16 }}>
-              <span style={{ fontSize: 54, lineHeight: 1, color: C.ink, fontWeight: 800, fontFamily: FONT_DISPLAY }}>
-                4,99€
-              </span>
-              <span style={{ color: C.secondary, fontSize: 15, marginBottom: 10, fontFamily: FONT }}>
-                /mois
-              </span>
-            </div>
-            <div style={{ marginTop: 6, color: C.secondary, fontSize: 14, lineHeight: 1.55, fontFamily: FONT }}>
-              Essai 7 jours sans carte, puis 4,99€/mois sans engagement.
-            </div>
-            <button
-              type="button"
-              onClick={() => handlePremium(PRICE_MONTHLY)}
-              style={{
-                display: "block",
-                width: "100%",
-                marginTop: 22,
-                minHeight: 52,
-                padding: "14px 18px",
-                borderRadius: 16,
-                border: `1px solid ${C.outlineVar}`,
-                background: C.bgCard,
-                color: C.ink,
-                fontSize: 15,
-                fontWeight: 700,
-                fontFamily: FONT,
-                cursor: "pointer",
-              }}
-            >
-              Choisir le mensuel
-            </button>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
-              {monthlyHighlights.map((item) => (
-                <CheckItem key={item}>{item}</CheckItem>
-              ))}
-            </div>
-          </div>
+          <p className="ms-pricing-note">{t("pricingPage.trialNote")}</p>
         </div>
       </section>
 
       {isLoggedIn && (
-        <section style={{ padding: isMobile ? "0 16px 28px" : "0 20px 32px", background: C.bg }}>
+        <section className="ms-pricing-section" style={{ paddingTop: 0 }}>
           <div
             id="checkout-legal-gates"
-            style={{
-              maxWidth: 560,
-              margin: "0 auto",
-              background: C.white,
-              border: `1px solid ${C.border}`,
-              borderRadius: 20,
-              padding: isMobile ? 16 : 20,
-              boxShadow: C.shadow,
-            }}
+            className="ms-pricing-gates"
           >
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginBottom: 6, fontFamily: FONT }}>
-              Avant de payer
-            </div>
+            <h2>{t("pricingPage.gatesTitle")}</h2>
+            {checkoutError ? <p className="ms-pricing-error" role="alert">{checkoutError}</p> : null}
             <CheckoutLegalGates
               acceptTerms={acceptTerms}
-              onAcceptTerms={setAcceptTerms}
+              onAcceptTerms={(v) => {
+                setAcceptTerms(v);
+                setCheckoutError("");
+              }}
               acceptWithdrawal={acceptWithdrawal}
-              onAcceptWithdrawal={setAcceptWithdrawal}
-              ink={C.ink}
+              onAcceptWithdrawal={(v) => {
+                setAcceptWithdrawal(v);
+                setCheckoutError("");
+              }}
+              ink="#f4f8fa"
+              muted="#9bb0c8"
+              linkColor="#74b4ff"
             />
           </div>
         </section>
       )}
 
-      <section style={{ padding: isMobile ? "0 16px 40px" : "0 20px 44px", background: C.bg }}>
-        <div
-          style={{
-            maxWidth: 1120,
-            margin: "0 auto",
-            background: C.white,
-            border: `1px solid ${C.border}`,
-            borderRadius: 24,
-            boxShadow: C.shadow,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              padding: isMobile ? "18px 16px" : "18px 22px",
-              background: C.bgSoft,
-              borderBottom: `1px solid ${C.border}`,
-            }}
-          >
-            <div style={{ color: C.ink, fontSize: 18, fontWeight: 800, fontFamily: FONT }}>
-              Comparatif rapide
-            </div>
-            <div style={{ color: C.secondary, fontSize: 14, lineHeight: 1.55, marginTop: 4, fontFamily: FONT }}>
-              En 10 secondes, tu comprends pourquoi le Premium change vraiment l'expérience.
-            </div>
-          </div>
+      {!isLoggedIn && checkoutError ? (
+        <section className="ms-pricing-section" style={{ paddingTop: 0 }}>
+          <p className="ms-pricing-error ms-pricing-wrap" role="alert">{checkoutError}</p>
+        </section>
+      ) : null}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1.2fr 0.9fr 0.95fr" : "1.5fr 0.9fr 1fr",
-              gap: 10,
-              padding: isMobile ? "14px 16px" : "14px 22px",
-              background: "#fbfcff",
-              borderBottom: `1px solid ${C.border}`,
-            }}
-          >
-            <div style={{ color: C.ink, fontSize: 13, fontWeight: 800, fontFamily: FONT }}>
-              Fonctionnalite
-            </div>
-            <div style={{ color: C.secondary, fontSize: 13, fontWeight: 800, fontFamily: FONT }}>
-              Essai / apres
-            </div>
-            <div style={{ color: C.primaryDeep, fontSize: 13, fontWeight: 800, fontFamily: FONT }}>
-              Premium
-            </div>
-          </div>
-
-          {[
-            ["Génération de programme", "Oui pendant l'essai", "Oui"],
-            ["Coach et adaptation", "Oui pendant l'essai", "Oui"],
-            ["Stats et historique", "Complet pendant l'essai", "Complet"],
-            ["Strava", "Complet pendant l'essai", "Complet"],
-          ].map(([label, freeValue, premiumValue], index) => (
-            <div
-              key={label}
-              style={{
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1.2fr 0.9fr 0.95fr" : "1.5fr 0.9fr 1fr",
-                gap: 10,
-                padding: isMobile ? "14px 16px" : "15px 22px",
-                alignItems: "center",
-                borderBottom: index === 3 ? "none" : `1px solid ${C.border}`,
-                background: premiumValue === "Oui" || premiumValue === "Complet" || premiumValue === "Jusqu'à 52 semaines"
-                  ? "linear-gradient(90deg, #ffffff 0%, #ffffff 66%, rgba(216,226,255,0.32) 100%)"
-                  : C.white,
-              }}
-            >
-              <div style={{ color: C.ink, fontSize: 14, fontWeight: 600, lineHeight: 1.4, fontFamily: FONT }}>
-                {label}
-              </div>
-              <div>
-                <CompactTableValue value={freeValue} />
-              </div>
-              <div>
-                <CompactTableValue value={premiumValue} premium />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ padding: isMobile ? "16px 16px 48px" : "24px 20px 64px", background: C.bg }}>
-        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <SectionEyebrow>COMPARAISON</SectionEyebrow>
-            <h2
-              style={{
-                margin: "16px 0 10px",
-                fontFamily: FONT_DISPLAY,
-                fontSize: "clamp(34px, 5vw, 54px)",
-                fontWeight: 800,
-                textTransform: "uppercase",
-                lineHeight: 0.98,
-                color: C.ink,
-              }}
-            >
-              L’essai 7 jours te fait découvrir.
-              <br />
-              Le Premium te fait progresser.
-            </h2>
-            <p style={{ margin: 0, color: C.secondary, fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 760, marginInline: "auto" }}>
-              La comparaison doit être évidente : l’essai sans carte ouvre tout Premium pendant 7 jours,
-              puis le mensuel ou l’annuel devient le choix logique — sinon l’app se gèle.
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: C.white,
-              border: `1px solid ${C.border}`,
-              borderRadius: 28,
-              overflow: "hidden",
-              boxShadow: C.shadow,
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1.2fr 1fr 1fr" : "1.6fr 1fr 1.15fr",
-                padding: isMobile ? "18px 14px" : "20px 24px",
-                background: C.bgSoft,
-                borderBottom: `1px solid ${C.border}`,
-                gap: 12,
-              }}
-            >
-              <div style={{ color: C.ink, fontWeight: 800, fontSize: isMobile ? 13 : 15, fontFamily: FONT }}>
-                Fonctionnalite
-              </div>
-              <div style={{ color: C.secondary, fontWeight: 800, fontSize: isMobile ? 13 : 15, fontFamily: FONT }}>
-                Essai
-              </div>
-              <div style={{ color: C.primaryDeep, fontWeight: 800, fontSize: isMobile ? 13 : 15, fontFamily: FONT }}>
-                Premium
-              </div>
-            </div>
-            {comparisonRows.map(([label, freeValue, premiumValue], index) => (
-              <div
-                key={label}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isMobile ? "1.2fr 1fr 1fr" : "1.6fr 1fr 1.15fr",
-                  padding: isMobile ? "16px 14px" : "18px 24px",
-                  gap: 12,
-                  alignItems: "center",
-                  background: index % 2 === 0 ? C.white : "#fbfcff",
-                  borderBottom:
-                    index === comparisonRows.length - 1 ? "none" : `1px solid ${C.border}`,
-                }}
-              >
-                <div style={{ color: C.ink, fontSize: isMobile ? 13 : 15, lineHeight: 1.45, fontWeight: 600, fontFamily: FONT }}>
-                  {label}
-                </div>
-                <FeatureCell value={freeValue} />
-                <FeatureCell value={premiumValue} premium />
-              </div>
-            ))}
+      <section className="ms-pricing-section">
+        <div className="ms-pricing-wrap">
+          <h2 className="ms-pricing-h2">{t("pricingPage.compareTitle")}</h2>
+          <p className="ms-pricing-sub">{t("pricingPage.compareLead")}</p>
+          <div className="ms-pricing-table-wrap">
+            <table className="ms-pricing-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t("pricingPage.colFeature")}</th>
+                  <th scope="col">{t("pricingPage.colTrial")}</th>
+                  <th scope="col">{t("pricingPage.colPremium")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARE_ROWS.map((row) => (
+                  <tr key={row}>
+                    <th scope="row">{t(`pricingPage.${row}Label`)}</th>
+                    <td>{t(`pricingPage.${row}Trial`)}</td>
+                    <td>{t(`pricingPage.${row}Premium`)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <section style={{ padding: isMobile ? "8px 16px 48px" : "0 20px 72px", background: C.bg }}>
-        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <SectionEyebrow>POURQUOI PASSER PREMIUM</SectionEyebrow>
-            <h2
-              style={{
-                margin: "16px 0 10px",
-                fontFamily: FONT_DISPLAY,
-                fontSize: "clamp(34px, 5vw, 52px)",
-                fontWeight: 800,
-                textTransform: "uppercase",
-                lineHeight: 0.98,
-                color: C.ink,
-              }}
-            >
-              Un investissement rentable
-              <br />
-              pour mieux nager.
-            </h2>
-            <p style={{ margin: 0, color: C.secondary, fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 720, marginInline: "auto" }}>
-              Le Premium n'est pas une simple option payante. C'est la version qui te
-              permet de suivre un vrai plan personnalise, d'analyser tes progres et de
-              rester engage jusqu'a ton objectif.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-              gap: 16,
-            }}
-          >
-            {premiumBenefits.map((item) => (
-              <div
-                key={item.title}
-                style={{
-                  background: C.white,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 24,
-                  padding: isMobile ? 22 : 24,
-                  boxShadow: C.shadow,
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 16,
-                    background: C.primaryFix,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 16,
-                  }}
-                >
-                  <item.icon size={20} color={C.primaryDeep} />
-                </div>
-                <h3 style={{ margin: "0 0 8px", color: C.ink, fontSize: 20, fontWeight: 700, fontFamily: FONT }}>
-                  {item.title}
-                </h3>
-                <p style={{ margin: 0, color: C.secondary, fontSize: 15, lineHeight: 1.65, fontFamily: FONT }}>
-                  {item.text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section style={{ padding: isMobile ? "0 16px 48px" : "0 20px 72px", background: C.bg }}>
-        <div
-          style={{
-            maxWidth: 1120,
-            margin: "0 auto",
-            background: C.white,
-            border: `1px solid ${C.border}`,
-            borderRadius: 28,
-            padding: isMobile ? 24 : 32,
-            boxShadow: C.shadow,
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) auto",
-              gap: 18,
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <SectionEyebrow>REASSURANCE</SectionEyebrow>
-              <h2
-                style={{
-                  margin: "16px 0 10px",
-                  fontFamily: FONT_DISPLAY,
-                  fontSize: "clamp(30px, 4.6vw, 48px)",
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  lineHeight: 0.98,
-                  color: C.ink,
-                }}
-              >
-                Tu peux commencer sans risque.
-              </h2>
-              <p style={{ margin: 0, color: C.secondary, fontSize: 15, lineHeight: 1.65, fontFamily: FONT, maxWidth: 640 }}>
-                Decouvre MySWYM avec l'essai 7 jours sans carte, choisis le
-                mensuel si tu veux de la flexibilite ou l'annuel si tu veux la meilleure
-                valeur sur la duree.
-              </p>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                minWidth: isMobile ? "auto" : 260,
-              }}
-            >
-              {[
-                "Essai 7 jours · sans carte",
-                "Paiement sécurisé",
-                "Données conservées",
-              ].map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "12px 14px",
-                    borderRadius: 16,
-                    background: C.bgSoft,
-                    color: C.ink,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    fontFamily: FONT,
-                  }}
-                >
-                  <ShieldCheck size={16} color={C.primaryDeep} />
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={{ padding: isMobile ? "0 16px 56px" : "0 20px 80px", background: C.bg }}>
-        <div style={{ maxWidth: 860, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <SectionEyebrow>FAQ</SectionEyebrow>
-            <h2
-              style={{
-                margin: "16px 0 10px",
-                fontFamily: FONT_DISPLAY,
-                fontSize: "clamp(32px, 5vw, 50px)",
-                fontWeight: 800,
-                textTransform: "uppercase",
-                lineHeight: 0.98,
-                color: C.ink,
-              }}
-            >
-              Questions frequentes
-            </h2>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {faqItems.map((item, index) => {
-              const isOpen = openFaq === index;
-              return (
-                <div
-                  key={item.q}
-                  style={{
-                    background: isOpen ? C.bgSoft : C.white,
-                    border: `1px solid ${isOpen ? `${C.primary}33` : C.border}`,
-                    borderRadius: 20,
-                    boxShadow: isOpen ? C.shadow : "none",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
-                    aria-expanded={isOpen}
-                    style={{
-                      width: "100%",
-                      padding: "18px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 14,
-                      background: "transparent",
-                      border: "none",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      fontFamily: FONT,
-                    }}
-                  >
-                    <span style={{ color: C.ink, fontSize: 15, fontWeight: 700, lineHeight: 1.45 }}>
-                      {item.q}
-                    </span>
-                    <span
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: isOpen ? C.primaryFix : C.bgCard,
-                        color: isOpen ? C.primaryDeep : C.secondary,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 18,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {isOpen ? "−" : "+"}
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div style={{ padding: "0 20px 20px", color: C.secondary, fontSize: 14, lineHeight: 1.7, fontFamily: FONT }}>
-                      {item.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section style={{ background: C.night, padding: isMobile ? "48px 16px 56px" : "64px 20px 80px" }}>
-        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
-          <SectionEyebrow dark>DERNIER PAS</SectionEyebrow>
-          <h2
-            style={{
-              margin: "18px 0 14px",
-              fontFamily: FONT_DISPLAY,
-              fontSize: "clamp(36px, 5vw, 58px)",
-              fontWeight: 800,
-              textTransform: "uppercase",
-              lineHeight: 0.95,
-              color: C.white,
-            }}
-          >
-            Démarre avec l'essai.
-            <br />
-            Garde Premium pour aller plus loin.
-          </h2>
-          <p style={{ margin: "0 auto 24px", color: "rgba(255,255,255,0.68)", fontSize: 16, lineHeight: 1.65, fontFamily: FONT, maxWidth: 620 }}>
-            Active l’essai 7 jours sans carte pour découvrir MySWYM. Pour
-            vraiment progresser avec un plan personnalisé et un vrai suivi, garde Premium ensuite.
+      <section id="faq" className="ms-pricing-section">
+        <div className="ms-pricing-wrap">
+          <p className="ms-pricing-kicker" style={{ display: "flex", marginInline: "auto" }}>
+            {t("faq.label")}
           </p>
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => handlePremium(PRICE_ANNUAL)}
-              style={{
-                minHeight: 50,
-                padding: "14px 22px",
-                borderRadius: 16,
-                border: "none",
-                background: C.accent,
-                color: C.accentText,
-                fontSize: 16,
-                fontWeight: 800,
-                fontFamily: FONT,
-                cursor: "pointer",
-              }}
-            >
-              Choisir Premium annuel
+          <h2 className="ms-pricing-h2">{t("faq.title")}</h2>
+          <Accordion type="single" collapsible className="ms-faq-list">
+            {faqItems.map((item) => (
+              <AccordionItem key={item.id} value={item.id} className="ms-faq-item">
+                <AccordionTrigger>
+                  <span>{item.q}</span>
+                  <ChevronDown size={16} color="var(--ms-primary)" aria-hidden />
+                </AccordionTrigger>
+                <AccordionContent>{item.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      <section className="ms-pricing-final">
+        <div className="ms-pricing-wrap">
+          <p className="ms-pricing-kicker">{t("pricingPage.lastStep")}</p>
+          <h2 className="ms-pricing-h2">{t("pricingPage.lastTitle")}</h2>
+          <p className="ms-pricing-sub">{t("pricingPage.lastLead")}</p>
+          <div className="ms-pricing-cta-row">
+            <LocalizedLink to={cta.href} className="ms-btn">
+              {t("pricingPage.startTrial")}
+            </LocalizedLink>
+            <button type="button" className="ms-btn ms-btn-ghost" onClick={scrollToOffers}>
+              {t("pricingPage.seeOffers")}
             </button>
-            <Link
-              to="/inscription"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 50,
-                padding: "14px 22px",
-                borderRadius: 16,
-                textDecoration: "none",
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(255,255,255,0.08)",
-                color: C.white,
-                fontSize: 15,
-                fontWeight: 700,
-                fontFamily: FONT,
-              }}
-            >
-              Creer mon compte
-            </Link>
           </div>
         </div>
       </section>

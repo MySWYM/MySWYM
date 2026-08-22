@@ -139,6 +139,10 @@ export function sportProfileToRow(userId, profile = {}) {
     profile.birthYear != null && profile.birthYear !== ""
       ? Number(profile.birthYear)
       : null;
+  const birthDayNum =
+    profile.birthDay != null && profile.birthDay !== ""
+      ? Number(profile.birthDay)
+      : null;
   const birthMonth =
     Number.isFinite(birthMonthNum) && birthMonthNum >= 1 && birthMonthNum <= 12
       ? Math.round(birthMonthNum)
@@ -147,8 +151,12 @@ export function sportProfileToRow(userId, profile = {}) {
     Number.isFinite(birthYearNum) && birthYearNum >= 1900
       ? Math.round(birthYearNum)
       : null;
+  const birthDay =
+    Number.isFinite(birthDayNum) && birthDayNum >= 1 && birthDayNum <= 31
+      ? Math.round(birthDayNum)
+      : null;
 
-  let age = computeAgeFromBirth(birthMonth, birthYear);
+  let age = computeAgeFromBirth(birthMonth, birthYear, new Date(), birthDay);
   if (age == null && profile.age != null && profile.age !== "") {
     const ageNum = Number(profile.age);
     if (Number.isFinite(ageNum)) age = Math.round(ageNum);
@@ -182,6 +190,7 @@ export function sportProfileToRow(userId, profile = {}) {
       category: profile.category || null,
       trainingFocus: profile.trainingFocus || null,
       birthMonth,
+      birthDay,
       birthYear,
       age,
       weightKg: profile.weightKg ?? null,
@@ -219,7 +228,15 @@ export function rowToSportProfileFields(row) {
     extra.birthYear != null && extra.birthYear !== ""
       ? Number(extra.birthYear)
       : null;
-  const ageFromBirth = computeAgeFromBirth(birthMonth, birthYear);
+  const birthDayRaw =
+    extra.birthDay != null && extra.birthDay !== ""
+      ? Number(extra.birthDay)
+      : null;
+  const birthDay =
+    Number.isFinite(birthDayRaw) && birthDayRaw >= 1 && birthDayRaw <= 31
+      ? Math.round(birthDayRaw)
+      : null;
+  const ageFromBirth = computeAgeFromBirth(birthMonth, birthYear, new Date(), birthDay);
   const ageLegacy = row.age ?? (extra.age != null && extra.age !== "" ? Number(extra.age) : null);
   const age = ageFromBirth ?? (Number.isFinite(Number(ageLegacy)) ? Number(ageLegacy) : null);
   return {
@@ -233,6 +250,7 @@ export function rowToSportProfileFields(row) {
     birthMonth: Number.isFinite(birthMonth) && birthMonth >= 1 && birthMonth <= 12
       ? Math.round(birthMonth)
       : null,
+    birthDay,
     birthYear: Number.isFinite(birthYear) && birthYear >= 1900
       ? Math.round(birthYear)
       : null,

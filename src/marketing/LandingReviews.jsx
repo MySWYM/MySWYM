@@ -1,37 +1,38 @@
-import { useState } from "react";
-import { Star } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LocalizedLink } from "../i18n/locale-routing.jsx";
 import { usePublishedReviews } from "./usePublishedReviews.js";
+import { LpButton } from "../ui/lp-button.jsx";
 
-const FONT = "'Lexend', sans-serif";
-const C = {
-  ink: "#191c1e",
-  inkLight: "#434751",
-  secondary: "#5d5e61",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-  border: "rgba(53,93,163,0.12)",
-  white: "#ffffff",
-  bgSoft: "#edeef1",
-};
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
-function StarRow({ value, onChange, readOnly = false }) {
+function StarDisplay({ value, label }) {
   return (
-    <div style={{ display: "flex", gap: 4 }} role={readOnly ? "img" : "radiogroup"} aria-label="Note sur 5">
+    <div className="lp-reviews-stars" role="img" aria-label={label}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star key={n} size={18} fill={n <= value ? "#d4a017" : "none"} color="#d4a017" aria-hidden />
+      ))}
+    </div>
+  );
+}
+
+function StarPicker({ value, onChange }) {
+  const { t } = useTranslation("landing");
+  return (
+    <div className="lp-review-stars-picker" role="radiogroup" aria-label={t("reviewsPage.starAria")}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
-          disabled={readOnly}
-          onClick={() => onChange?.(n)}
-          aria-label={`${n} sur 5`}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 4,
-            cursor: readOnly ? "default" : "pointer",
-            minWidth: 44,
-            minHeight: 44,
-          }}
+          onClick={() => onChange(n)}
+          aria-label={t("reviewsPage.starValue", { n })}
+          aria-checked={n === value}
+          role="radio"
+          className="lp-review-star-btn"
         >
           <Star size={22} fill={n <= value ? "#d4a017" : "none"} color="#d4a017" />
         </button>
@@ -40,8 +41,8 @@ function StarRow({ value, onChange, readOnly = false }) {
   );
 }
 
-export default function LandingReviews() {
-  const reviews = usePublishedReviews();
+function ReviewForm() {
+  const { t } = useTranslation("landing");
   const [name, setName] = useState("");
   const [rating, setRating] = useState(5);
   const [body, setBody] = useState("");
@@ -81,87 +82,228 @@ export default function LandingReviews() {
     }
   };
 
-  return (
-    <section id="avis" style={{ background: C.bgSoft, padding: "clamp(56px,8vw,96px) 20px" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto", fontFamily: FONT }}>
-        <p style={{
-          display: "inline-flex", background: "#d8e2ff", borderRadius: 100,
-          padding: "5px 14px", color: "#355da3", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em",
-        }}>AVIS</p>
-        <h2 style={{
-          fontFamily: "'Barlow Condensed', sans-serif", fontSize: "clamp(32px, 4.5vw, 48px)",
-          fontWeight: 800, color: C.ink, margin: "16px 0 12px", textTransform: "uppercase",
-        }}>
-          Ce qu’en disent les nageurs
-        </h2>
-        <p style={{ color: C.secondary, fontSize: 16, lineHeight: 1.6, margin: "0 0 28px" }}>
-          Uniquement des avis réels, publiés après relecture. Pas de témoignages inventés.
-        </p>
+  if (status === "ok") {
+    return <p className="lp-review-thanks">{t("reviewsPage.thanks")}</p>;
+  }
 
-        {reviews.length === 0 ? (
-          <p style={{
-            background: C.white, border: `1px dashed ${C.border}`, borderRadius: 16,
-            padding: 20, color: C.secondary, fontSize: 15, lineHeight: 1.55, marginBottom: 24,
-          }}>
-            Les premiers avis publiés apparaîtront ici.
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-            {reviews.map((r) => (
-              <article key={r.id} style={{
-                background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, padding: 18,
-              }}>
-                <StarRow value={r.rating} readOnly />
-                <p style={{ margin: "8px 0 6px", color: C.ink, fontSize: 15, lineHeight: 1.6 }}>{r.body}</p>
-                <p style={{ margin: 0, color: C.secondary, fontSize: 13, fontWeight: 700 }}>{r.authorName}</p>
-              </article>
+  return (
+    <form className="lp-review-form" onSubmit={submit}>
+      <input
+        type="text"
+        name="company"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="lp-review-honey"
+      />
+      <label className="lp-review-field">
+        <span>{t("reviewsPage.firstName")}</span>
+        <input required value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+      </label>
+      <div className="lp-review-field">
+        <span>{t("reviewsPage.rating")}</span>
+        <StarPicker value={rating} onChange={setRating} />
+      </div>
+      <label className="lp-review-field">
+        <span>{t("reviewsPage.body")}</span>
+        <textarea required value={body} onChange={(e) => setBody(e.target.value)} maxLength={800} rows={5} />
+      </label>
+      <label className="lp-review-field">
+        <span>{t("reviewsPage.email")}</span>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false} />
+      </label>
+      {status === "error" ? <p className="lp-review-error" role="alert">{errorMsg}</p> : null}
+      <LpButton type="submit" size="lg" disabled={status === "sending"}>
+        {status === "sending" ? t("reviewsPage.sending") : t("reviewsPage.send")}
+      </LpButton>
+    </form>
+  );
+}
+
+function ReviewsSkeleton() {
+  return (
+    <div className="lp-reviews-carousel" aria-hidden>
+      <div className="lp-skeleton lp-skeleton-quote" />
+      <hr className="lp-reviews-rule" />
+      <div className="lp-skeleton lp-skeleton-name" />
+    </div>
+  );
+}
+
+function ReviewsCarousel({ reviews }) {
+  const { t } = useTranslation("landing");
+  const [selected, setSelected] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: reviews.length > 1,
+    duration: prefersReducedMotion() ? 0 : 20,
+    watchDrag: reviews.length > 1,
+  });
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelected(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return undefined;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  if (reviews.length === 0) {
+    return <p className="lp-reviews-empty">{t("reviewsPage.empty")}</p>;
+  }
+
+  const canNav = reviews.length > 1;
+  const go = (dir) => {
+    if (!emblaApi) return;
+    if (dir < 0) emblaApi.scrollPrev();
+    else emblaApi.scrollNext();
+  };
+
+  return (
+    <div
+      className="lp-reviews-carousel"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={t("reviewsPage.label")}
+    >
+      <div
+        className="lp-reviews-viewport"
+        ref={emblaRef}
+        tabIndex={canNav ? 0 : undefined}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            go(-1);
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            go(1);
+          }
+        }}
+      >
+        <div className="lp-reviews-track">
+          {reviews.map((review) => (
+            <blockquote key={review.id} className="lp-reviews-slide">
+              <p className="lp-reviews-quote-text">{review.body}</p>
+              <hr className="lp-reviews-rule" />
+              <p className="lp-reviews-author">{review.authorName}</p>
+            </blockquote>
+          ))}
+        </div>
+      </div>
+      {canNav ? (
+        <div className="lp-reviews-nav">
+          <button
+            type="button"
+            className="lp-reviews-nav-btn"
+            aria-label={t("reviewsPage.prev")}
+            onClick={() => go(-1)}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="lp-reviews-dots" role="tablist" aria-label={t("reviewsPage.label")}>
+            {reviews.map((item, i) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={i === selected}
+                className={`lp-reviews-dot${i === selected ? " is-active" : ""}`}
+                aria-label={t("reviewsPage.goTo", { n: i + 1 })}
+                onClick={() => emblaApi?.scrollTo(i)}
+              />
             ))}
           </div>
-        )}
+          <button
+            type="button"
+            className="lp-reviews-nav-btn"
+            aria-label={t("reviewsPage.next")}
+            onClick={() => go(1)}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
-        <p style={{ fontSize: 13, color: C.secondary, margin: "0 0 20px" }}>
-          Avis Google : fiche à créer.
-        </p>
+export default function LandingReviews({ asPage = false, showWriteCta = true }) {
+  const { t } = useTranslation("landing");
+  const { reviews, loading } = usePublishedReviews();
+  const TitleTag = asPage ? "h1" : "h2";
+  const avg = reviews.length
+    ? Math.round(reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length)
+    : 0;
 
-        {status === "ok" ? (
-          <p style={{ background: "#e6f8f1", color: "#0f5c40", borderRadius: 14, padding: 16, fontWeight: 600 }}>
-            Merci. Ton avis est en relecture — il s’affichera s’il est publié.
-          </p>
-        ) : (
-          <form onSubmit={submit} style={{
-            background: C.white, border: `1px solid ${C.border}`, borderRadius: 20, padding: 20,
-            display: "flex", flexDirection: "column", gap: 12,
-          }}>
-            <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true"
-              style={{ position: "absolute", left: "-9999px", height: 0, width: 0, opacity: 0 }} />
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Prénom *</span>
-              <input required value={name} onChange={(e) => setName(e.target.value)} maxLength={80}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44 }} />
-            </label>
-            <div>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Note *</span>
-              <StarRow value={rating} onChange={setRating} />
-            </div>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Ton avis *</span>
-              <textarea required value={body} onChange={(e) => setBody(e.target.value)} maxLength={800} rows={4}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT }} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>Email (non publié)</span>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 13px", fontSize: 15, fontFamily: FONT, minHeight: 44 }} />
-            </label>
-            {status === "error" ? <p style={{ margin: 0, color: "#b42318", fontSize: 13, fontWeight: 600 }}>{errorMsg}</p> : null}
-            <button type="submit" disabled={status === "sending"} style={{
-              border: "none", borderRadius: 14, minHeight: 48, background: C.accent, color: C.accentText,
-              fontWeight: 700, fontSize: 15, fontFamily: FONT, cursor: "pointer",
-            }}>
-              {status === "sending" ? "Envoi…" : "Envoyer mon avis"}
-            </button>
-          </form>
-        )}
+  useEffect(() => {
+    if (!asPage) return;
+    if (window.location.hash !== "#write") return;
+    requestAnimationFrame(() => {
+      document.getElementById("write")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [asPage]);
+
+  if (asPage) {
+    return (
+      <section id="avis" className="lp-section">
+        <div className="lp-wrap lp-reviews-page">
+          <p className="lp-kicker">{t("reviewsPage.label")}</p>
+          <TitleTag className="lp-h2 lp-display">{t("reviewsPage.title")}</TitleTag>
+          <p className="lp-lead lp-lead-tight">{t("reviewsPage.subtitle")}</p>
+
+          {loading ? (
+            <ReviewsSkeleton />
+          ) : reviews.length === 0 ? (
+            <p className="lp-reviews-empty lp-reviews-empty-page">{t("reviewsPage.empty")}</p>
+          ) : (
+            <ul className="lp-reviews-list">
+              {reviews.map((item) => (
+                <li key={item.id}>
+                  <article className="lp-reviews-card">
+                    <StarDisplay value={item.rating} label={t("reviewsPage.starValue", { n: item.rating })} />
+                    <p>{item.body}</p>
+                    <p className="lp-reviews-author">{item.authorName}</p>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div id="write" className="lp-reviews-write">
+            <h2 className="lp-h2 lp-display lp-reviews-write-title">{t("reviewsPage.write")}</h2>
+            <ReviewForm />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section id="avis" className="lp-section">
+      <div className="lp-wrap lp-reviews">
+        <div className="lp-reviews-head">
+          {!loading && reviews.length > 0 ? (
+            <p className="lp-reviews-meta">
+              <StarDisplay value={avg} label={t("reviewsPage.starAria")} />
+              <span>{t("reviewsPage.count", { count: reviews.length })}</span>
+            </p>
+          ) : null}
+          <TitleTag className="lp-h2 lp-display">{t("reviewsPage.title")}</TitleTag>
+        </div>
+        {loading ? <ReviewsSkeleton /> : <ReviewsCarousel reviews={reviews} />}
+        {showWriteCta ? (
+          <LpButton asChild className="lp-reviews-add">
+            <LocalizedLink to={{ pathname: "/avis", hash: "#write" }}>
+              {t("reviewsPage.add")}
+            </LocalizedLink>
+          </LpButton>
+        ) : null}
       </div>
     </section>
   );

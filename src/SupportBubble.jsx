@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import { getStoredLanguage } from "./i18n/index.js";
+import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 
 const SUPPORT_EMAIL = "contact@myswym.app";
-const FONT = "'Lexend', sans-serif";
+const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
 
 const QUICK_PROMPTS = [
@@ -18,12 +21,12 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite l'app se gèle (plus rien de visible) jusqu'à l'abonnement. Mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Détails sur la page Tarifs.`,
+      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite l'app se gèle (plus rien de visible) jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
   },
   {
     keys: ["annul", "résili", "resili", "stop", "désabon", "desabon", "rembours"],
     answer:
-      "L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et l'app se gèle. Ensuite, mensuel 4,99€ sans engagement (accès jusqu'à la fin de période payée). Annuel 39,99€ : prépaiement, pas de remboursement une fois facturé (hors cas légaux).",
+      `L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et l'app se gèle. Ensuite : ${PRICING_SUMMARY_FR}. L'annuel est un prépaiement : pas de remboursement une fois facturé (hors cas légaux).`,
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -33,7 +36,7 @@ const FAQ_RULES = [
   {
     keys: ["début", "debut", "débutant", "debutant", "jamais", "apprendre", "savoir nager", "école"],
     answer:
-      "MySWYM convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z — l'app génère et structure tes séances.",
+      "MySWYM convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z. L'app génère et structure tes séances.",
   },
   {
     keys: ["comment ça marche", "comment ca marche", "fonctionn", "personnalis", "générateur", "generateur"],
@@ -43,7 +46,7 @@ const FAQ_RULES = [
   {
     keys: ["contact", "humain", "équipe", "equipe", "écrire", "ecrire", "mail", "email", "support"],
     answer:
-      `Pour une question perso ou un souci sur une séance, écris à ${SUPPORT_EMAIL} — l'équipe répond sous 24–48 h (jours ouvrés).`,
+      `Pour une question perso ou un souci sur une séance, écris à ${SUPPORT_EMAIL}. L'équipe répond sous 24-48 h (jours ouvrés).`,
   },
   {
     keys: ["compte", "connexion", "mot de passe", "inscription", "supprimer"],
@@ -60,17 +63,17 @@ const FAQ_RULES = [
   {
     keys: ["allure", "t100", "temps 100", "pace", "@", "mm:ss", "chron"],
     answer:
-      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau) — plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, l'app est gelée. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
+      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau), plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, l'app est gelée. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
   },
   {
     keys: ["d…", "d...", "r…", "r...", "d ou r", "départ chron", "depart chron", "repos ", "intervalle fixe", "chronométré", "chronometre"],
     answer:
-      "R… = repos simple entre reps (ex. R30\"). D… = départ chronométré (ex. D1'30) : tu repartis à intervalle fixe — Premium, avec allure cible si T100 connu. Sur un sprint, la récup doit rester complète : sinon c'est de l'endurance déguisée.",
+      "R… = repos simple entre reps (ex. R30\"). D… = départ chronométré (ex. D1'30) : tu repartis à intervalle fixe. Premium affiche l'allure cible si T100 connu. Sur un sprint, la récup doit rester complète : sinon c'est de l'endurance déguisée.",
   },
   {
     keys: ["structure", "échauff", "echauff", "retour calme", "rac", "bloc", "départ", "depart", "corps de séance", "corps de seance"],
     answer:
-      "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison) — pas seulement des reps bassin.",
+      "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison), pas seulement des reps bassin.",
   },
   {
     keys: ["godille", "sculling", "scull"],
@@ -85,27 +88,27 @@ const FAQ_RULES = [
   {
     keys: ["rattrapé", "rattrape", "catch-up", "catch up", "catchup"],
     answer:
-      "Le rattrapé : un bras attend dans l'axe des épaules (pas mains qui se touchent) pendant que l'autre tire. Éducatif de timing et d'alignement — pas un exercice de vitesse.",
+      "Le rattrapé : un bras attend dans l'axe des épaules (pas mains qui se touchent) pendant que l'autre tire. Éducatif de timing et d'alignement, pas un exercice de vitesse.",
   },
   {
     keys: ["coulée", "coulee", "virage", "apnée", "apnee", "glisse"],
     answer:
-      "Après un virage, on parle de coulée (glisse sous l'eau), pas de « sortie en apnée ». Sur BNSSA / pompiers, l'apnée dynamique et le matériel (palmes, masque, tuba) servent au parcours examen — c'est un autre contexte.",
+      "Après un virage, on parle de coulée (glisse sous l'eau), pas de « sortie en apnée ». Sur BNSSA / pompiers, l'apnée dynamique et le matériel (palmes, masque, tuba) servent au parcours examen. C'est un autre contexte.",
   },
   {
     keys: ["jambes", "battement", "kick"],
     answer:
-      "Focus jambes = éducatif court puis série jambes — jamais deux gros blocs battements d'affilée. Si la séance est déjà centrée jambes, le départ ne rajoute pas encore du kick.",
+      "Focus jambes = éducatif court puis série jambes. Jamais deux gros blocs battements d'affilée. Si la séance est déjà centrée jambes, le départ ne rajoute pas encore du kick.",
   },
   {
     keys: ["sprint", "vitesse", "récup complète", "recup complete"],
     answer:
-      "Sprint / vitesse : récup longue et complète entre les reps (souvent 1:3 à 1:6). Si tu raccourcis le repos, tu bascules en endurance — ce n'est plus le même stimulus.",
+      "Sprint / vitesse : récup longue et complète entre les reps (souvent 1:3 à 1:6). Si tu raccourcis le repos, tu bascules en endurance. Ce n'est plus le même stimulus.",
   },
   {
     keys: ["seuil", "régular", "regular", "constance"],
     answer:
-      "Au seuil (souvent Z3) : effort soutenu mais régulier — vise la constance des temps sur les reps, pas un coup de collier puis un crash.",
+      "Au seuil (souvent Z3) : effort soutenu mais régulier. Vise la constance des temps sur les reps, pas un coup de collier puis un crash.",
   },
   {
     keys: ["sighting", "eau libre", "bouée", "bouee", "combinaison", "open water", "ow"],
@@ -115,27 +118,27 @@ const FAQ_RULES = [
   {
     keys: ["bnssa", "pompier", "sauvetage", "remorquage", "palmes", "tuba", "masque"],
     answer:
-      "BNSSA / tests pompiers : séances orientées examen — apnée, palmes + masque + tuba, remorquage, simulations parcours (sortie eau, enchaînements). Ce n'est pas de l'endurance loisir générique.",
+      "BNSSA / tests pompiers : séances orientées examen (apnée, palmes + masque + tuba, remorquage, simulations parcours). Ce n'est pas de l'endurance loisir générique.",
   },
   {
     keys: ["bpjeps", "400 m", "400m", "7'40", "7:40"],
     answer:
-      "BPJEPS AAN : focus 400 m NL (repère examen souvent < 7'40\"), fractionné et régularité des temps — distinct du parcours sauvetage BNSSA.",
+      "BPJEPS AAN : focus 400 m NL (repère examen souvent < 7'40\"), fractionné et régularité des temps. Distinct du parcours sauvetage BNSSA.",
   },
   {
     keys: ["palme", "plaquette", "roulis", "rotation"],
     answer:
-      "Sur roulis / rotation du corps : palmes OK, plaquettes non — elles faussent l'appui. Les plaquettes servent plutôt d'autres blocs (force / traction), pas le travail de rotation.",
+      "Sur roulis / rotation du corps : palmes OK, plaquettes non. Elles faussent l'appui. Les plaquettes servent plutôt d'autres blocs (force / traction), pas le travail de rotation.",
   },
   {
     keys: ["volume", "+10", "10 %", "10%", "progression", "charge", "trop dur", "trop facile", "feedback", "easy", "hard"],
     answer:
-      "Le volume monte ~+10 % max d'une semaine à l'autre. Après une semaine, le feedback (facile / ok / dur) ajuste les semaines futures encore vierges (borné). Une séance trop dure ? Dis-le dans le retour — Premium peut aussi micro-ajuster au premier feedback séance.",
+      "Le volume monte ~+10 % max d'une semaine à l'autre. Après une semaine, le feedback (facile / ok / dur) ajuste les semaines futures encore vierges (borné). Une séance trop dure ? Dis-le dans le retour. Premium peut aussi micro-ajuster au premier feedback séance.",
   },
   {
     keys: ["affûtage", "affutage", "taper", "semaine test", "chrono", "décharge", "decharge"],
     answer:
-      "Décharges ~toutes les 4 semaines. Semaines test : chronos 100/200/400 pour mesurer l'évolution. Affûtage avant l'échéance (1 sem. dès 6 sem. de plan, 2 dès 10) : volume ↓, touches vitesse. Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume très bas, rappels ≤12,5 m — le travail est déjà fait.",
+      "Décharges ~toutes les 4 semaines. Semaines test : chronos 100/200/400 pour mesurer l'évolution. Affûtage avant l'échéance (1 sem. dès 6 sem. de plan, 2 dès 10) : volume ↓, touches vitesse. Semaine compétition : 1 séance (≤3×/sem) ou 2 (>3), volume très bas, rappels ≤12,5 m. Le travail est déjà fait.",
   },
   {
     keys: ["bassin", "25 m", "25m", "50 m", "50m", "longueur"],
@@ -173,7 +176,7 @@ function matchFaq(text) {
 
 const WELCOME = {
   role: "bot",
-  text: "Bonjour — assistance MySWYM. Questions produit ou natation (zones, allures, D…/R…, éducatifs…) : pose la tienne ou tape une suggestion.",
+  text: "Bonjour, assistance MySWYM. Questions produit ou natation (zones, allures, D…/R…, éducatifs…) : pose la tienne ou tape une suggestion.",
 };
 
 /**
@@ -237,7 +240,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
           height: 54,
           borderRadius: "50%",
           border: "none",
-          background: "#355da3",
+          background: "#006bfd",
           color: "#fff",
           boxShadow: "0 8px 28px rgba(53,93,163,0.35)",
           cursor: "pointer",
@@ -268,7 +271,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             className="sheet-panel"
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "#fff",
+              background: "#06101f",
               borderRadius: 24,
               padding: view === "chat" ? "16px 16px 14px" : "22px 20px 20px",
               boxShadow: "0 20px 60px rgba(53,93,163,0.22)",
@@ -286,16 +289,16 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     type="button"
                     aria-label="Retour"
                     onClick={() => setView("home")}
-                    style={{ background: "#f2f3f6", border: "none", borderRadius: 10, width: 40, height: 40, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}
+                    style={{ background: "#0a162c", border: "none", borderRadius: 10, width: 40, height: 40, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}
                   >
-                    <ArrowLeft size={17} color="#434751" />
+                    <ArrowLeft size={17} color="#9bb0c8" />
                   </button>
                 )}
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#737782", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9bb0c8", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
                     Support
                   </div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#191c1e", lineHeight: 1.2 }}>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f4f8fa", lineHeight: 1.2 }}>
                     {view === "chat" ? "Assistance rapide" : view === "contact" ? "Contacter l'équipe" : "Besoin d'aide ?"}
                   </h3>
                 </div>
@@ -304,16 +307,16 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                 type="button"
                 aria-label="Fermer"
                 onClick={close}
-                style={{ background: "#f2f3f6", border: "none", borderRadius: 10, width: 44, height: 44, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                style={{ background: "#0a162c", border: "none", borderRadius: 10, width: 44, height: 44, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
               >
-                <X size={18} color="#434751" />
+                <X size={18} color="#9bb0c8" />
               </button>
             </div>
 
             {view === "home" && (
               <>
-                <p style={{ fontSize: 15, color: "#434751", lineHeight: 1.55, margin: "0 0 18px" }}>
-                  Questions produit ou vocabulaire natation — réponses immédiates, ou message direct à l'équipe.
+                <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
+                  Questions produit ou vocabulaire natation : réponses immédiates, ou message direct à l'équipe.
                 </p>
 
                 <button
@@ -327,7 +330,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     padding: "14px 16px",
                     minHeight: 56,
                     borderRadius: 14,
-                    background: "#355da3",
+                    background: "#006bfd",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 15,
@@ -358,8 +361,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     padding: "14px 16px",
                     minHeight: 56,
                     borderRadius: 14,
-                    background: "#f2f3f6",
-                    color: "#191c1e",
+                    background: "#0a162c",
+                    color: "#f4f8fa",
                     fontWeight: 700,
                     fontSize: 15,
                     border: "none",
@@ -368,10 +371,10 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     textAlign: "left",
                   }}
                 >
-                  <Mail size={18} color="#355da3" style={{ flexShrink: 0 }} />
+                  <Mail size={18} color="#006bfd" style={{ flexShrink: 0 }} />
                   <span>
                     Contacter l'équipe
-                    <span style={{ display: "block", fontWeight: 500, fontSize: 12, color: "#737782", marginTop: 2 }}>
+                    <span style={{ display: "block", fontWeight: 500, fontSize: 12, color: "#9bb0c8", marginTop: 2 }}>
                       {SUPPORT_EMAIL}
                     </span>
                   </span>
@@ -381,11 +384,11 @@ export default function SupportBubble({ aboveBottomNav = false }) {
 
             {view === "contact" && (
               <>
-                <p style={{ fontSize: 15, color: "#434751", lineHeight: 1.55, margin: "0 0 18px" }}>
-                  Question sur une séance, suggestion ou souci technique — l'équipe répond sous 24–48 h ouvrjours ouvrés) à {SUPPORT_EMAIL}.
+                <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
+                  Question sur une séance, suggestion ou souci technique. L'équipe répond sous 24-48 h ouvrées à {SUPPORT_EMAIL}.
                 </p>
                 <a
-                  href="/contact"
+                  href={withLocalePrefix("/contact", getStoredLanguage())}
                   onClick={close}
                   style={{
                     display: "flex",
@@ -396,7 +399,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     padding: "14px 16px",
                     minHeight: 48,
                     borderRadius: 14,
-                    background: "#355da3",
+                    background: "#006bfd",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 15,
@@ -431,8 +434,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       style={{
                         alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
                         maxWidth: "88%",
-                        background: msg.role === "user" ? "#355da3" : "#f2f3f6",
-                        color: msg.role === "user" ? "#fff" : "#191c1e",
+                        background: msg.role === "user" ? "#006bfd" : "#0a162c",
+                        color: msg.role === "user" ? "#fff" : "#f4f8fa",
                         borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
                         padding: "10px 13px",
                         fontSize: 14,
@@ -447,8 +450,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     <div
                       style={{
                         alignSelf: "flex-start",
-                        background: "#f2f3f6",
-                        color: "#737782",
+                        background: "#0a162c",
+                        color: "#9bb0c8",
                         borderRadius: "14px 14px 14px 4px",
                         padding: "10px 14px",
                         fontSize: 13,
@@ -471,8 +474,8 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       onClick={() => send(p)}
                       style={{
                         border: "1px solid rgba(53,93,163,0.22)",
-                        background: "#fff",
-                        color: "#154388",
+                        background: "#06101f",
+                        color: "#3d8fff",
                         borderRadius: 999,
                         padding: "7px 12px",
                         fontSize: 12,
@@ -505,13 +508,13 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       flex: 1,
                       minHeight: 44,
                       borderRadius: 12,
-                      border: "1.5px solid rgba(53,93,163,0.18)",
+                      border: "1.5px solid rgba(0,107,253,0.28)",
                       padding: "10px 14px",
                       fontSize: 15,
                       fontFamily: FONT,
-                      color: "#191c1e",
+                      color: "#f4f8fa",
                       outline: "none",
-                      background: "#f8f9fc",
+                      background: "#06101f",
                     }}
                   />
                   <button
@@ -523,7 +526,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                       height: 44,
                       borderRadius: 12,
                       border: "none",
-                      background: input.trim() && !typing ? "#355da3" : "#d8e2ff",
+                      background: input.trim() && !typing ? "#006bfd" : "rgba(0,107,253,0.22)",
                       color: "#fff",
                       cursor: input.trim() && !typing ? "pointer" : "default",
                       display: "flex",
@@ -546,7 +549,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     minHeight: 40,
                     background: "none",
                     border: "none",
-                    color: "#355da3",
+                    color: "#006bfd",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",

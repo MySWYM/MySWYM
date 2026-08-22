@@ -33,7 +33,7 @@ export function ScreenShell({
             type="button"
             onClick={onBack}
             aria-label="Retour"
-            className="cv:flex cv:h-11 cv:w-11 cv:-ml-2 cv:items-center cv:justify-center cv:rounded-full cv:text-cv-ink cv:cursor-pointer hover:cv:bg-black/5"
+            className="cv:flex cv:h-11 cv:w-11 cv:-ml-2 cv:items-center cv:justify-center cv:rounded-full cv:text-cv-ink cv:cursor-pointer hover:cv:bg-white/8"
           >
             <ChevronLeft size={22} />
           </button>

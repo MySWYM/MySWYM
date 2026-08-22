@@ -1,98 +1,165 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { COOKIE_CONSENT_KEY } from "./lib/cookie-consent.js";
+import { useEffect, useId, useState } from "react";
+import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import {
+  DEFAULT_COOKIE_PREFS,
+  readConsent,
+  writeConsent,
+} from "./lib/cookie-consent.js";
+import {
+  CookieCategories,
+  CookiePreferenceActions,
+} from "./marketing/CookiePreferences.jsx";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+} from "./ui/lp-dialog.jsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/lp-tabs.jsx";
+import "./theme/cookie-consent.css";
 
 export default function CookieBanner() {
-  const [visible, setVisible] = useState(false);
+  const { t } = useTranslation("common");
+  const titleId = useId();
+  const [banner, setBanner] = useState(false);
+  const [manager, setManager] = useState(false);
+  const [tab, setTab] = useState("categories");
+  const [prefs, setPrefs] = useState(DEFAULT_COOKIE_PREFS);
 
   useEffect(() => {
-    const sync = () => {
-      try {
-        setVisible(!localStorage.getItem(COOKIE_CONSENT_KEY));
-      } catch {
-        setVisible(true);
-      }
+    const syncBanner = () => setBanner(!readConsent());
+    syncBanner();
+    const openManager = () => {
+      setPrefs(readConsent() || DEFAULT_COOKIE_PREFS);
+      setTab("categories");
+      setManager(true);
     };
-    sync();
-    window.addEventListener("myswym:cookie-consent-reset", sync);
-    return () => window.removeEventListener("myswym:cookie-consent-reset", sync);
+    window.addEventListener("myswym:cookie-consent-changed", syncBanner);
+    window.addEventListener("myswym:cookie-manager-open", openManager);
+    return () => {
+      window.removeEventListener("myswym:cookie-consent-changed", syncBanner);
+      window.removeEventListener("myswym:cookie-manager-open", openManager);
+    };
   }, []);
 
-  const saveChoice = (choice) => {
-    try {
-      localStorage.setItem(COOKIE_CONSENT_KEY, choice);
-    } catch { /* ignore */ }
-    try {
-      window.dispatchEvent(new CustomEvent("myswym:cookie-consent-changed", { detail: { choice } }));
-    } catch { /* ignore */ }
-    setVisible(false);
+  const persist = (next) => {
+    writeConsent(next);
+    setBanner(false);
+    setManager(false);
   };
 
-  if (!visible) return null;
+  const closeManager = () => {
+    setManager(false);
+    setTab("categories");
+  };
 
   return (
-    <div
-      role="dialog"
-      aria-label="Consentement cookies"
-      style={{
-        position: "fixed",
-        left: 16,
-        right: 16,
-        bottom: 16,
-        zIndex: 999,
-        background: "#ffffff",
-        border: "1px solid rgba(53,93,163,0.12)",
-        borderRadius: 16,
-        padding: "14px 14px",
-        boxShadow: "0 12px 36px rgba(25,28,30,0.14)",
-        fontFamily: "'Lexend', sans-serif",
-        maxWidth: 560,
-        margin: "0 auto",
-      }}
-    >
-      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#434751" }}>
-        Nous utilisons des cookies et un stockage local <strong>nécessaires</strong> au fonctionnement
-        (session, sécurité, préférences). Avec ton accord, nous mesurons aussi l’usage produit via{" "}
-        <strong>PostHog</strong> et les performances via <strong>Vercel Speed Insights</strong>
-        {" "}(événements sans contenu de séance ni notes personnelles).{" "}
-        <Link to="/politique-cookies" style={{ color: "#154388", fontWeight: 700, textDecoration: "none" }}>
-          En savoir plus
-        </Link>
-      </p>
-      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          onClick={() => saveChoice("refused")}
-          style={{
-            background: "none",
-            border: "1px solid #c3c6d2",
-            borderRadius: 10,
-            padding: "8px 12px",
-            fontSize: 12,
-            color: "#5d5e61",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Continuer sans cookies non essentiels
-        </button>
-        <button
-          type="button"
-          onClick={() => saveChoice("accepted")}
-          style={{
-            background: "#8eb3ff",
-            border: "none",
-            borderRadius: 10,
-            padding: "8px 12px",
-            fontSize: 12,
-            color: "#154388",
-            cursor: "pointer",
-            fontWeight: 700,
-          }}
-        >
-          Accepter
-        </button>
-      </div>
-    </div>
+    <>
+      {banner && !manager ? (
+        <div className="ms-cookie-banner" role="dialog" aria-label={t("cookies.bannerAria")}>
+          <p>
+            {t("cookies.bannerBefore")}{" "}
+            <strong>{t("cookies.necessaryWord")}</strong> {t("cookies.bannerMid")}{" "}
+            <strong>PostHog</strong> {t("cookies.bannerAnd")}{" "}
+            <strong>Vercel Speed Insights</strong> {t("cookies.bannerAfter")}{" "}
+            <LocalizedLink to={{ pathname: "/politique-cookies", hash: "#parametrage-cookies" }}>{t("cookies.learnMore")}</LocalizedLink>
+          </p>
+          <div className="ms-cookie-banner-actions">
+            <button type="button" className="ms-cookie-btn" onClick={() => persist({ analytics: false, performance: false })}>
+              {t("cookies.rejectAll")}
+            </button>
+            <button type="button" className="ms-cookie-btn" onClick={() => persist({ analytics: true, performance: true })}>
+              {t("cookies.acceptAll")}
+            </button>
+          </div>
+          <button type="button" className="ms-cookie-link" onClick={() => { setPrefs(DEFAULT_COOKIE_PREFS); setManager(true); }}>
+            {t("cookies.customize")}
+          </button>
+        </div>
+      ) : null}
+
+      <Dialog
+        open={manager}
+        onOpenChange={(open) => {
+          if (open) setManager(true);
+          else closeManager();
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="ms-cookie-overlay" />
+          <DialogContent
+            className="ms-cookie-dialog"
+            aria-labelledby={titleId}
+            onInteractOutside={(event) => {
+              if (!readConsent()) event.preventDefault();
+            }}
+            onEscapeKeyDown={(event) => {
+              if (!readConsent()) event.preventDefault();
+            }}
+          >
+            <div className="ms-cookie-dialog-head">
+              <DialogTitle id={titleId}>{t("cookies.title")}</DialogTitle>
+              <DialogClose asChild>
+                <button type="button" className="ms-cookie-icon" aria-label={t("cookies.close")}>
+                  <X size={20} />
+                </button>
+              </DialogClose>
+            </div>
+
+            <DialogDescription className="ms-cookie-sr">
+              {t("cookies.lead")}
+            </DialogDescription>
+
+            <Tabs value={tab} onValueChange={setTab}>
+              <TabsList className="ms-cookie-tabs" aria-label={t("cookies.title")}>
+                <TabsTrigger value="categories" className="ms-cookie-tab">
+                  {t("cookies.tabCategories")}
+                </TabsTrigger>
+                <TabsTrigger value="declaration" className="ms-cookie-tab">
+                  {t("cookies.tabDeclaration")}
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="ms-cookie-dialog-body">
+                <TabsContent value="categories">
+                  <p className="ms-cookie-lead">
+                    {t("cookies.lead")}{" "}
+                    <LocalizedLink to={{ pathname: "/politique-cookies", hash: "#parametrage-cookies" }}>{t("cookies.learnMore")}</LocalizedLink>
+                  </p>
+                  <CookieCategories prefs={prefs} onPrefsChange={setPrefs} />
+                </TabsContent>
+                <TabsContent value="declaration">
+                  <ul className="ms-cookie-decl">
+                    <li>
+                      <strong>{t("cookies.necessaryTitle")}</strong>
+                      <span>{t("cookies.declNecessary")}</span>
+                    </li>
+                    <li>
+                      <strong>PostHog</strong>
+                      <span>{t("cookies.declPosthog")}</span>
+                    </li>
+                    <li>
+                      <strong>Vercel Speed Insights</strong>
+                      <span>{t("cookies.declVercel")}</span>
+                    </li>
+                    <li>
+                      <strong>{t("cookies.declMarketingTitle")}</strong>
+                      <span>{t("cookies.declMarketing")}</span>
+                    </li>
+                  </ul>
+                </TabsContent>
+              </div>
+            </Tabs>
+
+            <CookiePreferenceActions prefs={prefs} onPersist={persist} />
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+    </>
   );
 }

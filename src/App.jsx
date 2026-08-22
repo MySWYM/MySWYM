@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { ACCESS_STATUS, getAccessState, isAccessMetadataPending } from "./lib/access.js";
+import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import {
   track,
   trackEvent,
@@ -14,7 +15,7 @@ import {
 } from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
-import { StepSessionDistance, StepTrainingWish } from "./OnboardingDistanceWish.jsx";
+import { StepSessionDistance } from "./OnboardingDistanceWish.jsx";
 import { parseTrainingWish } from "./lib/sports-engine/training-wish.js";
 import {
   decideAdaptAction,
@@ -43,6 +44,7 @@ import {
   hydrateSwimmerFromSources,
   BIRTH_MONTH_OPTIONS,
   computeAgeFromBirth,
+  daysInBirthMonth,
 } from "./lib/swimmer-profile.js";
 import {
   appZoneMultForT100,
@@ -82,15 +84,14 @@ import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { withLocalePrefix } from "./i18n/locale-path.js";
+import i18n, { getStoredLanguage } from "./i18n/index.js";
+import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import BuddyMatching from "./BuddyMatching.jsx";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 import {
-  LEGAL_LINKS,
-  SIGNUP_AGE_LABEL,
-  SIGNUP_TERMS_LABEL_PREFIX,
-  CARDLESS_TRIAL_NOTE,
-  SPORT_SAFETY_SHORT,
+  legalHref,
   ACCOUNT_DELETE_WARNING,
 } from "./lib/legal-copy.js";
 import {
@@ -104,7 +105,7 @@ import {
   formatInjurySummary,
   hasHealthConsent,
 } from "./lib/health-data.js";
-import { useTranslation } from "react-i18next";
+import { useTranslation, Trans } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
@@ -114,32 +115,21 @@ import {
   Sun, Moon, Camera, Trash2, Users, ExternalLink,
 } from "lucide-react";
 
-// ── FONTS ─────────────────────────────────────────────────────────────────
-const FontLoader = () => {
-  useEffect(() => {
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&display=swap";
-    document.head.appendChild(l);
-  }, []);
-  return null;
-};
-
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────
 const THEME_STORAGE_PREFIX = "myswym_theme_";
 const THEME_LAST_KEY = "myswym_theme_last";
 const THEME_LEGACY_KEY = "myswym_theme"; // ancien stockage global (migré)
 
 const G_LIGHT = {
-  bg: "#f8f9fc",
+  bg: "#f4f8fa",
   surface: "#FFFFFF",
-  ink: "#191c1e",
-  inkLight: "#434751",
+  ink: "#06101f",
+  inkLight: "#3d4f66",
   inverse: "#FFFFFF",
-  blue: "#355da3",
-  blueLight: "#d8e2ff",
-  blueMid: "#8eb3ff",
-  blueDeep: "#154388",
+  blue: "#006bfd",
+  blueLight: "#d6e7ff",
+  blueMid: "#3d8fff",
+  blueDeep: "#0056d6",
   water: "#00B4D8",
   waterLight: "#E0F7FA",
   coral: "#FF4757",
@@ -150,25 +140,25 @@ const G_LIGHT = {
   goldLight: "#FEF3C7",
   purple: "#7C3AED",
   purpleLight: "#EDE9FE",
-  grey: "#737782",
-  greyMid: "#9CA3AF",
-  greyLight: "#e1e2e5",
-  greyXLight: "#f2f3f6",
+  grey: "#5d6b7d",
+  greyMid: "#9bb0c8",
+  greyLight: "#d7e3f0",
+  greyXLight: "#eef3f8",
   white: "#FFFFFF",
   glass: "rgba(255,255,255,0.95)",
   navGlass: "rgba(255,255,255,0.94)",
 };
 
 const G_DARK = {
-  bg: "#0c0e12",
-  surface: "#161a22",
-  ink: "#f0f2f5",
-  inkLight: "#c5c9d2",
-  inverse: "#0c0e12",
-  blue: "#7aa2ef",
-  blueLight: "#1a2744",
-  blueMid: "#8eb3ff",
-  blueDeep: "#a8c5ff",
+  bg: "#000514",
+  surface: "#06101f",
+  ink: "#f4f8fa",
+  inkLight: "#9bb0c8",
+  inverse: "#000514",
+  blue: "#006bfd",
+  blueLight: "#0a162c",
+  blueMid: "#3d8fff",
+  blueDeep: "#3d8fff",
   water: "#22c3e0",
   waterLight: "#0c2a32",
   coral: "#FF6B78",
@@ -179,17 +169,17 @@ const G_DARK = {
   goldLight: "#3a2a0a",
   purple: "#a78bfa",
   purpleLight: "#241a3d",
-  grey: "#9aa0ad",
-  greyMid: "#6b7280",
-  greyLight: "#2a303c",
-  greyXLight: "#1c212b",
+  grey: "#9bb0c8",
+  greyMid: "#6b7c90",
+  greyLight: "rgba(0, 107, 253, 0.22)",
+  greyXLight: "#0a162c",
   white: "#FFFFFF",
-  glass: "rgba(12,14,18,0.92)",
-  navGlass: "rgba(22,26,34,0.94)",
+  glass: "rgba(0, 5, 20, 0.92)",
+  navGlass: "rgba(6, 16, 31, 0.94)",
 };
 
 /** Palette active — mutée par applyTheme pour que les styles inline suivent le thème. */
-const G = { ...G_LIGHT };
+const G = { ...G_DARK };
 
 const normalizeTheme = (value) => (value === "dark" ? "dark" : "light");
 
@@ -203,7 +193,7 @@ const getStoredTheme = (userId = null) => {
     const legacy = localStorage.getItem(THEME_LEGACY_KEY);
     if (legacy === "dark" || legacy === "light") return legacy;
   } catch { /* ignore */ }
-  return "light";
+  return "dark";
 };
 
 const resolveThemeForUser = (user) => {
@@ -235,8 +225,15 @@ const applyTheme = (theme, { userId = null, persist = true } = {}) => {
   root.style.setProperty("--myswym-bg", next.bg);
   root.style.setProperty("--myswym-surface", next.surface);
   root.style.setProperty("--myswym-ink", next.ink);
+  root.style.setProperty("--myswym-ink-light", next.inkLight);
   root.style.setProperty("--myswym-blue", next.blue);
+  root.style.setProperty("--myswym-blue-light", next.blueLight);
+  root.style.setProperty("--myswym-blue-mid", next.blueMid);
+  root.style.setProperty("--myswym-blue-deep", next.blueDeep);
+  root.style.setProperty("--myswym-grey", next.grey);
+  root.style.setProperty("--myswym-grey-mid", next.greyMid);
   root.style.setProperty("--myswym-grey-light", next.greyLight);
+  root.style.setProperty("--myswym-grey-xlight", next.greyXLight);
   root.style.setProperty("--myswym-nav-bg", next.navGlass);
   root.style.setProperty("--myswym-nav-border", next.greyLight);
   root.style.setProperty("--myswym-glass", next.glass);
@@ -261,9 +258,9 @@ const persistThemeToAccount = (theme, user) => {
 // Dernier thème affiché (évite un flash) — remplacé dès que le compte est connu
 applyTheme((() => {
   try {
-    return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || localStorage.getItem(THEME_LEGACY_KEY));
+    return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || localStorage.getItem(THEME_LEGACY_KEY) || "dark");
   } catch {
-    return "light";
+    return "dark";
   }
 })(), { persist: false });
 
@@ -278,14 +275,16 @@ const TYPE_META = {
 
 const css = `
   :root {
-    --myswym-bg: ${G_LIGHT.bg};
-    --myswym-surface: ${G_LIGHT.surface};
-    --myswym-ink: ${G_LIGHT.ink};
-    --myswym-blue: ${G_LIGHT.blue};
-    --myswym-grey-light: ${G_LIGHT.greyLight};
-    --myswym-nav-bg: ${G_LIGHT.navGlass};
-    --myswym-nav-border: ${G_LIGHT.greyLight};
-    --myswym-glass: ${G_LIGHT.glass};
+    --myswym-bg: ${G_DARK.bg};
+    --myswym-surface: ${G_DARK.surface};
+    --myswym-ink: ${G_DARK.ink};
+    --myswym-ink-light: ${G_DARK.inkLight};
+    --myswym-blue: ${G_DARK.blue};
+    --myswym-blue-light: ${G_DARK.blueLight};
+    --myswym-grey-light: ${G_DARK.greyLight};
+    --myswym-nav-bg: ${G_DARK.navGlass};
+    --myswym-nav-border: ${G_DARK.greyLight};
+    --myswym-glass: ${G_DARK.glass};
     --bottom-nav-h: 64px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-top: env(safe-area-inset-top, 0px);
@@ -299,7 +298,7 @@ const css = `
   body {
     background: var(--myswym-bg);
     color: var(--myswym-ink);
-    font-family: 'Lexend', sans-serif;
+    font-family: Geist, ui-sans-serif, system-ui, sans-serif;
     overscroll-behavior: none;
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
@@ -307,9 +306,9 @@ const css = `
     transition: background-color 0.25s ease, color 0.2s ease;
   }
   #root { min-height: 100dvh; }
-  h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; text-transform: uppercase; font-weight: 800; }
+  h1, h2, h3 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
   h4 { letter-spacing: -0.01em; }
-  .syne { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0; font-weight: 800; text-transform: uppercase; }
+  .syne { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; font-weight: 700; text-transform: none; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
@@ -352,8 +351,8 @@ const css = `
     vertical-align: top;
   }
   input[type="checkbox"]:checked {
-    background-color: #355da3;
-    border-color: #111827;
+    background-color: #006bfd;
+    border-color: #006bfd;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E");
   }
   input[type="checkbox"]:disabled {
@@ -361,7 +360,7 @@ const css = `
     cursor: not-allowed;
   }
   input[type="checkbox"]:focus-visible {
-    outline: 2px solid #355da3;
+    outline: 2px solid #006bfd;
     outline-offset: 2px;
   }
 
@@ -465,15 +464,15 @@ const css = `
     }
     body {
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(142,179,255,0.22), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(142,179,255,0.10), transparent 50%),
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,107,253,0.22), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,107,253,0.10), transparent 50%),
         var(--myswym-bg);
       background-attachment: fixed;
     }
     html[data-theme="dark"] body {
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(122,162,239,0.12), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(122,162,239,0.06), transparent 50%),
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,107,253,0.16), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,107,253,0.08), transparent 50%),
         var(--myswym-bg);
       background-attachment: fixed;
     }
@@ -495,14 +494,14 @@ const css = `
       transform: translateX(-50%);
       bottom: var(--nav-lift);
       border-radius: 22px;
-      border: 1px solid rgba(142,179,255,0.18);
-      border-top: 1px solid rgba(142,179,255,0.18);
-      box-shadow: 0 12px 40px rgba(53,93,163,0.18);
+      border: 1px solid rgba(0,107,253,0.22);
+      border-top: 1px solid rgba(0,107,253,0.22);
+      box-shadow: 0 12px 40px rgba(0,107,253,0.18);
       padding-bottom: 0;
       overflow: hidden;
     }
     html[data-theme="dark"] .bottom-nav {
-      border-color: rgba(142,179,255,0.12);
+      border-color: rgba(0,107,253,0.22);
       box-shadow: 0 12px 40px rgba(0,0,0,0.45);
     }
     .myswym-app {
@@ -1586,15 +1585,15 @@ const createShareCanvas = (session, goalLabel) => {
 
 // ── PRIMITIVES ────────────────────────────────────────────────────────────
 const Btn = ({ children, onClick, variant = "primary", disabled, style: s }) => {
-  const base = { display: "block", width: "100%", padding: "16px 24px", borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "'Lexend', sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
-  const styles = { primary: { background: G.ink, color: G.inverse }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0,87,255,0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
+  const base = { display: "block", width: "100%", padding: "16px 24px", minHeight: 48, borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
+  const styles = { primary: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)" }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
   return <button type="button" disabled={!!disabled} onClick={onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
 };
 
 const Progress = ({ step, total }) => (
   <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
     {Array.from({ length: total }).map((_, i) => (
-      <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < step ? G.ink : G.greyLight, transition: "background 0.3s" }} />
+      <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < step ? G.blue : G.greyLight, transition: "background 0.3s" }} />
     ))}
   </div>
 );
@@ -1619,7 +1618,7 @@ const StatPill = ({ icon: Icon, value, label, color, bg }) => (
     <div style={{ width: 40, height: 40, borderRadius: 12, background: bg || G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Icon size={20} color={color || G.blue} />
     </div>
-    <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Lexend', sans-serif", letterSpacing: "-0.02em", color: color || G.blue, lineHeight: 1 }}>{value}</span>
+    <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", letterSpacing: "-0.02em", color: color || G.blue, lineHeight: 1 }}>{value}</span>
     <span style={{ fontSize: 10, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", textAlign: "center" }}>{label}</span>
   </div>
 );
@@ -1709,7 +1708,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
       <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
         </div>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 14, lineHeight: 1.45 }}>
           Courbe de progression de tes chronos sur les semaines d’entraînement — réservé aux membres Premium.
@@ -1729,7 +1728,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
             <TrendingUp size={16} color={G.blue} />
           </div>
           <div>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
             <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection sur ton plan</p>
           </div>
         </div>
@@ -1782,7 +1781,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           <TrendingUp size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>T100 — projection sur {totalWeeks} semaines</p>
         </div>
       </div>
@@ -1820,7 +1819,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
         ].map((c, i) => (
           <div key={i} style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
             <div style={{ fontSize: 10, color: G.grey, fontWeight: 600, marginBottom: 4 }}>{c.label}</div>
-            <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 800, color: c.color }}>{c.value}</div>
+            <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 15, fontWeight: 800, color: c.color }}>{c.value}</div>
           </div>
         ))}
       </div>
@@ -1863,7 +1862,7 @@ const PaceProjectionCard = ({ pace100 }) => {
           <TrendingUp size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
             Projection de performance
           </h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>
@@ -1904,7 +1903,7 @@ const PaceProjectionCard = ({ pace100 }) => {
           return (
             <div key={t.dist} style={{ background: `${t.color}0D`, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.color}22` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginBottom: 4, letterSpacing: "0.04em" }}>{t.label}</div>
-              <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
+              <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
                 {fmtTime(Math.round(raw))}
               </div>
               <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{paceStr}</div>
@@ -1942,7 +1941,7 @@ const PaceZonesCard = ({ pace100, onSave }) => {
           <Gauge size={16} color={G.blue} />
         </div>
         <div>
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
           <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton T100 (départ dans l&apos;eau)</p>
         </div>
       </div>
@@ -1969,10 +1968,10 @@ const PaceZonesCard = ({ pace100, onSave }) => {
             return (
               <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
+                  <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
                   <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{z.desc}</div>
                 </div>
-                <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
                   {fmtZone(ps)}
                 </div>
               </div>
@@ -2033,7 +2032,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
       <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <Lock size={14} color={G.greyMid} />
-          <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
+          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, margin: 0 }}>Modifier mon programme</h3>
         </div>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Adapte le nombre de séances{isDecouverteLevel ? "" : " et ton allure"} — réservé aux membres Premium.</p>
 
@@ -2076,7 +2075,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             <div style={{
               width: "100%", padding: "12px 48px 12px 14px",
               fontSize: 16, fontWeight: 700, color: G.greyMid,
-              fontFamily: "'Lexend', sans-serif", boxSizing: "border-box",
+              fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", boxSizing: "border-box",
             }}>
               {paceRaw || "ex: 2:10"}
             </div>
@@ -2101,7 +2100,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
 
   return (
     <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-      <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
+      <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 4 }}>Modifier mon programme</h3>
       <p style={{ fontSize: 13, color: G.grey, marginBottom: 16 }}>Tes semaines déjà entamées et tes séances validées sont conservées. La nouvelle fréquence s&apos;applique aux semaines pas encore commencées.</p>
 
       {/* Fréquence */}
@@ -2157,7 +2156,7 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             width: "100%", padding: "12px 48px 12px 14px", borderRadius: 12,
             border: `1.5px solid ${pace100 ? G.blue : G.greyLight}`,
             fontSize: 16, fontWeight: 700, color: G.ink,
-            fontFamily: "'Lexend', sans-serif", background: G.surface,
+            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", background: G.surface,
             outline: "none", boxSizing: "border-box",
           }}
         />
@@ -2529,7 +2528,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
             Chargement des détails avancés Strava…
           </div>
         ) : error ? (
-          <div style={{ background: "#FFE8E8", borderRadius: 18, padding: "16px 14px", color: "#CC0000", fontSize: 13 }}>
+          <div style={{ background: G.coralLight, borderRadius: 18, padding: "16px 14px", color: G.coral, fontSize: 13 }}>
             {error}
           </div>
         ) : streamCards.length > 0 ? (
@@ -2816,7 +2815,7 @@ const StravaSection = ({
 
       {/* ── Message retour ───────────────────────────────────────── */}
       {msg && (
-        <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 10, padding: "9px 13px", marginBottom: 12, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 13 }}>
+        <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 10, padding: "9px 13px", marginBottom: 12, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 13 }}>
           {msg.text}
         </div>
       )}
@@ -3022,7 +3021,7 @@ const StravaSection = ({
         <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && setHealthGateOpen(false)}>
           <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
-            <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 10 }}>
+            <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 10 }}>
               {HEALTH_CONSENT_TITLE}
             </h3>
             <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEALTH_CONSENT_BODY}</p>
@@ -3045,6 +3044,7 @@ const StravaSection = ({
 };
 
 const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange, onSwimmerProfileChange }) => {
+  const { t: to } = useTranslation("onboarding");
   const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
   const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
@@ -3356,7 +3356,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
 
       <div>
         {msg && (
-          <div style={{ background: msg.type === "ok" ? G.mintLight : "#FFE8E8", borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? "#00897B" : "#CC0000", fontSize: 12 }}>
+          <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 12 }}>
             {msg.text}
           </div>
         )}
@@ -3413,51 +3413,75 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               {(() => {
                 const nowY = new Date().getFullYear();
                 const birthMonth = profile?.birthMonth ?? "";
+                const birthDay = profile?.birthDay ?? "";
                 const birthYear = profile?.birthYear ?? (
                   profile?.age != null && profile.age !== "" && Number.isFinite(Number(profile.age))
                     ? nowY - Math.round(Number(profile.age))
                     : ""
                 );
-                const ageNow = computeAgeFromBirth(birthMonth, birthYear)
-                  ?? (Number.isFinite(Number(profile?.age)) ? Number(profile.age) : null);
+                const dim = daysInBirthMonth(birthMonth, birthYear);
                 const fieldStyle = {
                   width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12,
                   border: `1.5px solid ${G.greyLight}`, background: G.greyXLight, fontSize: 14, fontWeight: 700, color: G.ink,
                 };
-                const patchBirth = (nextMonth, nextYear) => {
+                const patchBirth = (nextDay, nextMonth, nextYear) => {
+                  const d = nextDay === "" ? "" : Number(nextDay);
                   const m = nextMonth === "" ? "" : Number(nextMonth);
                   const y = nextYear === "" ? "" : Number(nextYear);
-                  const age = computeAgeFromBirth(m, y);
+                  const maxD = daysInBirthMonth(m, y);
+                  const clamped = d === "" ? "" : Math.min(Math.max(1, d), maxD);
+                  const age = computeAgeFromBirth(m, y, new Date(), clamped);
                   onSwimmerProfileChange({
+                    birthDay: clamped,
                     birthMonth: m,
                     birthYear: y,
                     ...(age != null ? { age } : {}),
                   });
                 };
+                const dayOpts = [];
+                for (let d = 1; d <= dim; d++) dayOpts.push(d);
                 return (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 8, marginBottom: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1.3fr 0.9fr", gap: 8, marginBottom: 12 }}>
                       <label style={{ display: "block" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                          Mois de naissance
+                          {to("physique.day")}
                         </div>
                         <select
-                          value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
+                          value={birthDay === "" || birthDay == null ? "" : Number(birthDay)}
                           onChange={(e) => {
                             const raw = e.target.value;
-                            patchBirth(raw === "" ? "" : Number(raw), birthYear);
+                            patchBirth(raw === "" ? "" : Number(raw), birthMonth, birthYear);
                           }}
                           style={{ ...fieldStyle, cursor: "pointer" }}
                         >
-                          <option value="">Mois</option>
-                          {BIRTH_MONTH_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
+                          <option value="">{to("physique.day")}</option>
+                          {dayOpts.map((d) => (
+                            <option key={d} value={d}>{d}</option>
                           ))}
                         </select>
                       </label>
                       <label style={{ display: "block" }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                          Année
+                          {to("physique.month")}
+                        </div>
+                        <select
+                          value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            patchBirth(birthDay, raw === "" ? "" : Number(raw), birthYear);
+                          }}
+                          style={{ ...fieldStyle, cursor: "pointer" }}
+                        >
+                          <option value="">{to("physique.month")}</option>
+                          {BIRTH_MONTH_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{to(`months.${o.value}`)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                          {to("physique.year")}
                         </div>
                         <input
                           type="number"
@@ -3465,20 +3489,15 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                           min={1900}
                           max={nowY}
                           value={birthYear ?? ""}
-                          placeholder="ex. 1998"
+                          placeholder="1998"
                           onChange={(e) => {
                             const raw = e.target.value;
-                            patchBirth(birthMonth, raw === "" ? "" : Number(raw));
+                            patchBirth(birthDay, birthMonth, raw === "" ? "" : Number(raw));
                           }}
                           style={fieldStyle}
                         />
                       </label>
                     </div>
-                    {ageNow != null && (
-                      <div style={{ fontSize: 12, color: G.grey, marginBottom: 12 }}>
-                        Âge actuel : <span style={{ fontWeight: 700, color: G.ink }}>{ageNow} ans</span>
-                      </div>
-                    )}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {[
                         { key: "weightKg", label: "Poids", placeholder: "kg" },
@@ -3637,7 +3656,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               {!editingEquipment ? (
                 <div style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45 }}>
                   {Array.isArray(profile?.equipment) && profile.equipment.length > 0
-                    ? profile.equipment.map((id) => EQUIPMENT_OPTS.find((o) => o.id === id)?.label || id).join(" · ")
+                    ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
                     : "Aucun"}
                 </div>
               ) : (
@@ -3659,7 +3678,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                             color: active ? G.blue : G.ink,
                           }}
                         >
-                          {active ? "✓ " : ""}{o.label}
+                          {active ? "✓ " : ""}{eqLabel(o.id)}
                         </button>
                       );
                     })}
@@ -3919,7 +3938,7 @@ const SettingsDrawer = ({
             <ChevronRight size={18} color={G.greyMid} />
           </button>
           <a
-            href="/accueil"
+            href={withLocalePrefix("/", getStoredLanguage())}
             onClick={onClose}
             style={{ ...menuRow, textDecoration: "none" }}
           >
@@ -4042,7 +4061,7 @@ const SettingsDrawer = ({
             </button>
           ) : (
             <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
-              S’abonner — 4,99€/mois
+              S’abonner — dès {PRICING.monthlyCommit.label}/mois
             </button>
           )}
           {isPremium ? (
@@ -4112,7 +4131,7 @@ const SettingsDrawer = ({
             </button>
           )}
           {deleteErr && (
-            <div style={{ padding: "8px 0 12px", fontSize: 12, color: "#CC0000" }}>{deleteErr}</div>
+            <div style={{ padding: "8px 0 12px", fontSize: 12, color: G.coral }}>{deleteErr}</div>
           )}
         </div>
       </div>
@@ -4202,7 +4221,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
       background: G.glass, backdropFilter: "blur(16px)",
       WebkitBackdropFilter: "blur(16px)",
       borderBottom: `1px solid ${G.greyLight}`,
-      boxShadow: "0 1px 16px rgba(142,179,255,0.08)",
+      boxShadow: "0 1px 16px rgba(0,107,253,0.12)",
       paddingTop: "var(--safe-top)",
     }}>
       <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
@@ -4217,7 +4236,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
               </div>
             </button>
           ) : null}
-          <BrandLogo variant="wordmark" height={16} style={{ maxWidth: "100%" }} />
+          <BrandLogo variant="wordmark" height={18} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark"} style={{ maxWidth: "100%" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <div ref={notifRef} style={{ position: "relative" }}>
@@ -4372,7 +4391,18 @@ const BottomNav = ({ active, onChange, newBadge }) => {
 
 // ── AUTH SCREEN ───────────────────────────────────────────────────────────
 
-const authInpStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 15, fontFamily: "'Lexend', sans-serif", background: G.surface, color: G.ink, outline: "none", boxSizing: "border-box" };
+const getAuthInpStyle = () => ({
+  width: "100%",
+  padding: "14px 16px",
+  borderRadius: 12,
+  border: `1.5px solid ${G.inkLight}`,
+  fontSize: 15,
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
+  background: G.greyXLight,
+  color: G.ink,
+  outline: "none",
+  boxSizing: "border-box",
+});
 
 const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "current-password" }) => {
   const [visible, setVisible] = useState(false);
@@ -4385,7 +4415,7 @@ const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "
         onChange={onChange}
         onKeyDown={e => e.key === "Enter" && onEnter?.()}
         autoComplete={autoComplete}
-        style={{ ...authInpStyle, paddingRight: 48 }}
+        style={{ ...getAuthInpStyle(), paddingRight: 48 }}
       />
       <button
         type="button"
@@ -4460,6 +4490,7 @@ async function ensureWelcomeEmail(user, { attempts = 3 } = {}) {
 }
 
 const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login" }) => {
+  const { t } = useTranslation("onboarding");
   const [busy, setBusy] = useState(null);
 
   const startOAuth = async (provider) => {
@@ -4485,8 +4516,8 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
       setBusy(null);
       const raw = e.message || "";
       const friendly = /not enabled|Unsupported provider/i.test(raw)
-        ? "Cette connexion n’est pas encore activée. Réessaie avec email, ou reviens dans un instant."
-        : (raw || "Connexion sociale impossible.");
+        ? t("auth.socialOff")
+        : (raw || t("auth.socialFail"));
       onError?.(friendly);
     }
   };
@@ -4494,7 +4525,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
   const btnBase = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
     width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-    fontFamily: "'Lexend', sans-serif", cursor: busy ? "not-allowed" : "pointer",
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", cursor: busy ? "not-allowed" : "pointer",
     opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
   };
 
@@ -4514,7 +4545,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
         }}
       >
         <GoogleMark />
-        {busy === "google" ? "Redirection…" : "Continuer avec Google"}
+        {busy === "google" ? t("auth.redirecting") : t("auth.google")}
       </button>
       <button
         type="button"
@@ -4533,12 +4564,12 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
       >
         <AppleMark />
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          Continuer avec Apple
+          {t("auth.apple")}
           <span style={{
             fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
             padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.18)", color: G.inverse,
           }}>
-            À venir
+            {t("auth.comingSoon")}
           </span>
         </span>
       </button>
@@ -4568,13 +4599,13 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <BrandLogo variant="wordmark" height={22} />
+          <BrandLogo variant="wordmark" height={22} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
+        <h2 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
-        {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
           <PasswordInput placeholder="Nouveau mot de passe" value={password} onChange={e => setPassword(e.target.value)} onEnter={handle} autoComplete="new-password" />
           <PasswordInput placeholder="Confirmer le mot de passe" value={confirm} onChange={e => setConfirm(e.target.value)} onEnter={handle} autoComplete="new-password" />
@@ -4587,7 +4618,9 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   );
 };
 
-const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", showBrandHeader = true }) => {
+const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode = "password", showBrandHeader = true }) => {
+  const locale = useActiveLocale();
+  const { t } = useTranslation("onboarding");
   // mode :
   //   "password" — login classique avec mot de passe
   //   "register" — création de compte avec mot de passe
@@ -4625,7 +4658,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         onAuth(data.user);
       } else if (mode === "register") {
         if (!acceptAge || !acceptTerms) {
-          throw new Error("Confirme ton âge (18+) et accepte les CGU / confidentialité pour créer un compte.");
+          throw new Error(t("auth.needChecks"));
         }
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -4640,39 +4673,37 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
           },
         });
         if (error) throw error;
-        if (data.user && !data.user.identities?.length) throw new Error("Un compte existe déjà avec cet email.");
+        if (data.user && !data.user.identities?.length) throw new Error(t("auth.exists"));
         track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || email}` });
-        setSuccess(referralCode
-          ? "Compte créé ! Parrainage enregistré — vérifie ton email, puis connecte-toi."
-          : "Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.");
+        setSuccess(referralCode ? t("auth.createdReferral") : t("auth.created"));
         switchMode("password");
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/app`,
         });
         if (error) throw error;
-        setSuccess("Email envoyé ! Vérifie ta boîte mail pour réinitialiser ton mot de passe.");
+        setSuccess(t("auth.resetSent"));
       }
-    } catch (e) { setError(e.message || "Une erreur est survenue."); }
+    } catch (e) { setError(e.message || t("auth.genericError")); }
     finally { setLoading(false); }
   };
 
   const titleMap = {
-    password: "Connexion",
-    register: "Créer un compte",
-    reset:    "Mot de passe oublié",
+    password: t("auth.loginTitle"),
+    register: t("auth.registerTitle"),
+    reset:    t("auth.resetTitle"),
   };
   const subtitleMap = {
-    password: "Connecte-toi avec Google ou ton email.",
+    password: t("auth.loginLead"),
     register: referralCode
-      ? `Code parrain ${referralCode} — −20% sur ta 1ère facture Premium.`
-      : "7 jours d’essai offerts, sans carte. Ensuite l’app se gèle.",
-    reset:    "Entre ton email, on t'envoie un lien de réinitialisation.",
+      ? t("auth.registerReferral", { code: referralCode })
+      : t("auth.registerLead"),
+    reset:    t("auth.resetLead"),
   };
   const ctaMap = {
-    password: "Se connecter",
-    register: "Créer mon compte",
-    reset:    "Envoyer le lien",
+    password: t("auth.loginCta"),
+    register: t("auth.registerCta"),
+    reset:    t("auth.resetCta"),
   };
 
   const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
@@ -4683,51 +4714,26 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
             <div style={{ display: "flex", alignItems: "center" }}>
-              <BrandLogo variant="wordmark" height={24} />
+              <BrandLogo variant="wordmark" height={24} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
             </div>
           ) : <div />}
           {onBack && (
             <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
-              ← Retour
+              {t("common.back")}
             </button>
           )}
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
+        <h2 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
           {titleMap[mode]}
         </h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
           {subtitleMap[mode]}
         </p>
 
-        {error   && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#CC0000", fontSize: 13 }}>{error}</div>}
-        {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#00897B", fontSize: 13 }}>{success}</div>}
-
-        {/* Cases avant Google — sinon bouton grisé sans qu’on comprenne pourquoi */}
-        {mode === "register" && (
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{SIGNUP_AGE_LABEL}</span>
-            </label>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>
-                {SIGNUP_TERMS_LABEL_PREFIX}{" "}
-                <a href={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>CGU</a>
-                {" "}et la{" "}
-                <a href={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>politique de confidentialité</a>.
-              </span>
-            </label>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
-              {CARDLESS_TRIAL_NOTE}
-            </p>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
-              {SPORT_SAFETY_SHORT}
-            </p>
-          </div>
-        )}
+        {error   && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
+        {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.mint, fontSize: 13 }}>{success}</div>}
 
         {(mode === "password" || mode === "register") && (
           <>
@@ -4737,22 +4743,22 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
               onError={(msg) => { setSuccess(null); setError(msg); }}
               onBlockedClick={registerBlocked ? () => {
                 setSuccess(null);
-                setError("Coche les deux cases ci-dessus pour continuer avec Google.");
+                setError(t("auth.googleBlocked"));
               } : undefined}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
               <div style={{ flex: 1, height: 1, background: G.greyLight }} />
-              <span style={{ fontSize: 12, color: G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>ou</span>
+              <span style={{ fontSize: 12, color: G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t("common.or")}</span>
               <div style={{ flex: 1, height: 1, background: G.greyLight }} />
             </div>
           </>
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
-          <input type="email" placeholder="Ton email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={authInpStyle} />
+          <input type="email" placeholder={t("auth.email")} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={getAuthInpStyle()} />
           {(mode === "password" || mode === "register") && (
             <PasswordInput
-              placeholder="Mot de passe"
+              placeholder={t("auth.password")}
               value={password}
               onChange={e => setPassword(e.target.value)}
               onEnter={handle}
@@ -4761,12 +4767,39 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
           )}
         </div>
 
-        {/* Lien mot de passe oublié — visible uniquement en mode password */}
         {mode === "password" && (
           <div style={{ textAlign: "right", marginBottom: 16 }}>
             <button onClick={() => switchMode("reset")} style={{ background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer", padding: 0 }}>
-              Mot de passe oublié ?
+              {t("auth.forgot")}
             </button>
+          </div>
+        )}
+
+        {mode === "register" && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
+              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>{t("auth.age")}</span>
+            </label>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
+              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>
+                <Trans
+                  i18nKey="auth.terms"
+                  ns="onboarding"
+                  components={{
+                    cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }} />,
+                    privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }} />,
+                  }}
+                />
+              </span>
+            </label>
+            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
+              {t("auth.trial")}
+            </p>
+            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
+              {t("health.safety")}
+            </p>
           </div>
         )}
 
@@ -4778,19 +4811,19 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
           {mode === "password" && (
             <>
-              <button onClick={() => switchMode("register")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-                Créer un compte
+              <button onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+                {t("auth.createAccount")}
               </button>
             </>
           )}
           {mode === "register" && (
             <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-              ← J'ai déjà un compte
+              {t("auth.hasAccount")}
             </button>
           )}
           {mode === "reset" && (
             <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-              ← Retour à la connexion
+              {t("auth.backLogin")}
             </button>
           )}
         </div>
@@ -4801,41 +4834,49 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────
 // ── STEP 1 : CATÉGORIE ────────────────────────────────────────────────────
-const Step1_Category = ({ onSelect }) => (
+const Step1_Category = ({ onSelect }) => {
+  const { t } = useTranslation("onboarding");
+  return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>Ton objectif</h2>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>{t("category.title")}</h2>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {CATEGORIES.map(cat => (
         <button key={cat.id} onClick={() => onSelect(cat.id)}
           style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.surface, cursor: "pointer", textAlign: "left" }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{cat.label}</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t(`category.${cat.id}`)}</span>
           <ArrowRight size={16} color={G.greyMid} />
         </button>
       ))}
     </div>
   </div>
-);
+  );
+};
 
 // ── STEP 2 : SOUS-OBJECTIF ────────────────────────────────────────────────
 const Step2_SubGoal = ({ category, onSelect, onBack }) => {
+  const { t } = useTranslation("onboarding");
   const subs = SUB_GOALS[category] || [];
-  const titles = { triathlon: "Quelle distance ?", eau_libre: "Ton objectif ?", diplome: "Quel diplôme ?" };
+  const titles = {
+    triathlon: t("subGoal.triathlon"),
+    eau_libre: t("subGoal.eau_libre"),
+    diplome: t("subGoal.diplome"),
+  };
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>{titles[category] || "Précise ton objectif"}</h2>
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>{titles[category] || t("subGoal.fallback")}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
         {subs.map(s => (
           <button key={s.id} onClick={() => onSelect(s.id)}
             style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.surface, cursor: "pointer", textAlign: "left", gap: 12 }}>
             <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{s.label}</span>
-              {s.dist && <span style={{ fontSize: 12, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>{s.dist}</span>}
+              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t(`subGoal.${s.id}.label`)}</span>
+              {s.dist && <span style={{ fontSize: 12, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>{t(`subGoal.${s.id}.dist`)}</span>}
             </span>
             <ChevronDown size={16} color={G.greyMid} style={{ transform: "rotate(-90deg)", flexShrink: 0 }} />
           </button>
         ))}
       </div>
-      <button onClick={onBack} style={{ width: "100%", padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
+      <button onClick={onBack} style={{ width: "100%", padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.backShort")}</button>
     </div>
   );
 };
@@ -4843,11 +4884,11 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
   const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
   const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "'Lexend', sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
   return (
     <div className="fade-up">
       <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "'Lexend', sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
+      <h2 style={{ fontSize: 30, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
       <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
         <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
@@ -4880,7 +4921,7 @@ const dateSelectStyle = {
   background: G.greyXLight,
   fontSize: 15,
   fontWeight: 600,
-  fontFamily: "'Lexend', sans-serif",
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
   color: G.ink,
   cursor: "pointer",
   outline: "none",
@@ -4889,6 +4930,10 @@ const dateSelectStyle = {
 };
 
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
+  const { t, i18n } = useTranslation("onboarding");
+  const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
+  const monthNames = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => t(`months.${n}`));
+  const weekdayNames = t("weekdays", { returnObjects: true });
   const minD = eventMinDate();
   const maxYear = minD.getFullYear() + 2;
   const selected = parseISODate(value);
@@ -4921,7 +4966,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
     const date = new Date(viewYear, viewMonth, day);
     date.setHours(0, 0, 0, 0);
     if (date < minD) {
-      setErr("Minimum 6 semaines à partir d'aujourd'hui");
+      setErr(t("date.minWeeks"));
       onChange("");
       return;
     }
@@ -4961,15 +5006,15 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
 
   return (
     <div className="fade-up">
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>Étape 5 sur 5</p>
-      <h2 style={{ fontSize: 38, fontFamily: "'Lexend', sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>Date de<br />l'événement ?</h2>
-      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>Minimum 6 semaines pour un bon plan.</p>
+      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>{t("date.kicker")}</p>
+      <h2 style={{ fontSize: 38, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{t("date.title")}</h2>
+      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>{t("date.lead")}</p>
       <div style={{ background: G.surface, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
-        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>Date de l'événement</label>
+        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>{t("date.label")}</label>
 
         {value && !err && (
           <div style={{ fontSize: 15, fontWeight: 600, color: G.blue, marginBottom: 14, textTransform: "capitalize" }}>
-            {formatDateFR(value)}
+            {parseISODate(value)?.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </div>
         )}
 
@@ -4978,9 +5023,9 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
             value={viewMonth}
             onChange={e => setViewMonth(Number(e.target.value))}
             style={dateSelectStyle}
-            aria-label="Mois"
+            aria-label={t("date.month")}
           >
-            {MONTHS_FR.map((name, i) => {
+            {monthNames.map((name, i) => {
               const monthStart = new Date(viewYear, i, 1);
               const monthEnd = new Date(viewYear, i + 1, 0);
               monthEnd.setHours(23, 59, 59, 999);
@@ -4992,7 +5037,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
             value={viewYear}
             onChange={e => setViewYear(Number(e.target.value))}
             style={{ ...dateSelectStyle, flex: "0 0 96px" }}
-            aria-label="Année"
+            aria-label={t("date.year")}
           >
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -5003,31 +5048,31 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
             type="button"
             onClick={prevMonth}
             disabled={!canPrevMonth}
-            aria-label="Mois précédent"
+            aria-label={t("date.prevMonth")}
             style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canPrevMonth ? "pointer" : "not-allowed", opacity: canPrevMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
           >‹</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: G.inkLight }}>{MONTHS_FR[viewMonth]} {viewYear}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: G.inkLight }}>{monthNames[viewMonth]} {viewYear}</span>
           <button
             type="button"
             onClick={nextMonth}
             disabled={!canNextMonth}
-            aria-label="Mois suivant"
+            aria-label={t("date.nextMonth")}
             style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canNextMonth ? "pointer" : "not-allowed", opacity: canNextMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
           >›</button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 14 }}>
-          {WEEKDAYS_FR.map(w => (
+          {(Array.isArray(weekdayNames) ? weekdayNames : WEEKDAYS_FR).map(w => (
             <div key={w} style={{ fontSize: 11, fontWeight: 700, color: G.grey, textAlign: "center", padding: "4px 0" }}>{w}</div>
           ))}
           {calendarCells.map((day, i) => {
             if (!day) return <div key={`e-${i}`} />;
             const disabled = new Date(viewYear, viewMonth, day) < minD;
             const isSel = isDaySelected(day);
-            const today = (() => {
-              const t = new Date(); t.setHours(0, 0, 0, 0);
+            const isToday = (() => {
+              const now = new Date(); now.setHours(0, 0, 0, 0);
               const d = new Date(viewYear, viewMonth, day);
-              return d.getTime() === t.getTime();
+              return d.getTime() === now.getTime();
             })();
             return (
               <button
@@ -5035,7 +5080,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
                 type="button"
                 disabled={disabled}
                 onClick={() => pickDate(day)}
-                aria-label={`${day} ${MONTHS_FR[viewMonth]} ${viewYear}`}
+                aria-label={`${day} ${monthNames[viewMonth]} ${viewYear}`}
                 aria-pressed={isSel}
                 style={{
                   aspectRatio: "1",
@@ -5043,9 +5088,9 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
                   borderRadius: 10,
                   fontSize: 14,
                   fontWeight: isSel ? 700 : 500,
-                  fontFamily: "'Lexend', sans-serif",
+                  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
                   cursor: disabled ? "not-allowed" : "pointer",
-                  background: isSel ? G.blue : today ? G.blueLight : "transparent",
+                  background: isSel ? G.blue : isToday ? G.blueLight : "transparent",
                   color: isSel ? G.white : disabled ? G.greyMid : G.ink,
                   opacity: disabled ? 0.35 : 1,
                 }}
@@ -5057,14 +5102,14 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, flexShrink: 0 }}>Jour</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, flexShrink: 0 }}>{t("date.day")}</span>
           <select
             value={selectedDay}
             onChange={e => { const d = Number(e.target.value); if (d) pickDate(d); }}
             style={{ ...dateSelectStyle, flex: 1 }}
-            aria-label="Jour"
+            aria-label={t("date.day")}
           >
-            <option value="">Choisir un jour…</option>
+            <option value="">{t("date.pickDay")}</option>
             {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
@@ -5073,51 +5118,94 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
       {weeks && !err && (
         <div style={{ background: G.ink, borderRadius: 14, padding: "16px 20px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: G.white }}>{weeks} semaines</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>de préparation · Programme complet</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: G.white }}>{t("date.weeks", { count: weeks })}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{t("date.weeksHint")}</div>
           </div>
           <Calendar size={20} color="rgba(255,255,255,0.3)" />
         </div>
       )}
-      <Btn onClick={onNext} disabled={!value}>Générer mon plan</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <Btn onClick={onNext} disabled={!value}>{t("common.generate")}</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
     </div>
   );
 };
 
-
-const Step3_Level = ({ value, onChange, pool, onPoolChange, onNext, onBack, total = 6, disabledLevels = [] }) => (
+const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevels = [] }) => {
+  const { t } = useTranslation("onboarding");
+  return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 20, lineHeight: 1.1 }}>Ton niveau</h2>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("level.title")}</h2>
+    <p style={{ fontSize: 14, color: G.inkLight, lineHeight: 1.5, marginBottom: 20 }}>
+      {t("level.lead")}
+    </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
       {LEVELS.map(l => {
         const isActive = value === l.id;
         const isDisabled = disabledLevels.includes(l.id);
         return (
           <button key={l.id}
+            type="button"
             onClick={() => !isDisabled && onChange(l.id)}
             disabled={isDisabled}
             style={{
               padding: "14px 16px", borderRadius: 14,
-              border: `2px solid ${isDisabled ? G.greyLight : isActive ? l.color : G.greyLight}`,
-              background: isDisabled ? G.greyXLight : isActive ? l.bg : G.surface,
+              border: `2px solid ${isDisabled ? G.greyLight : isActive ? G.blue : G.greyLight}`,
+              background: isDisabled ? G.greyXLight : isActive ? G.blueLight : G.surface,
               cursor: isDisabled ? "default" : "pointer", textAlign: "left", opacity: isDisabled ? 0.55 : 1,
             }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? l.color : G.ink }}>{l.label}</div>
-            {!isDisabled && <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{l.desc}</div>}
+            <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? G.blue : G.ink }}>{t(`level.${l.id}.label`)}</div>
+            {!isDisabled && <div style={{ fontSize: 13, color: isActive ? G.inkLight : G.grey, marginTop: 2 }}>{t(`level.${l.id}.desc`)}</div>}
           </button>
         );
       })}
     </div>
-    <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-      {POOLS.map(p => (
-        <button key={p.id} onClick={() => onPoolChange(p.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `2px solid ${pool === p.id ? G.ink : G.greyLight}`, background: pool === p.id ? G.ink : G.surface, color: pool === p.id ? G.inverse : G.ink, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{p.label}</button>
-      ))}
-    </div>
-    <Btn onClick={onNext} disabled={!value}>Continuer</Btn>
-    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>Retour</button>
+    <Btn onClick={onNext} disabled={!value}>{t("common.continue")}</Btn>
+    <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.backShort")}</button>
   </div>
-);
+  );
+};
+
+const Step3_Pool = ({ value, onChange, onNext, onBack }) => {
+  const { t } = useTranslation("onboarding");
+  return (
+  <div className="fade-up">
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("pool.title")}</h2>
+    <p style={{ fontSize: 16, fontWeight: 600, color: G.ink, lineHeight: 1.35, marginBottom: 8 }}>
+      {t("pool.lead")}
+    </p>
+    <p style={{ fontSize: 14, color: G.inkLight, lineHeight: 1.5, marginBottom: 20 }}>
+      {t("pool.hint")}
+    </p>
+    <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+      {POOLS.map(p => {
+        const isActive = Number(value) === p.id;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onChange(p.id)}
+            style={{
+              flex: 1,
+              padding: "16px 14px",
+              borderRadius: 14,
+              border: `2px solid ${isActive ? G.blue : G.greyLight}`,
+              background: isActive ? G.blueLight : G.surface,
+              color: isActive ? G.blue : G.ink,
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            {p.id === 50 ? t("pool.m50") : t("pool.m25")}
+          </button>
+        );
+      })}
+    </div>
+    <Btn onClick={onNext} disabled={!value}>{t("common.continue")}</Btn>
+    <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.backShort")}</button>
+  </div>
+  );
+};
 
 // ── Helpers temps /100 m (T100) ───────────────────────────────────────────
 function parsePaceInput(raw, maxSecs = 9 * 60) {
@@ -5182,7 +5270,7 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
         style={{
           width: "100%", boxSizing: "border-box",
           padding: "16px 14px", fontSize: 24,
-          fontFamily: "'Lexend', sans-serif", fontWeight: 700,
+          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
           textAlign: "center", letterSpacing: "0.06em",
           border: `2px solid ${err ? "#FF3B30" : value && !disabled ? G.blue : G.greyLight}`,
           borderRadius: 14, outline: "none",
@@ -5198,11 +5286,13 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
   );
 }
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => (
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => {
+  const { t } = useTranslation("onboarding");
+  return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Séances par semaine</h2>
+    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("frequency.title")}</h2>
     <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-      Ton essai Premium donne accès à toute la charge d'entraînement dès le départ.
+      {t("frequency.lead")}
     </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
       {FREQUENCIES.map(f => {
@@ -5219,7 +5309,7 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
             opacity: locked ? 0.8 : 1,
           }}>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{f.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{t("frequency.n", { count: f.id })}</div>
             </div>
             {isActive && !locked && <Check size={16} color={G.white} />}
             {locked && (
@@ -5232,10 +5322,11 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
         );
       })}
     </div>
-    <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
-    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+    <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? t("common.generate") : t("common.continue")}</Btn>
+    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
   </div>
-);
+  );
+};
 
 const onboardingNumInp = {
   width: "100%",
@@ -5243,7 +5334,7 @@ const onboardingNumInp = {
   borderRadius: 12,
   border: `1.5px solid ${G.greyLight}`,
   fontSize: 18,
-  fontFamily: "'Lexend', sans-serif",
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
   fontWeight: 700,
   color: G.ink,
   background: G.surface,
@@ -5253,56 +5344,83 @@ const onboardingNumInp = {
 };
 
 /** Naissance · poids · taille — commun à tous les programmes */
-const StepPhysique = ({ birthMonth, birthYear, weightKg, heightCm, onChange, onPatch, onNext, onBack }) => {
+const StepPhysique = ({ birthMonth, birthDay, birthYear, weightKg, heightCm, onChange, onPatch, onNext, onBack }) => {
+  const { t } = useTranslation("onboarding");
   const nowY = new Date().getFullYear();
-  const ageN = computeAgeFromBirth(birthMonth, birthYear);
+  const dim = daysInBirthMonth(birthMonth, birthYear);
+  const dayN = Number(birthDay);
+  const dayOk = Number.isFinite(dayN) && dayN >= 1 && dayN <= dim;
+  const ageN = computeAgeFromBirth(birthMonth, birthYear, new Date(), birthDay);
   const wN = parseFloat(String(weightKg).replace(",", "."));
   const hN = parseInt(heightCm, 10);
-  const ageOk = ageN != null && ageN >= 10 && ageN <= 90;
+  const ageOk = dayOk && ageN != null && ageN >= 10 && ageN <= 90;
   const weightOk = Number.isFinite(wN) && wN >= 30 && wN <= 250;
   const heightOk = Number.isFinite(hN) && hN >= 100 && hN <= 230;
   const canNext = ageOk && weightOk && heightOk;
 
-  const setBirth = (month, year) => {
+  const setBirth = (day, month, year) => {
+    const d = day === "" || day == null ? "" : Number(day);
     const m = month === "" || month == null ? "" : Number(month);
     const y = year === "" || year == null ? "" : Number(year);
-    const age = computeAgeFromBirth(m, y);
+    const maxD = daysInBirthMonth(m, y);
+    const clampedDay = d === "" ? "" : Math.min(Math.max(1, d), maxD);
+    const age = computeAgeFromBirth(m, y, new Date(), clampedDay);
     const patch = {
+      birthDay: clampedDay === "" ? "" : clampedDay,
       birthMonth: m === "" ? "" : m,
       birthYear: y === "" ? "" : y,
       ...(age != null ? { age } : { age: "" }),
     };
     if (typeof onPatch === "function") onPatch(patch);
     else {
+      onChange("birthDay", patch.birthDay);
       onChange("birthMonth", patch.birthMonth);
       onChange("birthYear", patch.birthYear);
       onChange("age", patch.age);
     }
   };
 
+  const dayOptions = [];
+  for (let d = 1; d <= dim; d++) dayOptions.push(d);
+
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Ton profil</h2>
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("physique.title")}</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        Date de naissance, poids et taille — pour mieux adapter ton plan.
+        {t("physique.lead")}
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
         <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}` }}>
           <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-            Naissance
+            {t("physique.birth")}
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.4fr 1fr", gap: 8 }}>
+            <select
+              value={birthDay === "" || birthDay == null ? "" : Number(birthDay)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setBirth(raw === "" ? "" : Number(raw), birthMonth, birthYear);
+              }}
+              aria-label={t("physique.day")}
+              style={{ ...onboardingNumInp, cursor: "pointer", textAlign: "left", fontSize: 16 }}
+            >
+              <option value="">{t("physique.day")}</option>
+              {dayOptions.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
             <select
               value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
               onChange={(e) => {
                 const raw = e.target.value;
-                setBirth(raw === "" ? "" : Number(raw), birthYear);
+                setBirth(birthDay, raw === "" ? "" : Number(raw), birthYear);
               }}
+              aria-label={t("physique.month")}
               style={{ ...onboardingNumInp, cursor: "pointer", textAlign: "left", fontSize: 16 }}
             >
-              <option value="">Mois</option>
+              <option value="">{t("physique.month")}</option>
               {BIRTH_MONTH_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>{t(`months.${o.value}`)}</option>
               ))}
             </select>
             <input
@@ -5313,25 +5431,21 @@ const StepPhysique = ({ birthMonth, birthYear, weightKg, heightCm, onChange, onP
               value={birthYear ?? ""}
               onChange={(e) => {
                 const raw = e.target.value;
-                setBirth(birthMonth, raw === "" ? "" : Number(raw));
+                setBirth(birthDay, birthMonth, raw === "" ? "" : Number(raw));
               }}
-              placeholder="Année"
+              placeholder={t("physique.year")}
+              aria-label={t("physique.year")}
               style={onboardingNumInp}
             />
           </div>
-          {ageN != null && (
-            <div style={{ marginTop: 10, fontSize: 13, color: G.grey }}>
-              Âge actuel : <span style={{ fontWeight: 700, color: G.ink }}>{ageN} ans</span>
-            </div>
-          )}
         </div>
         {[
-          { key: "weightKg", label: "Poids", value: weightKg, placeholder: "ex : 72", suffix: "kg", inputMode: "decimal" },
-          { key: "heightCm", label: "Taille", value: heightCm, placeholder: "ex : 175", suffix: "cm", inputMode: "numeric" },
+          { key: "weightKg", label: t("physique.weight"), value: weightKg, placeholder: t("physique.weightPh"), inputMode: "decimal" },
+          { key: "heightCm", label: t("physique.height"), value: heightCm, placeholder: t("physique.heightPh"), inputMode: "numeric" },
         ].map((f) => (
           <div key={f.key} style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}` }}>
             <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-              {f.label} ({f.suffix})
+              {f.label}
             </label>
             <input
               type="number"
@@ -5344,70 +5458,65 @@ const StepPhysique = ({ birthMonth, birthYear, weightKg, heightCm, onChange, onP
           </div>
         ))}
       </div>
-      <Btn onClick={onNext} disabled={!canNext}>Continuer</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <Btn onClick={onNext} disabled={!canNext}>{t("common.continue")}</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
     </div>
   );
 };
 
-/** Consentement art. 9 RGPD — écran séparé (pas fusionné avec les CGU). */
-const StepHealthConsent = ({ checked, onChange, onAccept, onRefuse, onBack }) => (
-  <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{HEALTH_CONSENT_TITLE}</h2>
-    <p style={{ fontSize: 14, color: G.grey, marginBottom: 14, lineHeight: 1.5 }}>{HEALTH_CONSENT_BODY}</p>
-    <p style={{ fontSize: 12, color: G.greyMid, marginBottom: 16, lineHeight: 1.45 }}>{MEDICAL_WARNING_SHORT}</p>
-    <label style={{
-      display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 18,
-      padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: G.surface,
-      fontSize: 13, lineHeight: 1.5, color: G.ink, cursor: "pointer",
-    }}>
-      <input
-        type="checkbox"
-        checked={!!checked}
-        onChange={(e) => onChange(e.target.checked)}
-        style={{ marginTop: 3, flexShrink: 0 }}
-      />
-      <span>{HEALTH_CONSENT_CHECKBOX}</span>
-    </label>
-    <Btn onClick={() => (checked ? onAccept() : onRefuse())} disabled={false}>
-      {checked ? "Continuer" : "Continuer sans données de santé"}
-    </Btn>
-    <button
-      type="button"
-      onClick={onRefuse}
-      style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}
-    >
-      Je refuse le traitement des données de santé
-    </button>
-    <button onClick={onBack} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
-  </div>
-);
-
-/** Blessure — listes fermées uniquement (minimisation art. 9). */
+/** Blessure + consentement santé (art. 9) — un seul écran. */
 const StepInjury = ({
   injuryStatus,
   injuryZone,
   injurySeverity,
   healthDeclaration,
+  healthConsent,
   onChangeStatus,
   onChangeZone,
   onChangeSeverity,
   onChangeDeclaration,
+  onChangeConsent,
   onNext,
+  onRefuse,
   onBack,
 }) => {
-  const canNext = injuryStatus === "aucune"
+  const { t } = useTranslation("onboarding");
+  const consented = !!healthConsent;
+  const canNext = !consented
+    || injuryStatus === "aucune"
     || (injuryStatus === "oui" && injuryZone && injurySeverity && healthDeclaration);
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Blessure ?</h2>
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("injury.title")}</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
-        Indique une zone et un niveau de gravité (listes fermées). Pas de diagnostic ni de traitement à saisir.
+        {t("injury.lead")}
       </p>
+      <label style={{
+        display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 12,
+        padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: G.surface,
+        fontSize: 13, lineHeight: 1.5, color: G.ink, cursor: "pointer",
+      }}>
+        <input
+          type="checkbox"
+          checked={consented}
+          onChange={(e) => onChangeConsent(e.target.checked)}
+          style={{ marginTop: 3, flexShrink: 0 }}
+        />
+        <span>{t("health.checkbox")}</span>
+      </label>
+      <details style={{ marginBottom: 16 }}>
+        <summary style={{ cursor: "pointer", color: G.blue, fontWeight: 700, fontSize: 14, listStyle: "none" }}>
+          {t("injury.learnMore")}
+        </summary>
+        <div style={{ marginTop: 10, fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
+          <p>{t("health.body")}</p>
+          <p style={{ marginTop: 8 }}>{t("health.medical")}</p>
+        </div>
+      </details>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {[
-          { id: "aucune", label: "Aucune blessure", desc: "Je nage sans gêne particulière" },
-          { id: "oui", label: "Oui, j'ai une blessure / gêne", desc: "Zone + gravité ci-dessous" },
+          { id: "aucune", label: t("injury.none"), desc: t("injury.noneDesc") },
+          { id: "oui", label: t("injury.yes"), desc: t("injury.yesDesc") },
         ].map((opt) => {
           const active = injuryStatus === opt.id;
           return (
@@ -5427,9 +5536,12 @@ const StepInjury = ({
           );
         })}
       </div>
-      {injuryStatus === "oui" && (
+      {injuryStatus === "oui" && !consented && (
+        <p style={{ fontSize: 13, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>{t("injury.consentHint")}</p>
+      )}
+      {injuryStatus === "oui" && consented && (
         <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Zone du corps</div>
+          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{t("injury.zone")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             {INJURY_ZONES.map((z) => {
               const active = injuryZone === z.id;
@@ -5445,12 +5557,12 @@ const StepInjury = ({
                     color: active ? G.blue : G.ink,
                   }}
                 >
-                  {z.label}
+                  {t(`injury.zones.${z.id}`)}
                 </button>
               );
             })}
           </div>
-          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Gravité</div>
+          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{t("injury.severity")}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
             {INJURY_SEVERITIES.map((s) => {
               const active = injurySeverity === s.id;
@@ -5465,8 +5577,8 @@ const StepInjury = ({
                     background: active ? G.blueLight : G.greyXLight,
                   }}
                 >
-                  <div style={{ fontSize: 14, fontWeight: 700, color: active ? G.blue : G.ink }}>{s.label}</div>
-                  <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{s.desc}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: active ? G.blue : G.ink }}>{t(`injury.severities.${s.id}.label`)}</div>
+                  <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{t(`injury.severities.${s.id}.desc`)}</div>
                 </button>
               );
             })}
@@ -5478,28 +5590,38 @@ const StepInjury = ({
               onChange={(e) => onChangeDeclaration(e.target.checked)}
               style={{ marginTop: 2, flexShrink: 0 }}
             />
-            <span>{HEALTH_DECLARATION_LABEL}</span>
+            <span>{t("health.declaration")}</span>
           </label>
         </div>
       )}
-      <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>{SPORT_SAFETY_SHORT}</p>
-      <Btn onClick={onNext} disabled={!canNext}>Continuer</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>{t("health.safety")}</p>
+      <Btn onClick={onNext} disabled={!canNext}>
+        {consented ? t("common.continue") : t("injury.continueWithout")}
+      </Btn>
+      <button
+        type="button"
+        onClick={onRefuse}
+        style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}
+      >
+        {t("injury.refuse")}
+      </button>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
     </div>
   );
 };
 
 const EQUIPMENT_OPTS = [
-  { id: "palmes", label: "Palmes" },
-  { id: "tuba", label: "Tuba frontal" },
-  { id: "pull", label: "Pull-buoy" },
-  { id: "planche", label: "Planche" },
-  { id: "plaquettes", label: "Plaquettes" },
-  { id: "elastique", label: "Élastique" },
+  { id: "palmes" },
+  { id: "tuba" },
+  { id: "pull" },
+  { id: "planche" },
+  { id: "plaquettes" },
 ];
+const eqLabel = (id) => i18n.t(`equipment.${id}`, { ns: "onboarding", defaultValue: id });
 
 /** Matériel dispo — même multi-sélection à tous les niveaux (plusieurs ou aucun). */
 const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
+  const { t } = useTranslation("onboarding");
   const selected = Array.isArray(equipment) ? equipment : [];
   const answered = Array.isArray(equipment); // null = pas encore répondu
 
@@ -5519,10 +5641,10 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        Quel matériel as-tu à disposition ?
+        {t("equipment.title")}
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        Tu peux en cocher plusieurs, ou aucun. On l’intègre quand c’est utile — jamais de matos que tu n’as pas.
+        {t("equipment.lead")}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -5540,7 +5662,7 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
                 fontWeight: 700, fontSize: 15, color: G.ink,
               }}
             >
-              {active ? "✓ " : ""}{o.label}
+              {active ? "✓ " : ""}{t(`equipment.${o.id}`)}
             </button>
           );
         })}
@@ -5555,11 +5677,11 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
           fontWeight: 700, fontSize: 14, color: G.ink,
         }}
       >
-        {answered && selected.length === 0 ? "✓ " : ""}Aucun
+        {answered && selected.length === 0 ? "✓ " : ""}{t("equipment.noneShort")}
       </button>
 
-      <Btn onClick={handleNext}>Continuer</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <Btn onClick={handleNext}>{t("common.continue")}</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
     </div>
   );
 };
@@ -5575,6 +5697,7 @@ const StepSwimPrefs = ({
   isLast = false,
   hideFourNages = false,
 }) => {
+  const { t } = useTranslation("onboarding");
   useEffect(() => {
     if (hideFourNages && swimStyle !== "crawl") onChangeStyle("crawl");
   }, [hideFourNages, swimStyle, onChangeStyle]);
@@ -5582,17 +5705,15 @@ const StepSwimPrefs = ({
   const canNext = hideFourNages ? !!preferredStroke : !!swimStyle && !!preferredStroke;
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Tes nages</h2>
+      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("prefs.title")}</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        {hideFourNages
-          ? "Dis-nous ta nage préférée — en triathlon et en eau libre, on travaille surtout le crawl."
-          : "Dis-nous ce que tu préfères — on orientera tes séances."}
+        {hideFourNages ? t("prefs.leadOpen") : t("prefs.lead")}
       </p>
 
       {!hideFourNages && (
         <>
       <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-        Style préféré
+        {t("prefs.style")}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
         {SWIM_STYLES.map((s) => {
@@ -5608,8 +5729,8 @@ const StepSwimPrefs = ({
                 background: active ? G.blue : G.surface,
               }}
             >
-              <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.white : G.ink }}>{s.label}</div>
-              <div style={{ fontSize: 13, color: active ? "rgba(255,255,255,0.75)" : G.grey, marginTop: 2 }}>{s.desc}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.white : G.ink }}>{t(`prefs.${s.id}.label`)}</div>
+              <div style={{ fontSize: 13, color: active ? "rgba(255,255,255,0.75)" : G.grey, marginTop: 2 }}>{t(`prefs.${s.id}.desc`)}</div>
             </button>
           );
         })}
@@ -5618,7 +5739,7 @@ const StepSwimPrefs = ({
       )}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-        Nage préférée
+        {t("prefs.stroke")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
         {PREFERRED_STROKES.map((s) => {
@@ -5636,14 +5757,14 @@ const StepSwimPrefs = ({
                 color: active ? G.blue : G.ink,
               }}
             >
-              {s.label}
+              {t(`prefs.strokes.${s.id}`)}
             </button>
           );
         })}
       </div>
 
-      <Btn onClick={onNext} disabled={!canNext}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
+      <Btn onClick={onNext} disabled={!canNext}>{isLast ? t("common.generate") : t("common.continue")}</Btn>
+      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
     </div>
   );
 };
@@ -5719,8 +5840,8 @@ const StepTrainingFocus = ({
 /**
  * Questionnaire plan — plein écran (visiteur) ou onglet Programme (compte).
  * mode="full" : profil nageur + objectif (1re fois)
- * mode="goal" : objectif + wish seulement (profil déjà connu)
- * Distance habituelle = profil ; wish libre = objectif du cycle.
+ * mode="goal" : objectif seulement (profil déjà connu)
+ * Distance habituelle = profil.
  */
 const OnboardingWizard = ({
   profile,
@@ -5736,37 +5857,40 @@ const OnboardingWizard = ({
   mode = "full",
   onEditProfile = null,
 }) => {
+  const { t } = useTranslation("onboarding");
   const isGoalMode = mode === "goal";
   const isProgression = profile.category === "progression";
   const isDiplome = profile.category === "diplome";
   const noDate = isProgression;
   const disabledLevels = [];
 
-  const equipmentSummary = (() => {
-    if (!Array.isArray(profile.equipment)) return "Non renseigné";
-    if (profile.equipment.length === 0) return "Aucun";
-    return profile.equipment.map((id) => EQUIPMENT_OPTS.find((o) => o.id === id)?.label || id).join(" · ");
-  })();
-
   const totalSteps = isGoalMode
-    ? (isProgression ? 2 : 4)
+    ? (isProgression ? 1 : 3)
     : (isProgression ? 8 : isDiplome ? 9 : 10);
 
-  const stepBefore5 = isDiplome ? 2 : 3;
+  const stepBefore5 = 4;
   const progressStep = (() => {
     if (isGoalMode) {
-      if (isProgression) return ({ 1: 1, 13: 2 })[step] || 1;
-      return ({ 1: 1, 2: 2, 6: 3, 13: 4 })[step] || 1;
+      if (isProgression) return 1;
+      return ({ 1: 1, 2: 2, 6: 3 })[step] || 1;
     }
-    if (isProgression) return ({ 3: 1, 5: 2, 7: 3, 8: 4, 10: 5, 12: 6, 9: 7, 13: 8 })[step] || 1;
-    if (isDiplome) return ({ 2: 1, 5: 2, 7: 3, 8: 4, 10: 5, 12: 6, 9: 7, 6: 8, 13: 9 })[step] || 1;
-    return ({ 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 6: 9, 13: 10 })[step] || 1;
+    if (isProgression) return ({ 3: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8 })[step] || 1;
+    if (isDiplome) return ({ 2: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 6: 9 })[step] || 1;
+    return ({ 2: 1, 3: 2, 4: 3, 5: 4, 7: 5, 8: 6, 10: 7, 12: 8, 9: 9, 6: 10 })[step] || 1;
   })();
+
+  const generateNow = (extra = {}) => {
+    const patch = extra && typeof extra === "object" && extra.nativeEvent == null ? extra : {};
+    const next = { ...profile, trainingWish: "", trainingWishMeta: null, ...patch };
+    patchProfile(next);
+    onGenerate(next);
+  };
 
   const goAfterCategory = (cat) => {
     if (cat === "progression") {
-      patchProfile({ category: cat, goal: "progression", pace100: null });
-      if (isGoalMode) setStep(13);
+      const extra = { category: cat, goal: "progression", pace100: null };
+      patchProfile(extra);
+      if (isGoalMode) generateNow(extra);
       else setStep(3);
     } else {
       patchProfile({ category: cat, goal: "", pace100: null });
@@ -5778,29 +5902,17 @@ const OnboardingWizard = ({
     if (isGoalMode) {
       if (isDiplome) patchProfile({ goal: goalId, level: "sportif" });
       else update("goal", goalId);
-      setStep(noDate ? 13 : 6);
+      if (noDate) generateNow();
+      else setStep(6);
       return;
     }
     if (isDiplome) {
       patchProfile({ goal: goalId, level: "sportif" });
-      setStep(5);
+      setStep(4);
     } else {
       update("goal", goalId);
       setStep(3);
     }
-  };
-
-  const finishWish = () => {
-    const raw = typeof profile.trainingWish === "string" ? profile.trainingWish.trim() : "";
-    if (raw) {
-      patchProfile({
-        trainingWish: raw,
-        trainingWishMeta: parseTrainingWish(raw),
-      });
-    } else {
-      patchProfile({ trainingWish: "", trainingWishMeta: null });
-    }
-    onGenerate();
   };
 
   return (
@@ -5814,12 +5926,12 @@ const OnboardingWizard = ({
             color: G.grey, cursor: "pointer", fontSize: 14, fontWeight: 600,
           }}
         >
-          ← Annuler
+          {t("common.cancel")}
         </button>
       )}
       {step > 1 && <Progress step={progressStep} total={totalSteps} />}
       {error && (
-        <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#CC0000", fontSize: 13 }}>
+        <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: G.coral, fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -5838,14 +5950,21 @@ const OnboardingWizard = ({
       {!isGoalMode && step === 3 && !isDiplome && (
         <Step3_Level
           value={profile.level} onChange={v => update("level", v)}
-          pool={profile.pool} onPoolChange={v => update("pool", v)}
           total={totalSteps}
           disabledLevels={disabledLevels}
           onNext={() => {
             update("pace100", null);
-            setStep(5);
+            setStep(4);
           }}
           onBack={() => isProgression ? setStep(1) : setStep(2)} />
+      )}
+
+      {!isGoalMode && step === 4 && (
+        <Step3_Pool
+          value={profile.pool}
+          onChange={v => update("pool", v)}
+          onNext={() => setStep(5)}
+          onBack={() => setStep(isDiplome ? 2 : 3)} />
       )}
 
       {!isGoalMode && step === 5 && (
@@ -5864,6 +5983,7 @@ const OnboardingWizard = ({
       {!isGoalMode && step === 7 && (
         <StepPhysique
           birthMonth={profile.birthMonth}
+          birthDay={profile.birthDay}
           birthYear={profile.birthYear}
           weightKg={profile.weightKg}
           heightCm={profile.heightCm}
@@ -5875,15 +5995,53 @@ const OnboardingWizard = ({
       )}
 
       {!isGoalMode && step === 8 && (
-        <StepHealthConsent
-          checked={!!profile.healthConsent}
-          onChange={(v) => {
-            if (v) patchProfile({ healthConsent: true, healthConsentAt: new Date().toISOString() });
-            else update("healthConsent", v);
+        <StepInjury
+          injuryStatus={profile.injuryStatus}
+          injuryZone={profile.injuryZone}
+          injurySeverity={profile.injurySeverity}
+          healthDeclaration={profile.healthDeclaration}
+          healthConsent={profile.healthConsent}
+          onChangeConsent={(v) => {
+            if (v) {
+              patchProfile({ healthConsent: true, healthConsentAt: new Date().toISOString() });
+            } else {
+              patchProfile({
+                healthConsent: false,
+                healthConsentAt: null,
+                injuryStatus: profile.injuryStatus === "oui" ? "aucune" : profile.injuryStatus,
+                injuryZone: null,
+                injurySeverity: null,
+                healthDeclaration: false,
+              });
+            }
           }}
-          onAccept={() => {
-            patchProfile({ healthConsent: true, healthConsentAt: new Date().toISOString() });
-            setStep(11);
+          onChangeStatus={(v) => {
+            if (v === "aucune") {
+              patchProfile({
+                injuryStatus: v,
+                injuryZone: null,
+                injurySeverity: null,
+                healthDeclaration: false,
+              });
+            } else {
+              update("injuryStatus", v);
+            }
+          }}
+          onChangeZone={(v) => update("injuryZone", v)}
+          onChangeSeverity={(v) => update("injurySeverity", v)}
+          onChangeDeclaration={(v) => update("healthDeclaration", v)}
+          onNext={() => {
+            if (!profile.healthConsent) {
+              patchProfile({
+                healthConsent: false,
+                healthConsentAt: null,
+                injuryStatus: "aucune",
+                injuryZone: null,
+                injurySeverity: null,
+                healthDeclaration: false,
+              });
+            }
+            setStep(10);
           }}
           onRefuse={() => {
             patchProfile({
@@ -5900,38 +6058,12 @@ const OnboardingWizard = ({
         />
       )}
 
-      {!isGoalMode && step === 11 && (
-        <StepInjury
-          injuryStatus={profile.injuryStatus}
-          injuryZone={profile.injuryZone}
-          injurySeverity={profile.injurySeverity}
-          healthDeclaration={profile.healthDeclaration}
-          onChangeStatus={(v) => {
-            if (v === "aucune") {
-              patchProfile({
-                injuryStatus: v,
-                injuryZone: null,
-                injurySeverity: null,
-                healthDeclaration: false,
-              });
-            } else {
-              update("injuryStatus", v);
-            }
-          }}
-          onChangeZone={(v) => update("injuryZone", v)}
-          onChangeSeverity={(v) => update("injurySeverity", v)}
-          onChangeDeclaration={(v) => update("healthDeclaration", v)}
-          onNext={() => setStep(10)}
-          onBack={() => setStep(8)}
-        />
-      )}
-
       {!isGoalMode && step === 10 && (
         <StepEquipment
           equipment={profile.equipment}
           onChange={(v) => update("equipment", v)}
           onNext={() => setStep(12)}
-          onBack={() => setStep(profile.healthConsent ? 11 : 8)}
+          onBack={() => setStep(8)}
         />
       )}
 
@@ -5954,9 +6086,9 @@ const OnboardingWizard = ({
           hideFourNages={goalHidesFourNages(profile)}
           onChangeStyle={(v) => update("swimStyle", v)}
           onChangeStroke={(v) => update("preferredStroke", v)}
-          onNext={() => (noDate ? setStep(13) : setStep(6))}
+          onNext={() => (noDate ? generateNow() : setStep(6))}
           onBack={() => setStep(12)}
-          isLast={false}
+          isLast={noDate}
         />
       )}
 
@@ -5964,69 +6096,29 @@ const OnboardingWizard = ({
         <Step2_Date
           value={profile.eventDate}
           onChange={v => update("eventDate", v)}
-          onNext={() => setStep(13)}
+          onNext={() => generateNow()}
           onBack={() => {
             if (isGoalMode) setStep(2);
             else setStep(9);
           }}
         />
       )}
-
-      {step === 13 && (
-        <div>
-          {isGoalMode && (
-            <div style={{
-              background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16,
-              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-            }}>
-              <div style={{ fontSize: 13, color: G.ink, lineHeight: 1.4, minWidth: 0 }}>
-                <span style={{ fontWeight: 700 }}>Matériel disponible · </span>
-                {equipmentSummary}
-              </div>
-              {onEditProfile && (
-                <button
-                  type="button"
-                  onClick={onEditProfile}
-                  style={{
-                    flexShrink: 0, background: "none", border: "none", color: G.blue,
-                    fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4,
-                  }}
-                >
-                  Modifier
-                </button>
-              )}
-            </div>
-          )}
-          <StepTrainingWish
-            value={profile.trainingWish}
-            onChange={(v) => update("trainingWish", v)}
-            onNext={finishWish}
-            onBack={() => {
-              if (isGoalMode) {
-                if (noDate) setStep(isProgression ? 1 : 2);
-                else setStep(6);
-              } else {
-                setStep(noDate ? 9 : 6);
-              }
-            }}
-            isLast
-            Btn={Btn}
-            G={G}
-          />
-        </div>
-      )}
     </>
   );
 };
 
 // ── LOADING ───────────────────────────────────────────────────────────────
-/** Boot loader Apple-like — wordmark + spinner fin + Loading. Styles dans index.html. */
+/** Boot loader — logo + barre. Styles dans index.html. */
 const Loading = () => (
   <div className="myswym-boot" role="status" aria-live="polite" aria-busy="true">
     <div className="myswym-boot-inner">
-      <p className="myswym-boot-mark">MySWYM</p>
-      <div className="myswym-boot-spinner" aria-hidden="true" />
-      <p className="myswym-boot-label">Loading</p>
+      <div className="myswym-boot-icon-wrap">
+        <img className="myswym-boot-icon" src="/apple-touch-icon.png" alt="" width={88} height={88} />
+      </div>
+      <img className="myswym-boot-wordmark" src="/logo-myswym-banner-blanc.png" alt="mySWYM" height={28} width={192} />
+      <p className="myswym-boot-status">Préparation de votre espace nageur</p>
+      <div className="myswym-boot-track" aria-hidden="true"><div className="myswym-boot-bar" /></div>
+      <p className="myswym-boot-label">Un instant</p>
     </div>
   </div>
 );
@@ -6051,14 +6143,14 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
+        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
         <div style={{ background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(142,179,255,0.15)" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
             <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
-          <div style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
+          <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 12 }}>
             {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
               <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px" }}>
@@ -6155,7 +6247,7 @@ const ConfirmSheet = ({
       <h3
         id="confirm-sheet-title"
         style={{
-          fontFamily: "'Lexend', sans-serif", fontSize: 20, fontWeight: 800,
+          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800,
           color: G.ink, textAlign: "center", marginBottom: 8,
         }}
       >
@@ -6212,7 +6304,7 @@ const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Semaine {weekNumber} terminée
         </p>
-        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment tu t'es senti·e ?
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: isPremium ? 28 : 12, lineHeight: 1.5 }}>
@@ -6288,7 +6380,7 @@ const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremi
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Retour séance
         </p>
-        <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment c'était ?
         </h3>
         {sessionTitle && (
@@ -6488,7 +6580,7 @@ const countCompletedSessions = (p) =>
   (p?.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0);
 
 const PREMIUM_TIER_LINES = [
-  "Essai 7 jours sans carte, puis 4,99€/mois",
+  `Essai 7 jours sans carte, puis ${PRICING_SUMMARY_FR}`,
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
@@ -6559,10 +6651,6 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
   );
 };
 
-const PRICE_MONTHLY  = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-const PRICE_ANNUAL   = "price_1TudyVAS4mfgF2TwHiSo3Vrg";
-const PRICE_BIENNIAL = "price_1Tue7cAS4mfgF2TwP53wZ7qn";
-
 const ReferralShareCard = () => {
   const [code, setCode] = useState(null);
   const [shareUrl, setShareUrl] = useState(null);
@@ -6620,7 +6708,7 @@ const ReferralShareCard = () => {
         Ton ami bénéficie de −20% sur sa 1ère facture. Tu reçois 4,99€ de crédit quand il s’abonne.
       </div>
       {loading && <div style={{ fontSize: 12, color: G.greyMid }}>Chargement du lien…</div>}
-      {err && <div style={{ fontSize: 12, color: "#CC0000" }}>{err}</div>}
+      {err && <div style={{ fontSize: 12, color: G.coral }}>{err}</div>}
       {code && shareUrl && (
         <>
           <div style={{
@@ -6685,10 +6773,10 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Check size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 8 }}>
             {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
@@ -6744,10 +6832,12 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
           acceptWithdrawal={acceptWithdrawal}
           onAcceptWithdrawal={handleAcceptWithdrawal}
           ink={G.ink}
+          muted={G.inkLight}
+          linkColor={G.blueMid}
           idPrefix="plan-ready-legal"
         />
 
-        {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: G.coral, fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleContinue} disabled={loading}>
           {loading ? "Redirection…" : "S’abonner — débloquer mon coach"}
         </Btn>
@@ -6770,7 +6860,7 @@ const CancelSurveySheet = ({ onChoose, onSkip }) => {
     <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: "uppercase", color: G.ink, marginBottom: 8, textAlign: "center" }}>
+        <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, textAlign: "center" }}>
           Avant de partir
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
@@ -6820,20 +6910,20 @@ const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
   >
     <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
       <div style={{
-        width: 64, height: 64, borderRadius: 20, background: G.ink,
+        width: 64, height: 64, borderRadius: 20, background: G.blue,
         display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px",
       }}>
         <Lock size={28} color={G.gold} />
       </div>
       <h1 id="freeze-title" style={{
-        fontFamily: "'Barlow Condensed', sans-serif", fontSize: 36, fontWeight: 800,
-        textTransform: "uppercase", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
+        fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 36, fontWeight: 800,
+        textTransform: "none", letterSpacing: "-0.03em", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
       }}>
         Ton essai est terminé
       </h1>
       <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 28px" }}>
         L’application est gelée. Tes plans et séances ne sont plus visibles.
-        Abonne-toi pour tout retrouver — 4,99€/mois sans engagement, ou 39,99€/an.
+        Abonne-toi pour tout retrouver — {PRICING_SUMMARY_FR}.
       </p>
       <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
         Choisir un abonnement
@@ -6858,7 +6948,7 @@ const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
 const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true, planWeeks = 0, canDismiss = true }) => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState("monthly");
+  const [period, setPeriod] = useState("monthly_flex");
   const [user, setUser] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
@@ -6876,6 +6966,8 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   const hasReferral = Boolean(resolveReferralCode(user));
   const showTrialOffer = false;
   const isAnnual = period === "annual";
+  const isCommit = period === "monthly_commit";
+  const selectedPriceId = priceIdForPlan(period);
   const trialEnded = softContext === "trial_expired" || !!weeksBlocked;
   const resolvedContext = trialEnded && softContext !== "trial_expired" ? "trial_expired" : softContext;
   const copy = getUpgradeCopy(resolvedContext, {
@@ -6916,7 +7008,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
     }
     setLoading(true); setErr(null);
     try {
-      const priceId = isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY;
+      const priceId = selectedPriceId;
       const referralCode = resolveReferralCode(user);
       trackEvent("checkout_started", {
         source: "upgrade_modal",
@@ -6939,72 +7031,102 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
   };
 
   const ctaLabel = isAnnual
-    ? "Démarrer — 39,99€/an"
-    : showTrialOffer
-      ? "Essai 7 jours — puis 4,99€/mois"
-      : hasReferral
-        ? "Démarrer — −20% parrainage"
-        : "Démarrer — 4,99€/mois";
+    ? `Démarrer — ${PRICING.annual.label}/an`
+    : isCommit
+      ? `Démarrer — ${PRICING.monthlyCommit.label}/mois · 12 mois`
+      : showTrialOffer
+        ? `Essai 7 jours — puis ${PRICING.monthlyFlex.label}/mois`
+        : hasReferral
+          ? "Démarrer — −20% parrainage"
+          : `Démarrer — ${PRICING.monthlyFlex.label}/mois`;
 
   return (
     <div className="sheet-overlay" onClick={e => canDismiss && e.target === e.currentTarget && onClose()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
         <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.ink, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Zap size={26} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "0", textTransform: "uppercase", color: G.ink, marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8 }}>
             {headline}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
           <p style={{ color: G.greyMid, fontSize: 12, marginTop: 10, lineHeight: 1.4 }}>
-            4,99 €/mois ou 39,99 €/an · résiliation via le portail Stripe
+            {PRICING_SUMMARY_FR} · résiliation via le portail Stripe
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          <button type="button" onClick={() => setPeriod("monthly")} style={{
-            flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "monthly" ? G.blue : G.greyLight}`,
-            background: period === "monthly" ? G.blueLight : G.surface,
-            transition: "all 0.18s", position: "relative", overflow: "hidden",
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+          <button type="button" onClick={() => setPeriod("monthly_flex")} style={{
+            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
+            border: `2px solid ${period === "monthly_flex" ? G.blue : G.greyLight}`,
+            background: period === "monthly_flex" ? G.blueLight : G.surface,
+            position: "relative",
           }}>
-            {showTrialOffer && (
-              <div style={{
-                position: "absolute", top: 8, right: 8,
-                background: G.blue, color: G.white,
-                fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-              }}>ESSAI 7J</div>
-            )}
-            {hasReferral && !showTrialOffer && (
+            {hasReferral && period === "monthly_flex" && (
               <div style={{
                 position: "absolute", top: 8, right: 8,
                 background: "#22C55E", color: G.white,
                 fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
               }}>−20%</div>
             )}
-            <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly" ? G.blue : G.grey, marginBottom: 6, letterSpacing: "0.04em" }}>MENSUEL</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "monthly" ? G.ink : G.grey }}>4,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ mois · sans engagement</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly_flex" ? G.blue : G.grey, letterSpacing: "0.04em" }}>MENSUEL</div>
+                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 2 }}>{PRICING.monthlyFlex.commitmentFr}</div>
+              </div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink }}>
+                {PRICING.monthlyFlex.label}<span style={{ fontSize: 13, fontWeight: 600, color: G.grey }}> /mois</span>
+              </div>
+            </div>
+          </button>
+
+          <button type="button" onClick={() => setPeriod("monthly_commit")} style={{
+            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
+            border: `2px solid ${period === "monthly_commit" ? G.blue : G.greyLight}`,
+            background: period === "monthly_commit" ? G.blueLight : G.surface,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly_commit" ? G.blue : G.grey, letterSpacing: "0.04em" }}>MENSUEL 12 MOIS</div>
+                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 2 }}>{PRICING.monthlyCommit.commitmentFr}</div>
+              </div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink }}>
+                {PRICING.monthlyCommit.label}<span style={{ fontSize: 13, fontWeight: 600, color: G.grey }}> /mois</span>
+              </div>
+            </div>
           </button>
 
           <button type="button" onClick={() => setPeriod("annual")} style={{
-            flex: 1, padding: "14px 12px", borderRadius: 16, cursor: "pointer", textAlign: "left",
+            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
             border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
             background: period === "annual" ? G.blueLight : G.surface,
-            transition: "all 0.18s", position: "relative", overflow: "hidden",
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, marginBottom: 4, letterSpacing: "0.04em" }}>ANNUEL</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: period === "annual" ? G.ink : G.grey }}>39,99€</div>
-            <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>/ an · pas de remboursement*</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, letterSpacing: "0.04em" }}>ANNUEL</div>
+                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 2 }}>{PRICING.annual.commitmentFr}</div>
+              </div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink }}>
+                {PRICING.annual.label}<span style={{ fontSize: 13, fontWeight: 600, color: G.grey }}> /an</span>
+              </div>
+            </div>
           </button>
         </div>
 
         {showTrialOffer && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", lineHeight: 1.4, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
               7 jours offerts sans carte à l’inscription · ensuite l’app se gèle
+            </span>
+          </div>
+        )}
+
+        {isCommit && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
+              {PRICING.monthlyCommit.label}/mois pendant 12 mois · engagement d’un an
             </span>
           </div>
         )}
@@ -7012,7 +7134,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         {isAnnual && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
-              39,99€ facturés une fois · pas de remboursement au prorata hors cas légaux · ~3,33€/mois
+              {PRICING.annual.label} facturés une fois · pas de remboursement au prorata hors cas légaux
             </span>
           </div>
         )}
@@ -7047,10 +7169,12 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
           acceptWithdrawal={acceptWithdrawal}
           onAcceptWithdrawal={handleAcceptWithdrawal}
           ink={G.ink}
+          muted={G.inkLight}
+          linkColor={G.blueMid}
           idPrefix="upgrade-modal-legal"
         />
 
-        {err && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#CC0000", fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: G.coral, fontSize: 13 }}>{err}</div>}
         <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
           {loading ? "Redirection…" : ctaLabel}
         </Btn>
@@ -7072,7 +7196,7 @@ const PremiumTeaser = ({ onUpgrade }) => (
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>Ton coach a préparé tes séances</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Essai 7 jours · adaptation + allures · puis 4,99€/mois</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Essai 7 jours · adaptation + allures · puis {PRICING_SUMMARY_FR}</div>
       </div>
       <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
         Essai
@@ -7082,7 +7206,7 @@ const PremiumTeaser = ({ onUpgrade }) => (
 );
 
 const PremiumBanner = ({ onUpgrade, weeks = 0 }) => (
-  <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #355da3 0%, #8eb3ff 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+  <div style={{ margin: "0 0 16px", background: "linear-gradient(135deg, #006bfd 0%, #003d99 100%)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
     <Lock size={24} color={G.white} />
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>
@@ -7537,7 +7661,7 @@ const SessionCard = ({
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -7625,7 +7749,7 @@ const SessionCard = ({
                 border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
               }}>
                 Matos : {session.equipmentUsed
-                  .map((id) => EQUIPMENT_OPTS.find((o) => o.id === id)?.label || id)
+                  .map((id) => eqLabel(id))
                   .join(" · ")}
               </span>
             )}
@@ -8053,7 +8177,7 @@ const ResetConfirmButton = ({ onReset, variant = "subtle" }) => {
 // ── COACH CARD ────────────────────────────────────────────────────────────
 const COACH = {
   name: "Arthur N.",
-  photo: "/coach.JPG",
+  photo: "/coach.webp",
   initials: "AN",
 };
 
@@ -8194,7 +8318,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
             Limite atteinte
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
-            Pour générer de nouvelles séances, abonne-toi à Premium : 4,99€/mois sans engagement.
+            Pour générer de nouvelles séances, abonne-toi à Premium : {PRICING_SUMMARY_FR}.
           </p>
         </>
       ) : (
@@ -8203,7 +8327,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
             Continue avec Premium
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
-            Pour de nouvelles séances personnalisées : 4,99€/mois sans engagement, ou 39,99€/an.
+            Pour de nouvelles séances personnalisées : {PRICING_SUMMARY_FR}.
           </p>
           <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
             {[
@@ -8220,7 +8344,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
           </ul>
         </>
       )}
-      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>S’abonner — 4,99€/mois</Btn>
+      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>S’abonner — dès {PRICING.monthlyCommit.label}/mois</Btn>
       {onClose && (
         <button type="button" onClick={onClose} style={{
           width: "100%", border: "none", background: "transparent", color: G.grey,
@@ -8423,7 +8547,7 @@ const ProgressionLoopView = ({
             <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
               Ton essai est terminé. Abonne-toi pour dégeler ta séance et continuer avec ton coach.
             </p>
-            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>S’abonner — 4,99€/mois</Btn>
+            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>S’abonner — dès {PRICING.monthlyCommit.label}/mois</Btn>
           </div>
         )}
 
@@ -8858,7 +8982,7 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{
-            fontFamily: "'Lexend', sans-serif",
+            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
             fontSize: 18, fontWeight: 800, color: G.ink,
             margin: "0 0 6px", lineHeight: 1.25, letterSpacing: "-0.02em",
           }}>
@@ -8909,7 +9033,7 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
             style={{
               display: "block", width: "100%", boxSizing: "border-box",
               padding: "16px 14px", fontSize: 24,
-              fontFamily: "'Lexend', sans-serif", fontWeight: 700,
+              fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
               textAlign: "center", letterSpacing: "0.06em",
               border: `2px solid ${G.greyLight}`,
               borderRadius: 14, outline: "none",
@@ -9175,7 +9299,7 @@ const BadgesTab = ({ plan }) => {
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
         <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
-        <h1 className="fade-up-1" style={{ fontFamily: "'Lexend', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
+        <h1 className="fade-up-1" style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
         <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
@@ -9188,7 +9312,7 @@ const BadgesTab = ({ plan }) => {
       <div style={{ padding: "20px 16px 0" }}>
         {earned.length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
                 <div key={b.id} className="scale-in" style={{ background: G.surface, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
@@ -9204,7 +9328,7 @@ const BadgesTab = ({ plan }) => {
         )}
         {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
           <>
-            <h3 style={{ fontFamily: "'Lexend', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
                 <div key={b.id} style={{ background: G.greyXLight, borderRadius: 16, padding: 16, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
@@ -11608,6 +11732,7 @@ const BLANK_PROFILE = {
   weightGoal: "",
   pace100: null,
   birthMonth: "",
+  birthDay: "",
   birthYear: "",
   age: "",
   weightKg: "",
@@ -11647,7 +11772,7 @@ export default function App() {
     try {
       return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || getStoredTheme());
     } catch {
-      return "light";
+      return "dark";
     }
   });
   const forceAuthRef = useRef(false);
@@ -11701,18 +11826,6 @@ export default function App() {
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
 
-  // Back button → landing page
-  useEffect(() => {
-    const handlePop = () => {
-      const p = window.location.pathname;
-      if (!p.startsWith("/app") && !isAuthPath(p)) {
-        window.location.replace("/");
-      }
-    };
-    window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
-  }, []);
-
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
   useEffect(() => {
@@ -11723,7 +11836,7 @@ export default function App() {
       return;
     }
     if (legacyAuth === "register") {
-      navigate("/inscription", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     if (isAuthPath(location.pathname)) {
@@ -11731,12 +11844,20 @@ export default function App() {
       if (user) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
-        navigate("/", { replace: true });
+        navigate("/app", { replace: true });
         return;
       }
       authOpenedFromUrlRef.current = true;
       forceAuthRef.current = true;
       setScreen("auth");
+      return;
+    }
+    // /connexion|/inscription → /app (CTA Commencer) : même composant App, il faut quitter l’écran auth
+    if (!user && location.pathname.startsWith("/app") && forceAuthRef.current) {
+      forceAuthRef.current = false;
+      authOpenedFromUrlRef.current = false;
+      setScreen("onboarding");
+      setStep(1);
     }
   }, [location.pathname, location.search, navigate, user]);
 
@@ -11788,6 +11909,14 @@ export default function App() {
     };
   }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
 
+  const exitAuthToQuiz = () => {
+    forceAuthRef.current = false;
+    authOpenedFromUrlRef.current = false;
+    setScreen("onboarding");
+    setStep(1);
+    navigate("/app");
+  };
+
   const handleAuthNavigateMode = (mode) => {
     navigate(mode === "register" ? "/inscription" : "/connexion", { replace: true });
   };
@@ -11798,18 +11927,18 @@ export default function App() {
     authOpenedFromUrlRef.current = false;
     if (plans.length > 0) {
       setScreen("app");
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     if (user) {
       setScreen("app");
       setActiveTab("plan");
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
       return;
     }
     // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion → landing
     setScreen("onboarding");
-    navigate(openedFromUrl ? "/accueil" : "/", { replace: true });
+    navigate(openedFromUrl ? "/" : "/app", { replace: true });
   };
 
   const handleAuthSuccess = (u) => {
@@ -11821,7 +11950,7 @@ export default function App() {
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   useEffect(() => {
@@ -12000,7 +12129,7 @@ export default function App() {
         if (isAuthPath(locationRef.current.pathname)) {
           forceAuthRef.current = false;
           authOpenedFromUrlRef.current = false;
-          navigate("/", { replace: true });
+          navigate("/app", { replace: true });
         } else {
           forceAuthRef.current = false;
         }
@@ -12716,9 +12845,12 @@ export default function App() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (overrideProfile = null) => {
+    const sourceProfile = overrideProfile && typeof overrideProfile === "object" && overrideProfile.nativeEvent == null
+      ? overrideProfile
+      : profile;
     if (!user) {
-      stashPendingOnboarding({ profile, addingPlan, tasteProfile });
+      stashPendingOnboarding({ profile: sourceProfile, addingPlan, tasteProfile });
       trackEvent("signup_started", { source: "plan_generation_gate" }, { essential: true });
       track("signup_started", { source: "plan_generation_gate" }, { onceKey: "signup_started:plan_generation_gate" });
       openAuth("register");
@@ -12731,7 +12863,7 @@ export default function App() {
     }
     // Option B : aperçu d’abord, Stripe ensuite (évite boucle questionnaire si abandon)
     const openPaywallAfter = !canGenerateProgram;
-    await generatePlanFromProfile(profile, {
+    await generatePlanFromProfile(sourceProfile, {
       taste: tasteProfile,
       openPaywallAfter,
     });
@@ -12752,7 +12884,7 @@ export default function App() {
       const referralCode = resolveReferralCode(session.user);
       trackEvent("checkout_started", {
         source: "plan_ready_sheet",
-        price_id: PRICE_MONTHLY,
+        price_id: PRICE_IDS.monthlyFlex,
       }, { essential: true });
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
@@ -12763,7 +12895,7 @@ export default function App() {
         },
         body: JSON.stringify({
           origin: window.location.origin,
-          priceId: PRICE_MONTHLY,
+          priceId: PRICE_IDS.monthlyFlex,
           ...(referralCode ? { referralCode } : {}),
         }),
       });
@@ -13908,14 +14040,14 @@ export default function App() {
 
   if (authLoading) return (
     <>
-      <style>{css}</style><FontLoader />
+      <style>{css}</style>
       <Loading />
     </>
   );
 
   if (isRecovery) return (
     <>
-      <style>{css}</style><FontLoader />
+      <style>{css}</style>
       <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         <ResetPasswordScreen showBrandHeader={false} onDone={() => {
@@ -13935,13 +14067,14 @@ export default function App() {
   // ou quand l'app doit rattacher le programme et l'essai 7j à un compte.
   if (screen === "auth") return (
     <>
-      <style>{css}</style><FontLoader />
+      <style>{css}</style>
       <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg }}>
         <AuthScreen
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
           onNavigateMode={handleAuthNavigateMode}
+          onStartQuiz={exitAuthToQuiz}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />
@@ -13950,12 +14083,11 @@ export default function App() {
     </>
   );
 
-  if (screen === "loading" || waitingForAccess) return <><style>{css}</style><FontLoader /><Loading /></>;
+  if (screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
 
   if (isFrozen) return (
     <>
       <style>{css}</style>
-      <FontLoader />
       <TrialExpiredFreeze
         onSubscribe={() => openUpgrade("trial_expired")}
         onSignOut={handleSignOut}
@@ -13975,14 +14107,14 @@ export default function App() {
 
   if (screen === "onboarding") return (
     <>
-      <style>{css}</style><FontLoader />
+      <style>{css}</style>
       <PublicNav />
       <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={22} />
+                <BrandLogo variant="wordmark" height={22} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
               </div>
             </div>
             <OnboardingWizard
@@ -14016,7 +14148,7 @@ export default function App() {
 
   return (
     <>
-      <style>{css}</style><FontLoader />
+      <style>{css}</style>
       <div className="myswym-app">
         {/* Compte sans plan : nudge inscription (l’essai 7j sans carte démarre au compte). */}
         {!user && plans.length > 0 && (
@@ -14032,8 +14164,8 @@ export default function App() {
           </div>
         )}
         {user && isPremium && accessState.status === "trial" && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 2 && (
-          <div style={{ background: "#EFF6FF", borderBottom: "1px solid #BFDBFE", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: "#1E40AF" }}>
+          <div style={{ background: G.blueLight, borderBottom: `1px solid ${G.greyLight}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: G.blue }}>
               <span style={{ flex: 1, lineHeight: 1.35 }}>
                 {accessState.trialDaysLeft === 1
                   ? "Dernier jour d’essai — demain l’app se gèle. Abonne-toi pour garder tes plans."

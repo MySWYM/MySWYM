@@ -28,7 +28,7 @@ export function ShareProgressCard({
       <div
         className="cv:relative cv:overflow-hidden cv:rounded-cv-xl cv:p-5 cv:text-white"
         style={{
-          background: 'linear-gradient(145deg, #154388 0%, #355da3 45%, #5b82c4 100%)',
+          background: 'linear-gradient(145deg, #003d99 0%, #006bfd 45%, #3d8fff 100%)',
         }}
       >
         <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.12em] cv:text-white/60">

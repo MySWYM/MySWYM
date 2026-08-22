@@ -1,18 +1,12 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import CookiePreferencesPanel from "./marketing/CookiePreferences.jsx";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
+import { useTranslation } from "react-i18next";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
-
-const C = {
-  bg: "#f8f9fc",
-  card: "#ffffff",
-  ink: "#191c1e",
-  inkLight: "#434751",
-  border: "rgba(53,93,163,0.12)",
-  accent: "#8eb3ff",
-  accentText: "#154388",
-};
+import "./theme/public.css";
 
 const host = {
   name: "Vercel Inc.",
@@ -20,22 +14,28 @@ const host = {
   website: "https://vercel.com",
 };
 
-function LegalLayout({ title, subtitle, path, description, children }) {
+function LegalLayout({ title, subtitle, path, description, children, after }) {
+  const { t } = useTranslation("common");
+  const crumbs = [{ label: t("footer.home"), href: "/" }, { label: title }];
   usePageSeo({
-    title: `${title} — MySWYM`,
+    title: `${title} | MySWYM`,
     description: description || subtitle,
     path,
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Lexend', sans-serif" }}>
+    <div className="ms-root">
       <PublicNav />
-      <main style={{ maxWidth: 920, margin: "0 auto", padding: "96px 20px 56px" }}>
-        <Breadcrumb items={[{ label: "Accueil", href: "/accueil" }, { label: title }]} />
-        <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{title}</h1>
-        <p style={{ color: C.inkLight, marginTop: 0, marginBottom: 8 }}>{subtitle}</p>
-        <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>Dernière mise à jour : {LEGAL_ENTITY.lastUpdated}</p>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: "24px 22px", color: C.ink, lineHeight: 1.7, fontSize: 14 }}>
-          {children}
+      <main className="ms-legal-main">
+        <div className="ms-legal-wrap">
+          <Breadcrumb items={crumbs} onDark />
+          <p className="ms-pricing-kicker">{t("footer.legal")}</p>
+          <h1 className="ms-legal-h1">{title}</h1>
+          <p className="ms-legal-lead">{subtitle}</p>
+          <p className="ms-legal-meta">{t("pages.legalUpdated", { date: LEGAL_ENTITY.lastUpdated })}</p>
+          <p className="ms-legal-meta ms-legal-meta-last">{t("pages.legalFrNotice")}</p>
+          <div className="ms-legal-card">{children}</div>
+          {after ? <div className="ms-legal-after">{after}</div> : null}
         </div>
       </main>
       <Footer />
@@ -44,31 +44,31 @@ function LegalLayout({ title, subtitle, path, description, children }) {
 }
 
 function H({ children }) {
-  return <h2 style={{ fontSize: 16, fontWeight: 800, color: C.ink, margin: "28px 0 10px", letterSpacing: "0.02em" }}>{children}</h2>;
+  return <h2 className="ms-legal-h2">{children}</h2>;
 }
 
 function H3({ children }) {
-  return <h3 style={{ fontSize: 14, fontWeight: 800, color: C.ink, margin: "18px 0 8px" }}>{children}</h3>;
+  return <h3 className="ms-legal-h3">{children}</h3>;
 }
 
 function P({ children }) {
-  return <p style={{ margin: "0 0 12px", color: C.inkLight }}>{children}</p>;
+  return <p className="ms-legal-p">{children}</p>;
 }
 
 function Ul({ items }) {
   return (
-    <ul style={{ margin: "0 0 12px", paddingLeft: 20, color: C.inkLight }}>
-      {items.map((it, i) => <li key={i} style={{ marginBottom: 6 }}>{it}</li>)}
+    <ul className="ms-legal-ul">
+      {items.map((it, i) => <li key={i}>{it}</li>)}
     </ul>
   );
 }
 
 function Strong({ children }) {
-  return <strong style={{ color: C.ink }}>{children}</strong>;
+  return <strong className="ms-legal-strong">{children}</strong>;
 }
 
 function Mail({ to }) {
-  return <a href={`mailto:${to}`} style={{ color: C.accentText }}>{to}</a>;
+  return <a className="ms-legal-a" href={`mailto:${to}`}>{to}</a>;
 }
 
 function PublisherBlock() {
@@ -91,10 +91,10 @@ function MediatorBlock() {
   if (pending) {
     return (
       <P>
-        <span style={{ background: "#FEF3C7", color: "#92400E", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+        <span className="ms-legal-warn">
           [MÉDIATEUR À CONFIRMER]
         </span>
-        {" "}— les coordonnées du médiateur de la consommation seront publiées ici dès inscription.
+        {" "}Les coordonnées du médiateur de la consommation seront publiées ici dès inscription.
         En attendant, adressez votre réclamation écrite à <Mail to={email} />.
       </P>
     );
@@ -102,7 +102,7 @@ function MediatorBlock() {
   return (
     <Ul items={[
       <>Médiateur : {mediatorName}</>,
-      mediatorWebsite ? <>Site : <a href={mediatorWebsite} style={{ color: C.accentText }}>{mediatorWebsite}</a></> : null,
+      mediatorWebsite ? <>Site : <a href={mediatorWebsite} className="ms-legal-a">{mediatorWebsite}</a></> : null,
       mediatorAddress ? <>Adresse : {mediatorAddress}</> : null,
     ].filter(Boolean)} />
   );
@@ -114,7 +114,7 @@ function MediatorBlock() {
 export function MentionsLegalesPage() {
   const { tradeName, commercialName, publisher, email, site, supportEmail, subprocessors } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Mentions légales" subtitle={`Informations légales — ${site.replace("https://", "")}`} path="/mentions-legales" description="Éditeur, hébergeur et mentions légales du site MySWYM.">
+    <LegalLayout title="Mentions légales" subtitle={`Informations légales | ${site.replace("https://", "")}`} path="/mentions-legales" description="Éditeur, hébergeur et mentions légales du site MySWYM.">
       <P>
         Conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique (LCEN),
         les informations suivantes sont portées à la connaissance des utilisateurs.
@@ -128,9 +128,9 @@ export function MentionsLegalesPage() {
 
       <H>2. Hébergement et sous-traitants techniques</H>
       <Ul items={[
-        <>Front / CDN : <Strong>{host.name}</Strong> — {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.accentText }}>vercel.com/legal/dpa</a>.</>,
-        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
-        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.accentText }}>stripe.com/legal/dpa</a>.</>,
+        <>Front / CDN : <Strong>{host.name}</Strong> : {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" className="ms-legal-a">vercel.com/legal/dpa</a>.</>,
+        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" className="ms-legal-a">supabase.com/legal/dpa</a>.</>,
+        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" className="ms-legal-a">stripe.com/legal/dpa</a>.</>,
       ]} />
       {(subprocessors || []).length > 0 && (
         <P>
@@ -152,10 +152,10 @@ export function MentionsLegalesPage() {
 
       <H>5. Documents connexes</H>
       <Ul items={[
-        <a key="cgu" href="/cgu" style={{ color: C.accentText }}>Conditions générales d’utilisation (CGU)</a>,
-        <a key="cgv" href="/cgv" style={{ color: C.accentText }}>Conditions générales de vente (CGV)</a>,
-        <a key="priv" href="/politique-confidentialite" style={{ color: C.accentText }}>Politique de confidentialité</a>,
-        <a key="cook" href="/politique-cookies" style={{ color: C.accentText }}>Politique de cookies</a>,
+        <LocalizedLink key="cgu" to="/cgu" className="ms-legal-a">Conditions générales d’utilisation (CGU)</LocalizedLink>,
+        <LocalizedLink key="cgv" to="/cgv" className="ms-legal-a">Conditions générales de vente (CGV)</LocalizedLink>,
+        <LocalizedLink key="priv" to="/politique-confidentialite" className="ms-legal-a">Politique de confidentialité</LocalizedLink>,
+        <LocalizedLink key="cook" to="/politique-cookies" className="ms-legal-a">Politique de cookies</LocalizedLink>,
       ]} />
     </LegalLayout>
   );
@@ -167,7 +167,7 @@ export function MentionsLegalesPage() {
 export function PolitiqueConfidentialitePage() {
   const { tradeName, publisher, email, supportEmail, dpoEmail, site } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Politique de confidentialité" subtitle={`Traitement des données personnelles — ${tradeName}`} path="/politique-confidentialite" description="Données collectées, finalités, droits RGPD et contact pour MySWYM.">
+    <LegalLayout title="Politique de confidentialité" subtitle={`Traitement des données personnelles | ${tradeName}`} path="/politique-confidentialite" description="Données collectées, finalités, droits RGPD et contact pour MySWYM.">
       <P>
         La présente politique décrit comment {publisher} ({tradeName}) traite vos données personnelles
         lorsque vous utilisez {site} et l’application associée, conformément au Règlement (UE) 2016/679 (RGPD)
@@ -188,7 +188,7 @@ export function PolitiqueConfidentialitePage() {
       <H3>2.1 Compte et authentification</H3>
       <Ul items={[
         "Données : e-mail, mot de passe (hashé par le prestataire d’auth), éventuels prénom / avatar, métadonnées de connexion.",
-        "Connexion sociale : Google (Apple annoncé comme à venir dans le produit) — identité et e-mail transmis via Supabase Auth si vous choisissez ce mode.",
+        "Connexion sociale : Google (Apple annoncé comme à venir dans le produit) : identité et e-mail transmis via Supabase Auth si vous choisissez ce mode.",
         "Finalité : création et sécurisation du compte, accès au service.",
         "Base légale : exécution du contrat (art. 6.1.b RGPD).",
         "Durée : durée du compte ; suppression à la demande ou après inactivité prolongée (voir §5).",
@@ -210,13 +210,13 @@ export function PolitiqueConfidentialitePage() {
       </P>
       <Ul items={[
         "Données concernées : (i) fréquence cardiaque par séance (notamment synchronisée via Strava lorsque vous connectez votre compte et avez consenti) ; (ii) historique de blessures / gênes déclarées (zone du corps + niveau de gravité en liste fermée) ; (iii) indicateur de douleur en feedback de séance (oui/non).",
-        "Finalité : adaptation des séances (intensité / volume) et prévention du risque de blessure — aucun diagnostic médical, aucun traitement, aucun dispositif médical.",
+        "Finalité : adaptation des séances (intensité / volume) et prévention du risque de blessure : aucun diagnostic médical, aucun traitement, aucun dispositif médical.",
         "Base légale : consentement explicite (art. 9.2.a), distinct du contrat / des CGU. Le refus n’empêche pas d’utiliser le service (sans adaptation santé).",
         "Caractère facultatif : vous pouvez refuser, retirer votre consentement à tout moment, ou choisir « Aucune blessure ».",
         "Minimisation : pas de champ texte libre pour un diagnostic ou un traitement ; listes fermées uniquement. Ces champs sont exclus des outils d’analytics tiers (PostHog, etc.).",
         "Destinataires : hébergement Supabase (sous-traitant) sous RLS ; pas de revente ; Strava uniquement si vous connectez votre compte.",
         "Durée de conservation : pendant la durée du compte ; suppression sous 30 jours sur demande (effacement / retrait du consentement) ; purge après 24 mois d’inactivité du compte.",
-        <>Droits : accès, rectification, effacement, portabilité, retrait du consentement — exerçables par e-mail à <Mail to={email} /> ; réponse sous 1 mois (art. 12 RGPD).</>,
+        <>Droits : accès, rectification, effacement, portabilité, retrait du consentement : exerçables par e-mail à <Mail to={email} /> ; réponse sous 1 mois (art. 12 RGPD).</>,
       ]} />
 
       <H3>2.4 Abonnement et paiement</H3>
@@ -266,7 +266,7 @@ export function PolitiqueConfidentialitePage() {
         "Base légale : exécution du contrat / intérêt légitime (support) / obligation légale le cas échéant.",
       ]} />
 
-      <H3>2.9 Mesure d’audience (PostHog) — non essentiel</H3>
+      <H3>2.9 Mesure d’audience (PostHog), non essentiel</H3>
       <Ul items={[
         "Données : événements produit agrégés / pseudonymisés (niveau, objectif, fréquence, etc.), identifiant technique, pages vues.",
         "Exclusions techniques : e-mail, notes, contenu complet de séance, notes de blessure ne sont pas envoyés comme propriétés d’événement.",
@@ -278,14 +278,14 @@ export function PolitiqueConfidentialitePage() {
       <Ul items={[
         "Données : nom d’événement funnel (ex. signup_started, checkout_started), chemin, referrer, propriétés non sensibles, user_id si connecté.",
         "Finalité : mesurer le parcours d’inscription / paiement pour faire fonctionner et améliorer le service.",
-        "Base légale : intérêt légitime (art. 6.1.f) pour la mesure première partie nécessaire à l’exploitation — distincte de PostHog.",
+        "Base légale : intérêt légitime (art. 6.1.f) pour la mesure première partie nécessaire à l’exploitation : distincte de PostHog.",
         "Ces événements peuvent être enregistrés même si les cookies non essentiels sont refusés, car ils ne reposent pas sur des traceurs publicitaires tiers.",
       ]} />
 
       <H3>2.11 Données techniques</H3>
       <Ul items={[
         "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=), session d’auth.",
-        "Polices Google Fonts : chargement depuis les serveurs Google (peut entraîner un transfert d’adresse IP) — voir politique cookies.",
+        "Polices : Geist et Space Grotesk auto-hébergées (pas de requête Google Fonts sur le site public).",
         "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
       ]} />
 
@@ -300,13 +300,13 @@ export function PolitiqueConfidentialitePage() {
 
       <H>3. Destinataires / sous-traitants</H>
       <Ul items={[
-        <>Supabase — auth, base de données, stockage avatars — DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.accentText }}>supabase.com/legal/dpa</a>.</>,
-        <>Stripe — paiement et portail client — DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.accentText }}>stripe.com/legal/dpa</a>.</>,
-        <>Vercel — hébergement front — DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.accentText }}>vercel.com/legal/dpa</a>.</>,
-        "PostHog — analytics produit (si consentement cookies) — sans données de santé.",
-        "Resend — envoi d’e-mails.",
-        "Google — OAuth (si choisi) et Google Fonts.",
-        "Strava — uniquement si connecté.",
+        <>Supabase : auth, base de données, stockage avatars : DPA : <a href="https://supabase.com/legal/dpa" className="ms-legal-a">supabase.com/legal/dpa</a>.</>,
+        <>Stripe : paiement et portail client : DPA : <a href="https://stripe.com/legal/dpa" className="ms-legal-a">stripe.com/legal/dpa</a>.</>,
+        <>Vercel : hébergement front : DPA : <a href="https://vercel.com/legal/dpa" className="ms-legal-a">vercel.com/legal/dpa</a>.</>,
+        "PostHog : analytics produit (si consentement cookies) : sans données de santé.",
+        "Resend : envoi d’e-mails.",
+        "Google : OAuth uniquement (si choisi). Les polices du site public sont auto-hébergées.",
+        "Strava : uniquement si connecté.",
       ]} />
       <P>
         Des transferts hors UE peuvent avoir lieu (notamment États-Unis via Vercel, Stripe, Google).
@@ -338,7 +338,7 @@ export function PolitiqueConfidentialitePage() {
         du traitement antérieur). Vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr).
       </P>
       <P>
-        Pour exercer vos droits (y compris données de santé) : <Mail to={email} /> — réponse sous 1 mois.
+        Pour exercer vos droits (y compris données de santé) : <Mail to={email} /> : réponse sous 1 mois.
         Vous pouvez aussi supprimer votre compte depuis les paramètres de l’application.
       </P>
 
@@ -382,13 +382,13 @@ export function PolitiqueConfidentialitePage() {
 export function CguPage() {
   const { tradeName, email, supportEmail, site, publisher } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="CGU" subtitle={`Conditions générales d'utilisation — ${tradeName}`} path="/cgu" description="Conditions générales d'utilisation de l'application MySWYM.">
+    <LegalLayout title="CGU" subtitle={`Conditions générales d'utilisation | ${tradeName}`} path="/cgu" description="Conditions générales d'utilisation de l'application MySWYM.">
       <P>
         Les présentes Conditions générales d’utilisation (CGU) régissent l’accès et l’utilisation de {site}
         et de l’application {tradeName}, édités par {publisher}.
         En créant un compte ou en utilisant le service, vous acceptez ces CGU.
         Les conditions commerciales de l’abonnement Premium sont détaillées dans les{" "}
-        <a href="/cgv" style={{ color: C.accentText }}>CGV</a>.
+        <LocalizedLink to="/cgv" className="ms-legal-a">CGV</LocalizedLink>.
       </P>
 
       <H>1. Objet du service</H>
@@ -412,7 +412,7 @@ export function CguPage() {
       <Ul items={[
         "Le service est destiné aux personnes majeures (18 ans révolus).",
         "Vous devez disposer de la capacité juridique pour contracter.",
-        "Certaines fonctionnalités (génération de plan, détail des exercices, départs chronométrés, adaptation feedback) nécessitent un abonnement Premium — voir CGV et page Tarifs.",
+        "Certaines fonctionnalités (génération de plan, détail des exercices, départs chronométrés, adaptation feedback) nécessitent un abonnement Premium : voir CGV et page Tarifs.",
         "Sans abonnement actif, un aperçu limité (squelette) peut rester visible, sans accès complet aux exercices ni génération de nouveaux programmes.",
       ]} />
 
@@ -449,7 +449,7 @@ export function CguPage() {
         communiquée. Les métadonnées de version de plan ne remplacent pas cette règle de préservation.
       </P>
 
-      <H>6. Sport, santé et sécurité — avertissements</H>
+      <H>6. Sport, santé et sécurité : avertissements</H>
       <P>
         <Strong>Avertissement médical :</Strong> les plans générés sont fournis à titre indicatif et ne remplacent pas
         l’avis d’un professionnel de santé. L’utilisateur est seul responsable de vérifier son aptitude physique,
@@ -485,7 +485,7 @@ export function CguPage() {
         {tradeName} s’efforce d’assurer une disponibilité continue mais ne garantit pas un service ininterrompu
         (maintenance, incidents, dépendances Supabase / Stripe / Vercel / réseaux). Des bugs peuvent survenir.
         En cas d’indisponibilité prolongée imputable à {tradeName}, un avoir ou une prolongation pourra être étudié
-        au cas par cas — sans préjudice des droits légaux du consommateur.
+        au cas par cas : sans préjudice des droits légaux du consommateur.
       </P>
 
       <H>9. Mise en relation entre utilisateurs (Buddy)</H>
@@ -518,7 +518,7 @@ export function CguPage() {
       <P>
         En dehors des cas où la responsabilité ne peut être limitée, la responsabilité de {tradeName} est limitée
         au montant total payé par l’utilisateur au titre des 12 derniers mois précédant le fait générateur
-        (ou 50 € si aucun paiement) — <Strong>sous réserve des dispositions impératives applicables aux consommateurs</Strong>.
+        (ou 50 € si aucun paiement) : <Strong>sous réserve des dispositions impératives applicables aux consommateurs</Strong>.
       </P>
 
       <H>11. Services tiers</H>
@@ -553,7 +553,7 @@ export function CguPage() {
 export function CgvPage() {
   const { tradeName, email, supportEmail, site } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="CGV" subtitle={`Conditions générales de vente — offre Premium ${tradeName}`} path="/cgv" description="Conditions générales de vente de l'offre Premium MySWYM.">
+    <LegalLayout title="CGV" subtitle={`Conditions générales de vente | offre Premium ${tradeName}`} path="/cgv" description="Conditions générales de vente de l'offre Premium MySWYM.">
       <P>
         Les présentes Conditions générales de vente (CGV) s’appliquent aux abonnements Premium souscrits sur {site}
         par des consommateurs. Elles complètent les CGU. En cas de contradiction sur un point commercial,
@@ -581,9 +581,10 @@ export function CgvPage() {
       <H>3. Offres et prix (TTC)</H>
       <Ul items={[
         "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est gelé (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
-        "Mensuel : 4,99 € TTC / mois après l’essai — sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) — prépaiement 12 mois (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
-        "Biennal (24 mois) : 29,99 € TTC pour 24 mois — offre prépayée éventuellement proposée via un identifiant de prix Stripe dédié. Elle n’est pas nécessairement affichée sur la page Tarifs grand public. Les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables ; une clause d’« engagement » ne peut pas supprimer ces droits.",
+        "Mensuel sans engagement : 9,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
+        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai : engagement d’une durée de 12 mois, facturé chaque mois ; reconduction selon les conditions Stripe / CGV ; les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables.",
+        "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
+        "Offre biennale héritée (24 mois) : éventuellement encore visible pour d’anciens identifiants de prix Stripe. Elle n’est plus commercialisée sur la page Tarifs. Les droits légaux du consommateur restent applicables.",
       ]} />
       <P>
         Prix en euros TTC. TVA : {LEGAL_ENTITY.vatNumber}.
@@ -646,7 +647,7 @@ export function CgvPage() {
       <P>
         En cas d’échec de paiement au renouvellement, Stripe / MySWYM peuvent retenter le prélèvement.
         L’accès Premium peut être suspendu si le paiement n’est pas régularisé. Aucune « période de grâce »
-        contractuelle fixe n’est garantie au-delà du comportement Stripe configuré — [À DOCUMENTER côté Stripe Billing].
+        contractuelle fixe n’est garantie au-delà du comportement Stripe configuré : [À DOCUMENTER côté Stripe Billing].
       </P>
 
       <H>10. Programme de parrainage</H>
@@ -698,16 +699,27 @@ export function CgvPage() {
 export function PolitiqueCookiesPage() {
   const { email, tradeName } = LEGAL_ENTITY;
   return (
-    <LegalLayout title="Politique de cookies" subtitle={`Cookies et traceurs — ${tradeName}`} path="/politique-cookies" description="Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics.">
+    <LegalLayout
+      title="Politique de cookies"
+      subtitle={`Cookies et traceurs | ${tradeName}`}
+      path="/politique-cookies"
+      description="Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics."
+      after={<CookiePreferencesPanel />}
+    >
       <P>
         Cette politique décrit les cookies et traceurs utilisés sur {tradeName}, conformément aux lignes directrices
-        CNIL relatives aux cookies et autres traceurs.
+        de la CNIL relatives aux cookies et autres traceurs, à l’article 82 de la loi n° 78-17 du 6 janvier 1978
+        (« Informatique et Libertés ») et au règlement (UE) 2016/679 (RGPD).
+      </P>
+      <P>
+        Vous pouvez <a href="#parametrage-cookies" className="ms-legal-a">paramétrer, accepter ou refuser</a> les
+        traceurs non essentiels à tout moment, en bas de cette page. Le refus est présenté de la même manière que l’acceptation.
       </P>
 
       <H>1. Qu’est-ce qu’un cookie / stockage local ?</H>
       <P>
         Un cookie ou un stockage local (localStorage / sessionStorage) est une donnée enregistrée sur votre appareil
-        pour faire fonctionner le site, mémoriser un choix, ou — le cas échéant — mesurer l’audience.
+        pour faire fonctionner le site, mémoriser un choix, ou, le cas échéant, mesurer l’audience.
       </P>
 
       <H>2. Traceurs strictement nécessaires (pas de consentement requis)</H>
@@ -724,24 +736,24 @@ export function PolitiqueCookiesPage() {
         "Fournisseur : PostHog (hébergement EU configuré : eu.i.posthog.com).",
         "Finalité : comprendre l’usage du produit (funnel, rétention, bugs UX).",
         "Type : cookies / localStorage selon configuration posthog-js (persistence localStorage+cookie).",
-        "Dépôt : uniquement après « Accepter » sur la bannière.",
-        "Refus : bouton « Continuer sans cookies non essentiels » ; retrait via « Gérer les cookies » (footer).",
+        "Dépôt : uniquement après activation de la mesure d’audience (bannière, popup ou module en bas de cette page).",
+        "Refus : « Tout refuser », ou désactivation de la catégorie Mesure d’audience.",
         "Durée : selon configuration PostHog / jusqu’au retrait du consentement.",
       ]} />
 
-      <H3>3.2 Google Fonts</H3>
+      <H3>3.2 Polices (auto-hébergées)</H3>
       <Ul items={[
-        "Fournisseur : Google.",
-        "Finalité : affichage typographique (Barlow Condensed, Lexend).",
-        "Conséquence : requête vers les serveurs Google pouvant exposer votre adresse IP.",
-        "Statut : considéré comme non essentiel / traceur tiers — [À VALIDER] : migrer vers polices auto-hébergées pour supprimer ce transfert hors consentement.",
+        "Polices : Geist et Space Grotesk, servies depuis le même domaine que le site (fichiers woff2).",
+        "Aucune requête vers fonts.googleapis.com / fonts.gstatic.com sur le site public.",
+        "Pas de transfert d’adresse IP vers Google du fait des polices.",
       ]} />
 
       <H3>3.3 Vercel Speed Insights</H3>
       <Ul items={[
         "Fournisseur : Vercel.",
         "Finalité : métriques de performance (Core Web Vitals).",
-        "Statut : mesure d’audience / performance — [À VALIDER] : activer uniquement après consentement ou désactiver si non indispensable.",
+        "Dépôt : uniquement après activation de la catégorie Performance.",
+        "Statut : mesure de performance soumise à consentement.",
       ]} />
 
       <H>4. Ce que MySWYM n’utilise pas (à date d’audit)</H>
@@ -753,13 +765,29 @@ export function PolitiqueCookiesPage() {
 
       <H>5. Gestion de votre choix</H>
       <P>
-        À la première visite, une bannière permet d’accepter ou de refuser les cookies non essentiels.
-        Votre choix est mémorisé localement (clé <code>myswym_cookie_consent_v1</code> = accepted | refused).
-        Pour le modifier : lien « Gérer les cookies » du pied de page (réaffiche la bannière).
+        Le consentement aux traceurs non essentiels est recueilli lors de votre première visite (bannière),
+        via le lien « Gérer les cookies » du pied de page, et via le <Strong>module de paramétrage</Strong> situé
+        en bas de la présente page. Ces trois points d’entrée ont la même valeur.
       </P>
       <P>
-        PostHog n’envoie des événements qu’après acceptation. Les événements funnel stockés en base Supabase
-        (conversion_events) sont distincts et documentés dans la politique de confidentialité.
+        Conformément aux recommandations de la CNIL, <Strong>accepter et refuser ont la même présentation</Strong>{" "}
+        (même couleur, même taille, même graisse). Vous pouvez aussi activer ou désactiver chaque finalité
+        (mesure d’audience, performance). Les cookies marketing ne sont pas utilisés : l’option correspondante
+        reste désactivée.
+      </P>
+      <P>
+        Vous pouvez retirer ou modifier votre consentement à tout moment, sans frais, aussi facilement que vous l’avez
+        donné. Le retrait n’affecte pas la licéité du traitement effectué avant ce retrait
+        (RGPD, article 7, paragraphe 3).
+      </P>
+      <P>
+        Votre choix est mémorisé localement (clé <code>myswym_cookie_consent_v1</code>). Les traceurs strictement
+        nécessaires ne sont pas soumis à consentement. PostHog n’envoie des événements qu’après acceptation de la
+        mesure d’audience. Les événements funnel stockés en base Supabase (<code>conversion_events</code>) sont
+        distincts et documentés dans la politique de confidentialité.
+      </P>
+      <P>
+        <a href="#parametrage-cookies" className="ms-legal-a">Aller au paramétrage des cookies</a>
       </P>
 
       <H>6. Contact</H>

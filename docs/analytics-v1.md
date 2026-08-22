@@ -20,7 +20,7 @@ Consentement cookies requis (`myswym_cookie_consent_v1=accepted`) avant tout env
 
 | Événement | Déclencheur | Props principales | Anti-doublon |
 |-----------|-------------|-------------------|--------------|
-| `landing_viewed` | Mount `/accueil` | `source` | session once |
+| `landing_viewed` | Mount `/` (landing) | `source` | session once |
 | `signup_started` | CTA inscription / auth register | `source` | onceKey par source |
 | `signup_completed` | Compte créé / auth depuis `/inscription` | — | `userId` |
 | `onboarding_started` | Écran onboarding step 1 | person props | `userId` |

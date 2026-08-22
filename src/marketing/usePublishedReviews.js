@@ -4,6 +4,7 @@ import { supabase } from "../supabase.js";
 /** Avis landing publiés (status = published). Tableau vide si la table n’existe pas encore. */
 export function usePublishedReviews() {
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
     supabase
@@ -12,19 +13,25 @@ export function usePublishedReviews() {
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        if (cancelled || error) return;
-        setReviews(
-          (data || []).map((row) => ({
-            id: row.id,
-            authorName: row.author_name,
-            rating: row.rating,
-            body: row.body,
-          })),
-        );
+        if (cancelled) return;
+        if (!error) {
+          setReviews(
+            (data || []).map((row) => ({
+              id: row.id,
+              authorName: row.author_name,
+              rating: row.rating,
+              body: row.body,
+            })),
+          );
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, []);
-  return reviews;
+  return { reviews, loading };
 }

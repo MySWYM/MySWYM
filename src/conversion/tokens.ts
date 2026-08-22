@@ -1,23 +1,23 @@
 /** Design tokens — mySWYM Conversion UX (Apple HIG inspired) */
 export const tokens = {
   color: {
-    bg: '#f5f7fb',
-    elevated: '#ffffff',
-    ink: '#0f1419',
-    secondary: '#5b6570',
-    tertiary: '#8b95a1',
-    blue: '#355da3',
-    blueDeep: '#154388',
-    blueMid: '#5b82c4',
-    blueSoft: '#e8effc',
-    blueGlow: '#d0ddf7',
+    bg: '#000514',
+    elevated: '#06101f',
+    ink: '#f4f8fa',
+    secondary: '#9bb0c8',
+    tertiary: '#6b7c90',
+    blue: '#006bfd',
+    blueDeep: '#3d8fff',
+    blueMid: '#3d8fff',
+    blueSoft: '#0a162c',
+    blueGlow: 'rgba(0, 107, 253, 0.22)',
     mint: '#1aad7a',
-    mintSoft: '#e6f8f1',
+    mintSoft: '#0c2a20',
     coral: '#e85d4c',
     gold: '#d4a017',
-    goldSoft: '#fbf3dc',
-    border: 'rgba(15, 20, 25, 0.08)',
-    overlay: 'rgba(15, 20, 25, 0.45)',
+    goldSoft: '#3a2a0a',
+    border: 'rgba(0, 107, 253, 0.22)',
+    overlay: 'rgba(0, 5, 20, 0.55)',
   },
   space: {
     xs: 4,
@@ -29,12 +29,12 @@ export const tokens = {
     '3xl': 64,
   },
   type: {
-    /** Display — Barlow Condensed */
+    /** Display — Space Grotesk */
     hero: { size: 40, line: 1.05, weight: 600 },
     title1: { size: 32, line: 1.1, weight: 600 },
     title2: { size: 24, line: 1.15, weight: 600 },
     title3: { size: 20, line: 1.2, weight: 600 },
-    /** Body — Lexend */
+    /** Body — Geist */
     body: { size: 16, line: 1.5, weight: 400 },
     callout: { size: 15, line: 1.45, weight: 500 },
     footnote: { size: 13, line: 1.4, weight: 400 },
@@ -49,9 +49,11 @@ export const tokens = {
     trialRequiresCard: false,
   },
   pricing: {
-    monthly: { label: '4,99 €', period: '/ mois', trialNote: '7 jours offerts · sans carte' },
-    annual: { label: '39,99 €', period: '/ an', perMonth: '3,33 €' },
-    biennial: { label: '29,99 €', period: '/ 2 ans' },
+    monthlyFlex: { label: '9,99 €', period: '/ mois', trialNote: '7 jours offerts · sans carte' },
+    monthlyCommit: { label: '4,99 €', period: '/ mois', commitment: '12 mois' },
+    /** Alias : mensuel sans engagement (9,99 €). */
+    monthly: { label: '9,99 €', period: '/ mois', trialNote: '7 jours offerts · sans carte' },
+    annual: { label: '52,99 €', period: '/ an' },
   },
 } as const
 
