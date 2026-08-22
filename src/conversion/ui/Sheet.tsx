@@ -34,7 +34,7 @@ export function Sheet({ open, onClose, children, dismissible = true }: Props) {
             exit="exit"
             className="cv:relative cv:w-full cv:max-w-lg cv:max-h-[92dvh] cv:overflow-y-auto cv:bg-cv-bg-elevated cv:rounded-t-cv-xl cv:shadow-cv-sheet cv:px-5 cv:pt-3 cv:pb-[max(24px,env(safe-area-inset-bottom))]"
           >
-            <div className="cv:mx-auto cv:mb-4 cv:h-1 cv:w-9 cv:rounded-full cv:bg-black/10" />
+            <div className="cv:mx-auto cv:mb-4 cv:h-1 cv:w-9 cv:rounded-full cv:bg-white/20" />
             {children}
           </motion.div>
         </div>

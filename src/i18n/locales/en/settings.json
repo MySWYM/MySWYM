@@ -2,7 +2,7 @@
   "language": {
     "section": "Language",
     "title": "Interface language",
-    "hint": "Landing and navigation. The rest of the app stays in French for now."
+    "hint": "Landing, navigation and onboarding quiz. The rest of the app is translated progressively."
   },
   "appearance": {
     "section": "Appearance",

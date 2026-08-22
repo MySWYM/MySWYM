@@ -4,7 +4,7 @@ import { fetchPublishedArticles } from "./blogData.js";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { getStoredLanguage } from "./i18n/index.js";
 
-const FONT = "'Lexend', sans-serif";
+const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 
 /** Couleurs via tokens thème app (--myswym-*) + fallbacks light. */
 function useAppColors() {

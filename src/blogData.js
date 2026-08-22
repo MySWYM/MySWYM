@@ -14,6 +14,44 @@ export const BLOG_CATEGORIES = [
 
 export const PAGE_SIZE = 12;
 
+const COVER_BY_SLUG = {
+  "personnalisation-100m-natation": "/nagerprogresser-objectif-landing.webp",
+  "programme-natation-triathlon": "/Triathlon-objectif-landing.webp",
+  "comment-reussir-bnssa": "/Sauveteur-objectif-landing.webp",
+  "plan-natation-debutant": "/hero-pool.webp",
+  "depart-interval-natation": "/nagerprogresser-objectif-landing.webp",
+  "glossaire-natation": "/coach.webp",
+};
+
+const COVER_BY_CATEGORY = {
+  "Conseils entraînement": ["/hero-pool.webp", "/nagerprogresser-objectif-landing.webp"],
+  "Technique & éducatifs": ["/nagerprogresser-objectif-landing.webp", "/hero-pool.webp"],
+  "Mental & préparation": ["/coach.webp", "/hero-pool.webp"],
+  "Physiologie & performance": ["/Triathlon-objectif-landing.webp", "/hero-pool.webp"],
+  "Eau libre": ["/Eaulibre-objectif-landing.webp", "/hero-pool.webp"],
+  Matériel: ["/Sauveteur-objectif-landing.webp", "/hero-pool.webp"],
+  "Récits & Interviews": ["/coach.webp", "/og-share.png"],
+};
+
+function hashSlug(slug) {
+  const s = String(slug || "");
+  let n = 0;
+  for (let i = 0; i < s.length; i++) n = (n + s.charCodeAt(i) * (i + 1)) % 97;
+  return n;
+}
+
+/** Visuel d’article : image CMS, sinon photo bassin locale (toujours une cover). */
+export function articleCoverUrl(article) {
+  const remote = article?.image_url;
+  if (typeof remote === "string" && remote.trim() && !remote.includes("unsplash.com")) {
+    return remote.trim();
+  }
+  const slug = article?.slug;
+  if (slug && COVER_BY_SLUG[slug]) return COVER_BY_SLUG[slug];
+  const pool = COVER_BY_CATEGORY[article?.categorie] || ["/hero-pool.webp"];
+  return pool[hashSlug(slug) % pool.length];
+}
+
 const CATEGORY_FALLBACK = {
   Entraînement: "Conseils entraînement",
   Triathlon: "Conseils entraînement",

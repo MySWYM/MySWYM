@@ -17,7 +17,7 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
         className="cv:pointer-events-none cv:absolute cv:inset-0"
         style={{
           background:
-            'radial-gradient(120% 80% at 50% -10%, #d0ddf7 0%, #e8effc 35%, #f5f7fb 70%, #f5f7fb 100%)',
+            'radial-gradient(circle at 20% 0%, rgba(0, 107, 253, 0.28), transparent 42%), linear-gradient(180deg, #000514 0%, #06101f 70%, #000514 100%)',
         }}
       />
       <motion.div
@@ -57,7 +57,7 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
             </Button>
           ) : null}
           <p className="cv:text-center cv:text-[12px] cv:text-cv-ink-tertiary">
-            Essai Premium 7 jours · sans carte · puis 4,99€/mois
+            Essai Premium 7 jours · sans carte · puis dès 4,99€/mois
           </p>
         </motion.div>
       </motion.div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, forwardRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { setAppLanguage } from "./index.js";
@@ -28,7 +28,7 @@ export function LocaleSync() {
 }
 
 /** `Link` qui préfixe `/fr` et traduit le slug selon la locale. */
-export function LocalizedLink({ to, ...rest }) {
+export const LocalizedLink = forwardRef(function LocalizedLink({ to, ...rest }, ref) {
   const locale = useActiveLocale();
   let resolved = to;
   if (typeof to === "string") {
@@ -36,8 +36,8 @@ export function LocalizedLink({ to, ...rest }) {
   } else if (to && typeof to === "object" && typeof to.pathname === "string") {
     resolved = { ...to, pathname: withLocalePrefix(to.pathname, locale) };
   }
-  return <Link to={resolved} {...rest} />;
-}
+  return <Link ref={ref} to={resolved} {...rest} />;
+});
 
 export function localePath(pathname, locale) {
   return shouldLocalizePath(pathname) ? withLocalePrefix(pathname, locale) : pathname;

@@ -29,11 +29,11 @@ export default function SessionPyramidPreview() {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(180deg, #eef3fb 0%, #f4f7fc 100%)",
+        background: "linear-gradient(180deg, #000514 0%, #06101f 100%)",
         display: "flex",
         justifyContent: "center",
         padding: "16px 12px 40px",
-        fontFamily: "'Lexend', system-ui, sans-serif",
+        fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
       }}
     >
       <div style={{ width: "100%", maxWidth: 390 }}>

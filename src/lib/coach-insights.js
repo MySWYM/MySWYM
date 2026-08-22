@@ -103,7 +103,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "after_first_session":
       return {
         headline: "Ton coach a noté la séance",
-        subtitle: "Abonne-toi pour que le plan s’adapte vraiment à toi — 4,99€/mois sans engagement.",
+        subtitle: "Abonne-toi pour que le plan s’adapte vraiment à toi — 9,99€/mois sans engagement, ou 4,99€/mois sur 12 mois.",
       };
     case "trial_required":
       return {
@@ -115,7 +115,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "trial_expired":
       return {
         headline: "L’app est gelée",
-        subtitle: "Ton essai de 7 jours est terminé. Abonne-toi à 4,99€/mois sans engagement, ou choisis l’annuel, pour tout revoir.",
+        subtitle: "Ton essai de 7 jours est terminé. Abonne-toi : 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an, pour tout revoir.",
       };
     case "session_locked":
       return {
@@ -136,8 +136,8 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
       return {
         headline: "MySWYM Premium",
         subtitle: trialEligible
-          ? "7 jours offerts sans carte à l’inscription, puis 4,99€/mois. Après l’essai, l’app se gèle."
-          : "Continue à 4,99€/mois sans engagement, ou choisis l’annuel.",
+          ? "7 jours offerts sans carte à l’inscription, puis 9,99€/mois sans engagement ou 4,99€/mois sur 12 mois. Après l’essai, l’app se gèle."
+          : "Continue à 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an.",
       };
   }
 }

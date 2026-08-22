@@ -27,6 +27,3 @@ export const BRAND = {
 
 export const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 export const FONT_DISPLAY = '"Space Grotesk", ui-sans-serif, system-ui, sans-serif';
-
-export const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap";

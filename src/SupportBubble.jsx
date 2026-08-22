@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { getStoredLanguage } from "./i18n/index.js";
+import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 
 const SUPPORT_EMAIL = "contact@myswym.app";
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
@@ -20,12 +21,12 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite l'app se gèle (plus rien de visible) jusqu'à l'abonnement. Mensuel 4,99€ sans engagement, ou annuel 39,99€ (pas de remboursement). Détails sur la page Tarifs.`,
+      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite l'app se gèle (plus rien de visible) jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
   },
   {
     keys: ["annul", "résili", "resili", "stop", "désabon", "desabon", "rembours"],
     answer:
-      "L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et l'app se gèle. Ensuite, mensuel 4,99€ sans engagement (accès jusqu'à la fin de période payée). Annuel 39,99€ : prépaiement, pas de remboursement une fois facturé (hors cas légaux).",
+      `L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et l'app se gèle. Ensuite : ${PRICING_SUMMARY_FR}. L'annuel est un prépaiement : pas de remboursement une fois facturé (hors cas légaux).`,
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],

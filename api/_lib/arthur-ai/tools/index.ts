@@ -155,7 +155,10 @@ export function getArthurOpenAITools(auth: AuthContext) {
         additionalProperties: false,
         required: ["plan"],
         properties: {
-          plan: { type: "string", enum: ["monthly", "annual"] },
+          plan: {
+            type: "string",
+            enum: ["monthly", "monthly_flex", "monthly_commit", "annual"],
+          },
         },
       },
     },

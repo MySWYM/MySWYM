@@ -7,10 +7,39 @@ import { arthurLog } from "../logging.js";
 import { trackAiEvent } from "../tracking.js";
 import { toolFail, toolOk } from "./result.js";
 
-const PRICE_MONTHLY =
-  process.env.STRIPE_PRICE_MONTHLY || "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-const PRICE_ANNUAL =
-  process.env.STRIPE_PRICE_ANNUAL || "price_1TudyVAS4mfgF2TwHiSo3Vrg";
+const LEGACY_PRICE_IDS = new Set([
+  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+  "price_1TudyVAS4mfgF2TwHiSo3Vrg",
+  "price_1Tue7cAS4mfgF2TwP53wZ7qn",
+  "price_1TPjyeAS4mfgF2TwmSjSiidD",
+  "price_1TP5yOAVxucD4jHaRYk2cbHC",
+  "price_1TPKQfAVxucD4jHaUDssY5cs",
+]);
+
+function envPrice(names: string[], fallback: string) {
+  for (const name of names) {
+    const v = process.env[name];
+    if (v && !LEGACY_PRICE_IDS.has(v)) return v;
+  }
+  return fallback;
+}
+
+const PRICE_MONTHLY_FLEX = envPrice(
+  ["STRIPE_PRICE_MONTHLY_FLEX", "VITE_STRIPE_PRICE_MONTHLY_FLEX"],
+  "price_1U67kYAS4mfgF2Twaw269yaU",
+);
+const PRICE_MONTHLY_COMMIT = envPrice(
+  [
+    "STRIPE_PRICE_MONTHLY_COMMIT",
+    "VITE_STRIPE_PRICE_MONTHLY_COMMIT",
+    "STRIPE_PRICE_MONTHLY",
+  ],
+  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+);
+const PRICE_ANNUAL = envPrice(
+  ["STRIPE_PRICE_ANNUAL", "VITE_STRIPE_PRICE_ANNUAL"],
+  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
+);
 
 export async function createCheckout(
   admin: SupabaseClient,
@@ -20,7 +49,10 @@ export async function createCheckout(
     /** JWT utilisateur — requis pour l’Edge Function create-checkout */
     accessToken?: string | null;
   },
-  args: { plan?: "monthly" | "annual"; price_id?: string } = {},
+  args: {
+    plan?: "monthly" | "monthly_flex" | "monthly_commit" | "annual";
+    price_id?: string;
+  } = {},
 ) {
   const userId = ctx.userId;
   if (!userId || !isUuid(userId)) {
@@ -52,7 +84,11 @@ export async function createCheckout(
 
   const priceId =
     args.price_id ||
-    (args.plan === "annual" ? PRICE_ANNUAL : PRICE_MONTHLY);
+    (args.plan === "annual"
+      ? PRICE_ANNUAL
+      : args.plan === "monthly_commit"
+        ? PRICE_MONTHLY_COMMIT
+        : PRICE_MONTHLY_FLEX);
 
   const appUrl = (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
 

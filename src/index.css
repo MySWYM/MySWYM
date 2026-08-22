@@ -107,3 +107,42 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Distance slider — piste visible derrière le pouce */
+.ms-distance-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  margin: 0;
+}
+.ms-distance-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+.ms-distance-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: #006bfd;
+  border: 3px solid #f4f8fa;
+  box-shadow: 0 2px 8px rgba(0, 107, 253, 0.4);
+  cursor: pointer;
+}
+.ms-distance-slider::-moz-range-track {
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+.ms-distance-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #006bfd;
+  border: 3px solid #f4f8fa;
+  box-shadow: 0 2px 8px rgba(0, 107, 253, 0.4);
+  cursor: pointer;
+}

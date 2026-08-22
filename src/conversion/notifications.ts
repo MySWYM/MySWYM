@@ -60,7 +60,7 @@ export const RETENTION_NOTIFICATIONS: NotificationTemplate[] = [
   {
     id: 'soft_premium',
     title: 'Plus que {days} jour{s} d’essai',
-    body: 'Sans abonnement, l’app se gèle demain. Premium à 4,99 € / mois, sans engagement.',
+    body: 'Sans abonnement, l’app se gèle demain. Premium dès 4,99 € / mois (12 mois) ou 9,99 € / mois sans engagement.',
     when: 'Essai J-2 / J-1, une fois / user',
     why: 'Conversion au pic de valeur perçue',
   },

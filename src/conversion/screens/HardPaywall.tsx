@@ -20,7 +20,7 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
       <motion.div variants={stagger} initial="hidden" animate="show" className="cv:flex cv:flex-1 cv:flex-col">
         <motion.div
           variants={fadeUp}
-          className="cv:flex cv:h-14 cv:w-14 cv:items-center cv:justify-center cv:rounded-2xl cv:bg-cv-ink"
+          className="cv:flex cv:h-14 cv:w-14 cv:items-center cv:justify-center cv:rounded-2xl cv:bg-cv-blue"
         >
           <Lock size={24} className="cv:text-cv-gold" />
         </motion.div>
@@ -29,25 +29,25 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
           Ton essai est terminé
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          L’app est gelée. Abonne-toi pour tout revoir — {monthly.label}/mois sans engagement
+          L’app est gelée. Abonne-toi pour tout revoir — 9,99 €/mois sans engagement, 4,99 €/mois sur 12 mois, ou 52,99 €/an
           {remaining > 0 ? ` · encore ${remaining} semaine${remaining > 1 ? 's' : ''} de plan` : ''}.
         </motion.p>
 
-        <motion.div variants={fadeUp} className="cv:mt-8 cv:rounded-cv-lg cv:bg-cv-ink cv:p-5 cv:text-white">
-          <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.1em] cv:text-white/50">
+        <motion.div variants={fadeUp} className="cv:mt-8 cv:rounded-cv-lg cv:border cv:border-cv-border cv:bg-cv-bg-elevated cv:p-5">
+          <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.1em] cv:text-cv-ink-tertiary">
             Premium mensuel
           </p>
-          <p className="cv-display cv:mt-2 cv:text-[36px] cv:leading-none">
+          <p className="cv-display cv:mt-2 cv:text-[36px] cv:leading-none cv:text-cv-ink">
             {monthly.label}
-            <span className="cv:text-[16px] cv:font-cv-body cv:font-medium cv:text-white/60"> / mois</span>
+            <span className="cv:text-[16px] cv:font-cv-body cv:font-medium cv:text-cv-ink-secondary"> / mois</span>
           </p>
-          <p className="cv:mt-1 cv:text-[13px] cv:text-white/55">sans engagement · annule quand tu veux</p>
+          <p className="cv:mt-1 cv:text-[13px] cv:text-cv-ink-secondary">sans engagement · 9,99 € / mois</p>
 
           <ul className="cv:mt-5 cv:space-y-2.5">
             {PREMIUM_FEATURES.map((f) => (
               <li key={f} className="cv:flex cv:gap-2.5">
                 <Check size={16} className="cv:mt-0.5 cv:shrink-0 cv:text-cv-gold" />
-                <span className="cv:text-[13px] cv:text-white/90">{f}</span>
+                <span className="cv:text-[13px] cv:text-cv-ink-secondary">{f}</span>
               </li>
             ))}
           </ul>

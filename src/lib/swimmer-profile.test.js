@@ -46,7 +46,8 @@ import {
   // Avant l'anniversaire (mois non encore atteint) → âge = année courante - année - 1
   assert.equal(computeAgeFromBirth(12, 2000, new Date("2026-06-15")), 25);
   // Après / pendant le mois de naissance → âge révolu
-  assert.equal(computeAgeFromBirth(3, 2000, new Date("2026-03-15")), 26);
+  assert.equal(computeAgeFromBirth(3, 2000, new Date("2026-03-15"), 20), 25);
+  assert.equal(computeAgeFromBirth(3, 2000, new Date("2026-03-20"), 20), 26);
   assert.equal(computeAgeFromBirth(3, 2000, new Date("2026-02-28")), 25);
   assert.equal(computeAgeFromBirth(null, 2000), null);
   assert.equal(computeAgeFromBirth(3, null), null);

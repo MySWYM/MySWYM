@@ -21,9 +21,9 @@ const styles: Record<Variant, string> = {
   secondary:
     'cv:bg-cv-blue-soft cv:text-cv-blue-deep hover:cv:bg-cv-blue-glow active:cv:scale-[0.98]',
   ghost:
-    'cv:bg-transparent cv:text-cv-ink-secondary hover:cv:bg-black/5 active:cv:scale-[0.98]',
+    'cv:bg-transparent cv:text-cv-ink-secondary hover:cv:bg-white/8 active:cv:scale-[0.98]',
   premium:
-    'cv:bg-cv-ink cv:text-white cv:shadow-cv-lg hover:cv:opacity-90 active:cv:scale-[0.98]',
+    'cv:bg-cv-blue cv:text-white cv:shadow-cv-lg hover:cv:bg-cv-blue-deep active:cv:scale-[0.98]',
 }
 
 export function Button({

@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "../i18n/locale-routing.jsx";
 import { usePublishedReviews } from "./usePublishedReviews.js";
+import { LpButton } from "../ui/lp-button.jsx";
+
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 function StarDisplay({ value, label }) {
   return (
@@ -106,39 +112,90 @@ function ReviewForm() {
         <span>{t("reviewsPage.email")}</span>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" spellCheck={false} />
       </label>
-      {status === "error" ? <p className="lp-review-error">{errorMsg}</p> : null}
-      <button type="submit" className="lp-btn lp-btn-lg" disabled={status === "sending"}>
+      {status === "error" ? <p className="lp-review-error" role="alert">{errorMsg}</p> : null}
+      <LpButton type="submit" size="lg" disabled={status === "sending"}>
         {status === "sending" ? t("reviewsPage.sending") : t("reviewsPage.send")}
-      </button>
+      </LpButton>
     </form>
+  );
+}
+
+function ReviewsSkeleton() {
+  return (
+    <div className="lp-reviews-carousel" aria-hidden>
+      <div className="lp-skeleton lp-skeleton-quote" />
+      <hr className="lp-reviews-rule" />
+      <div className="lp-skeleton lp-skeleton-name" />
+    </div>
   );
 }
 
 function ReviewsCarousel({ reviews }) {
   const { t } = useTranslation("landing");
-  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: reviews.length > 1,
+    duration: prefersReducedMotion() ? 0 : 20,
+    watchDrag: reviews.length > 1,
+  });
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelected(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
 
   useEffect(() => {
-    if (index >= reviews.length) setIndex(0);
-  }, [index, reviews.length]);
+    if (!emblaApi) return undefined;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   if (reviews.length === 0) {
     return <p className="lp-reviews-empty">{t("reviewsPage.empty")}</p>;
   }
 
-  const review = reviews[index] || reviews[0];
   const canNav = reviews.length > 1;
   const go = (dir) => {
-    setIndex((current) => (current + dir + reviews.length) % reviews.length);
+    if (!emblaApi) return;
+    if (dir < 0) emblaApi.scrollPrev();
+    else emblaApi.scrollNext();
   };
 
   return (
-    <div className="lp-reviews-carousel">
-      <blockquote className="lp-reviews-quote">
-        <p>{review.body}</p>
-      </blockquote>
-      <hr className="lp-reviews-rule" />
-      <p className="lp-reviews-author">{review.authorName}</p>
+    <div
+      className="lp-reviews-carousel"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={t("reviewsPage.label")}
+    >
+      <div
+        className="lp-reviews-viewport"
+        ref={emblaRef}
+        tabIndex={canNav ? 0 : undefined}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            go(-1);
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            go(1);
+          }
+        }}
+      >
+        <div className="lp-reviews-track">
+          {reviews.map((review) => (
+            <blockquote key={review.id} className="lp-reviews-slide">
+              <p className="lp-reviews-quote-text">{review.body}</p>
+              <hr className="lp-reviews-rule" />
+              <p className="lp-reviews-author">{review.authorName}</p>
+            </blockquote>
+          ))}
+        </div>
+      </div>
       {canNav ? (
         <div className="lp-reviews-nav">
           <button
@@ -155,10 +212,10 @@ function ReviewsCarousel({ reviews }) {
                 key={item.id}
                 type="button"
                 role="tab"
-                aria-selected={i === index}
-                className={`lp-reviews-dot${i === index ? " is-active" : ""}`}
+                aria-selected={i === selected}
+                className={`lp-reviews-dot${i === selected ? " is-active" : ""}`}
                 aria-label={t("reviewsPage.goTo", { n: i + 1 })}
-                onClick={() => setIndex(i)}
+                onClick={() => emblaApi?.scrollTo(i)}
               />
             ))}
           </div>
@@ -176,9 +233,9 @@ function ReviewsCarousel({ reviews }) {
   );
 }
 
-export default function LandingReviews({ asPage = false }) {
+export default function LandingReviews({ asPage = false, showWriteCta = true }) {
   const { t } = useTranslation("landing");
-  const reviews = usePublishedReviews();
+  const { reviews, loading } = usePublishedReviews();
   const TitleTag = asPage ? "h1" : "h2";
   const avg = reviews.length
     ? Math.round(reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length)
@@ -198,9 +255,11 @@ export default function LandingReviews({ asPage = false }) {
         <div className="lp-wrap lp-reviews-page">
           <p className="lp-kicker">{t("reviewsPage.label")}</p>
           <TitleTag className="lp-h2 lp-display">{t("reviewsPage.title")}</TitleTag>
-          <p className="lp-lead" style={{ marginTop: 12 }}>{t("reviewsPage.subtitle")}</p>
+          <p className="lp-lead lp-lead-tight">{t("reviewsPage.subtitle")}</p>
 
-          {reviews.length === 0 ? (
+          {loading ? (
+            <ReviewsSkeleton />
+          ) : reviews.length === 0 ? (
             <p className="lp-reviews-empty lp-reviews-empty-page">{t("reviewsPage.empty")}</p>
           ) : (
             <ul className="lp-reviews-list">
@@ -229,7 +288,7 @@ export default function LandingReviews({ asPage = false }) {
     <section id="avis" className="lp-section">
       <div className="lp-wrap lp-reviews">
         <div className="lp-reviews-head">
-          {reviews.length > 0 ? (
+          {!loading && reviews.length > 0 ? (
             <p className="lp-reviews-meta">
               <StarDisplay value={avg} label={t("reviewsPage.starAria")} />
               <span>{t("reviewsPage.count", { count: reviews.length })}</span>
@@ -237,10 +296,14 @@ export default function LandingReviews({ asPage = false }) {
           ) : null}
           <TitleTag className="lp-h2 lp-display">{t("reviewsPage.title")}</TitleTag>
         </div>
-        <ReviewsCarousel reviews={reviews} />
-        <LocalizedLink to={{ pathname: "/avis", hash: "#write" }} className="lp-btn lp-reviews-add">
-          {t("reviewsPage.add")}
-        </LocalizedLink>
+        {loading ? <ReviewsSkeleton /> : <ReviewsCarousel reviews={reviews} />}
+        {showWriteCta ? (
+          <LpButton asChild className="lp-reviews-add">
+            <LocalizedLink to={{ pathname: "/avis", hash: "#write" }}>
+              {t("reviewsPage.add")}
+            </LocalizedLink>
+          </LpButton>
+        ) : null}
       </div>
     </section>
   );

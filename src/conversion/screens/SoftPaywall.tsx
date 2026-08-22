@@ -13,19 +13,19 @@ interface Props {
 const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: string }> = {
   after_first_session: {
     title: 'Analyse terminée.',
-    subtitle: 'Essai 7 jours sans carte, puis 4,99 €/mois sans engagement. Après l’essai, l’app se gèle.',
+    subtitle: 'Essai 7 jours sans carte, puis 9,99 €/mois sans engagement ou 4,99 €/mois sur 12 mois. Après l’essai, l’app se gèle.',
   },
   streak: {
     title: 'Ta progression est prête.',
-    subtitle: 'Garde ton coach : 4,99 €/mois après l’essai sans carte.',
+    subtitle: 'Garde ton coach : 9,99 €/mois sans engagement, ou 4,99 €/mois sur 12 mois.',
   },
   week_unlock: {
     title: 'Tes prochaines recommandations sont prêtes.',
-    subtitle: 'Débloque l’analyse complète : 4,99 €/mois après l’essai.',
+    subtitle: 'Débloque l’analyse complète : 9,99 €/mois sans engagement, ou 4,99 €/mois sur 12 mois.',
   },
   generic: {
     title: 'Garde ton coach personnel.',
-    subtitle: 'Essai 7 jours · sans carte · puis 4,99 €/mois. Après l’essai, l’app se gèle.',
+    subtitle: 'Essai 7 jours · sans carte · puis 9,99 €/mois sans engagement ou 4,99 €/mois sur 12 mois. Après l’essai, l’app se gèle.',
   },
 }
 
@@ -44,7 +44,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="cv:flex cv:h-10 cv:w-10 cv:items-center cv:justify-center cv:rounded-full cv:text-cv-ink-tertiary cv:cursor-pointer hover:cv:bg-black/5"
+          className="cv:flex cv:h-10 cv:w-10 cv:items-center cv:justify-center cv:rounded-full cv:text-cv-ink-tertiary cv:cursor-pointer hover:cv:bg-white/8"
         >
           <X size={18} />
         </button>
@@ -57,7 +57,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
         <PlanCard
           title="Mensuel"
           price={monthly.label}
-          period="/ mois · après l'essai"
+          period="/ mois · sans engagement"
           badge="Recommandé"
           highlight
           onClick={() => onSubscribe('monthly')}

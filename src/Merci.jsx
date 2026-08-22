@@ -1,15 +1,15 @@
-import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
-import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import { usePageSeo } from "./lib/seo.js";
 import { useTranslation } from "react-i18next";
-import { BRAND, FONT, FONT_DISPLAY } from "./theme/brand.js";
+import { usePublicCta } from "./lib/use-auth-session.js";
 import "./theme/public.css";
 
 export default function MerciPage() {
   const { t } = useTranslation("common");
+  const cta = usePublicCta();
   usePageSeo({
     title: t("pages.thanksMetaTitle"),
     description: t("pages.thanksMetaDesc"),
@@ -18,34 +18,28 @@ export default function MerciPage() {
   });
 
   return (
-    <div className="ms-root" style={{ minHeight: "100vh", background: BRAND.bg, fontFamily: FONT, color: BRAND.ink }}>
+    <div className="ms-root">
       <PublicNav />
-      <main style={{ maxWidth: 640, margin: "0 auto", padding: "120px 20px 64px", textAlign: "center" }}>
-        <div style={{ textAlign: "left" }}>
-          <Breadcrumb items={[{ label: t("footer.home"), href: "/" }, { label: t("pages.thanksTitle") }]} onDark />
-        </div>
-        <h1 style={{
-          fontFamily: FONT_DISPLAY, fontSize: "clamp(36px,5vw,52px)", fontWeight: 800,
-          textTransform: "none", margin: "0 0 16px", letterSpacing: "-0.03em",
-        }}>
-          {t("pages.thanksTitle")}
-        </h1>
-        <p style={{ fontSize: 17, lineHeight: 1.65, color: BRAND.inkLight, margin: "0 0 28px" }}>
-          {t("pages.thanksBody")}
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          <LocalizedLink to="/" style={{
-            display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
-            borderRadius: 14, background: BRAND.primary, color: BRAND.accentText, fontWeight: 700, textDecoration: "none",
-          }}>
-            {t("pages.thanksHome")}
-          </LocalizedLink>
-          <Link to="/app" style={{
-            display: "inline-flex", minHeight: 48, alignItems: "center", padding: "0 22px",
-            borderRadius: 14, border: `1.5px solid ${BRAND.outlineVar}`, color: BRAND.ink, fontWeight: 700, textDecoration: "none",
-          }}>
-            {t("pages.startTrial")}
-          </Link>
+      <main className="ms-404">
+        <div className="ms-404-card ms-merci-card">
+          <img
+            className="ms-404-otter ms-merci-otter"
+            src="/loutre-merci.webp"
+            alt={t("pages.thanksAlt")}
+            width={1774}
+            height={887}
+          />
+          <p className="ms-pricing-kicker">{t("pages.thanksKicker")}</p>
+          <h1 className="ms-404-h1">{t("pages.thanksTitle")}</h1>
+          <p className="ms-404-lead">{t("pages.thanksBody")}</p>
+          <div className="ms-pricing-cta-row ms-404-cta">
+            <LocalizedLink to="/" className="ms-btn">
+              {t("pages.thanksHome")}
+            </LocalizedLink>
+            <LocalizedLink to={cta.href} className="ms-btn ms-btn-ghost">
+              {t("pages.thanksCta")} <ArrowRight size={15} aria-hidden />
+            </LocalizedLink>
+          </div>
         </div>
       </main>
       <Footer />

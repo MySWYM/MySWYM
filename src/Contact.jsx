@@ -1,50 +1,50 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, Mail } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import { LocalizedLink, useActiveLocale } from "./i18n/locale-routing.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
-import { useTranslation } from "react-i18next";
-
-import { BRAND, FONT, FONT_DISPLAY, FONT_HREF } from "./theme/brand.js";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/lp-accordion.jsx";
+import { LEGAL_ENTITY } from "./lib/legal-entity.js";
 import "./theme/public.css";
 
-const C = { ...BRAND };
-
-function FontLoader() {
-  useEffect(() => {
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.href = FONT_HREF;
-    document.head.appendChild(l);
-  }, []);
-  return null;
-}
+const CONTACT_EMAIL = LEGAL_ENTITY.email;
 
 export default function ContactPage() {
   const { t } = useTranslation("landing");
   const { t: tc } = useTranslation("common");
   const navigate = useNavigate();
   const locale = useActiveLocale();
-  const [open, setOpen] = useState(0);
+  const formId = useId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | sending | ok | error
+  const [company, setCompany] = useState("");
+  const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const isMobile = useIsMobile();
-  const faqItems = [1, 2, 3].map((n) => ({ q: t(`faq.q${n}`), a: t(`faq.a${n}`) }));
+  const crumbs = [{ label: tc("footer.home"), href: "/" }, { label: tc("nav.contact") }];
+  const faqItems = [1, 2, 3].map((n) => ({
+    id: `contact-faq-${n}`,
+    q: t(`faq.q${n}`),
+    a: t(`faq.a${n}`),
+  }));
 
   usePageSeo({
     title: t("contactPage.metaTitle"),
     description: t("contactPage.metaDescription"),
     path: "/contact",
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const sendContact = async (e) => {
     e.preventDefault();
@@ -56,7 +56,7 @@ export default function ContactPage() {
       email: email.trim(),
       subject: subject.trim(),
       message: message.trim(),
-      company: "", // honeypot
+      company,
     };
     try {
       const res = await fetch("/api/contact", {
@@ -66,7 +66,7 @@ export default function ContactPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Envoi impossible");
+        throw new Error(data.error || t("contactPage.sendError"));
       }
       setStatus("ok");
       setName("");
@@ -76,138 +76,131 @@ export default function ContactPage() {
       navigate(withLocalePrefix("/merci", locale), { replace: true });
     } catch (err) {
       setStatus("error");
-      setErrorMsg(
-        err?.message || t("contactPage.sendError"),
-      );
+      setErrorMsg(err?.message || t("contactPage.sendError"));
     }
   };
 
+  const sending = status === "sending";
+
   return (
-    <div className="ms-root" style={{ minHeight: "100vh", background: C.bg, color: C.ink, fontFamily: FONT }}>
-      <FontLoader />
+    <div className="ms-root">
       <PublicNav />
-      <main style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "88px 16px 44px" : "104px 20px 56px" }}>
-        <Breadcrumb items={[{ label: tc("footer.home"), href: "/" }, { label: tc("nav.contact") }]} onDark />
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 16 : 22, alignItems: "start" }}>
-          <section>
-            <div style={{ display: "inline-flex", alignItems: "center", background: C.primaryFix, borderRadius: 999, padding: "5px 12px", marginBottom: 12 }}>
-              <span style={{ color: C.primary, fontSize: 11, fontWeight: 700, letterSpacing: "0.07em" }}>{t("contactPage.eyebrow")}</span>
-            </div>
-            <h1 style={{ margin: 0, color: C.ink, fontSize: "clamp(34px,5.2vw,56px)", fontWeight: 800, lineHeight: 1.02, letterSpacing: "-0.03em", fontFamily: FONT_DISPLAY, textTransform: "none" }}>
-              {t("contactPage.h1")}
-            </h1>
-            <p style={{ color: C.secondary, fontSize: isMobile ? 16 : 18, lineHeight: 1.65, marginTop: 14, maxWidth: 560 }}>
-              {t("contactPage.lead")}
-            </p>
-            <p style={{ color: C.secondary, fontSize: 14, marginTop: 10 }}>
-              {t("contactPage.direct")} <a href="mailto:support@myswym.app" style={{ color: C.primaryDeep, fontWeight: 700 }}>support@myswym.app</a>
-            </p>
-
-            <div style={{ marginTop: isMobile ? 24 : 34, background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 22, boxShadow: C.shadow }}>
-              <h2 style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secondary, marginBottom: 12, fontFamily: FONT }}>
-                {t("faq.label")}
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {faqItems.map((item, i) => {
-                  const isOpen = open === i;
-                  return (
-                    <div key={item.q} style={{ borderBottom: `1px solid ${C.border}` }}>
-                      <button
-                        type="button"
-                        onClick={() => setOpen(isOpen ? -1 : i)}
-                        style={{
-                          width: "100%",
-                          border: "none",
-                          background: "none",
-                          color: C.ink,
-                          cursor: "pointer",
-                          padding: "14px 0",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          textAlign: "left",
-                          fontSize: isMobile ? 17 : 20,
-                          fontWeight: 700,
-                        }}
-                      >
-                        <span>{item.q}</span>
-                        <ChevronDown size={18} style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
-                      </button>
-                      {isOpen && (
-                        <p style={{ margin: "0 0 14px", color: C.secondary, lineHeight: 1.65 }}>
-                          {item.a}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p style={{ margin: "16px 0 0" }}>
-                <LocalizedLink to="/faq" style={{ color: C.primaryDeep, fontWeight: 700, textDecoration: "none" }}>
-                  {t("contactPage.allFaq")}
-                </LocalizedLink>
+      <main className="ms-contact">
+        <div className="ms-contact-wrap">
+          <Breadcrumb items={crumbs} onDark />
+          <div className="ms-contact-grid">
+            <section>
+              <p className="ms-pricing-kicker">{t("contactPage.eyebrow")}</p>
+              <h1 className="ms-pricing-h1">{t("contactPage.h1")}</h1>
+              <p className="ms-pricing-lead">{t("contactPage.lead")}</p>
+              <p className="ms-contact-direct">
+                {t("contactPage.direct")}{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`}>
+                  <Mail size={16} aria-hidden />
+                  {CONTACT_EMAIL}
+                </a>
               </p>
-            </div>
-          </section>
 
-          <section style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 24, padding: isMobile ? 16 : 24, boxShadow: C.shadowMd }}>
-            <h2 style={{ margin: 0, color: C.ink, fontFamily: FONT_DISPLAY, fontSize: isMobile ? 34 : 42, fontWeight: 800, lineHeight: 1.05, textTransform: "none", letterSpacing: "-0.03em" }}>{t("contactPage.formTitle")}</h2>
-            <p style={{ color: C.secondary, fontSize: 16, lineHeight: 1.6, marginTop: 12 }}>
-              {t("contactPage.formLead")}
-            </p>
+              <div className="ms-contact-faq">
+                <h2 className="ms-contact-faq-title">{t("faq.label")}</h2>
+                <Accordion type="single" collapsible className="ms-faq-list">
+                  {faqItems.map((item) => (
+                    <AccordionItem key={item.id} value={item.id} className="ms-faq-item">
+                      <AccordionTrigger>
+                        <span>{item.q}</span>
+                        <ChevronDown size={16} color="var(--ms-primary)" aria-hidden />
+                      </AccordionTrigger>
+                      <AccordionContent>{item.a}</AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+                <p className="ms-contact-faq-more">
+                  <LocalizedLink to="/faq" className="ms-contact-link">
+                    {t("contactPage.allFaq")}
+                    <ArrowRight size={14} aria-hidden />
+                  </LocalizedLink>
+                </p>
+              </div>
+            </section>
 
-            <form
-                onSubmit={sendContact}
-                style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}
-              >
-                {/* Honeypot, hidden from humans */}
-                <input
-                  type="text"
-                  name="company"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  aria-hidden="true"
-                  style={{ position: "absolute", left: "-9999px", height: 0, width: 0, opacity: 0 }}
-                />
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(180px, 1fr))", gap: 10 }}>
-                  <Field label={t("contactPage.name")} placeholder={t("contactPage.namePh")} value={name} onChange={(e) => setName(e.target.value)} required disabled={status === "sending"} />
-                  <Field label={t("contactPage.email")} type="email" placeholder={t("contactPage.emailPh")} value={email} onChange={(e) => setEmail(e.target.value)} required disabled={status === "sending"} />
+            <section className="ms-contact-card" aria-labelledby={`${formId}-title`}>
+              <h2 id={`${formId}-title`} className="ms-contact-form-title">
+                {t("contactPage.formTitle")}
+              </h2>
+              <p className="ms-contact-form-lead">{t("contactPage.formLead")}</p>
+
+              <form className="ms-contact-form" onSubmit={sendContact} noValidate={false}>
+                <div className="ms-sr-only">
+                  <label htmlFor={`${formId}-company`}>{t("contactPage.honeypot")}</label>
+                  <input
+                    id={`${formId}-company`}
+                    type="text"
+                    name="company"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
                 </div>
-                <Field label={t("contactPage.subject")} placeholder={t("contactPage.subjectPh")} value={subject} onChange={(e) => setSubject(e.target.value)} required disabled={status === "sending"} />
-                <Field label={t("contactPage.message")} as="textarea" placeholder={t("contactPage.messagePh")} value={message} onChange={(e) => setMessage(e.target.value)} required disabled={status === "sending"} />
+
+                <div className="ms-contact-row">
+                  <Field
+                    id={`${formId}-name`}
+                    label={t("contactPage.name")}
+                    autoComplete="name"
+                    placeholder={t("contactPage.namePh")}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    disabled={sending}
+                  />
+                  <Field
+                    id={`${formId}-email`}
+                    label={t("contactPage.email")}
+                    type="email"
+                    autoComplete="email"
+                    placeholder={t("contactPage.emailPh")}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={sending}
+                  />
+                </div>
+                <Field
+                  id={`${formId}-subject`}
+                  label={t("contactPage.subject")}
+                  autoComplete="off"
+                  placeholder={t("contactPage.subjectPh")}
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  required
+                  disabled={sending}
+                />
+                <Field
+                  id={`${formId}-message`}
+                  label={t("contactPage.message")}
+                  as="textarea"
+                  placeholder={t("contactPage.messagePh")}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                  disabled={sending}
+                />
 
                 {status === "error" && (
-                  <p style={{ margin: 0, color: "#b42318", fontSize: 13, lineHeight: 1.55, fontWeight: 600 }}>
+                  <p className="ms-pricing-error" role="alert">
                     {errorMsg}
                   </p>
                 )}
 
-                <p style={{ margin: 0, color: C.secondary, fontSize: 13, lineHeight: 1.55 }}>
-                  {t("contactPage.privacy")}
-                </p>
+                <p className="ms-contact-privacy">{t("contactPage.privacy")}</p>
 
-                <button
-                  type="submit"
-                  disabled={status === "sending"}
-                  style={{
-                    marginTop: 2,
-                    border: "none",
-                    borderRadius: 999,
-                    background: C.accent,
-                    color: C.accentText,
-                    cursor: status === "sending" ? "default" : "pointer",
-                    fontWeight: 700,
-                    fontFamily: FONT,
-                    fontSize: 16,
-                    padding: "13px 18px",
-                    minHeight: 46,
-                    opacity: status === "sending" ? 0.7 : 1,
-                  }}
-                >
-                  {status === "sending" ? t("contactPage.sending") : t("contactPage.send")}
+                <button type="submit" className="ms-btn" disabled={sending}>
+                  {sending ? t("contactPage.sending") : t("contactPage.send")}
                 </button>
               </form>
-          </section>
+            </section>
+          </div>
         </div>
       </main>
       <Footer />
@@ -216,37 +209,16 @@ export default function ContactPage() {
   );
 }
 
-function Field({ label, as = "input", ...props }) {
-  const common = {
-    width: "100%",
-    boxSizing: "border-box",
-    border: `1px solid ${C.border}`,
-    borderRadius: 10,
-    background: C.cardAlt,
-    color: C.ink,
-    fontSize: 15,
-    padding: as === "textarea" ? "12px 13px" : "11px 13px",
-    minHeight: as === "textarea" ? 148 : 44,
-    outline: "none",
-    fontFamily: FONT,
-  };
-
+function Field({ id, label, as = "input", ...props }) {
+  const Tag = as === "textarea" ? "textarea" : "input";
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secondary }}>
-        {label}
-      </span>
-      {as === "textarea" ? <textarea {...props} style={common} /> : <input {...props} style={common} />}
-    </label>
+    <div className="ms-field">
+      <label htmlFor={id}>{label}</label>
+      <Tag
+        id={id}
+        className={as === "textarea" ? "ms-input ms-input-area" : "ms-input"}
+        {...props}
+      />
+    </div>
   );
-}
-
-function useIsMobile(bp = 768) {
-  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
-  useEffect(() => {
-    const fn = () => setMobile(window.innerWidth < bp);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
-  }, [bp]);
-  return mobile;
 }

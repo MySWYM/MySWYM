@@ -3,13 +3,10 @@ import Footer from "./Footer.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import CookiePreferencesPanel from "./marketing/CookiePreferences.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
-import { usePageSeo } from "./lib/seo.js";
+import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import { useTranslation } from "react-i18next";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
-import { BRAND, FONT, FONT_DISPLAY } from "./theme/brand.js";
 import "./theme/public.css";
-
-const C = { ...BRAND };
 
 const host = {
   name: "Vercel Inc.",
@@ -19,24 +16,27 @@ const host = {
 
 function LegalLayout({ title, subtitle, path, description, children, after }) {
   const { t } = useTranslation("common");
+  const crumbs = [{ label: t("footer.home"), href: "/" }, { label: title }];
   usePageSeo({
     title: `${title} | MySWYM`,
     description: description || subtitle,
     path,
+    jsonLd: breadcrumbJsonLd(crumbs),
   });
   return (
-    <div className="ms-root" style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
+    <div className="ms-root">
       <PublicNav />
-      <main style={{ maxWidth: 920, margin: "0 auto", padding: "96px 20px 56px" }}>
-        <Breadcrumb items={[{ label: t("footer.home"), href: "/" }, { label: title }]} onDark />
-        <h1 style={{ color: C.ink, fontSize: "clamp(30px,4vw,44px)", margin: "0 0 10px", fontFamily: FONT_DISPLAY, textTransform: "none", letterSpacing: "-0.03em" }}>{title}</h1>
-        <p style={{ color: C.inkLight, marginTop: 0, marginBottom: 8 }}>{subtitle}</p>
-        <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 8 }}>{t("pages.legalUpdated", { date: LEGAL_ENTITY.lastUpdated })}</p>
-        <p style={{ color: C.inkLight, fontSize: 12, marginTop: 0, marginBottom: 24 }}>{t("pages.legalFrNotice")}</p>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: "24px 22px", color: C.ink, lineHeight: 1.7, fontSize: 14 }}>
-          {children}
+      <main className="ms-legal-main">
+        <div className="ms-legal-wrap">
+          <Breadcrumb items={crumbs} onDark />
+          <p className="ms-pricing-kicker">{t("footer.legal")}</p>
+          <h1 className="ms-legal-h1">{title}</h1>
+          <p className="ms-legal-lead">{subtitle}</p>
+          <p className="ms-legal-meta">{t("pages.legalUpdated", { date: LEGAL_ENTITY.lastUpdated })}</p>
+          <p className="ms-legal-meta ms-legal-meta-last">{t("pages.legalFrNotice")}</p>
+          <div className="ms-legal-card">{children}</div>
+          {after ? <div className="ms-legal-after">{after}</div> : null}
         </div>
-        {after}
       </main>
       <Footer />
     </div>
@@ -44,31 +44,31 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
 }
 
 function H({ children }) {
-  return <h2 style={{ fontSize: 16, fontWeight: 800, color: C.ink, margin: "28px 0 10px", letterSpacing: "0.02em" }}>{children}</h2>;
+  return <h2 className="ms-legal-h2">{children}</h2>;
 }
 
 function H3({ children }) {
-  return <h3 style={{ fontSize: 14, fontWeight: 800, color: C.ink, margin: "18px 0 8px" }}>{children}</h3>;
+  return <h3 className="ms-legal-h3">{children}</h3>;
 }
 
 function P({ children }) {
-  return <p style={{ margin: "0 0 12px", color: C.inkLight }}>{children}</p>;
+  return <p className="ms-legal-p">{children}</p>;
 }
 
 function Ul({ items }) {
   return (
-    <ul style={{ margin: "0 0 12px", paddingLeft: 20, color: C.inkLight }}>
-      {items.map((it, i) => <li key={i} style={{ marginBottom: 6 }}>{it}</li>)}
+    <ul className="ms-legal-ul">
+      {items.map((it, i) => <li key={i}>{it}</li>)}
     </ul>
   );
 }
 
 function Strong({ children }) {
-  return <strong style={{ color: C.ink }}>{children}</strong>;
+  return <strong className="ms-legal-strong">{children}</strong>;
 }
 
 function Mail({ to }) {
-  return <a href={`mailto:${to}`} style={{ color: C.primaryDeep }}>{to}</a>;
+  return <a className="ms-legal-a" href={`mailto:${to}`}>{to}</a>;
 }
 
 function PublisherBlock() {
@@ -91,7 +91,7 @@ function MediatorBlock() {
   if (pending) {
     return (
       <P>
-        <span style={{ background: "#FEF3C7", color: "#92400E", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+        <span className="ms-legal-warn">
           [MÉDIATEUR À CONFIRMER]
         </span>
         {" "}Les coordonnées du médiateur de la consommation seront publiées ici dès inscription.
@@ -102,7 +102,7 @@ function MediatorBlock() {
   return (
     <Ul items={[
       <>Médiateur : {mediatorName}</>,
-      mediatorWebsite ? <>Site : <a href={mediatorWebsite} style={{ color: C.primaryDeep }}>{mediatorWebsite}</a></> : null,
+      mediatorWebsite ? <>Site : <a href={mediatorWebsite} className="ms-legal-a">{mediatorWebsite}</a></> : null,
       mediatorAddress ? <>Adresse : {mediatorAddress}</> : null,
     ].filter(Boolean)} />
   );
@@ -128,9 +128,9 @@ export function MentionsLegalesPage() {
 
       <H>2. Hébergement et sous-traitants techniques</H>
       <Ul items={[
-        <>Front / CDN : <Strong>{host.name}</Strong> : {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.primaryDeep }}>vercel.com/legal/dpa</a>.</>,
-        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.primaryDeep }}>supabase.com/legal/dpa</a>.</>,
-        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.primaryDeep }}>stripe.com/legal/dpa</a>.</>,
+        <>Front / CDN : <Strong>{host.name}</Strong> : {host.address}. Site : {host.website}. DPA : <a href="https://vercel.com/legal/dpa" className="ms-legal-a">vercel.com/legal/dpa</a>.</>,
+        <>Authentification, base de données et stockage : <Strong>Supabase</Strong>. DPA : <a href="https://supabase.com/legal/dpa" className="ms-legal-a">supabase.com/legal/dpa</a>.</>,
+        <>Paiements : <Strong>Stripe</Strong> (MySWYM ne stocke pas les numéros de carte). DPA : <a href="https://stripe.com/legal/dpa" className="ms-legal-a">stripe.com/legal/dpa</a>.</>,
       ]} />
       {(subprocessors || []).length > 0 && (
         <P>
@@ -152,10 +152,10 @@ export function MentionsLegalesPage() {
 
       <H>5. Documents connexes</H>
       <Ul items={[
-        <LocalizedLink key="cgu" to="/cgu" style={{ color: C.primaryDeep }}>Conditions générales d’utilisation (CGU)</LocalizedLink>,
-        <LocalizedLink key="cgv" to="/cgv" style={{ color: C.primaryDeep }}>Conditions générales de vente (CGV)</LocalizedLink>,
-        <LocalizedLink key="priv" to="/politique-confidentialite" style={{ color: C.primaryDeep }}>Politique de confidentialité</LocalizedLink>,
-        <LocalizedLink key="cook" to="/politique-cookies" style={{ color: C.primaryDeep }}>Politique de cookies</LocalizedLink>,
+        <LocalizedLink key="cgu" to="/cgu" className="ms-legal-a">Conditions générales d’utilisation (CGU)</LocalizedLink>,
+        <LocalizedLink key="cgv" to="/cgv" className="ms-legal-a">Conditions générales de vente (CGV)</LocalizedLink>,
+        <LocalizedLink key="priv" to="/politique-confidentialite" className="ms-legal-a">Politique de confidentialité</LocalizedLink>,
+        <LocalizedLink key="cook" to="/politique-cookies" className="ms-legal-a">Politique de cookies</LocalizedLink>,
       ]} />
     </LegalLayout>
   );
@@ -285,7 +285,7 @@ export function PolitiqueConfidentialitePage() {
       <H3>2.11 Données techniques</H3>
       <Ul items={[
         "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=), session d’auth.",
-        "Polices Google Fonts : chargement depuis les serveurs Google (peut entraîner un transfert d’adresse IP) : voir politique cookies.",
+        "Polices : Geist et Space Grotesk auto-hébergées (pas de requête Google Fonts sur le site public).",
         "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
       ]} />
 
@@ -300,12 +300,12 @@ export function PolitiqueConfidentialitePage() {
 
       <H>3. Destinataires / sous-traitants</H>
       <Ul items={[
-        <>Supabase : auth, base de données, stockage avatars : DPA : <a href="https://supabase.com/legal/dpa" style={{ color: C.primaryDeep }}>supabase.com/legal/dpa</a>.</>,
-        <>Stripe : paiement et portail client : DPA : <a href="https://stripe.com/legal/dpa" style={{ color: C.primaryDeep }}>stripe.com/legal/dpa</a>.</>,
-        <>Vercel : hébergement front : DPA : <a href="https://vercel.com/legal/dpa" style={{ color: C.primaryDeep }}>vercel.com/legal/dpa</a>.</>,
+        <>Supabase : auth, base de données, stockage avatars : DPA : <a href="https://supabase.com/legal/dpa" className="ms-legal-a">supabase.com/legal/dpa</a>.</>,
+        <>Stripe : paiement et portail client : DPA : <a href="https://stripe.com/legal/dpa" className="ms-legal-a">stripe.com/legal/dpa</a>.</>,
+        <>Vercel : hébergement front : DPA : <a href="https://vercel.com/legal/dpa" className="ms-legal-a">vercel.com/legal/dpa</a>.</>,
         "PostHog : analytics produit (si consentement cookies) : sans données de santé.",
         "Resend : envoi d’e-mails.",
-        "Google : OAuth (si choisi) et Google Fonts.",
+        "Google : OAuth uniquement (si choisi). Les polices du site public sont auto-hébergées.",
         "Strava : uniquement si connecté.",
       ]} />
       <P>
@@ -388,7 +388,7 @@ export function CguPage() {
         et de l’application {tradeName}, édités par {publisher}.
         En créant un compte ou en utilisant le service, vous acceptez ces CGU.
         Les conditions commerciales de l’abonnement Premium sont détaillées dans les{" "}
-        <LocalizedLink to="/cgv" style={{ color: C.primaryDeep }}>CGV</LocalizedLink>.
+        <LocalizedLink to="/cgv" className="ms-legal-a">CGV</LocalizedLink>.
       </P>
 
       <H>1. Objet du service</H>
@@ -581,9 +581,10 @@ export function CgvPage() {
       <H>3. Offres et prix (TTC)</H>
       <Ul items={[
         "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est gelé (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
-        "Mensuel : 4,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Annuel : 39,99 € TTC / an (soit environ 3,33 € / mois) : prépaiement 12 mois (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
-        "Biennal (24 mois) : 29,99 € TTC pour 24 mois : offre prépayée éventuellement proposée via un identifiant de prix Stripe dédié. Elle n’est pas nécessairement affichée sur la page Tarifs grand public. Les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables ; une clause d’« engagement » ne peut pas supprimer ces droits.",
+        "Mensuel sans engagement : 9,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
+        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai : engagement d’une durée de 12 mois, facturé chaque mois ; reconduction selon les conditions Stripe / CGV ; les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables.",
+        "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
+        "Offre biennale héritée (24 mois) : éventuellement encore visible pour d’anciens identifiants de prix Stripe. Elle n’est plus commercialisée sur la page Tarifs. Les droits légaux du consommateur restent applicables.",
       ]} />
       <P>
         Prix en euros TTC. TVA : {LEGAL_ENTITY.vatNumber}.
@@ -711,7 +712,7 @@ export function PolitiqueCookiesPage() {
         (« Informatique et Libertés ») et au règlement (UE) 2016/679 (RGPD).
       </P>
       <P>
-        Vous pouvez <a href="#parametrage-cookies" style={{ color: C.primaryDeep, fontWeight: 700 }}>paramétrer, accepter ou refuser</a> les
+        Vous pouvez <a href="#parametrage-cookies" className="ms-legal-a">paramétrer, accepter ou refuser</a> les
         traceurs non essentiels à tout moment, en bas de cette page. Le refus est présenté de la même manière que l’acceptation.
       </P>
 
@@ -740,12 +741,11 @@ export function PolitiqueCookiesPage() {
         "Durée : selon configuration PostHog / jusqu’au retrait du consentement.",
       ]} />
 
-      <H3>3.2 Google Fonts</H3>
+      <H3>3.2 Polices (auto-hébergées)</H3>
       <Ul items={[
-        "Fournisseur : Google.",
-        "Finalité : affichage typographique (Barlow Condensed, Lexend).",
-        "Conséquence : requête vers les serveurs Google pouvant exposer votre adresse IP.",
-        "Statut : considéré comme non essentiel / traceur tiers : [À VALIDER] : migrer vers polices auto-hébergées pour supprimer ce transfert hors consentement.",
+        "Polices : Geist et Space Grotesk, servies depuis le même domaine que le site (fichiers woff2).",
+        "Aucune requête vers fonts.googleapis.com / fonts.gstatic.com sur le site public.",
+        "Pas de transfert d’adresse IP vers Google du fait des polices.",
       ]} />
 
       <H3>3.3 Vercel Speed Insights</H3>
@@ -787,7 +787,7 @@ export function PolitiqueCookiesPage() {
         distincts et documentés dans la politique de confidentialité.
       </P>
       <P>
-        <a href="#parametrage-cookies" style={{ color: C.primaryDeep, fontWeight: 700 }}>Aller au paramétrage des cookies</a>
+        <a href="#parametrage-cookies" className="ms-legal-a">Aller au paramétrage des cookies</a>
       </P>
 
       <H>6. Contact</H>

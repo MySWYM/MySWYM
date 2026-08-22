@@ -1,33 +1,25 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import StickyCta from "./marketing/StickyCta.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import { LocalizedLink, useActiveLocale } from "./i18n/locale-routing.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
-import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
+import { SITE_ORIGIN, usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import { useTranslation } from "react-i18next";
-import {
-  fetchArticleBySlug,
-  fetchRelatedArticles,
-} from "./blogData.js";
-import { BRAND, FONT, FONT_HREF } from "./theme/brand.js";
+import { articleCoverUrl, fetchArticleBySlug, fetchRelatedArticles } from "./blogData.js";
+import { usePublicCta } from "./lib/use-auth-session.js";
 import "./theme/public.css";
 
-const C = { ...BRAND };
-
-function useIsMobile(bp = 640) {
-  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < bp);
-  useEffect(() => {
-    const fn = () => setMobile(window.innerWidth < bp);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
-  }, [bp]);
-  return mobile;
+function ogImageForCover(cover) {
+  if (!cover) return undefined;
+  if (/^https?:\/\//i.test(cover)) return cover;
+  return `${SITE_ORIGIN}${cover.startsWith("/") ? cover : `/${cover}`}`;
 }
 
-function ArticleSeo({ article }) {
+function ArticleSeo({ article, cover }) {
   const { t } = useTranslation("common");
   const crumbs = [
     { label: t("footer.home"), href: "/" },
@@ -38,22 +30,12 @@ function ArticleSeo({ article }) {
     title: article ? `${article.titre} | MySWYM` : "Article | MySWYM",
     description: article?.extrait || article?.titre || "Article natation MySWYM",
     path: article?.slug ? `/blog/${article.slug}` : "/blog",
+    image: ogImageForCover(cover),
     jsonLd: breadcrumbJsonLd(crumbs),
   });
   return null;
 }
 
-function FontLoader() {
-  useEffect(() => {
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.href = FONT_HREF;
-    document.head.appendChild(l);
-  }, []);
-  return null;
-}
-
-/** Rendu markdown léger : ## titres, paragraphes, **gras** */
 function ArticleBody({ contenu }) {
   const blocks = String(contenu || "")
     .trim()
@@ -67,20 +49,7 @@ function ArticleBody({ contenu }) {
 
         if (trimmed.startsWith("## ")) {
           return (
-            <h2
-              key={i}
-              style={{
-                fontFamily: FONT,
-                fontWeight: 800,
-                fontSize: "clamp(20px, 3vw, 26px)",
-                color: C.ink,
-                margin: "36px 0 14px",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.25,
-                paddingLeft: 14,
-                borderLeft: `3px solid ${C.accent}`,
-              }}
-            >
+            <h2 key={i} className="ms-post-h2">
               {trimmed.slice(3)}
             </h2>
           );
@@ -88,7 +57,7 @@ function ArticleBody({ contenu }) {
 
         if (trimmed.startsWith("**") && trimmed.endsWith("**") && !trimmed.slice(2, -2).includes("**")) {
           return (
-            <h3 key={i} style={{ fontFamily: FONT, fontSize: 17, fontWeight: 700, color: C.ink, margin: "24px 0 8px" }}>
+            <h3 key={i} className="ms-post-h3">
               {trimmed.slice(2, -2)}
             </h3>
           );
@@ -96,15 +65,13 @@ function ArticleBody({ contenu }) {
 
         const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
         return (
-          <p key={i} style={{ color: C.inkLight, fontSize: 16, lineHeight: 1.8, margin: "0 0 18px" }}>
+          <p key={i} className="ms-post-p">
             {parts.map((part, j) =>
               part.startsWith("**") && part.endsWith("**") ? (
-                <strong key={j} style={{ color: C.ink, fontWeight: 600 }}>
-                  {part.slice(2, -2)}
-                </strong>
+                <strong key={j}>{part.slice(2, -2)}</strong>
               ) : (
                 part
-              )
+              ),
             )}
           </p>
         );
@@ -117,8 +84,8 @@ export default function BlogPost() {
   const { slug } = useParams();
   const locale = useActiveLocale();
   const { t } = useTranslation("common");
-  const isMobile = useIsMobile();
-  const [article, setArticle] = useState(undefined); // undefined = loading, null = not found
+  const cta = usePublicCta();
+  const [article, setArticle] = useState(undefined);
   const [related, setRelated] = useState([]);
 
   useEffect(() => {
@@ -140,208 +107,87 @@ export default function BlogPost() {
     };
   }, [slug]);
 
-  useEffect(() => {
-    document.body.style.background = C.bg;
-    document.body.style.fontFamily = FONT;
-  }, []);
-
   if (article === undefined) {
     return (
-      <div className="ms-root" style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
-        <FontLoader />
+      <div className="ms-root">
         <PublicNav />
-        <p style={{ textAlign: "center", color: C.secondary, padding: "120px 20px" }}>{t("pages.blogLoading")}</p>
+        <p className="ms-blog-loading">{t("pages.blogLoading")}</p>
       </div>
     );
   }
 
   if (!article) return <Navigate to={withLocalePrefix("/blog", locale)} replace />;
 
+  const cover = articleCoverUrl(article);
+
   return (
-    <div className="ms-root" style={{ background: C.bg, minHeight: "100vh", fontFamily: FONT }}>
-      <FontLoader />
-      <ArticleSeo article={article} />
+    <div className="ms-root">
+      <ArticleSeo article={article} cover={cover} />
       <PublicNav />
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "88px 16px 0" : "104px 20px 0" }}>
-        <Breadcrumb
-          items={[
-            { label: t("footer.home"), href: "/" },
-            { label: t("nav.blog"), href: "/blog" },
-            { label: article.titre },
-          ]}
-          onDark
-        />
-
-        <LocalizedLink
-          to="/blog"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            color: C.secondary,
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: "none",
-            marginBottom: 20,
-          }}
-        >
-          <ArrowLeft size={14} /> Retour au blog
-        </LocalizedLink>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-          <span
-            style={{
-              background: C.primaryFix,
-              color: C.primary,
-              fontSize: 12,
-              fontWeight: 700,
-              padding: "5px 12px",
-              borderRadius: 100,
-            }}
-          >
-            {article.categorie}
-          </span>
-        </div>
-
-        <h1
-          style={{
-            fontFamily: FONT,
-            fontWeight: 800,
-            fontSize: "clamp(28px, 5vw, 42px)",
-            color: C.ink,
-            margin: "0 0 20px",
-            letterSpacing: "-0.02em",
-            lineHeight: 1.15,
-          }}
-        >
-          {article.titre}
-        </h1>
-
-        {article.image_url && (
-          <div
-            style={{
-              borderRadius: 20,
-              overflow: "hidden",
-              marginBottom: 28,
-              aspectRatio: "16 / 9",
-              background: `center / cover no-repeat url(${article.image_url}), ${C.bgSoft}`,
-              boxShadow: C.shadow,
-            }}
-            role="img"
-            aria-label={article.titre}
+      <header className="ms-post-hero">
+        <div className="ms-post-wrap">
+          <Breadcrumb
+            items={[
+              { label: t("footer.home"), href: "/" },
+              { label: t("nav.blog"), href: "/blog" },
+              { label: article.titre },
+            ]}
+            onDark
           />
-        )}
+          <LocalizedLink to="/blog" className="ms-contact-link">
+            <ArrowLeft size={14} aria-hidden /> {t("pages.blogBack")}
+          </LocalizedLink>
+          {article.categorie ? <p className="ms-blog-tag ms-post-tag">{article.categorie}</p> : null}
+          <h1 className="ms-post-title">{article.titre}</h1>
+          <div className="ms-post-cover">
+            <img src={cover} alt="" width={1200} height={675} />
+          </div>
+          {article.extrait ? <p className="ms-post-excerpt">{article.extrait}</p> : null}
+        </div>
+      </header>
 
-        {article.extrait && (
-          <p style={{ color: C.secondary, fontSize: 18, lineHeight: 1.7, margin: "0 0 36px", fontStyle: "italic" }}>
-            {article.extrait}
-          </p>
-        )}
-      </div>
-
-      <article style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "0 16px 48px" : "0 20px 64px" }}>
-        <ArticleBody contenu={article.contenu} />
-
-        <div
-          style={{
-            background: C.bgCard,
-            border: `1px solid ${C.border}`,
-            borderRadius: 22,
-            padding: isMobile ? "28px 20px" : "36px 32px",
-            textAlign: "center",
-            boxShadow: C.shadow,
-            marginTop: 40,
-          }}
-        >
-          <h3 style={{ fontFamily: FONT, fontSize: 20, fontWeight: 800, color: C.ink, margin: "0 0 10px" }}>
-            {t("pages.blogCtaTitle")}
-          </h3>
-          <p style={{ color: C.secondary, fontSize: 14, lineHeight: 1.65, margin: "0 0 22px", maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
-            {t("pages.blogCtaLead")}
-          </p>
-          <Link
-            to="/app"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: C.accent,
-              color: C.accentText,
-              fontWeight: 700,
-              fontSize: 15,
-              padding: "12px 24px",
-              borderRadius: 100,
-              textDecoration: "none",
-              boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)",
-              minHeight: 48,
-            }}
-          >
-            {t("pages.blogCta")} <ArrowRight size={15} />
-          </Link>
+      <article className="ms-post-body">
+        <div className="ms-post-wrap">
+          <ArticleBody contenu={article.contenu} />
+          <div className="ms-post-cta">
+            <h2>{t("pages.blogCtaTitle")}</h2>
+            <p>{t("pages.blogCtaLead")}</p>
+            <LocalizedLink to={cta.href} className="ms-btn">
+              {t("pages.blogCta")} <ArrowRight size={15} aria-hidden />
+            </LocalizedLink>
+          </div>
         </div>
       </article>
 
       {related.length > 0 && (
-        <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "0 16px 72px" : "0 20px 80px" }}>
-          <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 16 }}>{t("pages.blogRelated")}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
-            {related.map((p) => (
-              <LocalizedLink key={p.slug} to={`/blog/${p.slug}`} style={{ textDecoration: "none" }}>
-                <div
-                  style={{
-                    background: C.bgCard,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 18,
-                    overflow: "hidden",
-                    height: "100%",
-                    boxShadow: C.shadow,
-                    transition: "transform 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
-                  <div
-                    style={{
-                      height: 100,
-                      background: p.image_url
-                        ? `center / cover no-repeat url(${p.image_url})`
-                        : `linear-gradient(135deg, ${C.primaryFix}, ${C.accent})`,
-                      backgroundColor: C.bgSoft,
-                    }}
-                  />
-                  <div style={{ padding: "14px 16px 16px" }}>
-                    <span
-                      style={{
-                        background: C.primaryFix,
-                        color: C.primary,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: "3px 9px",
-                        borderRadius: 100,
-                      }}
-                    >
-                      {p.categorie}
-                    </span>
-                    <h4 style={{ fontFamily: FONT, fontSize: 15, fontWeight: 700, color: C.ink, margin: "10px 0 6px", lineHeight: 1.3 }}>
-                      {p.titre}
-                    </h4>
-                    <span style={{ fontSize: 12, color: C.primary, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {t("pages.blogRead")} <ChevronRight size={12} />
-                    </span>
-                  </div>
-                </div>
-              </LocalizedLink>
-            ))}
+        <aside className="ms-post-related">
+          <div className="ms-post-wrap">
+            <h2>{t("pages.blogRelated")}</h2>
+            <div className="ms-post-related-grid">
+              {related.map((p) => (
+                <LocalizedLink key={p.slug} to={`/blog/${p.slug}`} className="ms-blog-card-link">
+                  <article className="ms-blog-card ms-blog-card-sm">
+                    <div className="ms-blog-card-media">
+                      <img src={articleCoverUrl(p)} alt="" width={480} height={240} loading="lazy" />
+                    </div>
+                    <div className="ms-blog-card-body">
+                      {p.categorie ? <span className="ms-blog-tag">{p.categorie}</span> : null}
+                      <h3>{p.titre}</h3>
+                      <span className="ms-blog-read">
+                        {t("pages.blogRead")} <ChevronRight size={12} aria-hidden />
+                      </span>
+                    </div>
+                  </article>
+                </LocalizedLink>
+              ))}
+            </div>
           </div>
-        </div>
+        </aside>
       )}
 
       <Footer />
+      <StickyCta />
     </div>
   );
 }

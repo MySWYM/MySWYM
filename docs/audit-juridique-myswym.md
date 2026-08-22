@@ -37,9 +37,10 @@
 | Gratuit | Essai 7 jours sans carte à l’inscription, puis gel total |
 | Payant | Premium via Stripe Checkout |
 | Essai | 7 jours, **sans carte**, 1×/compte ; ensuite app gelée |
-| Mensuel | 4,99 € TTC / mois, reconduction tacite |
-| Annuel | 39,99 € TTC / an, prépayé, sans essai sur ce tunnel |
-| Biennal | Price ID présent (29,99 € / 24 mois) — **non affiché** sur page Tarifs |
+| Mensuel flex | 9,99 € TTC / mois, sans engagement, reconduction tacite |
+| Mensuel 12 mois | 4,99 € TTC / mois, engagement 12 mois |
+| Annuel | 52,99 € TTC / an, prépayé en 1 fois, sans essai sur ce tunnel |
+| Biennal | Ancien Price ID (29,99 € / 24 mois) — **plus commercialisé** |
 | Résiliation | Portail Stripe (« Gérer mon abonnement ») |
 | Paiement | Stripe (carte) |
 | Hébergement front | Vercel (US) |
@@ -253,7 +254,7 @@ Source : `src/LegalPages.jsx` + `src/lib/legal-entity.js`.
 | Fonction réelle | Mention docs | Conforme ? | Correction |
 |---|---|---|---|
 | Essai 7j mensuel carte | CGV | Oui | — |
-| Annuel 39,99 sans essai | CGV / Tarifs | Oui | — |
+| Annuel 52,99 sans essai | CGV / Tarifs | Oui | — |
 | Biennal 29,99 | CGV oui / Tarifs non | Partiel | Clarifié CGV |
 | Portail résiliation | CGV / Profil | Oui | — |
 | Suppression compte | Privacy | Oui après UI | Corrigé |

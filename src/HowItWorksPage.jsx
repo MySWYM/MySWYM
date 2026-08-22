@@ -1,21 +1,56 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Target, Calendar, Gauge, Clock, UserPlus, Waves, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChevronDown,
+  ClipboardList,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
-import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
+import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { usePageSeo, breadcrumbJsonLd, faqPageJsonLd } from "./lib/seo.js";
 import { usePublicCta } from "./lib/use-auth-session.js";
-import { BRAND, FONT, FONT_DISPLAY } from "./theme/brand.js";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/lp-accordion.jsx";
+import LandingReviews from "./marketing/LandingReviews.jsx";
 import "./theme/public.css";
+import "./landing/landing.css";
 
-const C = { ...BRAND };
+const STEP_ICONS = [ClipboardList, Sparkles, BookOpen, RefreshCw];
 
-const STEP_ICONS = [Target, Calendar, Gauge, Clock];
-const NEXT_ICONS = [UserPlus, Waves, SlidersHorizontal];
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function SessionPreview() {
+  const { t } = useTranslation("landing");
+  const blocks = [
+    { label: t("session.warmLabel"), content: t("session.warmContent") },
+    { label: t("session.mainLabel"), content: t("session.mainContent") },
+    { label: t("session.coolLabel"), content: t("session.coolContent") },
+  ];
+  return (
+    <div className="ms-session">
+      <div className="ms-session-head">
+        <span className="ms-blog-tag">{t("session.type")}</span>
+        <h3>{t("session.heading")}</h3>
+        <p>{t("session.meta")}</p>
+      </div>
+      {blocks.map((b) => (
+        <div key={b.label} className="ms-session-block">
+          <strong>{b.label}</strong>
+          <p>{b.content}</p>
+        </div>
+      ))}
+      <p className="ms-session-tip">{t("session.tip")}</p>
+    </div>
+  );
+}
 
 export default function HowItWorksPage() {
   const { t } = useTranslation("landing");
@@ -25,114 +60,217 @@ export default function HowItWorksPage() {
     { label: tc("footer.home"), href: "/" },
     { label: tc("nav.how") },
   ];
+  const steps = [1, 2, 3, 4].map((n) => ({
+    n,
+    Icon: STEP_ICONS[n - 1],
+    meta: t(`howPage.s${n}Meta`),
+    title: t(`how.s${n}Title`),
+    desc: t(`how.s${n}Desc`),
+  }));
+  const trial = [1, 2, 3].map((n) => ({
+    title: t(`howPage.t${n}Title`),
+    desc: t(`howPage.t${n}Desc`),
+  }));
+  const who = [1, 2, 3].map((n) => t(`howPage.w${n}`));
+  const faqItems = [1, 2, 3].map((n) => ({
+    id: `how-faq-${n}`,
+    q: t(`howPage.fq${n}`),
+    a: t(`howPage.fa${n}`),
+  }));
 
   usePageSeo({
     title: t("meta.howTitle"),
     description: t("meta.howDescription"),
     path: "/comment-ca-marche",
-    jsonLd: breadcrumbJsonLd(crumbs.map((c, i) => (i < crumbs.length - 1 ? c : { label: c.label }))),
+    jsonLd: [breadcrumbJsonLd(crumbs), faqPageJsonLd(faqItems)],
   });
 
   useEffect(() => {
-    document.body.style.background = C.bg;
     window.scrollTo(0, 0);
   }, []);
 
-  const steps = [1, 2, 3, 4].map((n) => ({
-    n,
-    Icon: STEP_ICONS[n - 1],
-    title: t(`how.s${n}Title`),
-    desc: t(`how.s${n}Desc`),
-  }));
-  const next = [1, 2, 3].map((n) => ({
-    Icon: NEXT_ICONS[n - 1],
-    title: t(`howPage.n${n}Title`),
-    desc: t(`howPage.n${n}Desc`),
-  }));
+  const scrollToSession = () => {
+    document.getElementById("seance")?.scrollIntoView({
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      block: "start",
+    });
+  };
 
   return (
-    <div className="ms-root" style={{ minHeight: "100vh", background: C.bg, fontFamily: FONT, color: C.ink }}>
+    <div className="ms-root">
       <PublicNav />
-      <main style={{ maxWidth: 800, margin: "0 auto", padding: "96px 20px 64px" }}>
-        <Breadcrumb items={crumbs} onDark />
-        <p style={{ color: C.primary, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", margin: "0 0 12px" }}>
-          {t("how.label")}
-        </p>
-        <h1 style={{
-          fontFamily: FONT_DISPLAY, fontSize: "clamp(34px,5vw,52px)", fontWeight: 800,
-          color: C.ink, margin: "0 0 12px", lineHeight: 1.05, letterSpacing: "-0.03em",
-        }}>
-          {t("how.title")}
-        </h1>
-        <p style={{ color: C.inkLight, fontSize: 17, lineHeight: 1.65, margin: "0 0 36px", maxWidth: 560 }}>
-          {t("how.subtitle")}
-        </p>
 
-        <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-          {steps.map((s) => (
-            <li key={s.n} style={{
-              background: C.card, border: `1px solid ${C.border}`, borderRadius: 18,
-              padding: "20px 22px", display: "flex", gap: 16, alignItems: "flex-start",
-            }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-                background: C.primaryFix, color: C.primary,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <s.Icon size={20} />
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", color: C.primary, marginBottom: 4 }}>
-                  {String(s.n).padStart(2, "0")}
-                </div>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: C.ink, margin: "0 0 6px" }}>{s.title}</h2>
-                <p style={{ margin: 0, color: C.inkLight, fontSize: 15, lineHeight: 1.65 }}>{s.desc}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+      <header className="ms-how-hero">
+        <div className="ms-how-wrap ms-how-hero-grid">
+          <div>
+            <Breadcrumb items={crumbs} onDark />
+            <p className="ms-pricing-kicker">{t("how.label")}</p>
+            <h1 className="ms-how-h1">
+              {t("howPage.h1a")}
+              <br />
+              {t("howPage.h1b")}
+            </h1>
+            <p className="ms-pricing-lead">{t("howPage.lead")}</p>
+            <ul className="ms-how-chips">
+              <li>{t("howPage.chipQuiz")}</li>
+              <li>{t("howPage.chipTrial")}</li>
+              <li>{t("howPage.chipPool")}</li>
+            </ul>
+            <div className="ms-pricing-cta-row">
+              <LocalizedLink to={cta.href} className="ms-btn">
+                {t("howPage.cta")} <ArrowRight size={15} aria-hidden />
+              </LocalizedLink>
+              <button type="button" className="ms-btn ms-btn-ghost" onClick={scrollToSession}>
+                {t("howPage.seeSession")}
+              </button>
+            </div>
+          </div>
+          <div className="ms-how-hero-media">
+            <img
+              src="/hero-pool.webp"
+              alt={t("howPage.heroAlt")}
+              width={1200}
+              height={800}
+            />
+          </div>
+        </div>
+      </header>
 
-        <section style={{ marginTop: 48 }}>
-          <p style={{ color: C.primary, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", margin: "0 0 12px" }}>
-            {t("howPage.nextLabel")}
-          </p>
-          <h2 style={{
-            fontFamily: FONT_DISPLAY, fontSize: "clamp(26px,4vw,36px)", fontWeight: 800,
-            color: C.ink, margin: "0 0 20px", letterSpacing: "-0.03em",
-          }}>
-            {t("howPage.nextTitle")}
+      <section className="ms-how-section" aria-labelledby="how-steps-title">
+        <div className="ms-how-wrap">
+          <p className="ms-pricing-kicker">{t("howPage.stepsLabel")}</p>
+          <h2 id="how-steps-title" className="ms-pricing-h2">
+            {t("howPage.stepsTitle")}
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {next.map((s) => (
-              <div key={s.title} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: C.bgSoft,
-                  display: "flex", alignItems: "center", justifyContent: "center", color: C.primary,
-                }}>
-                  <s.Icon size={18} />
+          <ol className="ms-how-steps">
+            {steps.map((s) => (
+              <li key={s.n} className="ms-how-step">
+                <div className="ms-how-step-icon" aria-hidden>
+                  <s.Icon size={20} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, color: C.ink, margin: "0 0 4px" }}>{s.title}</h3>
-                  <p style={{ margin: 0, color: C.inkLight, fontSize: 14, lineHeight: 1.6 }}>{s.desc}</p>
+                  <p className="ms-how-step-meta">
+                    {String(s.n).padStart(2, "0")} · {s.meta}
+                  </p>
+                  <h3>{s.title}</h3>
+                  <p>{s.desc}</p>
                 </div>
-              </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="ms-how-section ms-how-section-alt" id="seance" aria-labelledby="how-session-title">
+        <div className="ms-how-wrap ms-how-split">
+          <div>
+            <p className="ms-pricing-kicker">{t("howPage.sessionLabel")}</p>
+            <h2 id="how-session-title" className="ms-pricing-h2">
+              {t("howPage.sessionTitle")}
+            </h2>
+            <p className="ms-pricing-sub">{t("howPage.sessionLead")}</p>
+            <div className="ms-how-inline-media">
+              <img
+                src="/nagerprogresser-objectif-landing.webp"
+                alt={t("howPage.sessionAlt")}
+                width={800}
+                height={450}
+                loading="lazy"
+              />
+            </div>
+          </div>
+          <SessionPreview />
+        </div>
+      </section>
+
+      <section className="ms-how-section" aria-labelledby="how-trial-title">
+        <div className="ms-how-wrap">
+          <p className="ms-pricing-kicker">{t("howPage.trialLabel")}</p>
+          <h2 id="how-trial-title" className="ms-pricing-h2">
+            {t("howPage.trialTitle")}
+          </h2>
+          <p className="ms-pricing-sub">{t("howPage.trialLead")}</p>
+          <div className="ms-how-trial">
+            {trial.map((item, i) => (
+              <article key={item.title} className="ms-how-trial-card">
+                <p className="ms-how-step-meta">{String(i + 1).padStart(2, "0")}</p>
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </article>
             ))}
           </div>
-        </section>
-
-        <div style={{ marginTop: 40, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          <Link to={cta.href} style={{
-            display: "inline-flex", alignItems: "center", gap: 8, minHeight: 48,
-            padding: "0 22px", borderRadius: 14, background: C.primary, color: C.accentText,
-            fontWeight: 700, textDecoration: "none",
-          }}>
-            {t("howPage.cta")} <ArrowRight size={16} />
-          </Link>
-          <LocalizedLink to="/tarifs" style={{ color: C.primaryDeep, fontWeight: 700, textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
-            {t("howPage.toPricing")}
-          </LocalizedLink>
         </div>
-      </main>
+      </section>
+
+      <section className="ms-how-section ms-how-section-alt" aria-labelledby="how-who-title">
+        <div className="ms-how-wrap ms-how-split">
+          <div className="ms-how-inline-media">
+            <img src="/coach.webp" alt={t("howPage.whoAlt")} width={800} height={1000} loading="lazy" />
+          </div>
+          <div>
+            <p className="ms-pricing-kicker">{t("howPage.whoLabel")}</p>
+            <h2 id="how-who-title" className="ms-pricing-h2">
+              {t("howPage.whoTitle")}
+            </h2>
+            <p className="ms-pricing-sub">{t("howPage.whoLead")}</p>
+            <ul className="ms-how-who">
+              {who.map((line) => (
+                <li key={line}>
+                  <Check size={16} aria-hidden />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="ms-how-section" aria-labelledby="how-faq-title">
+        <div className="ms-how-wrap">
+          <p className="ms-pricing-kicker">{t("howPage.faqLabel")}</p>
+          <h2 id="how-faq-title" className="ms-pricing-h2">
+            {t("howPage.faqTitle")}
+          </h2>
+          <Accordion type="single" collapsible className="ms-faq-list">
+            {faqItems.map((item) => (
+              <AccordionItem key={item.id} value={item.id} className="ms-faq-item">
+                <AccordionTrigger>
+                  <span>{item.q}</span>
+                  <ChevronDown size={16} color="var(--ms-primary)" aria-hidden />
+                </AccordionTrigger>
+                <AccordionContent>{item.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+          <p className="ms-how-faq-more">
+            <LocalizedLink to="/faq" className="ms-contact-link">
+              {t("howPage.allFaq")}
+              <ArrowRight size={14} aria-hidden />
+            </LocalizedLink>
+          </p>
+        </div>
+      </section>
+
+      <div className="lp-root ms-how-reviews">
+        <LandingReviews showWriteCta={false} />
+      </div>
+
+      <section className="ms-pricing-final">
+        <div className="ms-how-wrap">
+          <p className="ms-pricing-kicker">{t("howPage.lastLabel")}</p>
+          <h2 className="ms-pricing-h2">{t("howPage.lastTitle")}</h2>
+          <p className="ms-pricing-sub">{t("howPage.lastLead")}</p>
+          <div className="ms-pricing-cta-row">
+            <LocalizedLink to={cta.href} className="ms-btn">
+              {t("howPage.cta")} <ArrowRight size={15} aria-hidden />
+            </LocalizedLink>
+            <LocalizedLink to="/tarifs" className="ms-btn ms-btn-ghost">
+              {t("howPage.toPricing")}
+            </LocalizedLink>
+          </div>
+        </div>
+      </section>
+
       <Footer />
       <StickyCta />
     </div>

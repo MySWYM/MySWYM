@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
@@ -11,12 +11,21 @@ import {
   CookieCategories,
   CookiePreferenceActions,
 } from "./marketing/CookiePreferences.jsx";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+} from "./ui/lp-dialog.jsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/lp-tabs.jsx";
 import "./theme/cookie-consent.css";
 
 export default function CookieBanner() {
   const { t } = useTranslation("common");
   const titleId = useId();
-  const dialogRef = useRef(null);
   const [banner, setBanner] = useState(false);
   const [manager, setManager] = useState(false);
   const [tab, setTab] = useState("categories");
@@ -37,27 +46,6 @@ export default function CookieBanner() {
       window.removeEventListener("myswym:cookie-manager-open", openManager);
     };
   }, []);
-
-  useEffect(() => {
-    if (!manager) return undefined;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const focusTimer = window.setTimeout(() => {
-      dialogRef.current?.querySelector("[data-cookie-close]")?.focus();
-    }, 0);
-    const onKey = (event) => {
-      if (event.key === "Escape") {
-        setManager(false);
-        setTab("categories");
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.body.style.overflow = prevOverflow;
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [manager]);
 
   const persist = (next) => {
     writeConsent(next);
@@ -95,83 +83,83 @@ export default function CookieBanner() {
         </div>
       ) : null}
 
-      {manager ? (
-        <div
-          className="ms-cookie-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && readConsent()) closeManager();
-          }}
-        >
-          <div
-            ref={dialogRef}
+      <Dialog
+        open={manager}
+        onOpenChange={(open) => {
+          if (open) setManager(true);
+          else closeManager();
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="ms-cookie-overlay" />
+          <DialogContent
             className="ms-cookie-dialog"
-            role="dialog"
-            aria-modal="true"
             aria-labelledby={titleId}
+            onInteractOutside={(event) => {
+              if (!readConsent()) event.preventDefault();
+            }}
+            onEscapeKeyDown={(event) => {
+              if (!readConsent()) event.preventDefault();
+            }}
           >
             <div className="ms-cookie-dialog-head">
-              <h2 id={titleId}>{t("cookies.title")}</h2>
-              <button type="button" className="ms-cookie-icon" data-cookie-close aria-label={t("cookies.close")} onClick={closeManager}>
-                <X size={20} />
-              </button>
+              <DialogTitle id={titleId}>{t("cookies.title")}</DialogTitle>
+              <DialogClose asChild>
+                <button type="button" className="ms-cookie-icon" aria-label={t("cookies.close")}>
+                  <X size={20} />
+                </button>
+              </DialogClose>
             </div>
 
-            <div className="ms-cookie-tabs" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={tab === "categories"}
-                className={`ms-cookie-tab${tab === "categories" ? " is-active" : ""}`}
-                onClick={() => setTab("categories")}
-              >
-                {t("cookies.tabCategories")}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={tab === "declaration"}
-                className={`ms-cookie-tab${tab === "declaration" ? " is-active" : ""}`}
-                onClick={() => setTab("declaration")}
-              >
-                {t("cookies.tabDeclaration")}
-              </button>
-            </div>
+            <DialogDescription className="ms-cookie-sr">
+              {t("cookies.lead")}
+            </DialogDescription>
 
-            <div className="ms-cookie-dialog-body">
-              {tab === "categories" ? (
-                <>
+            <Tabs value={tab} onValueChange={setTab}>
+              <TabsList className="ms-cookie-tabs" aria-label={t("cookies.title")}>
+                <TabsTrigger value="categories" className="ms-cookie-tab">
+                  {t("cookies.tabCategories")}
+                </TabsTrigger>
+                <TabsTrigger value="declaration" className="ms-cookie-tab">
+                  {t("cookies.tabDeclaration")}
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="ms-cookie-dialog-body">
+                <TabsContent value="categories">
                   <p className="ms-cookie-lead">
                     {t("cookies.lead")}{" "}
                     <LocalizedLink to={{ pathname: "/politique-cookies", hash: "#parametrage-cookies" }}>{t("cookies.learnMore")}</LocalizedLink>
                   </p>
                   <CookieCategories prefs={prefs} onPrefsChange={setPrefs} />
-                </>
-              ) : (
-                <ul className="ms-cookie-decl">
-                  <li>
-                    <strong>{t("cookies.necessaryTitle")}</strong>
-                    <span>{t("cookies.declNecessary")}</span>
-                  </li>
-                  <li>
-                    <strong>PostHog</strong>
-                    <span>{t("cookies.declPosthog")}</span>
-                  </li>
-                  <li>
-                    <strong>Vercel Speed Insights</strong>
-                    <span>{t("cookies.declVercel")}</span>
-                  </li>
-                  <li>
-                    <strong>{t("cookies.declMarketingTitle")}</strong>
-                    <span>{t("cookies.declMarketing")}</span>
-                  </li>
-                </ul>
-              )}
-            </div>
+                </TabsContent>
+                <TabsContent value="declaration">
+                  <ul className="ms-cookie-decl">
+                    <li>
+                      <strong>{t("cookies.necessaryTitle")}</strong>
+                      <span>{t("cookies.declNecessary")}</span>
+                    </li>
+                    <li>
+                      <strong>PostHog</strong>
+                      <span>{t("cookies.declPosthog")}</span>
+                    </li>
+                    <li>
+                      <strong>Vercel Speed Insights</strong>
+                      <span>{t("cookies.declVercel")}</span>
+                    </li>
+                    <li>
+                      <strong>{t("cookies.declMarketingTitle")}</strong>
+                      <span>{t("cookies.declMarketing")}</span>
+                    </li>
+                  </ul>
+                </TabsContent>
+              </div>
+            </Tabs>
 
             <CookiePreferenceActions prefs={prefs} onPersist={persist} />
-          </div>
-        </div>
-      ) : null}
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
     </>
   );
 }

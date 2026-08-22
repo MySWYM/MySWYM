@@ -86,13 +86,13 @@ export default function LanguageSwitcher({ variant = "nav" }) {
       padding: 3,
       borderRadius: 999,
       background: "transparent",
-      border: "1.5px solid #c3c6d2",
-      fontFamily: "'Lexend', sans-serif",
+      border: "1.5px solid var(--myswym-grey-light, rgba(0, 107, 253, 0.22))",
+      fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
     };
     const btn = (active) => ({
       border: "none",
       cursor: "pointer",
-      fontFamily: "'Lexend', sans-serif",
+      fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
       fontWeight: 700,
       fontSize: 13,
       letterSpacing: "0.04em",
@@ -101,7 +101,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
       minHeight: 36,
       minWidth: 44,
       background: active ? "#006bfd" : "transparent",
-      color: active ? "#ffffff" : "#5d6b7d",
+      color: active ? "#ffffff" : "var(--myswym-ink-light, #9bb0c8)",
       transition: "background 0.15s, color 0.15s",
       WebkitTapHighlightColor: "transparent",
     });

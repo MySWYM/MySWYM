@@ -9,8 +9,9 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "pool",
   "sessionsPerWeek",
   "birthMonth",
+  "birthDay",
   "birthYear",
-  "age", // dérivé de birthMonth/birthYear (miroir legacy)
+  "age", // dérivé de birthDay/birthMonth/birthYear (miroir legacy)
   "weightKg",
   "heightCm",
   "equipment",
@@ -45,11 +46,19 @@ export const BIRTH_MONTH_OPTIONS = Object.freeze([
   { value: 12, label: "Décembre" },
 ]);
 
+/** Nombre de jours dans le mois de naissance (31 si mois/année incomplets). */
+export function daysInBirthMonth(birthMonth, birthYear) {
+  const y = Number(birthYear);
+  const m = Number(birthMonth);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return 31;
+  return new Date(Math.round(y), Math.round(m), 0).getDate();
+}
+
 /**
- * Âge en années révolues depuis mois + année de naissance.
+ * Âge en années révolues depuis jour / mois / année de naissance.
  * Sans jour : anniversaire traité au 1er du mois de naissance.
  */
-export function computeAgeFromBirth(birthMonth, birthYear, now = new Date()) {
+export function computeAgeFromBirth(birthMonth, birthYear, now = new Date(), birthDay) {
   const year = Number(birthYear);
   const month = Number(birthMonth);
   if (!Number.isFinite(year) || !Number.isFinite(month)) return null;
@@ -57,14 +66,18 @@ export function computeAgeFromBirth(birthMonth, birthYear, now = new Date()) {
   const m = Math.round(month);
   const maxYear = now.getFullYear();
   if (y < 1900 || y > maxYear || m < 1 || m > 12) return null;
+  const dim = new Date(y, m, 0).getDate();
+  const rawDay = Number(birthDay);
+  const day = Number.isFinite(rawDay) && rawDay >= 1 ? Math.min(Math.round(rawDay), dim) : 1;
   let age = maxYear - y;
   const nowMonth = now.getMonth() + 1;
-  if (nowMonth < m) age -= 1;
+  const nowDay = now.getDate();
+  if (nowMonth < m || (nowMonth === m && nowDay < day)) age -= 1;
   if (age < 0 || age > 120) return null;
   return age;
 }
 
-/** Normalise mois/année et recalcule `age` si possible (sinon conserve age legacy). */
+/** Normalise jour/mois/année et recalcule `age` si possible (sinon conserve age legacy). */
 export function withDerivedAge(profile = {}, now = new Date()) {
   if (!profile || typeof profile !== "object") return {};
   const out = { ...profile };
@@ -76,6 +89,10 @@ export function withDerivedAge(profile = {}, now = new Date()) {
   const yearNum =
     profile.birthYear != null && profile.birthYear !== ""
       ? Math.round(Number(profile.birthYear))
+      : null;
+  const dayNum =
+    profile.birthDay != null && profile.birthDay !== ""
+      ? Math.round(Number(profile.birthDay))
       : null;
 
   if (Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12) {
@@ -91,7 +108,14 @@ export function withDerivedAge(profile = {}, now = new Date()) {
     out.birthYear = "";
   }
 
-  const derived = computeAgeFromBirth(out.birthMonth, out.birthYear, now);
+  const dim = daysInBirthMonth(out.birthMonth, out.birthYear);
+  if (Number.isFinite(dayNum) && dayNum >= 1) {
+    out.birthDay = Math.min(dayNum, dim);
+  } else if (profile.birthDay === "") {
+    out.birthDay = "";
+  }
+
+  const derived = computeAgeFromBirth(out.birthMonth, out.birthYear, now, out.birthDay);
   if (derived != null) {
     out.age = derived;
   } else if (profile.age != null && profile.age !== "") {
@@ -295,6 +319,7 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     pool: 50,
     sessionsPerWeek: null,
     birthMonth: "",
+    birthDay: "",
     birthYear: "",
     age: "",
     weightKg: "",

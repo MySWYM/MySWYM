@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const SESSION_DISTANCE_PRESETS_UI = [
   1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3500, 4000, 4500, 5000, 5500, 6000,
@@ -19,11 +20,13 @@ export function defaultDistancePresetForLevel(level) {
 
 /** Distance moyenne par séance — jauge / slider */
 export function StepSessionDistance({ value, level, onChange, onNext, onBack, Btn, G }) {
+  const { t } = useTranslation("onboarding");
   const presets = SESSION_DISTANCE_PRESETS_UI;
   const fallback = defaultDistancePresetForLevel(level);
   const current = Number(value) > 0 ? Number(value) : fallback;
   let safeIdx = presets.findIndex((p) => p === current);
   if (safeIdx < 0) safeIdx = Math.max(0, presets.findIndex((p) => p === fallback));
+  const pct = presets.length > 1 ? (safeIdx / (presets.length - 1)) * 100 : 0;
 
   useEffect(() => {
     if (!(Number(value) > 0)) onChange(fallback);
@@ -33,10 +36,10 @@ export function StepSessionDistance({ value, level, onChange, onNext, onBack, Bt
   return (
     <div className="fade-up">
       <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        Quelle distance veux-tu nager en moyenne par séance ?
+        {t("distance.title")}
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 28, lineHeight: 1.45 }}>
-        Pas besoin d’être précis, indique simplement la distance que tu aimes généralement nager.
+        {t("distance.lead")}
       </p>
 
       <div
@@ -53,26 +56,61 @@ export function StepSessionDistance({ value, level, onChange, onNext, onBack, Bt
           {formatDistanceFr(presets[safeIdx] || current)}
         </div>
         <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginTop: 8 }}>
-          Distance moyenne par séance
+          {t("distance.label")}
         </div>
 
-        <input
-          type="range"
-          min={0}
-          max={presets.length - 1}
-          step={1}
-          value={safeIdx}
-          onChange={(e) => onChange(presets[Number(e.target.value)] || fallback)}
-          aria-label="Distance moyenne par séance"
+        <div
           style={{
-            width: "100%",
+            position: "relative",
             marginTop: 28,
-            accentColor: G.blue,
-            cursor: "pointer",
             height: 36,
-            touchAction: "none",
+            display: "flex",
+            alignItems: "center",
           }}
-        />
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: 11,
+              right: 11,
+              height: 4,
+              borderRadius: 2,
+              background: G.greyLight,
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: 11,
+              width: `calc((100% - 22px) * ${pct / 100})`,
+              height: 4,
+              borderRadius: 2,
+              background: G.blue,
+              pointerEvents: "none",
+            }}
+          />
+          <input
+            type="range"
+            className="ms-distance-slider"
+            min={0}
+            max={presets.length - 1}
+            step={1}
+            value={safeIdx}
+            onChange={(e) => onChange(presets[Number(e.target.value)] || fallback)}
+            aria-label={t("distance.aria")}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: 36,
+              cursor: "pointer",
+              touchAction: "none",
+              zIndex: 1,
+            }}
+          />
+        </div>
         <div
           style={{
             display: "flex",
@@ -88,7 +126,7 @@ export function StepSessionDistance({ value, level, onChange, onNext, onBack, Bt
         </div>
       </div>
 
-      <Btn onClick={onNext}>Continuer</Btn>
+      <Btn onClick={onNext}>{t("common.continue")}</Btn>
       <button
         type="button"
         onClick={onBack}
@@ -103,60 +141,7 @@ export function StepSessionDistance({ value, level, onChange, onNext, onBack, Bt
           fontSize: 14,
         }}
       >
-        ← Retour
-      </button>
-    </div>
-  );
-}
-
-/** Demande libre — préférences d'entraînement */
-export function StepTrainingWish({ value, onChange, onNext, onBack, isLast = false, Btn, G }) {
-  return (
-    <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-        Qu’aimerais-tu retrouver dans tes entraînements ?
-      </h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        Un type de séance, un objectif, un exercice, du matériel, quelque chose que tu veux travailler… dis-nous tout.
-      </p>
-      <textarea
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value.slice(0, 2000))}
-        rows={6}
-        placeholder="Exemple : plus de séries au seuil, travailler mes virages, utiliser des plaquettes, préparer un 100 m crawl…"
-        style={{
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "16px 18px",
-          borderRadius: 14,
-          border: `1.5px solid ${G.greyLight}`,
-          fontSize: 15,
-          fontFamily: "'Lexend', sans-serif",
-          color: G.ink,
-          background: G.surface,
-          outline: "none",
-          lineHeight: 1.5,
-          minHeight: 140,
-          resize: "vertical",
-          marginBottom: 20,
-        }}
-      />
-      <Btn onClick={onNext}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
-      <button
-        type="button"
-        onClick={onBack}
-        style={{
-          width: "100%",
-          marginTop: 10,
-          padding: "12px",
-          background: "none",
-          border: "none",
-          color: G.grey,
-          cursor: "pointer",
-          fontSize: 14,
-        }}
-      >
-        ← Retour
+        {t("common.back")}
       </button>
     </div>
   );

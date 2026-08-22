@@ -12,8 +12,10 @@ const APP = () =>
 export const MYSWYM_PRODUCT = {
   name: "MySWYM",
   tagline: "Plans d’entraînement natation personnalisés",
-  monthly: "4,99€",
-  annual: "39,99€",
+  monthlyFlex: "9,99€",
+  monthlyCommit: "4,99€",
+  monthly: "9,99€",
+  annual: "52,99€",
   trialDays: 7,
   paths: {
     tarifs: "/fr/tarifs",
@@ -48,7 +50,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_pricing",
       title: "Tarifs Premium",
       content:
-        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis ${MYSWYM_PRODUCT.monthly}/mois sans engagement, ou ${MYSWYM_PRODUCT.annual}/an. Après l’essai, l’app se gèle. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
+        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement, ${MYSWYM_PRODUCT.monthlyCommit}/mois avec engagement 12 mois, ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Après l’essai, l’app se gèle. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
       tags: ["prix", "tarif", "abonnement", "premium", "essai", "mensuel", "annuel"],
       intent_hints: ["subscription", "myswym_question"],
       priority: 100,
@@ -57,7 +59,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Résiliation via le portail client Stripe depuis le compte. L’essai 7 jours sans carte s’arrête tout seul : l’app se gèle, aucun prélèvement. Mensuel : sans engagement, accès jusqu’à la fin de période payée. Annuel : prépaiement, pas de remboursement au prorata hors cas légaux.",
+        "Résiliation via le portail client Stripe depuis le compte. L’essai 7 jours sans carte s’arrête tout seul : l’app se gèle, aucun prélèvement. Mensuel 9,99€ : sans engagement, accès jusqu’à la fin de période payée. Mensuel 4,99€ : engagement 12 mois. Annuel 52,99€ : prépaiement, pas de remboursement au prorata hors cas légaux.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,

@@ -84,7 +84,7 @@ const inp = {
   borderRadius: 12,
   border: `1.5px solid ${G.greyLight}`,
   fontSize: 15,
-  fontFamily: "'Lexend', sans-serif",
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
   background: G.surface,
   color: G.ink,
   outline: "none",
@@ -121,7 +121,7 @@ function FilterChip({ active, label, onClick }) {
         fontSize: 12,
         fontWeight: 700,
         cursor: "pointer",
-        fontFamily: "'Lexend', sans-serif",
+        fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
       }}
     >
       {label}
@@ -665,7 +665,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
         flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", cursor: "pointer",
         background: view === id ? G.blue : G.greyXLight,
         color: view === id ? G.white : G.grey,
-        fontWeight: 700, fontSize: 12, fontFamily: "'Lexend', sans-serif",
+        fontWeight: 700, fontSize: 12, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
       }}
     >
       {label}
@@ -959,7 +959,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                             fontSize: 11,
                             fontWeight: 700,
                             cursor: "pointer",
-                            fontFamily: "'Lexend', sans-serif",
+                            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
                           }}
                         >
                           {formatRadiusLabel(km)}
@@ -1000,7 +1000,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                           fontSize: 13,
                           fontWeight: 700,
                           cursor: "pointer",
-                          fontFamily: "'Lexend', sans-serif",
+                          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
                           textAlign: "left",
                           lineHeight: 1.3,
                           minHeight: 48,
@@ -1045,7 +1045,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                           background: active ? G.blue : G.greyXLight,
                           color: active ? G.white : G.grey,
                           fontSize: 11, fontWeight: 800, cursor: "pointer",
-                          fontFamily: "'Lexend', sans-serif", padding: 0,
+                          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", padding: 0,
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
@@ -1072,7 +1072,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                           border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                           background: active ? G.blueLight : G.surface,
                           color: active ? G.blueDeep : G.grey,
-                          cursor: "pointer", fontFamily: "'Lexend', sans-serif",
+                          cursor: "pointer", fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
                           textAlign: "left", minHeight: 56,
                         }}
                       >

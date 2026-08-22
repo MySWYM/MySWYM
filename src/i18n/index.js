@@ -7,6 +7,8 @@ import frLanding from "./locales/fr/landing.json";
 import enLanding from "./locales/en/landing.json";
 import frSettings from "./locales/fr/settings.json";
 import enSettings from "./locales/en/settings.json";
+import frOnboarding from "./locales/fr/onboarding.json";
+import enOnboarding from "./locales/en/onboarding.json";
 import { isAppPath, localeFromPathname, LANG_COOKIE } from "./locale-path.js";
 
 export const LANG_STORAGE_KEY = "myswym_lang";
@@ -59,13 +61,13 @@ export function setAppLanguage(lng) {
 
 void i18n.use(initReactI18next).init({
   resources: {
-    fr: { common: frCommon, landing: frLanding, settings: frSettings },
-    en: { common: enCommon, landing: enLanding, settings: enSettings },
+    fr: { common: frCommon, landing: frLanding, settings: frSettings, onboarding: frOnboarding },
+    en: { common: enCommon, landing: enLanding, settings: enSettings, onboarding: enOnboarding },
   },
   lng: detectInitialLanguage(),
   fallbackLng: "en",
   defaultNS: "common",
-  ns: ["common", "landing", "settings"],
+  ns: ["common", "landing", "settings", "onboarding"],
   interpolation: { escapeValue: false },
   returnNull: false,
 });

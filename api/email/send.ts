@@ -236,7 +236,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         html: layout(
           "Ton plan continue quand tu veux",
           p(`${who}on plan MySWYM est toujours là — séances structurées, progression claire, sans te perdre.`) +
-            p("Premium débloque le programme complet, l’adaptation coach et les départs chronométrés. Essai 7 jours avec carte, puis 4,99 € / mois — tu peux annuler quand tu veux.") +
+            p("Premium débloque le programme complet, l’adaptation coach et les départs chronométrés. Essai 7 jours sans carte, puis 9,99 €/mois sans engagement, 4,99 €/mois sur 12 mois, ou 52,99 €/an.") +
             p("Un clic et tu reprends exactement où tu en étais."),
           { label: "Reprendre mon plan", url: ctaUrl },
         ),

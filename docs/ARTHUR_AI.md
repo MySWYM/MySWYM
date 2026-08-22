@@ -50,7 +50,7 @@ Stripe : **inchangé** — Edge Function `create-checkout` appelée avec le JWT 
 | `ARTHUR_AI_MOCK=1` | Tests sans OpenAI |
 | `ARTHUR_AI_INTERNAL_SECRET` | Header `x-myswym-arthur-secret` + `testUserId` |
 | `APP_URL` | Origin pour checkout |
-| `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` | IDs prix (pas le secret Stripe) |
+| `STRIPE_PRICE_MONTHLY_FLEX` / `STRIPE_PRICE_MONTHLY_COMMIT` / `STRIPE_PRICE_ANNUAL` | IDs prix (pas le secret Stripe). Alias legacy : `STRIPE_PRICE_MONTHLY` = commit. |
 | `META_APP_ID` | Meta app |
 | `META_APP_SECRET` | Signature webhook `X-Hub-Signature-256` |
 | `META_VERIFY_TOKEN` | Challenge GET webhook |
