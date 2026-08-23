@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
+import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 function dash(v) {
   if (v == null || v === "") return "—";
@@ -18,17 +19,6 @@ function hoursLabel(h) {
   if (x < 1) return `${Math.round(x * 60)} min`;
   if (x < 48) return `${Math.round(x)} h`;
   return `${Math.round(x / 24)} j`;
-}
-
-async function getJson(url, headers) {
-  const res = await fetch(url, { headers, cache: "no-store" });
-  const type = res.headers.get("content-type") || "";
-  if (!type.includes("application/json")) return { missing: true };
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.ok === false) {
-    return { missing: true, error: json.error || `HTTP ${res.status}` };
-  }
-  return json;
 }
 
 function Card({ label, value, hint }) {
@@ -106,10 +96,10 @@ export default function ArthurNageursAdmin() {
     setLoading(true);
     try {
       const h = await headers();
-      const json = await getJson(`/api/admin/arthur-readiness?nageurs=1&days=${days}`, h);
+      const json = await adminGetJson(`/api/admin/arthur-readiness?nageurs=1&days=${days}`, h);
       if (json.missing) {
         setData(null);
-        setOffline(true);
+        setOffline(Boolean(json.offline));
       } else {
         setData(json);
         setOffline(false);
@@ -213,7 +203,8 @@ export default function ArthurNageursAdmin() {
             lineHeight: 1.5,
           }}
         >
-          Les chiffres se remplissent sur staging / prod. En local, la page s’ouvre mais reste à zéro.
+          Les APIs ne répondent pas. Relance le serveur local (proxy staging) ou
+          vérifie la clé admin.
         </p>
       ) : null}
 

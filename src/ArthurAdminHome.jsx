@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 import { DonutChart, FunnelChart } from "./admin/AdminCharts.jsx";
+import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 function dash(v) {
   if (v == null || v === "") return "—";
@@ -16,16 +17,6 @@ function pct(n) {
   return `${Math.round(ratio * 100)} %`;
 }
 
-async function getJson(url, headers) {
-  const res = await fetch(url, { headers, cache: "no-store" });
-  const type = res.headers.get("content-type") || "";
-  if (!type.includes("application/json")) return { missing: true };
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.ok === false) {
-    return { missing: true, error: json.error || `HTTP ${res.status}` };
-  }
-  return json;
-}
 
 function Card({ label, value, hint, to }) {
   const inner = (
@@ -70,6 +61,7 @@ function Card({ label, value, hint, to }) {
 function Section({ title, children }) {
   return (
     <section style={{ marginBottom: 28 }}>
+      {title ? (
       <h2
         style={{
           fontSize: 18,
@@ -80,6 +72,7 @@ function Section({ title, children }) {
       >
         {title}
       </h2>
+      ) : null}
       <div
         style={{
           display: "grid",
@@ -104,19 +97,21 @@ export default function ArthurAdminHome() {
   const [quality, setQuality] = useState(null);
   const [health, setHealth] = useState(null);
   const [nageurs, setNageurs] = useState(null);
+  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const h = await headers();
       const q = `days=${days}`;
       const [g, s, f, o, r, n] = await Promise.all([
-        getJson(`/api/admin/arthur-growth?${q}`, h),
-        getJson(`/api/admin/arthur-shadow?status=pending&${q}`, h),
-        getJson(`/api/admin/arthur-followups?${q}`, h),
-        getJson(`/api/admin/arthur-optimize?${q}`, h),
-        getJson("/api/admin/arthur-readiness", h),
-        getJson(`/api/admin/arthur-readiness?nageurs=1&${q}`, h),
+        adminGetJson(`/api/admin/arthur-growth?${q}`, h),
+        adminGetJson(`/api/admin/arthur-shadow?status=pending&${q}`, h),
+        adminGetJson(`/api/admin/arthur-followups?${q}`, h),
+        adminGetJson(`/api/admin/arthur-optimize?${q}`, h),
+        adminGetJson("/api/admin/arthur-readiness", h),
+        adminGetJson(`/api/admin/arthur-readiness?nageurs=1&${q}`, h),
       ]);
       setGrowth(g.missing ? null : g);
       setShadow(s.missing ? null : s);
@@ -124,7 +119,10 @@ export default function ArthurAdminHome() {
       setQuality(o.missing ? null : o);
       setHealth(r.missing ? null : r);
       setNageurs(n.missing ? null : n);
-      setOffline([g, s, f, o, r, n].every((x) => x.missing));
+      const rows = [g, s, f, o, r, n];
+      setOffline(rows.every((x) => x.offline));
+      const denied = rows.find((x) => x.auth);
+      if (denied) setError(denied.error || "Accès refusé");
     } catch {
       setOffline(true);
     } finally {
@@ -137,22 +135,17 @@ export default function ArthurAdminHome() {
   }, [load]);
 
   const funnel = growth?.funnel || {};
-  const scores = growth?.score_distribution || growth?.score_distribution || {};
+  const scores = growth?.score_distribution || {};
   const report = shadow?.report || {};
   const counts = followups?.counts || {};
-  const outcomes = followups?.outcomes || {};
-  const rates = followups?.rates || {};
   const q = quality?.quality || {};
   const band = q.band || {};
-  const conv = quality?.conversations || {};
-  const drop = conv.drop_risk || conv.drop_risk || {};
-  const cta = quality?.cta || {};
   const checks = health?.checks || [];
   const okChecks = checks.filter((c) => c.ok).length;
-  const takeovers = health?.active_takeover_count ?? health?.active_takeover_count ?? (health?.active_takeovers || []).length;
-  const events = (shadow?.recent_events || shadow?.recent_events || []).length;
+  const takeovers =
+    health?.active_takeover_count ?? (health?.active_takeovers || []).length;
   const waiting = report.pending ?? 0;
-  const reels = growth?.by_reel || growth?.by_reel || [];
+  const reels = growth?.by_reel || [];
   const bestReel = reels[0];
   const act = nageurs?.activation || {};
   const usageNageurs = nageurs?.usage || {};
@@ -227,8 +220,22 @@ export default function ArthurAdminHome() {
             lineHeight: 1.5,
           }}
         >
-          Les chiffres se remplissent quand l’admin est en ligne (staging). En local, les pages
-          s’ouvrent mais restent à zéro.
+          Les APIs ne répondent pas. Relance <code>npm run dev</code> pour
+          proxyfier vers staging, ou vérifie DEV_API_ORIGIN.
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          style={{
+            background: "#fde8e4",
+            color: "#8a2b1a",
+            padding: 14,
+            borderRadius: 10,
+            marginBottom: 20,
+            lineHeight: 1.5,
+          }}
+        >
+          {error}
         </p>
       ) : null}
 
@@ -345,6 +352,41 @@ export default function ArthurAdminHome() {
           label="Essai → payant J7"
           value={pct(nageurs?.money?.d7?.rate)}
           hint="Parmi les essais de plus de 7 jours."
+        />
+      </Section>
+
+      <Section title="Arthur aide ?">
+        <Card
+          to="/admin/instagram"
+          label="Note moyenne"
+          value={dash(q.avg_score)}
+          hint="Qualité des réponses, sur 100."
+        />
+        <Card
+          to="/admin/instagram"
+          label="Très bonnes"
+          value={band.strong ?? 0}
+        />
+        <Card
+          to="/admin/instagram"
+          label="À revoir"
+          value={band.weak ?? 0}
+        />
+        <Card
+          to="/admin/instagram"
+          label="Propose de s’inscrire"
+          value={pct(q.cta_rate)}
+        />
+        <Card
+          to="/admin/coulisses"
+          label="Contrôles OK"
+          value={checks.length ? `${okChecks}/${checks.length}` : "—"}
+        />
+        <Card
+          to="/admin/coulisses"
+          label="Conversations reprises"
+          value={takeovers}
+          hint="Tu as pris la main à la place d’Arthur."
         />
       </Section>
 

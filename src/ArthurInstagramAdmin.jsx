@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 import { BarChart, DonutChart, FunnelChart } from "./admin/AdminCharts.jsx";
+import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 function dash(v) {
   if (v == null || v === "") return "—";
@@ -16,17 +17,6 @@ function pct(n) {
   const x = Number(n);
   const ratio = x > 1 ? x / 100 : x;
   return `${Math.round(ratio * 100)} %`;
-}
-
-async function getJson(url, headers) {
-  const res = await fetch(url, { headers, cache: "no-store" });
-  const type = res.headers.get("content-type") || "";
-  if (!type.includes("application/json")) return { missing: true };
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.ok === false) {
-    return { missing: true, error: json.error || `HTTP ${res.status}` };
-  }
-  return json;
 }
 
 const card = {
@@ -74,20 +64,21 @@ export default function ArthurInstagramAdmin() {
       const h = await headers();
       const q = `days=${days}`;
       const [s, g, f, o] = await Promise.all([
-        getJson(
+        adminGetJson(
           `/api/admin/arthur-shadow?status=${encodeURIComponent(statusFilter)}&${q}`,
           h,
         ),
-        getJson(`/api/admin/arthur-growth?${q}`, h),
-        getJson(`/api/admin/arthur-followups?${q}`, h),
-        getJson(`/api/admin/arthur-optimize?${q}`, h),
+        adminGetJson(`/api/admin/arthur-growth?${q}`, h),
+        adminGetJson(`/api/admin/arthur-followups?${q}`, h),
+        adminGetJson(`/api/admin/arthur-optimize?${q}`, h),
       ]);
       setShadow(s.missing ? null : s);
       setGrowth(g.missing ? null : g);
       setFollowups(f.missing ? null : f);
       setQuality(o.missing ? null : o);
-      setOffline([s, g, f, o].every((x) => x.missing));
-      if (s.error || g.error) setError(s.error || g.error || "");
+      setOffline([s, g, f, o].every((x) => x.offline));
+      const denied = [s, g, f, o].find((x) => x.auth || x.error);
+      if (denied) setError(denied.error || "");
     } catch {
       setOffline(true);
     } finally {
@@ -142,15 +133,15 @@ export default function ArthurInstagramAdmin() {
   const premium = funnel.premium ?? 0;
   const report = shadow?.report || {};
   const waiting = report.pending ?? 0;
-  const counts = followups?.counts || followups?.counts || {};
+  const counts = followups?.counts || {};
   const q = quality?.quality || {};
   const scores = growth?.score_distribution || {};
   const reels = (growth?.by_reel || []).map((r) => ({
     label: r.reel_id || r.campaign || "vidéo",
     value: r.signup || r.dm || 0,
   }));
-  const proposals = shadow?.proposals || shadow?.proposals || [];
-  const recentFollowups = followups?.recent || followups?.recent || [];
+  const proposals = shadow?.proposals || [];
+  const recentFollowups = followups?.recent || [];
   const convLine =
     dm > 0
       ? `${pct(signup / dm)} des messages deviennent un compte.`
@@ -201,7 +192,8 @@ export default function ArthurInstagramAdmin() {
 
       {offline ? (
         <p style={{ background: "#fff6e8", color: "#7a4a12", padding: 14, borderRadius: 10, marginBottom: 20 }}>
-          Les chiffres se remplissent sur staging. En local, la page s’ouvre mais peut rester vide.
+          APIs inaccessibles. Relance le serveur local (proxy vers staging) ou
+          vérifie la clé admin.
         </p>
       ) : null}
       {error ? (
@@ -261,7 +253,7 @@ export default function ArthurInstagramAdmin() {
               </div>
               <div style={{ fontSize: 12, color: "#7a8a9a", marginBottom: 4 }}>Ils ont écrit</div>
               <div style={{ whiteSpace: "pre-wrap", marginBottom: 10 }}>
-                {p.inbound_message || p.inbound_message || "—"}
+                {p.inbound_message || "—"}
               </div>
               <div style={{ fontSize: 12, color: "#7a8a9a", marginBottom: 4 }}>Proposition Arthur</div>
               {editId === p.id ? (
@@ -273,7 +265,7 @@ export default function ArthurInstagramAdmin() {
                 />
               ) : (
                 <div style={{ whiteSpace: "pre-wrap", marginBottom: 12 }}>
-                  {p.final_message || p.proposed_message || p.proposed_message || "—"}
+                  {p.final_message || p.proposed_message || "—"}
                 </div>
               )}
               {p.status === "pending" ? (
