@@ -48,7 +48,7 @@ export async function arthurAdminHeaders(secret = "", { json = false } = {}) {
 
 export async function probeArthurAdmin(secret = "") {
   const headers = await arthurAdminHeaders(secret);
-  const res = await fetch("/api/admin/arthur-session", { headers });
+  const res = await fetch("/api/admin/arthur-readiness?ping=1", { headers });
   const contentType = res.headers.get("content-type") || "";
   const body = await res.text();
   const looksJson = contentType.includes("application/json") || /^\s*\{/.test(body);
