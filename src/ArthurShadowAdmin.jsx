@@ -2,7 +2,7 @@
  * Dashboard Shadow Mode H1 — validation humaine, zéro envoi auto.
  */
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./supabase.js";
+import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
@@ -20,8 +20,6 @@ const C = {
   cold: "#6b7c8f",
 };
 
-const SECRET_KEY = "myswym_arthur_admin_secret";
-
 function ensureFonts() {
   if (typeof document === "undefined") return;
   if (document.getElementById("arthur-growth-fonts")) return;
@@ -33,20 +31,6 @@ function ensureFonts() {
   document.head.appendChild(l);
 }
 
-async function adminHeaders(secret) {
-  const headers = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  };
-  if (secret) headers["x-myswym-arthur-admin"] = secret;
-  else {
-    const { data: sess } = await supabase.auth.getSession();
-    const token = sess?.session?.access_token;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  return headers;
-}
-
 function bandColor(band) {
   if (band === "hot") return C.hot;
   if (band === "warm") return C.warm;
@@ -54,14 +38,7 @@ function bandColor(band) {
 }
 
 export default function ArthurShadowAdmin() {
-  const [secret, setSecret] = useState(() => {
-    try {
-      return sessionStorage.getItem(SECRET_KEY) || "";
-    } catch {
-      return "";
-    }
-  });
-  const [secretDraft, setSecretDraft] = useState("");
+  const { secret, headers: adminHeaders } = useArthurAdmin();
   const [statusFilter, setStatusFilter] = useState("pending");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -78,7 +55,7 @@ export default function ArthurShadowAdmin() {
     setLoading(true);
     setError("");
     try {
-      const headers = await adminHeaders(secret);
+      const headers = await adminHeaders();
       const res = await fetch(
         `/api/admin/arthur-shadow?status=${encodeURIComponent(statusFilter)}&days=30&_=${Date.now()}`,
         { headers, cache: "no-store" },
@@ -97,17 +74,17 @@ export default function ArthurShadowAdmin() {
     } finally {
       setLoading(false);
     }
-  }, [secret, statusFilter]);
+  }, [adminHeaders, statusFilter]);
 
   useEffect(() => {
-    if (secret) load();
+    load();
   }, [secret, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const review = async (proposalId, action, extra = {}) => {
     setLoading(true);
     setError("");
     try {
-      const headers = await adminHeaders(secret);
+      const headers = await adminHeaders();
       const res = await fetch("/api/admin/arthur-shadow", {
         method: "POST",
         headers,
@@ -147,7 +124,7 @@ export default function ArthurShadowAdmin() {
             fontSize: 14,
           }}
         >
-          MySWYM · Arthur AI · H1
+          MySWYM · Admin
         </p>
         <h1
           style={{
@@ -158,84 +135,26 @@ export default function ArthurShadowAdmin() {
             color: C.deep,
           }}
         >
-          Shadow Mode
+          Messages
         </h1>
         <p style={{ color: C.muted, maxWidth: 580, marginTop: 8 }}>
-          Arthur analyse les DM Instagram, propose une réponse + classification lead /
-          action — sans aucun envoi automatique. Valide ici. Envois live et
-          followups restent bloqués.
-        </p>
-        <p style={{ marginTop: 8, display: "flex", gap: 14, flexWrap: "wrap" }}>
-          <a href="/admin/arthur-growth" style={{ color: C.primary }}>
-            Growth
-          </a>
-          <a href="/admin/arthur-followups" style={{ color: C.primary }}>
-            Conversion
-          </a>
-          <a href="/admin/arthur-optimize" style={{ color: C.primary }}>
-            Optimize
-          </a>
-          <a href="/admin/arthur-readiness" style={{ color: C.primary }}>
-            Readiness
-          </a>
+          Arthur prépare une réponse. Tu valides, tu modifies, ou tu ignores. Rien
+          ne part tout seul.
         </p>
       </header>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 24px 48px" }}>
-        {!secret && !data ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const s = secretDraft.trim();
-              if (!s) return;
-              try {
-                sessionStorage.setItem(SECRET_KEY, s);
-              } catch {
-                /* ignore */
-              }
-              setSecret(s);
-            }}
-            style={{
-              padding: 24,
-              border: `1px solid ${C.line}`,
-              borderRadius: 12,
-              background: "#fff",
-              maxWidth: 420,
-            }}
-          >
-            <label style={{ fontWeight: 600 }}>Secret admin</label>
-            <input
-              type="password"
-              value={secretDraft}
-              onChange={(e) => setSecretDraft(e.target.value)}
-              style={{
-                display: "block",
-                width: "100%",
-                margin: "8px 0 12px",
-                padding: 10,
-                borderRadius: 8,
-                border: `1px solid ${C.line}`,
-                boxSizing: "border-box",
-              }}
-            />
-            <button type="submit" style={btn(C.primary)}>
-              Ouvrir
-            </button>
-          </form>
-        ) : null}
-
-        {secret || data ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{ padding: 8, borderRadius: 6 }}
             >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="edited_approved">Edited</option>
-              <option value="rejected">Rejected</option>
-              <option value="all">All</option>
+              <option value="pending">À valider</option>
+              <option value="approved">Validés</option>
+              <option value="edited_approved">Modifiés</option>
+              <option value="rejected">Ignorés</option>
+              <option value="all">Tous</option>
             </select>
             <button type="button" disabled={loading} onClick={load} style={btn(C.primary)}>
               {loading ? "Chargement…" : "Rafraîchir"}
@@ -246,7 +165,6 @@ export default function ArthurShadowAdmin() {
               {lastRefresh ? ` · ${lastRefresh}` : ""}
             </span>
           </div>
-        ) : null}
 
         {error ? (
           <p style={{ background: "#fde8e4", color: "#8a2b1a", padding: 12, borderRadius: 8 }}>
@@ -439,7 +357,7 @@ export default function ArthurShadowAdmin() {
                             onClick={() => review(p.id, "approve")}
                             style={btn(C.ok)}
                           >
-                            Approve (sans send)
+                            Valider
                           </button>
                           <button
                             type="button"
@@ -450,7 +368,7 @@ export default function ArthurShadowAdmin() {
                             }}
                             style={btn(C.primary)}
                           >
-                            Éditer
+                            Modifier
                           </button>
                           {editId === p.id ? (
                             <button
@@ -463,7 +381,7 @@ export default function ArthurShadowAdmin() {
                               }
                               style={btn(C.deep)}
                             >
-                              Sauver + approve
+                              Enregistrer et valider
                             </button>
                           ) : null}
                         </>
@@ -474,13 +392,12 @@ export default function ArthurShadowAdmin() {
                         onClick={() => review(p.id, "reject", { notes: "rejected_ui" })}
                         style={btn(C.warn)}
                       >
-                        {p.recommended_action === "ignore" ? "Archiver" : "Reject"}
+                        {p.recommended_action === "ignore" ? "Ignorer" : "Ignorer"}
                       </button>
                     </div>
                   ) : null}
                   <p style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
-                    send_blocked: {p.send_blocked_reason || "shadow_mode_h1"} · sent_at:{" "}
-                    {p.sent_at || "null"}
+                    {p.sent_at ? "Déjà traité." : "Pas encore envoyé."}
                   </p>
                 </article>
               ))}

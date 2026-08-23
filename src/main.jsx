@@ -21,6 +21,8 @@ import CookieBanner from './CookieBanner.jsx'
 import { hasPerformanceConsent } from './lib/cookie-consent.js'
 import { ConversionFlow } from './conversion/ConversionFlow.tsx'
 import SessionPyramidPreview from './SessionPyramidPreview.jsx'
+import ArthurAdminShell from './ArthurAdminShell.jsx'
+import ArthurAdminHome from './ArthurAdminHome.jsx'
 import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
 import ArthurFollowupsAdmin from './ArthurFollowupsAdmin.jsx'
 import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
@@ -187,11 +189,14 @@ createRoot(document.getElementById('root')).render(
         <Route path="/prototype/conversion" element={<ConversionFlow />} />
         <Route path="/prototype/session-pyramid" element={<SessionPyramidPreview />} />
 
-        <Route path="/admin/arthur-growth" element={<ArthurGrowthAdmin />} />
-        <Route path="/admin/arthur-followups" element={<ArthurFollowupsAdmin />} />
-        <Route path="/admin/arthur-optimize" element={<ArthurOptimizeAdmin />} />
-        <Route path="/admin/arthur-readiness" element={<ArthurReadinessAdmin />} />
-        <Route path="/admin/arthur-shadow" element={<ArthurShadowAdmin />} />
+        <Route path="/admin" element={<ArthurAdminShell />}>
+          <Route index element={<ArthurAdminHome />} />
+          <Route path="arthur-growth" element={<ArthurGrowthAdmin />} />
+          <Route path="arthur-followups" element={<ArthurFollowupsAdmin />} />
+          <Route path="arthur-optimize" element={<ArthurOptimizeAdmin />} />
+          <Route path="arthur-readiness" element={<ArthurReadinessAdmin />} />
+          <Route path="arthur-shadow" element={<ArthurShadowAdmin />} />
+        </Route>
 
         {/* Marketing EN : /, /pricing, … */}
         {/* Marketing FR : /fr, /fr/tarifs, … */}

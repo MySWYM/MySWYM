@@ -4,6 +4,7 @@
  * Accepté :
  * - header x-myswym-arthur-admin === ARTHUR_ADMIN_SECRET
  * - ou Bearer JWT dont l’email est dans ARTHUR_ADMIN_EMAILS
+ *   (admin@myswym.app est toujours autorisé)
  * - ou JWT avec app_metadata.arthur_admin === true
  */
 import type { VercelRequest } from "@vercel/node";
@@ -14,14 +15,16 @@ export type AdminAuthResult =
   | { ok: true; via: "secret" | "email" | "metadata"; userId?: string }
   | { ok: false; status: number; error: string };
 
+/** Compte opérateur MySWYM — toujours admin, même si ARTHUR_ADMIN_EMAILS est vide. */
+export const BUILTIN_ARTHUR_ADMIN_EMAILS = ["admin@myswym.app"];
+
 function adminEmails(): Set<string> {
   const raw = process.env.ARTHUR_ADMIN_EMAILS || "";
-  return new Set(
-    raw
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  );
+  const fromEnv = raw
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([...BUILTIN_ARTHUR_ADMIN_EMAILS, ...fromEnv]);
 }
 
 export async function resolveArthurAdminAuth(
@@ -62,7 +65,7 @@ export async function resolveArthurAdminAuth(
       return { ok: true, via: "metadata", userId: data.user.id };
     }
 
-    return { ok: false, status: 403, error: "Compte non admin" };
+    return { ok: false, status: 403, error: "Compte non admin. Utilise admin@myswym.app." };
   } catch {
     return { ok: false, status: 401, error: "Auth admin échouée" };
   }
