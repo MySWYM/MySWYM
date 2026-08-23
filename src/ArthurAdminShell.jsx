@@ -21,11 +21,8 @@ export function useArthurAdmin() {
 const NAV = [
   { to: "/admin", label: "Accueil", end: true },
   { to: "/admin/arthur-nageurs", label: "Nageurs", end: false },
-  { to: "/admin/arthur-shadow", label: "Messages", end: false },
-  { to: "/admin/arthur-growth", label: "Chiffres", end: false },
-  { to: "/admin/arthur-followups", label: "Relances", end: false },
-  { to: "/admin/arthur-optimize", label: "Qualité", end: false },
-  { to: "/admin/arthur-readiness", label: "Santé", end: false },
+  { to: "/admin/instagram", label: "Instagram", end: false },
+  { to: "/admin/coulisses", label: "Coulisses", end: false },
 ];
 
 export default function ArthurAdminShell() {

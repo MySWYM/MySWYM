@@ -24,11 +24,8 @@ import SessionPyramidPreview from './SessionPyramidPreview.jsx'
 import ArthurAdminShell from './ArthurAdminShell.jsx'
 import ArthurAdminHome from './ArthurAdminHome.jsx'
 import ArthurNageursAdmin from './ArthurNageursAdmin.jsx'
-import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
-import ArthurFollowupsAdmin from './ArthurFollowupsAdmin.jsx'
-import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
+import ArthurInstagramAdmin from './ArthurInstagramAdmin.jsx'
 import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
-import ArthurShadowAdmin from './ArthurShadowAdmin.jsx'
 import VersionGate from './VersionGate.jsx'
 import { LocaleSync } from './i18n/locale-routing.jsx'
 import { localeFromPathname, withLocalePrefix } from './i18n/locale-path.js'
@@ -193,11 +190,13 @@ createRoot(document.getElementById('root')).render(
         <Route path="/admin" element={<ArthurAdminShell />}>
           <Route index element={<ArthurAdminHome />} />
           <Route path="arthur-nageurs" element={<ArthurNageursAdmin />} />
-          <Route path="arthur-growth" element={<ArthurGrowthAdmin />} />
-          <Route path="arthur-followups" element={<ArthurFollowupsAdmin />} />
-          <Route path="arthur-optimize" element={<ArthurOptimizeAdmin />} />
-          <Route path="arthur-readiness" element={<ArthurReadinessAdmin />} />
-          <Route path="arthur-shadow" element={<ArthurShadowAdmin />} />
+          <Route path="instagram" element={<ArthurInstagramAdmin />} />
+          <Route path="coulisses" element={<ArthurReadinessAdmin />} />
+          <Route path="arthur-growth" element={<Navigate to="/admin/instagram" replace />} />
+          <Route path="arthur-followups" element={<Navigate to="/admin/instagram" replace />} />
+          <Route path="arthur-optimize" element={<Navigate to="/admin/instagram" replace />} />
+          <Route path="arthur-readiness" element={<Navigate to="/admin/coulisses" replace />} />
+          <Route path="arthur-shadow" element={<Navigate to="/admin/instagram" replace />} />
         </Route>
 
         {/* Marketing EN : /, /pricing, … */}

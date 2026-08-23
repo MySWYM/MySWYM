@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
+import { DonutChart, FunnelChart } from "./admin/AdminCharts.jsx";
 
 function dash(v) {
   if (v == null || v === "") return "—";
@@ -231,32 +232,82 @@ export default function ArthurAdminHome() {
         </p>
       ) : null}
 
-      <Section title="À regarder en premier">
-        <Card
-          to="/admin/arthur-shadow"
-          label="Messages à valider"
-          value={waiting}
-          hint="Arthur a préparé une réponse. À toi de dire oui ou non."
-        />
-        <Card
-          to="/admin/arthur-growth"
-          label="Messages Instagram reçus"
-          value={funnel.dm}
-          hint="Personnes qui ont écrit."
-        />
-        <Card
-          to="/admin/arthur-growth"
-          label="Comptes créés"
-          value={funnel.signup}
-          hint="Ils se sont inscrits sur MySWYM."
-        />
-        <Card
-          to="/admin/arthur-growth"
-          label="Abonnés payants"
-          value={funnel.premium}
-          hint="Ils paient l’abonnement."
-        />
-      </Section>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 16,
+          marginBottom: 32,
+        }}
+      >
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #d8dee6",
+            borderRadius: 16,
+            padding: 18,
+          }}
+        >
+          <h2 style={{ fontSize: 18, fontWeight: 750, margin: "0 0 8px", color: "#0c1a2e" }}>
+            À faire aujourd’hui
+          </h2>
+          <p style={{ margin: "0 0 14px", color: "#5a6a7a", fontSize: 14, lineHeight: 1.45 }}>
+            Réponses Instagram à valider, et relances prêtes. Rien ne part tout seul.
+          </p>
+          <Section title="">
+            <Card
+              to="/admin/instagram"
+              label="Réponses à valider"
+              value={waiting}
+              hint="Arthur a préparé un texte."
+            />
+            <Card
+              to="/admin/instagram"
+              label="Relances prêtes"
+              value={counts.approved ?? counts.planned}
+              hint="À envoyer quand tu es OK."
+            />
+            <Card
+              to="/admin/instagram"
+              label="Messages reçus"
+              value={funnel.dm}
+              hint="Personnes qui ont écrit."
+            />
+          </Section>
+        </div>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 750, margin: "0 0 8px", color: "#0c1a2e" }}>
+            Instagram → abonnés
+          </h2>
+          <p style={{ margin: "0 0 14px", color: "#5a6a7a", fontSize: 14, lineHeight: 1.45 }}>
+            {funnel.dm
+              ? `${pct(funnel.signup / funnel.dm)} des messages deviennent un compte.`
+              : "L’entonnoir se remplit dès les premiers messages."}
+          </p>
+          <div style={{ display: "grid", gap: 12 }}>
+            <FunnelChart
+              steps={[
+                { label: "Messages", value: funnel.dm ?? 0 },
+                { label: "Comptes", value: funnel.signup ?? 0 },
+                { label: "Payants", value: funnel.premium ?? 0 },
+              ]}
+              caption={
+                bestReel
+                  ? `Meilleure vidéo : ${bestReel.reel_id || "une vidéo"}.`
+                  : "Les vidéos apparaîtront ici."
+              }
+            />
+            <DonutChart
+              title="Qui est chaud"
+              slices={[
+                { label: "Chaud", value: scores.hot ?? 0 },
+                { label: "Tiède", value: scores.warm ?? 0 },
+                { label: "Froid", value: scores.cold ?? 0 },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
 
       <Section title="Les nageurs">
         <Card
@@ -297,130 +348,13 @@ export default function ArthurAdminHome() {
         />
       </Section>
 
-      <Section title="Du message à l’abonnement">
-        <Card label="Personnes intéressées" value={funnel.leads} hint="On a leur contact." />
-        <Card
-          label="Vraiment intéressées"
-          value={funnel.qualified}
-          hint="Elles ont un vrai projet nage."
-        />
-        <Card
-          label="Message → inscription"
-          value={pct(funnel.dm ? funnel.signup / funnel.dm : null)}
-        />
-        <Card
-          label="Inscription → payant"
-          value={pct(funnel.signup ? funnel.premium / funnel.signup : null)}
-        />
-        <Card
-          label="Message → payant"
-          value={pct(funnel.dm ? funnel.premium / funnel.dm : null)}
-        />
-        <Card label="Vidéos suivies" value={reels.length} hint="Combien de Reels ont amené du monde." />
-      </Section>
-
-      <Section title="Qui a envie de nager">
-        <Card label="Très motivé" value={scores.hot} hint="Chaud : à relancer vite." />
-        <Card label="Un peu intéressé" value={scores.warm} />
-        <Card label="Pas trop chaud" value={scores.cold} />
-        <Card
-          label="Meilleure vidéo"
-          value={bestReel ? dash(bestReel.premium ?? bestReel.signup ?? bestReel.dm) : "—"}
-          hint={bestReel ? `Payants / inscrits depuis ${bestReel.reel_id || "une vidéo"}` : "Pas encore de vidéo."}
-        />
-      </Section>
-
-      <Section title="Boîte de réception Instagram">
-        <Card to="/admin/arthur-shadow" label="En attente" value={waiting} />
-        <Card to="/admin/arthur-shadow" label="Déjà validés" value={report.approved} />
-        <Card to="/admin/arthur-shadow" label="Ignorés" value={report.rejected} />
-        <Card label="Propositions au total" value={report.total} />
-        <Card label="Activité Instagram" value={events} hint="Événements récents (webhooks, DM…)." />
-        <Card
-          label="Envoi auto des réponses"
-          value={shadow?.live_send ? "Oui" : "Non"}
-          hint="Doit rester Non tant que tu valides à la main."
-        />
-      </Section>
-
-      <Section title="Relances">
-        <Card to="/admin/arthur-followups" label="Prévues" value={counts.planned} />
-        <Card to="/admin/arthur-followups" label="OK pour envoyer" value={counts.approved} />
-        <Card to="/admin/arthur-followups" label="Déjà envoyées" value={counts.sent} />
-        <Card label="Annulées / bloquées" value={(counts.cancelled || 0) + (counts.suppressed || 0)} />
-        <Card label="Ont répondu" value={pct(rates.reply_rate)} hint={`${dash(outcomes.replied)} réponses`} />
-        <Card label="Se sont inscrits après" value={pct(rates.signup_rate)} />
-        <Card label="Sont devenus payants" value={pct(rates.premium_rate)} />
-        <Card
-          label="Relances auto"
-          value={
-            followups?.send_gate === "live" || followups?.send_gate === "live"
-              ? "Oui"
-              : followups?.send_gate === "mock" || followups?.send_gate === "mock"
-                ? "Essai"
-                : "Non"
-          }
-          hint="Non = rien ne part tout seul."
-        />
-      </Section>
-
-      <Section title="Qualité des réponses d’Arthur">
-        <Card
-          to="/admin/arthur-optimize"
-          label="Réponses notées"
-          value={q.responses_scored ?? q.responses_scored}
-        />
-        <Card
-          to="/admin/arthur-optimize"
-          label="Note moyenne"
-          value={q.avg_score ?? q.avg_score ?? "—"}
-          hint="Sur 100."
-        />
-        <Card label="Très bonnes" value={band.strong} />
-        <Card label="Correctes" value={band.ok} />
-        <Card label="À améliorer" value={band.weak} />
-        <Card label="Avec un appel à s’inscrire" value={pct(q.cta_rate)} />
-        <Card label="Appels envoyés" value={cta.sent} />
-        <Card label="Conversations analysées" value={conv.analyzed} />
-        <Card label="Risque d’abandon élevé" value={drop.high} />
-        <Card label="Fiches coaching" value={quality?.knowledge?.active_snippets} />
-      </Section>
-
-      <Section title="Santé du système">
-        <Card
-          to="/admin/arthur-readiness"
-          label="Prêt à grandir"
-          value={health?.ready_for_scale || health?.ready_for_scale ? "Oui" : "Pas encore"}
-        />
-        <Card
-          label="Contrôles OK"
-          value={checks.length ? `${okChecks} / ${checks.length}` : "—"}
-        />
-        <Card
-          label="Conversations reprises à la main"
-          value={takeovers}
-          hint="Tu as pris la main à la place d’Arthur."
-        />
-        <Card
-          label="Dépense du jour"
-          value={
-            health?.cost?.status?.dayUsd != null
-              ? `${health.cost.status.dayUsd} $`
-              : health?.cost?.dayCost != null
-                ? `${health.cost.dayCost} $`
-                : "—"
-          }
-        />
-        <Card
-          label="Instagram en mode test"
-          value={shadow?.shadow_mode || health?.instagram_shadow ? "Oui" : "Non"}
-          hint="Oui = Arthur propose, il n’envoie pas."
-        />
-        <Card
-          label="Arthur allumé"
-          value={health?.flags?.enabled === false ? "Non" : "Oui"}
-        />
-      </Section>
+      <p style={{ color: "#5a6a7a", fontSize: 14, margin: "8px 0 0" }}>
+        Branchements Instagram, Ollama et Telegram :{" "}
+        <Link to="/admin/coulisses" style={{ color: "#154388", fontWeight: 700 }}>
+          Coulisses
+        </Link>
+        .
+      </p>
     </main>
   );
 }

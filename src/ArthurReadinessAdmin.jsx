@@ -114,11 +114,11 @@ export default function ArthurReadinessAdmin() {
             color: C.deep,
           }}
         >
-          Santé
+          Coulisses
         </h1>
         <p style={{ color: C.muted, maxWidth: 560, marginTop: 8 }}>
-          Est-ce que tout tourne bien : coûts, limites, et si tu as repris une
-          conversation à la main.
+          Les branchements : Instagram, plus tard Ollama et Telegram. Et si tu as
+          repris une conversation à la main. Rien de quotidien ici.
         </p>
       </header>
 
@@ -140,8 +140,36 @@ export default function ArthurReadinessAdmin() {
 
         {data ? (
           <>
+            <section
+              style={{
+                marginBottom: 24,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={card}>
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>Instagram</div>
+                <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
+                  Mode test : Arthur propose, tu envoies. L’envoi auto doit rester éteint.
+                </p>
+              </div>
+              <div style={card}>
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>Ollama</div>
+                <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
+                  Brouillons en local — pas encore branché. Tu verras ici s’il est allumé.
+                </p>
+              </div>
+              <div style={card}>
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>Telegram</div>
+                <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
+                  Pour répondre depuis ta chat box — pas encore branché.
+                </p>
+              </div>
+            </section>
+
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Scale readiness</h2>
+              <h2 style={h2}>Prêt à encaisser plus de messages</h2>
               <div
                 style={{
                   display: "inline-block",
@@ -161,7 +189,7 @@ export default function ArthurReadinessAdmin() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Checks</h2>
+              <h2 style={h2}>Contrôles</h2>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {checks.map((c) => (
                   <li
@@ -179,7 +207,7 @@ export default function ArthurReadinessAdmin() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Feature flags</h2>
+              <h2 style={h2}>Interrupteurs</h2>
               <div
                 style={{
                   display: "grid",
