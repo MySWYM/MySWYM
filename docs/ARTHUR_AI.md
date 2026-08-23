@@ -390,7 +390,7 @@ Migration : `20260809160000_arthur_ai_production_g.sql`
 ### Admin readiness
 
 - UI : `/admin/arthur-readiness`
-- API : `GET /api/admin/arthur-readiness`
+- API : `GET /api/admin/arthur-readiness` (auth login : `?ping=1`)
 - POST : `release_takeover` | `start_takeover` | `list_takeovers`
 - Toute activation auto-send → **403**
 
