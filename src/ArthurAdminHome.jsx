@@ -283,6 +283,18 @@ export default function ArthurAdminHome() {
           value={mon.paying_or_trial_no_session}
           hint="Essai ou payant, jamais nagé."
         />
+        <Card
+          to="/admin/arthur-nageurs"
+          label="Plan → 1re séance"
+          value={pct(nageurs?.dropoff?.plan_to_first)}
+          hint="Où le produit perd les gens."
+        />
+        <Card
+          to="/admin/arthur-nageurs"
+          label="Essai → payant J7"
+          value={pct(nageurs?.money?.d7?.rate)}
+          hint="Parmi les essais de plus de 7 jours."
+        />
       </Section>
 
       <Section title="Du message à l’abonnement">

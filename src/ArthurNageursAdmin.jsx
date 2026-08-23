@@ -81,6 +81,20 @@ function Section({ title, children }) {
   );
 }
 
+function Breakdown({ title, rows, empty, hint }) {
+  return (
+    <Section title={title}>
+      {rows.length ? (
+        rows.map((row) => (
+          <Card key={row.type} label={row.type} value={row.count} hint={hint} />
+        ))
+      ) : (
+        <Card label={empty} value="—" />
+      )}
+    </Section>
+  );
+}
+
 export default function ArthurNageursAdmin() {
   const { headers } = useArthurAdmin();
   const [days, setDays] = useState(30);
@@ -117,8 +131,18 @@ export default function ArthurNageursAdmin() {
   const e = data?.engine || {};
   const m = data?.money || {};
   const notes = data?.notes || [];
+  const drop = data?.dropoff || {};
+  const weekly = u.weekly || {};
   const hardTypes = e.hard_by_type || [];
+  const hardLevels = e.hard_by_level || [];
+  const hardGoals = e.hard_by_goal || [];
+  const hardWeeks = e.hard_by_week || [];
+  const topSkipped = e.top_skipped || [];
+  const topLiked = e.top_liked || [];
+  const adapt = e.adaptations || {};
   const reasons = m.cancel_reasons || [];
+  const d7 = m.d7 || {};
+  const d30 = m.d30_churn || {};
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 72px" }}>
@@ -175,7 +199,7 @@ export default function ArthurNageursAdmin() {
       </div>
       <p style={{ color: "#5a6a7a", margin: "0 0 24px", fontSize: 16, lineHeight: 1.5 }}>
         Est-ce qu’ils nagent vraiment ? Pas Instagram : le produit. 1re séance, habitude, trop dur /
-        trop facile, et ceux qui paient sans jamais aller à l’eau.
+        trop facile, et ceux qui paient sans jamais aller à l’eau. Ici : où ça casse, le moteur, D7/D30.
       </p>
 
       {offline ? (
@@ -232,6 +256,30 @@ export default function ArthurNageursAdmin() {
         />
       </Section>
 
+      <Section title="Où ça casse">
+        <Card
+          label="Ont commencé à s’inscrire"
+          value={drop.signup_started}
+          hint="Page compte ouverte."
+        />
+        <Card label="Compte créé" value={drop.signups} />
+        <Card label="Début → compte" value={pct(drop.started_to_account)} />
+        <Card label="Paywall vu" value={drop.paywalls} hint="Écran d’abonnement montré." />
+        <Card label="Panier ouvert" value={drop.checkouts} />
+        <Card label="Paywall → panier" value={pct(drop.paywall_to_checkout)} />
+        <Card
+          label="Panier abandonné"
+          value={drop.abandoned}
+          hint="Ils ont vu Stripe puis sont partis."
+        />
+        <Card label="Panier → payé / essai" value={pct(drop.checkout_to_paid)} />
+        <Card
+          label="Plan → 1re séance"
+          value={pct(drop.plan_to_first)}
+          hint="Le vrai trou produit si c’est bas."
+        />
+      </Section>
+
       <Section title="Est-ce qu’ils reviennent ?">
         <Card
           label="Nageurs cette semaine"
@@ -250,6 +298,14 @@ export default function ArthurNageursAdmin() {
           value={pct(u.completion_rate)}
           hint="Fait / prévu. C’est le cœur du produit."
         />
+        <Card
+          label="0 séance cette semaine"
+          value={weekly.zero}
+          hint={`Sur ${dash(weekly.users)} nageurs avec un plan cette semaine.`}
+        />
+        <Card label="1 séance / semaine" value={weekly.one} />
+        <Card label="2 séances / semaine" value={weekly.two} />
+        <Card label="3 séances ou plus" value={weekly.three_plus} />
       </Section>
 
       <Section title="Le moteur est-il juste ?">
@@ -268,13 +324,45 @@ export default function ArthurNageursAdmin() {
         />
       </Section>
 
-      {hardTypes.length ? (
-        <Section title="Séances trop dures (types)">
-          {hardTypes.map((row) => (
-            <Card key={row.type} label={row.type} value={row.count} />
-          ))}
-        </Section>
-      ) : null}
+      <Breakdown
+        title="Séances trop dures (types)"
+        rows={hardTypes}
+        empty="Aucun « trop dur » sur la période."
+      />
+      <Breakdown
+        title="Trop dur — par niveau"
+        rows={hardLevels}
+        empty="Pas encore de retours trop durs par niveau."
+      />
+      <Breakdown
+        title="Trop dur — par objectif"
+        rows={hardGoals}
+        empty="Pas encore de retours trop durs par objectif."
+      />
+      <Breakdown
+        title="Trop dur — par semaine du plan"
+        rows={hardWeeks}
+        empty="Pas encore de retours trop durs par semaine."
+      />
+      <Breakdown
+        title="Les plus sautées"
+        rows={topSkipped}
+        empty="Aucune séance sautée ou manquée."
+        hint="Skip / manquée."
+      />
+      <Breakdown
+        title="Les mieux notées"
+        rows={topLiked}
+        empty="Pas encore de retours « ok » ou « bien »."
+        hint="Retour « ok » ou « bien »."
+      />
+
+      <Section title="Le moteur a-t-il bougé les plans ?">
+        <Card label="Décisions" value={adapt.total} hint="Ajustements après retours." />
+        <Card label="Plans baissés" value={adapt.lowered} hint="Charge réduite." />
+        <Card label="Plans montés" value={adapt.raised} hint="Charge augmentée." />
+        <Card label="Sans changement" value={adapt.hold} />
+      </Section>
 
       <Section title="Argent qui tient">
         <Card label="En essai (maintenant)" value={m.trial} />
@@ -288,6 +376,16 @@ export default function ArthurNageursAdmin() {
           label="Payent (ou essai) sans séance"
           value={m.paying_or_trial_no_session}
           hint="Ils paient mais n’ont jamais nagé. Alarme produit."
+        />
+        <Card
+          label="Essai → payant à 7 jours"
+          value={pct(d7.rate)}
+          hint={`${dash(d7.converted)} / ${dash(d7.eligible)} essais assez vieux pour juger.`}
+        />
+        <Card
+          label="Churn à 30 jours"
+          value={pct(d30.rate)}
+          hint={`${dash(d30.churned)} partis / ${dash(d30.eligible)} payants depuis ≥ 30 j.`}
         />
       </Section>
 
