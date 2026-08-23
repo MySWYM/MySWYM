@@ -821,8 +821,8 @@ const buildAccessNotifications = (user, accessState) => {
       type: "billing",
       title: accessState.trialDaysLeft === 1 ? "Dernier jour d'essai" : `Essai Premium : ${accessState.trialDaysLeft} jours restants`,
       body: accessState.trialDaysLeft === 1
-        ? "Ton essai se termine aujourd'hui. Sans abonnement, l'app sera gelée — tu ne pourras plus rien voir."
-        : "Ton essai Premium arrive a sa fin. Abonne-toi pour garder tes plans, sinon l'app se gèle.",
+        ? "Ton essai se termine aujourd'hui. Sans abonnement, tes séances se mettent en pause — tu ne pourras plus rien voir."
+        : "Ton essai Premium arrive a sa fin. Abonne-toi pour garder tes plans, sinon tes séances se mettent en pause.",
       createdAt: (accessState.accessEndsMs || Date.now()) - (accessState.trialDaysLeft * DAY_MS),
     });
   }
@@ -839,8 +839,8 @@ const buildAccessNotifications = (user, accessState) => {
     items.push({
       id: `subscription-expired:${accessState.subscriptionEndsAt || accessState.trialEndsAt || "expired"}`,
       type: "security",
-      title: "Essai terminé — app gelée",
-      body: "Ton essai de 7 jours est fini. L'application est gelée. Abonne-toi pour retrouver tes plans et séances.",
+      title: "Essai terminé — séances en pause",
+      body: "Ton essai de 7 jours est fini. Tes séances sont en pause. Abonne-toi pour les retrouver.",
       createdAt: parseNotificationTime(accessState.subscriptionEndsAt || accessState.trialEndsAt, Date.now()),
     });
   }
@@ -4052,7 +4052,7 @@ const SettingsDrawer = ({
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Gestion de l&apos;abonnement</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé — abonne-toi pour dégeler l’app"}</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé — abonne-toi pour continuer"}</div>
             </div>
           </div>
           {isPremium ? (
@@ -6506,7 +6506,7 @@ const BadgeToast = ({ badgeId }) => {
 };
 
 // ── ACCÈS ──────────────────────────────────────────────────────────────────
-// Modèle live = essai 7j sans carte à l'inscription, puis gel total (abonnement pour dégeler).
+// Modèle live = essai 7j sans carte à l'inscription, puis pause (abonnement pour continuer).
 // FREE_* ci-dessous : remnants / helpers legacy — ne gate plus l’UX (voir access.js).
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
@@ -6571,9 +6571,9 @@ const clearPendingOnboarding = () => {
 };
 
 const FREE_TIER_LINES = [
-  "Après 7 jours : app gelée",
+  "Après 7 jours : séances en pause",
   "Plus aucun plan ni séance visible",
-  "Abonnement requis pour dégeler",
+  "Abonnement pour continuer",
 ];
 
 const countCompletedSessions = (p) =>
@@ -6633,8 +6633,8 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
           <div style={{ fontSize: 16, fontWeight: 800, color: G.ink }}>Essai terminé</div>
           <div style={{ fontSize: 12, color: G.grey, marginTop: 4 }}>
             {totalWeeks > 0
-              ? `L’app est gelée · ${totalWeeks} semaine${totalWeeks > 1 ? "s" : ""} à débloquer`
-              : "Abonne-toi pour dégeler tes plans et séances"}
+              ? `Séances en pause · ${totalWeeks} semaine${totalWeeks > 1 ? "s" : ""} à débloquer`
+              : "Abonne-toi pour reprendre tes plans et séances"}
           </div>
         </div>
         <button onClick={onUpgrade} style={{ padding: "9px 14px", borderRadius: 10, border: "none", background: G.blue, color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -6780,7 +6780,7 @@ const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
             {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-            Débloque les séances et l’adaptation coach — 7 jours offerts sans carte à l’inscription. Ensuite l’app se gèle.
+            Débloque les séances et l’adaptation coach — 7 jours offerts sans carte à l’inscription. Ensuite tes séances se mettent en pause.
           </p>
         </div>
 
@@ -6922,7 +6922,7 @@ const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
         Ton essai est terminé
       </h1>
       <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 28px" }}>
-        L’application est gelée. Tes plans et séances ne sont plus visibles.
+        Tes séances sont en pause. Tes plans ne sont plus visibles.
         Abonne-toi pour tout retrouver — {PRICING_SUMMARY_FR}.
       </p>
       <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
@@ -7118,7 +7118,7 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
         {showTrialOffer && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
-              7 jours offerts sans carte à l’inscription · ensuite l’app se gèle
+              7 jours offerts sans carte à l’inscription · ensuite tes séances se mettent en pause
             </span>
           </div>
         )}
@@ -7249,7 +7249,7 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
           <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 14 }}>+ {extra} autre{extra > 1 ? "s" : ""} semaine{extra > 1 ? "s" : ""} ensuite</p>
         )}
         <button type="button" onClick={onUpgrade} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px rgba(53,93,163,0.28)" }}>
-          S’abonner pour dégeler
+          S’abonner pour continuer
         </button>
       </div>
     </div>
@@ -8545,7 +8545,7 @@ const ProgressionLoopView = ({
             border: `1px solid rgba(53,93,163,0.15)`,
           }}>
             <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
-              Ton essai est terminé. Abonne-toi pour dégeler ta séance et continuer avec ton coach.
+              Ton essai est terminé. Abonne-toi pour reprendre ta séance et continuer avec ton coach.
             </p>
             <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>S’abonner — dès {PRICING.monthlyCommit.label}/mois</Btn>
           </div>
@@ -14168,8 +14168,8 @@ export default function App() {
             <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: G.blue }}>
               <span style={{ flex: 1, lineHeight: 1.35 }}>
                 {accessState.trialDaysLeft === 1
-                  ? "Dernier jour d’essai — demain l’app se gèle. Abonne-toi pour garder tes plans."
-                  : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite l’app se gèle.`}
+                  ? "Dernier jour d’essai — demain tes séances se mettent en pause. Abonne-toi pour garder tes plans."
+                  : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite tes séances se mettent en pause.`}
               </span>
               <button type="button" onClick={() => openUpgrade("trial_expired")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                 S’abonner

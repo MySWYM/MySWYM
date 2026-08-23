@@ -13,7 +13,7 @@ interface Props {
 const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: string }> = {
   after_first_session: {
     title: 'Analyse terminée.',
-    subtitle: 'Essai 7 jours sans carte, puis 9,99 €/mois sans engagement ou 4,99 €/mois sur 12 mois. Après l’essai, l’app se gèle.',
+    subtitle: 'Essai 7 jours sans carte, puis 9,99 €/mois sans engagement ou 4,99 €/mois sur 12 mois. Après l’essai, tes séances se mettent en pause.',
   },
   streak: {
     title: 'Ta progression est prête.',
@@ -25,7 +25,7 @@ const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: str
   },
   generic: {
     title: 'Garde ton coach personnel.',
-    subtitle: 'Essai 7 jours · sans carte · puis 9,99 €/mois sans engagement ou 4,99 €/mois sur 12 mois. Après l’essai, l’app se gèle.',
+    subtitle: 'Essai 7 jours · sans carte · puis 9,99 €/mois sans engagement ou 4,99 €/mois sur 12 mois. Après l’essai, tes séances se mettent en pause.',
   },
 }
 

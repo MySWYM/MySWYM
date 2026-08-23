@@ -3,7 +3,7 @@
  * Envois Instagram gated (ARTHUR_FOLLOWUPS_SEND).
  */
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./supabase.js";
+import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
@@ -17,8 +17,6 @@ const C = {
   warn: "#c45c26",
   ok: "#1f7a4c",
 };
-
-const SECRET_KEY = "myswym_arthur_admin_secret";
 
 function ensureFonts() {
   if (typeof document === "undefined") return;
@@ -36,28 +34,9 @@ function pct(n) {
   return `${(n * 100).toFixed(1)}%`;
 }
 
-async function adminHeaders(secret) {
-  const headers = { Accept: "application/json", "Content-Type": "application/json" };
-  if (secret) {
-    headers["x-myswym-arthur-admin"] = secret;
-  } else {
-    const { data: sess } = await supabase.auth.getSession();
-    const token = sess?.session?.access_token;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  return headers;
-}
-
 export default function ArthurFollowupsAdmin() {
+  const { secret, headers: adminHeaders } = useArthurAdmin();
   const [days, setDays] = useState(30);
-  const [secret, setSecret] = useState(() => {
-    try {
-      return sessionStorage.getItem(SECRET_KEY) || "";
-    } catch {
-      return "";
-    }
-  });
-  const [secretDraft, setSecretDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
@@ -71,7 +50,7 @@ export default function ArthurFollowupsAdmin() {
     setLoading(true);
     setError("");
     try {
-      const headers = await adminHeaders(secret);
+      const headers = await adminHeaders();
       const res = await fetch(`/api/admin/arthur-followups?days=${days}`, { headers });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
@@ -82,17 +61,17 @@ export default function ArthurFollowupsAdmin() {
     } finally {
       setLoading(false);
     }
-  }, [days, secret]);
+  }, [days, adminHeaders]);
 
   useEffect(() => {
-    if (secret) load();
+    load();
   }, [secret]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const postAction = async (body) => {
     setLoading(true);
     setError("");
     try {
-      const headers = await adminHeaders(secret);
+      const headers = await adminHeaders();
       const res = await fetch("/api/admin/arthur-followups", {
         method: "POST",
         headers,
@@ -110,18 +89,6 @@ export default function ArthurFollowupsAdmin() {
       setLoading(false);
       return null;
     }
-  };
-
-  const saveSecret = (e) => {
-    e.preventDefault();
-    const s = secretDraft.trim();
-    if (!s) return;
-    try {
-      sessionStorage.setItem(SECRET_KEY, s);
-    } catch {
-      /* ignore */
-    }
-    setSecret(s);
   };
 
   const gate = data?.send_gate || "—";
@@ -149,7 +116,7 @@ export default function ArthurFollowupsAdmin() {
             fontSize: 14,
           }}
         >
-          MySWYM · Arthur AI · F2
+          MySWYM · Admin
         </p>
         <h1
           style={{
@@ -160,65 +127,16 @@ export default function ArthurFollowupsAdmin() {
             color: C.deep,
           }}
         >
-          Conversion Engine
+          Relances
         </h1>
         <p style={{ color: C.muted, maxWidth: 560, marginTop: 8 }}>
-          Relances intelligentes + tracking d’impact. Pas de spam. Envois Instagram
-          réels désactivés tant que{" "}
-          <code>ARTHUR_FOLLOWUPS_SEND</code> n’est pas validé.
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <a href="/admin/arthur-growth" style={{ color: C.primary }}>
-            ← Growth (F1)
-          </a>
-          {" · "}
-          <a href="/admin/arthur-optimize" style={{ color: C.primary }}>
-            Optimize
-          </a>
-          <a href="/admin/arthur-readiness" style={{ color: C.primary }}>
-            Readiness
-          </a>
+          Messages de suivi pour les personnes qui n’ont pas encore bougé. Rien
+          n’est envoyé tout seul.
         </p>
       </header>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 24px 48px" }}>
-        {!secret && !data ? (
-          <form
-            onSubmit={saveSecret}
-            style={{
-              padding: 24,
-              border: `1px solid ${C.line}`,
-              borderRadius: 12,
-              background: "#fff",
-              maxWidth: 420,
-            }}
-          >
-            <label style={{ fontWeight: 600 }}>Secret admin</label>
-            <input
-              type="password"
-              value={secretDraft}
-              onChange={(e) => setSecretDraft(e.target.value)}
-              style={{
-                display: "block",
-                width: "100%",
-                margin: "8px 0 12px",
-                padding: 10,
-                borderRadius: 8,
-                border: `1px solid ${C.line}`,
-                boxSizing: "border-box",
-              }}
-            />
-            <button type="submit" style={btn(C.primary)}>
-              Ouvrir
-            </button>
-            <button type="button" onClick={() => load()} style={{ ...btn(C.muted), marginLeft: 8 }}>
-              Session JWT
-            </button>
-          </form>
-        ) : null}
-
-        {secret || data ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
             <select
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
@@ -248,7 +166,6 @@ export default function ArthurFollowupsAdmin() {
               Planifier (sans envoi)
             </button>
           </div>
-        ) : null}
 
         {error ? (
           <p style={{ background: "#fde8e4", color: "#8a2b1a", padding: 12, borderRadius: 8 }}>

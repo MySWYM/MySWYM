@@ -21,12 +21,12 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite l'app se gèle (plus rien de visible) jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
+      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
   },
   {
     keys: ["annul", "résili", "resili", "stop", "désabon", "desabon", "rembours"],
     answer:
-      `L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et l'app se gèle. Ensuite : ${PRICING_SUMMARY_FR}. L'annuel est un prépaiement : pas de remboursement une fois facturé (hors cas légaux).`,
+      `L'essai 7 jours ne demande pas de carte : il s'arrête tout seul et tes séances se mettent en pause. Ensuite : ${PRICING_SUMMARY_FR}. L'annuel est un prépaiement : pas de remboursement une fois facturé (hors cas légaux).`,
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -63,7 +63,7 @@ const FAQ_RULES = [
   {
     keys: ["allure", "t100", "temps 100", "pace", "@", "mm:ss", "chron"],
     answer:
-      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau), plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, l'app est gelée. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
+      "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau), plus de T400. Pendant l'essai et en Premium : @mm:ss à côté des zones. Après l'essai sans abo, tes séances sont en pause. Les coefficients s'adaptent : plus tu es rapide, plus les bandes aérobie sont calibrées.",
   },
   {
     keys: ["d…", "d...", "r…", "r...", "d ou r", "départ chron", "depart chron", "repos ", "intervalle fixe", "chronométré", "chronometre"],

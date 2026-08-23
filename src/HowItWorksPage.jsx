@@ -104,11 +104,9 @@ export default function HowItWorksPage() {
         <div className="ms-how-wrap ms-how-hero-grid">
           <div>
             <Breadcrumb items={crumbs} onDark />
-            <p className="ms-pricing-kicker">{t("how.label")}</p>
             <h1 className="ms-how-h1">
-              {t("howPage.h1a")}
-              <br />
-              {t("howPage.h1b")}
+              <span>{t("howPage.h1a")}</span>
+              <span>{t("howPage.h1b")}</span>
             </h1>
             <p className="ms-pricing-lead">{t("howPage.lead")}</p>
             <ul className="ms-how-chips">
@@ -116,11 +114,11 @@ export default function HowItWorksPage() {
               <li>{t("howPage.chipTrial")}</li>
               <li>{t("howPage.chipPool")}</li>
             </ul>
-            <div className="ms-pricing-cta-row">
+            <div className="ms-how-hero-cta">
               <LocalizedLink to={cta.href} className="ms-btn">
                 {t("howPage.cta")} <ArrowRight size={15} aria-hidden />
               </LocalizedLink>
-              <button type="button" className="ms-btn ms-btn-ghost" onClick={scrollToSession}>
+              <button type="button" className="ms-how-see" onClick={scrollToSession}>
                 {t("howPage.seeSession")}
               </button>
             </div>
@@ -272,7 +270,7 @@ export default function HowItWorksPage() {
       </section>
 
       <Footer />
-      <StickyCta />
+      <StickyCta revealOnScroll />
     </div>
   );
 }

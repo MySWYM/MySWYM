@@ -22,7 +22,7 @@ Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif*
 - Plans = moteur `composeSession` + quality gate. Arthur **forme le LLM à entraîner** (règles, catalogues, corrections). Le LLM sert au dev, à améliorer et à varier les séances ; il ne publie pas une séance nageur sans ce filtre. Pas de LLM in-app non cadré.
 - Auth : `/connexion`, `/inscription` (legacy `?auth=` → redirect).
 - Footer global : `src/Footer.jsx` sur toutes les pages.
-- Accès : **essai 7 jours sans carte** à la création du compte (1×) ; ensuite l’app est **gelée** (rien de visible) jusqu’à un abonnement payant. Premium = plans complets, multi-plans, départs `D…`, adaptation feedback.
+- Accès : **essai 7 jours sans carte** à la création du compte (1×) ; ensuite les séances sont **en pause** (rien de visible) jusqu’à un abonnement payant. Premium = plans complets, multi-plans, départs `D…`, adaptation feedback.
 - **Ne jamais régénérer silencieusement les semaines d'un plan existant** (progression utilisateur). `PLAN_VERSION` = métadonnées uniquement ; merge via `shouldPreserveWeek` / `mergePreservingProgress`.
 
 ## Fichiers sensibles
