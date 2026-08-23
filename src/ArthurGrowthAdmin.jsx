@@ -3,7 +3,7 @@
  * Mesure Reel → DM → Lead → Signup → Premium. Pas de relances.
  */
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./supabase.js";
+import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
@@ -19,8 +19,6 @@ const C = {
   cold: "#6b7c8f",
   ok: "#1f7a4c",
 };
-
-const SECRET_KEY = "myswym_arthur_admin_secret";
 
 function ensureFonts() {
   if (typeof document === "undefined") return;
@@ -45,15 +43,8 @@ function bandColor(band) {
 }
 
 export default function ArthurGrowthAdmin() {
+  const { secret, headers: adminHeaders } = useArthurAdmin();
   const [days, setDays] = useState(30);
-  const [secret, setSecret] = useState(() => {
-    try {
-      return sessionStorage.getItem(SECRET_KEY) || "";
-    } catch {
-      return "";
-    }
-  });
-  const [secretDraft, setSecretDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
@@ -67,16 +58,7 @@ export default function ArthurGrowthAdmin() {
       setLoading(true);
       setError("");
       try {
-        const headers = { Accept: "application/json" };
-        const useSecret = opts.secret ?? secret;
-        if (useSecret) {
-          headers["x-myswym-arthur-admin"] = useSecret;
-        } else {
-          const { data: sess } = await supabase.auth.getSession();
-          const token = sess?.session?.access_token;
-          if (token) headers.Authorization = `Bearer ${token}`;
-        }
-
+        const headers = await adminHeaders();
         const params = new URLSearchParams({ days: String(opts.days ?? days) });
         if (opts.sync) params.set("sync", "1");
 
@@ -95,36 +77,18 @@ export default function ArthurGrowthAdmin() {
         setLoading(false);
       }
     },
-    [days, secret],
+    [days, adminHeaders],
   );
 
   useEffect(() => {
-    if (secret) load();
+    load();
   }, [secret]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const saveSecret = (e) => {
-    e.preventDefault();
-    const s = secretDraft.trim();
-    if (!s) return;
-    try {
-      sessionStorage.setItem(SECRET_KEY, s);
-    } catch {
-      /* ignore */
-    }
-    setSecret(s);
-  };
 
   const runSync = async () => {
     setLoading(true);
     setError("");
     try {
-      const headers = { "Content-Type": "application/json" };
-      if (secret) headers["x-myswym-arthur-admin"] = secret;
-      else {
-        const { data: sess } = await supabase.auth.getSession();
-        const token = sess?.session?.access_token;
-        if (token) headers.Authorization = `Bearer ${token}`;
-      }
+      const headers = await adminHeaders();
       const res = await fetch("/api/admin/arthur-growth", {
         method: "POST",
         headers,
@@ -171,7 +135,7 @@ export default function ArthurGrowthAdmin() {
             fontSize: 14,
           }}
         >
-          MySWYM · Arthur AI
+          MySWYM · Admin
         </p>
         <h1
           style={{
@@ -183,97 +147,16 @@ export default function ArthurGrowthAdmin() {
             color: C.deep,
           }}
         >
-          Growth Engine
+          Chiffres
         </h1>
         <p style={{ margin: "8px 0 0", color: C.muted, maxWidth: 520 }}>
-          Attribution Reel → DM → Lead → Signup → Premium. Mesure uniquement —
-          aucune relance automatique (F1).
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <a href="/admin/arthur-followups" style={{ color: C.primary }}>
-            Conversion / relances (F2) →
-          </a>
-          {" · "}
-          <a href="/admin/arthur-optimize" style={{ color: C.primary }}>
-            Optimization (F3) →
-          </a>
-          {" · "}
-          <a href="/admin/arthur-readiness" style={{ color: C.primary }}>
-            Readiness (G) →
-          </a>
+          Combien de messages, d’inscriptions et d’abonnés payants — et d’où ça vient
+          (vidéos Instagram).
         </p>
       </header>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 24px 48px" }}>
-        {!secret && !data ? (
-          <form
-            onSubmit={saveSecret}
-            style={{
-              marginTop: 24,
-              padding: 24,
-              border: `1px solid ${C.line}`,
-              borderRadius: 12,
-              background: "#fff",
-              maxWidth: 420,
-            }}
-          >
-            <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-              Secret admin
-            </label>
-            <input
-              type="password"
-              value={secretDraft}
-              onChange={(e) => setSecretDraft(e.target.value)}
-              placeholder="ARTHUR_ADMIN_SECRET"
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: `1px solid ${C.line}`,
-                fontFamily: FONT,
-                marginBottom: 12,
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                background: C.primary,
-                color: "#fff",
-                border: 0,
-                borderRadius: 8,
-                padding: "10px 16px",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: FONT,
-              }}
-            >
-              Ouvrir le dashboard
-            </button>
-            <p style={{ margin: "12px 0 0", fontSize: 13, color: C.muted }}>
-              Ou connecte-toi avec un compte listé dans{" "}
-              <code>ARTHUR_ADMIN_EMAILS</code>, puis recharge.
-            </p>
-            <button
-              type="button"
-              onClick={() => load()}
-              style={{
-                marginTop: 10,
-                background: "transparent",
-                border: `1px solid ${C.line}`,
-                borderRadius: 8,
-                padding: "8px 12px",
-                cursor: "pointer",
-                fontFamily: FONT,
-              }}
-            >
-              Essayer avec ma session
-            </button>
-          </form>
-        ) : null}
-
-        {secret || data ? (
-          <div
+        <div
             style={{
               display: "flex",
               flexWrap: "wrap",
@@ -310,25 +193,7 @@ export default function ArthurGrowthAdmin() {
             >
               Sync signup / premium
             </button>
-            {secret ? (
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    sessionStorage.removeItem(SECRET_KEY);
-                  } catch {
-                    /* ignore */
-                  }
-                  setSecret("");
-                  setData(null);
-                }}
-                style={{ ...btnStyle, background: C.muted }}
-              >
-                Déconnexion secret
-              </button>
-            ) : null}
           </div>
-        ) : null}
 
         {error ? (
           <p

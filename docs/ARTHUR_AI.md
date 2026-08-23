@@ -57,8 +57,8 @@ Stripe : **inchangé** — Edge Function `create-checkout` appelée avec le JWT 
 | `INSTAGRAM_ACCESS_TOKEN` | Envoi DM Graph API |
 | `INSTAGRAM_BUSINESS_ID` | Optionnel (défaut `me`) |
 | `INSTAGRAM_MOCK=1` | Mock local (pas d’appel Meta) |
-| `ARTHUR_ADMIN_SECRET` | Header `x-myswym-arthur-admin` (dashboard Growth) |
-| `ARTHUR_ADMIN_EMAILS` | Emails admin séparés par virgule (JWT) |
+| `ARTHUR_ADMIN_SECRET` | Header `x-myswym-arthur-admin` (accès technique) |
+| `ARTHUR_ADMIN_EMAILS` | Emails admin JWT (admin@myswym.app est toujours inclus) |
 | `ARTHUR_FOLLOWUPS_SEND` | `1` = autorise envoi relances (OFF par défaut) |
 | `ARTHUR_FOLLOWUPS_SEND_MOCK` | `1` = mock même si SEND=1 (recommandé avant live) |
 
@@ -212,10 +212,10 @@ Reel / keyword
 
 ### Dashboard admin
 
-- URL : `/admin/arthur-growth`
-- API : `GET /api/admin/arthur-growth?days=30`
-- Auth : `ARTHUR_ADMIN_SECRET` (header) **ou** JWT email ∈ `ARTHUR_ADMIN_EMAILS` **ou** `app_metadata.arthur_admin=true`
-- Affiche : funnel, scores, table Reel/campagne, leads récents
+- Portail : `/admin` — une seule connexion pour tous les onglets. Email **admin@myswym.app**, mot de passe = **`ARTHUR_ADMIN_SECRET`** (Vercel / `.env`). La clé est mémorisée dans le navigateur (pas à recoller à chaque page).
+- Auth API : header `x-myswym-arthur-admin` = `ARTHUR_ADMIN_SECRET`, ou JWT email ∈ `ARTHUR_ADMIN_EMAILS` / `admin@myswym.app` / `app_metadata.arthur_admin=true`
+- Pages : `/admin/arthur-shadow` (messages), `/admin/arthur-growth` (stats), `/admin/arthur-followups`, `/admin/arthur-optimize`, `/admin/arthur-readiness`
+- Affiche (Growth) : funnel, scores, table Reel/campagne, leads récents
 - Bouton « Sync signup / premium » uniquement (pas d’envoi de messages)
 
 ```bash
