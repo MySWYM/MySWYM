@@ -102,25 +102,28 @@ export default function ArthurAdminHome() {
   const [followups, setFollowups] = useState(null);
   const [quality, setQuality] = useState(null);
   const [health, setHealth] = useState(null);
+  const [nageurs, setNageurs] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const h = await headers();
       const q = `days=${days}`;
-      const [g, s, f, o, r] = await Promise.all([
+      const [g, s, f, o, r, n] = await Promise.all([
         getJson(`/api/admin/arthur-growth?${q}`, h),
         getJson(`/api/admin/arthur-shadow?status=pending&${q}`, h),
         getJson(`/api/admin/arthur-followups?${q}`, h),
         getJson(`/api/admin/arthur-optimize?${q}`, h),
         getJson("/api/admin/arthur-readiness", h),
+        getJson(`/api/admin/arthur-readiness?nageurs=1&${q}`, h),
       ]);
       setGrowth(g.missing ? null : g);
       setShadow(s.missing ? null : s);
       setFollowups(f.missing ? null : f);
       setQuality(o.missing ? null : o);
       setHealth(r.missing ? null : r);
-      setOffline([g, s, f, o, r].every((x) => x.missing));
+      setNageurs(n.missing ? null : n);
+      setOffline([g, s, f, o, r, n].every((x) => x.missing));
     } catch {
       setOffline(true);
     } finally {
@@ -150,6 +153,10 @@ export default function ArthurAdminHome() {
   const waiting = report.pending ?? 0;
   const reels = growth?.by_reel || growth?.by_reel || [];
   const bestReel = reels[0];
+  const act = nageurs?.activation || {};
+  const usageNageurs = nageurs?.usage || {};
+  const eng = nageurs?.engine || {};
+  const mon = nageurs?.money || {};
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 72px" }}>
@@ -248,6 +255,33 @@ export default function ArthurAdminHome() {
           label="Abonnés payants"
           value={funnel.premium}
           hint="Ils paient l’abonnement."
+        />
+      </Section>
+
+      <Section title="Les nageurs">
+        <Card
+          to="/admin/arthur-nageurs"
+          label="1re séance faite"
+          value={act.first_session}
+          hint="Ils sont vraiment allés à l’eau."
+        />
+        <Card
+          to="/admin/arthur-nageurs"
+          label="Nageurs cette semaine"
+          value={usageNageurs.swimmers_7d}
+          hint="Au moins une séance sur 7 jours."
+        />
+        <Card
+          to="/admin/arthur-nageurs"
+          label="Trop dur"
+          value={eng.too_hard}
+          hint="Retours « trop difficile »."
+        />
+        <Card
+          to="/admin/arthur-nageurs"
+          label="Payent sans séance"
+          value={mon.paying_or_trial_no_session}
+          hint="Essai ou payant, jamais nagé."
         />
       </Section>
 

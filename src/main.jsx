@@ -23,6 +23,7 @@ import { ConversionFlow } from './conversion/ConversionFlow.tsx'
 import SessionPyramidPreview from './SessionPyramidPreview.jsx'
 import ArthurAdminShell from './ArthurAdminShell.jsx'
 import ArthurAdminHome from './ArthurAdminHome.jsx'
+import ArthurNageursAdmin from './ArthurNageursAdmin.jsx'
 import ArthurGrowthAdmin from './ArthurGrowthAdmin.jsx'
 import ArthurFollowupsAdmin from './ArthurFollowupsAdmin.jsx'
 import ArthurOptimizeAdmin from './ArthurOptimizeAdmin.jsx'
@@ -191,6 +192,7 @@ createRoot(document.getElementById('root')).render(
 
         <Route path="/admin" element={<ArthurAdminShell />}>
           <Route index element={<ArthurAdminHome />} />
+          <Route path="arthur-nageurs" element={<ArthurNageursAdmin />} />
           <Route path="arthur-growth" element={<ArthurGrowthAdmin />} />
           <Route path="arthur-followups" element={<ArthurFollowupsAdmin />} />
           <Route path="arthur-optimize" element={<ArthurOptimizeAdmin />} />

@@ -30,9 +30,9 @@ Endpoints :
 - `GET|POST /api/admin/arthur-growth` — Growth Engine F1 (admin)
 - `GET|POST /api/admin/arthur-followups` — Conversion Engine F2 (admin)
 - `GET|POST /api/admin/arthur-optimize` — Optimization Loop F3 (admin)
-- `GET|POST /api/admin/arthur-readiness` — Production Readiness G (admin)
+- `GET|POST /api/admin/arthur-readiness` — Production Readiness G (admin). `?nageurs=1` = cockpit produit (activation, habitude, moteur, argent) sans 13e fonction.
 - `GET|POST /api/admin/arthur-shadow` — Shadow Mode H1 (admin)
-- UI : `/admin/arthur-growth`, `/admin/arthur-followups`, `/admin/arthur-optimize`, `/admin/arthur-readiness`, `/admin/arthur-shadow`
+- UI : `/admin`, `/admin/arthur-nageurs`, `/admin/arthur-growth`, `/admin/arthur-followups`, `/admin/arthur-optimize`, `/admin/arthur-readiness`, `/admin/arthur-shadow`
 
 Stripe : **inchangé** — Edge Function `create-checkout` appelée avec le JWT utilisateur.
 
