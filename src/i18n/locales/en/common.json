@@ -16,6 +16,14 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
+  "stickyBar": {
+    "kicker": "Start today",
+    "title": "Your plan, in the browser",
+    "cta": "Get started",
+    "kickerApp": "You're in",
+    "titleApp": "Back to your sessions",
+    "ctaApp": "My plan"
+  },
   "footer": {
     "tagline": "Personalized swim training plan, ready in 2 minutes.",
     "product": "Product",

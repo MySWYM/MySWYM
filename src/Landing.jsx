@@ -26,18 +26,19 @@ import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib
 import "./landing/landing.css";
 
 const OBJECTIVE_TABS = [
-  { id: "progression", labelKey: "tabProgression", tagKey: "tagLevel", cards: ["p1", "p2", "p3", "p4"], media: "/nagerprogresser-objectif-landing.webp", width: 1672, height: 941 },
+  { id: "progression", labelKey: "tabProgression", tagKey: "tagLevel", kindKey: "kindLevels", cards: ["p1", "p2", "p3", "p4"], media: "/nagerprogresser-objectif-landing.webp", width: 1672, height: 941 },
   {
     id: "triathlon",
     labelKey: "tabTriathlon",
     tagKey: "tagEvent",
+    kindKey: "kindFormats",
     cards: ["t1", "t2", "t3", "t4", "t5"],
     media: "/Triathlon-objectif-landing.webp",
     width: 1672,
     height: 941,
   },
-  { id: "openwater", labelKey: "tabOpenwater", tagKey: "tagDistance", cards: ["w1", "w2", "w3", "w4", "w5", "w6"], media: "/Eaulibre-objectif-landing.webp", width: 1536, height: 1024 },
-  { id: "diploma", labelKey: "tabDiploma", tagKey: "tagDiploma", cards: ["d1", "d2", "d3"], media: "/Sauveteur-objectif-landing.webp", width: 1536, height: 1024 },
+  { id: "openwater", labelKey: "tabOpenwater", tagKey: "tagDistance", kindKey: "kindDistances", cards: ["w1", "w2", "w3", "w4", "w5", "w6"], media: "/Eaulibre-objectif-landing.webp", width: 1536, height: 1024 },
+  { id: "diploma", labelKey: "tabDiploma", tagKey: "tagDiploma", kindKey: "kindDiplomas", cards: ["d1", "d2", "d3"], media: "/Sauveteur-objectif-landing.webp", width: 1536, height: 1024 },
 ];
 
 const INCLUDE_ITEMS = [
@@ -137,25 +138,38 @@ function Hero() {
   );
 }
 
+function cardStep(scroller) {
+  const card = scroller?.querySelector(".lp-obj-card");
+  return card ? card.getBoundingClientRect().width + 16 : (scroller?.clientWidth || 0) * 0.8;
+}
+
 function Objectives() {
   const { t } = useTranslation("landing");
   const cta = usePublicCta();
   const [tabId, setTabId] = useState("progression");
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+  const [cardIndex, setCardIndex] = useState(0);
   const scrollerRef = useRef(null);
+  const activeTab = OBJECTIVE_TABS.find((item) => item.id === tabId) || OBJECTIVE_TABS[0];
+  const cardCount = activeTab.cards.length;
 
   const updateScroll = () => {
     const el = scrollerRef.current;
     if (!el) return;
     setCanPrev(el.scrollLeft > 12);
     setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 12);
+    const step = cardStep(el);
+    if (!step) return;
+    const index = Math.round(el.scrollLeft / step);
+    setCardIndex(Math.min(Math.max(index, 0), el.querySelectorAll(".lp-obj-card").length - 1));
   };
 
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return undefined;
     el.scrollTo({ left: 0 });
+    setCardIndex(0);
     const frame = requestAnimationFrame(updateScroll);
     el.addEventListener("scroll", updateScroll, { passive: true });
     window.addEventListener("resize", updateScroll);
@@ -169,9 +183,13 @@ function Objectives() {
   const scrollByCard = (dir) => {
     const el = scrollerRef.current;
     if (!el) return;
-    const card = el.querySelector(".lp-obj-card");
-    const step = card ? card.getBoundingClientRect().width + 16 : el.clientWidth * 0.8;
-    el.scrollBy({ left: dir * step, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    el.scrollBy({ left: dir * cardStep(el), behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  };
+
+  const scrollToCard = (index) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * cardStep(el), behavior: prefersReducedMotion() ? "auto" : "smooth" });
   };
 
   return (
@@ -194,6 +212,13 @@ function Objectives() {
               </TabsTrigger>
             ))}
           </TabsList>
+          <p className="lp-obj-hint">
+            {t("objectives.hint", {
+              category: t(`objectives.${activeTab.labelKey}`),
+              qty: cardCount,
+              kind: t(`objectives.${activeTab.kindKey}`),
+            })}
+          </p>
         </div>
         {OBJECTIVE_TABS.map((item) => (
           <TabsContent
@@ -245,6 +270,25 @@ function Objectives() {
                   <ChevronRight size={20} />
                 </button>
               </div>
+              {item.id === tabId ? (
+                <div className="lp-obj-pager">
+                  <p className="lp-obj-counter" aria-live="polite">
+                    {t("objectives.counter", { current: cardIndex + 1, total: cardCount })}
+                  </p>
+                  <div className="lp-obj-dots" role="tablist" aria-label={t("objectives.dotsAria")}>
+                    {item.cards.map((key, index) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`lp-obj-dot${index === cardIndex ? " is-active" : ""}`}
+                        aria-label={t("objectives.dotAria", { current: index + 1, total: cardCount })}
+                        aria-current={index === cardIndex ? "true" : undefined}
+                        onClick={() => scrollToCard(index)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </TabsContent>
         ))}
@@ -475,7 +519,7 @@ export default function Landing() {
         <FinalCta />
       </main>
       <Footer />
-      <StickyCta />
+      <StickyCta revealOnScroll />
     </div>
   );
 }

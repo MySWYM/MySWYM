@@ -1,6 +1,22 @@
 /* Pages publiques autour de la landing (tarifs, blog, légal, contact).
    Même DA que .lp-root — fichier séparé pour ne pas toucher landing.css. */
 
+:root {
+  --page-gutter: 2rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --page-gutter: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --page-gutter: 2.5rem;
+  }
+}
+
 .ms-root,
 .ms-header {
   --ms-bg: #000514;
@@ -59,7 +75,8 @@ body:has(.ms-root) {
 .ms-header-inner {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 0 max(1.5rem, env(safe-area-inset-left)) 0 max(1.5rem, env(safe-area-inset-right));
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right));
   height: 3.5rem;
   display: flex;
   align-items: center;
@@ -76,8 +93,8 @@ body:has(.ms-root) {
 
 @media (min-width: 1024px) {
   .ms-header-inner {
-    padding-left: max(2rem, env(safe-area-inset-left));
-    padding-right: max(2rem, env(safe-area-inset-right));
+    padding-left: max(var(--page-gutter), env(safe-area-inset-left));
+    padding-right: max(var(--page-gutter), env(safe-area-inset-right));
   }
 }
 
@@ -92,7 +109,7 @@ body:has(.ms-root) {
   display: block;
   height: 22px;
   width: auto;
-  max-width: min(148px, 52vw);
+  max-width: min(140px, 46vw);
   object-fit: contain;
 }
 
@@ -183,7 +200,7 @@ body:has(.ms-root) {
 .ms-drawer-link:focus-visible,
 .ms-drawer-cta:focus-visible,
 .ms-drawer-ghost:focus-visible,
-.ms-sticky-cta-btn:focus-visible {
+.ms-sticky-cta:focus-visible {
   outline: 2px solid var(--ms-primary, #006bfd);
   outline-offset: 2px;
 }
@@ -406,12 +423,12 @@ body:has(.ms-root) {
   color: var(--ms-fg);
   font-family: var(--ms-sans);
   border-top: 1px solid var(--ms-border);
-  padding: 2.5rem max(1.5rem, env(safe-area-inset-left)) 2rem max(1.5rem, env(safe-area-inset-right));
+  padding: 2.5rem max(var(--page-gutter), env(safe-area-inset-right)) 2rem max(var(--page-gutter), env(safe-area-inset-left));
 }
 
 @media (min-width: 768px) {
   .ms-footer {
-    padding: 4rem max(2rem, env(safe-area-inset-left)) 2.25rem max(2rem, env(safe-area-inset-right));
+    padding: 4rem max(var(--page-gutter), env(safe-area-inset-right)) 2.25rem max(var(--page-gutter), env(safe-area-inset-left));
   }
 }
 
@@ -737,38 +754,70 @@ body:has(.ms-root) {
 }
 
 .ms-sticky-cta-spacer {
-  height: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  height: calc(6.25rem + env(safe-area-inset-bottom, 0px));
 }
 
 .ms-sticky-cta {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
   z-index: 180;
-  padding: 0.75rem max(1.5rem, env(safe-area-inset-right)) max(0.875rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
-  background: color-mix(in srgb, var(--ms-bg, #000514) 92%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--ms-border, rgba(0, 107, 253, 0.22));
-  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.7rem 0.7rem 1.05rem;
+  background: color-mix(in srgb, var(--ms-bg, #000514) 94%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(244, 248, 250, 0.16);
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  text-decoration: none;
+  color: inherit;
+}
+
+.ms-sticky-cta-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ms-sticky-cta-kicker {
+  color: #74b4ff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.ms-sticky-cta-title {
+  color: #f4f8fa;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .ms-sticky-cta-btn {
-  display: flex;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  border-radius: 0.875rem;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 0.85rem;
   background: var(--ms-primary, #006bfd);
   color: var(--ms-primary-fg, #ffffff);
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-family: inherit;
-  text-decoration: none;
+  white-space: nowrap;
 }
 
-.ms-sticky-cta-btn:hover {
+.ms-sticky-cta:hover .ms-sticky-cta-btn {
   filter: brightness(1.08);
 }
 

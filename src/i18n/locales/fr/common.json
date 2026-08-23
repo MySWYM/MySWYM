@@ -16,6 +16,14 @@
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu"
   },
+  "stickyBar": {
+    "kicker": "Crée ton plan maintenant",
+    "title": "",
+    "cta": "Commencer",
+    "kickerApp": "C'est prêt",
+    "titleApp": "Retrouve tes séances",
+    "ctaApp": "Mon plan"
+  },
   "footer": {
     "tagline": "Plan d'entraînement natation personnalisé, prêt en 2 minutes.",
     "product": "Produit",

@@ -7,8 +7,8 @@
   --cc-primary-fg: #ffffff;
   --cc-border: rgba(0, 107, 253, 0.22);
   position: fixed;
-  left: 1rem;
-  right: 1rem;
+  left: max(var(--page-gutter, 2rem), env(safe-area-inset-left));
+  right: max(var(--page-gutter, 2rem), env(safe-area-inset-right));
   bottom: 1rem;
   z-index: 999;
   max-width: 36rem;
@@ -25,7 +25,7 @@
 
 @media (max-width: 767px) {
   .ms-cookie-banner {
-    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
+    bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
