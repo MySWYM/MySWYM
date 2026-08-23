@@ -9,8 +9,13 @@ import {
   cancelReasonFromProperties,
   hoursBetween,
   medianNumber,
+  classifyAdaptation,
+  sessionLabel,
+  paidChurnD30,
+  weeklyVolumeBuckets,
   ratio,
   tally,
+  trialToPaidD7,
   topEntries,
 } from "./nageurs-report.js";
 
@@ -189,6 +194,152 @@ await test("buildNageursReport aggregates funnel, engine, money", async () => {
   assert.equal(report.money.paying_or_trial_no_session, 1);
   assert.equal(report.money.cancel_reasons[0].reason, "pas le temps");
   assert.ok(report.usage.swimmers_7d >= 1);
+});
+
+await test("sessionLabel / classifyAdaptation / weekly buckets / cohorts", () => {
+  assert.equal(sessionLabel({ session_type: "css" }), "css");
+  assert.equal(sessionLabel({ session_payload: { title: "10x100" } }), "10x100");
+  assert.equal(classifyAdaptation({ action: "REDUCE", volume_mul: 1 }), "lowered");
+  assert.equal(classifyAdaptation({ action: "PROTECT" }), "lowered");
+  assert.equal(classifyAdaptation({ action: "PROGRESS" }), "raised");
+  assert.equal(classifyAdaptation({ action: "HOLD" }), "hold");
+  assert.equal(classifyAdaptation({ volume_mul: 1 }), "hold");
+  const buckets = weeklyVolumeBuckets(
+    [
+      { user_id: "a", status: "completed", completed_at: "2026-08-18T00:00:00.000Z", created_at: "2026-08-17T00:00:00.000Z" },
+      { user_id: "a", status: "skipped", created_at: "2026-08-16T00:00:00.000Z" },
+      { user_id: "b", status: "planned", created_at: "2026-08-19T00:00:00.000Z" },
+    ],
+    "2026-08-13T12:00:00.000Z",
+  );
+  assert.equal(buckets.users, 2);
+  assert.equal(buckets.one, 1);
+  assert.equal(buckets.zero, 1);
+  const now = new Date("2026-08-20T12:00:00.000Z");
+  const d7 = trialToPaidD7(
+    [
+      { trial_started_at: "2026-08-01T00:00:00.000Z", subscription_started_at: "2026-08-05T00:00:00.000Z", status: "active" },
+      { trial_started_at: "2026-08-01T00:00:00.000Z", status: "expired" },
+      { trial_started_at: "2026-08-18T00:00:00.000Z", status: "trial" },
+    ],
+    now,
+  );
+  assert.equal(d7.eligible, 2);
+  assert.equal(d7.converted, 1);
+  const d30 = paidChurnD30(
+    [
+      { subscription_started_at: "2026-07-01T00:00:00.000Z", status: "canceled" },
+      { subscription_started_at: "2026-07-01T00:00:00.000Z", status: "active" },
+      { subscription_started_at: "2026-08-15T00:00:00.000Z", status: "active" },
+    ],
+    now,
+  );
+  assert.equal(d30.eligible, 2);
+  assert.equal(d30.churned, 1);
+});
+
+await test("buildNageursReport P0 dropoff, engine slices, weekly, cohorts", async () => {
+  const now = new Date("2026-08-20T12:00:00.000Z");
+  const admin = fakeAdmin({
+    conversion_events: [
+      { user_id: "u1", event_name: "signup_started", created_at: "2026-08-10T00:00:00.000Z" },
+      { user_id: "u1", event_name: "signup_completed", created_at: "2026-08-10T00:10:00.000Z" },
+      { user_id: "u1", event_name: "plan_generated", created_at: "2026-08-10T01:00:00.000Z" },
+      { user_id: "u1", event_name: "first_session_completed", created_at: "2026-08-11T00:00:00.000Z" },
+      { user_id: "u1", event_name: "paywall_shown", created_at: "2026-08-10T02:00:00.000Z" },
+      { user_id: "u1", event_name: "checkout_started", created_at: "2026-08-10T02:05:00.000Z" },
+      { user_id: "u1", event_name: "trial_started", created_at: "2026-08-10T02:10:00.000Z" },
+      { user_id: "u2", event_name: "signup_started", created_at: "2026-08-10T00:00:00.000Z" },
+      { user_id: "u2", event_name: "paywall_shown", created_at: "2026-08-10T03:00:00.000Z" },
+      { user_id: "u2", event_name: "checkout_abandoned", created_at: "2026-08-10T03:30:00.000Z" },
+    ],
+    planned_sessions: [
+      {
+        user_id: "u1",
+        status: "completed",
+        completed_at: "2026-08-18T00:00:00.000Z",
+        created_at: "2026-08-17T00:00:00.000Z",
+        session_type: "endurance",
+        week_index: 2,
+      },
+      {
+        user_id: "u1",
+        status: "skipped",
+        created_at: "2026-08-16T00:00:00.000Z",
+        session_type: "speed",
+        session_payload: { title: "8x50" },
+      },
+      {
+        user_id: "u2",
+        status: "planned",
+        created_at: "2026-08-19T00:00:00.000Z",
+        session_type: "technique",
+      },
+    ],
+    session_feedback: [
+      {
+        user_id: "u1",
+        rating: "too_hard",
+        pain: false,
+        session_type: "css",
+        session_title: "pyramide",
+        week_number: 2,
+        created_at: "2026-08-18T00:00:00.000Z",
+      },
+      {
+        user_id: "u1",
+        rating: "ok",
+        session_type: "endurance",
+        session_title: "200s souples",
+        week_number: 1,
+        created_at: "2026-08-19T00:00:00.000Z",
+      },
+    ],
+    sport_profiles: [
+      { user_id: "u1", level: "sportif", objective: "5km" },
+    ],
+    weekly_adaptations: [
+      { user_id: "u1", action: "REDUCE", volume_mul: 0.9, created_at: "2026-08-19T00:00:00.000Z" },
+      { user_id: "u1", action: "PROGRESS", volume_mul: 1.06, created_at: "2026-08-12T00:00:00.000Z" },
+    ],
+    user_access_state: [
+      {
+        user_id: "u1",
+        status: "active",
+        trial_started_at: "2026-08-01T00:00:00.000Z",
+        subscription_started_at: "2026-08-05T00:00:00.000Z",
+      },
+      {
+        user_id: "u2",
+        status: "expired",
+        trial_started_at: "2026-08-01T00:00:00.000Z",
+      },
+      {
+        user_id: "u3",
+        status: "canceled",
+        subscription_started_at: "2026-07-01T00:00:00.000Z",
+      },
+    ],
+  });
+
+  const report = await buildNageursReport(admin as any, { days: 30, now });
+  assert.equal(report.dropoff.signup_started, 2);
+  assert.equal(report.dropoff.abandoned, 1);
+  assert.ok(report.dropoff.plan_to_first != null);
+  assert.equal(report.usage.weekly.users, 2);
+  assert.equal(report.usage.weekly.one, 1);
+  assert.equal(report.usage.weekly.zero, 1);
+  assert.equal(report.engine.hard_by_level[0].type, "sportif");
+  assert.equal(report.engine.hard_by_goal[0].type, "5km");
+  assert.equal(report.engine.hard_by_week[0].type, "S2");
+  assert.equal(report.engine.top_skipped[0].type, "8x50");
+  assert.equal(report.engine.top_liked[0].type, "200s souples");
+  assert.equal(report.engine.adaptations.lowered, 1);
+  assert.equal(report.engine.adaptations.raised, 1);
+  assert.equal(report.money.d7.eligible, 2);
+  assert.equal(report.money.d7.converted, 1);
+  assert.equal(report.money.d30_churn.eligible, 1);
+  assert.equal(report.money.d30_churn.churned, 1);
 });
 
 console.log("arthur nageurs tests passed");
