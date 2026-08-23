@@ -25,6 +25,10 @@
 
 @media (max-width: 767px) {
   .ms-cookie-banner {
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  body:has(.ms-sticky-cta) .ms-cookie-banner {
     bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
   }
 }

@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     const grantOpts = { userCreatedAt: sourceUser.created_at ?? null };
     let nextState: AccessStateRow;
 
-    // Abo Stripe encore valide → Stripe gagne. Sinon essai 7j sans carte (1×) puis gel.
+    // Abo Stripe encore valide → Stripe gagne. Sinon essai 7j sans carte (1×) puis pause.
     if (customerId) {
       const sub = await findActiveSubscription(customerId);
       if (sub) {

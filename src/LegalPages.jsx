@@ -575,12 +575,12 @@ export function CgvPage() {
         "les fonctionnalités Premium listées sur la page Tarifs au moment de la commande.",
       ]} />
       <P>
-        Sans essai en cours ni abonnement actif, l’application est gelée : aucun plan ni séance n’est visible.
+        Sans essai en cours ni abonnement actif, l’accès aux séances est en pause : aucun plan ni séance n’est visible.
       </P>
 
       <H>3. Offres et prix (TTC)</H>
       <Ul items={[
-        "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est gelé (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
+        "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est interrompu (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
         "Mensuel sans engagement : 9,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
         "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai : engagement d’une durée de 12 mois, facturé chaque mois ; reconduction selon les conditions Stripe / CGV ; les droits légaux du consommateur (rétractation, garanties, litiges) restent applicables.",
         "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
@@ -610,7 +610,7 @@ export function CgvPage() {
 
       <H>6. Renouvellement et résiliation</H>
       <Ul items={[
-        "Pendant l’essai 7 jours sans carte : aucune résiliation Stripe n’est nécessaire ; l’accès s’arrête automatiquement au bout de 7 jours et l’application est gelée.",
+        "Pendant l’essai 7 jours sans carte : aucune résiliation Stripe n’est nécessaire ; l’accès s’arrête automatiquement au bout de 7 jours et l’accès aux séances est en pause.",
         "Mensuel : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
         "Annuel / biennal : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période.",
         "Résiliation : depuis Profil → Paramètres → « Gérer mon abonnement » (portail Stripe), ou via les outils Stripe Customer Portal.",
