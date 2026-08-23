@@ -83,7 +83,7 @@ export function getAccessState(user) {
   };
 }
 
-/** Pas d'essai encore consommé : attendre le sync (il peut accorder 7 jours) avant de geler. */
+/** Pas d'essai encore consommé : attendre le sync (il peut accorder 7 jours) avant de mettre l’accès en pause. */
 export function isAccessMetadataPending(user) {
   if (!user) return false;
   if (getAccessState(user).hasPremiumAccess) return false;
@@ -104,12 +104,12 @@ export function getAccessLabel(accessState) {
     case ACCESS_STATUS.TRIAL:
       return accessState.trialDaysLeft > 0
         ? `Essai Premium · ${accessState.trialDaysLeft} jour${accessState.trialDaysLeft > 1 ? "s" : ""} restant${accessState.trialDaysLeft > 1 ? "s" : ""}`
-        : "Essai terminé — accès gelé";
+        : "Essai terminé — séances en pause";
     case ACCESS_STATUS.ACTIVE:
       return "Premium actif";
     case ACCESS_STATUS.CANCELED:
       return "Premium annulé";
     default:
-      return "Essai terminé — accès gelé";
+      return "Essai terminé — séances en pause";
   }
 }

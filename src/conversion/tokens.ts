@@ -86,7 +86,7 @@ export const LEVELS: { id: LevelId; title: string; subtitle: string }[] = [
 ]
 
 export const FREE_FEATURES = [
-  'Après 7 jours, l’app est gelée',
+  'Après 7 jours, tes séances se mettent en pause',
   'Plus aucun plan ni séance visible',
   'Abonnement requis pour tout revoir',
 ] as const

@@ -33,7 +33,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_how_it_works",
       title: "Fonctionnement de l’app",
       content:
-        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). À la création du compte : essai Premium ${MYSWYM_PRODUCT.trialDays} jours sans carte. Ensuite l’app se gèle (plus aucun plan ni séance visible) jusqu’à l’abonnement. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
+        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). À la création du compte : essai Premium ${MYSWYM_PRODUCT.trialDays} jours sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
       tags: [
         "fonctionne",
         "application",
@@ -50,7 +50,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_pricing",
       title: "Tarifs Premium",
       content:
-        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement, ${MYSWYM_PRODUCT.monthlyCommit}/mois avec engagement 12 mois, ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Après l’essai, l’app se gèle. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
+        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement, ${MYSWYM_PRODUCT.monthlyCommit}/mois avec engagement 12 mois, ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Après l’essai, tes séances se mettent en pause. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
       tags: ["prix", "tarif", "abonnement", "premium", "essai", "mensuel", "annuel"],
       intent_hints: ["subscription", "myswym_question"],
       priority: 100,
@@ -59,7 +59,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Résiliation via le portail client Stripe depuis le compte. L’essai 7 jours sans carte s’arrête tout seul : l’app se gèle, aucun prélèvement. Mensuel 9,99€ : sans engagement, accès jusqu’à la fin de période payée. Mensuel 4,99€ : engagement 12 mois. Annuel 52,99€ : prépaiement, pas de remboursement au prorata hors cas légaux.",
+        "Résiliation via le portail client Stripe depuis le compte. L’essai 7 jours sans carte s’arrête tout seul : tes séances se mettent en pause, aucun prélèvement. Mensuel 9,99€ : sans engagement, accès jusqu’à la fin de période payée. Mensuel 4,99€ : engagement 12 mois. Annuel 52,99€ : prépaiement, pas de remboursement au prorata hors cas légaux.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,
@@ -68,7 +68,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_features",
       title: "Fonctionnalités Premium",
       content:
-        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Essai 7 jours sans carte à l’inscription ; ensuite l’app se gèle jusqu’à l’abonnement.",
+        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Essai 7 jours sans carte à l’inscription ; ensuite tes séances se mettent en pause jusqu’à l’abonnement.",
       tags: ["fonctionnalité", "premium", "plan", "allure", "adaptation"],
       intent_hints: ["myswym_question", "plan_request", "subscription"],
       priority: 85,
