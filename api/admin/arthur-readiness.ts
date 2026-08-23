@@ -18,6 +18,7 @@ import { isFollowupSendEnabled } from "../_lib/arthur-ai/conversion/send.js";
 import { arthurLog } from "../_lib/arthur-ai/logging.js";
 import { asNonEmptyString, isUuid } from "../_lib/arthur-ai/security.js";
 import { buildAuthContext } from "../_lib/arthur-ai/security.js";
+import { buildNageursReport, clampDays } from "../_lib/arthur-ai/product/nageurs-report.js";
 
 export const config = {
   maxDuration: 60,
@@ -107,6 +108,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== "GET") {
       res.setHeader("Allow", "GET, POST");
       return res.status(405).json({ ok: false, error: "Method not allowed" });
+    }
+
+    if (String(req.query.nageurs || "") === "1") {
+      const report = await buildNageursReport(admin, {
+        days: clampDays(req.query.days),
+      });
+      return res.status(200).json({ ok: true, nageurs: true, ...report });
     }
 
     const report = await buildReadinessReport(admin);

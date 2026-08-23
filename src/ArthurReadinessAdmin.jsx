@@ -1,8 +1,9 @@
 /**
- * Dashboard Production Readiness Arthur AI (Phase G).
+ * Coulisses — Instagram, plus tard Ollama / Telegram, contrôles de prod.
  */
 import { useCallback, useEffect, useState } from "react";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
+import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 const FONT = "'Lexend', sans-serif";
 const FONT_DISPLAY = "'Barlow Condensed', sans-serif";
@@ -43,9 +44,18 @@ export default function ArthurReadinessAdmin() {
     setError("");
     try {
       const headers = await adminHeaders();
-      const res = await fetch("/api/admin/arthur-readiness", { headers });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      const json = await adminGetJson("/api/admin/arthur-readiness", headers);
+      if (json.missing) {
+        setData(null);
+        setError(
+          json.auth
+            ? json.error || "Accès refusé"
+            : json.offline
+              ? "APIs inaccessibles en local. Relance npm run dev (proxy staging)."
+              : json.error || "Impossible de charger les coulisses.",
+        );
+        return;
+      }
       setData(json);
     } catch (err) {
       setData(null);
@@ -72,7 +82,7 @@ export default function ArthurReadinessAdmin() {
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Release échoué");
+      setError(err instanceof Error ? err.message : "Impossible de rendre la conversation");
       setLoading(false);
     }
   };
@@ -114,11 +124,11 @@ export default function ArthurReadinessAdmin() {
             color: C.deep,
           }}
         >
-          Santé
+          Coulisses
         </h1>
         <p style={{ color: C.muted, maxWidth: 560, marginTop: 8 }}>
-          Est-ce que tout tourne bien : coûts, limites, et si tu as repris une
-          conversation à la main.
+          Les branchements : Instagram, plus tard Ollama et Telegram. Et si tu as
+          repris une conversation à la main. Rien de quotidien ici.
         </p>
       </header>
 
@@ -138,10 +148,38 @@ export default function ArthurReadinessAdmin() {
           </p>
         ) : null}
 
+        <section
+          style={{
+            marginBottom: 24,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+          }}
+        >
+          <div style={card}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Instagram</div>
+            <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
+              Mode test : Arthur propose, tu envoies. L’envoi auto doit rester éteint.
+            </p>
+          </div>
+          <div style={card}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Ollama</div>
+            <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
+              Brouillons en local — pas encore branché. Tu verras ici s’il est allumé.
+            </p>
+          </div>
+          <div style={card}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Telegram</div>
+            <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
+              Pour répondre depuis ta chat box — pas encore branché.
+            </p>
+          </div>
+        </section>
+
         {data ? (
           <>
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Scale readiness</h2>
+              <h2 style={h2}>Prêt à encaisser plus de messages</h2>
               <div
                 style={{
                   display: "inline-block",
@@ -152,16 +190,17 @@ export default function ArthurReadinessAdmin() {
                   background: "#fff",
                 }}
               >
-                ready_for_scale = {String(!!data.ready_for_scale)}
+                {data.ready_for_scale ? "Oui, on peut monter" : "Pas encore"}
               </div>
               <p style={{ color: C.muted, fontSize: 13, marginTop: 8 }}>
-                followups_send_mode = {data.followups_send_mode} (doit rester blocked
-                jusqu’à validation)
+                Relances : {data.followups_send_mode === "blocked" || !data.followups_send_mode
+                  ? "envoi bloqué (normal)"
+                  : String(data.followups_send_mode)}
               </p>
             </section>
 
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Checks</h2>
+              <h2 style={h2}>Contrôles</h2>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {checks.map((c) => (
                   <li
@@ -179,7 +218,7 @@ export default function ArthurReadinessAdmin() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Feature flags</h2>
+              <h2 style={h2}>Interrupteurs</h2>
               <div
                 style={{
                   display: "grid",
@@ -210,13 +249,13 @@ export default function ArthurReadinessAdmin() {
                 soft {data.cost_budget?.softRatio}
               </p>
               <p style={{ fontWeight: 700 }}>
-                Status : {cost?.level} — day ${cost?.dayCost} / month ${cost?.monthCost}
+                État : {cost?.level} — jour ${cost?.dayCost} / mois ${cost?.monthCost}
               </p>
               <div style={{ overflowX: "auto", marginTop: 8 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: C.deep, color: "#fff", textAlign: "left" }}>
-                      {["Jour", "Req", "Cost", "Offline", "RateLtd", "Takeover"].map((h) => (
+                      {["Jour", "Requêtes", "Coût", "Hors-ligne", "Limité", "Reprises"].map((h) => (
                         <th key={h} style={{ padding: "8px 10px" }}>
                           {h}
                         </th>
@@ -246,7 +285,7 @@ export default function ArthurReadinessAdmin() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-              <h2 style={h2}>Rate limits</h2>
+              <h2 style={h2}>Plafonds</h2>
               <p style={{ color: C.muted }}>
                 {data.rate_limits?.perHour}/h · {data.rate_limits?.perDay}/jour
               </p>
@@ -254,7 +293,7 @@ export default function ArthurReadinessAdmin() {
 
             <section style={{ marginBottom: 24 }}>
               <h2 style={h2}>
-                Human takeovers actifs ({data.active_takeover_count ?? 0})
+                Conversations reprises à la main ({data.active_takeover_count ?? 0})
               </h2>
               <div style={{ overflowX: "auto", border: `1px solid ${C.line}`, borderRadius: 10 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -295,7 +334,7 @@ export default function ArthurReadinessAdmin() {
                             onClick={() => release(t.conversation_id)}
                             style={{ ...btn(C.ok), padding: "4px 8px", fontSize: 12 }}
                           >
-                            Release
+                            Rendre
                           </button>
                         </td>
                       </tr>
@@ -303,7 +342,7 @@ export default function ArthurReadinessAdmin() {
                     {(data.active_takeovers || []).length === 0 ? (
                       <tr>
                         <td colSpan={5} style={{ ...td, color: C.muted }}>
-                          Aucun takeover actif
+                          Aucune conversation reprise
                         </td>
                       </tr>
                     ) : null}
@@ -313,7 +352,7 @@ export default function ArthurReadinessAdmin() {
             </section>
 
             <section>
-              <h2 style={h2}>Checklist scaling</h2>
+              <h2 style={h2}>Avant d’ouvrir les vannes</h2>
               <ul style={{ color: C.muted, fontSize: 14 }}>
                 {(data.scaling_checklist || []).map((item) => (
                   <li key={item}>{item}</li>
