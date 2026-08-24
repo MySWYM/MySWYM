@@ -85,6 +85,53 @@ test("telegram update extract + reply-to code", () => {
   assert.equal(isOperatorChat(111, ""), false);
 });
 
+test("leading-zero short code and quote reply", () => {
+  const text = formatOperatorNotify({
+    shortCode: "082866fb",
+    displayName: "Lison",
+    email: "lison@test.com",
+    body: "Salut",
+    isNew: true,
+  });
+  assert.equal(parseSupportCodeFromText(text), "082866fb");
+
+  const quoted = extractTelegramMessage({
+    update_id: 7,
+    message: {
+      message_id: 20,
+      chat: { id: 111 },
+      from: { id: 111 },
+      text: "Hello",
+      quote: { text: "Salut" },
+      reply_parameters: { message_id: 19, quote: { text: "Salut" } },
+      reply_to_message: {
+        message_id: 19,
+        text,
+      },
+    },
+  });
+  assert.ok(quoted);
+  assert.equal(quoted.text, "Hello");
+  assert.equal(quoted.replyToMessageId, 19);
+  assert.equal(parseSupportCodeFromText(quoted.replyToText), "082866fb");
+});
+
+test("business_message and reply_parameters without reply_to_message", () => {
+  const inbound = extractTelegramMessage({
+    update_id: 8,
+    business_message: {
+      message_id: 21,
+      chat: { id: 111 },
+      from: { id: 111 },
+      text: "Tu as besoin d’aide ?",
+      reply_parameters: { message_id: 19 },
+    },
+  });
+  assert.ok(inbound);
+  assert.equal(inbound.replyToMessageId, 19);
+  assert.equal(inbound.text, "Tu as besoin d’aide ?");
+});
+
 test("notify format is replyable", () => {
   const text = formatOperatorNotify({
     shortCode: "deadbeef",

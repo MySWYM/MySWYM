@@ -249,11 +249,14 @@ async function notifyOperator(
   });
   const sent = await port.sendMessage(chatId, text);
   if (!sent?.messageId) return;
-  await admin.from("support_telegram_outbound").insert({
+  const { error } = await admin.from("support_telegram_outbound").insert({
     telegram_chat_id: Number(chatId),
     telegram_message_id: sent.messageId,
     conversation_id: input.conversation.id,
   });
+  if (error) {
+    console.error("[support] outbound map", error.message);
+  }
 }
 
 export async function loadSupportForUser(
@@ -351,7 +354,7 @@ export async function sendSupportMessage(input: {
     telegram: input.telegram,
   });
 
-  return loadSupportForUser(input.userId, admin);
+  return loadSupportForUser(input.userId, admin, conversation.id);
 }
 
 async function lastOutboundMessageId(
@@ -445,25 +448,42 @@ async function findConversationByShortCode(
   return { ...mapConversation(data), user_id: String(data.user_id) };
 }
 
+async function loadConversationById(
+  admin: SupabaseClient,
+  conversationId: string,
+): Promise<(SupportConversation & { user_id: string }) | null> {
+  const { data: conv } = await admin
+    .from("support_conversations")
+    .select("id, user_id, short_code, status, closed_at, closed_by, created_at, updated_at")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conv) return null;
+  return { ...mapConversation(conv), user_id: String(conv.user_id) };
+}
+
 async function findConversationByOutbound(
   admin: SupabaseClient,
   chatId: number,
   messageId: number,
 ): Promise<(SupportConversation & { user_id: string }) | null> {
-  const { data } = await admin
+  const { data: withChat } = await admin
     .from("support_telegram_outbound")
     .select("conversation_id")
     .eq("telegram_chat_id", chatId)
     .eq("telegram_message_id", messageId)
     .maybeSingle();
-  if (!data?.conversation_id) return null;
-  const { data: conv } = await admin
-    .from("support_conversations")
-    .select("id, user_id, short_code, status, closed_at, closed_by, created_at, updated_at")
-    .eq("id", data.conversation_id)
+  if (withChat?.conversation_id) {
+    return loadConversationById(admin, String(withChat.conversation_id));
+  }
+  const { data: byMessage } = await admin
+    .from("support_telegram_outbound")
+    .select("conversation_id")
+    .eq("telegram_message_id", messageId)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  if (!conv) return null;
-  return { ...mapConversation(conv), user_id: String(conv.user_id) };
+  if (!byMessage?.conversation_id) return null;
+  return loadConversationById(admin, String(byMessage.conversation_id));
 }
 
 async function findLatestOutboundConversation(
@@ -478,21 +498,33 @@ async function findLatestOutboundConversation(
     .limit(1)
     .maybeSingle();
   if (!data?.conversation_id) return null;
-  const { data: conv } = await admin
+  return loadConversationById(admin, String(data.conversation_id));
+}
+
+async function findLatestOpenConversation(
+  admin: SupabaseClient,
+): Promise<(SupportConversation & { user_id: string }) | null> {
+  const { data } = await admin
     .from("support_conversations")
     .select("id, user_id, short_code, status, closed_at, closed_by, created_at, updated_at")
-    .eq("id", data.conversation_id)
+    .eq("status", "open")
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  if (!conv) return null;
-  return { ...mapConversation(conv), user_id: String(conv.user_id) };
+  if (!data) return null;
+  return { ...mapConversation(data), user_id: String(data.user_id) };
 }
 
 async function resolveInboundConversation(
   admin: SupabaseClient,
   inbound: TelegramInbound,
   shortCode?: string,
+  allowFallback = true,
 ): Promise<(SupportConversation & { user_id: string }) | null> {
-  if (shortCode) return findConversationByShortCode(admin, shortCode);
+  if (shortCode) {
+    const tagged = await findConversationByShortCode(admin, shortCode);
+    if (tagged) return tagged;
+  }
   if (inbound.replyToMessageId) {
     const fromReply = await findConversationByOutbound(
       admin,
@@ -501,9 +533,20 @@ async function resolveInboundConversation(
     );
     if (fromReply) return fromReply;
   }
-  const fromText = parseSupportCodeFromText(inbound.replyToText);
-  if (fromText) return findConversationByShortCode(admin, fromText);
-  return findLatestOutboundConversation(admin, inbound.chatId);
+  const fromReplyText = parseSupportCodeFromText(inbound.replyToText);
+  if (fromReplyText) {
+    const tagged = await findConversationByShortCode(admin, fromReplyText);
+    if (tagged) return tagged;
+  }
+  const fromBody = parseSupportCodeFromText(inbound.text);
+  if (fromBody) {
+    const tagged = await findConversationByShortCode(admin, fromBody);
+    if (tagged) return tagged;
+  }
+  if (!allowFallback) return null;
+  const latestOutbound = await findLatestOutboundConversation(admin, inbound.chatId);
+  if (latestOutbound) return latestOutbound;
+  return findLatestOpenConversation(admin);
 }
 
 export async function handleOperatorInbound(input: {
@@ -523,7 +566,12 @@ export async function handleOperatorInbound(input: {
   const conversation = await resolveInboundConversation(
     admin,
     inbound,
-    cmd.type === "close" ? cmd.shortCode : parseSupportCodeFromText(inbound.replyToText) || undefined,
+    cmd.type === "close"
+      ? cmd.shortCode
+      : parseSupportCodeFromText(inbound.replyToText) ||
+          parseSupportCodeFromText(inbound.text) ||
+          undefined,
+    cmd.type !== "close",
   );
 
   if (!conversation) {
