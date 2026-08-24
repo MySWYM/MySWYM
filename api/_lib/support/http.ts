@@ -11,6 +11,7 @@ import {
   loadSupportForUser,
   sendSupportMessage,
 } from "./service.js";
+import { allowSupportSend, RATE_LIMIT_MESSAGE } from "./rate-limit.js";
 import {
   extractTelegramMessage,
   isOperatorChat,
@@ -149,6 +150,11 @@ export async function handleSupportHttp(
       const message = asNonEmptyString(body.message, 2000);
       if (!message) {
         json(res, 400, { ok: false, error: "message requis" });
+        return;
+      }
+      const allowed = await allowSupportSend(auth.userId);
+      if (!allowed) {
+        json(res, 429, { ok: false, error: RATE_LIMIT_MESSAGE });
         return;
       }
       const snap = await sendSupportMessage({

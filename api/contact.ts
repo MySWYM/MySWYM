@@ -19,6 +19,7 @@ import {
   isContactTelegramConfigured,
   sendContactTelegramMessage,
 } from "./_lib/support/telegram.js";
+import { allowContactNotify, RATE_LIMIT_MESSAGE } from "./_lib/support/rate-limit.js";
 
 const MAX_NAME = 120;
 const MAX_REVIEW_NAME = 80;
@@ -167,6 +168,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (!message || message.length > MAX_MESSAGE) {
     return res.status(400).json({ ok: false, error: "Message invalide" });
+  }
+
+  const allowed = await allowContactNotify(req, email);
+  if (!allowed) {
+    return res.status(429).json({ ok: false, error: RATE_LIMIT_MESSAGE });
   }
 
   const apiKey = process.env.RESEND_API_KEY;
