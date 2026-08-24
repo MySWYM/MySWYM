@@ -23,7 +23,7 @@ import {
   missedSessionPolicy,
 } from "./lib/sports-engine/index.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
-import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress } from "./lib/plan-progress-merge.js";
+import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress, planProgressScore, loopSessionNeedsAdvance } from "./lib/plan-progress-merge.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -1117,11 +1117,6 @@ const formatSessionPlainText = (session) => {
 const planFingerprint = (entry) => {
   const p = entry?.profile ?? {};
   return [p.category, p.goal, p.eventDate, p.level, p.pool, p.sessionsPerWeek].join("|");
-};
-
-const planProgressScore = (entry) => {
-  if (!entry?.plan?.weeks) return 0;
-  return entry.plan.weeks.reduce((n, w) => n + (w.sessions?.filter(isSessionResolved).length ?? 0), 0);
 };
 
 const dedupePlans = (plans) => {
@@ -8382,6 +8377,7 @@ const ProgressionLoopView = ({
   activePlanId,
   isPremium,
   onComplete,
+  onAdvanceLoop,
   onSwitchPlan,
   onAddPlan,
   onDeletePlan,
@@ -8557,6 +8553,32 @@ const ProgressionLoopView = ({
           </div>
         )}
 
+        {resolved && isPremium && (
+          <div style={{
+            background: G.mintLight, borderRadius: 16, padding: "16px", marginBottom: 14,
+            border: `1px solid ${G.mint}33`,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Check size={16} color={G.mint} />
+              <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Séance terminée</div>
+            </div>
+            <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45, margin: "0 0 12px" }}>
+              Cette séance est déjà validée. Passe à la suivante pour continuer.
+            </p>
+            <button
+              type="button"
+              onClick={() => onAdvanceLoop?.()}
+              style={{
+                width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
+                border: "none", background: G.blue, color: G.white,
+                fontSize: 14, fontWeight: 800, minHeight: 48,
+              }}
+            >
+              Passer à la séance suivante
+            </button>
+          </div>
+        )}
+
         {!isPremium && (
           <div style={{
             background: G.blueLight, borderRadius: 16, padding: "16px", marginBottom: 14,
@@ -8699,7 +8721,7 @@ const PlanSelector = ({
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 const PlanTab = ({
-  plan, profile, isPremium, onComplete, onShare, onEditFeedback, onReset, onUpgrade,
+  plan, profile, isPremium, onComplete, onAdvanceLoop, onShare, onEditFeedback, onReset, onUpgrade,
   plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram,
   user, onOpenMenu, onTabChange,
   addingPlan = false, onboardingProps = null, onCancelAddPlan = null,
@@ -8771,6 +8793,7 @@ const PlanTab = ({
         activePlanId={activePlanId}
         isPremium={isPremium}
         onComplete={(status) => onComplete(0, 0, status)}
+        onAdvanceLoop={onAdvanceLoop}
         onSwitchPlan={onSwitchPlan}
         onAddPlan={onAddPlan}
         onDeletePlan={onDeletePlan}
@@ -11737,6 +11760,41 @@ const withLoopGenerationCounters = (plan, premium) => {
   };
 };
 
+const loopSessionKey = (s) => (s ? `${s.title || ""}|${s.distance || ""}` : "");
+
+/** Archive + génère la séance suivante. Idempotent si la séance est déjà dans l'historique. */
+const buildAdvancedLoopPlan = (entryPlan, entryProfile, archivedSession, isPremium, tasteProfile) => {
+  const prevHist = entryPlan.history || [];
+  const alreadyInHist = !!(archivedSession && prevHist.some(
+    (s) => loopSessionKey(s) === loopSessionKey(archivedSession),
+  ));
+  const history = alreadyInHist || !archivedSession
+    ? prevHist
+    : [...prevHist, { ...archivedSession, archivedAt: new Date().toISOString() }];
+  const base = { ...entryPlan, history };
+  const gate = loopCanGenerateNext(base, isPremium);
+  if (!gate.ok) {
+    return { plan: { ...base, weeks: entryPlan.weeks, loopBlocked: gate.reason }, blockedReason: gate.reason };
+  }
+  const nextCursor = Math.max(
+    (entryPlan.sessionCursor ?? 0) + (alreadyInHist ? 0 : 1),
+    history.length,
+  );
+  const { week } = buildProgressionLoopSession(
+    { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
+    nextCursor,
+    isPremium,
+  );
+  let next = {
+    ...base,
+    sessionCursor: nextCursor,
+    weeks: [week],
+    loopBlocked: null,
+  };
+  next = withLoopGenerationCounters(next, isPremium);
+  return { plan: next, blockedReason: null };
+};
+
 // ── APP ───────────────────────────────────────────────────────────────────
 const BLANK_PROFILE = {
   category: "",
@@ -11831,6 +11889,8 @@ export default function App() {
   const deletedPlanIdsRef = useRef(new Set());
   /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
+  /** Évite un double enchaînement (effet + bouton, Strict Mode). */
+  const loopAdvanceKeyRef = useRef(null);
   /** Reprise questionnaire → checkout / génération après auth ou Stripe (évite stale closures). */
   const resumePendingRef = useRef(async () => false);
 
@@ -12759,39 +12819,30 @@ export default function App() {
     return () => { cancelled = true; };
   }, [user?.id, screen, isPremium, plans.length]);
 
-  // Boucle progression : déblocage auto (Premium ou nouvelle semaine calendaire)
+  // Boucle progression : déblocage auto + filet « séance validée sans enchaînement » (reload après feedback)
+  const loopCurrentResolved = loopSessionNeedsAdvance(plan);
   useEffect(() => {
-    if (screen !== "app" || !plan?.isSessionLoop || !plan.loopBlocked) return;
+    if (screen !== "app" || !plan?.isSessionLoop) return;
+    if (sessionFeedbackTarget !== null) return;
+    const cur = plan.weeks?.[0]?.sessions?.[0];
+    if (!cur || !isSessionResolved(cur)) return;
     const gate = loopCanGenerateNext(plan, isPremium);
     if (!gate.ok && !isPremium) return;
-    const cur = plan.weeks?.[0]?.sessions?.[0];
-    if (cur && !isSessionResolved(cur)) return;
     const entry = plans.find((e) => e.id === activePlanId);
     if (!entry) return;
-    const archived = cur || (plan.history || []).slice(-1)[0];
-    if (!archived) return;
-    // Si déjà dans history (cas blocked), ne pas re-archiver
-    const alreadyInHist = (plan.history || []).some(
-      (s) => s.archivedAt && s.title === archived.title && s.distance === archived.distance,
-    );
-    const hist = alreadyInHist ? (plan.history || []) : [...(plan.history || []), { ...archived, archivedAt: new Date().toISOString() }];
-    const nextCursor = (plan.sessionCursor ?? 0) + 1;
-    const { week } = buildProgressionLoopSession(
-      { ...entry.profile, sessionsPerWeek: 1, taste: plan.taste || tasteProfile, volumeAdj: plan.volumeAdj },
-      nextCursor,
+    const key = `${activePlanId}:${plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
+    if (loopAdvanceKeyRef.current === key) return;
+    loopAdvanceKeyRef.current = key;
+    const { plan: next, blockedReason } = buildAdvancedLoopPlan(
+      entry.plan,
+      entry.profile,
+      cur,
       isPremium,
+      plan.taste || tasteProfile,
     );
-    let next = {
-      ...plan,
-      history: hist,
-      sessionCursor: nextCursor,
-      weeks: [week],
-      loopBlocked: null,
-    };
-    next = withLoopGenerationCounters(next, isPremium);
     setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: next } : e)));
-    setLoopPaywall(null);
-  }, [screen, isPremium, plan?.loopBlocked, plan?.weekGenKey, activePlanId]);
+    setLoopPaywall(blockedReason);
+  }, [screen, isPremium, loopCurrentResolved, plan?.loopBlocked, sessionFeedbackTarget, activePlanId]);
 
   useEffect(() => {
     if (!plan) return;
@@ -13099,30 +13150,15 @@ export default function App() {
   resumePendingRef.current = resumePendingOnboarding;
 
   const advanceProgressionLoop = (entryPlan, entryProfile, archivedSession) => {
-    const history = [...(entryPlan.history || []), {
-      ...archivedSession,
-      archivedAt: new Date().toISOString(),
-    }];
-    const base = { ...entryPlan, history };
-    const gate = loopCanGenerateNext(base, isPremium);
-    if (!gate.ok) {
-      setLoopPaywall(gate.reason);
-      // Garde la séance résolue visible — pas de nouvelle génération
-      return { ...base, weeks: entryPlan.weeks, loopBlocked: gate.reason };
-    }
-    const nextCursor = (entryPlan.sessionCursor ?? 0) + 1;
-    const { week } = buildProgressionLoopSession(
-      { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
-      nextCursor,
+    const { plan: next, blockedReason } = buildAdvancedLoopPlan(
+      entryPlan,
+      entryProfile,
+      archivedSession,
       isPremium,
+      entryPlan.taste || tasteProfile,
     );
-    let next = {
-      ...base,
-      sessionCursor: nextCursor,
-      weeks: [week],
-      loopBlocked: null,
-    };
-    next = withLoopGenerationCounters(next, isPremium);
+    if (blockedReason) setLoopPaywall(blockedReason);
+    else setLoopPaywall(null);
     return next;
   };
 
@@ -13138,6 +13174,14 @@ export default function App() {
       };
       return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
     }));
+  };
+
+  const handleAdvanceLoopSession = () => {
+    const entry = plans.find((e) => e.id === activePlanId);
+    const cur = entry?.plan?.weeks?.[0]?.sessions?.[0];
+    if (!entry?.plan?.isSessionLoop || !cur || !isSessionResolved(cur)) return;
+    loopAdvanceKeyRef.current = `${activePlanId}:${entry.plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
+    finishLoopSessionAndAdvance(cur);
   };
 
   const handleRegenerateLoopSession = () => {
@@ -14196,7 +14240,7 @@ export default function App() {
           </div>
         )}
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
           setStep,

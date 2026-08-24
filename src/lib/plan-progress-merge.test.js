@@ -6,6 +6,8 @@ import {
   isSessionResolved,
   shouldPreserveWeek,
   mergePreservingProgress,
+  planProgressScore,
+  loopSessionNeedsAdvance,
 } from "./plan-progress-merge.js";
 
 function assert(cond, msg) {
@@ -112,6 +114,42 @@ function assert(cond, msg) {
   const merged = mergePreservingProgress([], [{ sessions: [{ title: "New" }] }]);
   assert(merged[0].sessions[0].title === "New", "no old week → new");
   console.log("merge missing old week PASS");
+}
+
+{
+  const classic = {
+    plan: {
+      weeks: [{ sessions: [{ completed: true }, { completed: false }] }],
+    },
+  };
+  assert(planProgressScore(classic) === 1, "classic weeks only");
+  assert(planProgressScore({ plan: null }) === 0, "no plan");
+  console.log("planProgressScore classic PASS");
+}
+
+{
+  const stuck = {
+    plan: {
+      isSessionLoop: true,
+      sessionCursor: 0,
+      history: [],
+      weeks: [{ sessions: [{ title: "A", distance: "1500m", completed: true }] }],
+    },
+  };
+  const advanced = {
+    plan: {
+      isSessionLoop: true,
+      sessionCursor: 1,
+      history: [{ title: "A", distance: "1500m", completed: true }],
+      weeks: [{ sessions: [{ title: "B", distance: "1600m", completed: false }] }],
+    },
+  };
+  assert(planProgressScore(stuck) === 1, "stuck = current resolved only");
+  assert(planProgressScore(advanced) === 1010, "advanced = cursor 1 + hist 1");
+  assert(planProgressScore(advanced) > planProgressScore(stuck), "advanced beats stuck on merge");
+  assert(loopSessionNeedsAdvance(stuck.plan) === true, "stuck needs advance");
+  assert(loopSessionNeedsAdvance(advanced.plan) === false, "open next session does not");
+  console.log("planProgressScore loop stuck vs advanced PASS");
 }
 
 console.log("\n✅ plan-progress-merge tests passed");
