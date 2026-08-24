@@ -6,6 +6,7 @@ import { createArthurUserClient } from "../arthur-ai/supabase.js";
 import { asNonEmptyString, isUuid } from "../arthur-ai/security.js";
 import {
   closeSupportConversation,
+  getSupportAdmin,
   handleOperatorInbound,
   loadSupportForUser,
   sendSupportMessage,
@@ -121,7 +122,13 @@ export async function handleSupportHttp(
 
   try {
     if (req.method === "GET") {
-      const snap = await loadSupportForUser(auth.userId);
+      const raw = req.query?.conversationId;
+      const requested = asNonEmptyString(Array.isArray(raw) ? raw[0] : raw, 64);
+      const snap = await loadSupportForUser(
+        auth.userId,
+        getSupportAdmin(),
+        requested && isUuid(requested) ? requested : undefined,
+      );
       json(res, 200, { ok: true, ...snap });
       return;
     }

@@ -52,6 +52,18 @@ export function formatOperatorNotify(input: {
   ].join("\n");
 }
 
+export function formatOperatorClosed(input: {
+  shortCode: string;
+  displayName: string;
+  email?: string | null;
+}): string {
+  const who = [input.displayName, input.email].filter(Boolean).join(" · ");
+  return [
+    `✅ Support · ${input.shortCode}`,
+    `${who || "Nageur"} a clôturé la conversation dans l’app.`,
+  ].join("\n");
+}
+
 export function parseSupportCodeFromText(text: string): string | null {
   const raw = String(text || "");
   const tagged = raw.match(/Support[^\n]*\b([a-f0-9]{8})\b/i);
