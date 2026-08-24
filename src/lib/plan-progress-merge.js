@@ -11,6 +11,37 @@ export function isSessionResolved(session) {
   return !!(session.completed || session.skipped);
 }
 
+function countResolvedInWeeks(plan) {
+  return (plan?.weeks || []).reduce(
+    (n, w) => n + (w.sessions?.filter(isSessionResolved).length ?? 0),
+    0,
+  );
+}
+
+/**
+ * Score de fusion local/remote.
+ * Boucle « une séance à la fois » : le curseur + l'historique doivent battre
+ * une séance courante seulement marquée completed (état coincé après feedback).
+ * Plans multi-semaines : inchangé (nombre de séances validées).
+ */
+export function planProgressScore(entry) {
+  const plan = entry?.plan;
+  if (!plan?.weeks) return 0;
+  const weekResolved = countResolvedInWeeks(plan);
+  if (plan.isSessionLoop) {
+    const cursor = Number(plan.sessionCursor) || 0;
+    const hist = Array.isArray(plan.history) ? plan.history.length : 0;
+    return cursor * 1000 + hist * 10 + weekResolved;
+  }
+  return weekResolved;
+}
+
+/** Séance boucle affichée déjà validée — il faut enchaîner vers la suivante. */
+export function loopSessionNeedsAdvance(plan) {
+  if (!plan?.isSessionLoop) return false;
+  return isSessionResolved(plan.weeks?.[0]?.sessions?.[0]);
+}
+
 /** Garde une semaine dès qu'il y a du progrès, un feedback ou une satisfaction. */
 export function shouldPreserveWeek(week) {
   if (!week) return false;
