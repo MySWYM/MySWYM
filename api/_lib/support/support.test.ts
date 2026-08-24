@@ -19,6 +19,7 @@ import {
 } from "./parse.js";
 import { isSupportRequest } from "./http.js";
 import { attachLastMessages } from "./preview.js";
+import { hashBucketPart, windowStartIso } from "./rate-limit.js";
 
 test("http module loads (ESM exports)", () => {
   assert.equal(typeof isSupportRequest, "function");
@@ -181,6 +182,15 @@ test("landing contact notify is email-only, not a support thread", () => {
 test("ignore non-telegram contact payloads", () => {
   assert.equal(isTelegramUpdate({ name: "A", email: "a@b.c", message: "hi" }), false);
   assert.equal(extractTelegramMessage({ foo: 1 }), null);
+});
+
+test("rate-limit windows are stable buckets", () => {
+  const t0 = Date.UTC(2026, 7, 24, 12, 0, 0);
+  assert.equal(windowStartIso(600, t0), windowStartIso(600, t0 + 599_999));
+  assert.notEqual(windowStartIso(600, t0), windowStartIso(600, t0 + 600_000));
+  assert.equal(hashBucketPart("a@b.c").length, 16);
+  assert.equal(hashBucketPart("a@b.c"), hashBucketPart("a@b.c"));
+  assert.notEqual(hashBucketPart("a@b.c"), hashBucketPart("c@b.a"));
 });
 
 function test(name: string, fn: () => void) {
