@@ -66,7 +66,7 @@ export function formatOperatorClosed(input: {
 
 export function parseSupportCodeFromText(text: string): string | null {
   const raw = String(text || "");
-  const tagged = raw.match(/Support[^\n]*\b([a-f0-9]{8})\b/i);
+  const tagged = raw.match(/Support[^\n]{0,80}?([a-f0-9]{8})(?![a-f0-9])/i);
   if (tagged) return tagged[1].toLowerCase();
   return null;
 }
@@ -105,10 +105,30 @@ export type TelegramInbound = {
   replyToText: string;
 };
 
+function telegramFieldText(obj: Record<string, unknown> | undefined): string {
+  if (!obj || typeof obj !== "object") return "";
+  return [obj.text, obj.caption]
+    .map((part) => String(part || "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+function quotedSnippet(obj: Record<string, unknown> | undefined): string {
+  if (!obj || typeof obj !== "object") return "";
+  const quote = obj.quote as { text?: unknown } | undefined;
+  const params = obj.reply_parameters as { quote?: { text?: unknown } } | undefined;
+  return String(quote?.text || params?.quote?.text || "").trim();
+}
+
 export function extractTelegramMessage(body: unknown): TelegramInbound | null {
   if (!isTelegramUpdate(body)) return null;
   const root = body as Record<string, unknown>;
-  const msg = (root.message || root.edited_message) as Record<string, unknown> | undefined;
+  const msg = (
+    root.message ||
+    root.edited_message ||
+    root.business_message ||
+    root.edited_business_message
+  ) as Record<string, unknown> | undefined;
   if (!msg || typeof msg !== "object") return null;
   const chat = msg.chat as Record<string, unknown> | undefined;
   const from = msg.from as Record<string, unknown> | undefined;
@@ -118,12 +138,12 @@ export function extractTelegramMessage(body: unknown): TelegramInbound | null {
   if (!Number.isFinite(chatId) || !Number.isFinite(fromId) || !Number.isFinite(updateId)) {
     return null;
   }
-  const text = String(msg.text || msg.caption || "").trim();
+  const text = telegramFieldText(msg);
   const reply = msg.reply_to_message as Record<string, unknown> | undefined;
-  const replyToMessageId = reply && Number.isFinite(Number(reply.message_id))
-    ? Number(reply.message_id)
-    : null;
-  const replyToText = String(reply?.text || reply?.caption || "");
+  const replyParams = msg.reply_parameters as { message_id?: unknown } | undefined;
+  const rawReplyId = reply?.message_id ?? replyParams?.message_id;
+  const replyToMessageId = Number.isFinite(Number(rawReplyId)) ? Number(rawReplyId) : null;
+  const replyToText = [telegramFieldText(reply), quotedSnippet(msg)].filter(Boolean).join("\n");
   return {
     updateId,
     chatId,
