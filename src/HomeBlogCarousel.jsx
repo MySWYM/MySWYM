@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen } from "lucide-react";
-import { fetchPublishedArticles } from "./blogData.js";
+import { articleCoverUrl, fetchPublishedArticles } from "./blogData.js";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { getStoredLanguage } from "./i18n/index.js";
 
@@ -63,14 +63,24 @@ function BlogCard({ article, colors, width }) {
         <div
           style={{
             aspectRatio: "16 / 9",
-            background: article.image_url
-              ? `center / cover no-repeat url(${article.image_url})`
-              : `linear-gradient(135deg, ${colors.blueLight}, ${colors.blue}55)`,
             backgroundColor: colors.greyXLight,
+            overflow: "hidden",
           }}
-          role="img"
-          aria-label={article.titre}
-        />
+        >
+          <img
+            src={articleCoverUrl(article)}
+            alt=""
+            width={640}
+            height={360}
+            loading="lazy"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
         <div style={{ padding: "14px 14px 16px", display: "flex", flexDirection: "column", flex: 1, gap: 6 }}>
           <span
             style={{
