@@ -24,11 +24,16 @@
   },
   "weekdays": ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
   "category": {
-    "title": "Ton objectif",
-    "progression": "Nager & Progresser",
+    "title": "Quel est ton objectif ?",
+    "lead": "Choisis une catégorie. On adapte les séances à l’épreuve, à la distance ou à ton niveau.",
+    "progression": "Nager",
+    "progressionDesc": "Technique, endurance, plaisir",
     "triathlon": "Triathlon",
+    "triathlonDesc": "De XS à Ironman",
     "eau_libre": "Eau libre",
-    "diplome": "Prépa diplôme"
+    "eau_libreDesc": "500 m à 25 km",
+    "diplome": "Diplômes",
+    "diplomeDesc": "BNSSA · BPJEPS · CAEPMNS"
   },
   "subGoal": {
     "triathlon": "Quelle distance ?",
@@ -67,7 +72,7 @@
   },
   "frequency": {
     "title": "Séances par semaine",
-    "lead": "Ton essai Premium donne accès à toute la charge d'entraînement dès le départ.",
+    "lead": "Ton essai Premium débloque toute la charge dès le départ. Bassin 25 m par défaut — tu pourras changer bassin, matériel et nages dans Profil.",
     "n": "{{count}}×/semaine"
   },
   "physique": {

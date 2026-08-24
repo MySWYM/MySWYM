@@ -1,0 +1,104 @@
+/**
+ * Carte séance unique — landing + app.
+ * Tokens : --lp-* (landing) avec repli --border / --accent (app).
+ */
+.ms-session-card {
+  border: 1px solid var(--lp-border, var(--border));
+  background: var(--lp-card, var(--code-bg));
+  border-radius: 1.25rem;
+  overflow: hidden;
+  color: var(--lp-fg, var(--text-h));
+}
+.ms-session-card-head {
+  padding: 1.25rem 1.25rem 0.85rem;
+}
+.ms-session-card-kicker {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-primary, var(--accent));
+}
+.ms-session-card-head h2 {
+  margin: 0.35rem 0 0;
+  font-family: var(--lp-display, var(--heading));
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--lp-fg, var(--text-h));
+}
+.ms-session-card-head p {
+  margin: 0.25rem 0 0;
+  color: var(--lp-muted, var(--text));
+  font-size: 0.875rem;
+}
+.ms-session-card-block {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--lp-border, var(--border));
+}
+.ms-session-card-block strong {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lp-primary, var(--accent));
+}
+.ms-session-card-block p {
+  margin: 0.4rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--lp-muted, var(--text));
+}
+.ms-session-card-cta {
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--lp-border, var(--border));
+}
+.ms-session-card-tip {
+  margin: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--lp-border, var(--border));
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--lp-fg, var(--text-h));
+}
+.ms-session-card-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 1.25rem 1rem;
+  color: var(--lp-primary, var(--accent));
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.ms-session-card-more:hover {
+  text-decoration: underline;
+}
+.ms-session-card.is-compact {
+  background: color-mix(in srgb, var(--lp-card, var(--code-bg)) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.ms-session-card.is-compact .ms-session-card-head {
+  padding: 1rem 1rem 0.7rem;
+}
+.ms-session-card.is-compact .ms-session-card-head h2 {
+  font-size: 1.05rem;
+}
+.ms-session-card.is-compact .ms-session-card-block {
+  padding: 0.75rem 1rem;
+}
+.ms-session-card.is-compact .ms-session-card-block p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ms-session-card.is-featured {
+  margin-top: 1.75rem;
+}
+.ms-plan-reveal-ready .ms-session-card {
+  margin-top: 1.5rem;
+}

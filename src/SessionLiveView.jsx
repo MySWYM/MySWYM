@@ -53,12 +53,12 @@ export default function SessionLiveView({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
             fontSize: 26,
-            fontWeight: 800,
+            fontWeight: 700,
             color: G.ink,
-            textTransform: "uppercase",
-            lineHeight: 1,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
           }}>
             Aujourd&apos;hui
           </div>

@@ -6,6 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { usePublicCta } from "./lib/use-auth-session.js";
+import { landingCtaPath } from "./lib/landing-onboarding.js";
 import {
   ArrowRight,
   Target,
@@ -23,6 +24,7 @@ import LandingReviews from "./marketing/LandingReviews.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
 import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
+import SessionHeroCard from "./SessionHeroCard.jsx";
 import "./landing/landing.css";
 
 const OBJECTIVE_TABS = [
@@ -55,33 +57,26 @@ function prefersReducedMotion() {
 function SessionCard({ compact = false }) {
   const { t } = useTranslation("landing");
   const blocks = [
-    { label: t("session.warmLabel"), content: t("session.warmContent") },
-    { label: t("session.mainLabel"), content: t("session.mainContent") },
-    { label: t("session.coolLabel"), content: t("session.coolContent") },
+    { label: t("session.warmLabel"), detail: t("session.warmContent") },
+    { label: t("session.mainLabel"), detail: t("session.mainContent") },
+    { label: t("session.coolLabel"), detail: t("session.coolContent") },
   ];
   const shown = compact ? blocks.slice(0, 2) : blocks;
   return (
-    <div className={`lp-session${compact ? " is-compact" : ""}`}>
-      <div className="lp-session-head">
-        <span className="lp-card-kicker">{t("session.type")}</span>
-        <h3>{t("session.heading")}</h3>
-        <p>{t("session.meta")}</p>
-      </div>
-      {shown.map((b) => (
-        <div key={b.label} className="lp-session-block">
-          <strong>{b.label}</strong>
-          <p>{b.content}</p>
-        </div>
-      ))}
+    <SessionHeroCard
+      className={compact ? "is-compact" : "is-featured"}
+      kicker={t("session.type")}
+      preview={{ title: t("session.heading"), meta: t("session.meta"), blocks: shown }}
+      tip={compact ? null : t("session.tip")}
+      wrapCta={false}
+    >
       {compact ? (
-        <a href="#seance" className="lp-session-more">
+        <a href="#seance" className="ms-session-card-more">
           {t("hero.seeSession")}
           <ArrowRight size={14} />
         </a>
-      ) : (
-        <p className="lp-session-tip">{t("session.tip")}</p>
-      )}
-    </div>
+      ) : null}
+    </SessionHeroCard>
   );
 }
 
@@ -248,7 +243,7 @@ function Objectives() {
                   ref={item.id === tabId ? scrollerRef : undefined}
                 >
                   {item.cards.map((key) => (
-                    <Link key={key} to={cta.href} className="lp-obj-card">
+                    <LocalizedLink key={key} to={landingCtaPath(key, cta.href)} className="lp-obj-card">
                       <p className="lp-card-kicker">{t(`objectives.${item.tagKey}`)}</p>
                       <h3 className="lp-obj-card-title">{t(`objectives.${key}Title`)}</h3>
                       <p className="lp-obj-card-meta">{t(`objectives.${key}Meta`)}</p>
@@ -257,7 +252,7 @@ function Objectives() {
                         {t("objectives.cta")}
                         <ArrowRight size={16} />
                       </span>
-                    </Link>
+                    </LocalizedLink>
                   ))}
                 </div>
                 <button

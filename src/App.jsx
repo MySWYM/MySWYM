@@ -15,7 +15,20 @@ import {
 } from "./lib/analytics.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
-import { StepSessionDistance } from "./OnboardingDistanceWish.jsx";
+import { FONT, FONT_DISPLAY } from "./theme/brand.js";
+import PlanRevealView from "./PlanRevealView.jsx";
+import SessionHeroCard from "./SessionHeroCard.jsx";
+import SessionCompleteView from "./SessionCompleteView.jsx";
+import Btn from "./ui/Btn.jsx";
+import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel } from "./lib/plan-reveal.js";
+import {
+  parseOnboardingPrefill,
+  profilePatchFromPrefill,
+  stepFromPrefill,
+  persistOnboardingPrefill,
+  readPersistedOnboardingPrefill,
+  clearOnboardingPrefill,
+} from "./lib/landing-onboarding.js";
 import { parseTrainingWish } from "./lib/sports-engine/training-wish.js";
 import {
   decideAdaptAction,
@@ -36,6 +49,7 @@ import {
   extractPlanObjective,
   mergeForGeneration,
   isSwimmerProfileComplete,
+  applyFirstPlanDefaults,
   resolveQuestionnaireMode,
   buildQuestionnaireDraft,
   enforceSingleActivePlan,
@@ -112,42 +126,12 @@ import {
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
-  Sun, Moon, Camera, Trash2, Users, ExternalLink,
+  Camera, Trash2, Users, ExternalLink,
 } from "lucide-react";
 
-// ── DESIGN SYSTEM ─────────────────────────────────────────────────────────
-const THEME_STORAGE_PREFIX = "myswym_theme_";
+// ── DESIGN SYSTEM (DA dark only — pas de thème clair) ────────────────────
 const THEME_LAST_KEY = "myswym_theme_last";
-const THEME_LEGACY_KEY = "myswym_theme"; // ancien stockage global (migré)
-
-const G_LIGHT = {
-  bg: "#f4f8fa",
-  surface: "#FFFFFF",
-  ink: "#06101f",
-  inkLight: "#3d4f66",
-  inverse: "#FFFFFF",
-  blue: "#006bfd",
-  blueLight: "#d6e7ff",
-  blueMid: "#3d8fff",
-  blueDeep: "#0056d6",
-  water: "#00B4D8",
-  waterLight: "#E0F7FA",
-  coral: "#FF4757",
-  coralLight: "#FFE8EA",
-  mint: "#00C48C",
-  mintLight: "#E6FFF6",
-  gold: "#F59E0B",
-  goldLight: "#FEF3C7",
-  purple: "#7C3AED",
-  purpleLight: "#EDE9FE",
-  grey: "#5d6b7d",
-  greyMid: "#9bb0c8",
-  greyLight: "#d7e3f0",
-  greyXLight: "#eef3f8",
-  white: "#FFFFFF",
-  glass: "rgba(255,255,255,0.95)",
-  navGlass: "rgba(255,255,255,0.94)",
-};
+const THEME_LEGACY_KEY = "myswym_theme";
 
 const G_DARK = {
   bg: "#000514",
@@ -178,100 +162,50 @@ const G_DARK = {
   navGlass: "rgba(6, 16, 31, 0.94)",
 };
 
-/** Palette active — mutée par applyTheme pour que les styles inline suivent le thème. */
+/** Palette DA — dark only. applyTheme écrase un ancien thème clair en localStorage. */
 const G = { ...G_DARK };
 
-const normalizeTheme = (value) => (value === "dark" ? "dark" : "light");
-
-const themeStorageKey = (userId) => `${THEME_STORAGE_PREFIX}${userId || "anon"}`;
-
-const getStoredTheme = (userId = null) => {
-  try {
-    const scoped = localStorage.getItem(themeStorageKey(userId));
-    if (scoped === "dark" || scoped === "light") return scoped;
-    // Migration : ancien thème global → utile surtout pour l'anon / 1re connexion
-    const legacy = localStorage.getItem(THEME_LEGACY_KEY);
-    if (legacy === "dark" || legacy === "light") return legacy;
-  } catch { /* ignore */ }
-  return "dark";
-};
-
-const resolveThemeForUser = (user) => {
-  const fromMeta = user?.user_metadata?.theme;
-  if (fromMeta === "dark" || fromMeta === "light") return fromMeta;
-  try {
-    const scoped = localStorage.getItem(themeStorageKey(user?.id || null));
-    if (scoped === "dark" || scoped === "light") return scoped;
-    // Nouveau compte / pas encore de préférence : hériter du thème anon / dernier utilisé
-    if (user?.id) {
-      const inherited = [
-        localStorage.getItem(themeStorageKey(null)),
-        localStorage.getItem(THEME_LAST_KEY),
-        localStorage.getItem(THEME_LEGACY_KEY),
-      ].find((v) => v === "dark" || v === "light");
-      if (inherited) return inherited;
-    }
-  } catch { /* ignore */ }
-  return getStoredTheme(user?.id || null);
-};
-
-const applyTheme = (theme, { userId = null, persist = true } = {}) => {
-  const t = normalizeTheme(theme);
-  const next = t === "dark" ? G_DARK : G_LIGHT;
-  Object.assign(G, next);
+const applyTheme = () => {
+  Object.assign(G, G_DARK);
   const root = document.documentElement;
-  root.setAttribute("data-theme", t);
-  root.style.colorScheme = t;
-  root.style.setProperty("--myswym-bg", next.bg);
-  root.style.setProperty("--myswym-surface", next.surface);
-  root.style.setProperty("--myswym-ink", next.ink);
-  root.style.setProperty("--myswym-ink-light", next.inkLight);
-  root.style.setProperty("--myswym-blue", next.blue);
-  root.style.setProperty("--myswym-blue-light", next.blueLight);
-  root.style.setProperty("--myswym-blue-mid", next.blueMid);
-  root.style.setProperty("--myswym-blue-deep", next.blueDeep);
-  root.style.setProperty("--myswym-grey", next.grey);
-  root.style.setProperty("--myswym-grey-mid", next.greyMid);
-  root.style.setProperty("--myswym-grey-light", next.greyLight);
-  root.style.setProperty("--myswym-grey-xlight", next.greyXLight);
-  root.style.setProperty("--myswym-nav-bg", next.navGlass);
-  root.style.setProperty("--myswym-nav-border", next.greyLight);
-  root.style.setProperty("--myswym-glass", next.glass);
-  if (persist) {
-    try {
-      localStorage.setItem(themeStorageKey(userId), t);
-      localStorage.setItem(THEME_LAST_KEY, t);
-      localStorage.removeItem(THEME_LEGACY_KEY);
-    } catch { /* ignore */ }
-  }
-  return t;
-};
-
-const persistThemeToAccount = (theme, user) => {
-  const t = applyTheme(theme, { userId: user?.id || null, persist: true });
-  if (user?.id) {
-    supabase.auth.updateUser({ data: { theme: t } }).catch(() => {});
-  }
-  return t;
-};
-
-// Dernier thème affiché (évite un flash) — remplacé dès que le compte est connu
-applyTheme((() => {
+  root.setAttribute("data-theme", "dark");
+  root.style.colorScheme = "dark";
+  root.style.setProperty("--myswym-bg", G_DARK.bg);
+  root.style.setProperty("--myswym-surface", G_DARK.surface);
+  root.style.setProperty("--myswym-ink", G_DARK.ink);
+  root.style.setProperty("--myswym-ink-light", G_DARK.inkLight);
+  root.style.setProperty("--myswym-blue", G_DARK.blue);
+  root.style.setProperty("--myswym-blue-light", G_DARK.blueLight);
+  root.style.setProperty("--myswym-blue-mid", G_DARK.blueMid);
+  root.style.setProperty("--myswym-blue-deep", G_DARK.blueDeep);
+  root.style.setProperty("--myswym-grey", G_DARK.grey);
+  root.style.setProperty("--myswym-grey-mid", G_DARK.greyMid);
+  root.style.setProperty("--myswym-grey-light", G_DARK.greyLight);
+  root.style.setProperty("--myswym-grey-xlight", G_DARK.greyXLight);
+  root.style.setProperty("--myswym-nav-bg", G_DARK.navGlass);
+  root.style.setProperty("--myswym-nav-border", G_DARK.greyLight);
+  root.style.setProperty("--myswym-glass", G_DARK.glass);
   try {
-    return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || localStorage.getItem(THEME_LEGACY_KEY) || "dark");
-  } catch {
-    return "dark";
-  }
-})(), { persist: false });
-
-// Pastels figés (lisibles sur fond clair et sombre) — ne pas lier à G mutable
-const TYPE_META = {
-  ENDURANCE:    { bg: G_LIGHT.blueLight,   color: G_LIGHT.blue,    Icon: Waves,    tooltip: "Nage à allure confortable — tu pourrais parler. C'est la base de toute progression." },
-  SEUIL:        { bg: "#FFF3E0",           color: "#E65100",       Icon: Activity, tooltip: "Effort soutenu mais contrôlé — tu travailles à la limite de ton confort. Améliore ton endurance." },
-  VITESSE:      { bg: G_LIGHT.coralLight,  color: G_LIGHT.coral,   Icon: Zap,      tooltip: "Sprints courts et intenses — récup complète entre chaque. Développe ta puissance." },
-  TECHNIQUE:    { bg: G_LIGHT.waterLight,  color: "#0097A7",       Icon: Target,   tooltip: "On travaille la façon de nager — position, bras, jambes. Moins d'effort, plus d'efficacité." },
-  RÉCUPÉRATION: { bg: G_LIGHT.mintLight,   color: "#00897B",       Icon: Droplets, tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer — c'est là que le corps progresse." },
+    localStorage.setItem(THEME_LAST_KEY, "dark");
+    localStorage.removeItem(THEME_LEGACY_KEY);
+  } catch { /* ignore */ }
 };
+
+applyTheme();
+
+// Couleurs lues sur G (DA dark). Plus de pastels light ni d’orange Strava.
+const TYPE_KIND = {
+  ENDURANCE:    { Icon: Waves,    color: "blue",  bg: "blueLight",  tooltip: "Nage à allure confortable — tu pourrais parler. C'est la base de toute progression." },
+  SEUIL:        { Icon: Activity, color: "gold",  bg: "goldLight",  tooltip: "Effort soutenu mais contrôlé — tu travailles à la limite de ton confort. Améliore ton endurance." },
+  VITESSE:      { Icon: Zap,      color: "coral", bg: "coralLight", tooltip: "Sprints courts et intenses — récup complète entre chaque. Développe ta puissance." },
+  TECHNIQUE:    { Icon: Target,   color: "water", bg: "waterLight", tooltip: "On travaille la façon de nager — position, bras, jambes. Moins d'effort, plus d'efficacité." },
+  RÉCUPÉRATION: { Icon: Droplets, color: "mint",  bg: "mintLight",  tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer — c'est là que le corps progresse." },
+};
+
+function getTypeMeta(type) {
+  const kind = TYPE_KIND[type] || TYPE_KIND.ENDURANCE;
+  return { Icon: kind.Icon, tooltip: kind.tooltip, bg: G[kind.bg], color: G[kind.color] };
+}
 
 const css = `
   :root {
@@ -308,7 +242,7 @@ const css = `
   #root { min-height: 100dvh; }
   h1, h2, h3 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
   h4 { letter-spacing: -0.01em; }
-  .syne { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; font-weight: 700; text-transform: none; }
+  .syne, .ms-display { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; font-weight: 700; text-transform: none; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
@@ -325,7 +259,7 @@ const css = `
   ::-webkit-scrollbar { width: 0; height: 0; }
   button { -webkit-tap-highlight-color: transparent; }
   button:active { transform: scale(0.97); transition: transform 0.1s; }
-  /* Texte : pas d’apparence native iOS (zoom / style). Cases à cocher : style visible (contour noir). */
+  /* Texte : pas d’apparence native iOS (zoom / style). Cases à cocher : tokens marque. */
   input:not([type="checkbox"]):not([type="radio"]), textarea {
     -webkit-appearance: none;
     appearance: none;
@@ -334,16 +268,16 @@ const css = `
   input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
-    min-width: 18px;
-    min-height: 18px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
     margin: 0;
     flex-shrink: 0;
     box-sizing: border-box;
-    border: 2px solid #111827;
-    border-radius: 3px;
-    background-color: #ffffff;
+    border: 2px solid var(--myswym-ink-light, #9bb0c8);
+    border-radius: 6px;
+    background-color: var(--myswym-surface, #06101f);
     background-repeat: no-repeat;
     background-position: center;
     background-size: 12px 12px;
@@ -426,8 +360,9 @@ const css = `
     flex-direction: column;
     overflow: hidden;
     border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 18px 50px rgba(6, 16, 31, 0.28);
+    background: var(--myswym-surface, #06101f);
+    color: var(--myswym-ink, #f4f8fa);
+    box-shadow: 0 18px 50px rgba(0, 5, 20, 0.45);
   }
   .support-widget--bare {
     bottom: calc(16px + var(--safe-bottom) + 66px);
@@ -1597,11 +1532,15 @@ const createShareCanvas = (session, goalLabel) => {
 };
 
 // ── PRIMITIVES ────────────────────────────────────────────────────────────
-const Btn = ({ children, onClick, variant = "primary", disabled, style: s }) => {
-  const base = { display: "block", width: "100%", padding: "16px 24px", minHeight: 48, borderRadius: 14, fontSize: 16, fontWeight: 600, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "all 0.18s", opacity: disabled ? 0.4 : 1, ...s };
-  const styles = { primary: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)" }, secondary: { background: G.greyLight, color: G.ink }, blue: { background: G.blue, color: G.white, boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)" }, ghost: { background: "transparent", color: G.grey, border: `1px solid ${G.greyLight}` } };
-  return <button type="button" disabled={!!disabled} onClick={onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
-};
+const onboardingTitleStyle = () => ({
+  fontFamily: FONT_DISPLAY,
+  fontSize: 28,
+  fontWeight: 700,
+  letterSpacing: "-0.03em",
+  color: G.ink,
+  marginBottom: 8,
+  lineHeight: 1.1,
+});
 
 const Progress = ({ step, total }) => (
   <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
@@ -2150,11 +2089,11 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
             {stravaIsBetter && (
               <button onClick={applyStravaPace} style={{
                 padding: "2px 8px", borderRadius: 6, border: "none",
-                background: "#FC4C02", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                background: G.blue, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer",
               }}>Utiliser</button>
             )}
             {stravaIsUsed && (
-              <span style={{ fontSize: 11, color: "#FC4C02", fontWeight: 600 }}>utilisé</span>
+              <span style={{ fontSize: 11, color: G.blue, fontWeight: 600 }}>utilisé</span>
             )}
           </div>
         )}
@@ -2819,7 +2758,7 @@ const StravaSection = ({
           <button
             onClick={sync}
             disabled={syncing}
-            style={{ padding: "7px 14px", borderRadius: 10, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontSize: 13, fontWeight: 600, cursor: syncing ? "not-allowed" : "pointer", opacity: syncing ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}
+            style={{ padding: "7px 14px", borderRadius: 10, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontSize: 13, fontWeight: 600, cursor: syncing ? "not-allowed" : "pointer", opacity: syncing ? 0.5 : 1, fontFamily: FONT }}
           >
             {syncing ? "Sync…" : "Synchroniser"}
           </button>
@@ -2837,9 +2776,12 @@ const StravaSection = ({
       {!connected ? (
         <button
           onClick={connect}
-          style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: "#FC4C02", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'DM Sans', sans-serif" }}
+          style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT }}
         >
-          <Activity size={16} color="#fff" /> Connecter Strava
+          <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Activity size={13} color="#fff" />
+          </span>
+          Connecter Strava
         </button>
       ) : (
         <>
@@ -2879,7 +2821,7 @@ const StravaSection = ({
               </div>
               <button
                 onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: "Séance validée depuis Strava" }); }}
-                style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: G.blue, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}
+                style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: G.blue, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: FONT }}
               >
                 Valider
               </button>
@@ -2906,7 +2848,7 @@ const StravaSection = ({
               {hasBetterPace && onPaceUpdate && (
                 <button
                   onClick={() => { onPaceUpdate(bestPace); setMsg({ type: "ok", text: `Référence mise à jour : ${fmtPace(bestPace)}` }); }}
-                  style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.gold, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.gold, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: FONT }}
                 >
                   Utiliser
                 </button>
@@ -2938,7 +2880,7 @@ const StravaSection = ({
                   </div>
                   <Eye size={16} color={G.greyMid} />
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 6 }}>{latestPremiumAnalysis.title}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 6 }}>{latestPremiumAnalysis.title}</div>
                 <div style={{ fontSize: 12, color: G.grey, marginBottom: 8 }}>{latestPremiumAnalysis.verdict}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {latestPremiumAnalysis.chips.map((chip) => (
@@ -3015,7 +2957,7 @@ const StravaSection = ({
           <button
             onClick={disconnect}
             disabled={disconnecting}
-            style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontSize: 12, fontWeight: 500, cursor: disconnecting ? "not-allowed" : "pointer", opacity: disconnecting ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}
+            style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontSize: 12, fontWeight: 500, cursor: disconnecting ? "not-allowed" : "pointer", opacity: disconnecting ? 0.5 : 1, fontFamily: FONT }}
           >
             {disconnecting ? "Déconnexion…" : "Déconnecter Strava"}
           </button>
@@ -3034,7 +2976,7 @@ const StravaSection = ({
         <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && setHealthGateOpen(false)}>
           <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
-            <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 10 }}>
+            <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 10 }}>
               {HEALTH_CONSENT_TITLE}
             </h3>
             <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEALTH_CONSENT_BODY}</p>
@@ -3289,7 +3231,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               }}
             >
               <div style={{ padding: "16px 18px 10px", textAlign: "left" }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Photo de profil</div>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Photo de profil</div>
                 <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>Choisis une action</div>
               </div>
               <button
@@ -3355,7 +3297,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             onClick={() => { setNameInput(displayName); setEditingName(true); }}
             style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
           >
-            <span style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>{displayName}</span>
+            <span style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>{displayName}</span>
             <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Settings size={11} color={G.blue} />
             </div>
@@ -3399,7 +3341,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               <Target size={18} color={G.blue} />
             </div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Mon objectif</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Mon objectif</div>
               <div style={{ fontSize: 12, color: G.grey }}>Change via « Nouveau plan » dans Programme</div>
             </div>
           </div>
@@ -3422,7 +3364,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
         {onSwimmerProfileChange && (
           <>
             <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Mon profil</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 12 }}>Mon profil</div>
               {(() => {
                 const nowY = new Date().getFullYear();
                 const birthMonth = profile?.birthMonth ?? "";
@@ -3538,7 +3480,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             </div>
 
             <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Ma natation</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 12 }}>Ma natation</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {LEVELS.map((l) => {
@@ -3652,7 +3594,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
           {onEquipmentChange && (
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Mon matériel</div>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Mon matériel</div>
                 {!editingEquipment ? (
                   <button
                     type="button"
@@ -3744,7 +3686,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
 
         {onSwimmerProfileChange && (
           <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Santé et blessures</div>
+            <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 12 }}>Santé et blessures</div>
             <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               {[
@@ -3859,8 +3801,6 @@ const SettingsDrawer = ({
   open,
   onClose,
   user,
-  theme,
-  onToggleTheme,
   isPremium,
   onUpgrade,
   onPortal,
@@ -3916,7 +3856,7 @@ const SettingsDrawer = ({
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Menu</div>
+            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>Menu</div>
             <div style={{ fontSize: 13, color: G.grey }}>Navigation, compte et réglages</div>
           </div>
           <button
@@ -3990,47 +3930,12 @@ const SettingsDrawer = ({
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey, marginBottom: 12 }}>
             Paramètres
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{ts("language.title")}</div>
               <div style={{ fontSize: 12, color: G.grey }}>{ts("language.hint")}</div>
             </div>
             <LanguageSwitcher variant="settings" />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{theme === "dark" ? ts("appearance.dark") : ts("appearance.light")}</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{theme === "dark" ? ts("appearance.darkHint") : ts("appearance.lightHint")}</div>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={theme === "dark"}
-              aria-label={theme === "dark" ? ts("appearance.switchToLight") : ts("appearance.switchToDark")}
-              onClick={onToggleTheme}
-              style={{
-                flexShrink: 0, width: 64, height: 36, borderRadius: 999,
-                border: "none", cursor: "pointer", padding: 3,
-                background: theme === "dark" ? "#1e293b" : "#fde68a",
-                position: "relative", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.12)",
-              }}
-            >
-              <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", opacity: theme === "dark" ? 0.35 : 1, display: "flex" }}>
-                <Sun size={14} color={theme === "dark" ? "#94a3b8" : "#b45309"} strokeWidth={2.4} />
-              </span>
-              <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", opacity: theme === "dark" ? 1 : 0.35, display: "flex" }}>
-                <Moon size={14} color={theme === "dark" ? "#e2e8f0" : "#94a3b8"} strokeWidth={2.4} />
-              </span>
-              <span style={{
-                position: "absolute", top: 3, left: theme === "dark" ? 31 : 3,
-                width: 30, height: 30, borderRadius: "50%", background: G.white,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                transition: "left 0.25s cubic-bezier(.4,.0,.2,1)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {theme === "dark" ? <Moon size={15} color="#334155" strokeWidth={2.4} /> : <Sun size={15} color="#d97706" strokeWidth={2.4} />}
-              </span>
-            </button>
           </div>
         </div>
 
@@ -4040,7 +3945,7 @@ const SettingsDrawer = ({
               <Link2 size={17} color={G.blue} />
             </div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Connexions</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Connexions</div>
               <div style={{ fontSize: 12, color: G.grey }}>Strava et services liés</div>
             </div>
           </div>
@@ -4064,7 +3969,7 @@ const SettingsDrawer = ({
               <CreditCard size={17} color={G.gold} />
             </div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: G.ink }}>Gestion de l&apos;abonnement</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Gestion de l&apos;abonnement</div>
               <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé — abonne-toi pour continuer"}</div>
             </div>
           </div>
@@ -4249,7 +4154,7 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
               </div>
             </button>
           ) : null}
-          <BrandLogo variant="wordmark" height={18} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark"} style={{ maxWidth: "100%" }} />
+          <BrandLogo variant="wordmark" height={24} onDark style={{ maxWidth: "100%" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <div ref={notifRef} style={{ position: "relative" }}>
@@ -4366,13 +4271,13 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
   );
 };
 
-const BottomNav = ({ active, onChange, newBadge }) => {
+const BottomNav = ({ active, onChange, newBadge, hideBuddies = false }) => {
   const tabs = [
     { id: "home",    Icon: Home,      label: "Accueil" },
     { id: "plan",    Icon: Calendar,  label: "Programme" },
-    { id: "buddies", Icon: Users,     label: "Binômes" },
+    !hideBuddies && { id: "buddies", Icon: Users,     label: "Binômes" },
     { id: "profile", Icon: User,      label: "Profil" },
-  ];
+  ].filter(Boolean);
   return (
     <div className="bottom-nav">
       <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "6px 0 8px" }} aria-label="Navigation principale">
@@ -4456,12 +4361,6 @@ const GoogleMark = () => (
   </svg>
 );
 
-const AppleMark = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
-    <path d="M16.365 1.43c0 1.14-.42 2.2-1.18 3.01-.79.84-2.1 1.49-3.23 1.4-.15-1.1.44-2.27 1.16-3.02.8-.84 2.2-1.45 3.25-1.39zM20.8 17.33c-.56 1.28-.83 1.85-1.55 2.98-1 1.55-2.41 3.48-4.16 3.5-1.55.02-1.95-1.01-4.06-1-2.1.01-2.55 1.02-4.1 1.04-1.74.02-3.07-1.75-4.08-3.29C.74 17.6-.6 12.7 1.5 9.4c1.05-1.63 2.72-2.66 4.32-2.66 1.7 0 2.77 1.01 4.18 1.01 1.36 0 2.19-1.02 4.2-1.02 1.5 0 3.09.82 4.14 2.23-3.64 2-3.05 7.2.46 8.37z" />
-  </svg>
-);
-
 const authOAuthRedirect = () => `${window.location.origin}/app`;
 
 /** Welcome mail (email + Google OAuth) — retry si session pas encore prête. */
@@ -4538,7 +4437,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
   const btnBase = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
     width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", cursor: busy ? "not-allowed" : "pointer",
+    fontFamily: FONT, cursor: busy ? "not-allowed" : "pointer",
     opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
   };
 
@@ -4559,32 +4458,6 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
       >
         <GoogleMark />
         {busy === "google" ? t("auth.redirecting") : t("auth.google")}
-      </button>
-      <button
-        type="button"
-        disabled
-        aria-disabled="true"
-        title="Bientôt disponible"
-        style={{
-          ...btnBase,
-          background: G.ink,
-          color: G.inverse,
-          border: `1.5px solid ${G.ink}`,
-          opacity: 0.45,
-          cursor: "not-allowed",
-          position: "relative",
-        }}
-      >
-        <AppleMark />
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {t("auth.apple")}
-          <span style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
-            padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.18)", color: G.inverse,
-          }}>
-            {t("auth.comingSoon")}
-          </span>
-        </span>
       </button>
     </div>
   );
@@ -4612,11 +4485,11 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <BrandLogo variant="wordmark" height={22} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
+          <BrandLogo variant="wordmark" height={22} onDark />
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
+        <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>Nouveau mot de passe</h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28 }}>Choisis un nouveau mot de passe pour ton compte.</p>
         {error && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
@@ -4727,7 +4600,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
             <div style={{ display: "flex", alignItems: "center" }}>
-              <BrandLogo variant="wordmark" height={24} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
+              <BrandLogo variant="wordmark" height={24} onDark />
             </div>
           ) : <div />}
           {onBack && (
@@ -4738,7 +4611,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 44, fontWeight: 800, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.0 }}>
+        <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
           {titleMap[mode]}
         </h2>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
@@ -4851,13 +4724,34 @@ const Step1_Category = ({ onSelect }) => {
   const { t } = useTranslation("onboarding");
   return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>{t("category.title")}</h2>
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <h2 style={{ ...onboardingTitleStyle(), marginBottom: 10 }}>{t("category.title")}</h2>
+    <p style={{ fontSize: 15, color: G.grey, marginBottom: 22, lineHeight: 1.5 }}>
+      {t("category.lead")}
+    </p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {CATEGORIES.map(cat => (
-        <button key={cat.id} onClick={() => onSelect(cat.id)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.surface, cursor: "pointer", textAlign: "left" }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t(`category.${cat.id}`)}</span>
-          <ArrowRight size={16} color={G.greyMid} />
+        <button key={cat.id} type="button" onClick={() => onSelect(cat.id)}
+          style={{
+            display: "flex", alignItems: "center", gap: 14, padding: "16px 16px",
+            borderRadius: 18, border: `1px solid ${G.greyLight}`, background: G.surface,
+            cursor: "pointer", textAlign: "left", minHeight: 72,
+          }}>
+          <span style={{
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            background: G.blueLight, color: G.blue,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <cat.Icon size={20} strokeWidth={2} />
+          </span>
+          <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink }}>
+              {t(`category.${cat.id}`)}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>
+              {t(`category.${cat.id}Desc`)}
+            </span>
+          </span>
+          <ArrowRight size={16} color={G.greyMid} style={{ flexShrink: 0 }} />
         </button>
       ))}
     </div>
@@ -4876,7 +4770,7 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   };
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 24, lineHeight: 1.1 }}>{titles[category] || t("subGoal.fallback")}</h2>
+      <h2 style={{ ...onboardingTitleStyle(), marginBottom: 24 }}>{titles[category] || t("subGoal.fallback")}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
         {subs.map(s => (
           <button key={s.id} onClick={() => onSelect(s.id)}
@@ -5020,7 +4914,7 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   return (
     <div className="fade-up">
       <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>{t("date.kicker")}</p>
-      <h2 style={{ fontSize: 38, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 800, letterSpacing: "0.02em", color: G.ink, marginBottom: 10, lineHeight: 1.0 }}>{t("date.title")}</h2>
+      <h2 style={{ ...onboardingTitleStyle(), fontSize: 32, marginBottom: 10 }}>{t("date.title")}</h2>
       <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>{t("date.lead")}</p>
       <div style={{ background: G.surface, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
         <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>{t("date.label")}</label>
@@ -5129,12 +5023,21 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
       </div>
       {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
       {weeks && !err && (
-        <div style={{ background: G.ink, borderRadius: 14, padding: "16px 20px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{
+          background: G.blueLight,
+          borderRadius: 14,
+          padding: "16px 20px",
+          marginBottom: 28,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          border: `1px solid ${G.greyLight}`,
+        }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: G.white }}>{t("date.weeks", { count: weeks })}</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{t("date.weeksHint")}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t("date.weeks", { count: weeks })}</div>
+            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{t("date.weeksHint")}</div>
           </div>
-          <Calendar size={20} color="rgba(255,255,255,0.3)" />
+          <Calendar size={20} color={G.blue} />
         </div>
       )}
       <Btn onClick={onNext} disabled={!value}>{t("common.generate")}</Btn>
@@ -5147,7 +5050,7 @@ const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevel
   const { t } = useTranslation("onboarding");
   return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("level.title")}</h2>
+    <h2 style={onboardingTitleStyle()}>{t("level.title")}</h2>
     <p style={{ fontSize: 14, color: G.inkLight, lineHeight: 1.5, marginBottom: 20 }}>
       {t("level.lead")}
     </p>
@@ -5182,7 +5085,7 @@ const Step3_Pool = ({ value, onChange, onNext, onBack }) => {
   const { t } = useTranslation("onboarding");
   return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("pool.title")}</h2>
+    <h2 style={onboardingTitleStyle()}>{t("pool.title")}</h2>
     <p style={{ fontSize: 16, fontWeight: 600, color: G.ink, lineHeight: 1.35, marginBottom: 8 }}>
       {t("pool.lead")}
     </p>
@@ -5303,7 +5206,7 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
   const { t } = useTranslation("onboarding");
   return (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("frequency.title")}</h2>
+    <h2 style={onboardingTitleStyle()}>{t("frequency.title")}</h2>
     <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
       {t("frequency.lead")}
     </p>
@@ -5398,7 +5301,7 @@ const StepPhysique = ({ birthMonth, birthDay, birthYear, weightKg, heightCm, onC
 
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("physique.title")}</h2>
+      <h2 style={onboardingTitleStyle()}>{t("physique.title")}</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
         {t("physique.lead")}
       </p>
@@ -5500,7 +5403,7 @@ const StepInjury = ({
     || (injuryStatus === "oui" && injuryZone && injurySeverity && healthDeclaration);
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("injury.title")}</h2>
+      <h2 style={onboardingTitleStyle()}>{t("injury.title")}</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
         {t("injury.lead")}
       </p>
@@ -5653,7 +5556,7 @@ const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
 
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+      <h2 style={onboardingTitleStyle()}>
         {t("equipment.title")}
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
@@ -5718,7 +5621,7 @@ const StepSwimPrefs = ({
   const canNext = hideFourNages ? !!preferredStroke : !!swimStyle && !!preferredStroke;
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>{t("prefs.title")}</h2>
+      <h2 style={onboardingTitleStyle()}>{t("prefs.title")}</h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
         {hideFourNages ? t("prefs.leadOpen") : t("prefs.lead")}
       </p>
@@ -5793,7 +5696,7 @@ const StepTrainingFocus = ({
   onEditProfile = null,
 }) => (
   <div className="fade-up">
-    <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+    <h2 style={onboardingTitleStyle()}>
       Sur quoi veux-tu mettre l’accent ?
     </h2>
     <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
@@ -5879,22 +5782,21 @@ const OnboardingWizard = ({
 
   const totalSteps = isGoalMode
     ? (isProgression ? 1 : 3)
-    : (isProgression ? 8 : isDiplome ? 9 : 10);
+    : (isProgression ? 3 : isDiplome ? 4 : 5);
 
-  const stepBefore5 = 4;
   const progressStep = (() => {
     if (isGoalMode) {
       if (isProgression) return 1;
       return ({ 1: 1, 2: 2, 6: 3 })[step] || 1;
     }
-    if (isProgression) return ({ 3: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8 })[step] || 1;
-    if (isDiplome) return ({ 2: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 12: 7, 9: 8, 6: 9 })[step] || 1;
-    return ({ 2: 1, 3: 2, 4: 3, 5: 4, 7: 5, 8: 6, 10: 7, 12: 8, 9: 9, 6: 10 })[step] || 1;
+    if (isProgression) return ({ 1: 1, 3: 2, 5: 3 })[step] || 1;
+    if (isDiplome) return ({ 1: 1, 2: 2, 5: 3, 6: 4 })[step] || 1;
+    return ({ 1: 1, 2: 2, 3: 3, 5: 4, 6: 5 })[step] || 1;
   })();
 
   const generateNow = (extra = {}) => {
     const patch = extra && typeof extra === "object" && extra.nativeEvent == null ? extra : {};
-    const next = { ...profile, trainingWish: "", trainingWishMeta: null, ...patch };
+    const next = applyFirstPlanDefaults({ ...profile, trainingWish: "", trainingWishMeta: null, ...patch });
     patchProfile(next);
     onGenerate(next);
   };
@@ -5921,7 +5823,7 @@ const OnboardingWizard = ({
     }
     if (isDiplome) {
       patchProfile({ goal: goalId, level: "sportif" });
-      setStep(4);
+      setStep(5);
     } else {
       update("goal", goalId);
       setStep(3);
@@ -5942,7 +5844,7 @@ const OnboardingWizard = ({
           {t("common.cancel")}
         </button>
       )}
-      {step > 1 && <Progress step={progressStep} total={totalSteps} />}
+      {step > 0 && <Progress step={progressStep} total={totalSteps} />}
       {error && (
         <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: G.coral, fontSize: 13 }}>
           {error}
@@ -5967,17 +5869,9 @@ const OnboardingWizard = ({
           disabledLevels={disabledLevels}
           onNext={() => {
             update("pace100", null);
-            setStep(4);
+            setStep(5);
           }}
           onBack={() => isProgression ? setStep(1) : setStep(2)} />
-      )}
-
-      {!isGoalMode && step === 4 && (
-        <Step3_Pool
-          value={profile.pool}
-          onChange={v => update("pool", v)}
-          onNext={() => setStep(5)}
-          onBack={() => setStep(isDiplome ? 2 : 3)} />
       )}
 
       {!isGoalMode && step === 5 && (
@@ -5985,123 +5879,11 @@ const OnboardingWizard = ({
           value={profile.sessionsPerWeek}
           onChange={v => update("sessionsPerWeek", v)}
           total={totalSteps}
-          onNext={() => setStep(7)}
-          onBack={() => setStep(stepBefore5)}
-          isLast={false}
+          onNext={() => (noDate ? generateNow() : setStep(6))}
+          onBack={() => setStep(isDiplome ? 2 : 3)}
+          isLast={noDate}
           isPremium={isPremium}
           onUpgrade={onUpgrade}
-        />
-      )}
-
-      {!isGoalMode && step === 7 && (
-        <StepPhysique
-          birthMonth={profile.birthMonth}
-          birthDay={profile.birthDay}
-          birthYear={profile.birthYear}
-          weightKg={profile.weightKg}
-          heightCm={profile.heightCm}
-          onChange={(key, val) => update(key, val)}
-          onPatch={patchProfile}
-          onNext={() => setStep(8)}
-          onBack={() => setStep(5)}
-        />
-      )}
-
-      {!isGoalMode && step === 8 && (
-        <StepInjury
-          injuryStatus={profile.injuryStatus}
-          injuryZone={profile.injuryZone}
-          injurySeverity={profile.injurySeverity}
-          healthDeclaration={profile.healthDeclaration}
-          healthConsent={profile.healthConsent}
-          onChangeConsent={(v) => {
-            if (v) {
-              patchProfile({ healthConsent: true, healthConsentAt: new Date().toISOString() });
-            } else {
-              patchProfile({
-                healthConsent: false,
-                healthConsentAt: null,
-                injuryStatus: profile.injuryStatus === "oui" ? "aucune" : profile.injuryStatus,
-                injuryZone: null,
-                injurySeverity: null,
-                healthDeclaration: false,
-              });
-            }
-          }}
-          onChangeStatus={(v) => {
-            if (v === "aucune") {
-              patchProfile({
-                injuryStatus: v,
-                injuryZone: null,
-                injurySeverity: null,
-                healthDeclaration: false,
-              });
-            } else {
-              update("injuryStatus", v);
-            }
-          }}
-          onChangeZone={(v) => update("injuryZone", v)}
-          onChangeSeverity={(v) => update("injurySeverity", v)}
-          onChangeDeclaration={(v) => update("healthDeclaration", v)}
-          onNext={() => {
-            if (!profile.healthConsent) {
-              patchProfile({
-                healthConsent: false,
-                healthConsentAt: null,
-                injuryStatus: "aucune",
-                injuryZone: null,
-                injurySeverity: null,
-                healthDeclaration: false,
-              });
-            }
-            setStep(10);
-          }}
-          onRefuse={() => {
-            patchProfile({
-              healthConsent: false,
-              healthConsentAt: null,
-              injuryStatus: "aucune",
-              injuryZone: null,
-              injurySeverity: null,
-              healthDeclaration: false,
-            });
-            setStep(10);
-          }}
-          onBack={() => setStep(7)}
-        />
-      )}
-
-      {!isGoalMode && step === 10 && (
-        <StepEquipment
-          equipment={profile.equipment}
-          onChange={(v) => update("equipment", v)}
-          onNext={() => setStep(12)}
-          onBack={() => setStep(8)}
-        />
-      )}
-
-      {!isGoalMode && step === 12 && (
-        <StepSessionDistance
-          value={profile.targetSessionDistance}
-          level={profile.level}
-          onChange={(v) => update("targetSessionDistance", v)}
-          onNext={() => setStep(9)}
-          onBack={() => setStep(10)}
-          Btn={Btn}
-          G={G}
-        />
-      )}
-
-      {!isGoalMode && step === 9 && (
-        <StepSwimPrefs
-          swimStyle={profile.swimStyle}
-          preferredStroke={profile.preferredStroke}
-          hideFourNages={goalHidesFourNages(profile)}
-          onChangeStyle={(v) => update("swimStyle", v)}
-          onChangeStroke={(v) => update("preferredStroke", v)}
-          onNext={() => (noDate ? generateNow() : setStep(6))}
-          onBack={() => setStep(12)}
-          isLast={noDate}
         />
       )}
 
@@ -6112,7 +5894,7 @@ const OnboardingWizard = ({
           onNext={() => generateNow()}
           onBack={() => {
             if (isGoalMode) setStep(2);
-            else setStep(9);
+            else setStep(5);
           }}
         />
       )}
@@ -6138,7 +5920,7 @@ const Loading = () => (
 
 // ── SHARE MODAL ───────────────────────────────────────────────────────────
 const ShareModal = ({ session, goalLabel, onClose }) => {
-  const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
+  const tm = getTypeMeta(session.type);
   const handleDownload = () => {
     const canvas = createShareCanvas(session, goalLabel);
     const link = document.createElement("a");
@@ -6506,13 +6288,13 @@ const BadgeToast = ({ badgeId }) => {
   const b = BADGE_DEFS.find(d => d.id === badgeId);
   if (!b) return null;
   return (
-    <div className="toast-in" style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: G.ink, borderRadius: 20, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", whiteSpace: "nowrap" }}>
+    <div className="toast-in" style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: G.surface, borderRadius: 20, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", whiteSpace: "nowrap", border: `1px solid ${G.greyLight}` }}>
       <div className="badge-pop" style={{ width: 40, height: 40, borderRadius: "50%", background: b.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <b.icon size={18} color={G.white} />
       </div>
       <div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>Badge débloqué</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: G.white }}>{b.label}</div>
+        <div style={{ fontSize: 12, color: G.grey }}>Badge débloqué</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: G.ink }}>{b.label}</div>
       </div>
     </div>
   );
@@ -6626,13 +6408,13 @@ const PlanTierComparison = ({ compact = false }) => (
 const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus }) => {
   if (isPremium) {
     return (
-      <div style={{ background: G.ink, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Zap size={18} color={G.gold} />
+      <div style={{ background: G.blueLight, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12, border: `1px solid ${G.greyLight}` }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Zap size={18} color={G.white} />
         </div>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: G.white }}>Premium actif</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Plan complet · départs D… · adaptation coach</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: G.ink }}>Premium actif</div>
+          <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>Plan complet · départs D… · adaptation coach</div>
         </div>
       </div>
     );
@@ -7203,15 +6985,15 @@ const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible
 
 const PremiumTeaser = ({ onUpgrade }) => (
   <div style={{ margin: "0 0 16px", borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
-    <div style={{ background: G.ink, padding: "24px 22px", display: "flex", alignItems: "center", gap: 16 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Lock size={20} color="rgba(255,255,255,0.6)" />
+    <div style={{ background: G.blueLight, padding: "20px 18px", display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Lock size={20} color={G.white} />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: G.white, marginBottom: 2 }}>Ton coach a préparé tes séances</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Essai 7 jours · adaptation + allures · puis {PRICING_SUMMARY_FR}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Ton coach a préparé tes séances</div>
+        <div style={{ fontSize: 13, color: G.grey }}>Essai 7 jours · adaptation + allures · puis {PRICING_SUMMARY_FR}</div>
       </div>
-      <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.ink, cursor: "pointer", flexShrink: 0 }}>
+      <button type="button" onClick={onUpgrade} style={{ background: G.blue, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.white, cursor: "pointer", flexShrink: 0 }}>
         Essai
       </button>
     </div>
@@ -7508,7 +7290,7 @@ const SessionCard = ({
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
-  const tm = TYPE_META[session.type] || TYPE_META.ENDURANCE;
+  const tm = getTypeMeta(session.type);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -7616,11 +7398,10 @@ const SessionCard = ({
   return (
     <div style={{
       background: resolved || locked ? G.greyXLight : G.surface,
-      borderRadius: 24,
-      border: `1px solid ${resolved || locked ? G.greyLight : "rgba(53,93,163,0.10)"}`,
+      borderRadius: 20,
+      border: `1px solid ${G.greyLight}`,
       opacity: resolved ? 0.78 : locked ? 0.92 : 1,
-      transition: "opacity 0.25s, box-shadow 0.25s",
-      boxShadow: resolved || locked ? "none" : "0 2px 12px rgba(142,179,255,0.10), 0 8px 32px rgba(53,93,163,0.06)",
+      transition: "opacity 0.25s",
       overflow: "hidden",
       position: "relative",
     }}>
@@ -7798,7 +7579,7 @@ const SessionCard = ({
               aria-label="Débloque Premium pour voir les exercices"
               style={{
                 width: "100%", padding: "14px 16px 16px",
-                background: "#f0f1f4",
+                background: G.greyXLight,
                 border: "none", borderTop: `1px solid ${G.greyLight}`,
                 cursor: "pointer", textAlign: "left",
               }}
@@ -7817,7 +7598,7 @@ const SessionCard = ({
                     style={{
                       height: i === 0 || i === skeletonBars - 1 ? 36 : 48,
                       borderRadius: 12,
-                      background: i % 2 === 0 ? "#d8dbe2" : "#e4e6eb",
+                      background: i % 2 === 0 ? G.greyLight : G.surface,
                       width: `${88 - (i % 3) * 12}%`,
                     }}
                   />
@@ -7846,7 +7627,7 @@ const SessionCard = ({
             }}
             style={{
               width: "100%", padding: "14px 16px", minHeight: 48,
-              background: expanded ? "#fafbfc" : "transparent",
+              background: expanded ? G.blueLight : "transparent",
               border: "none", borderTop: `1px solid ${G.greyLight}`,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
               color: G.inkLight, fontSize: 13, fontWeight: 600,
@@ -7856,7 +7637,7 @@ const SessionCard = ({
             {expanded ? <ChevronUp size={14} color={G.greyMid} /> : <ChevronDown size={14} color={G.greyMid} />}
           </button>
           {expanded && (
-            <div style={{ background: "#fafbfc", padding: "12px 12px 16px" }}>
+            <div style={{ background: G.blueLight, padding: "12px 12px 16px" }}>
               <WorkoutPrepView
                 session={session}
                 colors={G}
@@ -7989,18 +7770,18 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 17, fontWeight: 800, color: G.ink, letterSpacing: "-0.02em" }}>Semaine {week.number}</span>
+              <span style={{ fontSize: 17, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>Semaine {week.number}</span>
               {isCurrentWeek && (
-                <span style={{ fontSize: 10, fontWeight: 800, color: G.white, background: G.blue, padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em" }}>EN COURS</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: G.white, background: G.blue, padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em" }}>En cours</span>
               )}
               {allDone && !isCurrentWeek && (
                 <span style={{
-                  fontSize: 10, fontWeight: 800,
+                  fontSize: 10, fontWeight: 700,
                   color: allActuallyDone ? G.mint : G.gold,
                   background: allActuallyDone ? G.mintLight : G.goldLight,
                   padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em",
                 }}>
-                  {allActuallyDone ? "TERMINÉE" : "PASSÉE"}
+                  {allActuallyDone ? "Terminée" : "Passée"}
                 </span>
               )}
             </div>
@@ -8441,7 +8222,7 @@ const ProgressionLoopView = ({
           borderBottom: `1px solid rgba(142,179,255,0.10)`,
         }}>
           <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>
+            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, lineHeight: 1, margin: 0 }}>
               {loopTitle}
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
@@ -8484,11 +8265,11 @@ const ProgressionLoopView = ({
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
         {!isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="card" />}
 
-        <div style={{ marginBottom: 14 }}>
+        <div className="ms-session-card" style={{ marginBottom: 14, padding: "16px 18px 18px" }}>
           <WorkoutPrepView
             session={session}
             colors={G}
-            accent={{ bg: (TYPE_META[session.type] || TYPE_META.ENDURANCE).bg, color: (TYPE_META[session.type] || TYPE_META.ENDURANCE).color }}
+            accent={{ bg: getTypeMeta(session.type).bg, color: getTypeMeta(session.type).color }}
             isPremium={isPremium}
             showStart={!resolved}
             startLabel={isPremium ? "Commencer la séance" : "S’abonner pour nager"}
@@ -8517,7 +8298,7 @@ const ProgressionLoopView = ({
             session={session}
             sessionKey={`${activePlanId || "loop"}:today`}
             colors={G}
-            accent={{ bg: (TYPE_META[session.type] || TYPE_META.ENDURANCE).bg, color: (TYPE_META[session.type] || TYPE_META.ENDURANCE).color }}
+            accent={{ bg: getTypeMeta(session.type).bg, color: getTypeMeta(session.type).color }}
             onClose={() => setPoolOpen(false)}
             onFinish={() => {
               setPoolOpen(false);
@@ -8685,7 +8466,7 @@ const PlanSelector = ({
         <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
           Plan actif
         </div>
-        <div style={{ fontSize: 15, fontWeight: 800, color: G.ink, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {primary}
         </div>
         {secondary && (
@@ -8831,7 +8612,7 @@ const PlanTab = ({
       }}>
         <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
+            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{
@@ -9169,9 +8950,14 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
 const Dashboard = ({
   plan, profile, onTabChange, onSignOut, user,
   isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
+  activePlanId = null,
 }) => {
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
+  const [poolOpen, setPoolOpen] = useState(false);
+  const next = findNextSession(plan);
+  const preview = next?.session ? sessionCardModel(next.session) : null;
+  const hasSwum = stats.totalSessions > 0;
 
   const firstName = user?.user_metadata?.firstname
     || (() => {
@@ -9187,6 +8973,30 @@ const Dashboard = ({
     || "Nageur";
 
   const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
+  const tm = getTypeMeta(next?.session?.type);
+
+  const startToday = () => {
+    if (!next?.session || next.resolved) {
+      onTabChange?.("plan");
+      return;
+    }
+    if (!isPremium) {
+      onUpgrade?.("session_locked");
+      return;
+    }
+    const props = sessionAnalyticsProps(profile, next.session, {
+      planWeek: (plan?.weeks?.[next.weekIndex]?.number) ?? next.weekIndex + 1,
+      sessionIndex: next.sessionIndex,
+    });
+    track("session_started", {
+      level: props.level,
+      objective: props.objective,
+      planWeek: props.planWeek,
+      sessionIndex: props.sessionIndex,
+      volume: props.volume,
+    }, { onceKey: `session_started:${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}` });
+    setPoolOpen(true);
+  };
 
   return (
     <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", background: "transparent", minHeight: "100dvh" }}>
@@ -9200,17 +9010,24 @@ const Dashboard = ({
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
 
-        {/* ── Greeting ── */}
-        {(() => {
-          const h = new Date().getHours();
-          const greeting = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-          return (
-            <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 13, color: G.grey, marginBottom: 2 }}>{greeting},</p>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: G.ink, lineHeight: 1.1 }}>{firstName}</h1>
-            </div>
-          );
-        })()}
+        <div className="ms-home-greet">
+          <div>
+            <p>{(() => {
+              const h = new Date().getHours();
+              return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+            })()},</p>
+            <h1>{plan ? "Prêt à nager ?" : firstName}</h1>
+          </div>
+          {plan && (stats.streak > 0 || hasSwum) && (
+            <span className="ms-home-streak">
+              {stats.streak > 0 ? (
+                <><Flame size={14} color={G.gold} />{stats.streak}</>
+              ) : (
+                <><Waves size={14} color={G.blue} />{(stats.totalMeters / 1000).toFixed(1)} km</>
+              )}
+            </span>
+          )}
+        </div>
 
         {!plan && (
           <div style={{
@@ -9218,18 +9035,19 @@ const Dashboard = ({
             border: `1px solid ${G.greyLight}`,
             boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
           }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: G.ink, margin: "0 0 8px" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, margin: "0 0 8px" }}>
               Pas encore de programme
             </h2>
             <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 16px" }}>
-              Crée ton plan personnalisé dans l’onglet Programme. Profil, Binômes et paramètres restent disponibles.
+              Crée ton plan personnalisé dans l’onglet Programme.
             </p>
             <button
               type="button"
               onClick={() => onTabChange?.("plan")}
               style={{
                 width: "100%", padding: "14px 16px", borderRadius: 12, border: "none",
-                background: G.blue, color: G.white, fontSize: 15, fontWeight: 700, cursor: "pointer", minHeight: 48,
+                background: G.blue, color: G.white, fontSize: 15, fontWeight: 600, cursor: "pointer", minHeight: 48,
+                fontFamily: FONT,
               }}
             >
               Créer mon programme
@@ -9237,7 +9055,51 @@ const Dashboard = ({
           </div>
         )}
 
-        {isPremium && plan?.weeks?.length > 0 && (
+        {preview && (
+          <div style={{ marginBottom: 16 }}>
+            <SessionHeroCard preview={preview} kicker={next.resolved ? "Séance faite" : "Séance du jour"}>
+              <button
+                type="button"
+                className="ms-plan-reveal-btn"
+                onClick={startToday}
+                style={{ fontFamily: FONT }}
+              >
+                {next.resolved
+                  ? "Voir le programme"
+                  : (isPremium ? "C’est parti — je nage" : "S’abonner pour nager")}
+              </button>
+            </SessionHeroCard>
+          </div>
+        )}
+
+        {poolOpen && next?.session && (
+          <PoolMode
+            session={next.session}
+            sessionKey={`${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}`}
+            colors={G}
+            accent={{ bg: tm.bg, color: tm.color }}
+            onClose={() => setPoolOpen(false)}
+            onFinish={() => {
+              setPoolOpen(false);
+              onComplete?.(next.weekIndex, next.sessionIndex, "done");
+            }}
+          />
+        )}
+
+        {!isLoop && planFinished && (
+          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
+            {plan.isProgression
+              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
+              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
+            }
+          </div>
+        )}
+
+        {!isPremium && plan?.weeks?.length > 0 && (
+          <PremiumTeaser onUpgrade={onUpgrade} />
+        )}
+
+        {hasSwum && isPremium && plan?.weeks?.length > 0 && (
           <CoachCard
             plan={plan}
             profile={profile}
@@ -9245,12 +9107,7 @@ const Dashboard = ({
           />
         )}
 
-        {!isPremium && plan?.weeks?.length > 0 && (
-          <PremiumTeaser onUpgrade={onUpgrade} />
-        )}
-
-        {/* ── T100 : précision des séances (levier Premium) ── */}
-        {plan && (
+        {hasSwum && plan && (
           <PacePersonalizationCard
             pace100={profile?.pace100}
             isPremium={isPremium}
@@ -9259,74 +9116,27 @@ const Dashboard = ({
           />
         )}
 
-        {plan && (
-        <div style={{
-          background: `linear-gradient(135deg, ${G.surface} 0%, ${G.blueLight} 100%)`,
-          borderRadius: 24,
-          padding: "20px 18px",
-          marginBottom: 16,
-          border: `1px solid ${G.greyLight}`,
-          boxShadow: "0 12px 30px rgba(53,93,163,0.08)",
-        }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.blue, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-                Dashboard natation
-              </div>
-            </div>
-            <div style={{ minWidth: 56, height: 56, borderRadius: 18, background: G.surface, border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <BarChart2 size={24} color={G.blue} />
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {[
-              { label: "Distance", value: `${(stats.totalMeters / 1000).toFixed(1)} km`, Icon: Waves, color: G.blue, bg: G.blueLight },
-              { label: "Séances", value: String(stats.totalSessions), Icon: Check, color: G.mint, bg: G.mintLight },
-              { label: "Série", value: String(stats.streak), Icon: Flame, color: G.coral, bg: G.coralLight },
-              { label: "Progression", value: `${checkBadges(stats).length}/${BADGE_DEFS.length}`, Icon: Trophy, color: G.gold, bg: G.goldLight },
-            ].map((item) => (
-              <div key={item.label} style={{ background: G.surface, borderRadius: 16, padding: "14px 12px", border: `1px solid ${G.greyLight}`, display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <item.Icon size={18} color={item.color} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{item.value}</div>
-                  <div style={{ fontSize: 11, color: G.grey, marginTop: 3 }}>{item.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        )}
-
-        {!isLoop && planFinished && (
-          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
-            {plan.isProgression
-              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 800, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
-            }
-          </div>
-        )}
-
-        {plan && (
+        {hasSwum && plan && (
           <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
         )}
 
-        <StravaSection
-          user={user}
-          plan={plan}
-          profile={profile}
-          currentPace100={profile?.pace100}
-          onPaceUpdate={onPaceUpdate}
-          onValidateSession={onValidateSession}
-          showProgramActions={false}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-        />
+        {hasSwum && (
+          <StravaSection
+            user={user}
+            plan={plan}
+            profile={profile}
+            currentPace100={profile?.pace100}
+            onPaceUpdate={onPaceUpdate}
+            onValidateSession={onValidateSession}
+            showProgramActions={false}
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+          />
+        )}
 
-        {plan && <HomeBadgesSection plan={plan} />}
+        {hasSwum && plan && <HomeBadgesSection plan={plan} />}
 
-        <HomeBlogCarousel />
+        {hasSwum && <HomeBlogCarousel />}
       </div>
     </div>
   );
@@ -11802,7 +11612,7 @@ const BLANK_PROFILE = {
   eventDate: "",
   trainingFocus: null,
   level: "",
-  pool: 50,
+  pool: 25,
   sessionsPerWeek: null,
   weightCurrent: "",
   weightGoal: "",
@@ -11841,19 +11651,16 @@ export default function App() {
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [showPlanReady, setShowPlanReady] = useState(false);
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
+  const [planReveal, setPlanReveal] = useState(null);
+  const [sessionCelebrate, setSessionCelebrate] = useState(null);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
-  const [theme, setTheme] = useState(() => {
-    try {
-      return normalizeTheme(localStorage.getItem(THEME_LAST_KEY) || getStoredTheme());
-    } catch {
-      return "dark";
-    }
-  });
   const forceAuthRef = useRef(false);
   const checkoutAbandonedRef = useRef(false);
   const welcomeEmailInFlightRef = useRef(null);
+  const planRevealPaywallRef = useRef(false);
+  const pendingFeedbackRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const locationRef = useRef(location);
@@ -11935,9 +11742,30 @@ export default function App() {
       forceAuthRef.current = false;
       authOpenedFromUrlRef.current = false;
       setScreen("onboarding");
-      setStep(1);
+      const prefill = readPersistedOnboardingPrefill();
+      if (prefill) {
+        setProfile((prev) => ({ ...prev, ...profilePatchFromPrefill(prefill) }));
+        setStep(stepFromPrefill(prefill));
+      } else {
+        setStep(1);
+      }
     }
   }, [location.pathname, location.search, navigate, user]);
+
+  const onboardingPrefillRef = useRef(false);
+  useEffect(() => {
+    const fromUrl = parseOnboardingPrefill(location.search);
+    if (fromUrl) persistOnboardingPrefill(fromUrl);
+    if (isAuthPath(location.pathname)) return;
+    if (!location.pathname.startsWith("/app")) return;
+    const prefill = fromUrl || readPersistedOnboardingPrefill();
+    if (!prefill) return;
+    if (onboardingPrefillRef.current && !fromUrl) return;
+    onboardingPrefillRef.current = true;
+    setProfile((prev) => ({ ...prev, ...profilePatchFromPrefill(prefill) }));
+    setStep(stepFromPrefill(prefill));
+    if (fromUrl) navigate("/app", { replace: true });
+  }, [location.pathname, location.search, navigate]);
 
   const openAuth = (mode = "password") => {
     forceAuthRef.current = true;
@@ -12282,7 +12110,16 @@ export default function App() {
         plansHydratedRef.current = false;
         resetAnalytics();
         setAccessSynced(false);
-        setScreen("onboarding"); setStep(1); setProfile(BLANK_PROFILE); setPlans([]); setActivePlanId(null); setPlanHistory([]); setAddingPlan(false); setQuestionnaireMode("full"); setTasteProfile(blankTaste()); setAuthLoading(false);
+        setScreen("onboarding");
+        const prefill = readPersistedOnboardingPrefill();
+        if (prefill) {
+          setProfile({ ...BLANK_PROFILE, ...profilePatchFromPrefill(prefill) });
+          setStep(stepFromPrefill(prefill));
+        } else {
+          setStep(1);
+          setProfile(BLANK_PROFILE);
+        }
+        setPlans([]); setActivePlanId(null); setPlanHistory([]); setAddingPlan(false); setQuestionnaireMode("full"); setTasteProfile(blankTaste()); setAuthLoading(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -12914,6 +12751,32 @@ export default function App() {
     }
   };
 
+  const queueSessionCelebrate = (session, planSnapshot) => {
+    const meters = parseInt(String(session?.distance || "").replace(/\D/g, ""), 10) || 0;
+    const statsNow = computeStats(planSnapshot);
+    setSessionCelebrate({
+      meters,
+      streak: Math.max(1, (statsNow.streak || 0) + 1),
+      first: (statsNow.totalSessions || 0) === 0,
+    });
+  };
+
+  const dismissSessionCelebrate = () => {
+    const pending = pendingFeedbackRef.current;
+    pendingFeedbackRef.current = null;
+    setSessionCelebrate(null);
+    if (pending) setSessionFeedbackTarget(pending);
+  };
+
+  const dismissPlanReveal = () => {
+    const paywall = planRevealPaywallRef.current;
+    planRevealPaywallRef.current = false;
+    setPlanReveal(null);
+    setScreen("app");
+    setActiveTab("home");
+    if (paywall) setShowPlanReady(true);
+  };
+
   const handleGenerate = async (overrideProfile = null) => {
     const sourceProfile = overrideProfile && typeof overrideProfile === "object" && overrideProfile.nativeEvent == null
       ? overrideProfile
@@ -12925,6 +12788,7 @@ export default function App() {
       openAuth("register");
       return;
     }
+    clearOnboardingPrefill();
     // Remplacement d’un plan existant = Premium (1er plan = aperçu OK)
     if (addingPlan && plans.length > 0 && !canGenerateProgram) {
       openUpgrade("trial_required");
@@ -12984,12 +12848,22 @@ export default function App() {
   };
 
   const generatePlanFromProfile = async (sourceProfile, { taste = null, openPaywallAfter = false } = {}) => {
-    setScreen("loading"); setError(null);
+    const showReveal = shouldShowPlanReveal({ addingPlan });
+    planRevealPaywallRef.current = !!(showReveal && openPaywallAfter);
+    if (showReveal) {
+      setPlanReveal({ phase: "building" });
+      setScreen("planReveal");
+    } else {
+      setScreen("loading");
+    }
+    setError(null);
+    const revealStartedAt = Date.now();
     try {
-      const swimmer = extractSwimmerProfile(sourceProfile);
-      const objective = extractPlanObjective(sourceProfile);
+      const source = applyFirstPlanDefaults(sourceProfile);
+      const swimmer = extractSwimmerProfile(source);
+      const objective = extractPlanObjective(source);
       let genProfile = mergeForGeneration(swimmer, objective, {
-        ...sourceProfile,
+        ...source,
         taste: taste || tasteProfile,
       });
       if (usesSessionLoop(genProfile)) {
@@ -13109,11 +12983,21 @@ export default function App() {
       }
       // Sortie définitive du questionnaire — même si le paiement est abandonné plus tard
       clearPendingOnboarding();
-      setScreen("app"); setActiveTab("home");
-      if (openPaywallAfter) {
-        setShowPlanReady(true);
+      setActiveTab("home");
+      if (showReveal) {
+        const reduceMotion = typeof window !== "undefined"
+          && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const wait = revealMinWaitMs(Date.now() - revealStartedAt, reduceMotion);
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        setPlanReveal({ phase: "ready" });
+        setScreen("planReveal");
+      } else {
+        setScreen("app");
+        if (openPaywallAfter) setShowPlanReady(true);
       }
     } catch {
+      setPlanReveal(null);
+      planRevealPaywallRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
       const retryStep = sourceProfile.category === "progression" ? 3 : 5;
       setStep(retryStep);
@@ -13330,8 +13214,8 @@ export default function App() {
             status: "completed",
           }).then(() => {});
         }
-        // Feedback d'abord — avance à la fermeture du sheet
-        setSessionFeedbackTarget({ weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived });
+        pendingFeedbackRef.current = { weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived };
+        queueSessionCelebrate(archived, active.plan);
       } else {
         finishLoopSessionAndAdvance(archived);
       }
@@ -13411,7 +13295,8 @@ export default function App() {
           status: "completed",
         }).then(() => {});
       }
-      setSessionFeedbackTarget({ weekIndex, sessionIndex, promptWeekAfter: true });
+      pendingFeedbackRef.current = { weekIndex, sessionIndex, promptWeekAfter: true };
+      queueSessionCelebrate(sessForAnalytics, active?.plan);
     }
   };
 
@@ -14032,24 +13917,6 @@ export default function App() {
     showToast("Compte supprimé.");
   };
 
-  // Thème propre à chaque compte (user_metadata + localStorage scopé par userId)
-  useEffect(() => {
-    const t = resolveThemeForUser(user);
-    applyTheme(t, { userId: user?.id || null, persist: true });
-    setTheme(t);
-    // Première fois sur ce compte : enregistrer le thème dans le profil (sync multi-appareils)
-    const meta = user?.user_metadata?.theme;
-    if (user?.id && meta !== "dark" && meta !== "light") {
-      supabase.auth.updateUser({ data: { theme: t } }).catch(() => {});
-    }
-  }, [user?.id, user?.user_metadata?.theme]);
-
-  const handleToggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    persistThemeToAccount(next, user);
-    setTheme(next);
-  };
-
   const handleRefreshStatus = async () => {
     showToast("Synchronisation avec Stripe…");
     try {
@@ -14145,6 +14012,19 @@ export default function App() {
     </>
   );
 
+  if (screen === "planReveal") return (
+    <>
+      <style>{css}</style>
+      <PlanRevealView
+        phase={planReveal?.phase || "building"}
+        plan={plan}
+        profile={activeProfile}
+        colors={G}
+        onContinue={dismissPlanReveal}
+      />
+    </>
+  );
+
   if (screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
 
   if (isFrozen) return (
@@ -14176,7 +14056,7 @@ export default function App() {
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={22} onDark={typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") !== "light"} />
+                <BrandLogo variant="wordmark" height={22} onDark />
               </div>
             </div>
             <OnboardingWizard
@@ -14239,7 +14119,7 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
@@ -14258,13 +14138,11 @@ export default function App() {
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav user={user} />
-        <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
+        <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} hideBuddies={(!stats || stats.totalSessions < 1) && activeTab !== "buddies"} />
         <SettingsDrawer
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
           user={user}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
           isPremium={isPremium}
           onUpgrade={() => openUpgrade()}
           onPortal={handlePortal}
@@ -14287,7 +14165,7 @@ export default function App() {
           />
         )}
 
-        {sessionFeedbackTarget !== null && (() => {
+        {sessionFeedbackTarget !== null && !sessionCelebrate && (() => {
           const s = sessionFeedbackTarget.archived
             || plan?.weeks?.[sessionFeedbackTarget.weekIndex]?.sessions?.[sessionFeedbackTarget.sessionIndex];
           return (
@@ -14305,8 +14183,16 @@ export default function App() {
         {feedbackWeek !== null && sessionFeedbackTarget === null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} isPremium={isPremium} />}
         {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
         {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
+        {sessionCelebrate && (
+          <SessionCompleteView
+            meters={sessionCelebrate.meters}
+            streak={sessionCelebrate.streak}
+            first={sessionCelebrate.first}
+            onContinue={dismissSessionCelebrate}
+          />
+        )}
         {toast && (
-          <div className="toast-in app-toast" style={{ background: G.ink, color: G.inverse, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}>
+          <div className="toast-in app-toast" style={{ background: G.surface, color: G.ink, borderRadius: 14, padding: "14px 16px", fontSize: 14, lineHeight: 1.5, boxShadow: "0 8px 32px rgba(0,0,0,0.28)", border: `1px solid ${G.greyLight}` }}>
             {toast}
           </div>
         )}

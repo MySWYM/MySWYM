@@ -144,6 +144,35 @@ export const REQUIRED_SWIMMER_FIELDS = Object.freeze([
   "preferredStroke",
 ]);
 
+/** Distance moyenne / séance si le nageur n’a pas encore choisi (palier du niveau). */
+export function defaultSessionDistanceForLevel(level) {
+  const l = String(level || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  if (l.includes("decouv") || l === "beginner" || l === "debutant") return 1000;
+  if (l.includes("sportif")) return 2500;
+  if (l.includes("perf") || l === "advanced") return 3000;
+  return 2000;
+}
+
+/**
+ * Complète les champs reportés après le questionnaire court
+ * (bassin 25 m, aucun matos, crawl, distance selon le niveau). N’écrase pas un choix déjà fait.
+ */
+export function applyFirstPlanDefaults(profile = {}) {
+  const next = { ...profile };
+  const pool = Number(next.pool);
+  next.pool = pool === 50 ? 50 : 25;
+  if (!Array.isArray(next.equipment)) next.equipment = [];
+  if (!next.swimStyle) next.swimStyle = "crawl";
+  if (!next.preferredStroke) next.preferredStroke = "crawl";
+  if (!(Number(next.targetSessionDistance) > 0)) {
+    next.targetSessionDistance = defaultSessionDistanceForLevel(next.level);
+  }
+  if (next.injuryStatus == null || next.injuryStatus === "") {
+    next.injuryStatus = "aucune";
+  }
+  return next;
+}
+
 export const TRAINING_FOCUS_OPTIONS = Object.freeze([
   {
     id: "technique",
@@ -316,7 +345,7 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     eventDate: "",
     trainingFocus: null,
     level: "",
-    pool: 50,
+    pool: 25,
     sessionsPerWeek: null,
     birthMonth: "",
     birthDay: "",

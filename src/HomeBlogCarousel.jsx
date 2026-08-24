@@ -6,29 +6,20 @@ import { getStoredLanguage } from "./i18n/index.js";
 
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 
-/** Couleurs via tokens thème app (--myswym-*) + fallbacks light. */
+/** Couleurs via tokens DA dark (--myswym-*). */
 function useAppColors() {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const root = document.documentElement;
-    const obs = new MutationObserver(() => setTick((n) => n + 1));
-    obs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => obs.disconnect();
-  }, []);
-  void tick;
   const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
   const v = (name, fallback) => cs?.getPropertyValue(name)?.trim() || fallback;
-  const dark = document.documentElement.getAttribute("data-theme") === "dark";
   return {
-    surface: v("--myswym-surface", "#FFFFFF"),
-    ink: v("--myswym-ink", "#191c1e"),
+    surface: v("--myswym-surface", "#06101f"),
+    ink: v("--myswym-ink", "#f4f8fa"),
     blue: v("--myswym-blue", "#006bfd"),
     greyLight: v("--myswym-grey-light", "rgba(0, 107, 253, 0.22)"),
-    blueLight: dark ? "#0a162c" : "#d6e7ff",
-    grey: dark ? "#9bb0c8" : "#5d6b7d",
-    greyMid: dark ? "#6b7c90" : "#9bb0c8",
-    inkLight: dark ? "#9bb0c8" : "#3d4f66",
-    greyXLight: dark ? "#0a162c" : "#eef3f8",
+    blueLight: "#0a162c",
+    grey: "#9bb0c8",
+    greyMid: "#6b7c90",
+    inkLight: "#9bb0c8",
+    greyXLight: "#0a162c",
   };
 }
 

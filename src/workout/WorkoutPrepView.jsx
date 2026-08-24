@@ -50,11 +50,12 @@ export default function WorkoutPrepView({
         <div style={{ marginBottom: 18 }}>
           <h2 style={{
             margin: 0,
+            fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
             fontSize: 26,
-            fontWeight: 800,
+            fontWeight: 700,
             color: G.ink,
             lineHeight: 1.15,
-            letterSpacing: "-0.02em",
+            letterSpacing: "-0.03em",
           }}>
             {header.title}
           </h2>
