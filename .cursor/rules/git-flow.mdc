@@ -1,29 +1,51 @@
 ---
-description: Branches MySWYM — develop → staging (test Arthur) → main (Arthur seulement)
+description: Couches MySWYM — local (dev) d’abord, puis GitHub, staging, main. Le live doit être dans le develop local.
 alwaysApply: true
 ---
 
 # Git flow MySWYM
 
-## Branches
+## Couches (dans cet ordre)
 
-| Branche | Rôle |
-| --- | --- |
-| `develop` | Base de travail. Toute feature part de `origin/develop`. |
-| `feat/…` `fix/…` | Un sujet par branche. Jamais depuis `main` ni une vieille branche agent. |
-| `staging` | Recette (`staging.myswym.app`). Merge **après validation**. Arthur teste. |
-| `main` | Production. **L’agent ne merge jamais vers `main`.** Arthur merge `staging` → `main`. |
+| Couche | C’est quoi | Rôle |
+| --- | --- | --- |
+| **1. Local** (`develop`) | La machine d’Arthur. Quand il dit « dev », c’est **ici**. | Première couche. Toute feature part de **ce** `develop`, une fois le live dedans. |
+| **2. GitHub** (`origin/…`) | Copie distante. | Sync / backup. Ce n’est **pas** la base de branchement. |
+| **3. Staging** | `staging.myswym.app` | Recette. Merge **après validation**. Arthur teste. |
+| **4. Main** | Production | **L’agent ne merge jamais vers `main`.** Arthur merge `staging` → `main`. |
+
+`feat/…` `fix/…` : un sujet par branche. Jamais depuis `main`, `staging`, ou une vieille branche agent.
 
 ## Déroulé
 
-1. `git fetch origin && git checkout -b feat/… origin/develop`
-2. Travailler, committer.
-3. Quand c’est validé : merge vers `staging` (PR ou merge), **pas** vers `main`.
-4. Arthur teste sur staging, puis merge lui-même vers `main`.
+1. `git fetch origin` — **doit réussir** (pas un fetch sandbox ignoré). Le fetch **met à jour le local**, il ne le remplace pas.
+2. Mettre le **`develop` local** à jour : il doit contenir `origin/main` (le live). Sinon : merge `origin/main` → `develop` **local**, puis `git push origin develop` pour que GitHub suive.
+3. `git checkout -b feat/… develop` — depuis le **local**, jamais depuis `origin/develop`.
+4. Travailler, committer.
+5. Quand c’est validé : merge vers `staging` (PR ou merge), **pas** vers `main`.
+6. Arthur teste sur staging, puis merge lui-même `staging` → `main`.
+7. **Ensuite** : ramener le live dans le **`develop` local** (`main` → `develop`, fast-forward ou merge), puis pusher `origin/develop`. Sans ça, la prochaine feature reprend un local périmé et peut réintroduire des bugs déjà corrigés en prod.
+
+## Avant de brancher, committer ou pusher (agent)
+
+Toujours `git fetch origin` d’abord. Si le fetch échoue (`FETCH_HEAD`, sandbox) : le refaire avec les permissions nécessaires. Ne pas continuer sur des refs `origin/*` périmées.
+
+Le live doit être dans le **`develop` local**, pas seulement dans `HEAD` ni dans `origin/develop` :
+
+```bash
+git merge-base --is-ancestor origin/main develop || echo STALE
+```
+
+**Stop** (pas de nouvelle feature, pas de push d’une base vieille) tant que ce check échoue. Dans ce cas : merge `origin/main` → `develop` local, expliquer à Arthur, pusher `develop`, **puis** brancher.
+
+Avant de pusher une `feat/…` : `origin/main` doit aussi être un ancêtre de `HEAD` (la feature part du local à jour).
+
+Ne **jamais** `checkout -b feat/… origin/develop`. `origin/develop` n’est pas la couche 1.
 
 ## Interdit
 
-- Brancher depuis `main`, `staging`, ou une branche `claude/*` / `cursor/*` déjà mergée.
+- Brancher depuis `main`, `staging`, `origin/develop`, ou une branche `claude/*` / `cursor/*` déjà mergée.
 - Merger silencieusement vers `main`.
 - Mélanger deux sujets sur la même branche (ex. composeur + DA landing).
 - Commits « checkpoint before checkout » / dumps fourre-tout.
+- Pusher / merger une branche qui n’inclut pas les commits déjà sur `origin/main`.
