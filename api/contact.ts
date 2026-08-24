@@ -14,6 +14,12 @@ import {
   isSupportRequest,
   isTelegramWebhookRequest,
 } from "./_lib/support/http.js";
+import { formatLandingContactNotify } from "./_lib/support/parse.js";
+import {
+  isTelegramConfigured,
+  operatorChatId,
+  sendTelegramMessage,
+} from "./_lib/support/telegram.js";
 
 const MAX_NAME = 120;
 const MAX_REVIEW_NAME = 80;
@@ -201,6 +207,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ok: false,
         error: "Envoi impossible pour le moment. Réessaie ou écris à contact@myswym.app.",
       });
+    }
+
+    if (isTelegramConfigured()) {
+      try {
+        await sendTelegramMessage(
+          operatorChatId(),
+          formatLandingContactNotify({ name, email, subject, body: message }),
+        );
+      } catch (err) {
+        console.error(
+          "[api/contact] telegram notify:",
+          err instanceof Error ? err.message : err,
+        );
+      }
     }
 
     return res.status(200).json({ ok: true, id: data?.id ?? "unknown" });
