@@ -59,7 +59,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Résiliation via le portail client Stripe depuis le compte. L’essai 7 jours sans carte s’arrête tout seul : tes séances se mettent en pause, aucun prélèvement. Mensuel 9,99€ : sans engagement, accès jusqu’à la fin de période payée. Mensuel 4,99€ : engagement 12 mois. Annuel 52,99€ : prépaiement, pas de remboursement au prorata hors cas légaux.",
+        "Pour te désabonner : Profil → Paramètres → « Gérer mon abonnement » (portail Stripe) → Annuler l’abonnement. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier, ça s’arrête tout seul. Offre 4,99€/mois : engagement 12 mois. Annuel 52,99€ : pas de remboursement au prorata hors cas légaux. Supprimer le compte ne résilie pas l’abonnement.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,

@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import {
   asMessageBody,
   extractTelegramMessage,
+  formatOperatorClosed,
   formatOperatorNotify,
   isOperatorChat,
   isSupportKind,
@@ -15,9 +16,27 @@ import {
   wantsHumanHandoff,
 } from "./parse.js";
 import { isSupportRequest } from "./http.js";
+import { attachLastMessages } from "./preview.js";
 
 test("http module loads (ESM exports)", () => {
   assert.equal(typeof isSupportRequest, "function");
+});
+
+test("conversation history keeps last message per thread", () => {
+  const previews = attachLastMessages(
+    [
+      { id: "a", updated_at: "2026-08-24T10:00:00Z" },
+      { id: "b", updated_at: "2026-08-23T10:00:00Z" },
+    ],
+    [
+      { conversation_id: "a", id: "m1", role: "user", body: "premier", created_at: "2026-08-24T09:00:00Z" },
+      { conversation_id: "a", id: "m2", role: "agent", body: "réponse Arthur", created_at: "2026-08-24T09:05:00Z" },
+      { conversation_id: "b", id: "m3", role: "user", body: "ancien fil", created_at: "2026-08-23T09:00:00Z" },
+    ],
+  );
+  assert.equal(previews[0].last_body, "réponse Arthur");
+  assert.equal(previews[0].last_role, "agent");
+  assert.equal(previews[1].last_body, "ancien fil");
 });
 
 test("kind + message limits", () => {
@@ -78,6 +97,18 @@ test("notify format is replyable", () => {
   assert.match(text, /Marie · marie@myswym.app/);
   assert.match(text, /nouvelle conversation/);
   assert.match(text, /\/close/);
+  assert.equal(parseSupportCodeFromText(text), "deadbeef");
+});
+
+test("user close notifies operator", () => {
+  const text = formatOperatorClosed({
+    shortCode: "deadbeef",
+    displayName: "Marie",
+    email: "marie@myswym.app",
+  });
+  assert.match(text, /Support · deadbeef/);
+  assert.match(text, /Marie · marie@myswym.app/);
+  assert.match(text, /clôturé/);
   assert.equal(parseSupportCodeFromText(text), "deadbeef");
 });
 

@@ -408,12 +408,30 @@ const css = `
   }
   .support-fab {
     position: fixed;
-    z-index: 150;
+    z-index: 170;
     right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab--bare {
     bottom: calc(16px + var(--safe-bottom));
+  }
+  .support-widget {
+    position: fixed;
+    z-index: 160;
+    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px + 66px);
+    width: min(380px, calc(100vw - 32px));
+    height: min(560px, calc(100dvh - var(--bottom-nav-h) - var(--safe-bottom) - var(--nav-lift) - 108px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 18px 50px rgba(6, 16, 31, 0.28);
+  }
+  .support-widget--bare {
+    bottom: calc(16px + var(--safe-bottom) + 66px);
+    height: min(560px, calc(100dvh - 108px));
   }
   .sheet-overlay {
     position: fixed;
@@ -8523,7 +8541,7 @@ const ProgressionLoopView = ({
                 color: G.inkLight, fontSize: 14, fontWeight: 700,
               }}
             >
-              Marquer comme terminée
+              Terminée
             </button>
             <button
               type="button"

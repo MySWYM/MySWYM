@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createArthurAdminClient } from "../arthur-ai/supabase.js";
 import {
   asMessageBody,
+  formatOperatorClosed,
   formatOperatorNotify,
   MAX_PRIOR_MESSAGES,
   newShortCode,
@@ -19,6 +20,7 @@ import {
   type TelegramPort,
 } from "./telegram.js";
 import type { TelegramInbound } from "./parse.js";
+import { attachLastMessages } from "./preview.js";
 
 const HOLD_MESSAGE =
   "L’équipe a bien reçu ton message. Arthur te répond ici dès qu’il peut.";
@@ -44,9 +46,16 @@ export type SupportConversation = {
   updated_at: string;
 };
 
+export type SupportConversationPreview = SupportConversation & {
+  last_body: string;
+  last_role: string | null;
+  last_message_id: string;
+};
+
 export type SupportSnapshot = {
   conversation: SupportConversation | null;
   messages: SupportMessage[];
+  conversations: SupportConversationPreview[];
   telegram_configured: boolean;
 };
 
@@ -91,18 +100,48 @@ async function findOpenConversation(
   return data ? mapConversation(data) : null;
 }
 
-async function findLatestConversation(
+async function findUserConversation(
   admin: SupabaseClient,
   userId: string,
+  conversationId: string,
 ): Promise<SupportConversation | null> {
   const { data } = await admin
     .from("support_conversations")
     .select("id, short_code, status, closed_at, closed_by, created_at, updated_at")
     .eq("user_id", userId)
-    .order("updated_at", { ascending: false })
-    .limit(1)
+    .eq("id", conversationId)
     .maybeSingle();
   return data ? mapConversation(data) : null;
+}
+
+async function listConversationPreviews(
+  admin: SupabaseClient,
+  userId: string,
+  limit = 40,
+): Promise<SupportConversationPreview[]> {
+  const { data: convos } = await admin
+    .from("support_conversations")
+    .select("id, short_code, status, closed_at, closed_by, created_at, updated_at")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  const list = (convos || []).map((row) => mapConversation(row));
+  if (!list.length) return [];
+  const { data: msgs } = await admin
+    .from("support_messages")
+    .select("id, conversation_id, role, body, created_at")
+    .in(
+      "conversation_id",
+      list.map((c) => c.id),
+    )
+    .order("created_at", { ascending: true });
+  return attachLastMessages(list, (msgs || []) as {
+    conversation_id: string;
+    id: string;
+    role: string;
+    body: string;
+    created_at: string;
+  }[]);
 }
 
 async function listMessages(
@@ -220,13 +259,22 @@ async function notifyOperator(
 export async function loadSupportForUser(
   userId: string,
   admin: SupabaseClient = getSupportAdmin(),
+  conversationId?: string | null,
 ): Promise<SupportSnapshot> {
-  const open = await findOpenConversation(admin, userId);
-  const conversation = open || (await findLatestConversation(admin, userId));
+  const conversations = await listConversationPreviews(admin, userId);
+  let conversation: SupportConversation | null = null;
+  if (conversationId) {
+    conversation = conversations.find((c) => c.id === conversationId) || null;
+    if (!conversation) conversation = await findUserConversation(admin, userId, conversationId);
+  }
+  if (!conversation) {
+    conversation = conversations.find((c) => c.status === "open") || conversations[0] || null;
+  }
   const messages = conversation ? await listMessages(admin, conversation.id) : [];
   return {
     conversation,
     messages,
+    conversations,
     telegram_configured: isTelegramConfigured(),
   };
 }
@@ -252,7 +300,15 @@ export async function sendSupportMessage(input: {
   telegram?: TelegramPort;
 }): Promise<SupportSnapshot & { error?: string }> {
   const body = asMessageBody(input.message);
-  if (!body) return { conversation: null, messages: [], telegram_configured: isTelegramConfigured(), error: "message_invalide" };
+  if (!body) {
+    return {
+      conversation: null,
+      messages: [],
+      conversations: [],
+      telegram_configured: isTelegramConfigured(),
+      error: "message_invalide",
+    };
+  }
 
   const admin = input.admin || getSupportAdmin();
   let conversation = await findOpenConversation(admin, input.userId);
@@ -298,11 +354,49 @@ export async function sendSupportMessage(input: {
   return loadSupportForUser(input.userId, admin);
 }
 
+async function lastOutboundMessageId(
+  admin: SupabaseClient,
+  conversationId: string,
+): Promise<number | null> {
+  const { data } = await admin
+    .from("support_telegram_outbound")
+    .select("telegram_message_id")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const id = data?.telegram_message_id;
+  const n = Number(id);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+async function notifyOperatorClosed(
+  admin: SupabaseClient,
+  input: {
+    conversation: SupportConversation;
+    userId: string;
+    telegram?: TelegramPort;
+  },
+): Promise<void> {
+  if (!isTelegramConfigured()) return;
+  const port = input.telegram || liveTelegramPort;
+  const chatId = operatorChatId();
+  const who = await resolveUserLabel(admin, input.userId);
+  const text = formatOperatorClosed({
+    shortCode: input.conversation.short_code,
+    displayName: who.displayName,
+    email: who.email,
+  });
+  const replyTo = await lastOutboundMessageId(admin, input.conversation.id);
+  await port.sendMessage(chatId, text, replyTo);
+}
+
 export async function closeSupportConversation(input: {
   userId: string;
   conversationId?: string;
   closedBy: "user" | "agent" | "system";
   admin?: SupabaseClient;
+  telegram?: TelegramPort;
 }): Promise<SupportSnapshot & { error?: string }> {
   const admin = input.admin || getSupportAdmin();
   const open = await findOpenConversation(admin, input.userId);
@@ -328,6 +422,13 @@ export async function closeSupportConversation(input: {
     body: CLOSED_MESSAGE,
     source: "system",
   });
+  if (input.closedBy === "user") {
+    await notifyOperatorClosed(admin, {
+      conversation: open,
+      userId: input.userId,
+      telegram: input.telegram,
+    });
+  }
   return loadSupportForUser(input.userId, admin);
 }
 
