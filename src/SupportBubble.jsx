@@ -446,7 +446,6 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          position: "relative",
         }}
       >
         <MessageCircle size={24} color="#fff" />
