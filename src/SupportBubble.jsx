@@ -341,6 +341,8 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
   const listRef = useRef(null);
   const typingTimer = useRef(null);
   const activeIdRef = useRef(null);
+  const startFreshRef = useRef(false);
+  const fetchGen = useRef(0);
   const userId = user?.id || null;
   const firstName = firstNameOf(user);
 
@@ -354,18 +356,21 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
   const openConversation = history.find((c) => c.status === "open") || null;
   const busy = typing || sending;
 
-  const applyThread = (json, { markSeen = false } = {}) => {
+  const applyThread = (json, { markSeen = false, pin = false } = {}) => {
     if (!json?.ok) return;
+    const incoming = json.conversation || null;
     const nextMessages = json.messages || [];
     const nextList = json.conversations || [];
     if (Array.isArray(json.conversations)) setConversations(nextList);
+    if (!pin && startFreshRef.current) return;
+    if (!pin && activeIdRef.current && incoming?.id && incoming.id !== activeIdRef.current) {
+      return;
+    }
     setThread({
-      conversation: json.conversation || null,
+      conversation: incoming,
       messages: nextMessages,
     });
-    if (json.conversation?.id && !startFresh) {
-      activeIdRef.current = json.conversation.id;
-    }
+    if (incoming?.id) activeIdRef.current = incoming.id;
     const agentId =
       lastAgentId(nextMessages) ||
       nextList.find((c) => c.last_role === "agent")?.last_message_id ||
@@ -381,8 +386,11 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
   };
 
   const refreshThread = async ({ markSeen = false, conversationId } = {}) => {
-    const id = conversationId ?? (startFresh ? undefined : activeIdRef.current);
-    const json = await fetchSupportThread(id);
+    if (startFreshRef.current && !conversationId) return null;
+    const gen = ++fetchGen.current;
+    const id = conversationId ?? activeIdRef.current;
+    const json = await fetchSupportThread(id || undefined);
+    if (gen !== fetchGen.current) return json;
     applyThread(json, { markSeen });
     return json;
   };
@@ -407,13 +415,13 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
   }, [userId, open]);
 
   useEffect(() => {
-    if (!open || view !== "chat") return undefined;
+    if (!open || view !== "chat" || startFresh) return undefined;
     refreshThread({ markSeen: true });
     const interval = window.setInterval(() => {
       refreshThread({ markSeen: true });
     }, liveOpen ? 4000 : 12000);
     return () => window.clearInterval(interval);
-  }, [open, view, liveOpen, userId]);
+  }, [open, view, liveOpen, userId, startFresh]);
 
   useEffect(() => {
     if (!open || view !== "chat") return;
@@ -440,14 +448,21 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
     setError("");
   };
 
+  const beginFresh = () => {
+    fetchGen.current += 1;
+    startFreshRef.current = true;
+    setStartFresh(true);
+    setForceLive(false);
+    setFaqMessages([WELCOME]);
+    setError("");
+    activeIdRef.current = null;
+    setThread({ conversation: null, messages: [] });
+  };
+
   const openChat = (opts = {}) => {
     setView("chat");
     setError("");
-    if (opts.fresh) {
-      setStartFresh(true);
-      setFaqMessages([WELCOME]);
-      activeIdRef.current = null;
-    }
+    if (opts.fresh) beginFresh();
     if (opts.live) setForceLive(true);
   };
 
@@ -456,12 +471,14 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
       openChat({ fresh: true });
       return;
     }
+    fetchGen.current += 1;
+    startFreshRef.current = false;
     setStartFresh(false);
     setForceLive(false);
     setError("");
     activeIdRef.current = conv.id;
     setView("chat");
-    fetchSupportThread(conv.id).then((json) => applyThread(json, { markSeen: true }));
+    fetchSupportThread(conv.id).then((json) => applyThread(json, { markSeen: true, pin: true }));
   };
 
   const backToTabs = () => {
@@ -481,9 +498,12 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
         setError(json.error || "Impossible d’envoyer. Réessaie dans un instant.");
         return false;
       }
+      fetchGen.current += 1;
+      if (json.conversation?.id) activeIdRef.current = json.conversation.id;
+      startFreshRef.current = false;
       setStartFresh(false);
       setForceLive(false);
-      applyThread(json, { markSeen: true });
+      applyThread(json, { markSeen: true, pin: true });
       if (!Array.isArray(json.conversations)) {
         await refreshThread({ markSeen: true, conversationId: json.conversation?.id });
       }
@@ -782,11 +802,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                 {showClosed ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setStartFresh(true);
-                      setFaqMessages([WELCOME]);
-                      setError("");
-                    }}
+                    onClick={() => beginFresh()}
                     style={{
                       width: "100%",
                       minHeight: 44,
