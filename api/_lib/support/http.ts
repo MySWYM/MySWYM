@@ -12,11 +12,11 @@ import {
 } from "./service.js";
 import {
   extractTelegramMessage,
+  isOperatorChat,
   isSupportKind,
   isTelegramUpdate,
 } from "./parse.js";
 import {
-  isOperatorChat,
   operatorChatId,
   telegramSecretOk,
 } from "./telegram.js";

@@ -14,6 +14,11 @@ import {
   parseSupportCodeFromText,
   wantsHumanHandoff,
 } from "./parse.js";
+import { isSupportRequest } from "./http.js";
+
+test("http module loads (ESM exports)", () => {
+  assert.equal(typeof isSupportRequest, "function");
+});
 
 test("kind + message limits", () => {
   assert.equal(isSupportKind("app-support"), true);
