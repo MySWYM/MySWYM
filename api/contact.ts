@@ -16,9 +16,8 @@ import {
 } from "./_lib/support/http.js";
 import { formatLandingContactNotify } from "./_lib/support/parse.js";
 import {
-  isTelegramConfigured,
-  operatorChatId,
-  sendTelegramMessage,
+  isContactTelegramConfigured,
+  sendContactTelegramMessage,
 } from "./_lib/support/telegram.js";
 
 const MAX_NAME = 120;
@@ -209,10 +208,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    if (isTelegramConfigured()) {
+    if (isContactTelegramConfigured()) {
       try {
-        await sendTelegramMessage(
-          operatorChatId(),
+        await sendContactTelegramMessage(
           formatLandingContactNotify({ name, email, subject, body: message }),
         );
       } catch (err) {

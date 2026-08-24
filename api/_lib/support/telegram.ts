@@ -1,5 +1,11 @@
 /**
- * Envoi Telegram Bot API (opérateur MySWYM uniquement).
+ * Envoi Telegram Bot API.
+ *
+ * Support nageur : TELEGRAM_BOT_TOKEN + webhook
+ *   `https://www.myswym.app/api/telegram/webhook`
+ *   (l’apex myswym.app renvoie un 307 ; Telegram ne suit pas ce POST).
+ *
+ * Contact landing : TELEGRAM_CONTACT_BOT_TOKEN, envoi seul, pas de webhook.
  */
 
 export type TelegramSendResult = { messageId: number } | null;
@@ -16,8 +22,17 @@ function botToken(): string {
   return (process.env.TELEGRAM_BOT_TOKEN || "").trim();
 }
 
+function contactBotToken(): string {
+  return (process.env.TELEGRAM_CONTACT_BOT_TOKEN || "").trim();
+}
+
 export function operatorChatId(): string {
   return (process.env.TELEGRAM_OPERATOR_CHAT_ID || "").trim();
+}
+
+/** Chat du bot contact. Même id Telegram perso qu’opérateur, sauf override. */
+export function contactChatId(): string {
+  return (process.env.TELEGRAM_CONTACT_CHAT_ID || "").trim() || operatorChatId();
 }
 
 export function telegramWebhookSecret(): string {
@@ -26,6 +41,10 @@ export function telegramWebhookSecret(): string {
 
 export function isTelegramConfigured(): boolean {
   return Boolean(botToken() && operatorChatId());
+}
+
+export function isContactTelegramConfigured(): boolean {
+  return Boolean(contactBotToken() && contactChatId());
 }
 
 export function isTelegramMock(): boolean {
@@ -39,12 +58,12 @@ export function telegramSecretOk(headerValue: unknown): boolean {
   return String(headerValue || "").trim() === expected;
 }
 
-export async function sendTelegramMessage(
+async function sendTelegramMessageWithToken(
+  token: string,
   chatId: string | number,
   text: string,
   replyToMessageId?: number | null,
 ): Promise<TelegramSendResult> {
-  const token = botToken();
   if (!token) return null;
   if (isTelegramMock()) {
     return { messageId: Date.now() };
@@ -73,6 +92,19 @@ export async function sendTelegramMessage(
   } catch {
     return null;
   }
+}
+
+export async function sendTelegramMessage(
+  chatId: string | number,
+  text: string,
+  replyToMessageId?: number | null,
+): Promise<TelegramSendResult> {
+  return sendTelegramMessageWithToken(botToken(), chatId, text, replyToMessageId);
+}
+
+export async function sendContactTelegramMessage(text: string): Promise<TelegramSendResult> {
+  if (!isContactTelegramConfigured()) return null;
+  return sendTelegramMessageWithToken(contactBotToken(), contactChatId(), text);
 }
 
 export const liveTelegramPort: TelegramPort = {
