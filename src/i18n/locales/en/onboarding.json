@@ -24,11 +24,16 @@
   },
   "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
   "category": {
-    "title": "Your goal",
-    "progression": "Swim & Progress",
+    "title": "What's your goal?",
+    "lead": "Pick a category. We adapt sessions to the event, the distance, or your level.",
+    "progression": "Swim",
+    "progressionDesc": "Technique, endurance, enjoyment",
     "triathlon": "Triathlon",
+    "triathlonDesc": "From XS to Ironman",
     "eau_libre": "Open water",
-    "diplome": "Lifeguard / diploma"
+    "eau_libreDesc": "500 m to 25 km",
+    "diplome": "Diplomas",
+    "diplomeDesc": "BNSSA · BPJEPS · CAEPMNS"
   },
   "subGoal": {
     "triathlon": "Which distance?",
@@ -67,7 +72,7 @@
   },
   "frequency": {
     "title": "Sessions per week",
-    "lead": "Your Premium trial unlocks the full training load from day one.",
+    "lead": "Your Premium trial unlocks the full training load from day one. We assume a 25 m pool — you can change pool, gear and strokes later in Profile.",
     "n": "{{count}}× / week"
   },
   "physique": {

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { defaultSessionDistanceForLevel } from "./lib/swimmer-profile.js";
 
 const SESSION_DISTANCE_PRESETS_UI = [
   1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3500, 4000, 4500, 5000, 5500, 6000,
@@ -11,11 +12,7 @@ export function formatDistanceFr(meters) {
 }
 
 export function defaultDistancePresetForLevel(level) {
-  const l = String(level || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
-  if (l.includes("decouv") || l === "beginner" || l === "debutant") return 1000;
-  if (l.includes("sportif")) return 2500;
-  if (l.includes("perf") || l === "advanced") return 3000;
-  return 2000;
+  return defaultSessionDistanceForLevel(level);
 }
 
 /** Distance moyenne par séance — jauge / slider */
@@ -35,7 +32,7 @@ export function StepSessionDistance({ value, level, onChange, onNext, onBack, Bt
 
   return (
     <div className="fade-up">
-      <h2 style={{ fontSize: 28, fontWeight: 800, color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+      <h2 style={{ fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif', fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
         {t("distance.title")}
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 28, lineHeight: 1.45 }}>

@@ -1,53 +1,30 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "./theme/session-card.css";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+:root {
+  --text: #9bb0c8;
+  --text-h: #f4f8fa;
+  --bg: #000514;
+  --border: rgba(0, 107, 253, 0.22);
+  --code-bg: #06101f;
+  --accent: #006bfd;
+  --accent-bg: rgba(0, 107, 253, 0.16);
+  --accent-border: rgba(0, 107, 253, 0.5);
+  --social-bg: rgba(6, 16, 31, 0.5);
+  --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+
+  --sans: Geist, ui-sans-serif, system-ui, sans-serif;
+  --heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
+  font: 16px/150% var(--sans);
+  letter-spacing: 0.01em;
+  color-scheme: dark;
+  color: var(--text-h);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
 }
 
 body {
@@ -73,30 +50,14 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: inherit;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
 p {
   margin: 0;
 }
@@ -153,4 +114,299 @@ code {
   border: 3px solid #f4f8fa;
   box-shadow: 0 2px 8px rgba(0, 107, 253, 0.4);
   cursor: pointer;
+}
+
+/* Plan reveal — même carte séance que la landing, tokens app */
+.ms-plan-reveal {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text-h);
+}
+.ms-plan-reveal-inner {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: max(28px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+.ms-plan-reveal-building {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.ms-plan-reveal-spin {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: ms-plan-reveal-spin 0.9s linear infinite;
+}
+.ms-plan-reveal-ready {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+}
+.ms-plan-reveal-title {
+  margin: 1.75rem 0 0;
+  font-family: var(--heading);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--text-h);
+}
+.ms-plan-reveal-ready .ms-plan-reveal-title {
+  font-size: 34px;
+  margin-top: 0.35rem;
+}
+.ms-plan-reveal-sub {
+  margin: 0.7rem 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.ms-plan-reveal-kicker {
+  margin: 1.5rem 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1aad7a;
+}
+.ms-plan-reveal-meta {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ms-plan-reveal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+}
+.ms-plan-reveal-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ms-plan-reveal-row-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+}
+.ms-plan-reveal-row-value {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+.ms-plan-reveal-bars {
+  margin-top: 1.5rem;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+}
+.ms-plan-reveal-bars-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.ms-plan-reveal-bars-row {
+  margin-top: 16px;
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.ms-plan-reveal-bar {
+  flex: 1;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--accent);
+  min-width: 0;
+}
+.ms-plan-reveal-bars-cap {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text);
+}
+.ms-home-greet {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.ms-home-greet p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+.ms-home-greet h1 {
+  margin: 2px 0 0;
+  font-family: var(--heading);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--text-h);
+}
+.ms-home-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.ms-plan-reveal-cta {
+  margin-top: auto;
+  padding-top: 2rem;
+}
+.ms-plan-reveal-btn {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 107, 253, 0.28);
+}
+.ms-plan-reveal-btn:hover {
+  filter: brightness(1.06);
+}
+.ms-plan-reveal-foot {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+@keyframes ms-plan-reveal-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms-plan-reveal-spin {
+    animation: none;
+    border-color: var(--accent);
+  }
+}
+
+.ms-app-btn {
+  display: block;
+  width: 100%;
+  padding: 16px 24px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 107, 253, 0.28);
+  transition: filter 0.18s, opacity 0.18s;
+}
+.ms-app-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ms-app-btn:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+.ms-app-btn.is-secondary {
+  background: var(--code-bg);
+  color: var(--text-h);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+.ms-app-btn.is-ghost {
+  background: transparent;
+  color: var(--text);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+
+.ms-celeb {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+.ms-celeb-card {
+  width: 100%;
+  max-width: 22rem;
+  text-align: center;
+}
+.ms-celeb-check {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #1aad7a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ms-celeb-title {
+  margin: 1.5rem 0 0;
+  font-family: var(--heading);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--text-h);
+}
+.ms-celeb-sub {
+  margin: 0.5rem 0 0;
+  font-size: 15px;
+  color: var(--text);
+}
+.ms-celeb-bar {
+  width: 96px;
+  height: 4px;
+  margin: 1.5rem auto 2rem;
+  border-radius: 99px;
+  background: #1aad7a;
+}
+.ms-celeb .ms-plan-reveal-btn {
+  box-shadow: 0 8px 24px rgba(0, 107, 253, 0.28);
 }

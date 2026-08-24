@@ -5,6 +5,8 @@ import {
   mergeForGeneration,
   isSwimmerProfileComplete,
   missingSwimmerProfileFields,
+  applyFirstPlanDefaults,
+  defaultSessionDistanceForLevel,
   enforceSingleActivePlan,
   replaceActivePlan,
   resolveQuestionnaireMode,
@@ -58,6 +60,39 @@ import {
   assert.equal(derived.age, 36);
   const legacy = withDerivedAge({ age: 28 }, new Date("2026-08-15"));
   assert.equal(legacy.age, 28);
+}
+
+{
+  assert.equal(defaultSessionDistanceForLevel("découverte"), 1000);
+  assert.equal(defaultSessionDistanceForLevel("sportif"), 2500);
+  const short = applyFirstPlanDefaults({
+    category: "progression",
+    goal: "progression",
+    level: "régulier",
+    sessionsPerWeek: 3,
+  });
+  assert.equal(short.pool, 25);
+  assert.deepEqual(short.equipment, []);
+  assert.equal(short.swimStyle, "crawl");
+  assert.equal(short.preferredStroke, "crawl");
+  assert.equal(short.targetSessionDistance, 2000);
+  assert.equal(short.injuryStatus, "aucune");
+  assert.equal(isSwimmerProfileComplete(short), true);
+
+  const keep = applyFirstPlanDefaults({
+    level: "sportif",
+    pool: 50,
+    sessionsPerWeek: 4,
+    equipment: ["palmes"],
+    swimStyle: "4_nages",
+    preferredStroke: "brasse",
+    targetSessionDistance: 3000,
+  });
+  assert.equal(keep.pool, 50);
+  assert.deepEqual(keep.equipment, ["palmes"]);
+  assert.equal(keep.swimStyle, "4_nages");
+  assert.equal(keep.preferredStroke, "brasse");
+  assert.equal(keep.targetSessionDistance, 3000);
 }
 
 {

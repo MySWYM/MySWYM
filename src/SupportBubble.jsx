@@ -6,9 +6,11 @@ import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/sup
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
 const BLUE = "#006bfd";
-const INK = "#12161c";
-const MUTED = "#5b6b7c";
-const LINE = "rgba(18, 22, 28, 0.08)";
+const INK = "var(--myswym-ink, #f4f8fa)";
+const MUTED = "var(--myswym-ink-light, #9bb0c8)";
+const LINE = "var(--myswym-grey-light, rgba(0, 107, 253, 0.22))";
+const SURFACE = "var(--myswym-surface, #06101f)";
+const PAGE = "var(--myswym-bg, #000514)";
 const ARTHUR_PHOTO = "/coach.webp";
 
 /** FAQ rule-based — produit + vocabulaire / méthode natation MySWYM. */
@@ -261,9 +263,9 @@ function bubbleAlign(role) {
 
 function bubbleColors(role) {
   if (role === "user") return { background: BLUE, color: "#fff", border: "none" };
-  if (role === "agent") return { background: "#fff", color: INK, border: `1px solid ${LINE}` };
+  if (role === "agent") return { background: SURFACE, color: INK, border: `1px solid ${LINE}` };
   if (role === "system") return { background: "transparent", color: MUTED, border: "none" };
-  return { background: "#fff", color: INK, border: `1px solid ${LINE}` };
+  return { background: SURFACE, color: INK, border: `1px solid ${LINE}` };
 }
 
 function roleLabel(role) {
@@ -698,7 +700,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                   gap: 8,
                   padding: "10px 8px 10px 4px",
                   borderBottom: `1px solid ${LINE}`,
-                  background: "#fff",
+                  background: SURFACE,
                 }}
               >
                 <button type="button" aria-label="Retour" onClick={backToTabs} style={iconBtn}>
@@ -728,7 +730,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                   flexDirection: "column",
                   gap: 10,
                   padding: "14px 14px 8px",
-                  background: "#f4f6f8",
+                  background: PAGE,
                   WebkitOverflowScrolling: "touch",
                 }}
               >
@@ -779,7 +781,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                   <div
                     style={{
                       alignSelf: "flex-start",
-                      background: "#fff",
+                      background: SURFACE,
                       border: `1px solid ${LINE}`,
                       color: MUTED,
                       borderRadius: "14px 14px 14px 4px",
@@ -795,7 +797,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                 ) : null}
               </div>
 
-              <div style={{ padding: "10px 12px 12px", background: "#fff", borderTop: `1px solid ${LINE}` }}>
+              <div style={{ padding: "10px 12px 12px", background: SURFACE, borderTop: `1px solid ${LINE}` }}>
                 {error ? (
                   <p style={{ color: "#c2410c", fontSize: 12, fontWeight: 600, margin: "0 0 8px" }}>{error}</p>
                 ) : null}
@@ -843,7 +845,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                         fontFamily: FONT,
                         color: INK,
                         outline: "none",
-                        background: "#fff",
+                        background: SURFACE,
                       }}
                     />
                     <button
@@ -937,7 +939,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                           minHeight: 64,
                           borderRadius: 12,
                           border: `1px solid ${LINE}`,
-                          background: "#fff",
+                          background: SURFACE,
                           cursor: "pointer",
                           fontFamily: FONT,
                           marginBottom: 16,
@@ -1059,7 +1061,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                                 minHeight: 72,
                                 borderRadius: 12,
                                 border: `1px solid ${LINE}`,
-                                background: "#fff",
+                                background: SURFACE,
                                 cursor: "pointer",
                                 fontFamily: FONT,
                               }}
@@ -1142,7 +1144,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                 style={{
                   display: "flex",
                   borderTop: `1px solid ${LINE}`,
-                  background: "#fff",
+                  background: SURFACE,
                 }}
               >
                 {tabBtn("home", "Accueil", Home)}
