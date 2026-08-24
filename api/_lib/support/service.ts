@@ -354,7 +354,7 @@ export async function sendSupportMessage(input: {
     telegram: input.telegram,
   });
 
-  return loadSupportForUser(input.userId, admin);
+  return loadSupportForUser(input.userId, admin, conversation.id);
 }
 
 async function lastOutboundMessageId(
