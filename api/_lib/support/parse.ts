@@ -64,6 +64,29 @@ export function formatOperatorClosed(input: {
   ].join("\n");
 }
 
+export function formatLandingContactNotify(input: {
+  name: string;
+  email: string;
+  subject: string;
+  body: string;
+}): string {
+  const who = [input.name, input.email].filter(Boolean).join(" · ");
+  const body = String(input.body || "").trim().slice(0, 3200);
+  return [
+    "✉️ Contact landing",
+    who || "Visiteur",
+    `Objet : ${String(input.subject || "").trim() || "—"}`,
+    "",
+    body,
+    "",
+    `↪ Réponds par e-mail à ${input.email} — ce n’est pas un fil in-app.`,
+  ].join("\n");
+}
+
+export function isLandingContactNotify(text: string): boolean {
+  return /^\s*✉️?\s*Contact landing\b/im.test(String(text || ""));
+}
+
 export function parseSupportCodeFromText(text: string): string | null {
   const raw = String(text || "");
   const tagged = raw.match(/Support[^\n]{0,80}?([a-f0-9]{8})(?![a-f0-9])/i);

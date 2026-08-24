@@ -12,6 +12,7 @@ import {
   normalizeShortCode,
   parseOperatorText,
   parseSupportCodeFromText,
+  isLandingContactNotify,
 } from "./parse.js";
 import {
   isTelegramConfigured,
@@ -561,6 +562,15 @@ export async function handleOperatorInbound(input: {
 
   if (cmd.type === "ignore") {
     return { ok: true, action: "ignored" };
+  }
+
+  if (isLandingContactNotify(inbound.replyToText)) {
+    await port.sendMessage(
+      inbound.chatId,
+      "Ce message vient du formulaire /contact. Réponds par e-mail dans ta boîte (contact@myswym.app).",
+      inbound.replyToMessageId,
+    );
+    return { ok: true, action: "contact_email_only" };
   }
 
   const conversation = await resolveInboundConversation(

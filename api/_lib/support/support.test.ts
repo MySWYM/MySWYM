@@ -6,8 +6,10 @@ import assert from "node:assert/strict";
 import {
   asMessageBody,
   extractTelegramMessage,
+  formatLandingContactNotify,
   formatOperatorClosed,
   formatOperatorNotify,
+  isLandingContactNotify,
   isOperatorChat,
   isSupportKind,
   isTelegramUpdate,
@@ -157,6 +159,23 @@ test("user close notifies operator", () => {
   assert.match(text, /Marie · marie@myswym.app/);
   assert.match(text, /clôturé/);
   assert.equal(parseSupportCodeFromText(text), "deadbeef");
+});
+
+test("landing contact notify is email-only, not a support thread", () => {
+  const text = formatLandingContactNotify({
+    name: "Marie",
+    email: "marie@test.com",
+    subject: "Partenariat",
+    body: "On peut discuter ?",
+  });
+  assert.match(text, /Contact landing/);
+  assert.match(text, /Marie · marie@test.com/);
+  assert.match(text, /Objet : Partenariat/);
+  assert.match(text, /On peut discuter \?/);
+  assert.match(text, /Réponds par e-mail à marie@test.com/);
+  assert.equal(isLandingContactNotify(text), true);
+  assert.equal(parseSupportCodeFromText(text), null);
+  assert.equal(isLandingContactNotify("💬 Support · deadbeef\nMarie"), false);
 });
 
 test("ignore non-telegram contact payloads", () => {
