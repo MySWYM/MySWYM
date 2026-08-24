@@ -114,6 +114,8 @@
     { "source": "/en/conformite", "destination": "/?s=seance", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/api/support", "destination": "/api/contact?kind=app-support" },
+    { "source": "/api/telegram/webhook", "destination": "/api/contact" },
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
     { "source": "/((?!api|assets|favicon).*)", "destination": "/index.html" }

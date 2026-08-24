@@ -1,10 +1,19 @@
 /**
- * POST /api/contact — formulaire contact + avis landing (même fonction Vercel).
- * Hobby = 12 fonctions max : ne pas ajouter api/landing-review.ts.
+ * POST /api/contact — formulaire contact + avis landing + support in-app / Telegram.
+ * Hobby = 12 fonctions max : ne pas ajouter api/landing-review.ts ni api/support.ts.
+ *
+ * Support : GET|POST /api/contact?kind=app-support (JWT)
+ * Telegram webhook : POST /api/telegram/webhook (rewrite) ou POST avec update_id
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import {
+  handleSupportHttp,
+  handleTelegramWebhook,
+  isSupportRequest,
+  isTelegramWebhookRequest,
+} from "./_lib/support/http.js";
 
 const MAX_NAME = 120;
 const MAX_REVIEW_NAME = 80;
@@ -112,12 +121,22 @@ async function handleLandingReview(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  const body = (req.body ?? {}) as Record<string, unknown>;
+
+  if (isTelegramWebhookRequest(req, body)) {
+    await handleTelegramWebhook(req, res, body);
+    return;
   }
 
-  const body = (req.body ?? {}) as Record<string, unknown>;
+  if (isSupportRequest(req, body)) {
+    await handleSupportHttp(req, res, body);
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
   const honey = asString(body.company || body.website).trim();
   if (honey) {
     return res.status(200).json({ ok: true, id: "ignored" });

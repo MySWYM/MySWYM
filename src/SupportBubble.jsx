@@ -3,6 +3,7 @@ import { ArrowLeft, Mail, MessageCircle, Send, X } from "lucide-react";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { getStoredLanguage } from "./i18n/index.js";
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
+import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 
 const SUPPORT_EMAIL = "contact@myswym.app";
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
@@ -148,7 +149,7 @@ const FAQ_RULES = [
 ];
 
 const FALLBACK =
-  `Pas de réponse auto pour celle-ci. Essaie une question courte (zones, allures, D…/R…, godilles, tarifs…) ou contacte l'équipe à ${SUPPORT_EMAIL}.`;
+  "Pas de réponse auto pour celle-ci. J’envoie ça à Arthur — il te répond ici.";
 
 function stripAccents(s) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -176,21 +177,144 @@ function matchFaq(text) {
 
 const WELCOME = {
   role: "bot",
-  text: "Bonjour, assistance MySWYM. Questions produit ou natation (zones, allures, D…/R…, éducatifs…) : pose la tienne ou tape une suggestion.",
+  text: "Bonjour, assistance MySWYM. Questions produit ou natation (zones, allures, D…/R…, éducatifs…) : pose la tienne ou tape une suggestion. Pour un souci perso, écris à Arthur ici — la conversation reste ouverte tant que tu ne la clôtures pas.",
 };
 
+function wantsHuman(text) {
+  return /\b(parler\s+(à|a)\s+|contacter\s+(l['’]?équipe|arthur)|un\s+humain|l['’]équipe|aide\s+humaine)\b/i.test(
+    String(text || ""),
+  );
+}
+
+function toBubbleMessages(rows) {
+  return (rows || []).map((m) => ({
+    id: m.id,
+    role: m.role === "assistant" ? "bot" : m.role,
+    text: m.body || m.text || "",
+  }));
+}
+
+function seenStorageKey(userId) {
+  return `myswym_support_seen_${userId || "anon"}`;
+}
+
+function readSeenId(userId) {
+  try {
+    return localStorage.getItem(seenStorageKey(userId)) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeSeenId(userId, messageId) {
+  if (!messageId) return;
+  try {
+    localStorage.setItem(seenStorageKey(userId), messageId);
+  } catch {
+    /* ignore */
+  }
+}
+
+function lastAgentId(messages) {
+  const agents = (messages || []).filter((m) => m.role === "agent");
+  return agents.length ? agents[agents.length - 1].id : "";
+}
+
+function bubbleAlign(role) {
+  if (role === "user") return "flex-end";
+  if (role === "system") return "center";
+  return "flex-start";
+}
+
+function bubbleColors(role) {
+  if (role === "user") return { background: "#006bfd", color: "#fff" };
+  if (role === "agent") return { background: "#12325c", color: "#f4f8fa" };
+  if (role === "system") return { background: "transparent", color: "#9bb0c8" };
+  return { background: "#0a162c", color: "#f4f8fa" };
+}
+
+function roleLabel(role) {
+  if (role === "agent") return "Arthur";
+  if (role === "bot") return "Assistance";
+  return "";
+}
+
 /**
- * Bulle support — FAQ autonome + contact équipe.
- * Visible sur l'app (au-dessus de la bottom nav).
+ * Bulle support — FAQ instantanée, puis fil persisté avec Arthur (Telegram).
  */
-export default function SupportBubble({ aboveBottomNav = false }) {
+export default function SupportBubble({ aboveBottomNav = false, user = null }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState("home"); // home | chat | contact
-  const [messages, setMessages] = useState([WELCOME]);
+  const [faqMessages, setFaqMessages] = useState([WELCOME]);
+  const [thread, setThread] = useState({ conversation: null, messages: [] });
+  const [startFresh, setStartFresh] = useState(false);
+  const [forceLive, setForceLive] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [unread, setUnread] = useState(false);
   const listRef = useRef(null);
   const typingTimer = useRef(null);
+  const userId = user?.id || null;
+
+  const conversation = thread.conversation;
+  const liveOpen = conversation?.status === "open";
+  const showClosed = conversation?.status === "closed" && !startFresh;
+  const liveMode = liveOpen || showClosed;
+  const messages = liveMode ? toBubbleMessages(thread.messages) : faqMessages;
+
+  const applyThread = (json, { markSeen = false } = {}) => {
+    if (!json?.ok) return;
+    const nextMessages = json.messages || [];
+    setThread({
+      conversation: json.conversation || null,
+      messages: nextMessages,
+    });
+    const agentId = lastAgentId(nextMessages);
+    if (markSeen) {
+      writeSeenId(userId, agentId);
+      setUnread(false);
+    } else if (agentId && agentId !== readSeenId(userId)) {
+      setUnread(true);
+    } else {
+      setUnread(false);
+    }
+  };
+
+  const refreshThread = async ({ markSeen = false } = {}) => {
+    const json = await fetchSupportThread();
+    applyThread(json, { markSeen });
+    return json;
+  };
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    let cancelled = false;
+    fetchSupportThread().then((json) => {
+      if (!cancelled) applyThread(json, { markSeen: false });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || open) return undefined;
+    const interval = window.setInterval(() => {
+      fetchSupportThread().then((json) => applyThread(json, { markSeen: false }));
+    }, 20000);
+    return () => window.clearInterval(interval);
+  }, [userId, open]);
+
+  useEffect(() => {
+    if (!open || view !== "chat") return undefined;
+    refreshThread({ markSeen: true });
+    const interval = window.setInterval(() => {
+      refreshThread({ markSeen: true });
+    }, liveOpen ? 4000 : 12000);
+    return () => window.clearInterval(interval);
+  }, [open, view, liveOpen, userId]);
 
   useEffect(() => {
     if (!open || view !== "chat") return;
@@ -209,24 +333,99 @@ export default function SupportBubble({ aboveBottomNav = false }) {
   const openPanel = () => {
     setView("home");
     setOpen(true);
+    setError("");
   };
 
-  const send = (raw) => {
+  const openChat = (opts = {}) => {
+    setView("chat");
+    setError("");
+    if (opts.fresh) setStartFresh(true);
+    if (opts.live) setForceLive(true);
+  };
+
+  const escalate = async (text, prior) => {
+    setSending(true);
+    setError("");
+    try {
+      const json = await sendSupportLive(text, prior);
+      if (!json.ok) {
+        setInput(text);
+        setError(json.error || "Impossible d’envoyer. Réessaie ou écris à contact@myswym.app.");
+        return false;
+      }
+      setStartFresh(false);
+      setForceLive(false);
+      applyThread(json, { markSeen: true });
+      return true;
+    } catch {
+      setInput(text);
+      setError("Impossible d’envoyer. Réessaie ou écris à contact@myswym.app.");
+      return false;
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const send = async (raw) => {
     const text = (raw ?? input).trim();
-    if (!text || typing) return;
+    if (!text || typing || sending) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", text }]);
+
+    if (liveOpen) {
+      await escalate(text);
+      return;
+    }
+
+    if (showClosed) {
+      setError("Cette conversation est clôturée. Ouvre-en une nouvelle pour écrire à Arthur.");
+      return;
+    }
+
+    const prior = faqMessages.map((m) => ({
+      role: m.role,
+      text: m.text,
+    }));
+    const goLive = forceLive || wantsHuman(text) || matchFaq(text) === FALLBACK;
+
+    setFaqMessages((m) => [...m, { role: "user", text }]);
+
+    if (goLive) {
+      const ok = await escalate(text, prior);
+      if (!ok) {
+        setFaqMessages((m) => [...m, { role: "bot", text: FALLBACK }]);
+      }
+      return;
+    }
+
     setTyping(true);
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => {
-      setMessages((m) => [...m, { role: "bot", text: matchFaq(text) }]);
+      setFaqMessages((m) => [...m, { role: "bot", text: matchFaq(text) }]);
       setTyping(false);
     }, 420);
+  };
+
+  const closeThread = async () => {
+    if (!conversation?.id || !liveOpen) return;
+    setSending(true);
+    const json = await closeSupportLive(conversation.id);
+    setSending(false);
+    if (json.ok) applyThread(json, { markSeen: true });
+    else setError(json.error || "Impossible de clôturer.");
   };
 
   const padBottom = aboveBottomNav
     ? "calc(var(--bottom-nav-h, 72px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + var(--nav-lift, 0px) + 16px)"
     : "calc(16px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))";
+
+  const chatTitle = liveOpen
+    ? "Conversation avec Arthur"
+    : showClosed
+      ? "Conversation clôturée"
+      : "Assistance rapide";
+
+  const busy = typing || sending;
+
 
   return (
     <>
@@ -247,9 +446,25 @@ export default function SupportBubble({ aboveBottomNav = false }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          position: "relative",
         }}
       >
         <MessageCircle size={24} color="#fff" />
+        {unread ? (
+          <span
+            aria-label="Nouveau message"
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "#ff5a3d",
+              border: "2px solid #006bfd",
+            }}
+          />
+        ) : null}
       </button>
 
       {open && (
@@ -299,7 +514,7 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     Support
                   </div>
                   <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f4f8fa", lineHeight: 1.2 }}>
-                    {view === "chat" ? "Assistance rapide" : view === "contact" ? "Contacter l'équipe" : "Besoin d'aide ?"}
+                    {view === "chat" ? chatTitle : view === "contact" ? "Contacter l'équipe" : "Besoin d'aide ?"}
                   </h3>
                 </div>
               </div>
@@ -316,12 +531,12 @@ export default function SupportBubble({ aboveBottomNav = false }) {
             {view === "home" && (
               <>
                 <p style={{ fontSize: 15, color: "#9bb0c8", lineHeight: 1.55, margin: "0 0 18px" }}>
-                  Questions produit ou vocabulaire natation : réponses immédiates, ou message direct à l'équipe.
+                  Questions produit ou vocabulaire natation : réponses immédiates. Pour un souci perso, écris à Arthur — le fil reste ouvert jusqu’à clôture.
                 </p>
 
                 <button
                   type="button"
-                  onClick={() => setView("chat")}
+                  onClick={() => openChat({ fresh: false })}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -343,12 +558,45 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                 >
                   <MessageCircle size={18} color="#fff" style={{ flexShrink: 0 }} />
                   <span>
-                    Assistance rapide
+                    {liveOpen ? "Continuer la conversation" : "Assistance rapide"}
                     <span style={{ display: "block", fontWeight: 500, fontSize: 12, opacity: 0.85, marginTop: 2 }}>
-                      Produit & natation · réponses instantanées
+                      {liveOpen ? "Arthur te répond ici" : "Produit & natation · réponses instantanées"}
                     </span>
                   </span>
                 </button>
+
+                {!liveOpen ? (
+                <button
+                  type="button"
+                  onClick={() => openChat({ fresh: showClosed, live: true })}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    width: "100%",
+                    padding: "14px 16px",
+                    minHeight: 56,
+                    borderRadius: 14,
+                    background: "#0a162c",
+                    color: "#f4f8fa",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: FONT,
+                    textAlign: "left",
+                    marginBottom: 10,
+                  }}
+                >
+                  <MessageCircle size={18} color="#006bfd" style={{ flexShrink: 0 }} />
+                  <span>
+                    Écrire à Arthur
+                    <span style={{ display: "block", fontWeight: 500, fontSize: 12, color: "#9bb0c8", marginTop: 2 }}>
+                      Conversation longue, réponse en live
+                    </span>
+                  </span>
+                </button>
+                ) : null}
 
                 <button
                   type="button"
@@ -428,25 +676,40 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     WebkitOverflowScrolling: "touch",
                   }}
                 >
-                  {messages.map((msg, i) => (
-                    <div
-                      key={`${msg.role}-${i}`}
-                      style={{
-                        alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                        maxWidth: "88%",
-                        background: msg.role === "user" ? "#006bfd" : "#0a162c",
-                        color: msg.role === "user" ? "#fff" : "#f4f8fa",
-                        borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
-                        padding: "10px 13px",
-                        fontSize: 14,
-                        lineHeight: 1.5,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {msg.text}
-                    </div>
-                  ))}
-                  {typing && (
+                  {messages.map((msg, i) => {
+                    const colors = bubbleColors(msg.role);
+                    const label = roleLabel(msg.role);
+                    return (
+                      <div
+                        key={msg.id || `${msg.role}-${i}`}
+                        style={{
+                          alignSelf: bubbleAlign(msg.role),
+                          maxWidth: msg.role === "system" ? "100%" : "88%",
+                          background: colors.background,
+                          color: colors.color,
+                          borderRadius:
+                            msg.role === "user"
+                              ? "14px 14px 4px 14px"
+                              : msg.role === "system"
+                                ? 0
+                                : "14px 14px 14px 4px",
+                          padding: msg.role === "system" ? "4px 6px" : "10px 13px",
+                          fontSize: msg.role === "system" ? 12 : 14,
+                          lineHeight: 1.5,
+                          fontWeight: 500,
+                          textAlign: msg.role === "system" ? "center" : "left",
+                        }}
+                      >
+                        {label ? (
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.7, marginBottom: 4 }}>
+                            {label}
+                          </div>
+                        ) : null}
+                        {msg.text}
+                      </div>
+                    );
+                  })}
+                  {(typing || sending) && (
                     <div
                       style={{
                         alignSelf: "flex-start",
@@ -465,12 +728,17 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                   )}
                 </div>
 
+                {error ? (
+                  <p style={{ color: "#ff8a75", fontSize: 12, fontWeight: 600, margin: "0 0 8px" }}>{error}</p>
+                ) : null}
+
+                {!liveMode && !forceLive ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                   {QUICK_PROMPTS.map((p) => (
                     <button
                       key={p}
                       type="button"
-                      disabled={typing}
+                      disabled={busy}
                       onClick={() => send(p)}
                       style={{
                         border: "1px solid rgba(53,93,163,0.22)",
@@ -480,16 +748,43 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                         padding: "7px 12px",
                         fontSize: 12,
                         fontWeight: 600,
-                        cursor: typing ? "default" : "pointer",
+                        cursor: busy ? "default" : "pointer",
                         fontFamily: FONT,
-                        opacity: typing ? 0.55 : 1,
+                        opacity: busy ? 0.55 : 1,
                       }}
                     >
                       {p}
                     </button>
                   ))}
                 </div>
+                ) : null}
 
+                {showClosed ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartFresh(true);
+                      setFaqMessages([WELCOME]);
+                      setError("");
+                    }}
+                    style={{
+                      width: "100%",
+                      marginBottom: 8,
+                      padding: "12px 14px",
+                      minHeight: 44,
+                      borderRadius: 12,
+                      border: "none",
+                      background: "#006bfd",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      fontFamily: FONT,
+                    }}
+                  >
+                    Nouvelle conversation
+                  </button>
+                ) : (
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -501,9 +796,9 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ta question…"
-                    aria-label="Ta question"
-                    disabled={typing}
+                    placeholder={liveOpen || forceLive ? "Écrire à Arthur…" : "Ta question…"}
+                    aria-label={liveOpen || forceLive ? "Écrire à Arthur" : "Ta question"}
+                    disabled={busy}
                     style={{
                       flex: 1,
                       minHeight: 44,
@@ -520,15 +815,15 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                   <button
                     type="submit"
                     aria-label="Envoyer"
-                    disabled={typing || !input.trim()}
+                    disabled={busy || !input.trim()}
                     style={{
                       width: 44,
                       height: 44,
                       borderRadius: 12,
                       border: "none",
-                      background: input.trim() && !typing ? "#006bfd" : "rgba(0,107,253,0.22)",
+                      background: input.trim() && !busy ? "#006bfd" : "rgba(0,107,253,0.22)",
                       color: "#fff",
-                      cursor: input.trim() && !typing ? "pointer" : "default",
+                      cursor: input.trim() && !busy ? "pointer" : "default",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -538,10 +833,33 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     <Send size={17} color="#fff" />
                   </button>
                 </form>
+                )}
 
+                {liveOpen ? (
+                  <button
+                    type="button"
+                    onClick={closeThread}
+                    disabled={busy}
+                    style={{
+                      width: "100%",
+                      marginTop: 8,
+                      padding: "10px",
+                      minHeight: 40,
+                      background: "none",
+                      border: "none",
+                      color: "#9bb0c8",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: busy ? "default" : "pointer",
+                      fontFamily: FONT,
+                    }}
+                  >
+                    Clôturer la conversation
+                  </button>
+                ) : showClosed ? null : (
                 <button
                   type="button"
-                  onClick={() => setView("contact")}
+                  onClick={() => send("Je voudrais parler à l’équipe")}
                   style={{
                     width: "100%",
                     marginTop: 8,
@@ -556,8 +874,9 @@ export default function SupportBubble({ aboveBottomNav = false }) {
                     fontFamily: FONT,
                   }}
                 >
-                  Parler à l'équipe →
+                  Écrire à Arthur →
                 </button>
+                )}
               </>
             )}
           </div>

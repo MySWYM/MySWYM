@@ -14195,7 +14195,7 @@ export default function App() {
         {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
 
         <Footer aboveBottomNav />
-        <SupportBubble aboveBottomNav />
+        <SupportBubble aboveBottomNav user={user} />
         <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} />
         <SettingsDrawer
           open={settingsOpen}

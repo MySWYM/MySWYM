@@ -171,7 +171,7 @@ export default function ArthurReadinessAdmin() {
           <div style={card}>
             <div style={{ fontWeight: 800, marginBottom: 6 }}>Telegram</div>
             <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
-              Pour répondre depuis ta chat box — pas encore branché.
+              Relais de la bulle d’aide : tu reçois les messages et tu réponds depuis Telegram. Variables : TELEGRAM_BOT_TOKEN, TELEGRAM_OPERATOR_CHAT_ID.
             </p>
           </div>
         </section>
