@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
 import { trackEvent } from "./lib/analytics.js";
+import { resolveAvatarUrl } from "./lib/avatar.js";
 import { supabase } from "./supabase.js";
 import {
   BUDDY_DAYS,
@@ -270,7 +271,7 @@ function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
 }
 
 function BuddyTopBar({ user, onOpenMenu, onTabChange }) {
-  const avatarUrl = user?.user_metadata?.avatar_url;
+  const avatarUrl = resolveAvatarUrl(user);
   const firstName = String(user?.user_metadata?.firstname || user?.email?.split("@")[0] || "N");
   const initials = firstName.slice(0, 2).toUpperCase();
 

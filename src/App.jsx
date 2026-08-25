@@ -103,6 +103,13 @@ import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import { captureReferralFromUrl, getStoredReferralCode, resolveReferralCode } from "./lib/referral.js";
 import {
+  resolveAvatarUrl,
+  uploadAndPersistAvatar,
+  removeAndPersistAvatar,
+  hydrateAvatarFromStorage,
+  clearCachedAvatar,
+} from "./lib/avatar.js";
+import {
   legalHref,
   ACCOUNT_DELETE_WARNING,
 } from "./lib/legal-copy.js";
@@ -2936,7 +2943,6 @@ const StravaSection = ({
 
 const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange, onSwimmerProfileChange }) => {
   const { t: to } = useTranslation("onboarding");
-  const avatarStorageKey = user?.id ? `myswym_avatar_${user.id}` : "myswym_avatar";
   const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
   const [editingEquipment, setEditingEquipment] = useState(false);
@@ -2948,15 +2954,8 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
     setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
   }, [profile?.equipment]);
 
-  // Avatar + firstName — Supabase user_metadata en priorité, localStorage en fallback
-  const [avatarUrl, setAvatarUrl] = useState(() => {
-    try {
-      return user?.user_metadata?.avatar_url
-        || (user?.id ? localStorage.getItem(`myswym_avatar_${user.id}`) : null)
-        || localStorage.getItem("myswym_avatar")
-        || null;
-    } catch { return null; }
-  });
+  // Avatar + firstName — user_metadata (cross-device) en priorité, cache local en fallback
+  const [avatarUrl, setAvatarUrl] = useState(() => resolveAvatarUrl(user));
   const [firstName, setFirstName] = useState(() => {
     try {
       return user?.user_metadata?.firstname
@@ -2980,15 +2979,25 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
         if (cached) setFirstName(cached);
       } catch {}
     }
-    if (user?.user_metadata?.avatar_url) setAvatarUrl(user.user_metadata.avatar_url);
-    else if (user?.id) {
-      try {
-        const cached = localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
-        if (cached) setAvatarUrl(cached);
-        else setAvatarUrl(null);
-      } catch { setAvatarUrl(null); }
-    }
-  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url]);
+    if (avatarBusy) return;
+    const next = resolveAvatarUrl(user);
+    setAvatarUrl(next);
+  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url, avatarBusy]);
+
+  // Si metadata vide : retombe sur le fichier Storage et backfill (même compte, autre appareil)
+  useEffect(() => {
+    if (!user?.id || avatarBusy) return;
+    if (resolveAvatarUrl(user)) return;
+    let cancelled = false;
+    hydrateAvatarFromStorage(user.id)
+      .then((res) => {
+        if (cancelled || !res?.publicUrl) return;
+        setAvatarUrl(res.publicUrl);
+        if (res.user && onUserUpdate) onUserUpdate(res.user);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.id, user?.user_metadata?.avatar_url, avatarBusy, onUserUpdate]);
 
   const stats  = computeStats(plan);
   const earned = checkBadges(stats);
@@ -3012,48 +3021,29 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    // Reset input pour permettre de re-sélectionner le même fichier
     e.target.value = "";
     setAvatarMenuOpen(false);
 
     const previousUrl = avatarUrl;
     setAvatarBusy(true);
 
-    // Aperçu immédiat local
-    const reader = new FileReader();
-    reader.onload = (ev) => setAvatarUrl(ev.target.result);
-    reader.readAsDataURL(file);
-
-    // Upload vers Supabase Storage → URL publique persistante cross-device
+    // Aperçu immédiat (data URL) — ne remplace pas la persistance serveur
     try {
-      const mime = file.type || "image/jpeg";
-      const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
-      const path = `${user.id}/avatar.${ext}`;
+      const preview = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result);
+        reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+        reader.readAsDataURL(file);
+      });
+      setAvatarUrl(preview);
+    } catch { /* preview optionnel */ }
 
-      // Upsert exige une policy SELECT (RETURNING). Fallback remove+insert si besoin.
-      let uploadErr = (await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true, contentType: mime, cacheControl: "3600" })).error;
-      if (uploadErr) {
-        await supabase.storage.from("avatars").remove([path]).catch(() => {});
-        uploadErr = (await supabase.storage
-          .from("avatars")
-          .upload(path, file, { upsert: false, contentType: mime, cacheControl: "3600" })).error;
-      }
-      if (uploadErr) throw uploadErr;
-
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
-      // Cache-busting pour forcer le rechargement de l'image
-      const urlWithTs = `${publicUrl}?t=${Date.now()}`;
-      setAvatarUrl(urlWithTs);
-      try {
-        localStorage.setItem(avatarStorageKey, urlWithTs);
-        localStorage.setItem("myswym_avatar", urlWithTs);
-      } catch {}
-      // Sync cross-device via user_metadata + état parent (home header)
-      const { data: updated, error: metaErr } = await supabase.auth.updateUser({ data: { avatar_url: urlWithTs } });
-      if (metaErr) throw metaErr;
-      if (updated?.user && onUserUpdate) onUserUpdate(updated.user);
+    try {
+      const { publicUrl, user: updatedUser } = await uploadAndPersistAvatar(user.id, file);
+      setAvatarUrl(publicUrl);
+      if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
+      setMsg({ type: "ok", text: "Photo enregistrée — visible sur tous tes appareils." });
+      setTimeout(() => setMsg(null), 3500);
     } catch (err) {
       setAvatarUrl(previousUrl || null);
       setMsg({ type: "err", text: err?.message || "Impossible d'enregistrer la photo de profil" });
@@ -3069,16 +3059,9 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
     const previousUrl = avatarUrl;
     setAvatarUrl(null);
     try {
-      try {
-        localStorage.removeItem(avatarStorageKey);
-        localStorage.removeItem("myswym_avatar");
-      } catch {}
-      // Supprime les variantes éventuelles (jpg/png/webp)
-      const paths = ["jpg", "png", "webp"].map((ext) => `${user.id}/avatar.${ext}`);
-      await supabase.storage.from("avatars").remove(paths);
-      const { data: updated, error: metaErr } = await supabase.auth.updateUser({ data: { avatar_url: "" } });
-      if (metaErr) throw metaErr;
-      if (updated?.user && onUserUpdate) onUserUpdate(updated.user);
+      clearCachedAvatar(user.id);
+      const { user: updatedUser } = await removeAndPersistAvatar(user.id);
+      if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
     } catch (err) {
       setAvatarUrl(previousUrl || null);
       setMsg({ type: "err", text: err?.message || "Impossible de supprimer la photo" });
@@ -3141,7 +3124,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
               <Camera size={12} color="#fff" />
             </div>
           </button>
-          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
         </div>
 
         {avatarMenuOpen && createPortal(
@@ -4025,15 +4008,7 @@ const SettingsDrawer = ({
 
 /** Barre haute commune (logo + paramètres) — Accueil / Programme / Profil */
 const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
-  const avatarUrl = user?.user_metadata?.avatar_url
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_avatar_${user.id}`) || localStorage.getItem("myswym_avatar");
-        }
-        return localStorage.getItem("myswym_avatar");
-      } catch { return null; }
-    })();
+  const avatarUrl = resolveAvatarUrl(user);
   const firstName = user?.user_metadata?.firstname
     || (() => {
       try {
