@@ -1790,6 +1790,37 @@ const MonAllureCard = ({ profile, pace100, isPremium, onSave, onUpgrade }) => {
         </div>
       )}
 
+      {isPremium && Array.isArray(profile?.paceHistory) && profile.paceHistory.filter((h) => h?.pace100).length > 0 && (
+        <div style={{ marginTop: showEvolution ? 16 : 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+            Journal T100
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[...profile.paceHistory].filter((h) => h?.pace100).slice(-6).reverse().map((h, i) => {
+              const when = h.at ? new Date(h.at) : null;
+              const whenLabel = when && Number.isFinite(when.getTime())
+                ? when.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                : (h.week ? `Sem. ${h.week}` : "—");
+              const src = h.source === "strava" ? "Strava" : h.source === "program" ? "Programme" : "Manuel";
+              return (
+                <div
+                  key={`${h.pace100}-${h.at || i}`}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                    padding: "8px 10px", borderRadius: 10, background: G.greyXLight,
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>{secToDisplay(h.pace100)}</div>
+                  <div style={{ fontSize: 11, color: G.greyMid, textAlign: "right" }}>
+                    {whenLabel} · {src}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {!isPremium && (
         <p style={{ fontSize: 12, color: G.grey, margin: "12px 0 0", lineHeight: 1.45, textAlign: "center" }}>
           Zones + projection 2/5 ans avec Premium.
@@ -7774,6 +7805,7 @@ const Dashboard = ({
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
   const [poolOpen, setPoolOpen] = useState(false);
+  const [homePrepOpen, setHomePrepOpen] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
   const next = findNextSession(plan);
   const preview = next?.session ? sessionCardModel(next.session) : null;
@@ -7820,7 +7852,7 @@ const Dashboard = ({
       sessionIndex: props.sessionIndex,
       volume: props.volume,
     }, { onceKey: `session_started:${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}` });
-    setPoolOpen(true);
+    setHomePrepOpen(true);
   };
 
   return (
@@ -7901,9 +7933,38 @@ const Dashboard = ({
               >
                 {next.resolved
                   ? "Voir le programme"
-                  : (isPremium ? "C’est parti — je nage" : "S’abonner pour nager")}
+                  : (isPremium
+                    ? (homePrepOpen ? "Préparation ouverte ↓" : "Préparer la séance")
+                    : "S’abonner pour nager")}
               </button>
             </SessionHeroCard>
+          </div>
+        )}
+
+        {homePrepOpen && next?.session && !next.resolved && (
+          <div className="ms-session-card" style={{ marginBottom: 16, padding: "16px 18px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Préparation
+              </div>
+              <button
+                type="button"
+                onClick={() => setHomePrepOpen(false)}
+                style={{ border: "none", background: "none", color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Fermer
+              </button>
+            </div>
+            <WorkoutPrepView
+              session={next.session}
+              colors={G}
+              accent={{ bg: tm.bg, color: tm.color }}
+              isPremium={isPremium}
+              showStart
+              startLabel="C’est parti — je nage"
+              onUpgrade={onUpgrade}
+              onStart={() => setPoolOpen(true)}
+            />
           </div>
         )}
 
@@ -7943,6 +8004,7 @@ const Dashboard = ({
             onClose={() => setPoolOpen(false)}
             onFinish={() => {
               setPoolOpen(false);
+              setHomePrepOpen(false);
               onComplete?.(next.weekIndex, next.sessionIndex, "done");
             }}
           />
