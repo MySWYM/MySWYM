@@ -94,6 +94,17 @@ import { buildWorkoutView } from "./lib/workout-display.js";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
+import {
+  planFingerprint,
+  dedupePlans,
+  mergePlanLists,
+  readDeletedPlanIds,
+  writeDeletedPlanIds,
+  persistAccountPlans,
+} from "./lib/plan-account.js";
+import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
+import { AppShell, BottomNav, Loading } from "./app-shell/index.js";
+
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
 
@@ -467,12 +478,6 @@ const css = `
   }
 `;
 
-/** Conteneur app mobile-first → colonne centrée sur tablette/PC */
-const AppShell = ({ children, flush = false, style = {} }) => (
-  <div className={flush ? "app-shell app-shell--flush" : "app-shell"} style={style}>
-    {flush ? <div className="app-shell-inner">{children}</div> : children}
-  </div>
-);
 // ── DATA ──────────────────────────────────────────────────────────────────
 const GOALS = [
   { id: "triathlon_xs",      label: "Triathlon XS",           dist: "300–400 m nage",               icon: <Activity size={20} />, wellness: false },
@@ -647,20 +652,6 @@ const EQUIPMENT_OPTS = [
   { id: "plaquettes" },
 ];
 const eqLabel = (id) => i18n.t(`equipment.${id}`, { ns: "onboarding", defaultValue: id });
-
-const BADGE_DEFS = [
-  { id: "first_session", label: "Premier plongeon",   desc: "1re séance complétée",                icon: Droplets, color: G.water },
-  { id: "km1",           label: "1 km nagé",          desc: "1 000 m au compteur",                  icon: Ruler,    color: G.blue },
-  { id: "km5",           label: "5 km nagé",          desc: "5 000 m parcourus",                    icon: Waves,    color: G.blueDeep },
-  { id: "km10",          label: "10 km nagé",         desc: "10 000 m — niveau avancé",             icon: Waves,    color: G.purple },
-  { id: "streak3",       label: "Série de 3",         desc: "3 séances consécutives",               icon: Flame,    color: G.coral },
-  { id: "streak5",       label: "Série de 5",         desc: "5 séances consécutives",               icon: Flame,    color: "#FF3D00" },
-  { id: "week_perfect",  label: "Semaine parfaite",   desc: "Toutes les séances d'une semaine",     icon: Star,     color: G.gold },
-  { id: "speed_demon",   label: "Flash aquatique",    desc: "1re séance de vitesse complétée",      icon: Zap,      color: G.coral },
-  { id: "technique_pro", label: "Maître technicien",  desc: "3 séances de technique complétées",    icon: Target,   color: G.mint },
-  { id: "halfway",       label: "À mi-chemin",        desc: "50 % du plan complété",                icon: TrendingUp, color: G.blueMid },
-  { id: "finisher",      label: "Finisher",           desc: "Plan d'entraînement 100 % bouclé",     icon: Trophy,   color: G.gold },
-];
 
 const DAY_MS = 86400000;
 const NOTIFICATION_KIND_META = {
@@ -998,267 +989,6 @@ const expandCompoundDetailLines = (details = []) => {
     }
   }
   return out.map((line) => prettifySessionDetailLine(line));
-};
-
-// Empreinte profil pour détecter les doublons cross-device (même objectif recréé avec un autre id)
-const planFingerprint = (entry) => {
-  const p = entry?.profile ?? {};
-  return [p.category, p.goal, p.eventDate, p.level, p.pool, p.sessionsPerWeek].join("|");
-};
-
-const dedupePlans = (plans) => {
-  if (!plans?.length) return plans;
-  const groups = new Map();
-  for (const entry of plans) {
-    const fp = planFingerprint(entry);
-    if (!groups.has(fp)) groups.set(fp, []);
-    groups.get(fp).push(entry);
-  }
-  const out = [];
-  for (const group of groups.values()) {
-    if (group.length === 1) { out.push(group[0]); continue; }
-    // Plusieurs ids pour le même objectif : garde ceux avec progression, sinon le premier
-    const withProgress = group.filter(e => planProgressScore(e) > 0);
-    if (withProgress.length >= 2) out.push(...withProgress);
-    else if (withProgress.length === 1) out.push(withProgress[0]);
-    else out.push(group[0]);
-  }
-  return out;
-};
-
-// Fusion local + remote : union des plans non tombstonés.
-// Suppression intentionnelle = présent dans deletedIds uniquement.
-// Pour un même id des deux côtés : garde la version avec le plus de progression.
-// À progression égale : garder le côté le plus récent (base) — sinon un changement
-// de fréquence 2×→3× (même nb de séances validées) est écrasé par l'ancien plan au refresh.
-// Si les timestamps sont égaux : préférer la fréquence / le volume planifié du côté base
-// déjà choisi ; ne prendre `other` que s'il a strictement plus de séances validées.
-const planCreatedAt = (id) => {
-  const m = String(id || "").match(/^plan_(\d+)$/);
-  return m ? Number(m[1]) : 0;
-};
-
-// Fusion local + remote : union des plans non tombstonés.
-// Suppression intentionnelle = présent dans deletedIds, OU id absent du côté
-// le plus récent alors que le plan est plus vieux que ce snapshot.
-// Pour un même id des deux côtés : garde la version avec le plus de progression.
-const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, localUpdatedAt = 0, remoteUpdatedAt = 0, currentActive = null, deletedIds = null) => {
-  const localIsNewer = (localUpdatedAt || 0) >= (remoteUpdatedAt || 0);
-  const base = localIsNewer ? (localPlans || []) : (remotePlans || []);
-  const other = localIsNewer ? (remotePlans || []) : (localPlans || []);
-  const newerTs = localIsNewer ? (localUpdatedAt || 0) : (remoteUpdatedAt || 0);
-  const byId = new Map();
-  for (const e of base) {
-    if (deletedIds?.has(e.id)) continue;
-    byId.set(e.id, e);
-  }
-  for (const e of other) {
-    if (deletedIds?.has(e.id)) continue;
-    const existing = byId.get(e.id);
-    if (!existing) {
-      const created = planCreatedAt(e.id);
-      // Présent seulement sur le côté plus ancien + créé avant le snapshot récent
-      // → suppression sur l'autre appareil (ne pas ressusciter).
-      // Créé après le snapshot → création concurrente / hors-ligne à garder.
-      if (created > 0 && newerTs > 0 && created <= newerTs) continue;
-      byId.set(e.id, e);
-      continue;
-    }
-    if (planProgressScore(e) > planProgressScore(existing)) byId.set(e.id, e);
-  }
-  const merged = dedupePlans([...byId.values()]);
-  let active = currentActive;
-  if (!active || !merged.some(e => e.id === active)) {
-    if (localActive && merged.some(e => e.id === localActive)) active = localActive;
-    else if (remoteActive && merged.some(e => e.id === remoteActive)) active = remoteActive;
-    else active = merged[0]?.id ?? null;
-  }
-  const updatedAt = new Date(Math.max(localUpdatedAt || 0, remoteUpdatedAt || 0) || Date.now()).toISOString();
-  return { plans: merged, active, updatedAt };
-};
-
-const deletedPlansStorageKey = (userId) => `myswym_deleted_plans_${userId}`;
-
-const readDeletedPlanIds = (userId) => {
-  try {
-    const raw = localStorage.getItem(deletedPlansStorageKey(userId));
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch {
-    return new Set();
-  }
-};
-
-const writeDeletedPlanIds = (userId, ids) => {
-  try {
-    const list = [...(ids || [])];
-    if (list.length === 0) localStorage.removeItem(deletedPlansStorageKey(userId));
-    else localStorage.setItem(deletedPlansStorageKey(userId), JSON.stringify(list));
-  } catch { /* ignore */ }
-};
-
-/** Persistance compte : union local∪remote (sauf tombstones), 1 plan actif max, puis upsert Supabase. */
-const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds = null, localHistory = []) => {
-  const now = new Date().toISOString();
-  const tombstones = deletedIds instanceof Set ? new Set(deletedIds) : readDeletedPlanIds(userId);
-  let remotePlans = [];
-  let remoteActive = null;
-  let remoteHistory = [];
-  let remoteTime = 0;
-  try {
-    const { data } = await supabase
-      .from("user_plans")
-      .select("plans_json, active_plan_id, plan_history, updated_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (Array.isArray(data?.plans_json)) remotePlans = data.plans_json;
-    remoteActive = data?.active_plan_id || null;
-    if (Array.isArray(data?.plan_history)) remoteHistory = data.plan_history;
-    remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
-  } catch { /* offline / network */ }
-
-  let localTime = Date.now();
-  try {
-    const ts = localStorage.getItem(`myswym_plans_updated_${userId}`);
-    if (ts) localTime = Math.max(new Date(ts).getTime() || 0, localTime);
-  } catch { /* ignore */ }
-
-  const { plans: mergedRaw, active: activeRaw } = mergePlanLists(
-    localPlans || [],
-    remotePlans,
-    activePlanId,
-    remoteActive,
-    localTime,
-    remoteTime,
-    activePlanId,
-    tombstones,
-  );
-
-  // Historique : union local ∪ remote (par id), sans doublon
-  const histById = new Map();
-  for (const h of [...(remoteHistory || []), ...(localHistory || [])]) {
-    if (h?.id) histById.set(h.id, h);
-  }
-  const existingHistory = [...histById.values()];
-  const enforced = enforceSingleActivePlan(mergedRaw, activeRaw, existingHistory);
-  const merged = enforced.plans;
-  const active = enforced.activeId;
-  const history = enforced.history;
-
-  try {
-    localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(merged));
-    if (active) localStorage.setItem(`myswym_active_${userId}`, active);
-    else localStorage.removeItem(`myswym_active_${userId}`);
-    localStorage.setItem(`myswym_plan_history_${userId}`, JSON.stringify(history));
-    localStorage.setItem(`myswym_plans_updated_${userId}`, now);
-  } catch { /* ignore */ }
-
-  if (merged.length === 0) {
-    const { error } = await supabase.from("user_plans").upsert({
-      user_id: userId,
-      plans_json: [],
-      active_plan_id: null,
-      plan_history: history,
-      profile: null,
-      plan: null,
-      updated_at: now,
-    }, { onConflict: "user_id" });
-    if (!error) writeDeletedPlanIds(userId, new Set());
-    return { plans: [], active: null, history, error: error || null };
-  }
-
-  const activeEntry = merged.find((e) => e.id === active) ?? merged[0];
-  const { error } = await supabase.from("user_plans").upsert({
-    user_id: userId,
-    plans_json: merged,
-    active_plan_id: active,
-    plan_history: history,
-    profile: activeEntry?.profile ?? null,
-    plan: activeEntry?.plan ?? null,
-    updated_at: now,
-  }, { onConflict: "user_id" });
-
-  if (error) {
-    if (import.meta.env.DEV) console.warn("[plans] upsert failed", error.message);
-    writeDeletedPlanIds(userId, tombstones);
-    return { plans: merged, active, history, error };
-  }
-
-  writeDeletedPlanIds(userId, new Set());
-  return { plans: merged, active, history, error: null };
-};
-
-const computeStats = (plan) => {
-  if (!plan?.weeks) return { totalSessions: 0, totalMeters: 0, streak: 0, perfectWeeks: 0, speedSessions: 0, techniqueSessions: 0, planTotal: 0, weeklyData: [] };
-  let totalSessions = 0, totalMeters = 0, currentStreak = 0, maxStreak = 0, perfectWeeks = 0, speedSessions = 0, techniqueSessions = 0;
-  // Boucle progression : stats depuis l'historique + séance courante
-  if (plan.isSessionLoop) {
-    const hist = plan.history || [];
-    hist.forEach((s) => {
-      if (s.completed) {
-        totalSessions++;
-        totalMeters += parseInt(s.distance, 10) || 0;
-        currentStreak++;
-        maxStreak = Math.max(maxStreak, currentStreak);
-        if (s.type === "VITESSE") speedSessions++;
-        if (s.type === "TECHNIQUE") techniqueSessions++;
-      } else {
-        currentStreak = 0;
-      }
-    });
-    const cur = plan.weeks?.[0]?.sessions?.[0];
-    if (cur?.completed) {
-      totalSessions++;
-      totalMeters += parseInt(cur.distance, 10) || 0;
-      currentStreak++;
-      maxStreak = Math.max(maxStreak, currentStreak);
-    }
-    return {
-      totalSessions,
-      totalMeters,
-      streak: maxStreak,
-      perfectWeeks: 0,
-      speedSessions,
-      techniqueSessions,
-      planTotal: Math.max(totalSessions + (cur && !isSessionResolved(cur) ? 1 : 0), 1),
-      weeklyData: [],
-    };
-  }
-  const planTotal = plan.weeks.reduce((a, w) => a + w.sessions.length, 0);
-  const weeklyData = plan.weeks.map(w => ({
-    label: `S${w.number}`,
-    done: w.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
-    total: w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
-  }));
-  plan.weeks.forEach(week => {
-    if (week.sessions.length > 0 && week.sessions.every(s => s.completed && !s.skipped)) perfectWeeks++;
-    week.sessions.forEach(s => {
-      if (s.completed) {
-        totalSessions++; totalMeters += parseInt(s.distance) || 0; currentStreak++;
-        maxStreak = Math.max(maxStreak, currentStreak);
-        if (s.type === "VITESSE") speedSessions++;
-        if (s.type === "TECHNIQUE") techniqueSessions++;
-      } else { currentStreak = 0; }
-    });
-  });
-  return { totalSessions, totalMeters, streak: maxStreak, perfectWeeks, speedSessions, techniqueSessions, planTotal, weeklyData };
-};
-
-const checkBadges = (stats) => {
-  const e = [];
-  if (stats.totalSessions >= 1)  e.push("first_session");
-  if (stats.totalMeters >= 1000)  e.push("km1");
-  if (stats.totalMeters >= 5000)  e.push("km5");
-  if (stats.totalMeters >= 10000) e.push("km10");
-  if (stats.streak >= 3) e.push("streak3");
-  if (stats.streak >= 5) e.push("streak5");
-  if (stats.perfectWeeks >= 1) e.push("week_perfect");
-  if (stats.speedSessions >= 1) e.push("speed_demon");
-  if (stats.techniqueSessions >= 3) e.push("technique_pro");
-  if (stats.planTotal > 0 && stats.totalSessions >= stats.planTotal / 2) e.push("halfway");
-  if (stats.planTotal > 0 && stats.totalSessions >= stats.planTotal) e.push("finisher");
-  return e;
 };
 
 // Feedback hebdo : multiplicateur cumulé plafonné (évite ×1.12^n sans borne vs règle +10 %/sem.)
@@ -4232,51 +3962,6 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
   );
 };
 
-const BottomNav = ({ active, onChange, newBadge, hideBuddies = false, lockBuddies = false }) => {
-  const tabs = [
-    { id: "home",    Icon: Home,      label: "Accueil" },
-    { id: "plan",    Icon: Calendar,  label: "Programme" },
-    !hideBuddies && { id: "buddies", Icon: Users,     label: "Binômes", locked: lockBuddies },
-    { id: "profile", Icon: User,      label: "Profil" },
-  ].filter(Boolean);
-  return (
-    <div className="bottom-nav">
-      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "6px 0 8px" }} aria-label="Navigation principale">
-        {tabs.map(t => {
-          const isActive = active === t.id;
-          const muted = t.locked && !isActive;
-          const iconColor = isActive ? G.blue : muted ? G.greyMid : G.greyMid;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => onChange(t.id)}
-              aria-current={isActive ? "page" : undefined}
-              aria-label={t.locked ? `${t.label} (abonnés)` : t.label}
-              style={{
-                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 4, background: "none", border: "none", cursor: "pointer",
-                minHeight: 48, padding: "6px 4px", position: "relative",
-                opacity: muted ? 0.55 : 1,
-              }}
-            >
-              <span style={{ position: "relative", display: "inline-flex" }}>
-                <t.Icon size={22} color={iconColor} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
-                {t.locked && (
-                  <Lock size={10} color={iconColor} strokeWidth={2.6} style={{ position: "absolute", right: -6, top: -3 }} />
-                )}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 500, color: isActive ? G.blue : G.grey }}>{t.label}</span>
-              {t.id === "profile" && newBadge && <div style={{ position: "absolute", top: 6, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
-              {isActive && <div style={{ position: "absolute", bottom: 2, width: 28, height: 3, borderRadius: 2, background: G.blue }} />}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
-};
-
 // ── AUTH (welcome email + reset password; AuthScreen in AuthScreen.jsx)
 
 /** Welcome mail (email + Google OAuth) — retry si session pas encore prête. */
@@ -4962,22 +4647,6 @@ const OnboardingWizard = ({
     </>
   );
 };
-
-// ── LOADING ───────────────────────────────────────────────────────────────
-/** Boot loader — logo + barre. Styles dans index.html. */
-const Loading = () => (
-  <div className="myswym-boot" role="status" aria-live="polite" aria-busy="true">
-    <div className="myswym-boot-inner">
-      <div className="myswym-boot-icon-wrap">
-        <img className="myswym-boot-icon" src="/apple-touch-icon.png" alt="" width={88} height={88} />
-      </div>
-      <img className="myswym-boot-wordmark" src="/logo-myswym-banner-blanc.png" alt="mySWYM" height={28} width={192} />
-      <p className="myswym-boot-status">Préparation de votre espace nageur</p>
-      <div className="myswym-boot-track" aria-hidden="true"><div className="myswym-boot-bar" /></div>
-      <p className="myswym-boot-label">Un instant</p>
-    </div>
-  </div>
-);
 
 // ── SHARE MODAL ───────────────────────────────────────────────────────────
 const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
