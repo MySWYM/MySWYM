@@ -9410,6 +9410,8 @@ export default function App() {
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const forceAuthRef = useRef(false);
+  /** Empêche le bounce /app→onboarding pendant / juste après signOut. */
+  const signingOutRef = useRef(false);
   const checkoutAbandonedRef = useRef(false);
   const welcomeEmailInFlightRef = useRef(null);
   const planRevealPaywallRef = useRef(false);
@@ -9547,8 +9549,9 @@ export default function App() {
       return;
     }
     if (isAuthPath(location.pathname)) {
-      // Déjà connecté → sortir de /connexion (évite quiz collé sous l’URL auth)
-      if (user) {
+      // Déjà connecté → /app, SAUF pendant une déconnexion (forceAuth déjà true).
+      // Sinon : navigate(/connexion) avant signOut → bounce /app → quiz.
+      if (user && !forceAuthRef.current) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
         navigate("/app", { replace: true });
@@ -9559,8 +9562,9 @@ export default function App() {
       setScreen("auth");
       return;
     }
-    // /connexion|/inscription → /app (CTA Commencer) : même composant App, il faut quitter l’écran auth
-    if (!user && location.pathname.startsWith("/app") && forceAuthRef.current) {
+    // /connexion|/inscription → /app (CTA Commencer) : même composant App, il faut quitter l’écran auth.
+    // Ne pas traiter un bounce tardif post-déconnexion (signingOutRef / forceAuth + user null).
+    if (!user && location.pathname.startsWith("/app") && forceAuthRef.current && !signingOutRef.current) {
       forceAuthRef.current = false;
       authOpenedFromUrlRef.current = false;
       setScreen("onboarding");
@@ -9933,6 +9937,7 @@ export default function App() {
         setAuthLoading(false);
         // Déconnexion explicite → /connexion (pas le questionnaire /app)
         if (event === "SIGNED_OUT") {
+          signingOutRef.current = true;
           plansHydratedRef.current = false;
           resetAnalytics();
           setPlans([]);
@@ -9945,9 +9950,9 @@ export default function App() {
           setStep(1);
           forceAuthRef.current = true;
           authOpenedFromUrlRef.current = true;
-          if (locationRef.current.pathname !== "/connexion") {
-            navigate("/connexion", { replace: true });
-          }
+          setScreen("auth");
+          navigate("/connexion", { replace: true });
+          setTimeout(() => { signingOutRef.current = false; }, 500);
         }
       } else {
         plansHydratedRef.current = false;
@@ -11881,12 +11886,19 @@ export default function App() {
 
   const handleSignOut = async () => {
     resetAnalytics();
+    signingOutRef.current = true;
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
-    setScreen("auth");
-    navigate("/connexion", { replace: true });
-    await supabase.auth.signOut();
+    // signOut AVANT navigate : sinon user encore set + /connexion → effet renvoie vers /app
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setScreen("auth");
+      navigate("/connexion", { replace: true });
+      // Laisse passer les effets de route en retard avant de relâcher
+      setTimeout(() => { signingOutRef.current = false; }, 500);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -11905,12 +11917,17 @@ export default function App() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.error || "Suppression impossible.");
     resetAnalytics();
+    signingOutRef.current = true;
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
-    setScreen("auth");
-    navigate("/connexion", { replace: true });
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setScreen("auth");
+      navigate("/connexion", { replace: true });
+      setTimeout(() => { signingOutRef.current = false; }, 500);
+    }
     showToast("Compte supprimé.");
   };
 
