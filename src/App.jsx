@@ -131,8 +131,14 @@ import {
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
-  Camera, Trash2, Users, ExternalLink, Info, Pencil,
+  Camera, Trash2, Users, ExternalLink, Info, Pencil, Printer, Share2,
 } from "lucide-react";
+import {
+  copySessionText,
+  openSessionPrint,
+} from "./lib/session-export.js";
+import { createShareCanvas } from "./lib/session-share-canvas.js";
+import { buildWeekProjection } from "./lib/week-projection.js";
 
 applyTheme();
 
@@ -977,24 +983,6 @@ const expandCompoundDetailLines = (details = []) => {
   return out.map((line) => prettifySessionDetailLine(line));
 };
 
-/** Texte plat d'une séance — WhatsApp / description Strava */
-const formatSessionPlainText = (session) => {
-  const lines = [
-    `${session.title || "Séance"} — ${session.distance || ""}${session.duration ? ` — ${formatDuration(session.duration)}` : ""}`.trim(),
-  ];
-  if (session.intensity) lines.push(String(session.intensity));
-  lines.push("");
-  expandCompoundDetailLines(session.details || []).forEach((d) => {
-    const kind = classifyDetailLine(d);
-    const t = stripDetailPrefix(d).replace(/\s*:\s*$/, "");
-    if (!t) return;
-    if (kind === "sub") lines.push(`  ${t}`);
-    else lines.push(t);
-  });
-  lines.push("", "— MySWYM");
-  return lines.join("\n");
-};
-
 // Empreinte profil pour détecter les doublons cross-device (même objectif recréé avec un autre id)
 const planFingerprint = (entry) => {
   const p = entry?.profile ?? {};
@@ -1420,52 +1408,6 @@ const adjustPlan = (plan, weekIndex, rating, profile = null, premium = true, { s
     // Étape K compat : persister la vue history sur le blob (reload sans tables K)
     _engineHistory: engineProfile?._engineHistory || plan._engineHistory || null,
   };
-};
-
-// ── SHARE CARD (Canvas) ────────────────────────────────────────────────────
-function crr(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-const createShareCanvas = (session, goalLabel) => {
-  const W = 1080, H = 1080;
-  const canvas = document.createElement("canvas");
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#0D1117"); bg.addColorStop(1, "#001966");
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  ctx.save(); ctx.globalAlpha = 0.07; ctx.strokeStyle = "#0057FF"; ctx.lineWidth = 3;
-  [130, 220, 310, 400].forEach(r => { ctx.beginPath(); ctx.arc(980, 160, r, 0, Math.PI * 2); ctx.stroke(); });
-  ctx.restore();
-  ctx.fillStyle = "rgba(255,255,255,0.88)"; ctx.font = "bold 34px sans-serif"; ctx.fillText("MySWYM", 80, 126);
-  ctx.fillStyle = "#00C48C"; crr(ctx, 80, 196, 300, 58, 29); ctx.fill();
-  ctx.fillStyle = "#fff"; ctx.font = "bold 24px sans-serif"; ctx.fillText("Séance terminée", 108, 234);
-  const tc = { ENDURANCE: "#4080FF", SEUIL: "#FF6D00", VITESSE: "#FF4757", TECHNIQUE: "#00B4D8", RÉCUPÉRATION: "#00C48C" };
-  ctx.fillStyle = tc[session.type] || "#4080FF"; ctx.font = "500 28px sans-serif"; ctx.fillText(session.type, 80, 340);
-  ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 68px sans-serif";
-  const words = session.title.split(" "); let line = "", y = 430;
-  words.forEach((word) => {
-    const test = line + word + " ";
-    if (ctx.measureText(test).width > 920 && line) { ctx.fillText(line.trim(), 80, y); line = word + " "; y += 84; }
-    else { line = test; }
-  });
-  ctx.fillText(line.trim(), 80, y);
-  [{ label: "Distance", value: session.distance }, { label: "Durée", value: formatDuration(session.duration) }, { label: "Intensité", value: session.intensity }].forEach((s, i) => {
-    const x = 80 + i * 310;
-    ctx.fillStyle = "rgba(255,255,255,0.07)"; crr(ctx, x, 640, 290, 134, 20); ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.font = "400 22px sans-serif"; ctx.fillText(s.label, x + 20, 678);
-    ctx.fillStyle = "#FFFFFF"; ctx.font = "bold 40px sans-serif"; ctx.fillText(s.value, x + 20, 734);
-  });
-  if (goalLabel) { ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.font = "400 26px sans-serif"; ctx.fillText(`Objectif : ${goalLabel}`, 80, 854); }
-  ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "400 22px sans-serif"; ctx.fillText("myswym.app", 80, 1016);
-  return canvas;
 };
 
 // ── PRIMITIVES ────────────────────────────────────────────────────────────
@@ -5336,47 +5278,93 @@ const Loading = () => (
 );
 
 // ── SHARE MODAL ───────────────────────────────────────────────────────────
-const ShareModal = ({ session, goalLabel, onClose }) => {
+const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const tm = getTypeMeta(session.type);
+  const badgeMeta = badge
+    ? (BADGE_DEFS.find((d) => d.id === badge) || { label: badge, color: G.gold })
+    : null;
+  const canvasBadge = badgeMeta ? { label: badgeMeta.label, color: badgeMeta.color } : null;
+
   const handleDownload = () => {
-    const canvas = createShareCanvas(session, goalLabel);
+    const canvas = createShareCanvas(session, goalLabel, canvasBadge);
     const link = document.createElement("a");
-    link.download = "myswym-seance.png"; link.href = canvas.toDataURL("image/png"); link.click();
+    link.download = "myswym-seance.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
   const handleShare = async () => {
     if (!navigator.share) { handleDownload(); return; }
-    const canvas = createShareCanvas(session, goalLabel);
+    const canvas = createShareCanvas(session, goalLabel, canvasBadge);
     canvas.toBlob(async (blob) => {
-      try { await navigator.share({ files: [new File([blob], "myswym-seance.png", { type: "image/png" })], title: "Ma séance MySWYM" }); }
-      catch { handleDownload(); }
+      try {
+        await navigator.share({
+          files: [new File([blob], "myswym-seance.png", { type: "image/png" })],
+          title: "Ma séance MySWYM",
+          text: badgeMeta ? `Badge débloqué : ${badgeMeta.label}` : "Séance terminée sur MySWYM",
+        });
+      } catch { handleDownload(); }
     });
   };
+  const handleCopyStrava = async () => {
+    const ok = await copySessionText(session);
+    if (ok) {
+      /* toast léger via titre temporaire non nécessaire */
+    }
+  };
+
   return (
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 20, textAlign: "center" }}>Partage ta séance</h3>
-        <div style={{ background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(142,179,255,0.15)" }} />
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 14px", marginBottom: 16 }}>
-            <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
+        <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink, marginBottom: 8, textAlign: "center" }}>
+          Partage ta séance
+        </h3>
+        <p style={{ fontSize: 13, color: G.grey, textAlign: "center", margin: "0 0 18px", lineHeight: 1.4 }}>
+          Image pour Instagram / Stories, ou texte pour Strava.
+        </p>
+        <div style={{ background: `linear-gradient(145deg, #06101F 0%, #0033A0 100%)`, borderRadius: 20, padding: 24, marginBottom: 16, position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: -40, right: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(0,87,253,0.35)" }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 12px" }}>
+              <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
+            </div>
+            {badgeMeta && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,184,0,0.18)", border: `1px solid ${badgeMeta.color}`, borderRadius: 20, padding: "5px 12px" }}>
+                <Trophy size={12} color={badgeMeta.color} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: badgeMeta.color }}>{badgeMeta.label}</span>
+              </div>
+            )}
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
-          <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 16 }}>{session.title}</div>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: G.white, marginBottom: 16 }}>{session.title}</div>
+          <div style={{ display: "flex", gap: 10 }}>
             {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
-              <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px" }}>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>{s.l}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: G.white }}>{s.v}</div>
+              <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px" }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 2 }}>{s.l}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: G.white }}>{s.v}</div>
               </div>
             ))}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
           <Btn onClick={handleDownload} variant="secondary" style={{ flex: 1 }}>Télécharger</Btn>
-          <Btn onClick={handleShare}   variant="blue"      style={{ flex: 1 }}>Partager</Btn>
+          <Btn onClick={handleShare} variant="blue" style={{ flex: 1 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Share2 size={14} /> Partager</span>
+          </Btn>
         </div>
-        <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Fermer</button>
+        <button
+          type="button"
+          onClick={handleCopyStrava}
+          style={{
+            width: "100%", padding: "12px", borderRadius: 12, marginBottom: 6,
+            border: `1px solid ${G.greyLight}`, background: G.greyXLight,
+            color: G.inkLight, fontWeight: 600, fontSize: 13, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <Copy size={14} /> Copier pour Strava / WhatsApp
+        </button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Fermer</button>
       </div>
     </div>
   );
@@ -5459,19 +5447,187 @@ const ConfirmSheet = ({
 
 
 
-// ── BADGE TOAST ───────────────────────────────────────────────────────────
-const BadgeToast = ({ badgeId }) => {
-  const b = BADGE_DEFS.find(d => d.id === badgeId);
+// ── BADGE CÉLÉBRATION + EXPORT + SEMAINE ───────────────────────────────────
+const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
+  const b = BADGE_DEFS.find((d) => d.id === badgeId);
   if (!b) return null;
+  const Icon = b.icon;
   return (
-    <div className="toast-in" style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: G.surface, borderRadius: 20, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.25)", whiteSpace: "nowrap", border: `1px solid ${G.greyLight}` }}>
-      <div className="badge-pop" style={{ width: 40, height: 40, borderRadius: "50%", background: b.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <b.icon size={18} color={G.white} />
+    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose?.()}>
+      <div className="sheet-panel scale-in" style={{
+        background: G.surface, borderRadius: "24px 24px 0 0", padding: "32px 22px",
+        paddingBottom: "max(28px, env(safe-area-inset-bottom))", textAlign: "center",
+      }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 28px" }} />
+        <div className="badge-pop" style={{
+          width: 88, height: 88, borderRadius: "50%", margin: "0 auto 18px",
+          background: b.color, display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: `0 12px 40px ${b.color}55`,
+        }}>
+          <Icon size={40} color="#fff" />
+        </div>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: G.gold, margin: "0 0 8px" }}>
+          Badge débloqué
+        </p>
+        <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 700, color: G.ink, margin: "0 0 8px", letterSpacing: "-0.03em" }}>
+          {b.label}
+        </h3>
+        <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 24px" }}>{b.desc}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {session && onShare && (
+            <Btn
+              variant="blue"
+              onClick={() => { onShare(session, badgeId); onClose?.(); }}
+              style={{ width: "100%" }}
+            >
+              Fêter & partager la séance
+            </Btn>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 12, border: `1px solid ${G.greyLight}`,
+              background: G.greyXLight, color: G.inkLight, fontWeight: 600, fontSize: 14, cursor: "pointer",
+            }}
+          >
+            Continuer
+          </button>
+        </div>
       </div>
-      <div>
-        <div style={{ fontSize: 12, color: G.grey }}>Badge débloqué</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: G.ink }}>{b.label}</div>
+    </div>
+  );
+};
+
+const SessionExportBar = ({
+  session, isPremium, onUpgrade, onShare, showShare = false,
+}) => {
+  const [copied, setCopied] = useState(false);
+  const runCopy = async (e) => {
+    e?.stopPropagation?.();
+    if (!isPremium) { onUpgrade?.("session_locked"); return; }
+    const ok = await copySessionText(session);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  const runPrint = (e) => {
+    e?.stopPropagation?.();
+    if (!isPremium) { onUpgrade?.("session_locked"); return; }
+    openSessionPrint(session);
+  };
+  const btn = {
+    flex: 1, minWidth: 110, padding: "10px 12px", borderRadius: 12,
+    fontSize: 12, fontWeight: 600, cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+    border: `1px solid ${G.greyLight}`, background: G.surface, color: G.inkLight,
+  };
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button type="button" onClick={runCopy} style={{ ...btn, background: copied ? G.mint : G.surface, borderColor: copied ? G.mint : G.greyLight, color: copied ? G.white : G.inkLight }}>
+          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Strava</>}
+        </button>
+        <button type="button" onClick={runPrint} style={btn}>
+          <Printer size={13} /> Imprimer
+        </button>
+        {showShare && onShare && (
+          <button type="button" onClick={() => onShare(session)} style={btn}>
+            <Share2 size={13} /> Image
+          </button>
+        )}
       </div>
+      <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
+        Copie le texte dans la description Strava, ou imprime pour le bord du bassin.
+      </p>
+    </div>
+  );
+};
+
+const WeekProjectionCard = ({ plan, profile, onOpenPlan }) => {
+  const proj = buildWeekProjection(plan, profile);
+  if (!proj?.sessions?.length) return null;
+  const distLabel = proj.totalMeters >= 1000
+    ? `${(proj.totalMeters / 1000).toFixed(1)} km`
+    : `${proj.totalMeters} m`;
+
+  const statusStyle = (status, current) => {
+    if (status === "done") return { border: `1.5px solid ${G.mint}`, background: `${G.mint}14` };
+    if (status === "skipped") return { border: `1.5px solid ${G.gold}`, background: `${G.gold}12` };
+    if (current || status === "todo") return { border: `1.5px solid ${G.blue}`, background: G.blueLight };
+    return { border: `1px dashed ${G.greyLight}`, background: G.greyXLight };
+  };
+
+  return (
+    <div style={{
+      background: G.surface, borderRadius: 18, padding: "16px", marginBottom: 16,
+      border: `1px solid ${G.greyLight}`,
+      boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 6px 16px rgba(53,93,163,0.04)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Ma semaine
+          </div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, color: G.ink, marginTop: 2 }}>
+            {proj.label}
+            {proj.focus ? <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}> · {proj.focus}</span> : null}
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: G.blue }}>{proj.doneCount}/{proj.totalCount}</div>
+          <div style={{ fontSize: 11, color: G.greyMid }}>{distLabel}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {proj.sessions.map((s, i) => {
+          const tm = getTypeMeta(s.type);
+          const TypeIcon = tm.Icon;
+          return (
+            <div
+              key={`${s.title}-${i}`}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                borderRadius: 12, ...statusStyle(s.status, s.isCurrent),
+              }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: s.status === "upcoming" ? G.greyLight : tm.bg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {s.status === "done" ? <Check size={14} color={G.mint} />
+                  : s.status === "upcoming" ? <Calendar size={13} color={G.greyMid} />
+                  : <TypeIcon size={14} color={tm.color} />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {s.title}
+                </div>
+                <div style={{ fontSize: 11, color: G.greyMid }}>
+                  {s.status === "upcoming"
+                    ? "Séance à venir"
+                    : [s.type, s.distance].filter(Boolean).join(" · ")}
+                  {s.isCurrent && s.status === "todo" ? " · aujourd’hui" : ""}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {onOpenPlan && (
+        <button
+          type="button"
+          onClick={onOpenPlan}
+          style={{
+            width: "100%", marginTop: 12, padding: "10px", borderRadius: 12, border: "none",
+            background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 13, cursor: "pointer",
+          }}
+        >
+          Voir le détail dans Programme
+        </button>
+      )}
     </div>
   );
 };
@@ -6112,7 +6268,6 @@ const SessionCard = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [copied, setCopied] = useState(false);
   const [poolOpen, setPoolOpen] = useState(false);
   const viewedRef = useRef(false);
   const startedRef = useRef(false);
@@ -6183,31 +6338,6 @@ const SessionCard = ({
     } else {
       emitSessionStarted();
       setShowMenu(v => !v);
-    }
-  };
-
-  const handleCopy = async (e) => {
-    e.stopPropagation();
-    if (!isPremium) {
-      onUpgrade?.("session_locked");
-      return;
-    }
-    emitSessionStarted();
-    const text = formatSessionPlainText(session);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -6476,40 +6606,15 @@ const SessionCard = ({
                   setPoolOpen(true);
                 }}
               />
-              <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  title="Copier la séance"
-                  aria-label="Copier la séance"
-                  style={{
-                    flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
-                    background: copied ? G.mint : G.surface,
-                    border: `1px solid ${copied ? G.mint : G.greyLight}`,
-                    fontSize: 12, fontWeight: 600,
-                    color: copied ? G.white : G.inkLight,
-                    cursor: "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                  }}
-                >
-                  {copied
-                    ? <><CheckCheck size={13} color="#fff" /> Copié</>
-                    : <><Copy size={13} color={G.grey} /> Copier la séance</>}
-                </button>
-                {done && onShare && (
-                  <button onClick={() => onShare(session)} style={{
-                    flex: 1, minWidth: 140, padding: "10px 12px", borderRadius: 12,
-                    background: G.surface, border: `1px solid ${G.greyLight}`,
-                    fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                  }}>
-                    <Activity size={12} color={G.grey} /> Partager
-                  </button>
-                )}
+              <div style={{ marginTop: 14 }}>
+                <SessionExportBar
+                  session={session}
+                  isPremium={isPremium}
+                  onUpgrade={onUpgrade}
+                  onShare={onShare}
+                  showShare={!!done && !!onShare}
+                />
               </div>
-              <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
-                Colle le texte dans WhatsApp ou la description Strava.
-              </p>
             </div>
           )}
           {poolOpen && (
@@ -6530,23 +6635,14 @@ const SessionCard = ({
         </>
       )}
       {!locked && blockCount === 0 && (
-        <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <button
-            type="button"
-            onClick={handleCopy}
-            title="Copier la séance"
-            aria-label="Copier la séance"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-          >
-            {copied
-              ? <><CheckCheck size={12} /> Copié</>
-              : <><Copy size={12} /> Copier la séance</>}
-          </button>
-          {done && onShare && (
-            <button onClick={() => onShare(session)} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, background: G.greyXLight, border: `1px solid ${G.greyLight}`, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <Activity size={12} color={G.grey} /> Partager cette séance
-            </button>
-          )}
+        <div style={{ padding: "0 14px 12px" }}>
+          <SessionExportBar
+            session={session}
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+            onShare={onShare}
+            showShare={!!done && !!onShare}
+          />
         </div>
       )}
     </div>
@@ -7112,7 +7208,18 @@ const ProgressionLoopView = ({
               setPoolOpen(true);
             }}
           />
+          <div style={{ marginTop: 14 }}>
+            <SessionExportBar
+              session={session}
+              isPremium={isPremium}
+              onUpgrade={onUpgrade}
+              onShare={onShare}
+              showShare={!!resolved && !!onShare}
+            />
+          </div>
         </div>
+
+        <WeekProjectionCard plan={plan} profile={profile} />
 
         {poolOpen && (
           <PoolMode
@@ -7474,6 +7581,8 @@ const PlanTab = ({
           />
         )}
 
+        <WeekProjectionCard plan={plan} profile={profile} />
+
         {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
 
         <UpdateProgramCard
@@ -7803,7 +7912,7 @@ const HomeSecondaryStack = ({
             color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer",
           }}
         >
-          Voir plus — allure, Strava, badges
+          Voir plus — allure, badges, Strava
         </button>
       ) : (
         <>
@@ -7990,7 +8099,15 @@ const Dashboard = ({
           </div>
         )}
 
-        {hasSwum && weekMetersRow && (
+        {plan && (
+          <WeekProjectionCard
+            plan={plan}
+            profile={profile}
+            onOpenPlan={() => onTabChange?.("plan")}
+          />
+        )}
+
+        {hasSwum && weekMetersRow && !plan && (
           <div style={{
             display: "flex", alignItems: "center", gap: 16,
             background: G.surface, border: `1px solid ${G.greyLight}`,
@@ -10603,7 +10720,15 @@ export default function App() {
   /** Goûts compte (EMA retours) — miroir aussi sur plan.taste pour offline / régénération */
   const [tasteProfile, setTasteProfile] = useState(() => blankTaste());
   const [shareSession, setShareSession] = useState(null);
+  const [shareBadgeId, setShareBadgeId] = useState(null);
   const [newBadgeId, setNewBadgeId] = useState(null);
+  const lastCompletedSessionRef = useRef(null);
+
+  const openShare = (session, badgeId = null) => {
+    if (!session) return;
+    setShareSession(session);
+    setShareBadgeId(badgeId || null);
+  };
   const [toast, setToast] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const showToast = (msg, duration = 5000) => { setToast(msg); setTimeout(() => setToast(null), duration); };
@@ -11619,7 +11744,6 @@ export default function App() {
       unseenBadges.forEach((badgeId) => { nextSeen[`badge:${badgeId}`] = stamp; });
       writeSeenNotifications(user, nextSeen);
       setNewBadgeId(unseenBadges[0]);
-      setTimeout(() => setNewBadgeId(null), 3200);
     }
     prevBadgesRef.current = current;
   }, [activePlanId, plan, user]);
@@ -12044,6 +12168,7 @@ export default function App() {
     const sessOnce = `${activePlanId || "plan"}:${weekIndex}:${sessionIndex}`;
 
     if (resolvedStatus === "done") {
+      if (sessForAnalytics) lastCompletedSessionRef.current = sessForAnalytics;
       // Funnel: started avant completed si l'utilisateur valide sans copier
       track("session_started", {
         level: analyticsBase.level,
@@ -13045,8 +13170,8 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={s => setShareSession(s)} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={s => setShareSession(s)} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
           setStep,
@@ -13108,8 +13233,22 @@ export default function App() {
           );
         })()}
         {feedbackWeek !== null && sessionFeedbackTarget === null && <FeedbackModal weekNumber={plan.weeks[feedbackWeek]?.number} onSubmit={handleFeedback} onSkip={() => setFeedbackWeek(null)} isPremium={isPremium} />}
-        {shareSession && <ShareModal session={shareSession} goalLabel={goal?.label} onClose={() => setShareSession(null)} />}
-        {newBadgeId && <BadgeToast badgeId={newBadgeId} />}
+        {shareSession && (
+          <ShareModal
+            session={shareSession}
+            goalLabel={goal?.label}
+            badge={shareBadgeId}
+            onClose={() => { setShareSession(null); setShareBadgeId(null); }}
+          />
+        )}
+        {newBadgeId && (
+          <BadgeCelebrateSheet
+            badgeId={newBadgeId}
+            session={lastCompletedSessionRef.current || plan?.weeks?.[0]?.sessions?.[0] || null}
+            onShare={openShare}
+            onClose={() => setNewBadgeId(null)}
+          />
+        )}
         {sessionCelebrate && (
           <SessionCompleteView
             meters={sessionCelebrate.meters}
