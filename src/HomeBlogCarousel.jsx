@@ -16,9 +16,9 @@ function useAppColors() {
     blue: v("--myswym-blue", "#006bfd"),
     greyLight: v("--myswym-grey-light", "rgba(0, 107, 253, 0.22)"),
     blueLight: "#0a162c",
-    grey: "#9bb0c8",
-    greyMid: "#6b7c90",
-    inkLight: "#9bb0c8",
+    grey: "#b4c6db",
+    greyMid: "#8a9bb0",
+    inkLight: "#b4c6db",
     greyXLight: "#0a162c",
   };
 }
@@ -176,7 +176,55 @@ export default function HomeBlogCarousel() {
     return () => el.removeEventListener("scroll", onScroll);
   }, [articles.length, cardW]);
 
-  if (articles.length === 0) return null;
+  if (articles.length === 0) {
+    return (
+      <section
+        aria-label="Blog"
+        style={{
+          marginBottom: 12,
+          padding: "16px 14px",
+          borderRadius: 16,
+          border: `1px solid ${colors.greyLight || "rgba(0,107,253,0.22)"}`,
+          background: colors.surface || colors.codeBg || "#06101f",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <BookOpen size={16} color={colors.blue} />
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: colors.grey,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            Blog
+          </div>
+        </div>
+        <p style={{ margin: "0 0 12px", fontSize: 13, color: colors.grey, lineHeight: 1.5 }}>
+          Les articles technique arrivent bientôt. En attendant, ouvre le blog MySWYM.
+        </p>
+        <a
+          href={withLocalePrefix("/blog", getStoredLanguage())}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            minHeight: 44,
+            fontSize: 13,
+            fontWeight: 700,
+            color: colors.blue,
+            textDecoration: "none",
+          }}
+        >
+          Lire le blog <ArrowRight size={14} />
+        </a>
+      </section>
+    );
+  }
 
   const scrollTo = (i) => {
     const el = scrollerRef.current;

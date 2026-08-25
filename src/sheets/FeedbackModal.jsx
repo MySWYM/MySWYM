@@ -15,14 +15,13 @@ export default function FeedbackModal({ weekNumber, onSubmit, onSkip, isPremium 
 
   return (
     <div className="sheet-overlay">
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
-        {/* Handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
+      <div className="sheet-panel ms-sheet-card scale-in">
+        <div className="ms-sheet-handle" />
 
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Semaine {weekNumber} terminée
         </p>
-        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
+        <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment tu t'es senti·e ?
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: isPremium ? 28 : 12, lineHeight: 1.5 }}>
