@@ -360,8 +360,9 @@ const css = `
     flex-direction: column;
     overflow: hidden;
     border-radius: 16px;
-    background: var(--myswym-surface, #06101f);
-    color: var(--myswym-ink, #f4f8fa);
+    background: #ffffff;
+    color: #0b1526;
+    border: 1px solid rgba(11, 21, 38, 0.08);
     box-shadow: 0 18px 50px rgba(0, 5, 20, 0.45);
   }
   .support-widget--bare {
@@ -10261,7 +10262,6 @@ export default function App() {
           onGoProfile={() => goTab("profile")}
           onGoBuddies={() => goTab("buddies")}
           showBuddies={hasSwumNav}
-          onOpenAuth={openAuth}
           onSignOut={handleSignOut}
           onDeleteAccount={handleDeleteAccount}
           plan={plan}
