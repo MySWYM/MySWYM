@@ -60,7 +60,12 @@ Rappels pédagogiques :
 
 ## Quatre nages
 
-Le crawl garde toujours la plus grande part du volume.  
+UX profil : « Sais-tu nager du 4 nages ? » → Non = `swimStyle=crawl` (nage favorite masquée, forcée crawl) ; Oui = `4_nages` + « Quelle est ta nage favorite ? ».  
+Diplômes (BNSSA, BPJEPS, pompiers, CAEPMNS) : pas de choix 4 nages. Triathlon / eau libre : choix autorisé.
+
+Si `swimStyle=crawl` / `strokeFocus=crawl` : **aucune** ligne ni set en dos, brasse, papillon ou « au choix » (quality gate `crawl_only`).
+
+Le crawl garde toujours la plus grande part du volume en case 4 nages.  
 Sans préférence : 40 % crawl, 20 % dos, 20 % brasse, 20 % papillon.  
 Avec préférence crawl : 50 / 17 / 17 / 16.  
 Avec préférence dos, brasse ou papillon : 40 % crawl, 30 % nage préférée, 15 % et 15 % pour les deux autres.
@@ -71,7 +76,7 @@ Autres contrôles :
 - `swimStyle=4_nages` prime sur la nage préférée (ne pas transformer la préférence en séance mono-nage).
 - Papillon fractionné (longueur de bassin), jamais omis ni remplacé par ondulation seule.
 - Formats IM olympiques (pap → dos → brasse → crawl) explicites ; Découverte : pas d’IM enchaîné.
-- Eau libre / triathlon Performance : ne pas forcer un bloc IM plein de brasse (`usePoolIMBlock`).
+- Eau libre / triathlon : IM piscine seulement si 4 nages déclaré (`swimStyle=4_nages`).
 
 ---
 
@@ -96,4 +101,4 @@ Autres contrôles :
 - Premium : `D…` + `@mm:ss` depuis T100 ; Gratuit : `R…` sans allure.
 - Ton : français, tutoiement, consignes actionnables.
 - Fun : contrastes, pas 2 séries d’affilée à la même allure, pas de monolithes répétitifs.
-- Vocabulaire : **godilles** (pas sculling) ; **rattrapé** (pas catch-up) ; **coulée** (pas sortie en apnée).
+- Vocabulaire : **godilles** (sculling) ; **rattrapé** (catch-up) ; **coulée** (pas sortie en apnée).

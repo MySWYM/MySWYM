@@ -691,6 +691,7 @@ function tryArthurDepart({ budget, pool, level, brief, strokeFocus, rng, sets, d
     pool,
     level,
     fourNages: isFourNSession(brief, strokeFocus),
+    crawlOnly: strokeFocus === "crawl" && !isFourNSession(brief, strokeFocus),
     maxContinuous: maxContinuous ?? (level === "decouverte" ? 50 : 200),
     rng,
   });
@@ -727,6 +728,7 @@ function tryArthurFin({
     maxContinuous: maxContinuous ?? (level === "decouverte" ? 50 : 200),
     rng,
     zone,
+    crawlOnly: !fourNages && String(brief?.strokeFocus || "") === "crawl",
   });
   if (!built?.sets?.length) return false;
   for (const s of built.sets) {
@@ -766,6 +768,7 @@ function tryArthurTechnique({
     zone,
     papillonOk: canUsePapillon(brief),
     engageEquipment: engageEq,
+    crawlOnly: String(brief?.strokeFocus || "") === "crawl" && !isFourNagesDeclared(brief),
   });
   if (!built?.sets?.length) return false;
   {
@@ -1094,7 +1097,9 @@ function composeDecouverteSession(brief, rng) {
   }
 
   // --- FIN --- (respecte maxContinuous : pas de 100–150m continu si plafond 50)
-  const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
+  const finLabel = (isFourNSession(brief, strokeFocus) || strokeFocus === "crawl")
+    ? "crawl facile"
+    : "au choix (récup)";
   const arthurFinOk = tryArthurFin({
     budget: blocks.rac,
     pool,
@@ -1683,7 +1688,7 @@ function composeRegulierSession(brief, rng) {
 
   const altLabel = isFourNSession(brief, strokeFocus)
     ? "crawl"
-    : strokeFocus === "mixte" || strokeFocus === "crawl"
+    : strokeFocus === "mixte"
       ? "dos"
       : "crawl";
 
@@ -1808,7 +1813,9 @@ function composeRegulierSession(brief, rng) {
   }
 
   // FIN — Arthur RAC (D10) ou FINS_SEMAINE
-  const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
+  const finLabel = (isFourNSession(brief, strokeFocus) || strokeFocus === "crawl")
+    ? "crawl facile"
+    : "au choix (récup)";
   const arthurFinReg = tryArthurFin({
     budget: blocks.rac,
     pool,
@@ -2772,7 +2779,9 @@ function composeSportifSession(brief, rng) {
 
   // FIN Z1 — Arthur RAC (D10) ou FINS_SEMAINE
   const finMaxCont = Math.min(maxContCrawl, brief.hardConstraints?.maxContinuousDistance || maxContCrawl);
-  const finLabel = isFourNSession(brief, strokeFocus) ? "crawl facile" : "au choix (récup)";
+  const finLabel = (isFourNSession(brief, strokeFocus) || strokeFocus === "crawl")
+    ? "crawl facile"
+    : "au choix (récup)";
   const arthurFinSp = tryArthurFin({
     budget: blocks.rac,
     pool,

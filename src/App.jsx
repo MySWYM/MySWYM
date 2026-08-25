@@ -590,24 +590,18 @@ const FREQUENCIES = [
 
 const POOLS = [{ id: 25, label: "25 m" }, { id: 50, label: "50 m" }];
 
-/** Style d'entraînement préféré (crawl focus vs 4 nages) */
+/** Style d'entraînement — stocké crawl | 4_nages (UX : sais-tu nager du 4 nages ?) */
 const SWIM_STYLES = [
-  { id: "crawl", label: "Crawl", desc: "Je préfère nager surtout en crawl" },
-  { id: "4_nages", label: "4 nages", desc: "Je veux varier papillon, dos, brasse et crawl" },
+  { id: "crawl", label: "Non", desc: "Je nage surtout en crawl" },
+  { id: "4_nages", label: "Oui", desc: "Je sais nager les quatre nages" },
 ];
 
-/** Triathlon / eau libre : pas de 4 nages (aucun niveau) — ne pas le proposer. */
-const goalHidesFourNages = (profile = {}) => {
+/** Diplômes : pas de choix 4 nages (prépa spécifique). Tri / eau libre : choix autorisé. */
+const DIPLOMA_GOAL_IDS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
+const goalHidesFourNagesChoice = (profile = {}) => {
   const cat = String(profile.category || "");
   const goal = String(profile.goal || "");
-  return (
-    cat === "triathlon" ||
-    cat === "eau_libre" ||
-    cat === "open_water" ||
-    goal.startsWith("triathlon") ||
-    goal.startsWith("open_water") ||
-    goal.startsWith("eau_libre")
-  );
+  return cat === "diplome" || DIPLOMA_GOAL_IDS.has(goal);
 };
 
 /** Nage préférée (stroke) */
@@ -619,7 +613,7 @@ const PREFERRED_STROKES = [
 ];
 
 const STROKE_LABELS = Object.fromEntries(PREFERRED_STROKES.map((s) => [s.id, s.label]));
-const STYLE_LABELS = Object.fromEntries(SWIM_STYLES.map((s) => [s.id, s.label]));
+const STYLE_LABELS = { crawl: "Crawl", "4_nages": "4 nages" };
 
 /** Matériel — édité dans Profil (plus dans le questionnaire) et affiché sur les séances. */
 const EQUIPMENT_OPTS = [
@@ -3477,48 +3471,69 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                   );
                 })}
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Style</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                {SWIM_STYLES.map((s) => {
-                  const active = profile?.swimStyle === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => onSwimmerProfileChange({ swimStyle: s.id })}
-                      style={{
-                        flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                        background: active ? G.blueLight : G.surface,
-                        color: active ? G.blue : G.ink,
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Nage préférée</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {PREFERRED_STROKES.map((s) => {
-                  const active = profile?.preferredStroke === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => onSwimmerProfileChange({ preferredStroke: s.id })}
-                      style={{
-                        padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                        background: active ? G.blueLight : G.surface,
-                        color: active ? G.blue : G.ink,
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
+              {!goalHidesFourNagesChoice(profile) && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Sais-tu nager du 4 nages ?
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: profile?.swimStyle === "4_nages" ? 14 : 0 }}>
+                    {SWIM_STYLES.map((s) => {
+                      const active = (profile?.swimStyle || "crawl") === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            if (s.id === "crawl") {
+                              onSwimmerProfileChange({ swimStyle: "crawl", preferredStroke: "crawl" });
+                            } else {
+                              onSwimmerProfileChange({
+                                swimStyle: "4_nages",
+                                preferredStroke: profile?.preferredStroke || "crawl",
+                              });
+                            }
+                          }}
+                          style={{
+                            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                            border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                            background: active ? G.blueLight : G.surface,
+                            color: active ? G.blue : G.ink,
+                          }}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {profile?.swimStyle === "4_nages" && (
+                    <>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Quelle est ta nage favorite ?
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {PREFERRED_STROKES.map((s) => {
+                          const active = profile?.preferredStroke === s.id;
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => onSwimmerProfileChange({ preferredStroke: s.id })}
+                              style={{
+                                padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                                border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                                background: active ? G.blueLight : G.surface,
+                                color: active ? G.blue : G.ink,
+                              }}
+                            >
+                              {s.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </ProfileSection>
           </>
         )}
@@ -8181,10 +8196,16 @@ const calcSessionDistance = (details = []) => {
   return total;
 };
 
-// Eau libre & triathlon : crawl uniquement, tous niveaux — jamais de 4 nages
+// Eau libre & triathlon : IM piscine seulement si le nageur a déclaré les 4 nages
+// (legacy SESSION_TEMPLATES — le composeur lit swimStyle / strokeFocus).
 const isOpenWaterGoal = (g) => g?.startsWith("open_water") || g?.startsWith("eau_libre");
 const isTriathlonGoal = (g) => g?.startsWith("triathlon");
-const shouldUsePoolIMBlock = (g) => !isOpenWaterGoal(g) && !isTriathlonGoal(g);
+const shouldUsePoolIMBlock = (g, swimStyle = null) => {
+  if (isOpenWaterGoal(g) || isTriathlonGoal(g)) {
+    return swimStyle === "4_nages" || swimStyle === "4n";
+  }
+  return true;
+};
 
 // Banque confirmé (ex-OW_BASE_SESSIONS) : src/lib/swim-session-generator.js — branchée via swim-plan-bridge.
 

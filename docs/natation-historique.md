@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-25 | UX 4 nages + crawl pur | Profil : « Sais-tu nager du 4 nages ? » (Oui/Non) ; nage favorite seulement si Oui. Diplômes : pas de choix. Tri/eau libre : choix OK. `swimStyle=crawl` → séances 100 % crawl (composeur + QG `crawl_only`, pas de dos en alt/échauff/RAC). | ✅ active |
 | 2026-08-15 | Merge séance validée | Hotfix prod : `FORCE_PLAN_REGEN` ne bypass plus le merge. Séance `completed`/`skipped` conservée ; non validée régénérée ; semaine feedback/satisfaction intacte ; structure incompatible → fallback semaine. One-shot = `version < PLAN_VERSION` (option A), pas à chaque ouverture. | ✅ active |
 | 2026-08-16 | Éducatifs 4 nages Excel | Séances `strokeFocus=4n` : ~40 % technique = éducatifs Arthur tagués `4_nages` filtrés par « niveau Arthur » ; ~60 % = nages explicites (mix). Découverte 4n : dos à deux bras / papillon un bras / papillon baleine — pas flèche forcée. Plus d’« éducatif libre » inventé dans l’IM drill. | ✅ active |
 | 2026-08-15 | Niveaux Excel éducatifs | « niveau Arthur » = gate produit. `parseArthurEducatifLevels` : « adaptable à tous niveaux » n’ouvre plus la Découverte ; sélection = `levels.includes(niveau)` (+ allowlist Découverte règle 8). Petit chien / toucher cuisse / 6 battements hors Découverte ; grand chien reste via notes Excel. | ✅ active |
@@ -143,7 +144,7 @@ Les items ci-dessous restent des garde-fous. Si une formulation contredit [`nata
 7. **Distance** : volume affiché = somme exacte des blocs ; total final …00 ou …50 ; jamais arrondi silencieux ni `block()` qui « corrige » par ×25.
 8. **Cohérence blocs** : chaque bloc a une distance ; une consigne ×25 m doit coller à la distance annoncée ; pas d’incohérence d’unité.
 9. **Sportif / Performance** : volumes et intitulés différenciés.
-10. **Vocabulaire** : godilles, pas sculling.
+10. **Vocabulaire** : godilles.
 11. **Éducatifs** : ne pas saturer de grand/petit chien — ~1/8, priorité jambes + nage. Jamais deux blocs jambes d’affilée.
 12. **Migration plan** : `PLAN_VERSION` n’autorise pas une regen complète sauf force explicite Arthur.
 13. **Nager & Progresser** : boucle séance unique, pas plan multi-semaines.

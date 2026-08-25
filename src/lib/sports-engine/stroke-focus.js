@@ -39,10 +39,13 @@ export const STROKE_UX_TO_FOCUS = Object.freeze({
 /**
  * Normalise le choix de nage depuis le profil.
  * 4 nages (case cochée) prime sur la nage préférée.
+ * swimStyle=crawl = 100 % crawl (ignore preferredStroke).
  * Défaut : crawl pour eau libre / triathlon ; mixte sinon.
  */
 export function normalizeStrokeFocus(profile = {}, objectifV1 = null) {
   if (isFourNagesDeclared(profile) || isFourNagesStyle(profile.strokeFocus)) return "4n";
+
+  if (String(profile.swimStyle || "").toLowerCase() === "crawl") return "crawl";
 
   const raw =
     profile.strokeFocus ||
@@ -90,7 +93,7 @@ export function strokeSwimLabel(strokeFocus, { papillonOk = false } = {}) {
   }
 }
 
-/** Label départ selon stroke */
+/** Label départ selon stroke — crawl = 100 % crawl (pas de dos) */
 export function strokeDepartLabel(strokeFocus) {
   if (strokeFocus === "dos") return "dos facile";
   if (strokeFocus === "brasse") return "brasse / crawl facile";

@@ -343,9 +343,33 @@ export function validateComposedSession(session, brief = {}, constraints = null)
         `4N: share ${(share * 100).toFixed(0)}% < min ${(minShare * 100).toFixed(0)}% (fourN=${fourN} body=${bodyVol})`,
       );
     }
-    // crawl-only body rejection
+    // crawl-only body rejection (when 4N is required)
     if (fourN === 0 && CRAWL_ONLY_RE.test(text) && !FOUR_N_STROKE_RE.test(text)) {
       errors.push("4N: corps essentiellement crawl");
+    }
+  }
+
+  // --- crawl 100 % : pas de dos / brasse / papillon si swimStyle crawl ---
+  constraintsChecked.push("crawl_only");
+  const focus = String(brief.strokeFocus || "").toLowerCase();
+  const crawlOnlyDeclared =
+    !c.isFourN &&
+    (focus === "crawl" || String(brief.swimStyle || "").toLowerCase() === "crawl");
+  if (crawlOnlyDeclared) {
+    if (FOUR_N_STROKE_RE.test(text) || /\bau choix\b/i.test(text)) {
+      errors.push("crawl_only: nage autre que crawl dans la séance");
+    }
+    for (const s of session?.sets || []) {
+      const stroke = String(s.stroke || "").toLowerCase();
+      if (/^(dos|brasse|papillon)$/.test(stroke)) {
+        errors.push(`crawl_only: stroke ${stroke} interdit`);
+        break;
+      }
+      const label = String(s.label || "");
+      if (FOUR_N_STROKE_RE.test(label)) {
+        errors.push("crawl_only: label multi-nages interdit");
+        break;
+      }
     }
   }
 
@@ -638,6 +662,10 @@ function buildMinimalSafeSession(brief, constraints) {
   const maxCont = Math.min(constraints.maxContinuousDistance || 50, 50);
   const unit = Math.min(50, maxCont);
   const zone = constraints.painProtection || level === "decouverte" ? "Z1" : "Z1";
+  const crawlOnly =
+    !constraints.isFourN &&
+    (String(brief.strokeFocus || "").toLowerCase() === "crawl" ||
+      String(brief.swimStyle || "").toLowerCase() === "crawl");
   const sets = [];
   const details = [];
   const pushSeries = (reps, dist, label, cue, block) => {
@@ -650,16 +678,24 @@ function buildMinimalSafeSession(brief, constraints) {
       block,
       continuous: false,
       zone,
+      stroke: /dos|brasse|papillon/i.test(label) ? undefined : "crawl",
       exerciseId: `safe_${block}`,
     };
+    if (/^(crawl|dos|brasse|papillon)$/i.test(label)) s.stroke = label.toLowerCase();
     sets.push(s);
     details.push(`-${reps} × ${dist}m ${label} — ${cue} — repos 20s`);
   };
   // départ
   const depReps = Math.min(3, Math.max(2, Math.floor((maxVol * 0.15) / unit)));
-  pushSeries(depReps, unit, "crawl / dos souple", "échauffement facile", "depart");
+  pushSeries(
+    depReps,
+    unit,
+    crawlOnly ? "crawl facile" : "crawl / dos souple",
+    "échauffement facile",
+    "depart",
+  );
   // tech
-  pushSeries(4, Math.min(25, unit), "nage appliquée", "mouvement propre", "technique");
+  pushSeries(4, Math.min(25, unit), crawlOnly ? "crawl appliqué" : "nage appliquée", "mouvement propre", "technique");
   // corps
   let used = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
   let remain = Math.max(unit * 2, maxVol - used - unit);
@@ -687,9 +723,9 @@ function buildMinimalSafeSession(brief, constraints) {
     remain -= reps * unit;
   }
   // fin
-  pushSeries(2, unit, "au choix", "récupération", "fin");
+  pushSeries(2, unit, crawlOnly ? "crawl facile" : "au choix", "récupération", "fin");
   const vol = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  details.unshift(`-${Math.max(unit * 2, 100)}m crawl souple — Z1`);
+  details.unshift(`-${Math.max(unit * 2, 100)}m crawl facile — mise en route`);
   return {
     type: "ENDURANCE",
     title: level === "performance" ? "Performance · séance sécurisée" : `${level} · séance sécurisée`,

@@ -113,7 +113,7 @@ function hasFourBlocks(details) {
     /échauffement|souple|dos|tranquillement|brasse|mise en route/i.test(l),
   );
   const hasTech = details.some((l) =>
-    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile|focus geste|éducatif/i.test(
+    /technique|flèche|grand chien|plusieurs nages|ondulation|papillon|brasse facile|dos facile|focus geste|éducatif|appliqué|mouvement propre/i.test(
       l,
     ),
   );
@@ -173,7 +173,8 @@ assert(normalizeStrokeFocus({ strokeFocus: "crawl_mainly" }) === "crawl", "ux cr
 assert(normalizeStrokeFocus({ strokeFocus: "plusieurs" }) === "mixte", "ux mixte");
 assert(normalizeStrokeFocus({ strokeFocus: "4n" }) === "4n", "ux 4n");
 assert(normalizeStrokeFocus({ swimStyle: "4_nages", preferredStroke: "dos" }) === "4n", "4n prime sur préférence");
-assert(normalizeStrokeFocus({ swimStyle: "crawl", preferredStroke: "dos" }) === "dos", "sans 4n, préférence dos");
+assert(normalizeStrokeFocus({ swimStyle: "crawl", preferredStroke: "dos" }) === "crawl", "swimStyle crawl ignore préférence");
+assert(normalizeStrokeFocus({ preferredStroke: "dos" }) === "dos", "sans swimStyle, préférence dos");
 assert(normalizeStrokeFocus({}, "eau_libre") === "crawl", "défaut OW=crawl");
 assert(canUsePapillon({ level: "decouverte", strokeFocus: "4n" }), "4n ⇒ papillon");
 assert(!canUsePapillon({ level: "decouverte" }), "papillon off Découverte hors 4n");
