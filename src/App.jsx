@@ -72,8 +72,7 @@ import {
 import {
   appZoneMultForT100,
   calcDistanceProjection,
-  maxPaceGainFromT100,
-  projectedPaceAtWeek,
+  projectedPaceAtYears,
 } from "./lib/swim-pace.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
@@ -1582,13 +1581,9 @@ function appendPaceHistory(profile, { pace100, week, source = "manual" }) {
   return { ...profile, paceHistory: hist };
 }
 
-const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
+const PaceEvolutionCard = ({ profile, isPremium, onUpgrade }) => {
+  const [horizonYears, setHorizonYears] = useState(2);
   const pace100 = profile?.pace100 ?? null;
-  const totalWeeks = plan?.weeks?.length || 0;
-  const currentWeek = getCurrentWeekNumber(plan);
-  // Rendements décroissants : gain plafonné selon le T100 de départ
-  const maxGain = maxPaceGainFromT100(pace100);
-  const history = Array.isArray(profile?.paceHistory) ? profile.paceHistory : [];
 
   // Découverte : pas de T100 (souvent incapables d'enchaîner 100 m)
   if (profile?.level === "découverte" || profile?.level === "beginner") return null;
@@ -1601,7 +1596,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
         </div>
         <p style={{ fontSize: 13, color: G.grey, marginBottom: 14, lineHeight: 1.45 }}>
-          Courbe de progression de tes chronos sur les semaines d’entraînement — réservé aux membres Premium.
+          Projection réaliste de ton T100 sur 2 ou 5 ans — réservé aux membres Premium.
         </p>
         <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <Zap size={14} color={G.blue} /> Voir mon analyse complète
@@ -1610,7 +1605,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
     );
   }
 
-  if (!pace100 || totalWeeks < 2) {
+  if (!pace100) {
     return (
       <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -1619,60 +1614,69 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           </div>
           <div>
             <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
-            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection sur ton plan</p>
+            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection 2 / 5 ans</p>
           </div>
         </div>
         <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: 0 }}>
-          {!pace100
-            ? "Renseigne ton temps 100 m ci-dessus pour voir la courbe de progression possible."
-            : "Ton plan est trop court pour afficher une courbe."}
+          Renseigne ton temps 100 m ci-dessus pour voir la courbe de progression possible.
         </p>
       </div>
     );
   }
 
-  const firstHist = history.find(h => h.pace100);
-  const startPace = firstHist?.pace100 || pace100;
-  const startWeek = firstHist?.week || 1;
-  const basePace = pace100;
+  const startPace = pace100;
+  const paceAt2 = projectedPaceAtYears(startPace, 2);
+  const paceAt5 = projectedPaceAtYears(startPace, 5);
+  const endPace = projectedPaceAtYears(startPace, horizonYears);
+  const STEPS = 24;
+  const yearsAxis = Array.from({ length: STEPS + 1 }, (_, i) => (i / STEPS) * horizonYears);
+  const projected = yearsAxis.map((y) => projectedPaceAtYears(startPace, y));
 
-  const weeks = Array.from({ length: totalWeeks }, (_, i) => i + 1);
-  const projected = weeks.map(w => {
-    const rel = Math.max(0, w - startWeek);
-    const span = Math.max(1, totalWeeks - startWeek + 1);
-    return projectedPaceAtWeek(startPace, rel, span, maxGain);
-  });
-
-  const actualByWeek = new Map();
-  history.forEach(h => {
-    if (!h.pace100 || !h.week) return;
-    const prev = actualByWeek.get(h.week);
-    if (prev == null || h.pace100 < prev) actualByWeek.set(h.week, h.pace100);
-  });
-  if (!actualByWeek.has(currentWeek)) {
-    actualByWeek.set(currentWeek, basePace);
-  }
-
-  const allVals = [...projected, ...actualByWeek.values()];
+  const allVals = [...projected, startPace];
   const tMin = Math.min(...allVals) * 0.98;
   const tMax = Math.max(...allVals) * 1.02;
   const SVG_W = 280, SVG_H = 110, PAD_L = 4, PAD_R = 4, PAD_T = 8, PAD_B = 4;
-  const xOf = (w) => PAD_L + ((w - 1) / Math.max(1, totalWeeks - 1)) * (SVG_W - PAD_L - PAD_R);
+  const xOf = (y) => PAD_L + (y / Math.max(0.01, horizonYears)) * (SVG_W - PAD_L - PAD_R);
   const yOf = (t) => PAD_T + (1 - (t - tMin) / (tMax - tMin || 1)) * (SVG_H - PAD_T - PAD_B);
-  const projPts = weeks.map(w => `${xOf(w).toFixed(1)},${yOf(projected[w - 1]).toFixed(1)}`).join(" ");
-  const endPace = projected[projected.length - 1];
+  const projPts = yearsAxis.map((y, i) => `${xOf(y).toFixed(1)},${yOf(projected[i]).toFixed(1)}`).join(" ");
   const gainSec = Math.max(0, Math.round(startPace - endPace));
   const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 1000) / 10 : 0;
 
   return (
     <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <TrendingUp size={16} color={G.blue} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <TrendingUp size={16} color={G.blue} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
+            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>T100 — projection réaliste</p>
+          </div>
         </div>
-        <div>
-          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
-          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>T100 — projection sur {totalWeeks} semaines</p>
+        <div style={{ display: "flex", gap: 4, background: G.greyXLight, borderRadius: 10, padding: 3, flexShrink: 0 }}>
+          {[2, 5].map((y) => {
+            const active = horizonYears === y;
+            return (
+              <button
+                key={y}
+                type="button"
+                onClick={() => setHorizonYears(y)}
+                style={{
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  background: active ? G.blue : "transparent",
+                  color: active ? G.white : G.grey,
+                }}
+              >
+                {y} ans
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -1687,25 +1691,22 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
           {[0.25, 0.5, 0.75].map((f, i) => (
             <line key={i} x1={SVG_W * f} y1={0} x2={SVG_W * f} y2={SVG_H} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
           ))}
-          <polygon points={`${xOf(1).toFixed(1)},${SVG_H} ${projPts} ${xOf(totalWeeks).toFixed(1)},${SVG_H}`} fill="url(#evolGrad)" />
+          <polygon points={`${xOf(0).toFixed(1)},${SVG_H} ${projPts} ${xOf(horizonYears).toFixed(1)},${SVG_H}`} fill="url(#evolGrad)" />
           <polyline points={projPts} fill="none" stroke={G.blue} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          <line x1={xOf(currentWeek)} y1={0} x2={xOf(currentWeek)} y2={SVG_H} stroke={G.mint} strokeWidth="1.5" strokeDasharray="4,3" />
-          {[...actualByWeek.entries()].map(([w, t]) => (
-            <circle key={w} cx={xOf(w)} cy={yOf(t)} r="4.5" fill={G.mint} stroke={G.white} strokeWidth="2" />
-          ))}
+          <circle cx={xOf(0)} cy={yOf(startPace)} r="4.5" fill={G.mint} stroke={G.white} strokeWidth="2" />
+          <circle cx={xOf(horizonYears)} cy={yOf(endPace)} r="4" fill={G.blue} stroke={G.white} strokeWidth="2" />
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ fontSize: 10, color: G.greyMid, fontWeight: 600 }}>S1</span>
-          <span style={{ fontSize: 10, color: G.mint, fontWeight: 700 }}>S{currentWeek} · aujourd’hui</span>
-          <span style={{ fontSize: 10, color: G.greyMid, fontWeight: 600 }}>S{totalWeeks}</span>
+          <span style={{ fontSize: 10, color: G.mint, fontWeight: 700 }}>Aujourd’hui</span>
+          <span style={{ fontSize: 10, color: G.greyMid, fontWeight: 600 }}>+{horizonYears} ans</span>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
         {[
-          { label: "Départ", value: fmtTime(Math.round(startPace)), color: G.ink },
-          { label: "Actuel", value: fmtTime(Math.round(basePace)), color: G.blue },
-          { label: "Objectif fin", value: fmtTime(Math.round(endPace)), color: G.mint },
+          { label: "Aujourd’hui", value: fmtTime(Math.round(startPace)), color: G.ink },
+          { label: "+2 ans", value: fmtTime(Math.round(paceAt2)), color: G.blue },
+          { label: "+5 ans", value: fmtTime(Math.round(paceAt5)), color: G.mint },
         ].map((c, i) => (
           <div key={i} style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
             <div style={{ fontSize: 10, color: G.grey, fontWeight: 600, marginBottom: 4 }}>{c.label}</div>
@@ -1715,7 +1716,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
       </div>
 
       <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.5 }}>
-        Projection indicative (~{gainPct}% / −{gainSec}s sur 100 m). Plus ton T100 est déjà rapide, plus le gain estimé est faible (rendements décroissants). Mets à jour ton T100 après les semaines test.
+        Indicatif · entraînement régulier · pas une promesse (~{gainPct}% / −{gainSec}s sur {horizonYears} ans). Plus ton T100 est déjà rapide, plus le gain estimé est faible.
       </p>
     </div>
   );
@@ -7815,7 +7816,7 @@ const HomeSecondaryStack = ({
             />
           )}
           {plan && (
-            <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
+            <PaceEvolutionCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
           )}
           {primary !== "strava" && (
             <StravaSection
