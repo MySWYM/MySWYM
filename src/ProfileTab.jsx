@@ -1,0 +1,857 @@
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import {
+  Waves, Check, Flame, Trophy, Target, Pencil, Camera, Trash2, X,
+} from "lucide-react";
+import { G } from "./theme/palette.js";
+import { FONT_DISPLAY } from "./theme/brand.js";
+import { supabase } from "./supabase.js";
+import {
+  resolveAvatarUrl,
+  hydrateAvatarFromStorage,
+  uploadAndPersistAvatar,
+  removeAndPersistAvatar,
+} from "./lib/avatar.js";
+import { computeStats, checkBadges } from "./lib/plan-stats.js";
+import ProfileSection from "./ui/ProfileSection.jsx";
+import { HomeBadgesSection } from "./Dashboard.jsx";
+import AppTopBar from "./app-shell/AppTopBar.jsx";
+import { AppShell } from "./app-shell/index.js";
+import {
+  HEALTH_CONSENT_TITLE,
+  HEALTH_CONSENT_BODY,
+  HEALTH_CONSENT_CHECKBOX,
+} from "./lib/health-data.js";
+import {
+  BIRTH_MONTH_OPTIONS,
+  TRAINING_FOCUS_OPTIONS,
+  computeAgeFromBirth,
+  daysInBirthMonth,
+} from "./lib/swimmer-profile.js";
+import i18n from "./i18n/index.js";
+
+import {
+  GOALS, CATEGORIES, LEVELS, FREQUENCIES, POOLS, SWIM_STYLES, PREFERRED_STROKES,
+  EQUIPMENT_OPTS, eqLabel, goalHidesFourNagesChoice,
+} from "./lib/onboarding-catalog.jsx";
+
+export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange, onSwimmerProfileChange }) {
+  const { t: to } = useTranslation("onboarding");
+  const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
+  const [msg, setMsg] = useState(null);
+  const [editingEquipment, setEditingEquipment] = useState(false);
+  const [draftEquipment, setDraftEquipment] = useState(() =>
+    Array.isArray(profile?.equipment) ? [...profile.equipment] : []
+  );
+
+  useEffect(() => {
+    setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+  }, [profile?.equipment]);
+
+  // Avatar + firstName — user_metadata (cross-device) en priorité, cache local en fallback
+  const [avatarUrl, setAvatarUrl] = useState(() => resolveAvatarUrl(user));
+  const [firstName, setFirstName] = useState(() => {
+    try {
+      return user?.user_metadata?.firstname
+        || (user?.id ? localStorage.getItem(`myswym_firstname_${user.id}`) : null)
+        || localStorage.getItem("myswym_firstname")
+        || "";
+    } catch { return ""; }
+  });
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput,   setNameInput]   = useState(firstName);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Resync depuis user_metadata quand l'objet user arrive ou change
+  useEffect(() => {
+    if (user?.user_metadata?.firstname) setFirstName(user.user_metadata.firstname);
+    else if (user?.id) {
+      try {
+        const cached = localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
+        if (cached) setFirstName(cached);
+      } catch {}
+    }
+    if (avatarBusy) return;
+    const next = resolveAvatarUrl(user);
+    setAvatarUrl(next);
+  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url, avatarBusy]);
+
+  // Si metadata vide : retombe sur le fichier Storage et backfill (même compte, autre appareil)
+  useEffect(() => {
+    if (!user?.id || avatarBusy) return;
+    if (resolveAvatarUrl(user)) return;
+    let cancelled = false;
+    hydrateAvatarFromStorage(user.id)
+      .then((res) => {
+        if (cancelled || !res?.publicUrl) return;
+        setAvatarUrl(res.publicUrl);
+        if (res.user && onUserUpdate) onUserUpdate(res.user);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.id, user?.user_metadata?.avatar_url, avatarBusy, onUserUpdate]);
+
+  const stats  = computeStats(plan);
+  const earned = checkBadges(stats);
+
+  const saveName = () => {
+    const v = nameInput.trim();
+    if (v) {
+      try {
+        localStorage.setItem(nameStorageKey, v);
+        localStorage.setItem("myswym_firstname", v);
+      } catch {}
+      setFirstName(v);
+      // Sync cross-device via user_metadata
+      supabase.auth.updateUser({ data: { firstname: v } })
+        .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
+        .catch(() => {});
+    }
+    setEditingName(false);
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    e.target.value = "";
+    setAvatarMenuOpen(false);
+
+    const previousUrl = avatarUrl;
+    setAvatarBusy(true);
+
+    // Aperçu immédiat (data URL) — ne remplace pas la persistance serveur
+    try {
+      const preview = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result);
+        reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+        reader.readAsDataURL(file);
+      });
+      setAvatarUrl(preview);
+    } catch { /* preview optionnel */ }
+
+    try {
+      const { publicUrl, user: updatedUser } = await uploadAndPersistAvatar(user.id, file);
+      setAvatarUrl(publicUrl);
+      if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
+      setMsg({ type: "ok", text: "Photo enregistrée — visible sur tous tes appareils." });
+      setTimeout(() => setMsg(null), 3500);
+    } catch (err) {
+      setAvatarUrl(previousUrl || null);
+      setMsg({ type: "err", text: err?.message || "Impossible d'enregistrer la photo de profil" });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user || avatarBusy) return;
+    setAvatarBusy(true);
+    setAvatarMenuOpen(false);
+    const previousUrl = avatarUrl;
+    setAvatarUrl(null);
+    try {
+      clearCachedAvatar(user.id);
+      const { user: updatedUser } = await removeAndPersistAvatar(user.id);
+      if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
+    } catch (err) {
+      setAvatarUrl(previousUrl || null);
+      setMsg({ type: "err", text: err?.message || "Impossible de supprimer la photo" });
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
+  const initials = displayName.slice(0, 2).toUpperCase();
+  const levelLabel = LEVELS.find(l => l.id === profile?.level)?.label || profile?.level || "Nageur";
+  const goalLabel = GOALS.find(g => g.id === profile?.goal)?.label
+    || CATEGORIES.find(c => c.id === profile?.category)?.label
+    || "Mon objectif";
+
+  return (
+    <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
+      <AppTopBar
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+        plan={plan}
+      />
+      <AppShell>
+      {/* ── Profile Header ─────────────────────────────────────── */}
+      <div style={{ padding: "28px 0 24px", textAlign: "center" }}>
+        {/* Avatar — menu Ajouter / Modifier / Supprimer */}
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (avatarBusy) return;
+              if (!avatarUrl) {
+                fileInputRef.current?.click();
+                return;
+              }
+              setAvatarMenuOpen(true);
+            }}
+            aria-label={avatarUrl ? "Gérer la photo de profil" : "Ajouter une photo de profil"}
+            style={{ border: "none", background: "none", cursor: avatarBusy ? "wait" : "pointer", padding: 0, display: "block", minWidth: 44, minHeight: 44, opacity: avatarBusy ? 0.7 : 1 }}
+          >
+            <div style={{
+              width: 90, height: 90, borderRadius: "50%",
+              background: avatarUrl ? "transparent" : `linear-gradient(135deg, ${G.blueMid} 0%, ${G.blue} 100%)`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 8px 32px rgba(142,179,255,0.35)",
+              border: "3px solid #fff", overflow: "hidden",
+            }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>{initials}</span>
+              }
+            </div>
+            <div style={{
+              position: "absolute", bottom: 2, right: 2,
+              width: 26, height: 26, borderRadius: "50%",
+              background: G.blue, border: "2.5px solid #fff",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Camera size={12} color="#fff" />
+            </div>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
+        </div>
+
+        {avatarMenuOpen && createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo de profil"
+            onClick={() => setAvatarMenuOpen(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 400,
+              background: "rgba(15, 23, 42, 0.45)",
+              display: "flex", alignItems: "flex-end", justifyContent: "center",
+              padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%", maxWidth: 420, background: G.surface, borderRadius: 20,
+                border: `1px solid ${G.greyLight}`, overflow: "hidden",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.18)",
+              }}
+            >
+              <div style={{ padding: "16px 18px 10px", textAlign: "left" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Photo de profil</div>
+                <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>Choisis une action</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 12,
+                  padding: "14px 18px", background: "none", border: "none", borderTop: `1px solid ${G.greyLight}`,
+                  cursor: "pointer", textAlign: "left", minHeight: 52,
+                }}
+              >
+                <Camera size={18} color={G.blue} />
+                <span style={{ fontSize: 15, fontWeight: 600, color: G.ink }}>
+                  {avatarUrl ? "Modifier la photo" : "Ajouter une photo"}
+                </span>
+              </button>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleAvatarRemove}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 12,
+                    padding: "14px 18px", background: "none", border: "none", borderTop: `1px solid ${G.greyLight}`,
+                    cursor: "pointer", textAlign: "left", minHeight: 52,
+                  }}
+                >
+                  <Trash2 size={18} color={G.coral} />
+                  <span style={{ fontSize: 15, fontWeight: 600, color: G.coral }}>Supprimer la photo</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAvatarMenuOpen(false)}
+                style={{
+                  width: "100%", padding: "14px 18px", background: G.greyXLight, border: "none",
+                  borderTop: `1px solid ${G.greyLight}`, cursor: "pointer",
+                  fontSize: 15, fontWeight: 700, color: G.grey, minHeight: 52,
+                }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Name — tappable pour éditer */}
+        {editingName ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 8 }}>
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && saveName()}
+              placeholder="Ton prénom"
+              style={{ fontSize: 20, fontWeight: 700, color: G.ink, border: "none", borderBottom: `2px solid ${G.blue}`, outline: "none", background: "transparent", textAlign: "center", width: 160 }}
+            />
+            <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setNameInput(displayName); setEditingName(true); }}
+            aria-label="Modifier le nom d’utilisateur"
+            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>{displayName}</span>
+            <div
+              aria-hidden
+              style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <Pencil size={11} color={G.blue} strokeWidth={2.4} />
+            </div>
+          </button>
+        )}
+        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+          {levelLabel}
+        </div>
+        <div style={{ fontSize: 11, color: G.greyMid }}>{user?.email}</div>
+      </div>
+
+      <div>
+        {msg && (
+          <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 12 }}>
+            {msg.text}
+          </div>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+          {[
+            { Icon: Waves, value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés", color: G.blue, bg: G.blueLight },
+            { Icon: Check, value: stats.totalSessions, label: "Séances", color: G.mint, bg: G.mintLight },
+            { Icon: Flame, value: stats.streak, label: "Série", color: G.coral, bg: G.coralLight },
+            { Icon: Trophy, value: earned.length, label: "Badges", color: G.gold, bg: G.goldLight },
+          ].map(({ Icon, value, label, color, bg }, i) => (
+            <div key={i} style={{ background: G.surface, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon size={20} color={color} />
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{value}</div>
+                <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 14, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Target size={18} color={G.blue} />
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Mon objectif</div>
+              <div style={{ fontSize: 12, color: G.grey }}>Change via « Nouveau plan » dans Programme</div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { label: "Objectif", value: goalLabel },
+              profile?.eventDate ? { label: "Date", value: profile.eventDate } : null,
+              profile?.trainingFocus
+                ? { label: "Focus", value: TRAINING_FOCUS_OPTIONS.find((o) => o.id === profile.trainingFocus)?.label || profile.trainingFocus }
+                : null,
+            ].filter(Boolean).map((item) => (
+              <div key={item.label} style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 12px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, lineHeight: 1.35 }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {onSwimmerProfileChange && (
+          <>
+            <ProfileSection id="profile-physique" title="Mon profil" summary="Âge, poids, taille" defaultOpen={false}>
+              {(() => {
+                const nowY = new Date().getFullYear();
+                const birthMonth = profile?.birthMonth ?? "";
+                const birthDay = profile?.birthDay ?? "";
+                const birthYear = profile?.birthYear ?? (
+                  profile?.age != null && profile.age !== "" && Number.isFinite(Number(profile.age))
+                    ? nowY - Math.round(Number(profile.age))
+                    : ""
+                );
+                const dim = daysInBirthMonth(birthMonth, birthYear);
+                const fieldStyle = {
+                  width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12,
+                  border: `1.5px solid ${G.greyLight}`, background: G.greyXLight, fontSize: 14, fontWeight: 700, color: G.ink,
+                };
+                const patchBirth = (nextDay, nextMonth, nextYear) => {
+                  const d = nextDay === "" ? "" : Number(nextDay);
+                  const m = nextMonth === "" ? "" : Number(nextMonth);
+                  const y = nextYear === "" ? "" : Number(nextYear);
+                  const maxD = daysInBirthMonth(m, y);
+                  const clamped = d === "" ? "" : Math.min(Math.max(1, d), maxD);
+                  const age = computeAgeFromBirth(m, y, new Date(), clamped);
+                  onSwimmerProfileChange({
+                    birthDay: clamped,
+                    birthMonth: m,
+                    birthYear: y,
+                    ...(age != null ? { age } : {}),
+                  });
+                };
+                const dayOpts = [];
+                for (let d = 1; d <= dim; d++) dayOpts.push(d);
+                return (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1.3fr 0.9fr", gap: 8, marginBottom: 12 }}>
+                      <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                          {to("physique.day")}
+                        </div>
+                        <select
+                          value={birthDay === "" || birthDay == null ? "" : Number(birthDay)}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            patchBirth(raw === "" ? "" : Number(raw), birthMonth, birthYear);
+                          }}
+                          style={{ ...fieldStyle, cursor: "pointer" }}
+                        >
+                          <option value="">{to("physique.day")}</option>
+                          {dayOpts.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                          {to("physique.month")}
+                        </div>
+                        <select
+                          value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            patchBirth(birthDay, raw === "" ? "" : Number(raw), birthYear);
+                          }}
+                          style={{ ...fieldStyle, cursor: "pointer" }}
+                        >
+                          <option value="">{to("physique.month")}</option>
+                          {BIRTH_MONTH_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{to(`months.${o.value}`)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                          {to("physique.year")}
+                        </div>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1900}
+                          max={nowY}
+                          value={birthYear ?? ""}
+                          placeholder="1998"
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            patchBirth(birthDay, birthMonth, raw === "" ? "" : Number(raw));
+                          }}
+                          style={fieldStyle}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {[
+                        { key: "weightKg", label: "Poids", placeholder: "kg" },
+                        { key: "heightCm", label: "Taille", placeholder: "cm" },
+                      ].map(({ key, label, placeholder }) => (
+                        <label key={key} style={{ display: "block" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={profile?.[key] ?? ""}
+                            placeholder={placeholder}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              onSwimmerProfileChange({ [key]: raw === "" ? "" : Number(raw) });
+                            }}
+                            style={fieldStyle}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </ProfileSection>
+
+            <ProfileSection
+              id="profile-natation"
+              title="Ma natation"
+              summary={`${Number(profile?.pool) === 50 ? "50 m" : "25 m"} · ${profile?.level || "niveau"} · ${profile?.sessionsPerWeek ? `${profile.sessionsPerWeek}×/sem` : "fréquence"}`}
+              defaultOpen
+            >
+              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
+                Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
+              </p>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {LEVELS.map((l) => {
+                  const active = profile?.level === l.id;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ level: l.id })}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Bassin</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                {POOLS.map((p) => {
+                  const active = Number(profile?.pool) === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        onSwimmerProfileChange({ pool: p.id });
+                        setMsg({ type: "ok", text: `Bassin ${p.label} — prochaines séances adaptées (déjà faites conservées).` });
+                        setTimeout(() => setMsg(null), 3500);
+                      }}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fréquence</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {FREQUENCIES.map((f) => {
+                  const active = Number(profile?.sessionsPerWeek) === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => onSwimmerProfileChange({ sessionsPerWeek: f.id })}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                        background: active ? G.blueLight : G.surface,
+                        color: active ? G.blue : G.ink,
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {!goalHidesFourNagesChoice(profile) && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Sais-tu nager du 4 nages ?
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: profile?.swimStyle === "4_nages" ? 14 : 0 }}>
+                    {SWIM_STYLES.map((s) => {
+                      const active = (profile?.swimStyle || "crawl") === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            if (s.id === "crawl") {
+                              onSwimmerProfileChange({ swimStyle: "crawl", preferredStroke: "crawl" });
+                            } else {
+                              onSwimmerProfileChange({
+                                swimStyle: "4_nages",
+                                preferredStroke: profile?.preferredStroke || "crawl",
+                              });
+                            }
+                          }}
+                          style={{
+                            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                            border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                            background: active ? G.blueLight : G.surface,
+                            color: active ? G.blue : G.ink,
+                          }}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {profile?.swimStyle === "4_nages" && (
+                    <>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Quelle est ta nage favorite ?
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {PREFERRED_STROKES.map((s) => {
+                          const active = profile?.preferredStroke === s.id;
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => onSwimmerProfileChange({ preferredStroke: s.id })}
+                              style={{
+                                padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                                border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                                background: active ? G.blueLight : G.surface,
+                                color: active ? G.blue : G.ink,
+                              }}
+                            >
+                              {s.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </ProfileSection>
+          </>
+        )}
+
+        {onEquipmentChange && (
+        <ProfileSection
+          id="profile-equipment"
+          title="Mon matériel"
+          summary={Array.isArray(profile?.equipment) && profile.equipment.length > 0
+            ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
+            : "Aucun matériel"}
+          defaultOpen={false}
+        >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginBottom: 10 }}>
+                {!editingEquipment ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+                      setEditingEquipment(true);
+                    }}
+                    style={{ background: "none", border: "none", color: G.blue, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4, minHeight: 44 }}
+                  >
+                    Modifier
+                  </button>
+                ) : null}
+              </div>
+              {!editingEquipment ? (
+                <div style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45 }}>
+                  {Array.isArray(profile?.equipment) && profile.equipment.length > 0
+                    ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
+                    : "Aucun"}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                    {EQUIPMENT_OPTS.map((o) => {
+                      const active = draftEquipment.includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => setDraftEquipment((prev) => (
+                            active ? prev.filter((x) => x !== o.id) : [...prev, o.id]
+                          ))}
+                          style={{
+                            padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                            border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                            background: active ? G.blueLight : G.surface,
+                            color: active ? G.blue : G.ink,
+                          }}
+                        >
+                          {active ? "✓ " : ""}{eqLabel(o.id)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setDraftEquipment([])}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`,
+                        background: G.surface, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
+                      }}
+                    >
+                      Aucun
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingEquipment(false);
+                        setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+                      }}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`,
+                        background: G.surface, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
+                      }}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onEquipmentChange([...draftEquipment]);
+                        setEditingEquipment(false);
+                        setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées (déjà faites conservées)." });
+                        setTimeout(() => setMsg(null), 3500);
+                      }}
+                      style={{
+                        flex: 1, padding: "10px", borderRadius: 10, border: "none",
+                        background: G.blue, fontSize: 12, fontWeight: 700, color: G.white, cursor: "pointer",
+                      }}
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+        </ProfileSection>
+        )}
+
+        {onSwimmerProfileChange && (
+          <ProfileSection
+            id="profile-health"
+            title="Santé et blessures"
+            summary={profile?.injuryStatus === "oui" ? "Blessure déclarée" : (profile?.injuryStatus === "aucune" ? "Aucune blessure" : "À compléter")}
+            defaultOpen={false}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              {[
+                { id: "aucune", label: "Aucune" },
+                { id: "oui", label: "Oui" },
+              ].map((o) => {
+                const active = profile?.injuryStatus === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => {
+                      if (o.id === "aucune") {
+                        onSwimmerProfileChange({
+                          injuryStatus: "aucune",
+                          injuryZone: null,
+                          injurySeverity: null,
+                          healthDeclaration: false,
+                        });
+                      } else {
+                        onSwimmerProfileChange({ injuryStatus: "oui" });
+                      }
+                    }}
+                    style={{
+                      flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                      border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                      background: active ? G.blueLight : G.surface,
+                      color: active ? G.blue : G.ink,
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            {profile?.injuryStatus === "oui" && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zone</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  {INJURY_ZONES.map((z) => {
+                    const active = profile?.injuryZone === z.id;
+                    return (
+                      <button
+                        key={z.id}
+                        type="button"
+                        onClick={() => onSwimmerProfileChange({ injuryZone: z.id })}
+                        style={{
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blueLight : G.surface,
+                          color: active ? G.blue : G.ink,
+                        }}
+                      >
+                        {z.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sévérité</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  {INJURY_SEVERITIES.map((s) => {
+                    const active = profile?.injurySeverity === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => onSwimmerProfileChange({ injurySeverity: s.id })}
+                        style={{
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                          background: active ? G.blueLight : G.surface,
+                          color: active ? G.blue : G.ink,
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={!!profile?.healthConsent}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  onSwimmerProfileChange({
+                    healthConsent: v,
+                    healthConsentAt: v ? new Date().toISOString() : null,
+                  });
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
+                {HEALTH_CONSENT_CHECKBOX}
+              </span>
+            </label>
+          </ProfileSection>
+        )}
+
+        <div style={{ marginBottom: 24 }}>
+          <HomeBadgesSection plan={plan} />
+        </div>
+      </div>
+      </AppShell>
+    </div>
+  );
+}
