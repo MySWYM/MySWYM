@@ -433,6 +433,13 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
         level: levelFilter || undefined,
         goalCategory: goalFilter || undefined,
         excludeUserId: user.id,
+        viewerProfile: {
+          city: form.city,
+          level: form.level,
+          goal_category: form.goal_category,
+          availability_days: form.availability_days,
+          availability_slots: form.availability_slots,
+        },
       });
       setBuddies(Array.isArray(data) ? data : []);
       if (error) setMsg({ type: "err", text: typeof error.message === "string" ? error.message : "Impossible de charger les profils." });
@@ -441,7 +448,17 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
       setMsg({ type: "err", text: typeof err?.message === "string" ? err.message : "Impossible de charger les profils." });
     }
     setLoadingList(false);
-  }, [user?.id, cityFilter, levelFilter, goalFilter]);
+  }, [
+    user?.id,
+    cityFilter,
+    levelFilter,
+    goalFilter,
+    form.city,
+    form.level,
+    form.goal_category,
+    form.availability_days,
+    form.availability_slots,
+  ]);
 
   const loadOwn = useCallback(async () => {
     if (!user?.id) return;

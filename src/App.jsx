@@ -19,13 +19,24 @@ import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G, G_DARK, applyTheme } from "./theme/palette.js";
 import PlanRevealView from "./PlanRevealView.jsx";
 import FirstSwimTip, { hasSeenFirstSwimTip } from "./FirstSwimTip.jsx";
+import CoachCard from "./CoachCard.jsx";
+import PlanTab from "./PlanTab.jsx";
+import Dashboard, { HomeBadgesSection } from "./Dashboard.jsx";
+import { registerTabUi } from "./tab-ui-registry.js";
+import {
+  getSessionRemindersEnabled,
+  setSessionRemindersEnabled,
+  persistSessionRemindersPreference,
+  shouldShowSessionReminderBanner,
+  sessionReminderCopy,
+} from "./lib/session-reminder.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import ProfileSection from "./ui/ProfileSection.jsx";
-import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel } from "./lib/plan-reveal.js";
+import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel, sessionWhyLine } from "./lib/plan-reveal.js";
 import {
   dismissProfileNudge,
   isProfileNudgeDismissed,
@@ -3738,6 +3749,10 @@ const SettingsDrawer = ({
   const { t: ts } = useTranslation("settings");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
+  const [remindersOn, setRemindersOn] = useState(() => getSessionRemindersEnabled(user?.id));
+  useEffect(() => {
+    setRemindersOn(getSessionRemindersEnabled(user?.id));
+  }, [user?.id]);
   if (!open) return null;
 
   const menuRow = {
@@ -3853,6 +3868,34 @@ const SettingsDrawer = ({
         <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey, marginBottom: 12 }}>
             Paramètres
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>Rappel séance</div>
+              <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>Bannière du jour si tu n’as pas encore nagé</div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={remindersOn}
+              onClick={() => {
+                const next = !remindersOn;
+                setRemindersOn(next);
+                setSessionRemindersEnabled(user?.id, next);
+                persistSessionRemindersPreference(supabase, next);
+              }}
+              style={{
+                width: 52, height: 32, borderRadius: 999, border: "none", cursor: "pointer",
+                background: remindersOn ? G.blue : G.greyLight,
+                position: "relative", flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: "absolute", top: 4, left: remindersOn ? 24 : 4,
+                width: 24, height: 24, borderRadius: "50%", background: G.white,
+                transition: "left 0.15s ease",
+              }} />
+            </button>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
@@ -5083,13 +5126,13 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
         </h3>
         <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 24px" }}>{b.desc}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {session && onShare && (
+          {onShare && (
             <Btn
               variant="blue"
-              onClick={() => { onShare(session, badgeId); onClose?.(); }}
+              onClick={() => { onShare(session || null, badgeId); onClose?.(); }}
               style={{ width: "100%" }}
             >
-              Fêter & partager la séance
+              Partager mon badge
             </Btn>
           )}
           <button
@@ -6105,7 +6148,13 @@ const SessionCard = ({
                 isPremium={isPremium}
                 embedded
                 showStart={!resolved}
+                whyLine={sessionWhyLine(session)}
                 onUpgrade={() => onUpgrade?.("session_locked")}
+                onTooHard={
+                  !resolved && isPremium
+                    ? () => onEditFeedback?.(weekIndex, sessionIndex)
+                    : undefined
+                }
                 onStart={() => {
                   if (!isPremium) {
                     onUpgrade?.("session_locked");
@@ -6136,6 +6185,14 @@ const SessionCard = ({
                 setPoolOpen(false);
                 if (!resolved && isPremium) onComplete?.("done");
               }}
+              onTooHard={
+                !resolved && isPremium
+                  ? () => {
+                      setPoolOpen(false);
+                      onEditFeedback?.(weekIndex, sessionIndex);
+                    }
+                  : undefined
+              }
             />
           )}
             </>
@@ -6393,141 +6450,6 @@ const ResetConfirmButton = ({ onReset, variant = "subtle" }) => {
 };
 
 // ── COACH CARD ────────────────────────────────────────────────────────────
-const COACH = {
-  name: "Arthur N.",
-  photo: "/coach.webp",
-  initials: "AN",
-};
-
-const COACH_MESSAGES = {
-  // ── Découverte — messages simples, encourageants, zéro jargon ──
-  découverte_base: [
-    "L'important c'est d'y aller. Pas besoin de nager vite — nage régulièrement. Ton corps s'adapte plus vite que tu ne le crois.",
-    "Chaque longueur compte. Si tu as nagé aujourd'hui, tu as déjà réussi ta séance. Le reste viendra tout seul.",
-    "Commencer c'est la partie la plus difficile — tu l'as déjà faite. Continue à ton rythme, sans te comparer à personne.",
-  ],
-  découverte_development: [
-    "Tu progresses ! Tu tiens plus longtemps dans l'eau qu'au début — même si tu ne t'en rends pas compte. C'est ça, la progression.",
-    "Tes séances sont un peu plus longues maintenant. Pas de panique si tu dois t'arrêter : reprends, souffle, et continue.",
-  ],
-  découverte_peak: [
-    "Tu nages bien. Cette semaine on ajoute un peu d'intensité — juste pour voir jusqu'où tu peux aller. Pas d'obligation.",
-    "Tu es plus à l'aise dans l'eau qu'il y a quelques semaines. Profite de chaque séance, c'est là que tout se passe.",
-  ],
-  // ── Niveaux confirmés ──
-  base: [
-    "Ce mois est fondamental : on construit ta base aérobie. Travaille à basse intensité, respire, prends tes marques. La vitesse viendra plus tard.",
-    "La base, c'est le moteur. Chaque séance d'endurance que tu fais aujourd'hui, tu l'encaisseras comme un avantage dans 2 mois. Sois patient.",
-    "La simplicité est la sophistication suprême. — Léonard de Vinci",
-  ],
-  development: [
-    "On monte en charge. Les séances au seuil vont piquer — c'est normal. Reste dans les zones, ne cherche pas à tout donner d'un coup.",
-    "Ce mois développe ton endurance spécifique. Les efforts sont plus longs, l'intensité monte. Tu dois sortir fatigué mais pas détruit.",
-  ],
-  peak: [
-    "On est en phase de pointe. Les séances de vitesse sont courtes mais intenses. Récupère bien entre les efforts — c'est là que la progression s'installe.",
-    "Ce mois tu touches à ta meilleure forme. Chaque séance compte. Dors bien, mange bien, et fais confiance au travail déjà accompli.",
-  ],
-  taper: [
-    "On allège. C'est le moment où beaucoup veulent en faire plus — fais l'inverse. La fraîcheur au départ vaut plus que 3 séances de plus.",
-  ],
-  competition: [
-    "Semaine de compétition — reste frais, séances courtes. Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
-  ],
-  test: [
-    "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Pas de forçage — un chrono propre pour mesurer si tu progresses vraiment.",
-    "Compare avec le test précédent. Même 2–3 secondes de mieux, c'est une vraie évolution. Note-les quelque part.",
-  ],
-  wellness: [
-    "On reprend doucement. L'objectif ce mois : créer l'habitude. Deux séances régulières valent mieux qu'une séance intense suivie d'une semaine sans.",
-    "Le corps s'adapte progressivement. Tu vas peut-être te sentir limité — c'est une bonne chose. On construit sur du solide.",
-  ],
-  default: [
-    "Entraîne-toi intelligemment. La régularité bat toujours l'intensité ponctuelle. Une séance de plus par semaine sur 3 mois, ça change tout.",
-  ],
-};
-
-const CoachCard = ({ plan, profile, currentWeekIndex }) => {
-  const week = plan.weeks[Math.max(0, currentWeekIndex)];
-  const isDecouverte = profile?.level === "découverte";
-  const adaptLine = formatCoachAdaptLine(plan);
-
-  const resolveCoachPhase = () => {
-    if (!week) return "default";
-    const f = (week.focus || "").toLowerCase();
-    if (week.isTest || f.includes("test") || f.includes("contrôle")) return "test";
-    if (week.isBilan || f.includes("bilan")) return "taper";
-    if (f.includes("compét")) return "competition";
-    if (f.includes("affût")) return "taper";
-    if (f.includes("vitesse") || f.includes("intensité") || f.includes("volume maximum")) return "peak";
-    if (f.includes("seuil") || f.includes("développement")) return "development";
-    if (f.includes("mise en") || f.includes("construction") || f.includes("jambes") || f.includes("aérobie")) return "base";
-    if (plan.isProgression) {
-      if (currentWeekIndex < 3) return "base";
-      if (currentWeekIndex === 3) return "test";
-      if (currentWeekIndex < 7) return "development";
-      if (currentWeekIndex === 7) return "test";
-      if (currentWeekIndex < 11) return "peak";
-      return "taper";
-    }
-    return "base";
-  };
-  const phase = resolveCoachPhase();
-
-  // Découverte level gets its own set of simple, jargon-free messages
-  const phaseKey = isDecouverte
-    ? (`découverte_${phase}` in COACH_MESSAGES ? `découverte_${phase}` : "découverte_base")
-    : phase;
-  const msgs = COACH_MESSAGES[phaseKey] || COACH_MESSAGES.default;
-  // Change de message chaque mois civil pour que ça évolue même sans progresser
-  const msgIndex = new Date().getMonth() % msgs.length;
-  const message = msgs[msgIndex];
-
-  return (
-    <div style={{
-      background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
-      borderRadius: 22,
-      padding: "20px",
-      marginBottom: 20,
-      boxShadow: "0 8px 28px rgba(53,93,163,0.28)",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      {/* Decorative circle */}
-      <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: -30, right: 30, width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
-        {COACH.photo ? (
-          <img src={COACH.photo} alt={COACH.name} style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2.5px solid rgba(255,255,255,0.4)` }} />
-        ) : (
-          <div style={{ width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ color: G.white, fontSize: 16, fontWeight: 800 }}>{COACH.initials}</span>
-          </div>
-        )}
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Message de ton coach</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: G.white, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{COACH.name}</div>
-        </div>
-      </div>
-
-      {/* Message bubble */}
-      <div style={{ background: "rgba(255,255,255,0.13)", borderRadius: 14, padding: "14px 16px", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
-        <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.92)", lineHeight: 1.65, margin: 0 }}>{message}</p>
-        {adaptLine && (
-          <p style={{
-            fontSize: 12.5, color: G.mint, lineHeight: 1.5, margin: "12px 0 0", fontWeight: 700,
-            paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.18)",
-          }}>
-            {adaptLine}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
-
 // ── MODE BOUCLE « Nager & Progresser » ─────────────────────────────────────
 const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
   <div style={{
@@ -6943,617 +6865,27 @@ const PlanSelector = ({
   );
 };
 
-// ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({
-  plan, profile, isPremium, onComplete, onAdvanceLoop, onShare, onEditFeedback, onReset, onUpgrade,
-  plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram,
-  user, onOpenMenu, onTabChange,
-  addingPlan = false, onboardingProps = null, onCancelAddPlan = null,
-}) => {
-  const [stravaBestPace, setStravaBestPace] = useState(null);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    supabase
-      .from("strava_activities")
-      .select("pace")
-      .eq("user_id", user.id)
-      .in("activity_type", ["Swim", "OpenWaterSwim"])
-      .gt("pace", 0)
-      .order("pace", { ascending: true })
-      .limit(1)
-      .then(({ data }) => {
-        if (!cancelled) setStravaBestPace(data?.[0]?.pace ?? null);
-      });
-    return () => { cancelled = true; };
-  }, [user?.id]);
-
-  // Compte connecté sans plan (ou ajout d’un plan) → questionnaire dans le shell app
-  if ((!plan || addingPlan) && onboardingProps) {
-    return (
-      <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-        <AppTopBar
-          user={user}
-          onOpenMenu={onOpenMenu}
-          onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-          plan={null}
-        />
-        <div className="app-shell" style={{ paddingTop: 16, paddingBottom: 24 }}>
-          <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15, margin: 0 }}>
-              {addingPlan ? "Remplacer mon programme" : "Crée ton programme"}
-            </h1>
-            <p style={{ fontSize: 14, color: G.grey, marginTop: 6, lineHeight: 1.45 }}>
-              Réponds au questionnaire — Accueil, Profil et Binômes restent accessibles.
-            </p>
-          </div>
-          <OnboardingWizard
-            {...onboardingProps}
-            onCancel={addingPlan && plans?.length > 0 ? onCancelAddPlan : null}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (!plan?.weeks) {
-    return (
-      <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-        <AppTopBar user={user} onOpenMenu={onOpenMenu} onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined} plan={null} />
-        <div className="app-shell" style={{ paddingTop: 32 }}>
-          <p style={{ color: G.grey, fontSize: 14 }}>Aucun programme pour le moment.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (plan?.isSessionLoop) {
-    return (
-      <ProgressionLoopView
-        plan={plan}
-        profile={profile}
-        plans={plans}
-        activePlanId={activePlanId}
-        isPremium={isPremium}
-        onComplete={(status) => onComplete(0, 0, status)}
-        onAdvanceLoop={onAdvanceLoop}
-        onSwitchPlan={onSwitchPlan}
-        onAddPlan={onAddPlan}
-        onDeletePlan={onDeletePlan}
-        onRegenerate={onRegenerateLoop}
-        onUpgrade={onUpgrade}
-        onReset={onReset}
-        onShare={onShare}
-        onEditFeedback={onEditFeedback}
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onTabChange={onTabChange}
-      />
-    );
-  }
-
-  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
-  const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
-
-  const planLabel = GOALS.find(g => g.id === profile.goal)?.label
-                 || CATEGORIES.find(c => c.id === profile.category)?.label
-                 || "Mon plan";
-  return (
-    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-      <AppTopBar
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-        plan={plan}
-      />
-
-      {/* ── Sous-header programme ── */}
-      <div style={{
-        background: G.bg,
-        borderBottom: `1px solid rgba(142,179,255,0.10)`,
-      }}>
-        <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{
-              fontSize: 12, fontWeight: 600, color: G.inkLight,
-              background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
-            }}>
-              Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{plan.weeks.length}
-            </span>
-            {currentWeekIndex >= 0 && currentWeek?.focus && (
-              <span style={{ fontSize: 12, color: G.blue, fontWeight: 600 }}>{currentWeek.focus}</span>
-            )}
-          </div>
-        </div>
-        {/* Plan switcher */}
-        <div className="app-shell" style={{ paddingBottom: 12 }}>
-          <PlanSelector
-            plans={plans}
-            activePlanId={activePlanId}
-            onAddPlan={onAddPlan}
-          />
-        </div>
-      </div>
-
-      <div className="app-shell" style={{ paddingTop: 16 }}>
-
-        {!isPremium && (
-          <PremiumBanner
-            onUpgrade={onUpgrade}
-            weeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
-          />
-        )}
-
-        {isPremium && (
-          <CoachCard
-            plan={plan}
-            profile={profile}
-            currentWeekIndex={currentWeekIndex >= 0 ? currentWeekIndex : 0}
-          />
-        )}
-
-        <WeekProjectionCard plan={plan} profile={profile} />
-
-        {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
-
-        <UpdateProgramCard
-          profile={profile}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-          onSave={onUpdateProgram}
-          stravaBestPace={stravaBestPace}
-        />
-
-        {plan.weeks.map((week, i) => (
-          <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} analyticsCtx={{ planId: activePlanId, profile }} />
-          </div>
-        ))}
-
-        {isPremium && <ResetConfirmButton onReset={onReset} variant="subtle" />}
-      </div>
-    </div>
-  );
-};
-
-/** Badges sur l’accueil : colorés si débloqués, grisés sinon. */
-const HomeBadgesSection = ({ plan }) => {
-  const stats = computeStats(plan);
-  const earned = checkBadges(stats);
-  const earnedSet = new Set(earned);
-  return (
-    <div style={{
-      background: G.surface, borderRadius: 20, padding: "18px",
-      boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
-      border: `1px solid ${G.greyLight}`,
-      marginBottom: 12,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Award size={16} color={G.blue} />
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Badges</div>
-        </div>
-        <span style={{ fontSize: 13, fontWeight: 800, color: G.blue, fontVariantNumeric: "tabular-nums" }}>
-          {earned.length}/{BADGE_DEFS.length}
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px 8px" }}>
-        {BADGE_DEFS.map(b => {
-          const unlocked = earnedSet.has(b.id);
-          return (
-            <div
-              key={b.id}
-              title={unlocked ? b.desc : `À débloquer — ${b.desc}`}
-              style={{ textAlign: "center", minWidth: 0 }}
-            >
-              <div style={{
-                width: 48, height: 48, borderRadius: "50%",
-                margin: "0 auto 6px",
-                background: unlocked ? `${b.color}20` : G.greyXLight,
-                border: unlocked ? `1.5px solid ${b.color}40` : `1.5px solid ${G.greyLight}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                position: "relative",
-                boxShadow: unlocked ? `0 4px 12px ${b.color}22` : "none",
-                filter: unlocked ? "none" : "grayscale(1)",
-                opacity: unlocked ? 1 : 0.45,
-              }}>
-                <b.icon size={20} color={unlocked ? b.color : G.greyMid} />
-                {!unlocked && (
-                  <div style={{
-                    position: "absolute", bottom: -2, right: -2,
-                    width: 16, height: 16, borderRadius: "50%",
-                    background: G.surface, border: `1px solid ${G.greyLight}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <Lock size={9} color={G.greyMid} />
-                  </div>
-                )}
-              </div>
-              <div style={{
-                fontSize: 10, fontWeight: unlocked ? 700 : 600,
-                color: unlocked ? G.ink : G.greyMid,
-                lineHeight: 1.25,
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              }}>
-                {b.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {earned.length === 0 ? (
-        <p style={{ fontSize: 13, color: G.grey, margin: "12px 0 0", lineHeight: 1.5 }}>
-          Valide ta première séance pour débloquer ton premier badge.
-        </p>
-      ) : earned.length < BADGE_DEFS.length ? (
-        <p style={{ fontSize: 12, color: G.grey, margin: "12px 0 0", lineHeight: 1.45 }}>
-          Complète des séances pour débloquer les badges grisés.
-        </p>
-      ) : null}
-    </div>
-  );
-};
-
-// ── DASHBOARD ──────────────────────────────────────────────────────────────
-/** Après la 1re séance : une carte secondaire + le reste derrière « Voir plus ». */
-const HomeSecondaryStack = ({
-  plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
-}) => {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const coachWeek = plan?.weeks?.length
-    ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
-    : 0;
-
-  const primary = isPremium && plan?.weeks?.length > 0
-    ? "coach"
-    : plan
-      ? "pace"
-      : "strava";
-
-  return (
-    <>
-      {primary === "coach" && (
-        <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} />
-      )}
-      {primary === "pace" && (
-        <MonAllureCard
-          profile={profile}
-          pace100={profile?.pace100}
-          isPremium={isPremium}
-          onSave={onPaceUpdate}
-          onUpgrade={onUpgrade}
-        />
-      )}
-      {primary === "strava" && (
-        <StravaSection
-          user={user}
-          plan={plan}
-          profile={profile}
-          currentPace100={profile?.pace100}
-          onPaceUpdate={onPaceUpdate}
-          onValidateSession={onValidateSession}
-          showProgramActions={false}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-        />
-      )}
-
-      {!moreOpen ? (
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          style={{
-            width: "100%", marginBottom: 16, minHeight: 48, borderRadius: 14,
-            border: `1px solid ${G.greyLight}`, background: G.surface,
-            color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer",
-          }}
-        >
-          Voir plus
-        </button>
-      ) : (
-        <>
-          {primary !== "pace" && plan && (
-            <MonAllureCard
-              profile={profile}
-              pace100={profile?.pace100}
-              isPremium={isPremium}
-              onSave={onPaceUpdate}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {primary !== "strava" && (
-            <StravaSection
-              user={user}
-              plan={plan}
-              profile={profile}
-              currentPace100={profile?.pace100}
-              onPaceUpdate={onPaceUpdate}
-              onValidateSession={onValidateSession}
-              showProgramActions={false}
-              isPremium={isPremium}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {plan && <HomeBadgesSection plan={plan} />}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(false)}
-            style={{
-              width: "100%", marginBottom: 8, minHeight: 44, border: "none", background: "none",
-              color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
-            }}
-          >
-            Réduire
-          </button>
-        </>
-      )}
-    </>
-  );
-};
-
-const Dashboard = ({
-  plan, profile, onTabChange, onSignOut, user,
-  isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
-  activePlanId = null,
-}) => {
-  const stats = computeStats(plan);
-  const isLoop = !!plan?.isSessionLoop;
-  const [poolOpen, setPoolOpen] = useState(false);
-  const [homePrepOpen, setHomePrepOpen] = useState(false);
-  const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
-  const next = findNextSession(plan);
-  const preview = next?.session ? sessionCardModel(next.session) : null;
-  const hasSwum = stats.totalSessions > 0;
-  const showProfileNudge = !!plan && shouldShowProfileNudge(profile, { dismissed: nudgeDismissed });
-  const currentWeekIdx = (plan?.weeks || []).findIndex((w) => !(w.sessions || []).every(isSessionResolved));
-  const weekMetersRow = !isLoop && stats.weeklyData?.length
-    ? stats.weeklyData[currentWeekIdx >= 0 ? currentWeekIdx : 0]
-    : null;
-
-  const firstName = user?.user_metadata?.firstname
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        }
-        return localStorage.getItem("myswym_firstname");
-      } catch { return null; }
-    })()
-    || user?.user_metadata?.full_name?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || "Nageur";
-
-  const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
-  const tm = getTypeMeta(next?.session?.type);
-
-  const startToday = () => {
-    if (!next?.session || next.resolved) {
-      onTabChange?.("plan");
-      return;
-    }
-    if (!isPremium) {
-      onUpgrade?.("session_locked");
-      return;
-    }
-    const props = sessionAnalyticsProps(profile, next.session, {
-      planWeek: (plan?.weeks?.[next.weekIndex]?.number) ?? next.weekIndex + 1,
-      sessionIndex: next.sessionIndex,
-    });
-    track("session_started", {
-      level: props.level,
-      objective: props.objective,
-      planWeek: props.planWeek,
-      sessionIndex: props.sessionIndex,
-      volume: props.volume,
-    }, { onceKey: `session_started:${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}` });
-    setHomePrepOpen(true);
-  };
-
-  return (
-    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", background: "transparent", minHeight: "100dvh" }}>
-
-      <AppTopBar
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onAvatarClick={() => onTabChange("profile")}
-        plan={plan}
-      />
-
-      <div className="app-shell" style={{ paddingTop: 16 }}>
-
-        <div className="ms-home-greet">
-          <div>
-            <p>{(() => {
-              const h = new Date().getHours();
-              return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-            })()},</p>
-            <h1>{plan ? "Prêt à nager ?" : firstName}</h1>
-          </div>
-          {plan && (stats.streak > 0 || hasSwum) && (
-            <span className="ms-home-streak" title={stats.streak > 0 ? `Série de ${stats.streak}` : "Distance totale"}>
-              {stats.streak > 0 ? (
-                <><Flame size={14} color={G.gold} aria-hidden />{stats.streak}</>
-              ) : (
-                <><Waves size={14} color={G.blue} aria-hidden />{(stats.totalMeters / 1000).toFixed(1)} km</>
-              )}
-            </span>
-          )}
-        </div>
-
-        {plan && !next?.resolved && (
-          <div className="ms-habit-banner" role="status">
-            {stats.streak > 0
-              ? <>Série de <strong>{stats.streak}</strong> — nage aujourd’hui pour la garder.</>
-              : hasSwum
-                ? <>Reviens nager — une séance suffit pour relancer ta série.</>
-                : <>Ta première séance t’attend — coche-la après le bassin.</>}
-          </div>
-        )}
-        {plan && next?.resolved && stats.streak > 0 && (
-          <div className="ms-habit-banner is-done" role="status">
-            Séance du jour validée · série de <strong>{stats.streak}</strong> — reviens demain.
-          </div>
-        )}
-
-        {showProfileNudge && (
-          <ProfileNudgeCard
-            onOpenProfile={() => onTabChange?.("profile")}
-            onDismiss={() => {
-              dismissProfileNudge(user?.id);
-              setNudgeDismissed(true);
-            }}
-          />
-        )}
-
-        {!plan && (
-          <div style={{
-            background: G.surface, borderRadius: 20, padding: "22px 18px", marginBottom: 16,
-            border: `1px solid ${G.greyLight}`,
-            boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
-          }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, margin: "0 0 8px" }}>
-              Pas encore de programme
-            </h2>
-            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 16px" }}>
-              Crée ton plan personnalisé dans l’onglet Programme.
-            </p>
-            <button
-              type="button"
-              onClick={() => onTabChange?.("plan")}
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: 12, border: "none",
-                background: G.blue, color: G.white, fontSize: 15, fontWeight: 600, cursor: "pointer", minHeight: 48,
-                fontFamily: FONT,
-              }}
-            >
-              Créer mon programme
-            </button>
-          </div>
-        )}
-
-        {preview && (
-          <div style={{ marginBottom: 16 }}>
-            <SessionHeroCard preview={preview} kicker={next.resolved ? "Séance faite" : "Séance du jour"}>
-              <button
-                type="button"
-                className="ms-plan-reveal-btn"
-                onClick={startToday}
-                style={{ fontFamily: FONT }}
-              >
-                {next.resolved
-                  ? "Voir le programme"
-                  : (isPremium
-                    ? (homePrepOpen ? "Préparation ouverte ↓" : "Préparer la séance")
-                    : "S’abonner pour nager")}
-              </button>
-            </SessionHeroCard>
-          </div>
-        )}
-
-        {homePrepOpen && next?.session && !next.resolved && (
-          <div className="ms-session-card" style={{ marginBottom: 16, padding: "16px 18px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Préparation
-              </div>
-              <button
-                type="button"
-                onClick={() => setHomePrepOpen(false)}
-                style={{ border: "none", background: "none", color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >
-                Fermer
-              </button>
-            </div>
-            <WorkoutPrepView
-              session={next.session}
-              colors={G}
-              accent={{ bg: tm.bg, color: tm.color }}
-              isPremium={isPremium}
-              showStart
-              startLabel="C’est parti — je nage"
-              onUpgrade={onUpgrade}
-              onStart={() => setPoolOpen(true)}
-            />
-          </div>
-        )}
-
-        {plan && (
-          <WeekProjectionCard
-            plan={plan}
-            profile={profile}
-            onOpenPlan={() => onTabChange?.("plan")}
-          />
-        )}
-
-        {hasSwum && weekMetersRow && !plan && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 16,
-            background: G.surface, border: `1px solid ${G.greyLight}`,
-            borderRadius: 16, padding: "14px 16px", marginBottom: 16,
-          }}>
-            <WeekStatRing value={weekMetersRow.done} max={weekMetersRow.total} />
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey }}>
-                {weekMetersRow.label}
-              </div>
-              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: G.ink, letterSpacing: "-0.03em", marginTop: 2 }}>
-                {weekMetersRow.done}
-                <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, fontFamily: FONT }}> / {weekMetersRow.total} m</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {poolOpen && next?.session && (
-          <PoolMode
-            session={next.session}
-            sessionKey={`${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}`}
-            colors={G}
-            accent={{ bg: tm.bg, color: tm.color }}
-            onClose={() => setPoolOpen(false)}
-            onFinish={() => {
-              setPoolOpen(false);
-              setHomePrepOpen(false);
-              onComplete?.(next.weekIndex, next.sessionIndex, "done");
-            }}
-          />
-        )}
-
-        {!isLoop && planFinished && (
-          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
-            {plan.isProgression
-              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
-            }
-          </div>
-        )}
-
-        {!isPremium && plan?.weeks?.length > 0 && (
-          <PremiumTeaser onUpgrade={onUpgrade} />
-        )}
-
-        {hasSwum && (
-          <HomeSecondaryStack
-            plan={plan}
-            profile={profile}
-            user={user}
-            isPremium={isPremium}
-            onUpgrade={onUpgrade}
-            onPaceUpdate={onPaceUpdate}
-            onValidateSession={onValidateSession}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
+registerTabUi({
+  AppTopBar,
+  OnboardingWizard,
+  ProgressionLoopView,
+  PlanSelector,
+  PremiumBanner,
+  PremiumTeaser,
+  WeekProjectionCard,
+  ResetConfirmButton,
+  UpdateProgramCard,
+  WeekCard,
+  MonAllureCard,
+  StravaSection,
+  GOALS,
+  CATEGORIES,
+  BADGE_DEFS,
+  computeStats,
+  checkBadges,
+  getTypeMeta,
+});
 
 // ── BADGES TAB ─────────────────────────────────────────────────────────────
 const BadgesTab = ({ plan }) => {
@@ -10111,8 +9443,14 @@ export default function App() {
   const lastCompletedSessionRef = useRef(null);
 
   const openShare = (session, badgeId = null) => {
-    if (!session) return;
-    setShareSession(session);
+    const target = session || lastCompletedSessionRef.current || {
+      title: badgeId ? "Badge MySWYM" : "Séance MySWYM",
+      type: "Partage",
+      distance: null,
+      duration: null,
+      details: [],
+    };
+    setShareSession(target);
     setShareBadgeId(badgeId || null);
   };
   const [toast, setToast] = useState(null);

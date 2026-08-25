@@ -1,5 +1,6 @@
 import { supabase } from "../supabase.js";
 import { requirePaidBuddies } from "./buddy-access.js";
+import { sortBuddiesForViewer } from "./buddy-match-rank.js";
 
 export const BUDDY_GOAL_CATEGORIES = [
   { id: "eau_libre", label: "Eau libre" },
@@ -254,7 +255,13 @@ export async function fetchOwnBuddyProfile(userId) {
  * Visibilité = publié + ville + numéro prêt (phone_share_ready + whatsapp).
  * Fallback : mêmes filtres si la RPC n'est pas encore déployée.
  */
-export async function fetchDiscoverableBuddies({ city, level, goalCategory, excludeUserId } = {}) {
+export async function fetchDiscoverableBuddies({
+  city,
+  level,
+  goalCategory,
+  excludeUserId,
+  viewerProfile = null,
+} = {}) {
   const gate = await requirePaidBuddies();
   if (!gate.ok) return { data: [], error: gate.error };
 
@@ -270,7 +277,7 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
     const filtered = excludeUserId
       ? rows.filter((r) => r.user_id !== excludeUserId)
       : rows;
-    return { data: filtered, error: null };
+    return { data: sortBuddiesForViewer(filtered, viewerProfile || {}), error: null };
   }
 
   // Fallback legacy — colonnes publiques uniquement ; filtre numéro sans le sélectionner
@@ -291,7 +298,7 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
 
   const fallback = await q;
   return {
-    data: asBuddyRows(fallback.data).map(stripPhoneFromBuddy),
+    data: sortBuddiesForViewer(asBuddyRows(fallback.data).map(stripPhoneFromBuddy), viewerProfile || {}),
     error: fallback.error,
   };
 }

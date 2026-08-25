@@ -101,6 +101,28 @@ export function sessionCardModel(session) {
   };
 }
 
+export function sessionWhyLine(session, profile = {}) {
+  if (!session) return null;
+  const type = String(session.type || "").toLowerCase();
+  const focus = String(profile?.trainingFocus || profile?.goal || "").toLowerCase();
+  if (type.includes("technique") || type.includes("éduc")) {
+    return "Pourquoi cette séance : peaufiner la technique avant de monter la charge.";
+  }
+  if (type.includes("vitesse") || type.includes("sprint")) {
+    return "Pourquoi cette séance : développer la puissance sur des efforts courts.";
+  }
+  if (type.includes("seuil")) {
+    return "Pourquoi cette séance : tenir une allure soutenue sans exploser.";
+  }
+  if (type.includes("récup") || type.includes("recup")) {
+    return "Pourquoi cette séance : récupérer en nageant, sans forcer.";
+  }
+  if (focus.includes("tri") || focus.includes("eau")) {
+    return "Pourquoi cette séance : volume et endurance alignés sur ton objectif.";
+  }
+  return "Pourquoi cette séance : construire l’endurance de base, à allure confortable.";
+}
+
 export function sessionPreviewFromPlan(plan) {
   return sessionCardModel(plan?.weeks?.[0]?.sessions?.[0] || null);
 }

@@ -36,7 +36,7 @@ export default function ProfileNudgeCard({ onOpenProfile, onDismiss }) {
           Bassin et matériel
         </div>
         <p style={{ margin: "4px 0 10px", fontSize: 13, lineHeight: 1.45, color: G.grey, fontFamily: FONT }}>
-          Ton plan part sur un bassin 25 m, sans matériel. Ajoute tes infos dans Profil si tu nages en 50 m ou avec palmes, planche, pull…
+          Après ta première séance : confirme ton bassin (25 ou 50 m) et ton matériel dans Profil pour des séances encore plus justes.
         </p>
         <button
           type="button"
