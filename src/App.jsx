@@ -5909,7 +5909,7 @@ const CancelSurveySheet = ({ onChoose, onSkip }) => {
   );
 };
 
-const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
+const TrialExpiredFreeze = ({ onSubscribe, onSignOut, preview = null }) => (
   <div
     role="dialog"
     aria-modal="true"
@@ -5935,17 +5935,50 @@ const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
         <Lock size={28} color={G.gold} />
       </div>
       <h1 id="freeze-title" style={{
-        fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 36, fontWeight: 800,
+        fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 32, fontWeight: 800,
         textTransform: "none", letterSpacing: "-0.03em", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
       }}>
         Ton essai est terminé
       </h1>
-      <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 28px" }}>
-        Tes séances sont en pause. Tes plans ne sont plus visibles.
-        Abonne-toi pour tout retrouver — {PRICING_SUMMARY_FR}.
+      <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 20px" }}>
+        Le coach est en pause. Abonne-toi pour reprendre tes séances — {PRICING_SUMMARY_FR}.
       </p>
+
+      {preview && (
+        <div
+          aria-hidden
+          style={{
+            textAlign: "left",
+            marginBottom: 22,
+            borderRadius: 18,
+            padding: "16px 16px",
+            border: `1px solid ${G.greyLight}`,
+            background: G.surface,
+            filter: "blur(5px)",
+            opacity: 0.55,
+            pointerEvents: "none",
+            userSelect: "none",
+            position: "relative",
+          }}
+        >
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: 18,
+            background: "linear-gradient(180deg, transparent 30%, rgba(6,16,31,0.55) 100%)",
+          }} />
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+            Aperçu — séance en pause
+          </div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: G.ink, marginBottom: 6 }}>
+            {preview.title || "Séance"}
+          </div>
+          <div style={{ fontSize: 13, color: G.greyMid }}>
+            {[preview.type, preview.distance, preview.duration ? `${preview.duration} min` : null].filter(Boolean).join(" · ")}
+          </div>
+        </div>
+      )}
+
       <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
-        Choisir un abonnement
+        Reprendre avec Premium
       </Btn>
       <button
         type="button"
@@ -13036,12 +13069,17 @@ export default function App() {
 
   if (screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
 
-  if (isFrozen) return (
+  if (isFrozen) {
+    const freezePreview = plan?.weeks?.[0]?.sessions?.[0]
+      || plan?.history?.filter((s) => s)?.slice(-1)?.[0]
+      || null;
+    return (
     <>
       <style>{css}</style>
       <TrialExpiredFreeze
         onSubscribe={() => openUpgrade("trial_expired")}
         onSignOut={handleSignOut}
+        preview={freezePreview}
       />
       {showUpgrade && (
         <UpgradeModal
@@ -13055,6 +13093,7 @@ export default function App() {
       )}
     </>
   );
+  }
 
   if (screen === "onboarding") return (
     <>
