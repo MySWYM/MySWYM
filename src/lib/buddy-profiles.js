@@ -1,6 +1,9 @@
 import { supabase } from "../supabase.js";
 import { requirePaidBuddies } from "./buddy-access.js";
 import { sortBuddiesForViewer } from "./buddy-match-rank.js";
+import { humanizeBuddyOtpError } from "./buddy-otp-messages.js";
+
+export { humanizeBuddyOtpError };
 
 export const BUDDY_GOAL_CATEGORIES = [
   { id: "eau_libre", label: "Eau libre" },
@@ -420,21 +423,34 @@ export async function clearBuddyPhone(userId) {
 }
 
 async function callBuddyPhoneOtp(body) {
-  const { data: refreshData } = await supabase.auth.refreshSession();
-  const session = refreshData?.session;
-  if (!session) return { data: null, error: { message: "Connecte-toi d’abord." } };
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/buddy-phone-otp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) return { data: null, error: { message: json.error || "Erreur vérification." } };
-  return { data: json, error: null };
+  try {
+    const { data: refreshData } = await supabase.auth.refreshSession();
+    const session = refreshData?.session;
+    if (!session) return { data: null, error: { message: "Connecte-toi d’abord." } };
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/buddy-phone-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(20000),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        data: null,
+        error: { message: humanizeBuddyOtpError(json.error || `Erreur HTTP ${res.status}`) },
+      };
+    }
+    return { data: json, error: null };
+  } catch (err) {
+    const raw = err?.name === "TimeoutError" || err?.name === "AbortError"
+      ? "Délai dépassé"
+      : (err?.message || "network");
+    return { data: null, error: { message: humanizeBuddyOtpError(raw) } };
+  }
 }
 
 /** Envoie un code (SMS si Twilio, sinon e-mail compte). */

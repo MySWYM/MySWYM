@@ -52,6 +52,7 @@ const ALLOWED_PROPS = new Set([
   "hasEquipment",
   "equipmentUsedCount",
   "error_kind",
+  "pathname",
 ]);
 
 /** Props jamais envoyées (défense en profondeur) — inclut données de santé art. 9. */
@@ -151,6 +152,7 @@ function ensureInit() {
 export function initAnalytics() {
   ensureInit();
   if (typeof window === "undefined") return;
+  installGlobalErrorHandlers();
   window.addEventListener("myswym:cookie-consent-changed", onConsentChanged);
 }
 
@@ -320,6 +322,56 @@ export function trackAppOpened(properties = {}) {
     sessionStorage.setItem(APP_OPENED_KEY, "1");
   } catch { /* continue */ }
   track("app_opened", properties, { onceKey: "app_opened" });
+}
+
+/**
+ * Erreurs UI / runtime → PostHog only (pas de Sentry).
+ * Consentement analytics requis (comme `track`).
+ * @param {{ reason?: string, context?: string, source?: string, error_kind?: string }} [opts]
+ */
+export function trackUiError(opts = {}) {
+  const pathname =
+    typeof window !== "undefined" ? String(window.location?.pathname || "").slice(0, 80) : undefined;
+  track("ui_error", {
+    reason: String(opts.reason || "unknown").slice(0, 160),
+    context: String(opts.context || "unknown").slice(0, 80),
+    source: opts.source ? String(opts.source).slice(0, 120) : undefined,
+    error_kind: opts.error_kind || "runtime",
+    pathname,
+  });
+}
+
+/** Filet global window / promesses — 1× par page. */
+export function installGlobalErrorHandlers() {
+  if (typeof window === "undefined") return;
+  if (window.__myswymErrorHandlersInstalled) return;
+  window.__myswymErrorHandlersInstalled = true;
+
+  window.addEventListener("error", (ev) => {
+    try {
+      trackUiError({
+        reason: ev?.message || ev?.error?.message || "window_error",
+        context: "window_error",
+        source: ev?.filename ? `${String(ev.filename).slice(-60)}:${ev.lineno || 0}` : undefined,
+        error_kind: "uncaught",
+      });
+    } catch { /* ignore */ }
+  });
+
+  window.addEventListener("unhandledrejection", (ev) => {
+    try {
+      const r = ev?.reason;
+      const msg =
+        (r && typeof r === "object" && (r.message || r.error))
+          ? String(r.message || r.error)
+          : String(r || "unhandledrejection");
+      trackUiError({
+        reason: msg.slice(0, 160),
+        context: "unhandledrejection",
+        error_kind: "promise",
+      });
+    } catch { /* ignore */ }
+  });
 }
 
 /**

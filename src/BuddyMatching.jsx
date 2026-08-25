@@ -5,7 +5,7 @@ import {
   AlertTriangle, CheckCircle2, X, Lock,
 } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
-import { trackEvent } from "./lib/analytics.js";
+import { trackEvent, trackUiError } from "./lib/analytics.js";
 import { resolveAvatarUrl } from "./lib/avatar.js";
 import { supabase } from "./supabase.js";
 import {
@@ -24,6 +24,7 @@ import {
   formatAvailabilityLabel,
   formatRadiusLabel,
   formatWhatsAppDisplay,
+  humanizeBuddyOtpError,
   labelForGoalCategory,
   labelForLevel,
   labelsForOutingTypes,
@@ -649,50 +650,68 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
   const handleSendPhoneOtp = async () => {
     setOtpBusy(true);
     setMsg(null);
-    const { data, error } = await sendBuddyPhoneOtp(form.whatsapp_e164);
-    setOtpBusy(false);
-    if (error) {
-      setMsg({ type: "err", text: error.message });
-      return;
+    try {
+      const { data, error } = await sendBuddyPhoneOtp(form.whatsapp_e164);
+      if (error) {
+        const text = humanizeBuddyOtpError(error.message);
+        setMsg({ type: "err", text });
+        trackUiError({ reason: text, context: "buddy_otp_send", error_kind: "buddy" });
+        return;
+      }
+      setOtpChannel(data?.channel || null);
+      setMsg({
+        type: "ok",
+        text: data?.channel === "sms"
+          ? "Code envoyé par SMS."
+          : "Code envoyé par e-mail (SMS si Twilio est configuré).",
+      });
+    } catch (err) {
+      const text = humanizeBuddyOtpError(err?.message);
+      setMsg({ type: "err", text });
+      trackUiError({ reason: text, context: "buddy_otp_send", error_kind: "buddy" });
+    } finally {
+      setOtpBusy(false);
     }
-    setOtpChannel(data?.channel || null);
-    setMsg({
-      type: "ok",
-      text: data?.channel === "sms"
-        ? "Code envoyé par SMS."
-        : "Code envoyé par e-mail (SMS si Twilio est configuré).",
-    });
   };
 
   const handleConfirmPhoneOtp = async () => {
     setOtpBusy(true);
     setMsg(null);
-    const { error } = await confirmBuddyPhoneOtp(form.whatsapp_e164, otpCode);
-    setOtpBusy(false);
-    if (error) {
-      setMsg({ type: "err", text: error.message });
-      return;
-    }
-    setForm((f) => ({
-      ...f,
-      phone_verified: true,
-      phone_share_ready: true,
-      phone_ownership_ack: true,
-    }));
-    setOtpCode("");
-    setMsg({ type: "ok", text: "Numéro vérifié." });
-    if (user?.id) {
-      const { data } = await fetchOwnBuddyProfile(user.id);
-      if (data) {
-        setForm((f) => ({
-          ...f,
-          ...data,
-          whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : f.whatsapp_e164,
-          phone_verified: true,
-          phone_share_ready: true,
-          phone_ownership_ack: true,
-        }));
+    try {
+      const { error } = await confirmBuddyPhoneOtp(form.whatsapp_e164, otpCode);
+      if (error) {
+        const text = humanizeBuddyOtpError(error.message);
+        setMsg({ type: "err", text });
+        trackUiError({ reason: text, context: "buddy_otp_confirm", error_kind: "buddy" });
+        return;
       }
+      setForm((f) => ({
+        ...f,
+        phone_verified: true,
+        phone_share_ready: true,
+        phone_ownership_ack: true,
+      }));
+      setOtpCode("");
+      setMsg({ type: "ok", text: "Numéro vérifié." });
+      if (user?.id) {
+        const { data } = await fetchOwnBuddyProfile(user.id);
+        if (data) {
+          setForm((f) => ({
+            ...f,
+            ...data,
+            whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : f.whatsapp_e164,
+            phone_verified: true,
+            phone_share_ready: true,
+            phone_ownership_ack: true,
+          }));
+        }
+      }
+    } catch (err) {
+      const text = humanizeBuddyOtpError(err?.message);
+      setMsg({ type: "err", text });
+      trackUiError({ reason: text, context: "buddy_otp_confirm", error_kind: "buddy" });
+    } finally {
+      setOtpBusy(false);
     }
   };
 

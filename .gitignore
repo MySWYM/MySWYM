@@ -27,3 +27,9 @@ exports/
 # Maquettes v0 (Next.js) — source visuelle, l’app live reste Vite
 /myswym/
 /design-v0-app/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

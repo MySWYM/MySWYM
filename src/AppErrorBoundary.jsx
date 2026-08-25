@@ -1,8 +1,9 @@
 import { Component } from "react";
-import { track } from "./lib/analytics.js";
+import { trackUiError } from "./lib/analytics.js";
 
 /**
  * Filet global — évite l’écran blanc / « Chargement » mort après un crash React.
+ * Télémétrie : PostHog `ui_error` uniquement (pas de Sentry).
  */
 export default class AppErrorBoundary extends Component {
   constructor(props) {
@@ -16,10 +17,11 @@ export default class AppErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     try {
-      track("ui_error", {
-        reason: String(error?.message || error || "unknown").slice(0, 120),
+      trackUiError({
+        reason: String(error?.message || error || "unknown").slice(0, 160),
         context: "error_boundary",
-        source: String(info?.componentStack || "").slice(0, 80),
+        source: String(info?.componentStack || "").slice(0, 120),
+        error_kind: "react",
       });
     } catch {
       /* ignore */
