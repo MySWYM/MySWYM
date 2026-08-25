@@ -88,6 +88,17 @@ export function maxPaceGainFromT100(t100) {
 }
 
 /**
+ * Plafond de gain « carrière » (multi-années), conservateur.
+ * ~3 % (très rapide) … ~12 % (lent) — plus bas qu’un fantasme marketing.
+ */
+export function maxCareerPaceGainFromT100(t100) {
+  if (!t100 || t100 <= 0) return 0.07;
+  const t = Math.min(T100_SLOW, Math.max(T100_FAST, t100));
+  const tNorm = (Math.log(t) - Math.log(T100_FAST)) / (Math.log(T100_SLOW) - Math.log(T100_FAST));
+  return 0.03 + tNorm * 0.09; // 3 % … 12 %
+}
+
+/**
  * Projection indicative semaine → temps 100 m.
  * Courbe asymptotique ; le plafond de gain dépend du T100 (pas d'un % fixe).
  */
@@ -97,6 +108,18 @@ export function projectedPaceAtWeek(pace0, week, totalWeeks, maxGain = null) {
   const w = Math.max(0, Math.min(week, totalWeeks));
   // ~95 % du gain potentiel atteint en fin de plan
   const progress = 1 - Math.exp((-3 * w) / totalWeeks);
+  return pace0 * (1 - gain * progress);
+}
+
+/**
+ * Projection indicative années → temps 100 m (entraînement régulier).
+ * k ≈ 0.5 : ~63 % du plafond à 2 ans, ~92 % à 5 ans — réaliste, pas trop clément.
+ */
+export function projectedPaceAtYears(pace0, years, maxCareerGain = null) {
+  if (!pace0 || pace0 <= 0) return pace0;
+  const y = Math.max(0, Number(years) || 0);
+  const gain = maxCareerGain ?? maxCareerPaceGainFromT100(pace0);
+  const progress = 1 - Math.exp(-0.5 * y);
   return pace0 * (1 - gain * progress);
 }
 
