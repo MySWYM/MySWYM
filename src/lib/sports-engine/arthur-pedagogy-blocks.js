@@ -188,6 +188,7 @@ export function buildArthurCooldownForBudget({
   maxContinuous = 200,
   rng = Math.random,
   zone = null,
+  crawlOnly = false,
 } = {}) {
   const target = roundTo(budget, pool);
   if (!target || target < 50) return null;
@@ -211,11 +212,12 @@ export function buildArthurCooldownForBudget({
   let remaining = target;
 
   const preferDos =
-    level === "decouverte" ||
-    level === "regulier" ||
-    objective === "technique" ||
-    usePap ||
-    rng() > 0.25;
+    !crawlOnly &&
+    (level === "decouverte" ||
+      level === "regulier" ||
+      objective === "technique" ||
+      usePap ||
+      rng() > 0.25);
 
   if (preferDos && coreDist >= 100 && coreDist <= target) {
     if (coreDist <= maxContinuous) {
@@ -286,22 +288,23 @@ export function buildArthurCooldownForBudget({
 
   if (!sets.length) {
     // Fallback simple sans dos
+    const easyLabel = crawlOnly ? "crawl facile" : "au choix";
     if (target <= maxContinuous) {
       sets.push(
         makeContinuous(target, {
-          label: "au choix",
+          label: easyLabel,
           cue: "retour au calme, sans forcer",
           block: "fin",
           exerciseId: "fin_arthur_easy",
           zone,
         }),
       );
-      lines.push(line(`${target} m au choix — retour au calme, sans forcer`));
+      lines.push(line(`${target} m ${easyLabel} — retour au calme, sans forcer`));
     } else {
       const reps = Math.max(2, Math.round(target / unit));
       sets.push(
         makeSeries(reps, unit, {
-          label: "au choix",
+          label: easyLabel,
           cue: "retour au calme",
           restSec: 15,
           block: "fin",
@@ -309,7 +312,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${reps} × ${unit} m au choix — retour au calme — repos 15s`));
+      lines.push(line(`${reps} × ${unit} m ${easyLabel} — retour au calme — repos 15s`));
     }
   }
 
@@ -333,7 +336,7 @@ export function buildArthurCooldownForBudget({
   };
 }
 
-function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk = false }) {
+function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk = false, crawlOnly = false }) {
   let pool = ARTHUR_DRAFT_DRILLS.filter((d) => {
     if (d.id === "ui_catalog_progressif") return false;
     // Excel « niveau Arthur » : l’éducatif doit lister le niveau utilisateur.
@@ -343,6 +346,7 @@ function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk 
     if (d.recoveryOnly && (level === "sportif" || level === "performance")) return false;
     if (!hasEquip(equipment, d.equipmentRequired)) return false;
     if (!papillonOk && /papillon/i.test(`${d.name} ${d.stroke} ${d.id}`)) return false;
+    if (crawlOnly && /\b(dos|brasse|papillon|4\s*nages)\b/i.test(`${d.name} ${d.stroke} ${d.id}`)) return false;
     return true;
   });
 
@@ -419,6 +423,7 @@ export function buildArthurTechniqueBlock({
   zone = null,
   papillonOk = false,
   engageEquipment = true,
+  crawlOnly = false,
 } = {}) {
   const target = roundTo(budget, pool);
   if (!target || target < 50) return null;
@@ -430,12 +435,13 @@ export function buildArthurTechniqueBlock({
     objective,
     equipment,
     papillonOk,
+    crawlOnly,
     count: target >= unit * 6 ? 2 : level === "decouverte" ? 2 : 1,
   });
   if (!drills.length) return null;
   // Découverte : toujours 2 formats (variété pédagogique)
   if (level === "decouverte" && drills.length === 1) {
-    const alt = selectDrills(rng, { level, objective, equipment, papillonOk, count: 2 }).find(
+    const alt = selectDrills(rng, { level, objective, equipment, papillonOk, crawlOnly, count: 2 }).find(
       (d) => d.id !== drills[0].id,
     );
     if (alt) drills.push(alt);

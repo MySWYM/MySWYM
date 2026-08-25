@@ -25,6 +25,26 @@ import { humanizeArthurDisplayTerms } from "./session-labels.js";
 /** @type {ArthurWarmupRecipe[]} */
 export const ARTHUR_WARMUP_RECIPES = [
   {
+    id: "arthur_echauff_crawl_only_50",
+    kind: "cycle",
+    cycleM: 100,
+    parts: ["50 m crawl facile", "50 m crawl progressif"],
+    minTotal: 200,
+    maxTotal: 600,
+    step: 100,
+    levels: ["decouverte", "regulier", "sportif", "performance"],
+  },
+  {
+    id: "arthur_echauff_crawl_only_25",
+    kind: "cycle",
+    cycleM: 50,
+    parts: ["25 m crawl facile", "25 m crawl un cran plus vite"],
+    minTotal: 200,
+    maxTotal: 600,
+    step: 50,
+    levels: ["decouverte", "regulier", "sportif", "performance"],
+  },
+  {
     id: "arthur_echauff_cr_dos_50",
     kind: "cycle",
     cycleM: 100,
@@ -103,6 +123,7 @@ export function buildArthurWarmupForBudget({
   pool = 25,
   level = "regulier",
   fourNages = false,
+  crawlOnly = false,
   maxContinuous = 200,
   rng = Math.random,
 } = {}) {
@@ -111,6 +132,12 @@ export function buildArthurWarmupForBudget({
 
   let recipes = ARTHUR_WARMUP_RECIPES.filter((r) => r.levels.includes(level));
   if (!fourNages) recipes = recipes.filter((r) => !r.needs4n);
+  if (crawlOnly) {
+    recipes = recipes.filter((r) => {
+      const blob = [...(r.parts || []), r.line || "", r.label || ""].join(" ");
+      return !/\b(dos|brasse|papillon|4\s*nages|quatre\s*nages|autre\s*nage)\b/i.test(blob);
+    });
+  }
   // Cycles trop longs pour le max continuous → exclus (ex. 100+100 en découverte)
   recipes = recipes.filter((r) => {
     if (r.kind === "cycle") {
