@@ -13,6 +13,8 @@ import {
   personPropertiesFromProfile,
   sessionAnalyticsProps,
 } from "./lib/analytics.js";
+import { scrollAppToTop } from "./lib/scroll-app.js";
+import { shouldApplyRemotePlanSync } from "./lib/plan-sync-guard.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
@@ -9422,6 +9424,14 @@ export default function App() {
     return "onboarding";
   });
   const [activeTab, setActiveTab] = useState("home");
+  /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
+  const goTab = (tab) => {
+    if (tab === activeTab) {
+      scrollAppToTop();
+      return;
+    }
+    setActiveTab(tab);
+  };
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
   const [profile, setProfile] = useState(BLANK_PROFILE);
@@ -9456,6 +9466,16 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const showToast = (msg, duration = 5000) => { setToast(msg); setTimeout(() => setToast(null), duration); };
+  /** Horodatage local immédiat — bat un remote stale au visibility sync. */
+  const stampPlansLocalCache = (nextPlans, nextActiveId = activePlanId) => {
+    if (!user?.id || !Array.isArray(nextPlans)) return;
+    try {
+      const now = new Date().toISOString();
+      localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+      if (nextActiveId) localStorage.setItem(`myswym_active_${user.id}`, nextActiveId);
+      localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+    } catch { /* ignore */ }
+  };
   const prevBadgesRef = useRef([]);
   const plansHydratedRef = useRef(false);
   const deletedPlanIdsRef = useRef(new Set());
@@ -9481,6 +9501,37 @@ export default function App() {
     const n = plan ? computeStats(plan).totalSessions : 0;
     if (n < 1) setActiveTab("home");
   }, [activeTab, plan]);
+
+  // Sprint A — scroll top à chaque changement d’onglet / d’écran principal
+  useEffect(() => {
+    scrollAppToTop();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (screen === "app" || screen === "onboarding" || screen === "auth") {
+      scrollAppToTop();
+    }
+  }, [screen]);
+
+  // Sprint C — jamais rester bloqué sur Loading / sync accès
+  useEffect(() => {
+    if (screen !== "loading") return undefined;
+    const t = setTimeout(() => {
+      setScreen((prev) => (prev === "loading" ? "app" : prev));
+      showToast("Ça a pris trop longtemps. Réessaie.", 6000);
+      track("generation_failed", { reason: "timeout", context: "loading_screen" });
+    }, 25000);
+    return () => clearTimeout(t);
+  }, [screen]);
+
+  useEffect(() => {
+    if (!waitingForAccess) return undefined;
+    const t = setTimeout(() => {
+      setAccessSynced(true);
+      showToast("Connexion lente — tu peux continuer.", 5000);
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [waitingForAccess]);
 
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
@@ -9782,7 +9833,10 @@ export default function App() {
         setScreen("app"); setActiveTab("home");
       })
       .catch(() => {
-        if (!cancelled) setScreen("app");
+        if (!cancelled) {
+          setScreen("app");
+          track("generation_failed", { reason: "exception", context: "week_repair" });
+        }
       });
     return () => { cancelled = true; };
   }, [activePlanId, tasteProfile, plan?.isSessionLoop, plan?.weeks?.length, plan?.totalRealWeeks]);
@@ -9873,10 +9927,28 @@ export default function App() {
             })
             .finally(() => setAccessSynced(true));
         }
-      } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) {
+      } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname) || event === "SIGNED_OUT") {
         setAccessSynced(false);
         setScreen("auth");
         setAuthLoading(false);
+        // Déconnexion explicite → /connexion (pas le questionnaire /app)
+        if (event === "SIGNED_OUT") {
+          plansHydratedRef.current = false;
+          resetAnalytics();
+          setPlans([]);
+          setActivePlanId(null);
+          setPlanHistory([]);
+          setAddingPlan(false);
+          setQuestionnaireMode("full");
+          setTasteProfile(blankTaste());
+          setProfile(BLANK_PROFILE);
+          setStep(1);
+          forceAuthRef.current = true;
+          authOpenedFromUrlRef.current = true;
+          if (locationRef.current.pathname !== "/connexion") {
+            navigate("/connexion", { replace: true });
+          }
+        }
       } else {
         plansHydratedRef.current = false;
         resetAnalytics();
@@ -10197,10 +10269,14 @@ export default function App() {
         clearPendingOnboarding();
       }
 
-      // Abandon paiement ou compte sans plan : shell app + questionnaire (paramètres accessibles)
+      // Abandon paiement : ne JAMAIS vider un aperçu déjà généré / hydraté
       if (checkoutAbandonedRef.current) {
         checkoutAbandonedRef.current = false;
         clearPendingOnboarding();
+        setScreen("app");
+        setActiveTab("plan");
+        plansHydratedRef.current = true;
+        return;
       }
       setPlans([]);
       setActivePlanId(null);
@@ -10308,6 +10384,15 @@ export default function App() {
         // Ne pas écraser un changement de fréquence local (2×→3×) si la progression est égale
         const localFreq = plans.find(e => e.id === activePlanId)?.profile?.sessionsPerWeek;
         const mergedFreq = enforced.find(e => e.id === single.activeId)?.profile?.sessionsPerWeek;
+
+        // Garde anti-effacement : local plus récent ou plus de progression → ne pas écraser la mémoire
+        if (!shouldApplyRemotePlanSync({
+          localTime,
+          remoteTime,
+          currentProgress,
+          mergedProgress,
+        })) return;
+
         if (
           mergedIds === currentIds
           && enforced.length === plans.length
@@ -10784,6 +10869,7 @@ export default function App() {
       setPlanReveal(null);
       planRevealPaywallRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
+      track("generation_failed", { reason: "exception", context: "generate_plan" });
       const retryStep = sourceProfile.category === "progression" ? 3 : 5;
       setStep(retryStep);
       if (user) {
@@ -10832,17 +10918,21 @@ export default function App() {
   };
 
   const finishLoopSessionAndAdvance = (archivedSession) => {
-    setPlans((prev) => prev.map((entry) => {
-      if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-      const markedPlan = {
-        ...entry.plan,
-        weeks: [{
-          ...entry.plan.weeks[0],
-          sessions: [{ ...archivedSession }],
-        }],
-      };
-      return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
-    }));
+    setPlans((prev) => {
+      const next = prev.map((entry) => {
+        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
+        const markedPlan = {
+          ...entry.plan,
+          weeks: [{
+            ...entry.plan.weeks[0],
+            sessions: [{ ...archivedSession }],
+          }],
+        };
+        return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
+      });
+      stampPlansLocalCache(next, activePlanId);
+      return next;
+    });
   };
 
   const handleAdvanceLoopSession = () => {
@@ -10858,28 +10948,32 @@ export default function App() {
       openUpgrade("trial_expired");
       return;
     }
-    setPlans((prev) => prev.map((entry) => {
-      if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-      const cur = entry.plan.weeks?.[0]?.sessions?.[0];
-      if (!cur || isSessionResolved(cur)) return entry;
-      // Nouveau seed sans archiver — cursor bump pour variété
-      const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
-      const { week } = buildProgressionLoopSession(
-        { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
-        nextCursor,
-        true,
-      );
-      return {
-        ...entry,
-        plan: {
-          ...entry.plan,
-          sessionCursor: nextCursor,
-          weeks: [week],
-        },
-      };
-    }));
-    setToast("Nouvelle séance générée");
-    setTimeout(() => setToast(null), 2200);
+    setPlans((prev) => {
+      const next = prev.map((entry) => {
+        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
+        const cur = entry.plan.weeks?.[0]?.sessions?.[0];
+        if (!cur || isSessionResolved(cur)) return entry;
+        // Nouveau seed sans archiver — cursor bump pour variété
+        const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
+        const { week } = buildProgressionLoopSession(
+          { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+          nextCursor,
+          true,
+        );
+        return {
+          ...entry,
+          plan: {
+            ...entry.plan,
+            sessionCursor: nextCursor,
+            weeks: [week],
+          },
+        };
+      });
+      stampPlansLocalCache(next, activePlanId);
+      return next;
+    });
+    setToast("Séance du jour remplacée — la précédente n’était pas validée.");
+    setTimeout(() => setToast(null), 3200);
   };
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
@@ -10976,19 +11070,23 @@ export default function App() {
       }
 
       // Marque résolue tout de suite (verrouille)
-      setPlans((prev) => prev.map((entry) => {
-        if (entry.id !== activePlanId) return entry;
-        return {
-          ...entry,
-          plan: {
-            ...entry.plan,
-            weeks: [{
-              ...entry.plan.weeks[0],
-              sessions: [{ ...archived }],
-            }],
-          },
-        };
-      }));
+      setPlans((prev) => {
+        const next = prev.map((entry) => {
+          if (entry.id !== activePlanId) return entry;
+          return {
+            ...entry,
+            plan: {
+              ...entry.plan,
+              weeks: [{
+                ...entry.plan.weeks[0],
+                sessions: [{ ...archived }],
+              }],
+            },
+          };
+        });
+        stampPlansLocalCache(next, activePlanId);
+        return next;
+      });
 
       if (resolvedStatus === "done") {
         // Statut completed en base dès la validation — indépendant de la fiche de retour
@@ -11022,7 +11120,8 @@ export default function App() {
         }
       }
     }
-    setPlans(prev => prev.map(entry => {
+    setPlans(prev => {
+      const next = prev.map(entry => {
       if (entry.id !== activePlanId) return entry;
       const newPlan = {
         ...entry.plan,
@@ -11070,7 +11169,10 @@ export default function App() {
         setTimeout(() => setFeedbackWeek(weekIndex), 700);
       }
       return { ...entry, plan: newPlan };
-    }));
+    });
+      stampPlansLocalCache(next, activePlanId);
+      return next;
+    });
     if (resolvedStatus === "done") {
       // Statut completed en base dès la validation — indépendant de la fiche de retour
       if (user) {
@@ -11102,6 +11204,7 @@ export default function App() {
   const closeSessionFeedbackSheet = () => {
     const target = sessionFeedbackTarget;
     setSessionFeedbackTarget(null);
+    scrollAppToTop();
     if (target?.loopMode && target.archived) {
       finishLoopSessionAndAdvance(target.archived);
       return;
@@ -11636,41 +11739,52 @@ export default function App() {
     setScreen("loading");
     const taste = activePlanEntry.plan?.taste || tasteProfile;
     const planIdToUpdate = activePlanId;
-    generatePlan({ ...newProfile, taste }, isPremium).then(async (newPlan) => {
-      const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
-      // Semaines : séances validées conservées, non validées régénérées (merge séance par séance).
-      // Si la fréquence change (nombre de séances différent) → fallback semaine entière.
-      const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
-      const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
-      const now = new Date().toISOString();
-      // Invalide tout save en cours (évite qu'un upsert 2× arrive après le cache 3×).
-      plansSaveGenRef.current += 1;
+    generatePlan({ ...newProfile, taste }, isPremium)
+      .then(async (newPlan) => {
+        const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
+        // Semaines : séances validées conservées, non validées régénérées (merge séance par séance).
+        // Si la fréquence change (nombre de séances différent) → fallback semaine entière.
+        const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+        const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
+        const now = new Date().toISOString();
+        // Invalide tout save en cours (évite qu'un upsert 2× arrive après le cache 3×).
+        plansSaveGenRef.current += 1;
 
-      setPlans(prev => {
-        const nextPlans = prev.map(e => e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate });
+        setPlans(prev => {
+          const nextPlans = prev.map(e => e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate });
+          if (user) {
+            try {
+              localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+              localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
+              localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+            } catch {}
+          }
+          return nextPlans;
+        });
+
+        // Persistance remote immédiate à partir du cache (source de vérité post-changement)
         if (user) {
+          plansSaveGenRef.current += 1;
           try {
-            localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
-            localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
-            localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+            const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
+            }
           } catch {}
         }
-        return nextPlans;
+        setScreen("app");
+        setActiveTab("plan");
+      })
+      .catch((err) => {
+        setScreen("app");
+        setActiveTab("plan");
+        showToast("Impossible de mettre à jour le programme. Réessaie.", 6000);
+        track("generation_failed", {
+          reason: String(err?.message || "exception").slice(0, 80),
+          context: "update_program",
+        });
       });
-
-      // Persistance remote immédiate à partir du cache (source de vérité post-changement)
-      if (user) {
-        plansSaveGenRef.current += 1;
-        try {
-          const raw = localStorage.getItem(`myswym_plans_${user.id}`);
-          const parsed = raw ? JSON.parse(raw) : null;
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
-          }
-        } catch {}
-      }
-      setScreen("app"); setActiveTab("plan");
-    });
   };
 
   const handleAddPlan = () => {
@@ -11767,6 +11881,11 @@ export default function App() {
 
   const handleSignOut = async () => {
     resetAnalytics();
+    forceAuthRef.current = true;
+    authOpenedFromUrlRef.current = true;
+    setSettingsOpen(false);
+    setScreen("auth");
+    navigate("/connexion", { replace: true });
     await supabase.auth.signOut();
   };
 
@@ -11786,8 +11905,12 @@ export default function App() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.error || "Suppression impossible.");
     resetAnalytics();
-    await supabase.auth.signOut();
+    forceAuthRef.current = true;
+    authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    setScreen("auth");
+    navigate("/connexion", { replace: true });
+    await supabase.auth.signOut();
     showToast("Compte supprimé.");
   };
 
@@ -11962,7 +12085,7 @@ export default function App() {
               onUpgrade={() => openUpgrade()}
               onGenerate={handleGenerate}
               mode={questionnaireMode}
-              onEditProfile={() => setActiveTab("profile")}
+              onEditProfile={() => goTab("profile")}
             />
           </div>
         </div>
@@ -12011,8 +12134,8 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onComplete={handleComplete} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
           setStep,
@@ -12023,14 +12146,14 @@ export default function App() {
           onUpgrade: () => openUpgrade(),
           onGenerate: handleGenerate,
           mode: questionnaireMode,
-          onEditProfile: () => setActiveTab("profile"),
+          onEditProfile: () => goTab("profile"),
         }} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
-        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
+        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav user={user} />
-        <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
+        <BottomNav active={activeTab} onChange={goTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
         <SettingsDrawer
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
@@ -12039,8 +12162,8 @@ export default function App() {
           onUpgrade={() => openUpgrade()}
           onPortal={handlePortal}
           onRefreshStatus={handleRefreshStatus}
-          onGoProfile={() => setActiveTab("profile")}
-          onGoBuddies={() => setActiveTab("buddies")}
+          onGoProfile={() => goTab("profile")}
+          onGoBuddies={() => goTab("buddies")}
           showBuddies={hasSwumNav}
           onOpenAuth={openAuth}
           onSignOut={handleSignOut}

@@ -19,6 +19,7 @@ import NotFoundPage from './NotFound.jsx'
 import CookieBanner from './CookieBanner.jsx'
 import { hasPerformanceConsent } from './lib/cookie-consent.js'
 import VersionGate from './VersionGate.jsx'
+import AppErrorBoundary from './AppErrorBoundary.jsx'
 import { LocaleSync } from './i18n/locale-routing.jsx'
 import { localeFromPathname, withLocalePrefix } from './i18n/locale-path.js'
 
@@ -192,6 +193,7 @@ function ConsentedSpeedInsights() {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <VersionGate>
+    <AppErrorBoundary>
     <BrowserRouter>
       <LocaleSync />
       <LegacyQueryRedirects />
@@ -231,6 +233,7 @@ createRoot(document.getElementById('root')).render(
       <CookieBanner />
       <ConsentedSpeedInsights />
     </BrowserRouter>
+    </AppErrorBoundary>
     </VersionGate>
   </StrictMode>,
 )
