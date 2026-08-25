@@ -101,7 +101,7 @@ import FeedbackModal from "./sheets/FeedbackModal.jsx";
 import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
-import { captureReferralFromUrl, resolveReferralCode } from "./lib/referral.js";
+import { captureReferralFromUrl, getStoredReferralCode, resolveReferralCode } from "./lib/referral.js";
 import {
   legalHref,
   ACCOUNT_DELETE_WARNING,
