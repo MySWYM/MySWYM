@@ -46,6 +46,12 @@ jobs:
           supabase functions deploy strava-sync
           supabase functions deploy strava-disconnect
           supabase functions deploy strava-activity-detail
+          supabase functions deploy buddy-phone-otp
+          supabase functions deploy ensure-referral-code
+          supabase functions deploy welcome-email
+          supabase functions deploy marketing-cron
+          supabase functions deploy marketing-event
+          supabase functions deploy reactivate-nonpayers
 
       - name: Skip notice (secrets missing)
         if: env.SUPABASE_ACCESS_TOKEN == ''

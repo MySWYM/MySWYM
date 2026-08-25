@@ -43,6 +43,7 @@ export default function PoolMode({
   accent,
   onClose,
   onFinish,
+  onTooHard,
 }) {
   const view = useMemo(() => buildWorkoutView(session), [session]);
   const exercises = view.exercises;
@@ -275,6 +276,30 @@ export default function PoolMode({
           </button>
         )}
       </div>
+
+      {onTooHard && (
+        <div style={{ padding: "0 16px 8px", background: G.surface }}>
+          <button
+            type="button"
+            onClick={() => {
+              onClose?.();
+              onTooHard();
+            }}
+            style={{
+              width: "100%",
+              minHeight: 44,
+              border: "none",
+              background: "none",
+              color: G.grey,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Trop dure — alléger la suite
+          </button>
+        </div>
+      )}
 
       {/* Controls */}
       <div style={{

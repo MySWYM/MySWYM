@@ -21,11 +21,12 @@ export function dismissProfileNudge(userId) {
 }
 
 /**
- * Encadré tant que le nageur n’a pas personnalisé bassin/matos
- * (défauts du questionnaire court : 25 m, aucun matériel).
+ * Encadré après au moins 1 séance tant que bassin/matos sont encore les défauts
+ * (questionnaire court : 25 m, aucun matériel).
  */
-export function shouldShowProfileNudge(profile, { dismissed = false } = {}) {
+export function shouldShowProfileNudge(profile, { dismissed = false, hasSwum = false } = {}) {
   if (dismissed) return false;
+  if (!hasSwum) return false;
   if (!profile || typeof profile !== "object") return true;
   const pool = Number(profile.pool);
   const equipment = Array.isArray(profile.equipment) ? profile.equipment : [];

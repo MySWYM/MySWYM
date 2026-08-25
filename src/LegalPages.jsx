@@ -255,7 +255,7 @@ export function PolitiqueConfidentialitePage() {
         "Visibilité conditionnelle : le numéro n’est jamais consultable librement sur l’annuaire ; il n’est révélé aux deux parties qu’après acceptation mutuelle et consentement explicite de partage de chaque partie pour cette mise en relation.",
         "Absence de réutilisation : le numéro n’est pas utilisé à des fins publicitaires, de prospection, ni revendable à des tiers ; l’éditeur ne le publie pas.",
         "Droit de retrait : vous pouvez masquer votre numéro, révoquer le partage pour une mise en relation, ou quitter une mise en relation à tout moment depuis votre profil / l’onglet Relations ; le retrait du consentement n’affecte pas la licéité du traitement antérieur.",
-        "Vérification : e-mail vérifié requis pour les demandes ; une vérification SMS du numéro est prévue (colonne technique phone_verified) pour limiter les faux comptes.",
+        "Vérification : e-mail vérifié requis pour les demandes ; un code (SMS Twilio si configuré, sinon e-mail) confirme le numéro (phone_verified).",
         "Signalements / blocages : comptes signalés, compteur de signalements, suspension automatique Buddy au-delà du seuil (3 signalements) ; blocs mutuels.",
         "Durée : pendant la durée du compte / de la mise en relation ; suppression avec le compte ou sur retrait.",
       ]} />

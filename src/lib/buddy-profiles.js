@@ -1,5 +1,7 @@
 import { supabase } from "../supabase.js";
 import { requirePaidBuddies } from "./buddy-access.js";
+import { sortBuddiesForViewer } from "./buddy-match-rank.js";
+import { humanizeBuddyOtpError } from "./buddy-otp-messages.js";
 
 export const BUDDY_GOAL_CATEGORIES = [
   { id: "eau_libre", label: "Eau libre" },
@@ -254,7 +256,13 @@ export async function fetchOwnBuddyProfile(userId) {
  * Visibilité = publié + ville + numéro prêt (phone_share_ready + whatsapp).
  * Fallback : mêmes filtres si la RPC n'est pas encore déployée.
  */
-export async function fetchDiscoverableBuddies({ city, level, goalCategory, excludeUserId } = {}) {
+export async function fetchDiscoverableBuddies({
+  city,
+  level,
+  goalCategory,
+  excludeUserId,
+  viewerProfile = null,
+} = {}) {
   const gate = await requirePaidBuddies();
   if (!gate.ok) return { data: [], error: gate.error };
 
@@ -270,7 +278,7 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
     const filtered = excludeUserId
       ? rows.filter((r) => r.user_id !== excludeUserId)
       : rows;
-    return { data: filtered, error: null };
+    return { data: sortBuddiesForViewer(filtered, viewerProfile || {}), error: null };
   }
 
   // Fallback legacy — colonnes publiques uniquement ; filtre numéro sans le sélectionner
@@ -291,7 +299,7 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
 
   const fallback = await q;
   return {
-    data: asBuddyRows(fallback.data).map(stripPhoneFromBuddy),
+    data: sortBuddiesForViewer(asBuddyRows(fallback.data).map(stripPhoneFromBuddy), viewerProfile || {}),
     error: fallback.error,
   };
 }
@@ -410,6 +418,51 @@ export async function clearBuddyPhone(userId) {
     .select(BUDDY_OWN_SELECT)
     .maybeSingle();
   return { data, error };
+}
+
+async function callBuddyPhoneOtp(body) {
+  try {
+    const { data: refreshData } = await supabase.auth.refreshSession();
+    const session = refreshData?.session;
+    if (!session) return { data: null, error: { message: "Connecte-toi d’abord." } };
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/buddy-phone-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(20000),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        data: null,
+        error: { message: humanizeBuddyOtpError(json.error || `Erreur HTTP ${res.status}`) },
+      };
+    }
+    return { data: json, error: null };
+  } catch (err) {
+    const raw = err?.name === "TimeoutError" || err?.name === "AbortError"
+      ? "Délai dépassé"
+      : (err?.message || "network");
+    return { data: null, error: { message: humanizeBuddyOtpError(raw) } };
+  }
+}
+
+/** Envoie un code (SMS si Twilio, sinon e-mail compte). */
+export async function sendBuddyPhoneOtp(phoneRaw) {
+  const phone = normalizeWhatsAppE164(phoneRaw);
+  if (!phone) return { data: null, error: { message: "Numéro invalide (ex. 06 12 34 56 78)." } };
+  return callBuddyPhoneOtp({ action: "send", phone });
+}
+
+/** Confirme le code → phone_verified. */
+export async function confirmBuddyPhoneOtp(phoneRaw, code) {
+  const phone = normalizeWhatsAppE164(phoneRaw);
+  if (!phone) return { data: null, error: { message: "Numéro invalide." } };
+  return callBuddyPhoneOtp({ action: "confirm", phone, code });
 }
 
 export function labelForGoalCategory(id) {

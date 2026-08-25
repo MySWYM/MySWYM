@@ -102,40 +102,40 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
   switch (softContext) {
     case "after_first_session":
       return {
-        headline: "Analyse terminée.",
-        subtitle: "Le plan peut s’adapter à cette séance. Abonne-toi : 9,99 €/mois sans engagement, ou 4,99 €/mois sur 12 mois.",
+        headline: "Belle première séance.",
+        subtitle: "Le coach peut déjà adapter la suite. Abonne-toi pour garder ton plan vivant : 9,99 €/mois sans engagement, ou 4,99 €/mois sur 12 mois.",
       };
     case "buddies":
       return {
-        headline: "Binômes, entre abonnés",
-        subtitle: "Prénom, ville et téléphone restent entre nageurs qui ont un abonnement. L’essai n’ouvre pas le matching.",
+        headline: "Binômes réservés aux abonnés",
+        subtitle: "Trouve un nageur près de chez toi. L’essai Premium n’ouvre pas le matching — un abonnement actif oui.",
       };
     case "trial_required":
       return {
         headline: weeks > 4
-          ? `Ton plan ${weeks} semaines est prêt`
-          : "Ton plan personnalisé est prêt",
-        subtitle: "7 jours offerts sans carte à l’inscription. Ensuite tes séances se mettent en pause — abonne-toi pour continuer.",
+          ? `Ton plan ${weeks} semaines t’attend`
+          : "Ton plan est prêt — active ton coach",
+        subtitle: "7 jours offerts sans carte à l’inscription. Ensuite les séances se mettent en pause jusqu’à l’abonnement.",
       };
     case "trial_expired":
       return {
-        headline: "Tes séances sont en pause",
-        subtitle: "Ton essai de 7 jours est terminé. Abonne-toi : 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an, pour tout revoir.",
+        headline: "Ton essai est fini — le coach est en pause",
+        subtitle: "Reprends tes séances et l’adaptation : 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an.",
       };
     case "session_locked":
       return {
-        headline: "La séance n’est plus visible",
-        subtitle: "Abonne-toi pour voir les blocs, les consignes et cocher ta séance.",
+        headline: "Cette séance est verrouillée",
+        subtitle: "Abonne-toi pour voir les blocs, les consignes et cocher ta séance du jour.",
       };
     case "feedback_adjust":
       return {
-        headline: "Ajustement coach disponible",
-        subtitle: "Volume et intensité des prochaines séances peuvent bouger selon ton ressenti — Premium uniquement.",
+        headline: "Ton ressenti peut ajuster le plan",
+        subtitle: "Volume et intensité des prochaines séances : Premium uniquement.",
       };
     case "analysis":
       return {
-        headline: "Projection de progression disponible",
-        subtitle: "Courbe d’allures et estimation vers ton objectif — débloque avec Premium.",
+        headline: "Ta progression T100 est là",
+        subtitle: "Courbe d’allures et projection — débloque avec Premium.",
       };
     default:
       return {

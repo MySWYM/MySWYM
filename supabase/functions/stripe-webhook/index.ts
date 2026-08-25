@@ -179,6 +179,33 @@ async function creditReferrer(
   }
 
   await setEntitlement(supabaseAdmin, filleul, { referral_rewarded: true });
+
+  // Notif in-app pour le parrain
+  try {
+    const first =
+      (typeof filleul.user_metadata?.firstname === "string" && filleul.user_metadata.firstname) ||
+      (typeof filleul.user_metadata?.first_name === "string" && filleul.user_metadata.first_name) ||
+      (filleul.email ? String(filleul.email).split("@")[0] : "Un nageur");
+    const inbox = Array.isArray(parrain.app_metadata?.notifications)
+      ? [...parrain.app_metadata.notifications]
+      : [];
+    inbox.unshift({
+      id: `referral-joined:${filleul.id}`,
+      type: "update",
+      title: `${first} a rejoint MySWYM`,
+      body: "Ton parrainage a converti — merci. Le crédit est appliqué sur ton prochain paiement.",
+      createdAt: new Date().toISOString(),
+    });
+    await supabaseAdmin.auth.admin.updateUserById(referredById, {
+      app_metadata: {
+        ...(parrain.app_metadata ?? {}),
+        notifications: inbox.slice(0, 30),
+      },
+    });
+  } catch (err) {
+    console.error("[stripe-webhook] referral inbox notify failed:", err);
+  }
+
   console.log("[stripe-webhook] referral credit OK →", referredById);
 }
 

@@ -5,8 +5,9 @@ import {
   AlertTriangle, CheckCircle2, X, Lock,
 } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
-import { trackEvent } from "./lib/analytics.js";
+import { trackEvent, trackUiError } from "./lib/analytics.js";
 import { resolveAvatarUrl } from "./lib/avatar.js";
+import { humanizeBuddyOtpError } from "./lib/buddy-otp-messages.js";
 import { supabase } from "./supabase.js";
 import {
   BUDDY_DAYS,
@@ -34,6 +35,8 @@ import {
   toggleAvailabilityDay,
   toggleAvailabilitySlot,
   toggleOutingType,
+  sendBuddyPhoneOtp,
+  confirmBuddyPhoneOtp,
   upsertBuddyProfile,
 } from "./lib/buddy-profiles.js";
 import {
@@ -391,6 +394,9 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
   const [reportReason, setReportReason] = useState("harassment");
   const [reportDetails, setReportDetails] = useState("");
   const [busyAction, setBusyAction] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpChannel, setOtpChannel] = useState(null);
 
   const emailOk = isEmailVerified(user);
   const suspended = !!moderation?.buddy_suspended;
@@ -428,6 +434,13 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
         level: levelFilter || undefined,
         goalCategory: goalFilter || undefined,
         excludeUserId: user.id,
+        viewerProfile: {
+          city: form.city,
+          level: form.level,
+          goal_category: form.goal_category,
+          availability_days: form.availability_days,
+          availability_slots: form.availability_slots,
+        },
       });
       setBuddies(Array.isArray(data) ? data : []);
       if (error) setMsg({ type: "err", text: typeof error.message === "string" ? error.message : "Impossible de charger les profils." });
@@ -436,7 +449,17 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
       setMsg({ type: "err", text: typeof err?.message === "string" ? err.message : "Impossible de charger les profils." });
     }
     setLoadingList(false);
-  }, [user?.id, cityFilter, levelFilter, goalFilter]);
+  }, [
+    user?.id,
+    cityFilter,
+    levelFilter,
+    goalFilter,
+    form.city,
+    form.level,
+    form.goal_category,
+    form.availability_days,
+    form.availability_slots,
+  ]);
 
   const loadOwn = useCallback(async () => {
     if (!user?.id) return;
@@ -616,10 +639,80 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
         phone_ownership_ack: false,
         is_discoverable: false,
       }));
+      setOtpCode("");
+      setOtpChannel(null);
       setMsg({ type: "ok", text: "Numéro masqué et profil retiré de l’annuaire. Révoque aussi les partages dans « Mes mises en relation » si besoin." });
       await loadList();
     }
     setSaving(false);
+  };
+
+  const handleSendPhoneOtp = async () => {
+    setOtpBusy(true);
+    setMsg(null);
+    try {
+      const { data, error } = await sendBuddyPhoneOtp(form.whatsapp_e164);
+      if (error) {
+        const text = humanizeBuddyOtpError(error.message);
+        setMsg({ type: "err", text });
+        trackUiError({ reason: text, context: "buddy_otp_send", error_kind: "buddy" });
+        return;
+      }
+      setOtpChannel(data?.channel || null);
+      setMsg({
+        type: "ok",
+        text: data?.channel === "sms"
+          ? "Code envoyé par SMS."
+          : "Code envoyé par e-mail (SMS si Twilio est configuré).",
+      });
+    } catch (err) {
+      const text = humanizeBuddyOtpError(err?.message);
+      setMsg({ type: "err", text });
+      trackUiError({ reason: text, context: "buddy_otp_send", error_kind: "buddy" });
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const handleConfirmPhoneOtp = async () => {
+    setOtpBusy(true);
+    setMsg(null);
+    try {
+      const { error } = await confirmBuddyPhoneOtp(form.whatsapp_e164, otpCode);
+      if (error) {
+        const text = humanizeBuddyOtpError(error.message);
+        setMsg({ type: "err", text });
+        trackUiError({ reason: text, context: "buddy_otp_confirm", error_kind: "buddy" });
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        phone_verified: true,
+        phone_share_ready: true,
+        phone_ownership_ack: true,
+      }));
+      setOtpCode("");
+      setMsg({ type: "ok", text: "Numéro vérifié." });
+      if (user?.id) {
+        const { data } = await fetchOwnBuddyProfile(user.id);
+        if (data) {
+          setForm((f) => ({
+            ...f,
+            ...data,
+            whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : f.whatsapp_e164,
+            phone_verified: true,
+            phone_share_ready: true,
+            phone_ownership_ack: true,
+          }));
+        }
+      }
+    } catch (err) {
+      const text = humanizeBuddyOtpError(err?.message);
+      setMsg({ type: "err", text });
+      trackUiError({ reason: text, context: "buddy_otp_confirm", error_kind: "buddy" });
+    } finally {
+      setOtpBusy(false);
+    }
   };
 
   const submitRequest = async () => {
@@ -890,7 +983,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 16px" }}>
                   {activeFilters
                     ? "Élargis la ville ou retire un filtre."
-                    : "Publie ton profil (ville + numéro + consentement) pour apparaître. Le n° reste privé jusqu’à un accord mutuel."}
+                    : "Publie ton profil (ville + numéro + consentement) pour apparaître — et pour que d’autres te trouvent. Le n° reste privé jusqu’à un accord mutuel."}
                 </p>
                 {!activeFilters && (
                   <div style={{ textAlign: "left", background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: G.ink, lineHeight: 1.5 }}>
@@ -898,7 +991,10 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                     <div style={{ marginBottom: 6 }}>{form.city?.trim() ? "✓" : "○"} Ville / zone</div>
                     <div style={{ marginBottom: 6 }}>{(form.availability_days || []).length ? "✓" : "○"} Disponibilités</div>
                     <div style={{ marginBottom: 6 }}>{hasPhoneReady ? "✓" : "○"} Numéro + consentement</div>
-                    <div>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
+                    <div style={{ marginBottom: 6 }}>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
+                    <div style={{ marginTop: 10, fontSize: 12, color: G.grey, lineHeight: 1.45 }}>
+                      Signalement et blocage : onglet Relations, sur chaque mise en relation.
+                    </div>
                   </div>
                 )}
                 <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 12, padding: "12px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
@@ -1245,7 +1341,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                   après acceptation mutuelle et un consentement explicite au moment de la mise en relation.
                   {form.phone_verified
                     ? " · Numéro vérifié."
-                    : " · Vérification SMS à venir ; pour l’instant, e-mail vérifié + déclaration de propriété."}
+                    : " · Envoie un code pour vérifier le numéro (SMS si configuré, sinon e-mail)."}
                 </div>
 
                 <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, cursor: "pointer" }}>
@@ -1277,6 +1373,50 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                     Je confirme que ce numéro m’appartient et que je suis joignable dessus.
                   </span>
                 </label>
+
+                {!form.phone_verified && form.whatsapp_e164 && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${G.greyLight}` }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>
+                      Vérifier le numéro
+                    </div>
+                    <button
+                      type="button"
+                      disabled={otpBusy || saving}
+                      onClick={handleSendPhoneOtp}
+                      style={{
+                        width: "100%", padding: "12px", borderRadius: 12, border: "none",
+                        background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 13,
+                        cursor: otpBusy ? "wait" : "pointer", minHeight: 44, marginBottom: 10,
+                      }}
+                    >
+                      {otpBusy ? "Envoi…" : otpChannel ? "Renvoyer le code" : "Envoyer un code"}
+                    </button>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="Code à 6 chiffres"
+                      style={inp}
+                      aria-label="Code de vérification"
+                    />
+                    <button
+                      type="button"
+                      disabled={otpBusy || saving || otpCode.length !== 6}
+                      onClick={handleConfirmPhoneOtp}
+                      style={{
+                        width: "100%", marginTop: 10, padding: "12px", borderRadius: 12, border: "none",
+                        background: G.blue, color: G.white, fontWeight: 700, fontSize: 13,
+                        cursor: otpCode.length === 6 ? "pointer" : "not-allowed",
+                        opacity: otpCode.length === 6 ? 1 : 0.5, minHeight: 44,
+                      }}
+                    >
+                      Confirmer le code
+                    </button>
+                  </div>
+                )}
 
                 {form.whatsapp_e164 && (
                   <button

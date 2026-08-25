@@ -48,6 +48,8 @@ export default function WorkoutPrepView({
   startLabel = null,
   onStart,
   onUpgrade,
+  onTooHard,
+  whyLine = null,
   lockedPreview = false,
   embedded = false,
 }) {
@@ -201,6 +203,22 @@ export default function WorkoutPrepView({
         })}
       </div>
 
+      {whyLine && (
+        <p style={{
+          margin: "0 0 14px",
+          padding: "10px 12px",
+          borderRadius: 12,
+          background: G.blueLight,
+          border: `1px solid ${G.greyLight}`,
+          fontSize: 13,
+          lineHeight: 1.45,
+          color: G.ink,
+          fontWeight: 600,
+        }}>
+          {whyLine}
+        </p>
+      )}
+
       {showStart && (
         <button
           type="button"
@@ -228,6 +246,27 @@ export default function WorkoutPrepView({
         >
           {locked ? <Lock size={18} color="#fff" /> : <Play size={18} color="#fff" fill="#fff" />}
           {cta}
+        </button>
+      )}
+
+      {onTooHard && !locked && (
+        <button
+          type="button"
+          onClick={onTooHard}
+          style={{
+            width: "100%",
+            marginTop: 10,
+            minHeight: 44,
+            border: `1.5px solid ${G.greyLight}`,
+            borderRadius: 12,
+            background: "transparent",
+            color: G.grey,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Trop dure pour moi — alléger la suite
         </button>
       )}
 

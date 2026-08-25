@@ -73,7 +73,7 @@ function sitemapPlugin() {
 }
 
 /** Version client exposée au Version Gate (override via VITE_APP_VERSION). */
-const APP_VERSION = process.env.VITE_APP_VERSION || '1.0.0'
+const APP_VERSION = process.env.VITE_APP_VERSION || '1.0.1'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {

@@ -13,18 +13,34 @@ import {
   personPropertiesFromProfile,
   sessionAnalyticsProps,
 } from "./lib/analytics.js";
+import { scrollAppToTop } from "./lib/scroll-app.js";
+import { shouldApplyRemotePlanSync } from "./lib/plan-sync-guard.js";
+import { describePlanSyncChange } from "./lib/plan-sync-message.js";
+import { readSeenNotifications, writeSeenNotifications } from "./lib/in-app-notifications.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G, G_DARK, applyTheme } from "./theme/palette.js";
 import PlanRevealView from "./PlanRevealView.jsx";
+import FirstSwimTip, { hasSeenFirstSwimTip } from "./FirstSwimTip.jsx";
+import CoachCard from "./CoachCard.jsx";
+import PlanTab from "./PlanTab.jsx";
+import Dashboard, { HomeBadgesSection } from "./Dashboard.jsx";
+import { registerTabUi } from "./tab-ui-registry.js";
+import {
+  getSessionRemindersEnabled,
+  setSessionRemindersEnabled,
+  persistSessionRemindersPreference,
+  shouldShowSessionReminderBanner,
+  sessionReminderCopy,
+} from "./lib/session-reminder.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import ProfileSection from "./ui/ProfileSection.jsx";
-import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel } from "./lib/plan-reveal.js";
+import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel, sessionWhyLine } from "./lib/plan-reveal.js";
 import {
   dismissProfileNudge,
   isProfileNudgeDismissed,
@@ -80,6 +96,38 @@ import { buildWorkoutView } from "./lib/workout-display.js";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
+import {
+  planFingerprint,
+  dedupePlans,
+  mergePlanLists,
+  readDeletedPlanIds,
+  writeDeletedPlanIds,
+  persistAccountPlans,
+} from "./lib/plan-account.js";
+import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
+import { AppShell, BottomNav, Loading, AppTopBar } from "./app-shell/index.js";
+import {
+  GOALS,
+  CATEGORIES,
+  SUB_GOALS,
+  LEVELS,
+  FREQUENCIES,
+  POOLS,
+  SWIM_STYLES,
+  PREFERRED_STROKES,
+  STROKE_LABELS,
+  STYLE_LABELS,
+  EQUIPMENT_OPTS,
+  eqLabel,
+  isWellnessGoal,
+  isProgressionGoal,
+  getLvlIndex,
+  DIPLOMA_GOAL_IDS,
+  goalHidesFourNagesChoice,
+} from "./lib/onboarding-catalog.jsx";
+import ProfileTab from "./ProfileTab.jsx";
+import SettingsDrawer from "./SettingsDrawer.jsx";
+
 /** Étape K — faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
 
@@ -90,17 +138,20 @@ import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import AuthScreen, { PasswordInput } from "./AuthScreen.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import i18n, { getStoredLanguage } from "./i18n/index.js";
-import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import BuddyMatching from "./BuddyMatching.jsx";
 import FeedbackModal from "./sheets/FeedbackModal.jsx";
 import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
-import { captureReferralFromUrl, getStoredReferralCode, resolveReferralCode } from "./lib/referral.js";
+import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
+import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
+import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
+import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
   uploadAndPersistAvatar,
@@ -109,7 +160,6 @@ import {
   clearCachedAvatar,
 } from "./lib/avatar.js";
 import {
-  legalHref,
   ACCOUNT_DELETE_WARNING,
 } from "./lib/legal-copy.js";
 import {
@@ -123,13 +173,13 @@ import {
   formatInjurySummary,
   hasHealthConsent,
 } from "./lib/health-data.js";
-import { useTranslation, Trans } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import {
   Waves, Flame, Star, Calendar, BarChart2, Award, Home,
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
-  Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
+  Bell, CreditCard, Link2, ChevronRight, Eye,
   Camera, Trash2, Users, ExternalLink, Info, Pencil, Share2,
 } from "lucide-react";
 import {
@@ -225,7 +275,7 @@ const css = `
     margin: 0;
     flex-shrink: 0;
     box-sizing: border-box;
-    border: 2px solid var(--myswym-ink-light, #9bb0c8);
+    border: 2px solid var(--myswym-ink-light, #b4c6db);
     border-radius: 6px;
     background-color: var(--myswym-surface, #06101f);
     background-repeat: no-repeat;
@@ -310,8 +360,9 @@ const css = `
     flex-direction: column;
     overflow: hidden;
     border-radius: 16px;
-    background: var(--myswym-surface, #06101f);
-    color: var(--myswym-ink, #f4f8fa);
+    background: #ffffff;
+    color: #0b1526;
+    border: 1px solid rgba(11, 21, 38, 0.08);
     box-shadow: 0 18px 50px rgba(0, 5, 20, 0.45);
   }
   .support-widget--bare {
@@ -451,68 +502,8 @@ const css = `
   }
 `;
 
-/** Conteneur app mobile-first → colonne centrée sur tablette/PC */
-const AppShell = ({ children, flush = false, style = {} }) => (
-  <div className={flush ? "app-shell app-shell--flush" : "app-shell"} style={style}>
-    {flush ? <div className="app-shell-inner">{children}</div> : children}
-  </div>
-);
 // ── DATA ──────────────────────────────────────────────────────────────────
-const GOALS = [
-  { id: "triathlon_xs",      label: "Triathlon XS",           dist: "300–400 m nage",               icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_sprint",  label: "Triathlon S · Sprint",   dist: "750 m nage",                   icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_olympic", label: "Triathlon M · Olympique", dist: "1 500 m nage",                 icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_half",    label: "Triathlon L · Half-Ironman", dist: "1 900 m nage",              icon: <Activity size={20} />, wellness: false },
-  { id: "triathlon_ironman", label: "Triathlon XXL · Ironman", dist: "3 800 m nage",                 icon: <Activity size={20} />, wellness: false },
-  { id: "open_water_500",   label: "Eau libre 500 m",        dist: "500 m",                        icon: <Waves size={20} />,    wellness: false },
-  { id: "open_water_1k",     label: "Eau libre 1 km",         dist: "1 km",                         icon: <Waves size={20} />,    wellness: false },
-  { id: "open_water_2_5k",   label: "Eau libre 2,5 km",       dist: "2,5 km",                       icon: <Waves size={20} />,    wellness: false },
-  { id: "open_water_5k",     label: "Eau libre 5 km",         dist: "5 km",                         icon: <Waves size={20} />,    wellness: false },
-  { id: "open_water_10k",    label: "Eau libre 10 km",        dist: "10 km",                        icon: <Waves size={20} />,    wellness: false },
-  { id: "open_water_25k",    label: "Eau libre 25 km",        dist: "25 km",                        icon: <Waves size={20} />,    wellness: false },
-  { id: "bnssa",             label: "Prépa BNSSA",            dist: "100 m & 250 m sauvetage",      icon: <Shield size={20} />,   wellness: false },
-  { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"", icon: <Award size={20} />, wellness: false },
-  { id: "caepmns",           label: "Prépa CAEPMNS",          dist: "300 m palmes · parcours sauvetage", icon: <Shield size={20} />, wellness: false },
-  { id: "tests_pompiers",    label: "Tests Pompiers",         dist: "400 m NL + 50 m sauvetage",    icon: <Shield size={20} />,   wellness: false },
-  { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
-  { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
-  { id: "perte_de_poids",    label: "Activité physique",       dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
-];
-
-// Catégories onboarding (step 1)
-const CATEGORIES = [
-  { id: "progression", label: "Nager & Progresser",  Icon: TrendingUp,  desc: "Séance du jour · Progresser à ton rythme" },
-  { id: "triathlon",   label: "Triathlon",            Icon: Activity,    desc: "Séance du jour · XS · S · M · L · XXL" },
-  { id: "eau_libre",   label: "Eau libre",            Icon: Waves,       desc: "Séance du jour · 500 m à 25 km" },
-  { id: "diplome",     label: "Prépa diplôme",        Icon: Award,       desc: "Séance du jour · BNSSA · BPJEPS · CAEPMNS" },
-];
-
-// Sous-objectifs par catégorie
-const SUB_GOALS = {
-  triathlon: [
-    { id: "triathlon_xs",      label: "XS",                dist: "300–400 m · 8–10 km vélo · 2–2,5 km CAP · 10,3–12,9 km" },
-    { id: "triathlon_sprint",  label: "S · Sprint",        dist: "750 m · 20 km vélo · 5 km CAP · 25,7 km" },
-    { id: "triathlon_olympic", label: "M · Olympique",     dist: "1,5 km · 40 km vélo · 10 km CAP · 51,5 km" },
-    { id: "triathlon_half",    label: "L · Half-Ironman",  dist: "1,9 km · 90 km vélo · 21,1 km CAP · 113 km" },
-    { id: "triathlon_ironman", label: "XXL · Ironman",     dist: "3,8 km · 180 km vélo · 42,195 km CAP · 226 km" },
-  ],
-  eau_libre: [
-    { id: "open_water_500",  label: "500 m",  dist: "Eau vive" },
-    { id: "open_water_1k",   label: "1 km",   dist: "Eau vive" },
-    { id: "open_water_2_5k", label: "2,5 km", dist: "Eau vive" },
-    { id: "open_water_5k",   label: "5 km",   dist: "Eau vive" },
-    { id: "open_water_10k",  label: "10 km",  dist: "Eau vive" },
-    { id: "open_water_25k",  label: "25 km",  dist: "Eau vive" },
-  ],
-  diplome: [
-    { id: "bnssa",      label: "BNSSA",      dist: "100 m & 250 m sauvetage" },
-    { id: "bpjeps_aan", label: "BPJEPS AAN", dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"" },
-    { id: "caepmns",    label: "CAEPMNS",    dist: "300 m palmes · parcours sauvetage" },
-  ],
-};
-
-const isWellnessGoal = (goalId) => GOALS.find(g => g.id === goalId)?.wellness === true;
-const isProgressionGoal = (goalId) => goalId === "progression" || goalId?.startsWith("prog_");
+// Catalogues onboarding → ./lib/onboarding-catalog.jsx
 const capitalizeLabel = (value = "") => value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
 const pluralizeSessions = (count) => `${count} séance${count > 1 ? "s" : ""}`;
 const getPlanPrimaryLabel = (entry) => {
@@ -538,277 +529,6 @@ const getPlanSecondaryLabel = (entry) => {
     meta.push(`J−${days}`);
   }
   return meta.join(" · ");
-};
-
-// 4 niveaux mesurables — auto-évaluation physique + logique
-const LEVELS = [
-  {
-    id: "découverte",
-    label: "Découverte",
-    desc: "Je m'arrête après quelques longueurs",
-    detail: "Moins de 4 longueurs sans pause, ou je reprends après un arrêt",
-    color: "#00B4D8",
-    bg: "#E0F7FA",
-    dot: 1,
-  },
-  {
-    id: "régulier",
-    label: "Régulier",
-    desc: "Je tiens 400m sans m'arrêter",
-    detail: "Je peux enchaîner sans forcer, mais je ne travaille pas encore mes allures",
-    color: "#00C48C",
-    bg: "#E6FFF6",
-    dot: 2,
-  },
-  {
-    id: "sportif",
-    label: "Sportif",
-    desc: "Je tiens 1500m sans m'arrêter, et je nage plusieurs fois par semaine",
-    detail: "Technique solide, je m'entraîne avec régularité et je veux structurer ma progression",
-    color: "#0057FF",
-    bg: "#EEF3FF",
-    dot: 3,
-  },
-  {
-    id: "performance",
-    label: "Performance",
-    desc: "J'ai déjà fait des courses ou des compétitions",
-    detail: "Je connais mes chronos, je veux un plan taillé pour la compétition",
-    color: "#7C3AED",
-    bg: "#EDE9FE",
-    dot: 4,
-  },
-];
-
-// Rétro-compat anciens IDs → index 0-3
-const getLvlIndex = (level) => ({
-  découverte: 0, beginner: 1, régulier: 1,
-  intermediate: 2, sportif: 2,
-  advanced: 3, performance: 3,
-}[level] ?? 1);
-
-const FREQUENCIES = [
-  { id: 1, label: "1×/semaine",  desc: "Je suis occupé·e" },
-  { id: 2, label: "2×/semaine",  desc: "Mon rythme idéal" },
-  { id: 3, label: "3×/semaine",  desc: "Je suis motivé·e" },
-  { id: 4, label: "4×/semaine",  desc: "Je suis sérieux·se" },
-  { id: 5, label: "5×/semaine",  desc: "Mode compétition" },
-];
-
-const POOLS = [{ id: 25, label: "25 m" }, { id: 50, label: "50 m" }];
-
-/** Style d'entraînement — stocké crawl | 4_nages (UX : sais-tu nager du 4 nages ?) */
-const SWIM_STYLES = [
-  { id: "crawl", label: "Non", desc: "Je nage surtout en crawl" },
-  { id: "4_nages", label: "Oui", desc: "Je sais nager les quatre nages" },
-];
-
-/** Diplômes : pas de choix 4 nages (prépa spécifique). Tri / eau libre : choix autorisé. */
-const DIPLOMA_GOAL_IDS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
-const goalHidesFourNagesChoice = (profile = {}) => {
-  const cat = String(profile.category || "");
-  const goal = String(profile.goal || "");
-  return cat === "diplome" || DIPLOMA_GOAL_IDS.has(goal);
-};
-
-/** Nage préférée (stroke) */
-const PREFERRED_STROKES = [
-  { id: "crawl", label: "Crawl" },
-  { id: "dos", label: "Dos" },
-  { id: "brasse", label: "Brasse" },
-  { id: "papillon", label: "Papillon" },
-];
-
-const STROKE_LABELS = Object.fromEntries(PREFERRED_STROKES.map((s) => [s.id, s.label]));
-const STYLE_LABELS = { crawl: "Crawl", "4_nages": "4 nages" };
-
-/** Matériel — édité dans Profil (plus dans le questionnaire) et affiché sur les séances. */
-const EQUIPMENT_OPTS = [
-  { id: "palmes" },
-  { id: "tuba" },
-  { id: "pull" },
-  { id: "planche" },
-  { id: "plaquettes" },
-];
-const eqLabel = (id) => i18n.t(`equipment.${id}`, { ns: "onboarding", defaultValue: id });
-
-const BADGE_DEFS = [
-  { id: "first_session", label: "Premier plongeon",   desc: "1re séance complétée",                icon: Droplets, color: G.water },
-  { id: "km1",           label: "1 km nagé",          desc: "1 000 m au compteur",                  icon: Ruler,    color: G.blue },
-  { id: "km5",           label: "5 km nagé",          desc: "5 000 m parcourus",                    icon: Waves,    color: G.blueDeep },
-  { id: "km10",          label: "10 km nagé",         desc: "10 000 m — niveau avancé",             icon: Waves,    color: G.purple },
-  { id: "streak3",       label: "Série de 3",         desc: "3 séances consécutives",               icon: Flame,    color: G.coral },
-  { id: "streak5",       label: "Série de 5",         desc: "5 séances consécutives",               icon: Flame,    color: "#FF3D00" },
-  { id: "week_perfect",  label: "Semaine parfaite",   desc: "Toutes les séances d'une semaine",     icon: Star,     color: G.gold },
-  { id: "speed_demon",   label: "Flash aquatique",    desc: "1re séance de vitesse complétée",      icon: Zap,      color: G.coral },
-  { id: "technique_pro", label: "Maître technicien",  desc: "3 séances de technique complétées",    icon: Target,   color: G.mint },
-  { id: "halfway",       label: "À mi-chemin",        desc: "50 % du plan complété",                icon: TrendingUp, color: G.blueMid },
-  { id: "finisher",      label: "Finisher",           desc: "Plan d'entraînement 100 % bouclé",     icon: Trophy,   color: G.gold },
-];
-
-const DAY_MS = 86400000;
-const NOTIFICATION_KIND_META = {
-  billing:    { Icon: CreditCard, color: G.blue,   bg: G.blueLight },
-  security:   { Icon: Shield,     color: G.coral,  bg: G.coralLight },
-  promo:      { Icon: Star,       color: G.gold,   bg: G.goldLight },
-  newsletter: { Icon: BookOpen,   color: G.purple, bg: G.purpleLight },
-  buddy:      { Icon: Users,      color: G.water,  bg: G.waterLight },
-  badge:      { Icon: Trophy,     color: G.gold,   bg: G.goldLight },
-  update:     { Icon: Bell,       color: G.blue,   bg: G.blueLight },
-};
-
-// Feed manuel pour grandes actus / promos / newsletters. Il suffit d'ajouter une entrée.
-const GLOBAL_NOTIFICATION_FEED = [];
-
-const notificationsStorageKey = (userId) => `myswym_notifications_seen_${userId || "anon"}`;
-const normalizeSeenNotificationMap = (value) => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([key, seenAt]) => [String(key), parseNotificationTime(seenAt, 0)])
-      .filter(([, seenAt]) => Number.isFinite(seenAt) && seenAt > 0)
-  );
-};
-
-const parseNotificationTime = (value, fallback = Date.now()) => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const numeric = Number(value);
-    if (Number.isFinite(numeric) && value.trim() !== "") return numeric > 1e12 ? numeric : numeric * 1000;
-    const parsed = Date.parse(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-};
-
-const readSeenNotifications = (userOrId) => {
-  const userId = typeof userOrId === "string" || userOrId == null ? userOrId : userOrId.id;
-  const serverSeen = typeof userOrId === "object" && userOrId ? normalizeSeenNotificationMap(userOrId.user_metadata?.notifications_seen) : {};
-  try {
-    const raw = localStorage.getItem(notificationsStorageKey(userId));
-    const parsed = raw ? JSON.parse(raw) : {};
-    return { ...serverSeen, ...normalizeSeenNotificationMap(parsed) };
-  } catch {
-    return serverSeen;
-  }
-};
-
-const writeSeenNotifications = (userOrId, seenMap) => {
-  const userId = typeof userOrId === "string" || userOrId == null ? userOrId : userOrId.id;
-  const normalized = normalizeSeenNotificationMap(seenMap);
-  try {
-    localStorage.setItem(notificationsStorageKey(userId), JSON.stringify(normalized));
-  } catch {}
-  if (typeof userOrId === "object" && userOrId?.id) {
-    supabase.auth.updateUser({ data: { notifications_seen: normalized } }).catch(() => {});
-  }
-};
-
-const formatNotificationDate = (value) => {
-  const time = parseNotificationTime(value, 0);
-  if (!time) return "";
-  return new Date(time).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-};
-
-const notificationAudienceMatches = (audience, accessState) => {
-  switch (audience) {
-    case "trial": return accessState.status === ACCESS_STATUS.TRIAL;
-    case "premium": return accessState.hasPremiumAccess;
-    case "expired": return accessState.status === ACCESS_STATUS.EXPIRED;
-    default: return true;
-  }
-};
-
-const buildAccessNotifications = (user, accessState) => {
-  if (!user) return [];
-  const items = [];
-  if (accessState.status === ACCESS_STATUS.TRIAL && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 3) {
-    items.push({
-      id: `trial-ending:${accessState.trialEndsAt || accessState.trialDaysLeft}`,
-      type: "billing",
-      title: accessState.trialDaysLeft === 1 ? "Dernier jour d'essai" : `Essai Premium : ${accessState.trialDaysLeft} jours restants`,
-      body: accessState.trialDaysLeft === 1
-        ? "Ton essai se termine aujourd'hui. Sans abonnement, tes séances se mettent en pause — tu ne pourras plus rien voir."
-        : "Ton essai Premium arrive a sa fin. Abonne-toi pour garder tes plans, sinon tes séances se mettent en pause.",
-      createdAt: (accessState.accessEndsMs || Date.now()) - (accessState.trialDaysLeft * DAY_MS),
-    });
-  }
-  if (accessState.cancelAtPeriodEnd && accessState.subscriptionEndsAt) {
-    items.push({
-      id: `subscription-cancel:${accessState.subscriptionEndsAt}`,
-      type: "billing",
-      title: "Abonnement bientot coupe",
-      body: `Ton Premium restera actif jusqu'au ${formatNotificationDate(accessState.subscriptionEndsAt)} puis sera coupe sauf reactivation.`,
-      createdAt: parseNotificationTime(accessState.subscriptionEndsAt),
-    });
-  }
-  if (accessState.status === ACCESS_STATUS.EXPIRED) {
-    items.push({
-      id: `subscription-expired:${accessState.subscriptionEndsAt || accessState.trialEndsAt || "expired"}`,
-      type: "security",
-      title: "Essai terminé — séances en pause",
-      body: "Ton essai de 7 jours est fini. Tes séances sont en pause. Abonne-toi pour les retrouver.",
-      createdAt: parseNotificationTime(accessState.subscriptionEndsAt || accessState.trialEndsAt, Date.now()),
-    });
-  }
-
-  const rawInbox = user?.app_metadata?.notifications || user?.app_metadata?.notification_inbox || [];
-  const external = Array.isArray(rawInbox) ? rawInbox : [];
-  external.forEach((entry, index) => {
-    if (!entry || typeof entry !== "object") return;
-    if (!entry.title || !entry.body) return;
-    items.push({
-      id: String(entry.id || `server:${index}:${entry.title}`),
-      type: Object.prototype.hasOwnProperty.call(NOTIFICATION_KIND_META, entry.type) ? entry.type : "update",
-      title: String(entry.title),
-      body: String(entry.body),
-      createdAt: parseNotificationTime(entry.createdAt || entry.created_at || entry.publishedAt || entry.published_at, Date.now() - index),
-    });
-  });
-
-  GLOBAL_NOTIFICATION_FEED.forEach((entry, index) => {
-    if (!entry?.id || !entry?.title || !entry?.body) return;
-    if (!notificationAudienceMatches(entry.audience, accessState)) return;
-    const startsAt = parseNotificationTime(entry.startsAt || entry.starts_at, 0);
-    const endsAt = parseNotificationTime(entry.endsAt || entry.ends_at, Number.MAX_SAFE_INTEGER);
-    const now = Date.now();
-    if (startsAt && startsAt > now) return;
-    if (endsAt && endsAt < now) return;
-    items.push({
-      id: `global:${entry.id}`,
-      type: Object.prototype.hasOwnProperty.call(NOTIFICATION_KIND_META, entry.type) ? entry.type : "update",
-      title: String(entry.title),
-      body: String(entry.body),
-      createdAt: startsAt || (now - index),
-    });
-  });
-
-  return items;
-};
-
-const buildBadgeNotifications = (plan) => {
-  const earnedIds = checkBadges(computeStats(plan));
-  return BADGE_DEFS
-    .filter((badge) => earnedIds.includes(badge.id))
-    .map((badge, index) => ({
-      id: `badge:${badge.id}`,
-      type: "badge",
-      title: `Badge obtenu : ${badge.label}`,
-      body: badge.desc,
-      createdAt: index + 1,
-      accentColor: badge.color,
-      accentIcon: badge.icon,
-    }));
-};
-
-const buildInAppNotifications = ({ user, plan }) => {
-  const accessState = getAccessState(user);
-  const byId = new Map();
-  [...buildAccessNotifications(user, accessState), ...buildBadgeNotifications(plan)].forEach((item) => {
-    if (!item?.id) return;
-    byId.set(item.id, item);
-  });
-  return [...byId.values()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -982,267 +702,6 @@ const expandCompoundDetailLines = (details = []) => {
     }
   }
   return out.map((line) => prettifySessionDetailLine(line));
-};
-
-// Empreinte profil pour détecter les doublons cross-device (même objectif recréé avec un autre id)
-const planFingerprint = (entry) => {
-  const p = entry?.profile ?? {};
-  return [p.category, p.goal, p.eventDate, p.level, p.pool, p.sessionsPerWeek].join("|");
-};
-
-const dedupePlans = (plans) => {
-  if (!plans?.length) return plans;
-  const groups = new Map();
-  for (const entry of plans) {
-    const fp = planFingerprint(entry);
-    if (!groups.has(fp)) groups.set(fp, []);
-    groups.get(fp).push(entry);
-  }
-  const out = [];
-  for (const group of groups.values()) {
-    if (group.length === 1) { out.push(group[0]); continue; }
-    // Plusieurs ids pour le même objectif : garde ceux avec progression, sinon le premier
-    const withProgress = group.filter(e => planProgressScore(e) > 0);
-    if (withProgress.length >= 2) out.push(...withProgress);
-    else if (withProgress.length === 1) out.push(withProgress[0]);
-    else out.push(group[0]);
-  }
-  return out;
-};
-
-// Fusion local + remote : union des plans non tombstonés.
-// Suppression intentionnelle = présent dans deletedIds uniquement.
-// Pour un même id des deux côtés : garde la version avec le plus de progression.
-// À progression égale : garder le côté le plus récent (base) — sinon un changement
-// de fréquence 2×→3× (même nb de séances validées) est écrasé par l'ancien plan au refresh.
-// Si les timestamps sont égaux : préférer la fréquence / le volume planifié du côté base
-// déjà choisi ; ne prendre `other` que s'il a strictement plus de séances validées.
-const planCreatedAt = (id) => {
-  const m = String(id || "").match(/^plan_(\d+)$/);
-  return m ? Number(m[1]) : 0;
-};
-
-// Fusion local + remote : union des plans non tombstonés.
-// Suppression intentionnelle = présent dans deletedIds, OU id absent du côté
-// le plus récent alors que le plan est plus vieux que ce snapshot.
-// Pour un même id des deux côtés : garde la version avec le plus de progression.
-const mergePlanLists = (localPlans, remotePlans, localActive, remoteActive, localUpdatedAt = 0, remoteUpdatedAt = 0, currentActive = null, deletedIds = null) => {
-  const localIsNewer = (localUpdatedAt || 0) >= (remoteUpdatedAt || 0);
-  const base = localIsNewer ? (localPlans || []) : (remotePlans || []);
-  const other = localIsNewer ? (remotePlans || []) : (localPlans || []);
-  const newerTs = localIsNewer ? (localUpdatedAt || 0) : (remoteUpdatedAt || 0);
-  const byId = new Map();
-  for (const e of base) {
-    if (deletedIds?.has(e.id)) continue;
-    byId.set(e.id, e);
-  }
-  for (const e of other) {
-    if (deletedIds?.has(e.id)) continue;
-    const existing = byId.get(e.id);
-    if (!existing) {
-      const created = planCreatedAt(e.id);
-      // Présent seulement sur le côté plus ancien + créé avant le snapshot récent
-      // → suppression sur l'autre appareil (ne pas ressusciter).
-      // Créé après le snapshot → création concurrente / hors-ligne à garder.
-      if (created > 0 && newerTs > 0 && created <= newerTs) continue;
-      byId.set(e.id, e);
-      continue;
-    }
-    if (planProgressScore(e) > planProgressScore(existing)) byId.set(e.id, e);
-  }
-  const merged = dedupePlans([...byId.values()]);
-  let active = currentActive;
-  if (!active || !merged.some(e => e.id === active)) {
-    if (localActive && merged.some(e => e.id === localActive)) active = localActive;
-    else if (remoteActive && merged.some(e => e.id === remoteActive)) active = remoteActive;
-    else active = merged[0]?.id ?? null;
-  }
-  const updatedAt = new Date(Math.max(localUpdatedAt || 0, remoteUpdatedAt || 0) || Date.now()).toISOString();
-  return { plans: merged, active, updatedAt };
-};
-
-const deletedPlansStorageKey = (userId) => `myswym_deleted_plans_${userId}`;
-
-const readDeletedPlanIds = (userId) => {
-  try {
-    const raw = localStorage.getItem(deletedPlansStorageKey(userId));
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch {
-    return new Set();
-  }
-};
-
-const writeDeletedPlanIds = (userId, ids) => {
-  try {
-    const list = [...(ids || [])];
-    if (list.length === 0) localStorage.removeItem(deletedPlansStorageKey(userId));
-    else localStorage.setItem(deletedPlansStorageKey(userId), JSON.stringify(list));
-  } catch { /* ignore */ }
-};
-
-/** Persistance compte : union local∪remote (sauf tombstones), 1 plan actif max, puis upsert Supabase. */
-const persistAccountPlans = async (userId, localPlans, activePlanId, deletedIds = null, localHistory = []) => {
-  const now = new Date().toISOString();
-  const tombstones = deletedIds instanceof Set ? new Set(deletedIds) : readDeletedPlanIds(userId);
-  let remotePlans = [];
-  let remoteActive = null;
-  let remoteHistory = [];
-  let remoteTime = 0;
-  try {
-    const { data } = await supabase
-      .from("user_plans")
-      .select("plans_json, active_plan_id, plan_history, updated_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (Array.isArray(data?.plans_json)) remotePlans = data.plans_json;
-    remoteActive = data?.active_plan_id || null;
-    if (Array.isArray(data?.plan_history)) remoteHistory = data.plan_history;
-    remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
-  } catch { /* offline / network */ }
-
-  let localTime = Date.now();
-  try {
-    const ts = localStorage.getItem(`myswym_plans_updated_${userId}`);
-    if (ts) localTime = Math.max(new Date(ts).getTime() || 0, localTime);
-  } catch { /* ignore */ }
-
-  const { plans: mergedRaw, active: activeRaw } = mergePlanLists(
-    localPlans || [],
-    remotePlans,
-    activePlanId,
-    remoteActive,
-    localTime,
-    remoteTime,
-    activePlanId,
-    tombstones,
-  );
-
-  // Historique : union local ∪ remote (par id), sans doublon
-  const histById = new Map();
-  for (const h of [...(remoteHistory || []), ...(localHistory || [])]) {
-    if (h?.id) histById.set(h.id, h);
-  }
-  const existingHistory = [...histById.values()];
-  const enforced = enforceSingleActivePlan(mergedRaw, activeRaw, existingHistory);
-  const merged = enforced.plans;
-  const active = enforced.activeId;
-  const history = enforced.history;
-
-  try {
-    localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(merged));
-    if (active) localStorage.setItem(`myswym_active_${userId}`, active);
-    else localStorage.removeItem(`myswym_active_${userId}`);
-    localStorage.setItem(`myswym_plan_history_${userId}`, JSON.stringify(history));
-    localStorage.setItem(`myswym_plans_updated_${userId}`, now);
-  } catch { /* ignore */ }
-
-  if (merged.length === 0) {
-    const { error } = await supabase.from("user_plans").upsert({
-      user_id: userId,
-      plans_json: [],
-      active_plan_id: null,
-      plan_history: history,
-      profile: null,
-      plan: null,
-      updated_at: now,
-    }, { onConflict: "user_id" });
-    if (!error) writeDeletedPlanIds(userId, new Set());
-    return { plans: [], active: null, history, error: error || null };
-  }
-
-  const activeEntry = merged.find((e) => e.id === active) ?? merged[0];
-  const { error } = await supabase.from("user_plans").upsert({
-    user_id: userId,
-    plans_json: merged,
-    active_plan_id: active,
-    plan_history: history,
-    profile: activeEntry?.profile ?? null,
-    plan: activeEntry?.plan ?? null,
-    updated_at: now,
-  }, { onConflict: "user_id" });
-
-  if (error) {
-    if (import.meta.env.DEV) console.warn("[plans] upsert failed", error.message);
-    writeDeletedPlanIds(userId, tombstones);
-    return { plans: merged, active, history, error };
-  }
-
-  writeDeletedPlanIds(userId, new Set());
-  return { plans: merged, active, history, error: null };
-};
-
-const computeStats = (plan) => {
-  if (!plan?.weeks) return { totalSessions: 0, totalMeters: 0, streak: 0, perfectWeeks: 0, speedSessions: 0, techniqueSessions: 0, planTotal: 0, weeklyData: [] };
-  let totalSessions = 0, totalMeters = 0, currentStreak = 0, maxStreak = 0, perfectWeeks = 0, speedSessions = 0, techniqueSessions = 0;
-  // Boucle progression : stats depuis l'historique + séance courante
-  if (plan.isSessionLoop) {
-    const hist = plan.history || [];
-    hist.forEach((s) => {
-      if (s.completed) {
-        totalSessions++;
-        totalMeters += parseInt(s.distance, 10) || 0;
-        currentStreak++;
-        maxStreak = Math.max(maxStreak, currentStreak);
-        if (s.type === "VITESSE") speedSessions++;
-        if (s.type === "TECHNIQUE") techniqueSessions++;
-      } else {
-        currentStreak = 0;
-      }
-    });
-    const cur = plan.weeks?.[0]?.sessions?.[0];
-    if (cur?.completed) {
-      totalSessions++;
-      totalMeters += parseInt(cur.distance, 10) || 0;
-      currentStreak++;
-      maxStreak = Math.max(maxStreak, currentStreak);
-    }
-    return {
-      totalSessions,
-      totalMeters,
-      streak: maxStreak,
-      perfectWeeks: 0,
-      speedSessions,
-      techniqueSessions,
-      planTotal: Math.max(totalSessions + (cur && !isSessionResolved(cur) ? 1 : 0), 1),
-      weeklyData: [],
-    };
-  }
-  const planTotal = plan.weeks.reduce((a, w) => a + w.sessions.length, 0);
-  const weeklyData = plan.weeks.map(w => ({
-    label: `S${w.number}`,
-    done: w.sessions.filter(s => s.completed).reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
-    total: w.sessions.reduce((a, s) => a + (parseInt(s.distance) || 0), 0),
-  }));
-  plan.weeks.forEach(week => {
-    if (week.sessions.length > 0 && week.sessions.every(s => s.completed && !s.skipped)) perfectWeeks++;
-    week.sessions.forEach(s => {
-      if (s.completed) {
-        totalSessions++; totalMeters += parseInt(s.distance) || 0; currentStreak++;
-        maxStreak = Math.max(maxStreak, currentStreak);
-        if (s.type === "VITESSE") speedSessions++;
-        if (s.type === "TECHNIQUE") techniqueSessions++;
-      } else { currentStreak = 0; }
-    });
-  });
-  return { totalSessions, totalMeters, streak: maxStreak, perfectWeeks, speedSessions, techniqueSessions, planTotal, weeklyData };
-};
-
-const checkBadges = (stats) => {
-  const e = [];
-  if (stats.totalSessions >= 1)  e.push("first_session");
-  if (stats.totalMeters >= 1000)  e.push("km1");
-  if (stats.totalMeters >= 5000)  e.push("km5");
-  if (stats.totalMeters >= 10000) e.push("km10");
-  if (stats.streak >= 3) e.push("streak3");
-  if (stats.streak >= 5) e.push("streak5");
-  if (stats.perfectWeeks >= 1) e.push("week_perfect");
-  if (stats.speedSessions >= 1) e.push("speed_demon");
-  if (stats.techniqueSessions >= 3) e.push("technique_pro");
-  if (stats.planTotal > 0 && stats.totalSessions >= stats.planTotal / 2) e.push("halfway");
-  if (stats.planTotal > 0 && stats.totalSessions >= stats.planTotal) e.push("finisher");
-  return e;
 };
 
 // Feedback hebdo : multiplicateur cumulé plafonné (évite ×1.12^n sans borne vs règle +10 %/sem.)
@@ -2664,15 +2123,20 @@ const StravaSection = ({
 
       {/* ── Non connecté ─────────────────────────────────────────── */}
       {!connected ? (
-        <button
-          onClick={connect}
-          style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT }}
-        >
-          <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Activity size={13} color="#fff" />
-          </span>
-          Connecter Strava
-        </button>
+        <div>
+          <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 12px" }}>
+            Relie Strava pour importer tes sorties et valider plus vite.
+          </p>
+          <button
+            onClick={connect}
+            style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT, minHeight: 48 }}
+          >
+            <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Activity size={13} color="#fff" />
+            </span>
+            Connecter Strava
+          </button>
+        </div>
       ) : (
         <>
           {!showDetails && (
@@ -2701,7 +2165,7 @@ const StravaSection = ({
 
           {/* ── Valider séance depuis Strava ─────────────────────── */}
           {showDetails && showProgramActions && canValidate && (
-            <div style={{ background: "linear-gradient(135deg,#EEF3FF,#E0F7FA)", borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ background: G.blueLight, borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Waves size={18} color="#fff" />
               </div>
@@ -2888,1397 +2352,7 @@ const StravaSection = ({
   );
 };
 
-const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange, onSwimmerProfileChange }) => {
-  const { t: to } = useTranslation("onboarding");
-  const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
-  const [msg, setMsg] = useState(null);
-  const [editingEquipment, setEditingEquipment] = useState(false);
-  const [draftEquipment, setDraftEquipment] = useState(() =>
-    Array.isArray(profile?.equipment) ? [...profile.equipment] : []
-  );
-
-  useEffect(() => {
-    setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
-  }, [profile?.equipment]);
-
-  // Avatar + firstName — user_metadata (cross-device) en priorité, cache local en fallback
-  const [avatarUrl, setAvatarUrl] = useState(() => resolveAvatarUrl(user));
-  const [firstName, setFirstName] = useState(() => {
-    try {
-      return user?.user_metadata?.firstname
-        || (user?.id ? localStorage.getItem(`myswym_firstname_${user.id}`) : null)
-        || localStorage.getItem("myswym_firstname")
-        || "";
-    } catch { return ""; }
-  });
-  const [editingName, setEditingName] = useState(false);
-  const [nameInput,   setNameInput]   = useState(firstName);
-  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
-  const [avatarBusy, setAvatarBusy] = useState(false);
-  const fileInputRef = useRef(null);
-
-  // Resync depuis user_metadata quand l'objet user arrive ou change
-  useEffect(() => {
-    if (user?.user_metadata?.firstname) setFirstName(user.user_metadata.firstname);
-    else if (user?.id) {
-      try {
-        const cached = localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        if (cached) setFirstName(cached);
-      } catch {}
-    }
-    if (avatarBusy) return;
-    const next = resolveAvatarUrl(user);
-    setAvatarUrl(next);
-  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url, avatarBusy]);
-
-  // Si metadata vide : retombe sur le fichier Storage et backfill (même compte, autre appareil)
-  useEffect(() => {
-    if (!user?.id || avatarBusy) return;
-    if (resolveAvatarUrl(user)) return;
-    let cancelled = false;
-    hydrateAvatarFromStorage(user.id)
-      .then((res) => {
-        if (cancelled || !res?.publicUrl) return;
-        setAvatarUrl(res.publicUrl);
-        if (res.user && onUserUpdate) onUserUpdate(res.user);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [user?.id, user?.user_metadata?.avatar_url, avatarBusy, onUserUpdate]);
-
-  const stats  = computeStats(plan);
-  const earned = checkBadges(stats);
-
-  const saveName = () => {
-    const v = nameInput.trim();
-    if (v) {
-      try {
-        localStorage.setItem(nameStorageKey, v);
-        localStorage.setItem("myswym_firstname", v);
-      } catch {}
-      setFirstName(v);
-      // Sync cross-device via user_metadata
-      supabase.auth.updateUser({ data: { firstname: v } })
-        .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
-        .catch(() => {});
-    }
-    setEditingName(false);
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    e.target.value = "";
-    setAvatarMenuOpen(false);
-
-    const previousUrl = avatarUrl;
-    setAvatarBusy(true);
-
-    // Aperçu immédiat (data URL) — ne remplace pas la persistance serveur
-    try {
-      const preview = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target.result);
-        reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
-        reader.readAsDataURL(file);
-      });
-      setAvatarUrl(preview);
-    } catch { /* preview optionnel */ }
-
-    try {
-      const { publicUrl, user: updatedUser } = await uploadAndPersistAvatar(user.id, file);
-      setAvatarUrl(publicUrl);
-      if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
-      setMsg({ type: "ok", text: "Photo enregistrée — visible sur tous tes appareils." });
-      setTimeout(() => setMsg(null), 3500);
-    } catch (err) {
-      setAvatarUrl(previousUrl || null);
-      setMsg({ type: "err", text: err?.message || "Impossible d'enregistrer la photo de profil" });
-    } finally {
-      setAvatarBusy(false);
-    }
-  };
-
-  const handleAvatarRemove = async () => {
-    if (!user || avatarBusy) return;
-    setAvatarBusy(true);
-    setAvatarMenuOpen(false);
-    const previousUrl = avatarUrl;
-    setAvatarUrl(null);
-    try {
-      clearCachedAvatar(user.id);
-      const { user: updatedUser } = await removeAndPersistAvatar(user.id);
-      if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
-    } catch (err) {
-      setAvatarUrl(previousUrl || null);
-      setMsg({ type: "err", text: err?.message || "Impossible de supprimer la photo" });
-    } finally {
-      setAvatarBusy(false);
-    }
-  };
-
-  const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
-  const initials = displayName.slice(0, 2).toUpperCase();
-  const levelLabel = LEVELS.find(l => l.id === profile?.level)?.label || profile?.level || "Nageur";
-  const goalLabel = GOALS.find(g => g.id === profile?.goal)?.label
-    || CATEGORIES.find(c => c.id === profile?.category)?.label
-    || "Mon objectif";
-
-  return (
-    <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
-      <AppTopBar
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-        plan={plan}
-      />
-      <AppShell>
-      {/* ── Profile Header ─────────────────────────────────────── */}
-      <div style={{ padding: "28px 0 24px", textAlign: "center" }}>
-        {/* Avatar — menu Ajouter / Modifier / Supprimer */}
-        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
-          <button
-            type="button"
-            onClick={() => {
-              if (avatarBusy) return;
-              if (!avatarUrl) {
-                fileInputRef.current?.click();
-                return;
-              }
-              setAvatarMenuOpen(true);
-            }}
-            aria-label={avatarUrl ? "Gérer la photo de profil" : "Ajouter une photo de profil"}
-            style={{ border: "none", background: "none", cursor: avatarBusy ? "wait" : "pointer", padding: 0, display: "block", minWidth: 44, minHeight: 44, opacity: avatarBusy ? 0.7 : 1 }}
-          >
-            <div style={{
-              width: 90, height: 90, borderRadius: "50%",
-              background: avatarUrl ? "transparent" : `linear-gradient(135deg, ${G.blueMid} 0%, ${G.blue} 100%)`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 8px 32px rgba(142,179,255,0.35)",
-              border: "3px solid #fff", overflow: "hidden",
-            }}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <span style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>{initials}</span>
-              }
-            </div>
-            <div style={{
-              position: "absolute", bottom: 2, right: 2,
-              width: 26, height: 26, borderRadius: "50%",
-              background: G.blue, border: "2.5px solid #fff",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Camera size={12} color="#fff" />
-            </div>
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-        </div>
-
-        {avatarMenuOpen && createPortal(
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Photo de profil"
-            onClick={() => setAvatarMenuOpen(false)}
-            style={{
-              position: "fixed", inset: 0, zIndex: 400,
-              background: "rgba(15, 23, 42, 0.45)",
-              display: "flex", alignItems: "flex-end", justifyContent: "center",
-              padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: "100%", maxWidth: 420, background: G.surface, borderRadius: 20,
-                border: `1px solid ${G.greyLight}`, overflow: "hidden",
-                boxShadow: "0 16px 40px rgba(0,0,0,0.18)",
-              }}
-            >
-              <div style={{ padding: "16px 18px 10px", textAlign: "left" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Photo de profil</div>
-                <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>Choisis une action</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 12,
-                  padding: "14px 18px", background: "none", border: "none", borderTop: `1px solid ${G.greyLight}`,
-                  cursor: "pointer", textAlign: "left", minHeight: 52,
-                }}
-              >
-                <Camera size={18} color={G.blue} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: G.ink }}>
-                  {avatarUrl ? "Modifier la photo" : "Ajouter une photo"}
-                </span>
-              </button>
-              {avatarUrl && (
-                <button
-                  type="button"
-                  onClick={handleAvatarRemove}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 12,
-                    padding: "14px 18px", background: "none", border: "none", borderTop: `1px solid ${G.greyLight}`,
-                    cursor: "pointer", textAlign: "left", minHeight: 52,
-                  }}
-                >
-                  <Trash2 size={18} color={G.coral} />
-                  <span style={{ fontSize: 15, fontWeight: 600, color: G.coral }}>Supprimer la photo</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setAvatarMenuOpen(false)}
-                style={{
-                  width: "100%", padding: "14px 18px", background: G.greyXLight, border: "none",
-                  borderTop: `1px solid ${G.greyLight}`, cursor: "pointer",
-                  fontSize: 15, fontWeight: 700, color: G.grey, minHeight: 52,
-                }}
-              >
-                Annuler
-              </button>
-            </div>
-          </div>,
-          document.body
-        )}
-
-        {/* Name — tappable pour éditer */}
-        {editingName ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 8 }}>
-            <input
-              autoFocus
-              value={nameInput}
-              onChange={e => setNameInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && saveName()}
-              placeholder="Ton prénom"
-              style={{ fontSize: 20, fontWeight: 700, color: G.ink, border: "none", borderBottom: `2px solid ${G.blue}`, outline: "none", background: "transparent", textAlign: "center", width: 160 }}
-            />
-            <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => { setNameInput(displayName); setEditingName(true); }}
-            aria-label="Modifier le nom d’utilisateur"
-            style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
-          >
-            <span style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>{displayName}</span>
-            <div
-              aria-hidden
-              style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}
-            >
-              <Pencil size={11} color={G.blue} strokeWidth={2.4} />
-            </div>
-          </button>
-        )}
-        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
-          {levelLabel}
-        </div>
-        <div style={{ fontSize: 11, color: G.greyMid }}>{user?.email}</div>
-      </div>
-
-      <div>
-        {msg && (
-          <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 12 }}>
-            {msg.text}
-          </div>
-        )}
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-          {[
-            { Icon: Waves, value: `${(stats.totalMeters / 1000).toFixed(1)} km`, label: "Nagés", color: G.blue, bg: G.blueLight },
-            { Icon: Check, value: stats.totalSessions, label: "Séances", color: G.mint, bg: G.mintLight },
-            { Icon: Flame, value: stats.streak, label: "Série", color: G.coral, bg: G.coralLight },
-            { Icon: Trophy, value: earned.length, label: "Badges", color: G.gold, bg: G.goldLight },
-          ].map(({ Icon, value, label, color, bg }, i) => (
-            <div key={i} style={{ background: G.surface, borderRadius: 20, padding: "16px 14px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Icon size={20} color={color} />
-              </div>
-              <div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{value}</div>
-                <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 14, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Target size={18} color={G.blue} />
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Mon objectif</div>
-              <div style={{ fontSize: 12, color: G.grey }}>Change via « Nouveau plan » dans Programme</div>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {[
-              { label: "Objectif", value: goalLabel },
-              profile?.eventDate ? { label: "Date", value: profile.eventDate } : null,
-              profile?.trainingFocus
-                ? { label: "Focus", value: TRAINING_FOCUS_OPTIONS.find((o) => o.id === profile.trainingFocus)?.label || profile.trainingFocus }
-                : null,
-            ].filter(Boolean).map((item) => (
-              <div key={item.label} style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 12px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, lineHeight: 1.35 }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {onSwimmerProfileChange && (
-          <>
-            <ProfileSection id="profile-physique" title="Mon profil" summary="Âge, poids, taille" defaultOpen={false}>
-              {(() => {
-                const nowY = new Date().getFullYear();
-                const birthMonth = profile?.birthMonth ?? "";
-                const birthDay = profile?.birthDay ?? "";
-                const birthYear = profile?.birthYear ?? (
-                  profile?.age != null && profile.age !== "" && Number.isFinite(Number(profile.age))
-                    ? nowY - Math.round(Number(profile.age))
-                    : ""
-                );
-                const dim = daysInBirthMonth(birthMonth, birthYear);
-                const fieldStyle = {
-                  width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 12,
-                  border: `1.5px solid ${G.greyLight}`, background: G.greyXLight, fontSize: 14, fontWeight: 700, color: G.ink,
-                };
-                const patchBirth = (nextDay, nextMonth, nextYear) => {
-                  const d = nextDay === "" ? "" : Number(nextDay);
-                  const m = nextMonth === "" ? "" : Number(nextMonth);
-                  const y = nextYear === "" ? "" : Number(nextYear);
-                  const maxD = daysInBirthMonth(m, y);
-                  const clamped = d === "" ? "" : Math.min(Math.max(1, d), maxD);
-                  const age = computeAgeFromBirth(m, y, new Date(), clamped);
-                  onSwimmerProfileChange({
-                    birthDay: clamped,
-                    birthMonth: m,
-                    birthYear: y,
-                    ...(age != null ? { age } : {}),
-                  });
-                };
-                const dayOpts = [];
-                for (let d = 1; d <= dim; d++) dayOpts.push(d);
-                return (
-                  <>
-                    <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1.3fr 0.9fr", gap: 8, marginBottom: 12 }}>
-                      <label style={{ display: "block" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                          {to("physique.day")}
-                        </div>
-                        <select
-                          value={birthDay === "" || birthDay == null ? "" : Number(birthDay)}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            patchBirth(raw === "" ? "" : Number(raw), birthMonth, birthYear);
-                          }}
-                          style={{ ...fieldStyle, cursor: "pointer" }}
-                        >
-                          <option value="">{to("physique.day")}</option>
-                          {dayOpts.map((d) => (
-                            <option key={d} value={d}>{d}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label style={{ display: "block" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                          {to("physique.month")}
-                        </div>
-                        <select
-                          value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            patchBirth(birthDay, raw === "" ? "" : Number(raw), birthYear);
-                          }}
-                          style={{ ...fieldStyle, cursor: "pointer" }}
-                        >
-                          <option value="">{to("physique.month")}</option>
-                          {BIRTH_MONTH_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{to(`months.${o.value}`)}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label style={{ display: "block" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                          {to("physique.year")}
-                        </div>
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min={1900}
-                          max={nowY}
-                          value={birthYear ?? ""}
-                          placeholder="1998"
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            patchBirth(birthDay, birthMonth, raw === "" ? "" : Number(raw));
-                          }}
-                          style={fieldStyle}
-                        />
-                      </label>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {[
-                        { key: "weightKg", label: "Poids", placeholder: "kg" },
-                        { key: "heightCm", label: "Taille", placeholder: "cm" },
-                      ].map(({ key, label, placeholder }) => (
-                        <label key={key} style={{ display: "block" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={profile?.[key] ?? ""}
-                            placeholder={placeholder}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              onSwimmerProfileChange({ [key]: raw === "" ? "" : Number(raw) });
-                            }}
-                            style={fieldStyle}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </ProfileSection>
-
-            <ProfileSection
-              id="profile-natation"
-              title="Ma natation"
-              summary={`${Number(profile?.pool) === 50 ? "50 m" : "25 m"} · ${profile?.level || "niveau"} · ${profile?.sessionsPerWeek ? `${profile.sessionsPerWeek}×/sem` : "fréquence"}`}
-              defaultOpen
-            >
-              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
-                Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
-              </p>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                {LEVELS.map((l) => {
-                  const active = profile?.level === l.id;
-                  return (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => onSwimmerProfileChange({ level: l.id })}
-                      style={{
-                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                        background: active ? G.blueLight : G.surface,
-                        color: active ? G.blue : G.ink,
-                      }}
-                    >
-                      {l.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Bassin</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                {POOLS.map((p) => {
-                  const active = Number(profile?.pool) === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        onSwimmerProfileChange({ pool: p.id });
-                        setMsg({ type: "ok", text: `Bassin ${p.label} — prochaines séances adaptées (déjà faites conservées).` });
-                        setTimeout(() => setMsg(null), 3500);
-                      }}
-                      style={{
-                        flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
-                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                        background: active ? G.blueLight : G.surface,
-                        color: active ? G.blue : G.ink,
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fréquence</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                {FREQUENCIES.map((f) => {
-                  const active = Number(profile?.sessionsPerWeek) === f.id;
-                  return (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => onSwimmerProfileChange({ sessionsPerWeek: f.id })}
-                      style={{
-                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                        border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                        background: active ? G.blueLight : G.surface,
-                        color: active ? G.blue : G.ink,
-                      }}
-                    >
-                      {f.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {!goalHidesFourNagesChoice(profile) && (
-                <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Sais-tu nager du 4 nages ?
-                  </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: profile?.swimStyle === "4_nages" ? 14 : 0 }}>
-                    {SWIM_STYLES.map((s) => {
-                      const active = (profile?.swimStyle || "crawl") === s.id;
-                      return (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => {
-                            if (s.id === "crawl") {
-                              onSwimmerProfileChange({ swimStyle: "crawl", preferredStroke: "crawl" });
-                            } else {
-                              onSwimmerProfileChange({
-                                swimStyle: "4_nages",
-                                preferredStroke: profile?.preferredStroke || "crawl",
-                              });
-                            }
-                          }}
-                          style={{
-                            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                            border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                            background: active ? G.blueLight : G.surface,
-                            color: active ? G.blue : G.ink,
-                          }}
-                        >
-                          {s.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {profile?.swimStyle === "4_nages" && (
-                    <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                        Quelle est ta nage favorite ?
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        {PREFERRED_STROKES.map((s) => {
-                          const active = profile?.preferredStroke === s.id;
-                          return (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => onSwimmerProfileChange({ preferredStroke: s.id })}
-                              style={{
-                                padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                                border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                                background: active ? G.blueLight : G.surface,
-                                color: active ? G.blue : G.ink,
-                              }}
-                            >
-                              {s.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </ProfileSection>
-          </>
-        )}
-
-        {onEquipmentChange && (
-        <ProfileSection
-          id="profile-equipment"
-          title="Mon matériel"
-          summary={Array.isArray(profile?.equipment) && profile.equipment.length > 0
-            ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
-            : "Aucun matériel"}
-          defaultOpen={false}
-        >
-            <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginBottom: 10 }}>
-                {!editingEquipment ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
-                      setEditingEquipment(true);
-                    }}
-                    style={{ background: "none", border: "none", color: G.blue, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4, minHeight: 44 }}
-                  >
-                    Modifier
-                  </button>
-                ) : null}
-              </div>
-              {!editingEquipment ? (
-                <div style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45 }}>
-                  {Array.isArray(profile?.equipment) && profile.equipment.length > 0
-                    ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
-                    : "Aucun"}
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    {EQUIPMENT_OPTS.map((o) => {
-                      const active = draftEquipment.includes(o.id);
-                      return (
-                        <button
-                          key={o.id}
-                          type="button"
-                          onClick={() => setDraftEquipment((prev) => (
-                            active ? prev.filter((x) => x !== o.id) : [...prev, o.id]
-                          ))}
-                          style={{
-                            padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                            border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                            background: active ? G.blueLight : G.surface,
-                            color: active ? G.blue : G.ink,
-                          }}
-                        >
-                          {active ? "✓ " : ""}{eqLabel(o.id)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => setDraftEquipment([])}
-                      style={{
-                        flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`,
-                        background: G.surface, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
-                      }}
-                    >
-                      Aucun
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingEquipment(false);
-                        setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
-                      }}
-                      style={{
-                        flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`,
-                        background: G.surface, fontSize: 12, fontWeight: 600, color: G.grey, cursor: "pointer",
-                      }}
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onEquipmentChange([...draftEquipment]);
-                        setEditingEquipment(false);
-                        setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées (déjà faites conservées)." });
-                        setTimeout(() => setMsg(null), 3500);
-                      }}
-                      style={{
-                        flex: 1, padding: "10px", borderRadius: 10, border: "none",
-                        background: G.blue, fontSize: 12, fontWeight: 700, color: G.white, cursor: "pointer",
-                      }}
-                    >
-                      Enregistrer
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-        </ProfileSection>
-        )}
-
-        {onSwimmerProfileChange && (
-          <ProfileSection
-            id="profile-health"
-            title="Santé et blessures"
-            summary={profile?.injuryStatus === "oui" ? "Blessure déclarée" : (profile?.injuryStatus === "aucune" ? "Aucune blessure" : "À compléter")}
-            defaultOpen={false}
-          >
-            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              {[
-                { id: "aucune", label: "Aucune" },
-                { id: "oui", label: "Oui" },
-              ].map((o) => {
-                const active = profile?.injuryStatus === o.id;
-                return (
-                  <button
-                    key={o.id}
-                    type="button"
-                    onClick={() => {
-                      if (o.id === "aucune") {
-                        onSwimmerProfileChange({
-                          injuryStatus: "aucune",
-                          injuryZone: null,
-                          injurySeverity: null,
-                          healthDeclaration: false,
-                        });
-                      } else {
-                        onSwimmerProfileChange({ injuryStatus: "oui" });
-                      }
-                    }}
-                    style={{
-                      flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
-                      border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                      background: active ? G.blueLight : G.surface,
-                      color: active ? G.blue : G.ink,
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-            {profile?.injuryStatus === "oui" && (
-              <>
-                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zone</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                  {INJURY_ZONES.map((z) => {
-                    const active = profile?.injuryZone === z.id;
-                    return (
-                      <button
-                        key={z.id}
-                        type="button"
-                        onClick={() => onSwimmerProfileChange({ injuryZone: z.id })}
-                        style={{
-                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                          background: active ? G.blueLight : G.surface,
-                          color: active ? G.blue : G.ink,
-                        }}
-                      >
-                        {z.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sévérité</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                  {INJURY_SEVERITIES.map((s) => {
-                    const active = profile?.injurySeverity === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => onSwimmerProfileChange({ injurySeverity: s.id })}
-                        style={{
-                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                          background: active ? G.blueLight : G.surface,
-                          color: active ? G.blue : G.ink,
-                        }}
-                      >
-                        {s.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={!!profile?.healthConsent}
-                onChange={(e) => {
-                  const v = e.target.checked;
-                  onSwimmerProfileChange({
-                    healthConsent: v,
-                    healthConsentAt: v ? new Date().toISOString() : null,
-                  });
-                }}
-                style={{ marginTop: 3 }}
-              />
-              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
-                {HEALTH_CONSENT_CHECKBOX}
-              </span>
-            </label>
-          </ProfileSection>
-        )}
-
-        <div style={{ marginBottom: 24 }}>
-          <HomeBadgesSection plan={plan} />
-        </div>
-      </div>
-      </AppShell>
-    </div>
-  );
-};
-
-const SettingsDrawer = ({
-  open,
-  onClose,
-  user,
-  isPremium,
-  onUpgrade,
-  onPortal,
-  onRefreshStatus,
-  onGoProfile,
-  onGoBuddies,
-  showBuddies = false,
-  onOpenAuth,
-  onSignOut,
-  onDeleteAccount,
-  plan,
-  profile,
-  onPaceUpdate,
-  onValidateSession,
-}) => {
-  const { t: ts } = useTranslation("settings");
-  const [deleteBusy, setDeleteBusy] = useState(false);
-  const [deleteErr, setDeleteErr] = useState(null);
-  if (!open) return null;
-
-  const menuRow = {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: "14px 0",
-    background: "none",
-    border: "none",
-    borderBottom: `1px solid ${G.greyLight}`,
-    cursor: "pointer",
-    color: G.ink,
-    textAlign: "left",
-  };
-
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Menu principal"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      style={{
-        position: "fixed", inset: 0, zIndex: 500,
-        background: "rgba(15, 23, 42, 0.38)",
-        display: "flex", justifyContent: "flex-end",
-      }}
-    >
-      <div style={{
-        width: "min(420px, 92vw)", height: "100%",
-        background: G.surface, borderLeft: `1px solid ${G.greyLight}`,
-        boxShadow: "-12px 0 40px rgba(0,0,0,0.18)",
-        overflowY: "auto",
-        padding: "calc(var(--safe-top) + 18px) 18px calc(var(--safe-bottom) + 28px)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>Menu</div>
-            <div style={{ fontSize: 13, color: G.grey }}>Navigation, compte et réglages</div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fermer le menu"
-            style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div style={{ background: G.greyXLight, borderRadius: 20, padding: "8px 16px", marginBottom: 16 }}>
-          <button type="button" onClick={() => { onGoProfile?.(); onClose(); }} style={menuRow}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <User size={18} color={G.blue} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Mon profil</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Infos personnelles, stats, badges</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-          {showBuddies && (
-          <button type="button" onClick={() => { onGoBuddies?.(); onClose(); }} style={menuRow}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Users size={18} color={G.water} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                  Binômes eau libre
-                </div>
-                <div style={{ fontSize: 12, color: G.grey }}>Prénom, ville, téléphone · abonnés uniquement</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-          )}
-          <a
-            href={withLocalePrefix("/", getStoredLanguage())}
-            onClick={onClose}
-            style={{ ...menuRow, textDecoration: "none" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <ExternalLink size={18} color={G.blue} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Site mySWYM</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Landing, tarifs, blog et présentation</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </a>
-          <div style={{ ...menuRow, cursor: "default" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Bell size={18} color={G.gold} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Notifications</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Badges, abonnement, actus et alertes dans le header</div>
-              </div>
-            </div>
-            <Shield size={16} color={G.greyMid} />
-          </div>
-          <button type="button" onClick={onRefreshStatus} style={{ ...menuRow, borderBottom: "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <RotateCcw size={18} color={G.mint} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Restaurer les achats</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Resynchroniser le statut Premium</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-        </div>
-
-        <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey, marginBottom: 12 }}>
-            Paramètres
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{ts("language.title")}</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{ts("language.hint")}</div>
-            </div>
-            <LanguageSwitcher variant="settings" />
-          </div>
-        </div>
-
-        <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Link2 size={17} color={G.blue} />
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Connexions</div>
-              <div style={{ fontSize: 12, color: G.grey }}>Strava et services liés</div>
-            </div>
-          </div>
-          <StravaSection
-            user={user}
-            plan={plan}
-            profile={profile}
-            currentPace100={profile?.pace100}
-            onPaceUpdate={onPaceUpdate}
-            onValidateSession={onValidateSession}
-            showProgramActions={false}
-            showDetails={false}
-            isPremium={isPremium}
-            onUpgrade={onUpgrade}
-          />
-        </div>
-
-        <div style={{ background: G.surface, borderRadius: 20, padding: "16px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: G.goldLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CreditCard size={17} color={G.gold} />
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Gestion de l&apos;abonnement</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé — abonne-toi pour continuer"}</div>
-            </div>
-          </div>
-          {isPremium ? (
-            <button onClick={onPortal} style={{ width: "100%", padding: "14px", borderRadius: 14, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
-              Gérer mon abonnement
-            </button>
-          ) : (
-            <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
-              S’abonner — dès {PRICING.monthlyCommit.label}/mois
-            </button>
-          )}
-          {isPremium ? (
-            <ReferralShareCard />
-          ) : (
-            <div style={{
-              marginTop: 10, padding: 14, borderRadius: 14,
-              border: `1px dashed ${G.greyLight}`, background: G.greyXLight,
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Parrainage Premium</div>
-              <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.45 }}>
-                Une fois Premium, invite un ami (−20% pour lui, 4,99 € de crédit pour toi).
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div style={{ background: G.greyXLight, borderRadius: 20, padding: "8px 16px" }}>
-          <button type="button" onClick={() => { onClose(); onOpenAuth?.("password"); }} style={menuRow}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Shield size={18} color={G.blue} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Changer de compte</div>
-                <div style={{ fontSize: 12, color: G.grey }}>{user?.email || "Se connecter avec un autre compte"}</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-          <button type="button" onClick={onSignOut} style={{ ...menuRow, color: G.coral }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <LogOut size={18} color={G.coral} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Déconnexion</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Fermer la session actuelle</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-          {user && onDeleteAccount && (
-            <button
-              type="button"
-              disabled={deleteBusy}
-              onClick={async () => {
-                setDeleteErr(null);
-                const ok = window.confirm(
-                  `${ACCOUNT_DELETE_WARNING}\n\nConfirmer la suppression définitive du compte ?`,
-                );
-                if (!ok) return;
-                setDeleteBusy(true);
-                try {
-                  await onDeleteAccount();
-                } catch (e) {
-                  setDeleteErr(e?.message || "Suppression impossible.");
-                  setDeleteBusy(false);
-                }
-              }}
-              style={{ ...menuRow, borderBottom: "none", color: G.coral }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Trash2 size={18} color={G.coral} />
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{deleteBusy ? "Suppression…" : "Supprimer mon compte"}</div>
-                  <div style={{ fontSize: 12, color: G.grey }}>Droit à l’effacement (RGPD)</div>
-                </div>
-              </div>
-              <ChevronRight size={18} color={G.greyMid} />
-            </button>
-          )}
-          {deleteErr && (
-            <div style={{ padding: "8px 0 12px", fontSize: 12, color: G.coral }}>{deleteErr}</div>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
-
-/** Barre haute commune (logo + paramètres) — Accueil / Programme / Profil */
-const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
-  const avatarUrl = resolveAvatarUrl(user);
-  const firstName = user?.user_metadata?.firstname
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        }
-        return localStorage.getItem("myswym_firstname");
-      } catch { return null; }
-    })()
-    || user?.user_metadata?.full_name?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || "Nageur";
-  const initials = firstName.slice(0, 2).toUpperCase();
-  const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef(null);
-  const notificationItems = buildInAppNotifications({ user, plan });
-  const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user));
-  const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
-
-  useEffect(() => {
-    setSeenMap(readSeenNotifications(user));
-  }, [user?.id, user?.user_metadata?.notifications_seen]);
-
-  useEffect(() => {
-    const existing = readSeenNotifications(user);
-    if (Object.keys(existing).length > 0) return;
-    const bootstrapSeen = {};
-    notificationItems.forEach((item) => {
-      if (item.type === "badge") bootstrapSeen[item.id] = Date.now();
-    });
-    if (Object.keys(bootstrapSeen).length > 0) {
-      writeSeenNotifications(user, bootstrapSeen);
-      setSeenMap(bootstrapSeen);
-    }
-  }, [user, notificationItems]);
-
-  const markNotificationsAsRead = (items = notificationItems) => {
-    if (!items.length) return;
-    const next = { ...readSeenNotifications(user) };
-    const stamp = Date.now();
-    items.forEach((item) => { next[item.id] = stamp; });
-    writeSeenNotifications(user, next);
-    setSeenMap(next);
-  };
-
-  const handleToggleNotifications = () => {
-    const next = !notifOpen;
-    setNotifOpen(next);
-    if (next) markNotificationsAsRead();
-  };
-
-  useEffect(() => {
-    if (!notifOpen) return undefined;
-    const handlePointerDown = (event) => {
-      if (!notifRef.current?.contains(event.target)) setNotifOpen(false);
-    };
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-    };
-  }, [notifOpen]);
-
-  return (
-    <header style={{
-      position: "sticky", top: 0, zIndex: 40,
-      background: G.glass, backdropFilter: "blur(16px)",
-      WebkitBackdropFilter: "blur(16px)",
-      borderBottom: `1px solid ${G.greyLight}`,
-      boxShadow: "0 1px 16px rgba(0,107,253,0.12)",
-      paddingTop: "var(--safe-top)",
-    }}>
-      <div className="app-shell" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 10, paddingBottom: 10, minHeight: 56 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-          {onAvatarClick ? (
-            <button type="button" onClick={onAvatarClick} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent", flexShrink: 0 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${G.blueMid}`, flexShrink: 0 }}>
-                {avatarUrl
-                  ? <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span style={{ fontSize: 12, fontWeight: 800, color: G.blue }}>{initials}</span>
-                }
-              </div>
-            </button>
-          ) : null}
-          <BrandLogo variant="wordmark" height={24} onDark style={{ maxWidth: "100%" }} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
-          <div ref={notifRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={handleToggleNotifications}
-              aria-label={`Ouvrir les notifications (${unreadCount} non lues)`}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent", position: "relative" }}
-            >
-              <Bell size={20} color={unreadCount ? G.gold : G.grey} />
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 7,
-                    right: 6,
-                    minWidth: 16,
-                    height: 16,
-                    padding: "0 4px",
-                    borderRadius: 999,
-                    background: G.coral,
-                    color: G.white,
-                    border: `2px solid ${G.glass}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 9,
-                    fontWeight: 800,
-                    lineHeight: 1,
-                  }}
-                >
-                  {Math.min(unreadCount, 9)}
-                </span>
-              )}
-            </button>
-
-            {notifOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 10px)",
-                  right: -4,
-                  width: 320,
-                  maxWidth: "calc(100vw - 24px)",
-                  background: G.surface,
-                  border: `1px solid ${G.greyLight}`,
-                  borderRadius: 18,
-                  boxShadow: "0 18px 40px rgba(0,0,0,0.12)",
-                  padding: 14,
-                  zIndex: 60,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Notifications</div>
-                    <div style={{ fontSize: 11, color: G.grey }}>
-                      {notificationItems.length
-                        ? `${notificationItems.length} notification${notificationItems.length > 1 ? "s" : ""} dans ton centre`
-                        : "Aucune notification pour l'instant"}
-                    </div>
-                  </div>
-                  <div style={{ width: 32, height: 32, borderRadius: 12, background: unreadCount ? G.goldLight : G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Bell size={16} color={G.blue} />
-                  </div>
-                </div>
-
-                {notificationItems.length ? (
-                  <div style={{ display: "grid", gap: 8, maxHeight: "min(60vh, 420px)", overflowY: "auto", paddingRight: 2 }}>
-                    {notificationItems.map((item) => {
-                      const kindMeta = NOTIFICATION_KIND_META[item.type] || NOTIFICATION_KIND_META.update;
-                      const Icon = item.accentIcon || kindMeta.Icon;
-                      const bg = item.type === "badge" ? `${item.accentColor}22` : kindMeta.bg;
-                      const color = item.accentColor || kindMeta.color;
-                      return (
-                        <div
-                          key={item.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 10,
-                            background: G.greyXLight,
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                          }}
-                        >
-                          <div style={{ width: 36, height: 36, borderRadius: 12, background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <Icon size={16} />
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: G.ink, marginBottom: 2 }}>{item.title}</div>
-                            <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.45 }}>{item.body}</div>
-                            <div style={{ fontSize: 10, color: G.greyMid, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                              {formatNotificationDate(item.createdAt)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 14px", fontSize: 12, color: G.grey }}>
-                    Ici tu verras les badges, alertes d'abonnement, promos, newsletters, binomes et grosses mises a jour.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
-            <Settings size={20} color={G.grey} />
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-};
-
-const BottomNav = ({ active, onChange, newBadge, hideBuddies = false, lockBuddies = false }) => {
-  const tabs = [
-    { id: "home",    Icon: Home,      label: "Accueil" },
-    { id: "plan",    Icon: Calendar,  label: "Programme" },
-    !hideBuddies && { id: "buddies", Icon: Users,     label: "Binômes", locked: lockBuddies },
-    { id: "profile", Icon: User,      label: "Profil" },
-  ].filter(Boolean);
-  return (
-    <div className="bottom-nav">
-      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "6px 0 8px" }} aria-label="Navigation principale">
-        {tabs.map(t => {
-          const isActive = active === t.id;
-          const muted = t.locked && !isActive;
-          const iconColor = isActive ? G.blue : muted ? G.greyMid : G.greyMid;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => onChange(t.id)}
-              aria-current={isActive ? "page" : undefined}
-              aria-label={t.locked ? `${t.label} (abonnés)` : t.label}
-              style={{
-                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 4, background: "none", border: "none", cursor: "pointer",
-                minHeight: 48, padding: "6px 4px", position: "relative",
-                opacity: muted ? 0.55 : 1,
-              }}
-            >
-              <span style={{ position: "relative", display: "inline-flex" }}>
-                <t.Icon size={22} color={iconColor} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
-                {t.locked && (
-                  <Lock size={10} color={iconColor} strokeWidth={2.6} style={{ position: "absolute", right: -6, top: -3 }} />
-                )}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 500, color: isActive ? G.blue : G.grey }}>{t.label}</span>
-              {t.id === "profile" && newBadge && <div style={{ position: "absolute", top: 6, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
-              {isActive && <div style={{ position: "absolute", bottom: 2, width: 28, height: 3, borderRadius: 2, background: G.blue }} />}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
-};
-
-// ── AUTH SCREEN ───────────────────────────────────────────────────────────
-
-const getAuthInpStyle = () => ({
-  width: "100%",
-  padding: "14px 16px",
-  borderRadius: 12,
-  border: `1.5px solid ${G.inkLight}`,
-  fontSize: 15,
-  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-  background: G.greyXLight,
-  color: G.ink,
-  outline: "none",
-  boxSizing: "border-box",
-});
-
-const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "current-password" }) => {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <input
-        type={visible ? "text" : "password"}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        onKeyDown={e => e.key === "Enter" && onEnter?.()}
-        autoComplete={autoComplete}
-        style={{ ...getAuthInpStyle(), paddingRight: 48 }}
-      />
-      <button
-        type="button"
-        onClick={() => setVisible(v => !v)}
-        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-        style={{
-          position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-          background: "none", border: "none", padding: 4, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: G.greyMid, lineHeight: 0,
-        }}
-      >
-        {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
-      </button>
-    </div>
-  );
-};
-
-const GoogleMark = () => (
-  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-  </svg>
-);
-
-const authOAuthRedirect = () => `${window.location.origin}/app`;
+// ── AUTH (welcome email + reset password; AuthScreen in AuthScreen.jsx)
 
 /** Welcome mail (email + Google OAuth) — retry si session pas encore prête. */
 async function ensureWelcomeEmail(user, { attempts = 3 } = {}) {
@@ -4318,68 +2392,6 @@ async function ensureWelcomeEmail(user, { attempts = 3 } = {}) {
   return { ok: false, error: lastError };
 }
 
-const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login" }) => {
-  const { t } = useTranslation("onboarding");
-  const [busy, setBusy] = useState(null);
-
-  const startOAuth = async (provider) => {
-    if (busy) return;
-    if (disabled) {
-      onBlockedClick?.();
-      return;
-    }
-    setBusy(provider);
-    onError?.(null);
-    try {
-      try { sessionStorage.setItem("myswym_oauth_intent", intent); } catch { /* ignore */ }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: authOAuthRedirect(),
-          queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
-        },
-      });
-      if (error) throw error;
-      // Redirect en cours — on laisse busy actif
-    } catch (e) {
-      setBusy(null);
-      const raw = e.message || "";
-      const friendly = /not enabled|Unsupported provider/i.test(raw)
-        ? t("auth.socialOff")
-        : (raw || t("auth.socialFail"));
-      onError?.(friendly);
-    }
-  };
-
-  const btnBase = {
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-    width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-    fontFamily: FONT, cursor: busy ? "not-allowed" : "pointer",
-    opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <button
-        type="button"
-        disabled={!!busy}
-        aria-disabled={disabled || !!busy}
-        onClick={() => startOAuth("google")}
-        style={{
-          ...btnBase,
-          background: G.surface,
-          color: G.ink,
-          border: `1.5px solid ${G.greyLight}`,
-          opacity: disabled ? 0.7 : 1,
-        }}
-      >
-        <GoogleMark />
-        {busy === "google" ? t("auth.redirecting") : t("auth.google")}
-      </button>
-    </div>
-  );
-};
-
 const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
   const [password, setPassword] = useState("");
   const [confirm,  setConfirm]  = useState("");
@@ -4416,220 +2428,6 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
         <Btn onClick={handle} disabled={loading || !password || !confirm} variant="blue">
           {loading ? "…" : "Enregistrer le mot de passe"}
         </Btn>
-      </div>
-    </div>
-  );
-};
-
-const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode = "password", showBrandHeader = true }) => {
-  const locale = useActiveLocale();
-  const { t } = useTranslation("onboarding");
-  // mode :
-  //   "password" — login classique avec mot de passe
-  //   "register" — création de compte avec mot de passe
-  //   "reset"    — réinitialisation du mot de passe
-  const [mode, setMode] = useState(initialMode);
-  useEffect(() => { setMode(initialMode); }, [initialMode]);
-  useEffect(() => { captureReferralFromUrl(); }, []);
-  useEffect(() => {
-    if (mode === "register") {
-      track("signup_started", { source: "auth_screen" }, { onceKey: "signup_started:auth_screen" });
-    }
-  }, [mode]);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
-  const [acceptAge, setAcceptAge] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const referralCode = getStoredReferralCode();
-
-  const switchMode = (m) => {
-    if (m === "register" || m === "password") onNavigateMode?.(m);
-    setMode(m);
-    setError(null);
-    setSuccess(null);
-  };
-
-  const handle = async () => {
-    setError(null); setSuccess(null); setLoading(true);
-    try {
-      if (mode === "password") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        onAuth(data.user);
-      } else if (mode === "register") {
-        if (!acceptAge || !acceptTerms) {
-          throw new Error(t("auth.needChecks"));
-        }
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/app`,
-            data: {
-              ...(referralCode ? { referred_by: referralCode } : {}),
-              accepted_terms_at: new Date().toISOString(),
-              confirmed_age_18: true,
-            },
-          },
-        });
-        if (error) throw error;
-        if (data.user && !data.user.identities?.length) throw new Error(t("auth.exists"));
-        track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || email}` });
-        setSuccess(referralCode ? t("auth.createdReferral") : t("auth.created"));
-        switchMode("password");
-      } else if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/app`,
-        });
-        if (error) throw error;
-        setSuccess(t("auth.resetSent"));
-      }
-    } catch (e) { setError(e.message || t("auth.genericError")); }
-    finally { setLoading(false); }
-  };
-
-  const titleMap = {
-    password: t("auth.loginTitle"),
-    register: t("auth.registerTitle"),
-    reset:    t("auth.resetTitle"),
-  };
-  const subtitleMap = {
-    password: t("auth.loginLead"),
-    register: referralCode
-      ? t("auth.registerReferral", { code: referralCode })
-      : t("auth.registerLead"),
-    reset:    t("auth.resetLead"),
-  };
-  const ctaMap = {
-    password: t("auth.loginCta"),
-    register: t("auth.registerCta"),
-    reset:    t("auth.resetCta"),
-  };
-
-  const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
-
-  return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
-      {(showBrandHeader || onBack) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
-          {showBrandHeader ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <BrandLogo variant="wordmark" height={24} onDark />
-            </div>
-          ) : <div />}
-          {onBack && (
-            <button onClick={onBack} style={{ background: "none", border: `1px solid ${G.greyLight}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, color: G.grey, cursor: "pointer" }}>
-              {t("common.back")}
-            </button>
-          )}
-        </div>
-      )}
-      <div className="fade-up">
-        <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
-          {titleMap[mode]}
-        </h2>
-        <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
-          {subtitleMap[mode]}
-        </p>
-
-        {error   && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
-        {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.mint, fontSize: 13 }}>{success}</div>}
-
-        {(mode === "password" || mode === "register") && (
-          <>
-            <SocialAuthButtons
-              disabled={loading || registerBlocked}
-              intent={mode === "register" ? "signup" : "login"}
-              onError={(msg) => { setSuccess(null); setError(msg); }}
-              onBlockedClick={registerBlocked ? () => {
-                setSuccess(null);
-                setError(t("auth.googleBlocked"));
-              } : undefined}
-            />
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-              <div style={{ flex: 1, height: 1, background: G.greyLight }} />
-              <span style={{ fontSize: 12, color: G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t("common.or")}</span>
-              <div style={{ flex: 1, height: 1, background: G.greyLight }} />
-            </div>
-          </>
-        )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
-          <input type="email" placeholder={t("auth.email")} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={getAuthInpStyle()} />
-          {(mode === "password" || mode === "register") && (
-            <PasswordInput
-              placeholder={t("auth.password")}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onEnter={handle}
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-            />
-          )}
-        </div>
-
-        {mode === "password" && (
-          <div style={{ textAlign: "right", marginBottom: 16 }}>
-            <button onClick={() => switchMode("reset")} style={{ background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer", padding: 0 }}>
-              {t("auth.forgot")}
-            </button>
-          </div>
-        )}
-
-        {mode === "register" && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{t("auth.age")}</span>
-            </label>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>
-                <Trans
-                  i18nKey="auth.terms"
-                  ns="onboarding"
-                  components={{
-                    cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }} />,
-                    privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }} />,
-                  }}
-                />
-              </span>
-            </label>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
-              {t("auth.trial")}
-            </p>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
-              {t("health.safety")}
-            </p>
-          </div>
-        )}
-
-        <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
-          {loading ? "…" : ctaMap[mode]}
-        </Btn>
-
-        {/* Toggles secondaires */}
-        <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
-          {mode === "password" && (
-            <>
-              <button onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-                {t("auth.createAccount")}
-              </button>
-            </>
-          )}
-          {mode === "register" && (
-            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-              {t("auth.hasAccount")}
-            </button>
-          )}
-          {mode === "reset" && (
-            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-              {t("auth.backLogin")}
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -4705,36 +2503,6 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   );
 };
 
-const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
-  const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
-  const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
-  return (
-    <div className="fade-up">
-      <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
-          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Poids actuel (kg)</label>
-          <input type="number" inputMode="decimal" value={weightCurrent} onChange={e => onChangeCurrent(e.target.value)} placeholder="ex : 75" style={inp} />
-        </div>
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
-          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Objectif (kg)</label>
-          <input type="number" inputMode="decimal" value={weightGoal} onChange={e => onChangeGoal(e.target.value)} placeholder="ex : 72" style={inp} />
-        </div>
-      </div>
-      {weeks && (
-        <div style={{ background: G.blueLight, borderRadius: 12, padding: "12px 16px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-          <Target size={18} color={G.blue} />
-          <span style={{ fontSize: 14, color: G.blue, fontWeight: 500 }}>Plan de <strong>{weeks} semaines</strong> généré pour −{loss.toFixed(1)} kg</span>
-        </div>
-      )}
-      <Btn onClick={onNext} disabled={!weightCurrent || !weightGoal || parseFloat(weightCurrent) <= parseFloat(weightGoal)}>Continuer</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
-    </div>
-  );
-};
 
 const dateSelectStyle = {
   flex: 1,
@@ -5270,22 +3038,6 @@ const OnboardingWizard = ({
   );
 };
 
-// ── LOADING ───────────────────────────────────────────────────────────────
-/** Boot loader — logo + barre. Styles dans index.html. */
-const Loading = () => (
-  <div className="myswym-boot" role="status" aria-live="polite" aria-busy="true">
-    <div className="myswym-boot-inner">
-      <div className="myswym-boot-icon-wrap">
-        <img className="myswym-boot-icon" src="/apple-touch-icon.png" alt="" width={88} height={88} />
-      </div>
-      <img className="myswym-boot-wordmark" src="/logo-myswym-banner-blanc.png" alt="mySWYM" height={28} width={192} />
-      <p className="myswym-boot-status">Préparation de votre espace nageur</p>
-      <div className="myswym-boot-track" aria-hidden="true"><div className="myswym-boot-bar" /></div>
-      <p className="myswym-boot-label">Un instant</p>
-    </div>
-  </div>
-);
-
 // ── SHARE MODAL ───────────────────────────────────────────────────────────
 const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const tm = getTypeMeta(session.type);
@@ -5406,80 +3158,6 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
 };
 
 
-const ConfirmSheet = ({
-  title,
-  message,
-  confirmLabel = "Supprimer",
-  cancelLabel = "Annuler",
-  destructive = true,
-  onConfirm,
-  onCancel,
-}) => (
-  <div
-    className="sheet-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="confirm-sheet-title"
-    onClick={(e) => e.target === e.currentTarget && onCancel()}
-  >
-    <div
-      className="sheet-panel scale-in"
-      style={{
-        background: G.surface,
-        borderRadius: "28px 28px 0 0",
-        padding: "24px 20px",
-        paddingBottom: "max(28px, env(safe-area-inset-bottom))",
-      }}
-    >
-      <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-      <div style={{
-        width: 52, height: 52, borderRadius: 16,
-        background: destructive ? G.coralLight : G.blueLight,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        margin: "0 auto 16px",
-      }}>
-        <Trash2 size={22} color={destructive ? G.coral : G.blue} />
-      </div>
-      <h3
-        id="confirm-sheet-title"
-        style={{
-          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800,
-          color: G.ink, textAlign: "center", marginBottom: 8,
-        }}
-      >
-        {title}
-      </h3>
-      <p style={{ color: G.grey, fontSize: 14, textAlign: "center", lineHeight: 1.5, marginBottom: 24 }}>
-        {message}
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button
-          type="button"
-          onClick={onConfirm}
-          style={{
-            width: "100%", padding: "14px 16px", borderRadius: 14, border: "none",
-            background: destructive ? G.coral : G.blue, color: "#fff",
-            fontSize: 15, fontWeight: 700, cursor: "pointer", minHeight: 48,
-          }}
-        >
-          {confirmLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            width: "100%", padding: "14px 16px", borderRadius: 14,
-            border: `1.5px solid ${G.greyLight}`, background: G.surface,
-            color: G.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", minHeight: 48,
-          }}
-        >
-          {cancelLabel}
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
 
 
 // ── BADGE CÉLÉBRATION + EXPORT + SEMAINE ───────────────────────────────────
@@ -5509,13 +3187,13 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
         </h3>
         <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 24px" }}>{b.desc}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {session && onShare && (
+          {onShare && (
             <Btn
               variant="blue"
-              onClick={() => { onShare(session, badgeId); onClose?.(); }}
+              onClick={() => { onShare(session || null, badgeId); onClose?.(); }}
               style={{ width: "100%" }}
             >
-              Fêter & partager la séance
+              Partager mon badge
             </Btn>
           )}
           <button
@@ -5891,135 +3569,6 @@ const ReferralShareCard = () => {
   );
 };
 
-
-const CancelSurveySheet = ({ onChoose, onSkip }) => {
-  const reasons = [
-    { id: "price", label: "Trop cher" },
-    { id: "pause", label: "Pause / pas le temps" },
-    { id: "hard", label: "Trop dur / pas adapté" },
-    { id: "other", label: "Autre" },
-  ];
-  return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, textAlign: "center" }}>
-          Avant de partir
-        </h3>
-        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
-          Une raison rapide (optionnel) — ça nous aide à améliorer MySWYM.
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-          {reasons.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => onChoose(r.id)}
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: 14,
-                border: `1.5px solid ${G.greyLight}`, background: G.surface,
-                color: G.ink, fontWeight: 600, fontSize: 14, cursor: "pointer", textAlign: "left",
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-        <button type="button" onClick={onSkip} style={{ width: "100%", padding: 12, border: "none", background: "none", color: G.grey, fontSize: 13, cursor: "pointer" }}>
-          Continuer vers Stripe
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const TrialExpiredFreeze = ({ onSubscribe, onSignOut, preview = null }) => (
-  <div
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="freeze-title"
-    style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 400,
-      background: G.bg,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "28px 20px",
-      paddingBottom: "max(28px, env(safe-area-inset-bottom))",
-    }}
-  >
-    <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
-      <div style={{
-        width: 64, height: 64, borderRadius: 20, background: G.blue,
-        display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px",
-      }}>
-        <Lock size={28} color={G.gold} />
-      </div>
-      <h1 id="freeze-title" style={{
-        fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 32, fontWeight: 800,
-        textTransform: "none", letterSpacing: "-0.03em", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
-      }}>
-        Ton essai est terminé
-      </h1>
-      <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 20px" }}>
-        Le coach est en pause. Abonne-toi pour reprendre tes séances — {PRICING_SUMMARY_FR}.
-      </p>
-
-      {preview && (
-        <div
-          aria-hidden
-          style={{
-            textAlign: "left",
-            marginBottom: 22,
-            borderRadius: 18,
-            padding: "16px 16px",
-            border: `1px solid ${G.greyLight}`,
-            background: G.surface,
-            filter: "blur(5px)",
-            opacity: 0.55,
-            pointerEvents: "none",
-            userSelect: "none",
-            position: "relative",
-          }}
-        >
-          <div style={{
-            position: "absolute", inset: 0, borderRadius: 18,
-            background: "linear-gradient(180deg, transparent 30%, rgba(6,16,31,0.55) 100%)",
-          }} />
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
-            Aperçu — séance en pause
-          </div>
-          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: G.ink, marginBottom: 6 }}>
-            {preview.title || "Séance"}
-          </div>
-          <div style={{ fontSize: 13, color: G.greyMid }}>
-            {[preview.type, preview.distance, preview.duration ? `${preview.duration} min` : null].filter(Boolean).join(" · ")}
-          </div>
-        </div>
-      )}
-
-      <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
-        Reprendre avec Premium
-      </Btn>
-      <button
-        type="button"
-        onClick={onSignOut}
-        style={{
-          width: "100%", marginTop: 12, padding: 14, border: "none", background: "none",
-          color: G.grey, fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44,
-        }}
-      >
-        Se déconnecter
-      </button>
-      <p style={{ fontSize: 12, color: G.greyMid, marginTop: 16, lineHeight: 1.45 }}>
-        Besoin d’aide ? <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>support@myswym.app</a>
-      </p>
-    </div>
-  </div>
-);
 
 
 const PremiumTeaser = ({ onUpgrade }) => (
@@ -6411,15 +3960,14 @@ const SessionCard = ({
   const skeletonBars = Math.min(Math.max(blockCount || 3, 3), 5);
 
   return (
-    <div style={{
-      background: resolved || locked ? G.greyXLight : G.surface,
-      borderRadius: 20,
-      border: `1px solid ${G.greyLight}`,
-      opacity: resolved ? 0.78 : locked ? 0.92 : 1,
-      transition: "opacity 0.25s",
-      overflow: "hidden",
-      position: "relative",
-    }}>
+    <div
+      className={`ms-session-card${resolved ? " is-resolved" : ""}${locked ? " is-locked" : ""}`}
+      style={{
+        transition: "opacity 0.25s",
+        position: "relative",
+        background: resolved || locked ? G.greyXLight : undefined,
+      }}
+    >
       {!resolved && !locked && (
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
@@ -6661,7 +4209,13 @@ const SessionCard = ({
                 isPremium={isPremium}
                 embedded
                 showStart={!resolved}
+                whyLine={sessionWhyLine(session)}
                 onUpgrade={() => onUpgrade?.("session_locked")}
+                onTooHard={
+                  !resolved && isPremium
+                    ? () => onEditFeedback?.(weekIndex, sessionIndex)
+                    : undefined
+                }
                 onStart={() => {
                   if (!isPremium) {
                     onUpgrade?.("session_locked");
@@ -6692,6 +4246,14 @@ const SessionCard = ({
                 setPoolOpen(false);
                 if (!resolved && isPremium) onComplete?.("done");
               }}
+              onTooHard={
+                !resolved && isPremium
+                  ? () => {
+                      setPoolOpen(false);
+                      onEditFeedback?.(weekIndex, sessionIndex);
+                    }
+                  : undefined
+              }
             />
           )}
             </>
@@ -6949,141 +4511,6 @@ const ResetConfirmButton = ({ onReset, variant = "subtle" }) => {
 };
 
 // ── COACH CARD ────────────────────────────────────────────────────────────
-const COACH = {
-  name: "Arthur N.",
-  photo: "/coach.webp",
-  initials: "AN",
-};
-
-const COACH_MESSAGES = {
-  // ── Découverte — messages simples, encourageants, zéro jargon ──
-  découverte_base: [
-    "L'important c'est d'y aller. Pas besoin de nager vite — nage régulièrement. Ton corps s'adapte plus vite que tu ne le crois.",
-    "Chaque longueur compte. Si tu as nagé aujourd'hui, tu as déjà réussi ta séance. Le reste viendra tout seul.",
-    "Commencer c'est la partie la plus difficile — tu l'as déjà faite. Continue à ton rythme, sans te comparer à personne.",
-  ],
-  découverte_development: [
-    "Tu progresses ! Tu tiens plus longtemps dans l'eau qu'au début — même si tu ne t'en rends pas compte. C'est ça, la progression.",
-    "Tes séances sont un peu plus longues maintenant. Pas de panique si tu dois t'arrêter : reprends, souffle, et continue.",
-  ],
-  découverte_peak: [
-    "Tu nages bien. Cette semaine on ajoute un peu d'intensité — juste pour voir jusqu'où tu peux aller. Pas d'obligation.",
-    "Tu es plus à l'aise dans l'eau qu'il y a quelques semaines. Profite de chaque séance, c'est là que tout se passe.",
-  ],
-  // ── Niveaux confirmés ──
-  base: [
-    "Ce mois est fondamental : on construit ta base aérobie. Travaille à basse intensité, respire, prends tes marques. La vitesse viendra plus tard.",
-    "La base, c'est le moteur. Chaque séance d'endurance que tu fais aujourd'hui, tu l'encaisseras comme un avantage dans 2 mois. Sois patient.",
-    "La simplicité est la sophistication suprême. — Léonard de Vinci",
-  ],
-  development: [
-    "On monte en charge. Les séances au seuil vont piquer — c'est normal. Reste dans les zones, ne cherche pas à tout donner d'un coup.",
-    "Ce mois développe ton endurance spécifique. Les efforts sont plus longs, l'intensité monte. Tu dois sortir fatigué mais pas détruit.",
-  ],
-  peak: [
-    "On est en phase de pointe. Les séances de vitesse sont courtes mais intenses. Récupère bien entre les efforts — c'est là que la progression s'installe.",
-    "Ce mois tu touches à ta meilleure forme. Chaque séance compte. Dors bien, mange bien, et fais confiance au travail déjà accompli.",
-  ],
-  taper: [
-    "On allège. C'est le moment où beaucoup veulent en faire plus — fais l'inverse. La fraîcheur au départ vaut plus que 3 séances de plus.",
-  ],
-  competition: [
-    "Semaine de compétition — reste frais, séances courtes. Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
-  ],
-  test: [
-    "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Pas de forçage — un chrono propre pour mesurer si tu progresses vraiment.",
-    "Compare avec le test précédent. Même 2–3 secondes de mieux, c'est une vraie évolution. Note-les quelque part.",
-  ],
-  wellness: [
-    "On reprend doucement. L'objectif ce mois : créer l'habitude. Deux séances régulières valent mieux qu'une séance intense suivie d'une semaine sans.",
-    "Le corps s'adapte progressivement. Tu vas peut-être te sentir limité — c'est une bonne chose. On construit sur du solide.",
-  ],
-  default: [
-    "Entraîne-toi intelligemment. La régularité bat toujours l'intensité ponctuelle. Une séance de plus par semaine sur 3 mois, ça change tout.",
-  ],
-};
-
-const CoachCard = ({ plan, profile, currentWeekIndex }) => {
-  const week = plan.weeks[Math.max(0, currentWeekIndex)];
-  const isDecouverte = profile?.level === "découverte";
-  const adaptLine = formatCoachAdaptLine(plan);
-
-  const resolveCoachPhase = () => {
-    if (!week) return "default";
-    const f = (week.focus || "").toLowerCase();
-    if (week.isTest || f.includes("test") || f.includes("contrôle")) return "test";
-    if (week.isBilan || f.includes("bilan")) return "taper";
-    if (f.includes("compét")) return "competition";
-    if (f.includes("affût")) return "taper";
-    if (f.includes("vitesse") || f.includes("intensité") || f.includes("volume maximum")) return "peak";
-    if (f.includes("seuil") || f.includes("développement")) return "development";
-    if (f.includes("mise en") || f.includes("construction") || f.includes("jambes") || f.includes("aérobie")) return "base";
-    if (plan.isProgression) {
-      if (currentWeekIndex < 3) return "base";
-      if (currentWeekIndex === 3) return "test";
-      if (currentWeekIndex < 7) return "development";
-      if (currentWeekIndex === 7) return "test";
-      if (currentWeekIndex < 11) return "peak";
-      return "taper";
-    }
-    return "base";
-  };
-  const phase = resolveCoachPhase();
-
-  // Découverte level gets its own set of simple, jargon-free messages
-  const phaseKey = isDecouverte
-    ? (`découverte_${phase}` in COACH_MESSAGES ? `découverte_${phase}` : "découverte_base")
-    : phase;
-  const msgs = COACH_MESSAGES[phaseKey] || COACH_MESSAGES.default;
-  // Change de message chaque mois civil pour que ça évolue même sans progresser
-  const msgIndex = new Date().getMonth() % msgs.length;
-  const message = msgs[msgIndex];
-
-  return (
-    <div style={{
-      background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
-      borderRadius: 22,
-      padding: "20px",
-      marginBottom: 20,
-      boxShadow: "0 8px 28px rgba(53,93,163,0.28)",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      {/* Decorative circle */}
-      <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: -30, right: 30, width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
-        {COACH.photo ? (
-          <img src={COACH.photo} alt={COACH.name} style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2.5px solid rgba(255,255,255,0.4)` }} />
-        ) : (
-          <div style={{ width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ color: G.white, fontSize: 16, fontWeight: 800 }}>{COACH.initials}</span>
-          </div>
-        )}
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Message de ton coach</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: G.white, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{COACH.name}</div>
-        </div>
-      </div>
-
-      {/* Message bubble */}
-      <div style={{ background: "rgba(255,255,255,0.13)", borderRadius: 14, padding: "14px 16px", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
-        <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.92)", lineHeight: 1.65, margin: 0 }}>{message}</p>
-        {adaptLine && (
-          <p style={{
-            fontSize: 12.5, color: G.mint, lineHeight: 1.5, margin: "12px 0 0", fontWeight: 700,
-            paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.18)",
-          }}>
-            {adaptLine}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
-
 // ── MODE BOUCLE « Nager & Progresser » ─────────────────────────────────────
 const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
   <div style={{
@@ -7499,599 +4926,30 @@ const PlanSelector = ({
   );
 };
 
-// ── PLAN TAB ──────────────────────────────────────────────────────────────
-const PlanTab = ({
-  plan, profile, isPremium, onComplete, onAdvanceLoop, onShare, onEditFeedback, onReset, onUpgrade,
-  plans, activePlanId, onSwitchPlan, onAddPlan, onDeletePlan, onRegenerateLoop, onUpdateProgram,
-  user, onOpenMenu, onTabChange,
-  addingPlan = false, onboardingProps = null, onCancelAddPlan = null,
-}) => {
-  const [stravaBestPace, setStravaBestPace] = useState(null);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    supabase
-      .from("strava_activities")
-      .select("pace")
-      .eq("user_id", user.id)
-      .in("activity_type", ["Swim", "OpenWaterSwim"])
-      .gt("pace", 0)
-      .order("pace", { ascending: true })
-      .limit(1)
-      .then(({ data }) => {
-        if (!cancelled) setStravaBestPace(data?.[0]?.pace ?? null);
-      });
-    return () => { cancelled = true; };
-  }, [user?.id]);
-
-  // Compte connecté sans plan (ou ajout d’un plan) → questionnaire dans le shell app
-  if ((!plan || addingPlan) && onboardingProps) {
-    return (
-      <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-        <AppTopBar
-          user={user}
-          onOpenMenu={onOpenMenu}
-          onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-          plan={null}
-        />
-        <div className="app-shell" style={{ paddingTop: 16, paddingBottom: 24 }}>
-          <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15, margin: 0 }}>
-              {addingPlan ? "Remplacer mon programme" : "Crée ton programme"}
-            </h1>
-            <p style={{ fontSize: 14, color: G.grey, marginTop: 6, lineHeight: 1.45 }}>
-              Réponds au questionnaire — Accueil, Profil et Binômes restent accessibles.
-            </p>
-          </div>
-          <OnboardingWizard
-            {...onboardingProps}
-            onCancel={addingPlan && plans?.length > 0 ? onCancelAddPlan : null}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (!plan?.weeks) {
-    return (
-      <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-        <AppTopBar user={user} onOpenMenu={onOpenMenu} onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined} plan={null} />
-        <div className="app-shell" style={{ paddingTop: 32 }}>
-          <p style={{ color: G.grey, fontSize: 14 }}>Aucun programme pour le moment.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (plan?.isSessionLoop) {
-    return (
-      <ProgressionLoopView
-        plan={plan}
-        profile={profile}
-        plans={plans}
-        activePlanId={activePlanId}
-        isPremium={isPremium}
-        onComplete={(status) => onComplete(0, 0, status)}
-        onAdvanceLoop={onAdvanceLoop}
-        onSwitchPlan={onSwitchPlan}
-        onAddPlan={onAddPlan}
-        onDeletePlan={onDeletePlan}
-        onRegenerate={onRegenerateLoop}
-        onUpgrade={onUpgrade}
-        onReset={onReset}
-        onShare={onShare}
-        onEditFeedback={onEditFeedback}
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onTabChange={onTabChange}
-      />
-    );
-  }
-
-  const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
-  const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
-
-  const planLabel = GOALS.find(g => g.id === profile.goal)?.label
-                 || CATEGORIES.find(c => c.id === profile.category)?.label
-                 || "Mon plan";
-  return (
-    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-      <AppTopBar
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-        plan={plan}
-      />
-
-      {/* ── Sous-header programme ── */}
-      <div style={{
-        background: G.bg,
-        borderBottom: `1px solid rgba(142,179,255,0.10)`,
-      }}>
-        <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-            <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, lineHeight: 1, margin: 0 }}>{planLabel}</h1>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{
-              fontSize: 12, fontWeight: 600, color: G.inkLight,
-              background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
-            }}>
-              Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{plan.weeks.length}
-            </span>
-            {currentWeekIndex >= 0 && currentWeek?.focus && (
-              <span style={{ fontSize: 12, color: G.blue, fontWeight: 600 }}>{currentWeek.focus}</span>
-            )}
-          </div>
-        </div>
-        {/* Plan switcher */}
-        <div className="app-shell" style={{ paddingBottom: 12 }}>
-          <PlanSelector
-            plans={plans}
-            activePlanId={activePlanId}
-            onAddPlan={onAddPlan}
-          />
-        </div>
-      </div>
-
-      <div className="app-shell" style={{ paddingTop: 16 }}>
-
-        {!isPremium && (
-          <PremiumBanner
-            onUpgrade={onUpgrade}
-            weeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
-          />
-        )}
-
-        {isPremium && (
-          <CoachCard
-            plan={plan}
-            profile={profile}
-            currentWeekIndex={currentWeekIndex >= 0 ? currentWeekIndex : 0}
-          />
-        )}
-
-        <WeekProjectionCard plan={plan} profile={profile} />
-
-        {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
-
-        <UpdateProgramCard
-          profile={profile}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-          onSave={onUpdateProgram}
-          stravaBestPace={stravaBestPace}
-        />
-
-        {plan.weeks.map((week, i) => (
-          <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} analyticsCtx={{ planId: activePlanId, profile }} />
-          </div>
-        ))}
-
-        {isPremium && <ResetConfirmButton onReset={onReset} variant="subtle" />}
-      </div>
-    </div>
-  );
-};
-
-/** Badges sur l’accueil : colorés si débloqués, grisés sinon. */
-const HomeBadgesSection = ({ plan }) => {
-  const stats = computeStats(plan);
-  const earned = checkBadges(stats);
-  const earnedSet = new Set(earned);
-  return (
-    <div style={{
-      background: G.surface, borderRadius: 20, padding: "18px",
-      boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
-      border: `1px solid ${G.greyLight}`,
-      marginBottom: 12,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Award size={16} color={G.blue} />
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>Badges</div>
-        </div>
-        <span style={{ fontSize: 13, fontWeight: 800, color: G.blue, fontVariantNumeric: "tabular-nums" }}>
-          {earned.length}/{BADGE_DEFS.length}
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px 8px" }}>
-        {BADGE_DEFS.map(b => {
-          const unlocked = earnedSet.has(b.id);
-          return (
-            <div
-              key={b.id}
-              title={unlocked ? b.desc : `À débloquer — ${b.desc}`}
-              style={{ textAlign: "center", minWidth: 0 }}
-            >
-              <div style={{
-                width: 48, height: 48, borderRadius: "50%",
-                margin: "0 auto 6px",
-                background: unlocked ? `${b.color}20` : G.greyXLight,
-                border: unlocked ? `1.5px solid ${b.color}40` : `1.5px solid ${G.greyLight}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                position: "relative",
-                boxShadow: unlocked ? `0 4px 12px ${b.color}22` : "none",
-                filter: unlocked ? "none" : "grayscale(1)",
-                opacity: unlocked ? 1 : 0.45,
-              }}>
-                <b.icon size={20} color={unlocked ? b.color : G.greyMid} />
-                {!unlocked && (
-                  <div style={{
-                    position: "absolute", bottom: -2, right: -2,
-                    width: 16, height: 16, borderRadius: "50%",
-                    background: G.surface, border: `1px solid ${G.greyLight}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <Lock size={9} color={G.greyMid} />
-                  </div>
-                )}
-              </div>
-              <div style={{
-                fontSize: 10, fontWeight: unlocked ? 700 : 600,
-                color: unlocked ? G.ink : G.greyMid,
-                lineHeight: 1.25,
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              }}>
-                {b.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {earned.length < BADGE_DEFS.length && (
-        <p style={{ fontSize: 11, color: G.greyMid, margin: "12px 0 0", lineHeight: 1.4 }}>
-          Complète des séances pour débloquer les badges grisés.
-        </p>
-      )}
-    </div>
-  );
-};
-
-// ── DASHBOARD ──────────────────────────────────────────────────────────────
-/** Après la 1re séance : une carte secondaire + le reste derrière « Voir plus ». */
-const HomeSecondaryStack = ({
-  plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
-}) => {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const coachWeek = plan?.weeks?.length
-    ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
-    : 0;
-
-  const primary = isPremium && plan?.weeks?.length > 0
-    ? "coach"
-    : plan
-      ? "pace"
-      : "strava";
-
-  return (
-    <>
-      {primary === "coach" && (
-        <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} />
-      )}
-      {primary === "pace" && (
-        <MonAllureCard
-          profile={profile}
-          pace100={profile?.pace100}
-          isPremium={isPremium}
-          onSave={onPaceUpdate}
-          onUpgrade={onUpgrade}
-        />
-      )}
-      {primary === "strava" && (
-        <StravaSection
-          user={user}
-          plan={plan}
-          profile={profile}
-          currentPace100={profile?.pace100}
-          onPaceUpdate={onPaceUpdate}
-          onValidateSession={onValidateSession}
-          showProgramActions={false}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-        />
-      )}
-
-      {!moreOpen ? (
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          style={{
-            width: "100%", marginBottom: 16, minHeight: 48, borderRadius: 14,
-            border: `1px solid ${G.greyLight}`, background: G.surface,
-            color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer",
-          }}
-        >
-          Voir plus — allure, badges, Strava
-        </button>
-      ) : (
-        <>
-          {primary !== "pace" && plan && (
-            <MonAllureCard
-              profile={profile}
-              pace100={profile?.pace100}
-              isPremium={isPremium}
-              onSave={onPaceUpdate}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {primary !== "strava" && (
-            <StravaSection
-              user={user}
-              plan={plan}
-              profile={profile}
-              currentPace100={profile?.pace100}
-              onPaceUpdate={onPaceUpdate}
-              onValidateSession={onValidateSession}
-              showProgramActions={false}
-              isPremium={isPremium}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {plan && <HomeBadgesSection plan={plan} />}
-          <HomeBlogCarousel />
-          <button
-            type="button"
-            onClick={() => setMoreOpen(false)}
-            style={{
-              width: "100%", marginBottom: 8, minHeight: 44, border: "none", background: "none",
-              color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
-            }}
-          >
-            Réduire
-          </button>
-        </>
-      )}
-    </>
-  );
-};
-
-const Dashboard = ({
-  plan, profile, onTabChange, onSignOut, user,
-  isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
-  activePlanId = null,
-}) => {
-  const stats = computeStats(plan);
-  const isLoop = !!plan?.isSessionLoop;
-  const [poolOpen, setPoolOpen] = useState(false);
-  const [homePrepOpen, setHomePrepOpen] = useState(false);
-  const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
-  const next = findNextSession(plan);
-  const preview = next?.session ? sessionCardModel(next.session) : null;
-  const hasSwum = stats.totalSessions > 0;
-  const showProfileNudge = !!plan && shouldShowProfileNudge(profile, { dismissed: nudgeDismissed });
-  const currentWeekIdx = (plan?.weeks || []).findIndex((w) => !(w.sessions || []).every(isSessionResolved));
-  const weekMetersRow = !isLoop && stats.weeklyData?.length
-    ? stats.weeklyData[currentWeekIdx >= 0 ? currentWeekIdx : 0]
-    : null;
-
-  const firstName = user?.user_metadata?.firstname
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        }
-        return localStorage.getItem("myswym_firstname");
-      } catch { return null; }
-    })()
-    || user?.user_metadata?.full_name?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || "Nageur";
-
-  const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
-  const tm = getTypeMeta(next?.session?.type);
-
-  const startToday = () => {
-    if (!next?.session || next.resolved) {
-      onTabChange?.("plan");
-      return;
-    }
-    if (!isPremium) {
-      onUpgrade?.("session_locked");
-      return;
-    }
-    const props = sessionAnalyticsProps(profile, next.session, {
-      planWeek: (plan?.weeks?.[next.weekIndex]?.number) ?? next.weekIndex + 1,
-      sessionIndex: next.sessionIndex,
-    });
-    track("session_started", {
-      level: props.level,
-      objective: props.objective,
-      planWeek: props.planWeek,
-      sessionIndex: props.sessionIndex,
-      volume: props.volume,
-    }, { onceKey: `session_started:${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}` });
-    setHomePrepOpen(true);
-  };
-
-  return (
-    <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", background: "transparent", minHeight: "100dvh" }}>
-
-      <AppTopBar
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onAvatarClick={() => onTabChange("profile")}
-        plan={plan}
-      />
-
-      <div className="app-shell" style={{ paddingTop: 16 }}>
-
-        <div className="ms-home-greet">
-          <div>
-            <p>{(() => {
-              const h = new Date().getHours();
-              return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-            })()},</p>
-            <h1>{plan ? "Prêt à nager ?" : firstName}</h1>
-          </div>
-          {plan && (stats.streak > 0 || hasSwum) && (
-            <span className="ms-home-streak">
-              {stats.streak > 0 ? (
-                <><Flame size={14} color={G.gold} />{stats.streak}</>
-              ) : (
-                <><Waves size={14} color={G.blue} />{(stats.totalMeters / 1000).toFixed(1)} km</>
-              )}
-            </span>
-          )}
-        </div>
-
-        {showProfileNudge && (
-          <ProfileNudgeCard
-            onOpenProfile={() => onTabChange?.("profile")}
-            onDismiss={() => {
-              dismissProfileNudge(user?.id);
-              setNudgeDismissed(true);
-            }}
-          />
-        )}
-
-        {!plan && (
-          <div style={{
-            background: G.surface, borderRadius: 20, padding: "22px 18px", marginBottom: 16,
-            border: `1px solid ${G.greyLight}`,
-            boxShadow: "0 1px 3px rgba(25,28,30,0.03), 0 8px 20px rgba(53,93,163,0.05)",
-          }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, margin: "0 0 8px" }}>
-              Pas encore de programme
-            </h2>
-            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 16px" }}>
-              Crée ton plan personnalisé dans l’onglet Programme.
-            </p>
-            <button
-              type="button"
-              onClick={() => onTabChange?.("plan")}
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: 12, border: "none",
-                background: G.blue, color: G.white, fontSize: 15, fontWeight: 600, cursor: "pointer", minHeight: 48,
-                fontFamily: FONT,
-              }}
-            >
-              Créer mon programme
-            </button>
-          </div>
-        )}
-
-        {preview && (
-          <div style={{ marginBottom: 16 }}>
-            <SessionHeroCard preview={preview} kicker={next.resolved ? "Séance faite" : "Séance du jour"}>
-              <button
-                type="button"
-                className="ms-plan-reveal-btn"
-                onClick={startToday}
-                style={{ fontFamily: FONT }}
-              >
-                {next.resolved
-                  ? "Voir le programme"
-                  : (isPremium
-                    ? (homePrepOpen ? "Préparation ouverte ↓" : "Préparer la séance")
-                    : "S’abonner pour nager")}
-              </button>
-            </SessionHeroCard>
-          </div>
-        )}
-
-        {homePrepOpen && next?.session && !next.resolved && (
-          <div className="ms-session-card" style={{ marginBottom: 16, padding: "16px 18px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Préparation
-              </div>
-              <button
-                type="button"
-                onClick={() => setHomePrepOpen(false)}
-                style={{ border: "none", background: "none", color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >
-                Fermer
-              </button>
-            </div>
-            <WorkoutPrepView
-              session={next.session}
-              colors={G}
-              accent={{ bg: tm.bg, color: tm.color }}
-              isPremium={isPremium}
-              showStart
-              startLabel="C’est parti — je nage"
-              onUpgrade={onUpgrade}
-              onStart={() => setPoolOpen(true)}
-            />
-          </div>
-        )}
-
-        {plan && (
-          <WeekProjectionCard
-            plan={plan}
-            profile={profile}
-            onOpenPlan={() => onTabChange?.("plan")}
-          />
-        )}
-
-        {hasSwum && weekMetersRow && !plan && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 16,
-            background: G.surface, border: `1px solid ${G.greyLight}`,
-            borderRadius: 16, padding: "14px 16px", marginBottom: 16,
-          }}>
-            <WeekStatRing value={weekMetersRow.done} max={weekMetersRow.total} />
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey }}>
-                {weekMetersRow.label}
-              </div>
-              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: G.ink, letterSpacing: "-0.03em", marginTop: 2 }}>
-                {weekMetersRow.done}
-                <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, fontFamily: FONT }}> / {weekMetersRow.total} m</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {poolOpen && next?.session && (
-          <PoolMode
-            session={next.session}
-            sessionKey={`${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}`}
-            colors={G}
-            accent={{ bg: tm.bg, color: tm.color }}
-            onClose={() => setPoolOpen(false)}
-            onFinish={() => {
-              setPoolOpen(false);
-              setHomePrepOpen(false);
-              onComplete?.(next.weekIndex, next.sessionIndex, "done");
-            }}
-          />
-        )}
-
-        {!isLoop && planFinished && (
-          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
-            {plan.isProgression
-              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
-            }
-          </div>
-        )}
-
-        {!isPremium && plan?.weeks?.length > 0 && (
-          <PremiumTeaser onUpgrade={onUpgrade} />
-        )}
-
-        {hasSwum && (
-          <HomeSecondaryStack
-            plan={plan}
-            profile={profile}
-            user={user}
-            isPremium={isPremium}
-            onUpgrade={onUpgrade}
-            onPaceUpdate={onPaceUpdate}
-            onValidateSession={onValidateSession}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
+function registerAppTabUi() {
+  registerTabUi({
+    AppTopBar,
+    OnboardingWizard,
+    ProgressionLoopView,
+    PlanSelector,
+    PremiumBanner,
+    PremiumTeaser,
+    WeekProjectionCard,
+    ResetConfirmButton,
+    UpdateProgramCard,
+    WeekCard,
+    MonAllureCard,
+    StravaSection,
+    GOALS,
+    CATEGORIES,
+    BADGE_DEFS,
+    computeStats,
+    checkBadges,
+    getTypeMeta,
+  });
+}
+registerAppTabUi();
 
 // ── BADGES TAB ─────────────────────────────────────────────────────────────
 const BadgesTab = ({ plan }) => {
@@ -10599,6 +7457,11 @@ const BLANK_PROFILE = {
 };
 
 export default function App() {
+  useEffect(() => {
+    // Re-register après HMR (évite crash getTabUi / écran blanc)
+    registerAppTabUi();
+  }, []);
+
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
@@ -10614,6 +7477,8 @@ export default function App() {
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const forceAuthRef = useRef(false);
+  /** Empêche le bounce /app→onboarding pendant / juste après signOut. */
+  const signingOutRef = useRef(false);
   const checkoutAbandonedRef = useRef(false);
   const welcomeEmailInFlightRef = useRef(null);
   const planRevealPaywallRef = useRef(false);
@@ -10628,6 +7493,14 @@ export default function App() {
     return "onboarding";
   });
   const [activeTab, setActiveTab] = useState("home");
+  /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
+  const goTab = (tab) => {
+    if (tab === activeTab) {
+      scrollAppToTop();
+      return;
+    }
+    setActiveTab(tab);
+  };
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
   const [profile, setProfile] = useState(BLANK_PROFILE);
@@ -10649,13 +7522,29 @@ export default function App() {
   const lastCompletedSessionRef = useRef(null);
 
   const openShare = (session, badgeId = null) => {
-    if (!session) return;
-    setShareSession(session);
+    const target = session || lastCompletedSessionRef.current || {
+      title: badgeId ? "Badge MySWYM" : "Séance MySWYM",
+      type: "Partage",
+      distance: null,
+      duration: null,
+      details: [],
+    };
+    setShareSession(target);
     setShareBadgeId(badgeId || null);
   };
   const [toast, setToast] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const showToast = (msg, duration = 5000) => { setToast(msg); setTimeout(() => setToast(null), duration); };
+  /** Horodatage local immédiat — bat un remote stale au visibility sync. */
+  const stampPlansLocalCache = (nextPlans, nextActiveId = activePlanId) => {
+    if (!user?.id || !Array.isArray(nextPlans)) return;
+    try {
+      const now = new Date().toISOString();
+      localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+      if (nextActiveId) localStorage.setItem(`myswym_active_${user.id}`, nextActiveId);
+      localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+    } catch { /* ignore */ }
+  };
   const prevBadgesRef = useRef([]);
   const plansHydratedRef = useRef(false);
   const deletedPlanIdsRef = useRef(new Set());
@@ -10682,6 +7571,37 @@ export default function App() {
     if (n < 1) setActiveTab("home");
   }, [activeTab, plan]);
 
+  // Sprint A — scroll top à chaque changement d’onglet / d’écran principal
+  useEffect(() => {
+    scrollAppToTop();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (screen === "app" || screen === "onboarding" || screen === "auth") {
+      scrollAppToTop();
+    }
+  }, [screen]);
+
+  // Sprint C — jamais rester bloqué sur Loading / sync accès
+  useEffect(() => {
+    if (screen !== "loading") return undefined;
+    const t = setTimeout(() => {
+      setScreen((prev) => (prev === "loading" ? "app" : prev));
+      showToast("Ça a pris trop longtemps. Réessaie.", 6000);
+      track("generation_failed", { reason: "timeout", context: "loading_screen" });
+    }, 25000);
+    return () => clearTimeout(t);
+  }, [screen]);
+
+  useEffect(() => {
+    if (!waitingForAccess) return undefined;
+    const t = setTimeout(() => {
+      setAccessSynced(true);
+      showToast("Connexion lente — tu peux continuer.", 5000);
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [waitingForAccess]);
+
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
   useEffect(() => {
@@ -10696,8 +7616,9 @@ export default function App() {
       return;
     }
     if (isAuthPath(location.pathname)) {
-      // Déjà connecté → sortir de /connexion (évite quiz collé sous l’URL auth)
-      if (user) {
+      // Déjà connecté → /app, SAUF pendant une déconnexion (forceAuth déjà true).
+      // Sinon : navigate(/connexion) avant signOut → bounce /app → quiz.
+      if (user && !forceAuthRef.current) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
         navigate("/app", { replace: true });
@@ -10708,8 +7629,9 @@ export default function App() {
       setScreen("auth");
       return;
     }
-    // /connexion|/inscription → /app (CTA Commencer) : même composant App, il faut quitter l’écran auth
-    if (!user && location.pathname.startsWith("/app") && forceAuthRef.current) {
+    // /connexion|/inscription → /app (CTA Commencer) : même composant App, il faut quitter l’écran auth.
+    // Ne pas traiter un bounce tardif post-déconnexion (signingOutRef / forceAuth + user null).
+    if (!user && location.pathname.startsWith("/app") && forceAuthRef.current && !signingOutRef.current) {
       forceAuthRef.current = false;
       authOpenedFromUrlRef.current = false;
       setScreen("onboarding");
@@ -10982,7 +7904,10 @@ export default function App() {
         setScreen("app"); setActiveTab("home");
       })
       .catch(() => {
-        if (!cancelled) setScreen("app");
+        if (!cancelled) {
+          setScreen("app");
+          track("generation_failed", { reason: "exception", context: "week_repair" });
+        }
       });
     return () => { cancelled = true; };
   }, [activePlanId, tasteProfile, plan?.isSessionLoop, plan?.weeks?.length, plan?.totalRealWeeks]);
@@ -11073,10 +7998,29 @@ export default function App() {
             })
             .finally(() => setAccessSynced(true));
         }
-      } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) {
+      } else if (forceAuthRef.current || isAuthPath(locationRef.current.pathname) || event === "SIGNED_OUT") {
         setAccessSynced(false);
         setScreen("auth");
         setAuthLoading(false);
+        // Déconnexion explicite → /connexion (pas le questionnaire /app)
+        if (event === "SIGNED_OUT") {
+          signingOutRef.current = true;
+          plansHydratedRef.current = false;
+          resetAnalytics();
+          setPlans([]);
+          setActivePlanId(null);
+          setPlanHistory([]);
+          setAddingPlan(false);
+          setQuestionnaireMode("full");
+          setTasteProfile(blankTaste());
+          setProfile(BLANK_PROFILE);
+          setStep(1);
+          forceAuthRef.current = true;
+          authOpenedFromUrlRef.current = true;
+          setScreen("auth");
+          navigate("/connexion", { replace: true });
+          setTimeout(() => { signingOutRef.current = false; }, 500);
+        }
       } else {
         plansHydratedRef.current = false;
         resetAnalytics();
@@ -11397,10 +8341,14 @@ export default function App() {
         clearPendingOnboarding();
       }
 
-      // Abandon paiement ou compte sans plan : shell app + questionnaire (paramètres accessibles)
+      // Abandon paiement : ne JAMAIS vider un aperçu déjà généré / hydraté
       if (checkoutAbandonedRef.current) {
         checkoutAbandonedRef.current = false;
         clearPendingOnboarding();
+        setScreen("app");
+        setActiveTab("plan");
+        plansHydratedRef.current = true;
+        return;
       }
       setPlans([]);
       setActivePlanId(null);
@@ -11508,6 +8456,15 @@ export default function App() {
         // Ne pas écraser un changement de fréquence local (2×→3×) si la progression est égale
         const localFreq = plans.find(e => e.id === activePlanId)?.profile?.sessionsPerWeek;
         const mergedFreq = enforced.find(e => e.id === single.activeId)?.profile?.sessionsPerWeek;
+
+        // Garde anti-effacement : local plus récent ou plus de progression → ne pas écraser la mémoire
+        if (!shouldApplyRemotePlanSync({
+          localTime,
+          remoteTime,
+          currentProgress,
+          mergedProgress,
+        })) return;
+
         if (
           mergedIds === currentIds
           && enforced.length === plans.length
@@ -11515,6 +8472,12 @@ export default function App() {
           && (mergedProgress < currentProgress || localFreq === mergedFreq || localTime >= remoteTime)
         ) return;
 
+        const syncInfo = describePlanSyncChange({
+          beforePlans: plans,
+          afterPlans: enforced,
+          beforeActiveId: activePlanId,
+          afterActiveId: single.activeId,
+        });
         setPlans(enforced);
         setActivePlanId(single.activeId);
         setPlanHistory(single.history);
@@ -11522,6 +8485,13 @@ export default function App() {
         if (single.activeId) localStorage.setItem(`myswym_active_${user.id}`, single.activeId);
         localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(single.history));
         localStorage.setItem(`myswym_plans_updated_${user.id}`, updatedAt);
+        if (syncInfo?.message) {
+          showToast(syncInfo.message, 4500);
+          track("plan_sync_applied", {
+            reason: syncInfo.reason,
+            context: "visibility_sync",
+          });
+        }
       } catch {}
     };
     const onVisible = () => { if (document.visibilityState === "visible") syncFromRemote(); };
@@ -11742,9 +8712,21 @@ export default function App() {
   };
 
   const dismissPlanReveal = () => {
+    setPlanReveal(null);
+    if (!hasSeenFirstSwimTip()) {
+      setScreen("firstSwimTip");
+      return;
+    }
     const paywall = planRevealPaywallRef.current;
     planRevealPaywallRef.current = false;
-    setPlanReveal(null);
+    setScreen("app");
+    setActiveTab("home");
+    if (paywall) setShowPlanReady(true);
+  };
+
+  const dismissFirstSwimTip = () => {
+    const paywall = planRevealPaywallRef.current;
+    planRevealPaywallRef.current = false;
     setScreen("app");
     setActiveTab("home");
     if (paywall) setShowPlanReady(true);
@@ -11972,6 +8954,7 @@ export default function App() {
       setPlanReveal(null);
       planRevealPaywallRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
+      track("generation_failed", { reason: "exception", context: "generate_plan" });
       const retryStep = sourceProfile.category === "progression" ? 3 : 5;
       setStep(retryStep);
       if (user) {
@@ -12020,17 +9003,21 @@ export default function App() {
   };
 
   const finishLoopSessionAndAdvance = (archivedSession) => {
-    setPlans((prev) => prev.map((entry) => {
-      if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-      const markedPlan = {
-        ...entry.plan,
-        weeks: [{
-          ...entry.plan.weeks[0],
-          sessions: [{ ...archivedSession }],
-        }],
-      };
-      return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
-    }));
+    setPlans((prev) => {
+      const next = prev.map((entry) => {
+        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
+        const markedPlan = {
+          ...entry.plan,
+          weeks: [{
+            ...entry.plan.weeks[0],
+            sessions: [{ ...archivedSession }],
+          }],
+        };
+        return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
+      });
+      stampPlansLocalCache(next, activePlanId);
+      return next;
+    });
   };
 
   const handleAdvanceLoopSession = () => {
@@ -12046,28 +9033,32 @@ export default function App() {
       openUpgrade("trial_expired");
       return;
     }
-    setPlans((prev) => prev.map((entry) => {
-      if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-      const cur = entry.plan.weeks?.[0]?.sessions?.[0];
-      if (!cur || isSessionResolved(cur)) return entry;
-      // Nouveau seed sans archiver — cursor bump pour variété
-      const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
-      const { week } = buildProgressionLoopSession(
-        { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
-        nextCursor,
-        true,
-      );
-      return {
-        ...entry,
-        plan: {
-          ...entry.plan,
-          sessionCursor: nextCursor,
-          weeks: [week],
-        },
-      };
-    }));
-    setToast("Nouvelle séance générée");
-    setTimeout(() => setToast(null), 2200);
+    setPlans((prev) => {
+      const next = prev.map((entry) => {
+        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
+        const cur = entry.plan.weeks?.[0]?.sessions?.[0];
+        if (!cur || isSessionResolved(cur)) return entry;
+        // Nouveau seed sans archiver — cursor bump pour variété
+        const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
+        const { week } = buildProgressionLoopSession(
+          { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+          nextCursor,
+          true,
+        );
+        return {
+          ...entry,
+          plan: {
+            ...entry.plan,
+            sessionCursor: nextCursor,
+            weeks: [week],
+          },
+        };
+      });
+      stampPlansLocalCache(next, activePlanId);
+      return next;
+    });
+    setToast("Séance du jour remplacée — la précédente n’était pas validée.");
+    setTimeout(() => setToast(null), 3200);
   };
 
   const handleComplete = (weekIndex, sessionIndex, status) => {
@@ -12164,19 +9155,23 @@ export default function App() {
       }
 
       // Marque résolue tout de suite (verrouille)
-      setPlans((prev) => prev.map((entry) => {
-        if (entry.id !== activePlanId) return entry;
-        return {
-          ...entry,
-          plan: {
-            ...entry.plan,
-            weeks: [{
-              ...entry.plan.weeks[0],
-              sessions: [{ ...archived }],
-            }],
-          },
-        };
-      }));
+      setPlans((prev) => {
+        const next = prev.map((entry) => {
+          if (entry.id !== activePlanId) return entry;
+          return {
+            ...entry,
+            plan: {
+              ...entry.plan,
+              weeks: [{
+                ...entry.plan.weeks[0],
+                sessions: [{ ...archived }],
+              }],
+            },
+          };
+        });
+        stampPlansLocalCache(next, activePlanId);
+        return next;
+      });
 
       if (resolvedStatus === "done") {
         // Statut completed en base dès la validation — indépendant de la fiche de retour
@@ -12210,7 +9205,8 @@ export default function App() {
         }
       }
     }
-    setPlans(prev => prev.map(entry => {
+    setPlans(prev => {
+      const next = prev.map(entry => {
       if (entry.id !== activePlanId) return entry;
       const newPlan = {
         ...entry.plan,
@@ -12258,7 +9254,10 @@ export default function App() {
         setTimeout(() => setFeedbackWeek(weekIndex), 700);
       }
       return { ...entry, plan: newPlan };
-    }));
+    });
+      stampPlansLocalCache(next, activePlanId);
+      return next;
+    });
     if (resolvedStatus === "done") {
       // Statut completed en base dès la validation — indépendant de la fiche de retour
       if (user) {
@@ -12290,6 +9289,7 @@ export default function App() {
   const closeSessionFeedbackSheet = () => {
     const target = sessionFeedbackTarget;
     setSessionFeedbackTarget(null);
+    scrollAppToTop();
     if (target?.loopMode && target.archived) {
       finishLoopSessionAndAdvance(target.archived);
       return;
@@ -12824,41 +9824,52 @@ export default function App() {
     setScreen("loading");
     const taste = activePlanEntry.plan?.taste || tasteProfile;
     const planIdToUpdate = activePlanId;
-    generatePlan({ ...newProfile, taste }, isPremium).then(async (newPlan) => {
-      const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
-      // Semaines : séances validées conservées, non validées régénérées (merge séance par séance).
-      // Si la fréquence change (nombre de séances différent) → fallback semaine entière.
-      const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
-      const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
-      const now = new Date().toISOString();
-      // Invalide tout save en cours (évite qu'un upsert 2× arrive après le cache 3×).
-      plansSaveGenRef.current += 1;
+    generatePlan({ ...newProfile, taste }, isPremium)
+      .then(async (newPlan) => {
+        const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? null;
+        // Semaines : séances validées conservées, non validées régénérées (merge séance par séance).
+        // Si la fréquence change (nombre de séances différent) → fallback semaine entière.
+        const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+        const planWithDate = { ...newPlan, taste, weeks: mergedWeeks, ...(originalStartDate ? { startDate: originalStartDate } : {}) };
+        const now = new Date().toISOString();
+        // Invalide tout save en cours (évite qu'un upsert 2× arrive après le cache 3×).
+        plansSaveGenRef.current += 1;
 
-      setPlans(prev => {
-        const nextPlans = prev.map(e => e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate });
+        setPlans(prev => {
+          const nextPlans = prev.map(e => e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate });
+          if (user) {
+            try {
+              localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+              localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
+              localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+            } catch {}
+          }
+          return nextPlans;
+        });
+
+        // Persistance remote immédiate à partir du cache (source de vérité post-changement)
         if (user) {
+          plansSaveGenRef.current += 1;
           try {
-            localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
-            localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
-            localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+            const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
+            }
           } catch {}
         }
-        return nextPlans;
+        setScreen("app");
+        setActiveTab("plan");
+      })
+      .catch((err) => {
+        setScreen("app");
+        setActiveTab("plan");
+        showToast("Impossible de mettre à jour le programme. Réessaie.", 6000);
+        track("generation_failed", {
+          reason: String(err?.message || "exception").slice(0, 80),
+          context: "update_program",
+        });
       });
-
-      // Persistance remote immédiate à partir du cache (source de vérité post-changement)
-      if (user) {
-        plansSaveGenRef.current += 1;
-        try {
-          const raw = localStorage.getItem(`myswym_plans_${user.id}`);
-          const parsed = raw ? JSON.parse(raw) : null;
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
-          }
-        } catch {}
-      }
-      setScreen("app"); setActiveTab("plan");
-    });
   };
 
   const handleAddPlan = () => {
@@ -12955,7 +9966,19 @@ export default function App() {
 
   const handleSignOut = async () => {
     resetAnalytics();
-    await supabase.auth.signOut();
+    signingOutRef.current = true;
+    forceAuthRef.current = true;
+    authOpenedFromUrlRef.current = true;
+    setSettingsOpen(false);
+    // signOut AVANT navigate : sinon user encore set + /connexion → effet renvoie vers /app
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setScreen("auth");
+      navigate("/connexion", { replace: true });
+      // Laisse passer les effets de route en retard avant de relâcher
+      setTimeout(() => { signingOutRef.current = false; }, 500);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -12974,8 +9997,17 @@ export default function App() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.error || "Suppression impossible.");
     resetAnalytics();
-    await supabase.auth.signOut();
+    signingOutRef.current = true;
+    forceAuthRef.current = true;
+    authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setScreen("auth");
+      navigate("/connexion", { replace: true });
+      setTimeout(() => { signingOutRef.current = false; }, 500);
+    }
     showToast("Compte supprimé.");
   };
 
@@ -13061,7 +10093,7 @@ export default function App() {
     <>
       <style>{css}</style>
       <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg }}>
+      <div style={{ minHeight: "100vh", background: G.bg, color: G.ink }} className="ms-screen-enter">
         <AuthScreen
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
@@ -13072,6 +10104,17 @@ export default function App() {
         />
       </div>
       <Footer />
+    </>
+  );
+
+  if (screen === "firstSwimTip") return (
+    <>
+      <style>{css}</style>
+      <FirstSwimTip
+        colors={G}
+        sessionTitle={plan?.weeks?.[0]?.sessions?.[0]?.title || null}
+        onContinue={dismissFirstSwimTip}
+      />
     </>
   );
 
@@ -13139,7 +10182,7 @@ export default function App() {
               onUpgrade={() => openUpgrade()}
               onGenerate={handleGenerate}
               mode={questionnaireMode}
-              onEditProfile={() => setActiveTab("profile")}
+              onEditProfile={() => goTab("profile")}
             />
           </div>
         </div>
@@ -13188,8 +10231,8 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={setActiveTab} onComplete={handleComplete} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onComplete={handleComplete} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
           setStep,
@@ -13200,14 +10243,14 @@ export default function App() {
           onUpgrade: () => openUpgrade(),
           onGenerate: handleGenerate,
           mode: questionnaireMode,
-          onEditProfile: () => setActiveTab("profile"),
+          onEditProfile: () => goTab("profile"),
         }} />}
-        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
-        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
+        {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
+        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav user={user} />
-        <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
+        <BottomNav active={activeTab} onChange={goTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
         <SettingsDrawer
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
@@ -13216,16 +10259,30 @@ export default function App() {
           onUpgrade={() => openUpgrade()}
           onPortal={handlePortal}
           onRefreshStatus={handleRefreshStatus}
-          onGoProfile={() => setActiveTab("profile")}
-          onGoBuddies={() => setActiveTab("buddies")}
+          onGoProfile={() => goTab("profile")}
+          onGoBuddies={() => goTab("buddies")}
           showBuddies={hasSwumNav}
-          onOpenAuth={openAuth}
           onSignOut={handleSignOut}
           onDeleteAccount={handleDeleteAccount}
           plan={plan}
           profile={activeProfile}
           onPaceUpdate={handlePaceUpdate}
           onValidateSession={handleComplete}
+          connectionsSlot={(
+            <StravaSection
+              user={user}
+              plan={plan}
+              profile={activeProfile}
+              currentPace100={activeProfile?.pace100}
+              onPaceUpdate={handlePaceUpdate}
+              onValidateSession={handleComplete}
+              showProgramActions={false}
+              showDetails={false}
+              isPremium={isPremium}
+              onUpgrade={() => openUpgrade()}
+            />
+          )}
+          referralSlot={<ReferralShareCard />}
         />
 
         {cancelSurveyOpen && (
