@@ -51,6 +51,7 @@ const ALLOWED_PROPS = new Set([
   "equipmentCount",
   "hasEquipment",
   "equipmentUsedCount",
+  "error_kind",
 ]);
 
 /** Props jamais envoyées (défense en profondeur) — inclut données de santé art. 9. */
