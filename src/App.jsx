@@ -71,7 +71,6 @@ import {
 } from "./lib/swimmer-profile.js";
 import {
   appZoneMultForT100,
-  calcDistanceProjection,
   projectedPaceAtYears,
 } from "./lib/swim-pace.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
@@ -1486,11 +1485,6 @@ const ZONE_DEFS = [
   },
 ];
 
-// ── PROJECTION DISTANCE (loi de puissance, T100 seul) ───────────────────
-function calcProjection(pace100) {
-  return calcDistanceProjection(pace100);
-}
-
 function fmtTime(totalSecs) {
   const h = Math.floor(totalSecs / 3600);
   const m = Math.floor((totalSecs % 3600) / 60);
@@ -1523,299 +1517,281 @@ function appendPaceHistory(profile, { pace100, week, source = "manual" }) {
   return { ...profile, paceHistory: hist };
 }
 
-const PaceEvolutionCard = ({ profile, isPremium, onUpgrade }) => {
+/** Bloc unique : T100 + zones utiles + projection 2/5 ans. */
+const MonAllureCard = ({ profile, pace100, isPremium, onSave, onUpgrade }) => {
+  const [val, setVal] = useState(pace100 || null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [horizonYears, setHorizonYears] = useState(2);
-  const pace100 = profile?.pace100 ?? null;
+  const isDiscovery = profile?.level === "découverte" || profile?.level === "beginner";
 
-  // Découverte : pas de T100 (souvent incapables d'enchaîner 100 m)
-  if (profile?.level === "découverte" || profile?.level === "beginner") return null;
+  useEffect(() => {
+    setVal(pace100 || null);
+    setSaved(false);
+  }, [pace100]);
 
-  if (!isPremium) {
-    return (
-      <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", opacity: 0.85 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <Lock size={14} color={G.greyMid} />
-          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
-        </div>
-        <p style={{ fontSize: 13, color: G.grey, marginBottom: 14, lineHeight: 1.45 }}>
-          Projection réaliste de ton T100 sur 2 ou 5 ans — réservé aux membres Premium.
-        </p>
-        <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Zap size={14} color={G.blue} /> Voir mon analyse complète
-        </button>
-      </div>
-    );
-  }
+  const activePace = val || pace100 || null;
+  const hasChange = val !== (pace100 || null);
+  const canSave = isPremium && !!val && hasChange && !saving;
+  const zoneMult = appZoneMultForT100(activePace);
+  const fmtZone = (s) => `${Math.floor(s / 60)}'${String(Math.round(s % 60)).padStart(2, "0")}"`;
 
-  if (!pace100) {
-    return (
-      <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <TrendingUp size={16} color={G.blue} />
-          </div>
-          <div>
-            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
-            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Projection 2 / 5 ans</p>
-          </div>
-        </div>
-        <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: 0 }}>
-          Renseigne ton temps 100 m ci-dessus pour voir la courbe de progression possible.
-        </p>
-      </div>
-    );
-  }
-
-  const startPace = pace100;
-  const paceAt2 = projectedPaceAtYears(startPace, 2);
-  const paceAt5 = projectedPaceAtYears(startPace, 5);
-  const endPace = projectedPaceAtYears(startPace, horizonYears);
-  const STEPS = 24;
-  const yearsAxis = Array.from({ length: STEPS + 1 }, (_, i) => (i / STEPS) * horizonYears);
-  const projected = yearsAxis.map((y) => projectedPaceAtYears(startPace, y));
-
-  const allVals = [...projected, startPace];
-  const tMin = Math.min(...allVals) * 0.98;
-  const tMax = Math.max(...allVals) * 1.02;
-  const SVG_W = 280, SVG_H = 110, PAD_L = 4, PAD_R = 4, PAD_T = 8, PAD_B = 4;
-  const xOf = (y) => PAD_L + (y / Math.max(0.01, horizonYears)) * (SVG_W - PAD_L - PAD_R);
-  const yOf = (t) => PAD_T + (1 - (t - tMin) / (tMax - tMin || 1)) * (SVG_H - PAD_T - PAD_B);
-  const projPts = yearsAxis.map((y, i) => `${xOf(y).toFixed(1)},${yOf(projected[i]).toFixed(1)}`).join(" ");
-  const gainSec = Math.max(0, Math.round(startPace - endPace));
-  const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 1000) / 10 : 0;
-
-  return (
-    <div style={{ background: G.surface, borderRadius: 18, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <TrendingUp size={16} color={G.blue} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Évolution des temps</h3>
-            <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>T100 — projection réaliste</p>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 4, background: G.greyXLight, borderRadius: 10, padding: 3, flexShrink: 0 }}>
-          {[2, 5].map((y) => {
-            const active = horizonYears === y;
-            return (
-              <button
-                key={y}
-                type="button"
-                onClick={() => setHorizonYears(y)}
-                style={{
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "6px 10px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  background: active ? G.blue : "transparent",
-                  color: active ? G.white : G.grey,
-                }}
-              >
-                {y} ans
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ background: G.greyXLight, borderRadius: 12, padding: "12px 10px 8px", marginBottom: 14 }}>
-        <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }} aria-label="Courbe d'évolution du T100">
-          <defs>
-            <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={G.blue} stopOpacity="0.20" />
-              <stop offset="100%" stopColor={G.blue} stopOpacity="0.02" />
-            </linearGradient>
-          </defs>
-          {[0.25, 0.5, 0.75].map((f, i) => (
-            <line key={i} x1={SVG_W * f} y1={0} x2={SVG_W * f} y2={SVG_H} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
-          ))}
-          <polygon points={`${xOf(0).toFixed(1)},${SVG_H} ${projPts} ${xOf(horizonYears).toFixed(1)},${SVG_H}`} fill="url(#evolGrad)" />
-          <polyline points={projPts} fill="none" stroke={G.blue} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx={xOf(0)} cy={yOf(startPace)} r="4.5" fill={G.mint} stroke={G.white} strokeWidth="2" />
-          <circle cx={xOf(horizonYears)} cy={yOf(endPace)} r="4" fill={G.blue} stroke={G.white} strokeWidth="2" />
-        </svg>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ fontSize: 10, color: G.mint, fontWeight: 700 }}>Aujourd’hui</span>
-          <span style={{ fontSize: 10, color: G.greyMid, fontWeight: 600 }}>+{horizonYears} ans</span>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-        {[
-          { label: "Aujourd’hui", value: fmtTime(Math.round(startPace)), color: G.ink },
-          { label: "+2 ans", value: fmtTime(Math.round(paceAt2)), color: G.blue },
-          { label: "+5 ans", value: fmtTime(Math.round(paceAt5)), color: G.mint },
-        ].map((c, i) => (
-          <div key={i} style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: G.grey, fontWeight: 600, marginBottom: 4 }}>{c.label}</div>
-            <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 15, fontWeight: 800, color: c.color }}>{c.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.5 }}>
-        Indicatif · entraînement régulier · pas une promesse (~{gainPct}% / −{gainSec}s sur {horizonYears} ans). Plus ton T100 est déjà rapide, plus le gain estimé est faible.
-      </p>
-    </div>
-  );
-};
-
-const PaceProjectionCard = ({ pace100 }) => {
-  if (!pace100) return null;
-  const proj = calcProjection(pace100);
-  if (!proj) return null;
-
-  const TARGETS = [
-    { dist: 400,  label: "400 m",   color: "#0057FF" },
-    { dist: 1000, label: "1 000 m", color: G.blue },
-    { dist: 1500, label: "1 500 m", color: "#00C48C" },
-    { dist: 3000, label: "3 000 m", color: "#FF9F0A" },
-  ];
-
-  const SVG_W = 280, SVG_H = 90;
-  const distMin = 100, distMax = 3200;
-  const allPredicted = [100, 400, 1000, 1500, 3000].map(d => proj.predict(d));
-  const tMin = Math.min(...allPredicted);
-  const tMax = Math.max(...allPredicted);
-  const xOf = (d) => ((d - distMin) / (distMax - distMin)) * SVG_W;
-  const yOf = (t) => SVG_H - ((t - tMin) / (tMax - tMin + 1)) * (SVG_H - 8) - 4;
-  const pts = Array.from({ length: 40 }, (_, i) => {
-    const d = distMin + (i / 39) * (distMax - distMin);
-    return `${xOf(d).toFixed(1)},${yOf(proj.predict(d)).toFixed(1)}`;
-  }).join(" ");
-
-  return (
-    <div style={{ background: G.surface, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <TrendingUp size={16} color={G.blue} />
-        </div>
-        <div>
-          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>
-            Projection de performance
-          </h3>
-          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>
-            Estimation basée sur ton T100 — loi de puissance
-          </p>
-        </div>
-      </div>
-
-      <div style={{ background: G.greyXLight, borderRadius: 12, padding: "12px 12px 8px", marginBottom: 16, overflow: "hidden" }}>
-        <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: "block" }}>
-          {[0.25, 0.5, 0.75].map((f, i) => (
-            <line key={i} x1={SVG_W * f} y1={0} x2={SVG_W * f} y2={SVG_H} stroke={G.greyLight} strokeWidth="1" strokeDasharray="3,3" />
-          ))}
-          <defs>
-            <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={G.blue} stopOpacity="0.18"/>
-              <stop offset="100%" stopColor={G.blue} stopOpacity="0.02"/>
-            </linearGradient>
-          </defs>
-          <polygon points={`0,${SVG_H} ${pts} ${SVG_W},${SVG_H}`} fill="url(#projGrad)" />
-          <polyline points={pts} fill="none" stroke={G.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          {TARGETS.map(t => (
-            <circle key={t.dist} cx={xOf(t.dist)} cy={yOf(proj.predict(t.dist))} r="4" fill={t.color} />
-          ))}
-        </svg>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          {["100m", "1 km", "2 km", "3 km"].map((l, i) => (
-            <span key={i} style={{ fontSize: 9, color: G.greyMid, fontWeight: 600 }}>{l}</span>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {TARGETS.map(t => {
-          const raw = proj.predict(t.dist);
-          const pace = raw / (t.dist / 100);
-          const paceStr = `${Math.floor(pace/60)}'${String(Math.round(pace%60)).padStart(2,'0')}"/100m`;
-          return (
-            <div key={t.dist} style={{ background: `${t.color}0D`, borderRadius: 12, padding: "12px 14px", border: `1px solid ${t.color}22` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginBottom: 4, letterSpacing: "0.04em" }}>{t.label}</div>
-              <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1 }}>
-                {fmtTime(Math.round(raw))}
-              </div>
-              <div style={{ fontSize: 10, color: G.grey, marginTop: 4 }}>{paceStr}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <p style={{ fontSize: 11, color: G.greyMid, marginTop: 12, lineHeight: 1.5 }}>
-        Projection indicative à partir de ton seul test de référence : le 100 m (T100).
-      </p>
-    </div>
-  );
-};
-
-const PaceZonesCard = ({ pace100, onSave }) => {
-  const [val100, setVal100] = useState(pace100 || null);
-  const [saved,  setSaved]  = useState(false);
-  const zoneMult = appZoneMultForT100(val100);
-
-  const handleSave = () => {
-    if (!val100) return;
-    onSave(val100);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      await Promise.resolve(onSave?.(val));
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const fmtZone = (s) => `${Math.floor(s/60)}'${String(Math.round(s%60)).padStart(2,'0')}"/100m`;
-  const hasChange = val100 !== pace100;
+  // Courbe 2/5 ans
+  const startPace = pace100 || activePace;
+  const showEvolution = !isDiscovery && isPremium && !!startPace;
+  const paceAt2 = startPace ? projectedPaceAtYears(startPace, 2) : null;
+  const paceAt5 = startPace ? projectedPaceAtYears(startPace, 5) : null;
+  const endPace = startPace ? projectedPaceAtYears(startPace, horizonYears) : null;
+  let evolSvg = null;
+  if (showEvolution && startPace && endPace != null) {
+    const STEPS = 24;
+    const yearsAxis = Array.from({ length: STEPS + 1 }, (_, i) => (i / STEPS) * horizonYears);
+    const projected = yearsAxis.map((y) => projectedPaceAtYears(startPace, y));
+    const allVals = [...projected, startPace];
+    const tMin = Math.min(...allVals) * 0.98;
+    const tMax = Math.max(...allVals) * 1.02;
+    const SVG_W = 280, SVG_H = 96, PAD_L = 4, PAD_R = 4, PAD_T = 8, PAD_B = 4;
+    const xOf = (y) => PAD_L + (y / Math.max(0.01, horizonYears)) * (SVG_W - PAD_L - PAD_R);
+    const yOf = (t) => PAD_T + (1 - (t - tMin) / (tMax - tMin || 1)) * (SVG_H - PAD_T - PAD_B);
+    const projPts = yearsAxis.map((y, i) => `${xOf(y).toFixed(1)},${yOf(projected[i]).toFixed(1)}`).join(" ");
+    const gainSec = Math.max(0, Math.round(startPace - endPace));
+    const gainPct = startPace > 0 ? Math.round((gainSec / startPace) * 1000) / 10 : 0;
+    evolSvg = { SVG_W, SVG_H, xOf, yOf, projPts, startPace, endPace, gainSec, gainPct, paceAt2, paceAt5 };
+  }
 
   return (
-    <div style={{ background: G.surface, borderRadius: 18, padding: "20px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}` }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div className="fade-up" style={{
+      background: G.surface,
+      borderRadius: 20,
+      padding: "18px 16px",
+      marginBottom: 16,
+      border: `1px solid ${G.greyLight}`,
+      boxShadow: "0 1px 2px rgba(25,28,30,0.03), 0 12px 32px rgba(53,93,163,0.08)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <Gauge size={16} color={G.blue} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>
+            Mon allure
+          </span>
+          <button
+            type="button"
+            onClick={() => setInfoOpen((o) => !o)}
+            aria-expanded={infoOpen}
+            aria-label={infoOpen ? "Masquer l’aide T100" : "Pourquoi et comment renseigner le T100"}
+            style={{
+              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+              border: `1px solid ${G.blueMid}55`,
+              background: infoOpen ? G.blueLight : "transparent",
+              color: G.blue,
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", padding: 0,
+            }}
+          >
+            <Info size={13} strokeWidth={2.4} />
+          </button>
         </div>
-        <div>
-          <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, color: G.ink, margin: 0 }}>Zones d'intensité</h3>
-          <p style={{ fontSize: 12, color: G.grey, margin: 0 }}>Basées sur ton T100 (départ dans l&apos;eau)</p>
-        </div>
+        {!isPremium && <Lock size={14} color={G.greyMid} aria-hidden />}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-        <PaceInput label="100 m crawl (T100)" hint="ex : 1:45" placeholder="1:45"
-          value={val100} onChange={setVal100} maxLen={3} minSec={45} maxSec={5*60} />
-      </div>
-
-      <button onClick={handleSave} disabled={!val100 || !hasChange} style={{
-        width: "100%", padding: "13px", borderRadius: 12, border: "none",
-        cursor: (val100 && hasChange) ? "pointer" : "not-allowed",
-        background: saved ? G.mint : (val100 && hasChange) ? G.blue : G.greyLight,
-        color: G.white, fontWeight: 700, fontSize: 14, transition: "background 0.2s",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 16,
-      }}>
-        {saved ? <><Check size={14} /> Enregistré</> : "Enregistrer"}
-      </button>
-
-      {val100 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {ZONE_DEFS.map((z, i) => {
-            const ps = Math.round(val100 * zoneMult[z.key]);
-            return (
-              <div key={i} style={{ background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
-                  <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{z.desc}</div>
-                </div>
-                <div style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 15, fontWeight: 800, color: z.color, flexShrink: 0, marginLeft: 12 }}>
-                  {fmtZone(ps)}
-                </div>
-              </div>
-            );
-          })}
+      {infoOpen && (
+        <div style={{
+          marginBottom: 12, padding: "12px 14px", borderRadius: 12,
+          background: G.blueLight, border: `1px solid ${G.blueMid}33`,
+          fontSize: 13, color: G.inkLight, lineHeight: 1.5,
+        }}>
+          <p style={{ margin: "0 0 8px" }}>
+            <strong style={{ color: G.ink }}>Pourquoi&nbsp;?</strong>{" "}
+            Ton meilleur 100&nbsp;m crawl (T100) calibre zones, allures et projection.
+          </p>
+          <p style={{ margin: 0 }}>
+            <strong style={{ color: G.ink }}>Comment&nbsp;?</strong>{" "}
+            100&nbsp;m crawl, départ dans l’eau — note ton meilleur temps.
+          </p>
         </div>
       )}
 
-      {pace100 && !hasChange && (
-        <p style={{ fontSize: 12, color: G.mint, textAlign: "center", marginTop: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-          <Check size={12} /> Zones actives dans ton plan
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+          Meilleur temps 100 m
+        </div>
+        {isPremium ? (
+          <PaceInput
+            placeholder="1:45"
+            value={val}
+            onChange={(v) => { setVal(v); setSaved(false); }}
+            maxLen={3}
+            minSec={45}
+            maxSec={5 * 60}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={onUpgrade}
+            aria-label="Débloquer le temps au 100 m avec Premium"
+            style={{
+              display: "block", width: "100%", boxSizing: "border-box",
+              padding: "14px 12px", fontSize: 22,
+              fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
+              textAlign: "center", letterSpacing: "0.06em",
+              border: `2px solid ${G.greyLight}`,
+              borderRadius: 14, outline: "none",
+              background: G.greyXLight, color: G.greyMid,
+              cursor: "pointer", opacity: 0.9,
+            }}
+          >
+            1:45
+          </button>
+        )}
+      </div>
+
+      {isPremium ? (
+        <>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            style={{
+              width: "100%", padding: "12px", borderRadius: 14, border: "none",
+              minHeight: 44,
+              cursor: canSave ? "pointer" : "not-allowed",
+              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
+              color: saved || canSave ? G.white : G.greyMid,
+              fontWeight: 700, fontSize: 15,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              marginBottom: activePace ? 14 : 0,
+            }}
+          >
+            {saved ? <><Check size={16} /> Enregistré</> : saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+          {saved && (
+            <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: G.mint, textAlign: "center" }}>
+              Temps enregistré — tes prochaines séances s’adaptent.
+            </p>
+          )}
+          {!saved && pace100 && !hasChange && (
+            <p style={{ margin: "0 0 12px", fontSize: 12, color: G.grey, textAlign: "center" }}>
+              Actif : {secToDisplay(pace100)} /100&nbsp;m
+            </p>
+          )}
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          style={{
+            width: "100%", padding: "12px", borderRadius: 14, border: "none",
+            minHeight: 44, cursor: "pointer", marginBottom: 4,
+            background: G.blue, color: G.white, fontWeight: 700, fontSize: 15,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <Lock size={14} color={G.white} />
+          Débloquer avec Premium
+        </button>
+      )}
+
+      {isPremium && activePace && (
+        <div style={{ marginBottom: showEvolution ? 16 : 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+            Zones utiles
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {ZONE_DEFS.map((z) => {
+              const ps = Math.round(activePace * zoneMult[z.key]);
+              return (
+                <div key={z.key} style={{
+                  background: z.bg, border: `1px solid ${z.color}28`, borderRadius: 12,
+                  padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
+                }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: G.ink }}>{z.label}</div>
+                    <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{z.tip}</div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: z.color, flexShrink: 0 }}>
+                    {fmtZone(ps)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {showEvolution && evolSvg && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              Projection T100
+            </div>
+            <div style={{ display: "flex", gap: 4, background: G.greyXLight, borderRadius: 10, padding: 3 }}>
+              {[2, 5].map((y) => {
+                const active = horizonYears === y;
+                return (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setHorizonYears(y)}
+                    style={{
+                      border: "none", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 700,
+                      cursor: "pointer",
+                      background: active ? G.blue : "transparent",
+                      color: active ? G.white : G.grey,
+                    }}
+                  >
+                    {y} ans
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 8px 6px", marginBottom: 10 }}>
+            <svg width="100%" viewBox={`0 0 ${evolSvg.SVG_W} ${evolSvg.SVG_H}`} style={{ display: "block" }} aria-label="Projection T100">
+              <defs>
+                <linearGradient id="monAllureGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={G.blue} stopOpacity="0.20" />
+                  <stop offset="100%" stopColor={G.blue} stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+              <polygon points={`${evolSvg.xOf(0).toFixed(1)},${evolSvg.SVG_H} ${evolSvg.projPts} ${evolSvg.xOf(horizonYears).toFixed(1)},${evolSvg.SVG_H}`} fill="url(#monAllureGrad)" />
+              <polyline points={evolSvg.projPts} fill="none" stroke={G.blue} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx={evolSvg.xOf(0)} cy={evolSvg.yOf(evolSvg.startPace)} r="4" fill={G.mint} stroke={G.white} strokeWidth="2" />
+              <circle cx={evolSvg.xOf(horizonYears)} cy={evolSvg.yOf(evolSvg.endPace)} r="3.5" fill={G.blue} stroke={G.white} strokeWidth="2" />
+            </svg>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+            {[
+              { label: "Aujourd’hui", value: fmtTime(Math.round(evolSvg.startPace)), color: G.ink },
+              { label: "+2 ans", value: fmtTime(Math.round(evolSvg.paceAt2)), color: G.blue },
+              { label: "+5 ans", value: fmtTime(Math.round(evolSvg.paceAt5)), color: G.mint },
+            ].map((c) => (
+              <div key={c.label} style={{ background: G.greyXLight, borderRadius: 10, padding: "8px 6px", textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: G.grey, fontWeight: 600, marginBottom: 2 }}>{c.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: c.color }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.45 }}>
+            Indicatif · entraînement régulier (~{evolSvg.gainPct}% / −{evolSvg.gainSec}s sur {horizonYears} ans).
+          </p>
+        </div>
+      )}
+
+      {!isPremium && (
+        <p style={{ fontSize: 12, color: G.grey, margin: "12px 0 0", lineHeight: 1.45, textAlign: "center" }}>
+          Zones + projection 2/5 ans avec Premium.
         </p>
       )}
     </div>
@@ -7682,183 +7658,6 @@ const HomeBadgesSection = ({ plan }) => {
   );
 };
 
-// ── Carte T100 — levier conversion Premium (accueil) ───────────────────────
-const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
-  const [val, setVal] = useState(pace100 || null);
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
-
-  useEffect(() => {
-    setVal(pace100 || null);
-    setSaved(false);
-  }, [pace100]);
-
-  const hasChange = val !== (pace100 || null);
-  const canSave = isPremium && !!val && hasChange && !saving;
-
-  const handleSave = async () => {
-    if (!canSave) return;
-    setSaving(true);
-    try {
-      await Promise.resolve(onSave?.(val));
-      setSaved(true);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fade-up" style={{
-      background: G.surface,
-      borderRadius: 20,
-      padding: "18px 16px",
-      marginBottom: 16,
-      border: `1px solid ${G.greyLight}`,
-      boxShadow: "0 1px 2px rgba(25,28,30,0.03), 0 12px 32px rgba(53,93,163,0.08)",
-    }}>
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: 10, marginBottom: 10,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>
-            Meilleur temps 100&nbsp;m
-          </span>
-          <button
-            type="button"
-            onClick={() => setInfoOpen((o) => !o)}
-            aria-expanded={infoOpen}
-            aria-controls="pace-t100-info"
-            aria-label={infoOpen ? "Masquer l’aide T100" : "Pourquoi et comment renseigner le T100"}
-            style={{
-              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-              border: `1px solid ${G.blueMid}55`,
-              background: infoOpen ? G.blueLight : "transparent",
-              color: G.blue,
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", padding: 0,
-            }}
-          >
-            <Info size={13} strokeWidth={2.4} />
-          </button>
-        </div>
-        {!isPremium && <Lock size={14} color={G.greyMid} aria-hidden />}
-      </div>
-
-      {infoOpen && (
-        <div
-          id="pace-t100-info"
-          role="region"
-          style={{
-            marginBottom: 12,
-            padding: "12px 14px",
-            borderRadius: 12,
-            background: G.blueLight,
-            border: `1px solid ${G.blueMid}33`,
-            fontSize: 13,
-            color: G.inkLight,
-            lineHeight: 1.5,
-          }}
-        >
-          <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: G.ink }}>Pourquoi&nbsp;?</strong>{" "}
-            Ce meilleur 100&nbsp;m crawl sert de référence unique pour calibrer tes allures et intensités.
-          </p>
-          <p style={{ margin: 0 }}>
-            <strong style={{ color: G.ink }}>Comment&nbsp;?</strong>{" "}
-            100&nbsp;m crawl, départ dans l’eau (pas de plongeon) et note ton meilleur temps.
-          </p>
-        </div>
-      )}
-
-      <div style={{ marginBottom: 12 }}>
-        {isPremium ? (
-          <PaceInput
-            placeholder="1:45"
-            value={val}
-            onChange={(v) => { setVal(v); setSaved(false); }}
-            maxLen={3}
-            minSec={45}
-            maxSec={5 * 60}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={onUpgrade}
-            aria-label="Débloquer le temps au 100 m avec Premium"
-            style={{
-              display: "block", width: "100%", boxSizing: "border-box",
-              padding: "14px 12px", fontSize: 22,
-              fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
-              textAlign: "center", letterSpacing: "0.06em",
-              border: `2px solid ${G.greyLight}`,
-              borderRadius: 14, outline: "none",
-              background: G.greyXLight, color: G.greyMid,
-              cursor: "pointer", opacity: 0.9,
-            }}
-          >
-            1:45
-          </button>
-        )}
-      </div>
-
-      {isPremium ? (
-        <>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            style={{
-              width: "100%", padding: "12px", borderRadius: 14, border: "none",
-              minHeight: 44,
-              cursor: canSave ? "pointer" : "not-allowed",
-              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
-              color: saved || canSave ? G.white : G.greyMid,
-              fontWeight: 700, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              transition: "background 0.2s",
-            }}
-          >
-            {saved ? <><Check size={16} /> Enregistré</> : saving ? "Enregistrement…" : "Enregistrer"}
-          </button>
-          {saved && (
-            <p style={{
-              margin: "10px 0 0", fontSize: 12, fontWeight: 600, color: G.mint,
-              lineHeight: 1.4, textAlign: "center",
-            }}>
-              Temps enregistré — tes prochaines séances s’adaptent.
-            </p>
-          )}
-          {!saved && pace100 && !hasChange && (
-            <p style={{
-              margin: "10px 0 0", fontSize: 12, color: G.grey, textAlign: "center", lineHeight: 1.4,
-            }}>
-              Actif : {secToDisplay(pace100)} /100&nbsp;m
-            </p>
-          )}
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={onUpgrade}
-          style={{
-            width: "100%", padding: "12px", borderRadius: 14, border: "none",
-            minHeight: 44, cursor: "pointer",
-            background: G.blue, color: G.white,
-            fontWeight: 700, fontSize: 15,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            boxShadow: "0 4px 16px rgba(53,93,163,0.22)",
-          }}
-        >
-          <Lock size={14} color={G.white} />
-          Débloquer avec Premium
-        </button>
-      )}
-    </div>
-  );
-};
-
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
 /** Après la 1re séance : une carte secondaire + le reste derrière « Voir plus ». */
 const HomeSecondaryStack = ({
@@ -7881,7 +7680,8 @@ const HomeSecondaryStack = ({
         <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} />
       )}
       {primary === "pace" && (
-        <PacePersonalizationCard
+        <MonAllureCard
+          profile={profile}
           pace100={profile?.pace100}
           isPremium={isPremium}
           onSave={onPaceUpdate}
@@ -7917,15 +7717,13 @@ const HomeSecondaryStack = ({
       ) : (
         <>
           {primary !== "pace" && plan && (
-            <PacePersonalizationCard
+            <MonAllureCard
+              profile={profile}
               pace100={profile?.pace100}
               isPremium={isPremium}
               onSave={onPaceUpdate}
               onUpgrade={onUpgrade}
             />
-          )}
-          {plan && (
-            <PaceEvolutionCard profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
           )}
           {primary !== "strava" && (
             <StravaSection
