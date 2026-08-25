@@ -256,6 +256,32 @@ function sectionForKind(kind, cues, main) {
   return "main";
 }
 
+/** Mappe les blocs moteur → sections UI (3 phases). */
+export function sectionFromSetBlock(block) {
+  const b = String(block || "").toLowerCase();
+  if (b === "depart" || b === "warmup" || b === "warm") return "warm";
+  if (b === "fin" || b === "rac" || b === "cooldown" || b === "cool") return "cool";
+  return "main"; // technique, corps, …
+}
+
+/** Si `sets` est aligné 1:1 avec les exercices, impose la section depuis le moteur. */
+function applySetBlockSections(exercises, sets = []) {
+  if (!exercises?.length || !sets?.length || sets.length !== exercises.length) {
+    return exercises;
+  }
+  return exercises.map((ex, i) => ({
+    ...ex,
+    section: sectionFromSetBlock(sets[i]?.block),
+    setBlock: sets[i]?.block || null,
+  }));
+}
+
+const SECTION_META = {
+  warm: { id: "warm", label: "Échauffement" },
+  main: { id: "main", label: "Corps de séance" },
+  cool: { id: "cool", label: "Retour au calme" },
+};
+
 /**
  * Construit la vue workout à partir d’une séance existante (rétrocompatible).
  * @returns {{ header, sections, exercises, totalMeters }}
@@ -330,23 +356,47 @@ export function buildWorkoutView(session = {}) {
     }
   }
 
+  const withSections = applySetBlockSections(exercises, session.sets);
+
+  // Numérotation par phase (1…n dans chaque bloc)
+  const phaseCounters = { warm: 0, main: 0, cool: 0 };
+  const numbered = withSections.map((ex) => {
+    const sec = ex.section || "main";
+    phaseCounters[sec] = (phaseCounters[sec] || 0) + 1;
+    return { ...ex, index: phaseCounters[sec], phaseIndex: phaseCounters[sec] };
+  });
+
   const fromDistance = parseInt(String(session.distance || "").replace(/\D/g, ""), 10) || 0;
-  const summed = exercises.reduce((a, e) => a + (e.meters || 0), 0);
+  const summed = numbered.reduce((a, e) => a + (e.meters || 0), 0);
   const totalMeters = fromDistance || summed;
 
   const equipment = Array.isArray(session.equipmentUsed)
     ? session.equipmentUsed
     : [];
 
-  const sections = [
-    { id: "warm", label: "Échauffement", exercises: exercises.filter((e) => e.section === "warm") },
-    { id: "main", label: "Corps de séance", exercises: exercises.filter((e) => e.section === "main") },
-    { id: "cool", label: "Retour au calme", exercises: exercises.filter((e) => e.section === "cool") },
-  ].filter((s) => s.exercises.length > 0);
+  const sections = ["warm", "main", "cool"]
+    .map((id) => {
+      const list = numbered.filter((e) => e.section === id);
+      const meters = list.reduce((a, e) => a + (e.meters || 0), 0);
+      return {
+        ...SECTION_META[id],
+        exercises: list,
+        meters,
+        metersLabel: meters > 0 ? `${meters.toLocaleString("fr-FR")} m` : null,
+      };
+    })
+    .filter((s) => s.exercises.length > 0);
 
   // Si rien n’a été classé warm/cool, tout en une section
-  if (sections.length === 0 && exercises.length > 0) {
-    sections.push({ id: "main", label: "Séance", exercises });
+  if (sections.length === 0 && numbered.length > 0) {
+    const meters = numbered.reduce((a, e) => a + (e.meters || 0), 0);
+    sections.push({
+      id: "main",
+      label: "Séance",
+      exercises: numbered,
+      meters,
+      metersLabel: meters > 0 ? `${meters.toLocaleString("fr-FR")} m` : null,
+    });
   }
 
   return {
@@ -360,7 +410,7 @@ export function buildWorkoutView(session = {}) {
       equipment,
     },
     sections,
-    exercises,
+    exercises: numbered,
     totalMeters,
   };
 }

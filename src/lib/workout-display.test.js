@@ -63,6 +63,36 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   const withDrill = view.exercises.find((e) => e.educatifId === "respiration_3t");
   assert.ok(withDrill, "éducatif 3T détecté");
   assert.ok(view.sections.some((s) => s.id === "warm" || s.id === "main"));
+  assert.equal(view.sections.find((s) => s.id === "warm")?.exercises.length, 1);
+  assert.equal(view.sections.find((s) => s.id === "cool")?.exercises.length, 1);
+}
+
+{
+  // Classement via sets.block (sans préfixe Échauffement / Retour)
+  const session = {
+    title: "Crawl pur",
+    distance: "1000m",
+    details: [
+      "-200 m crawl facile",
+      "-8 × 50 m crawl — repos 20s",
+      "-4 × 25 m flèche — repos 15s",
+      "-100 m crawl facile",
+    ],
+    sets: [
+      { block: "depart", reps: 1, distancePerRep: 200, label: "crawl facile" },
+      { block: "corps", reps: 8, distancePerRep: 50, label: "crawl", restSec: 20 },
+      { block: "technique", reps: 4, distancePerRep: 25, label: "flèche", restSec: 15 },
+      { block: "fin", reps: 1, distancePerRep: 100, label: "crawl facile" },
+    ],
+  };
+  const view = buildWorkoutView(session);
+  assert.deepEqual(
+    view.exercises.map((e) => e.section),
+    ["warm", "main", "main", "cool"],
+  );
+  assert.equal(view.sections.length, 3);
+  assert.ok(view.sections.find((s) => s.id === "warm")?.metersLabel);
+  assert.equal(view.sections.find((s) => s.id === "main")?.exercises.length, 2);
 }
 
 console.log("workout-display.test.js PASS");

@@ -26,6 +26,7 @@ export default function WorkoutExerciseCard({
   defaultOpen = false,
   onOpenDrill,
   compact = false,
+  nested = false,
 }) {
   const [open, setOpen] = useState(defaultOpen);
   if (!exercise) return null;
@@ -43,9 +44,9 @@ export default function WorkoutExerciseCard({
   return (
     <div
       style={{
-        background: G.surface,
-        borderRadius: 16,
-        border: `1px solid ${G.greyLight}`,
+        background: nested ? "transparent" : G.surface,
+        borderRadius: nested ? 12 : 16,
+        border: nested ? "none" : `1px solid ${G.greyLight}`,
         overflow: "hidden",
       }}
     >
