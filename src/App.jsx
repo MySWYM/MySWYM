@@ -138,6 +138,7 @@ import {
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
+import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 
 applyTheme();
 
@@ -3355,7 +3356,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                       type="button"
                       onClick={() => {
                         onSwimmerProfileChange({ pool: p.id });
-                        setMsg({ type: "ok", text: `Bassin ${p.label} — les prochaines séances tiendront compte de cette longueur.` });
+                        setMsg({ type: "ok", text: `Bassin ${p.label} — prochaines séances adaptées (déjà faites conservées).` });
                         setTimeout(() => setMsg(null), 3500);
                       }}
                       style={{
@@ -3541,7 +3542,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                       onClick={() => {
                         onEquipmentChange([...draftEquipment]);
                         setEditingEquipment(false);
-                        setMsg({ type: "ok", text: "Matériel enregistré. Les prochaines séances utiliseront ce matos (pas de regen rétroactive)." });
+                        setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées (déjà faites conservées)." });
                         setTimeout(() => setMsg(null), 3500);
                       }}
                       style={{
@@ -6919,6 +6920,7 @@ const COACH_MESSAGES = {
 const CoachCard = ({ plan, profile, currentWeekIndex }) => {
   const week = plan.weeks[Math.max(0, currentWeekIndex)];
   const isDecouverte = profile?.level === "découverte";
+  const adaptLine = formatCoachAdaptLine(plan);
 
   const resolveCoachPhase = () => {
     if (!week) return "default";
@@ -6983,6 +6985,14 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
       {/* Message bubble */}
       <div style={{ background: "rgba(255,255,255,0.13)", borderRadius: 14, padding: "14px 16px", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
         <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.92)", lineHeight: 1.65, margin: 0 }}>{message}</p>
+        {adaptLine && (
+          <p style={{
+            fontSize: 12.5, color: G.mint, lineHeight: 1.5, margin: "12px 0 0", fontWeight: 700,
+            paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.18)",
+          }}>
+            {adaptLine}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -12413,11 +12423,18 @@ export default function App() {
     }
 
     if (!isPremium && (legacyRating === "easy" || legacyRating === "hard" || tasteDriven)) {
-      showToast("Retour enregistré. Premium affine volume et style des prochaines séances.", 5500);
+      showToast(formatFeedbackToast({ isPremium: false, legacyRating, hasPain: false, tasteDriven }), 5500);
     } else if (hasPainTag) {
-      showToast("Retour noté. En cas de douleur inhabituelle, ne force pas — on allège la suite.", 5500);
-    } else if (shouldNudge || tasteDriven) {
-      showToast("Prochaines séances adaptées à tes goûts.", 4000);
+      showToast(formatFeedbackToast({ isPremium, legacyRating, hasPain: true }), 5500);
+    } else {
+      const toast = formatFeedbackToast({
+        isPremium,
+        legacyRating,
+        hasPain: false,
+        tasteDriven,
+        plan: adaptedForPersist || plan,
+      });
+      showToast(toast, 4500);
     }
 
     setSessionFeedbackTarget(null);
@@ -12490,7 +12507,9 @@ export default function App() {
       }).then(() => {});
     }
     if (!isPremium) {
-      showToast("Retour enregistré. Premium ajuste volume et style des prochaines séances.", 5500);
+      showToast(formatFeedbackToast({ isPremium: false, legacyRating: rating }), 5500);
+    } else {
+      showToast(formatFeedbackToast({ isPremium: true, legacyRating: rating, plan: weekAdapted || plan }), 4500);
     }
     setFeedbackWeek(null);
   };
@@ -12547,24 +12566,93 @@ export default function App() {
     }).catch(() => { /* profil déjà sauvé */ });
   };
 
-  /** Matériel profil — influence les prochaines générations seulement (pas de regen rétroactive). */
+  /** Régénère les séances non commencées après changement profil (pool / matos / nage). */
+  const applyProfileToUpcomingSessions = (nextProfile, { toast = true } = {}) => {
+    if (!activePlanEntry || !canUpdateProgram) return Promise.resolve();
+    const taste = activePlanEntry.plan?.taste || tasteProfile;
+    const planIdToUpdate = activePlanId;
+
+    if (activePlanEntry.plan?.isSessionLoop) {
+      const cur = activePlanEntry.plan.weeks?.[0]?.sessions?.[0];
+      if (!cur || isSessionResolved(cur)) {
+        if (toast) showToast("Profil enregistré — la prochaine séance utilisera ces réglages.", 4000);
+        return Promise.resolve();
+      }
+      const nextCursor = (activePlanEntry.plan.sessionCursor ?? 0) + 1;
+      const { week } = buildProgressionLoopSession(
+        { ...nextProfile, sessionsPerWeek: 1, taste, volumeAdj: activePlanEntry.plan.volumeAdj },
+        nextCursor,
+        true,
+      );
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== planIdToUpdate) return e;
+        return {
+          ...e,
+          profile: nextProfile,
+          plan: {
+            ...e.plan,
+            sessionCursor: nextCursor,
+            weeks: [week],
+          },
+        };
+      }));
+      if (toast) showToast("Séance du jour mise à jour avec ton profil.", 4000);
+      return Promise.resolve();
+    }
+
+    const oldWeeks = activePlanEntry.plan?.weeks ?? [];
+    const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? Date.now();
+    return generatePlan({ ...nextProfile, taste }, true, originalStartDate, { skipDelay: true }).then((newPlan) => {
+      const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== planIdToUpdate) return e;
+        return {
+          ...e,
+          profile: nextProfile,
+          plan: {
+            ...newPlan,
+            taste,
+            weeks: mergedWeeks,
+            ...(e.plan?.startDate ? { startDate: e.plan.startDate } : {}),
+            history: e.plan?.history,
+            freeSessionsUsed: e.plan?.freeSessionsUsed,
+            weekGenKey: e.plan?.weekGenKey,
+            weekGenCount: e.plan?.weekGenCount,
+            sessionCursor: e.plan?.sessionCursor,
+            loopBlocked: e.plan?.loopBlocked,
+            volumeAdj: e.plan?.volumeAdj,
+            _lastAdapt: e.plan?._lastAdapt,
+            _adaptSignals: e.plan?._adaptSignals,
+          },
+        };
+      }));
+      if (toast) showToast("Prochaines séances adaptées à ton profil (semaines déjà faites conservées).", 5000);
+    }).catch(() => {
+      if (toast) showToast("Profil enregistré.", 3000);
+    });
+  };
+
+  /** Matériel profil — applique aux prochaines séances (pas de regen des semaines faites). */
   const handleEquipmentChange = (nextEquipment) => {
     const equipment = Array.isArray(nextEquipment)
       ? nextEquipment.filter((e) =>
           ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
         )
       : [];
+    const nextProfile = { ...activeProfile, equipment };
     setPlans((prev) => prev.map((e) => {
       if (e.id !== activePlanId) return e;
       return { ...e, profile: { ...e.profile, equipment } };
     }));
     if (user?.id) {
-      const nextProfile = { ...activeProfile, equipment };
       sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
+    if (canUpdateProgram) {
+      applyProfileToUpcomingSessions(nextProfile, { toast: false });
     }
   };
 
-  /** Édition profil nageur depuis ProfileTab — pas de régénération auto. */
+  /** Édition profil nageur depuis ProfileTab — applique aux prochaines si pool / nage / etc. */
   const handleSwimmerProfileChange = (partial) => {
     if (!partial || typeof partial !== "object") return;
     const swimmerPartial = extractSwimmerProfile(partial);
@@ -12572,6 +12660,7 @@ export default function App() {
     for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuryNote", "healthConsent", "healthConsentAt", "healthDeclaration"]) {
       if (partial[k] !== undefined) nextPatch[k] = partial[k];
     }
+    const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...nextPatch };
     if (activePlanId) {
       setPlans((prev) => prev.map((e) => {
         if (e.id !== activePlanId) return e;
@@ -12579,8 +12668,17 @@ export default function App() {
       }));
     }
     if (user?.id) {
-      const nextProfile = { ...(activePlanEntry?.profile || {}), ...nextPatch };
       sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
+    const shouldApply = canUpdateProgram && (
+      nextPatch.pool !== undefined
+      || nextPatch.swimStyle !== undefined
+      || nextPatch.favoriteStroke !== undefined
+      || nextPatch.knowsFourNages !== undefined
+      || nextPatch.equipment !== undefined
+    );
+    if (shouldApply) {
+      applyProfileToUpcomingSessions(nextProfile, { toast: false });
     }
   };
 
