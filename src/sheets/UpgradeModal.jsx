@@ -114,32 +114,33 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
 
   return (
     <div className="sheet-overlay" onClick={e => canDismiss && e.target === e.currentTarget && onClose()}>
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <Zap size={26} color={G.white} />
+      <div className="sheet-panel ms-sheet-card scale-in">
+        <div className="ms-sheet-handle" />
+        <div style={{ textAlign: "center", marginBottom: 22, paddingTop: 4 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <Zap size={24} color={G.white} />
           </div>
-          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8 }}>
             {headline}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
-          <p style={{ color: G.greyMid, fontSize: 12, marginTop: 10, lineHeight: 1.4 }}>
+          <p style={{ color: G.greyMid, fontSize: 12, marginTop: 10, lineHeight: 1.45 }}>
             {PRICING_SUMMARY_FR} · résiliation via le portail Stripe
           </p>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
           <button type="button" onClick={() => setPeriod("monthly_flex")} style={{
-            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "monthly_flex" ? G.blue : G.greyLight}`,
+            width: "100%", padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+            border: `1.5px solid ${period === "monthly_flex" ? G.blue : G.greyLight}`,
             background: period === "monthly_flex" ? G.blueLight : G.surface,
             position: "relative",
+            minHeight: 56,
           }}>
             {hasReferral && period === "monthly_flex" && (
               <div style={{
                 position: "absolute", top: 8, right: 8,
-                background: "#22C55E", color: G.white,
+                background: G.mint, color: G.white,
                 fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
               }}>−20%</div>
             )}
@@ -155,9 +156,10 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
           </button>
 
           <button type="button" onClick={() => setPeriod("monthly_commit")} style={{
-            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "monthly_commit" ? G.blue : G.greyLight}`,
+            width: "100%", padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+            border: `1.5px solid ${period === "monthly_commit" ? G.blue : G.greyLight}`,
             background: period === "monthly_commit" ? G.blueLight : G.surface,
+            minHeight: 56,
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
               <div>
@@ -171,9 +173,10 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
           </button>
 
           <button type="button" onClick={() => setPeriod("annual")} style={{
-            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
+            width: "100%", padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+            border: `1.5px solid ${period === "annual" ? G.blue : G.greyLight}`,
             background: period === "annual" ? G.blueLight : G.surface,
+            minHeight: 56,
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
               <div>
@@ -196,24 +199,24 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
         )}
 
         {isCommit && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.goldLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: G.gold, lineHeight: 1.45, textAlign: "center" }}>
               {PRICING.monthlyCommit.label}/mois pendant 12 mois · engagement d’un an
             </span>
           </div>
         )}
 
         {isAnnual && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.goldLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: G.gold, lineHeight: 1.45, textAlign: "center" }}>
               {PRICING.annual.label} facturés une fois · pas de remboursement au prorata hors cas légaux
             </span>
           </div>
         )}
 
         {hasReferral && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>Parrainage actif — −20% auto au paiement</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.mintLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: G.mint }}>Parrainage actif — −20% auto au paiement</span>
           </div>
         )}
 

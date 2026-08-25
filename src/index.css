@@ -1,7 +1,7 @@
 @import "./theme/session-card.css";
 
 :root {
-  --text: #9bb0c8;
+  --text: #b4c6db;
   --text-h: #f4f8fa;
   --bg: #000514;
   --border: rgba(0, 107, 253, 0.22);
@@ -122,6 +122,22 @@ code {
   background: var(--bg);
   color: var(--text-h);
 }
+.ms-plan-reveal-ready {
+  animation: ms-screen-enter 0.28s ease both;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+}
+.ms-plan-reveal-building {
+  animation: ms-screen-enter 0.22s ease both;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
 .ms-plan-reveal-inner {
   max-width: 440px;
   margin: 0 auto;
@@ -131,14 +147,6 @@ code {
   min-height: 100dvh;
   box-sizing: border-box;
 }
-.ms-plan-reveal-building {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
 .ms-plan-reveal-spin {
   width: 56px;
   height: 56px;
@@ -146,12 +154,6 @@ code {
   border: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-top-color: var(--accent);
   animation: ms-plan-reveal-spin 0.9s linear infinite;
-}
-.ms-plan-reveal-ready {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding-top: 8px;
 }
 .ms-plan-reveal-title {
   margin: 1.75rem 0 0;
@@ -370,11 +372,13 @@ code {
   padding: 20px;
   background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(10px);
+  animation: ms-screen-enter 0.28s ease both;
 }
 .ms-celeb-card {
   width: 100%;
   max-width: 22rem;
   text-align: center;
+  animation: ms-screen-enter 0.32s ease 0.04s both;
 }
 .ms-celeb-check {
   width: 64px;
@@ -409,4 +413,47 @@ code {
 }
 .ms-celeb .ms-plan-reveal-btn {
   box-shadow: 0 8px 24px rgba(0, 107, 253, 0.28);
+}
+
+/* Sheets paywall / confirm — silhouette carte séance */
+.ms-sheet-card {
+  background: var(--code-bg, #06101f) !important;
+  border-radius: 1.25rem 1.25rem 0 0 !important;
+  border: 1px solid var(--border, rgba(0, 107, 253, 0.22));
+  border-bottom: none;
+  padding: 24px 20px !important;
+  padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+}
+.ms-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border, rgba(0, 107, 253, 0.22));
+  margin: 0 auto 22px;
+}
+.ms-screen-enter {
+  animation: ms-screen-enter 0.28s ease both;
+}
+@keyframes ms-screen-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms-screen-enter,
+  .ms-plan-reveal-ready,
+  .ms-plan-reveal-building,
+  .ms-celeb,
+  .ms-celeb-card {
+    animation: none !important;
+  }
+}
+
+.ms-session-card.is-resolved {
+  opacity: 0.78;
+}
+.ms-session-card.is-locked {
+  opacity: 0.92;
 }

@@ -100,6 +100,9 @@ import FeedbackModal from "./sheets/FeedbackModal.jsx";
 import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
+import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
+import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
+import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
 import { captureReferralFromUrl, getStoredReferralCode, resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -225,7 +228,7 @@ const css = `
     margin: 0;
     flex-shrink: 0;
     box-sizing: border-box;
-    border: 2px solid var(--myswym-ink-light, #9bb0c8);
+    border: 2px solid var(--myswym-ink-light, #b4c6db);
     border-radius: 6px;
     background-color: var(--myswym-surface, #06101f);
     background-repeat: no-repeat;
@@ -2664,15 +2667,20 @@ const StravaSection = ({
 
       {/* ── Non connecté ─────────────────────────────────────────── */}
       {!connected ? (
-        <button
-          onClick={connect}
-          style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT }}
-        >
-          <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Activity size={13} color="#fff" />
-          </span>
-          Connecter Strava
-        </button>
+        <div>
+          <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 12px" }}>
+            Relie Strava pour importer tes sorties et valider plus vite.
+          </p>
+          <button
+            onClick={connect}
+            style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT, minHeight: 48 }}
+          >
+            <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Activity size={13} color="#fff" />
+            </span>
+            Connecter Strava
+          </button>
+        </div>
       ) : (
         <>
           {!showDetails && (
@@ -2701,7 +2709,7 @@ const StravaSection = ({
 
           {/* ── Valider séance depuis Strava ─────────────────────── */}
           {showDetails && showProgramActions && canValidate && (
-            <div style={{ background: "linear-gradient(135deg,#EEF3FF,#E0F7FA)", borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ background: G.blueLight, borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Waves size={18} color="#fff" />
               </div>
@@ -4705,36 +4713,6 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
   );
 };
 
-const StepWeight = ({ weightCurrent, weightGoal, onChangeCurrent, onChangeGoal, onNext, onBack }) => {
-  const loss = Math.max(0, (parseFloat(weightCurrent) || 0) - (parseFloat(weightGoal) || 0));
-  const weeks = loss > 0 ? Math.min(16, Math.max(4, Math.ceil(loss * 2))) : null;
-  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${G.greyLight}`, fontSize: 18, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, color: G.ink, background: G.surface, outline: "none", textAlign: "center" };
-  return (
-    <div className="fade-up">
-      <p style={{ fontSize: 12, fontWeight: 600, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Étape 2 sur 4</p>
-      <h2 style={{ fontSize: 30, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, letterSpacing: "0.03em", color: G.ink, marginBottom: 6, lineHeight: 1.1 }}>Ton objectif<br />poids ?</h2>
-      <p style={{ color: G.grey, fontSize: 15, marginBottom: 24 }}>On va calculer la durée de ton plan.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
-          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Poids actuel (kg)</label>
-          <input type="number" inputMode="decimal" value={weightCurrent} onChange={e => onChangeCurrent(e.target.value)} placeholder="ex : 75" style={inp} />
-        </div>
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 20px", border: `1px solid ${G.greyLight}` }}>
-          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Objectif (kg)</label>
-          <input type="number" inputMode="decimal" value={weightGoal} onChange={e => onChangeGoal(e.target.value)} placeholder="ex : 72" style={inp} />
-        </div>
-      </div>
-      {weeks && (
-        <div style={{ background: G.blueLight, borderRadius: 12, padding: "12px 16px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-          <Target size={18} color={G.blue} />
-          <span style={{ fontSize: 14, color: G.blue, fontWeight: 500 }}>Plan de <strong>{weeks} semaines</strong> généré pour −{loss.toFixed(1)} kg</span>
-        </div>
-      )}
-      <Btn onClick={onNext} disabled={!weightCurrent || !weightGoal || parseFloat(weightCurrent) <= parseFloat(weightGoal)}>Continuer</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
-    </div>
-  );
-};
 
 const dateSelectStyle = {
   flex: 1,
@@ -5406,80 +5384,6 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
 };
 
 
-const ConfirmSheet = ({
-  title,
-  message,
-  confirmLabel = "Supprimer",
-  cancelLabel = "Annuler",
-  destructive = true,
-  onConfirm,
-  onCancel,
-}) => (
-  <div
-    className="sheet-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="confirm-sheet-title"
-    onClick={(e) => e.target === e.currentTarget && onCancel()}
-  >
-    <div
-      className="sheet-panel scale-in"
-      style={{
-        background: G.surface,
-        borderRadius: "28px 28px 0 0",
-        padding: "24px 20px",
-        paddingBottom: "max(28px, env(safe-area-inset-bottom))",
-      }}
-    >
-      <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-      <div style={{
-        width: 52, height: 52, borderRadius: 16,
-        background: destructive ? G.coralLight : G.blueLight,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        margin: "0 auto 16px",
-      }}>
-        <Trash2 size={22} color={destructive ? G.coral : G.blue} />
-      </div>
-      <h3
-        id="confirm-sheet-title"
-        style={{
-          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 800,
-          color: G.ink, textAlign: "center", marginBottom: 8,
-        }}
-      >
-        {title}
-      </h3>
-      <p style={{ color: G.grey, fontSize: 14, textAlign: "center", lineHeight: 1.5, marginBottom: 24 }}>
-        {message}
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button
-          type="button"
-          onClick={onConfirm}
-          style={{
-            width: "100%", padding: "14px 16px", borderRadius: 14, border: "none",
-            background: destructive ? G.coral : G.blue, color: "#fff",
-            fontSize: 15, fontWeight: 700, cursor: "pointer", minHeight: 48,
-          }}
-        >
-          {confirmLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            width: "100%", padding: "14px 16px", borderRadius: 14,
-            border: `1.5px solid ${G.greyLight}`, background: G.surface,
-            color: G.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", minHeight: 48,
-          }}
-        >
-          {cancelLabel}
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
 
 
 // ── BADGE CÉLÉBRATION + EXPORT + SEMAINE ───────────────────────────────────
@@ -5892,135 +5796,6 @@ const ReferralShareCard = () => {
 };
 
 
-const CancelSurveySheet = ({ onChoose, onSkip }) => {
-  const reasons = [
-    { id: "price", label: "Trop cher" },
-    { id: "pause", label: "Pause / pas le temps" },
-    { id: "hard", label: "Trop dur / pas adapté" },
-    { id: "other", label: "Autre" },
-  ];
-  return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, textAlign: "center" }}>
-          Avant de partir
-        </h3>
-        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
-          Une raison rapide (optionnel) — ça nous aide à améliorer MySWYM.
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-          {reasons.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => onChoose(r.id)}
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: 14,
-                border: `1.5px solid ${G.greyLight}`, background: G.surface,
-                color: G.ink, fontWeight: 600, fontSize: 14, cursor: "pointer", textAlign: "left",
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-        <button type="button" onClick={onSkip} style={{ width: "100%", padding: 12, border: "none", background: "none", color: G.grey, fontSize: 13, cursor: "pointer" }}>
-          Continuer vers Stripe
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const TrialExpiredFreeze = ({ onSubscribe, onSignOut, preview = null }) => (
-  <div
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="freeze-title"
-    style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 400,
-      background: G.bg,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "28px 20px",
-      paddingBottom: "max(28px, env(safe-area-inset-bottom))",
-    }}
-  >
-    <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
-      <div style={{
-        width: 64, height: 64, borderRadius: 20, background: G.blue,
-        display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px",
-      }}>
-        <Lock size={28} color={G.gold} />
-      </div>
-      <h1 id="freeze-title" style={{
-        fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 32, fontWeight: 800,
-        textTransform: "none", letterSpacing: "-0.03em", color: G.ink, margin: "0 0 12px", lineHeight: 1.05,
-      }}>
-        Ton essai est terminé
-      </h1>
-      <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 20px" }}>
-        Le coach est en pause. Abonne-toi pour reprendre tes séances — {PRICING_SUMMARY_FR}.
-      </p>
-
-      {preview && (
-        <div
-          aria-hidden
-          style={{
-            textAlign: "left",
-            marginBottom: 22,
-            borderRadius: 18,
-            padding: "16px 16px",
-            border: `1px solid ${G.greyLight}`,
-            background: G.surface,
-            filter: "blur(5px)",
-            opacity: 0.55,
-            pointerEvents: "none",
-            userSelect: "none",
-            position: "relative",
-          }}
-        >
-          <div style={{
-            position: "absolute", inset: 0, borderRadius: 18,
-            background: "linear-gradient(180deg, transparent 30%, rgba(6,16,31,0.55) 100%)",
-          }} />
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
-            Aperçu — séance en pause
-          </div>
-          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: G.ink, marginBottom: 6 }}>
-            {preview.title || "Séance"}
-          </div>
-          <div style={{ fontSize: 13, color: G.greyMid }}>
-            {[preview.type, preview.distance, preview.duration ? `${preview.duration} min` : null].filter(Boolean).join(" · ")}
-          </div>
-        </div>
-      )}
-
-      <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
-        Reprendre avec Premium
-      </Btn>
-      <button
-        type="button"
-        onClick={onSignOut}
-        style={{
-          width: "100%", marginTop: 12, padding: 14, border: "none", background: "none",
-          color: G.grey, fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44,
-        }}
-      >
-        Se déconnecter
-      </button>
-      <p style={{ fontSize: 12, color: G.greyMid, marginTop: 16, lineHeight: 1.45 }}>
-        Besoin d’aide ? <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>support@myswym.app</a>
-      </p>
-    </div>
-  </div>
-);
-
 
 const PremiumTeaser = ({ onUpgrade }) => (
   <div style={{ margin: "0 0 16px", borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
@@ -6411,15 +6186,14 @@ const SessionCard = ({
   const skeletonBars = Math.min(Math.max(blockCount || 3, 3), 5);
 
   return (
-    <div style={{
-      background: resolved || locked ? G.greyXLight : G.surface,
-      borderRadius: 20,
-      border: `1px solid ${G.greyLight}`,
-      opacity: resolved ? 0.78 : locked ? 0.92 : 1,
-      transition: "opacity 0.25s",
-      overflow: "hidden",
-      position: "relative",
-    }}>
+    <div
+      className={`ms-session-card${resolved ? " is-resolved" : ""}${locked ? " is-locked" : ""}`}
+      style={{
+        transition: "opacity 0.25s",
+        position: "relative",
+        background: resolved || locked ? G.greyXLight : undefined,
+      }}
+    >
       {!resolved && !locked && (
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
@@ -7744,11 +7518,15 @@ const HomeBadgesSection = ({ plan }) => {
           );
         })}
       </div>
-      {earned.length < BADGE_DEFS.length && (
-        <p style={{ fontSize: 11, color: G.greyMid, margin: "12px 0 0", lineHeight: 1.4 }}>
+      {earned.length === 0 ? (
+        <p style={{ fontSize: 13, color: G.grey, margin: "12px 0 0", lineHeight: 1.5 }}>
+          Valide ta première séance pour débloquer ton premier badge.
+        </p>
+      ) : earned.length < BADGE_DEFS.length ? (
+        <p style={{ fontSize: 12, color: G.grey, margin: "12px 0 0", lineHeight: 1.45 }}>
           Complète des séances pour débloquer les badges grisés.
         </p>
-      )}
+      ) : null}
     </div>
   );
 };
@@ -13061,7 +12839,7 @@ export default function App() {
     <>
       <style>{css}</style>
       <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg }}>
+      <div style={{ minHeight: "100vh", background: G.bg, color: G.ink }} className="ms-screen-enter">
         <AuthScreen
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}

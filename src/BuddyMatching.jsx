@@ -890,7 +890,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 16px" }}>
                   {activeFilters
                     ? "Élargis la ville ou retire un filtre."
-                    : "Publie ton profil (ville + numéro + consentement) pour apparaître. Le n° reste privé jusqu’à un accord mutuel."}
+                    : "Publie ton profil (ville + numéro + consentement) pour apparaître — et pour que d’autres te trouvent. Le n° reste privé jusqu’à un accord mutuel."}
                 </p>
                 {!activeFilters && (
                   <div style={{ textAlign: "left", background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: G.ink, lineHeight: 1.5 }}>
@@ -898,7 +898,10 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                     <div style={{ marginBottom: 6 }}>{form.city?.trim() ? "✓" : "○"} Ville / zone</div>
                     <div style={{ marginBottom: 6 }}>{(form.availability_days || []).length ? "✓" : "○"} Disponibilités</div>
                     <div style={{ marginBottom: 6 }}>{hasPhoneReady ? "✓" : "○"} Numéro + consentement</div>
-                    <div>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
+                    <div style={{ marginBottom: 6 }}>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
+                    <div style={{ marginTop: 10, fontSize: 12, color: G.grey, lineHeight: 1.45 }}>
+                      Signalement et blocage : onglet Relations, sur chaque mise en relation.
+                    </div>
                   </div>
                 )}
                 <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 12, padding: "12px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
