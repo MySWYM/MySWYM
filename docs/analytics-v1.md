@@ -37,6 +37,10 @@ Consentement cookies requis (`myswym_cookie_consent_v1=accepted`) avant tout env
 | `trial_started` | Sync Stripe → status trial | trial_ends_at | `userId` |
 | `subscription_started` | Sync Stripe → status active | premium | `userId` |
 | `app_opened` | Boot app (1× / onglet) | premium? | sessionStorage |
+| `ui_error` | ErrorBoundary, `window.onerror`, `unhandledrejection`, Buddy OTP | reason, context, error_kind, pathname | — |
+| `generation_failed` | Timeout Loading / échec génération plan | reason, context | — |
+
+> Observabilité crashes : **PostHog only** (`trackUiError` / `installGlobalErrorHandlers`). Pas de Sentry pour l’instant.
 
 Person properties (`identify`) : `level`, `objective`, `frequency`, `sessionDuration`, `poolLength`, `premium`.
 
