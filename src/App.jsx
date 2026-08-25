@@ -16,11 +16,19 @@ import {
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
+import { G, G_DARK, applyTheme } from "./theme/palette.js";
 import PlanRevealView from "./PlanRevealView.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
+import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import Btn from "./ui/Btn.jsx";
+import WeekStatRing from "./ui/WeekStatRing.jsx";
 import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel } from "./lib/plan-reveal.js";
+import {
+  dismissProfileNudge,
+  isProfileNudgeDismissed,
+  shouldShowProfileNudge,
+} from "./lib/profile-nudge.js";
 import {
   parseOnboardingPrefill,
   profilePatchFromPrefill,
@@ -128,68 +136,6 @@ import {
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
   Camera, Trash2, Users, ExternalLink,
 } from "lucide-react";
-
-// ── DESIGN SYSTEM (DA dark only — pas de thème clair) ────────────────────
-const THEME_LAST_KEY = "myswym_theme_last";
-const THEME_LEGACY_KEY = "myswym_theme";
-
-const G_DARK = {
-  bg: "#000514",
-  surface: "#06101f",
-  ink: "#f4f8fa",
-  inkLight: "#9bb0c8",
-  inverse: "#000514",
-  blue: "#006bfd",
-  blueLight: "#0a162c",
-  blueMid: "#3d8fff",
-  blueDeep: "#3d8fff",
-  water: "#22c3e0",
-  waterLight: "#0c2a32",
-  coral: "#FF6B78",
-  coralLight: "#3a151a",
-  mint: "#2dd4a0",
-  mintLight: "#0c2a20",
-  gold: "#FBBF24",
-  goldLight: "#3a2a0a",
-  purple: "#a78bfa",
-  purpleLight: "#241a3d",
-  grey: "#9bb0c8",
-  greyMid: "#6b7c90",
-  greyLight: "rgba(0, 107, 253, 0.22)",
-  greyXLight: "#0a162c",
-  white: "#FFFFFF",
-  glass: "rgba(0, 5, 20, 0.92)",
-  navGlass: "rgba(6, 16, 31, 0.94)",
-};
-
-/** Palette DA — dark only. applyTheme écrase un ancien thème clair en localStorage. */
-const G = { ...G_DARK };
-
-const applyTheme = () => {
-  Object.assign(G, G_DARK);
-  const root = document.documentElement;
-  root.setAttribute("data-theme", "dark");
-  root.style.colorScheme = "dark";
-  root.style.setProperty("--myswym-bg", G_DARK.bg);
-  root.style.setProperty("--myswym-surface", G_DARK.surface);
-  root.style.setProperty("--myswym-ink", G_DARK.ink);
-  root.style.setProperty("--myswym-ink-light", G_DARK.inkLight);
-  root.style.setProperty("--myswym-blue", G_DARK.blue);
-  root.style.setProperty("--myswym-blue-light", G_DARK.blueLight);
-  root.style.setProperty("--myswym-blue-mid", G_DARK.blueMid);
-  root.style.setProperty("--myswym-blue-deep", G_DARK.blueDeep);
-  root.style.setProperty("--myswym-grey", G_DARK.grey);
-  root.style.setProperty("--myswym-grey-mid", G_DARK.greyMid);
-  root.style.setProperty("--myswym-grey-light", G_DARK.greyLight);
-  root.style.setProperty("--myswym-grey-xlight", G_DARK.greyXLight);
-  root.style.setProperty("--myswym-nav-bg", G_DARK.navGlass);
-  root.style.setProperty("--myswym-nav-border", G_DARK.greyLight);
-  root.style.setProperty("--myswym-glass", G_DARK.glass);
-  try {
-    localStorage.setItem(THEME_LAST_KEY, "dark");
-    localStorage.removeItem(THEME_LEGACY_KEY);
-  } catch { /* ignore */ }
-};
 
 applyTheme();
 
@@ -677,6 +623,16 @@ const PREFERRED_STROKES = [
 
 const STROKE_LABELS = Object.fromEntries(PREFERRED_STROKES.map((s) => [s.id, s.label]));
 const STYLE_LABELS = Object.fromEntries(SWIM_STYLES.map((s) => [s.id, s.label]));
+
+/** Matériel — édité dans Profil (plus dans le questionnaire) et affiché sur les séances. */
+const EQUIPMENT_OPTS = [
+  { id: "palmes" },
+  { id: "tuba" },
+  { id: "pull" },
+  { id: "planche" },
+  { id: "plaquettes" },
+];
+const eqLabel = (id) => i18n.t(`equipment.${id}`, { ns: "onboarding", defaultValue: id });
 
 const BADGE_DEFS = [
   { id: "first_session", label: "Premier plongeon",   desc: "1re séance complétée",                icon: Droplets, color: G.water },
@@ -3480,7 +3436,10 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
             </div>
 
             <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 12 }}>Ma natation</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 6 }}>Ma natation</div>
+              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
+                Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
+              </p>
               <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {LEVELS.map((l) => {
@@ -3807,6 +3766,7 @@ const SettingsDrawer = ({
   onRefreshStatus,
   onGoProfile,
   onGoBuddies,
+  showBuddies = false,
   onOpenAuth,
   onSignOut,
   onDeleteAccount,
@@ -3880,16 +3840,20 @@ const SettingsDrawer = ({
             </div>
             <ChevronRight size={18} color={G.greyMid} />
           </button>
+          {showBuddies && (
           <button type="button" onClick={() => { onGoBuddies?.(); onClose(); }} style={menuRow}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Users size={18} color={G.water} />
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Binômes eau libre</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Trouver un partenaire · WhatsApp</div>
+                <div style={{ fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                  Binômes eau libre
+                </div>
+                <div style={{ fontSize: 12, color: G.grey }}>Prénom, ville, téléphone · abonnés uniquement</div>
               </div>
             </div>
             <ChevronRight size={18} color={G.greyMid} />
           </button>
+          )}
           <a
             href={withLocalePrefix("/", getStoredLanguage())}
             onClick={onClose}
@@ -4271,11 +4235,11 @@ const AppTopBar = ({ user, onOpenMenu, onAvatarClick, plan = null }) => {
   );
 };
 
-const BottomNav = ({ active, onChange, newBadge, hideBuddies = false }) => {
+const BottomNav = ({ active, onChange, newBadge, hideBuddies = false, lockBuddies = false }) => {
   const tabs = [
     { id: "home",    Icon: Home,      label: "Accueil" },
     { id: "plan",    Icon: Calendar,  label: "Programme" },
-    !hideBuddies && { id: "buddies", Icon: Users,     label: "Binômes" },
+    !hideBuddies && { id: "buddies", Icon: Users,     label: "Binômes", locked: lockBuddies },
     { id: "profile", Icon: User,      label: "Profil" },
   ].filter(Boolean);
   return (
@@ -4283,19 +4247,28 @@ const BottomNav = ({ active, onChange, newBadge, hideBuddies = false }) => {
       <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "6px 0 8px" }} aria-label="Navigation principale">
         {tabs.map(t => {
           const isActive = active === t.id;
+          const muted = t.locked && !isActive;
+          const iconColor = isActive ? G.blue : muted ? G.greyMid : G.greyMid;
           return (
             <button
               key={t.id}
               type="button"
               onClick={() => onChange(t.id)}
               aria-current={isActive ? "page" : undefined}
+              aria-label={t.locked ? `${t.label} (abonnés)` : t.label}
               style={{
                 flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                 gap: 4, background: "none", border: "none", cursor: "pointer",
                 minHeight: 48, padding: "6px 4px", position: "relative",
+                opacity: muted ? 0.55 : 1,
               }}
             >
-              <t.Icon size={22} color={isActive ? G.blue : G.greyMid} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
+              <span style={{ position: "relative", display: "inline-flex" }}>
+                <t.Icon size={22} color={iconColor} strokeWidth={isActive ? 2.5 : 1.8} style={{ transition: "all 0.2s" }} />
+                {t.locked && (
+                  <Lock size={10} color={iconColor} strokeWidth={2.6} style={{ position: "absolute", right: -6, top: -3 }} />
+                )}
+              </span>
               <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 500, color: isActive ? G.blue : G.grey }}>{t.label}</span>
               {t.id === "profile" && newBadge && <div style={{ position: "absolute", top: 6, right: "calc(50% - 18px)", width: 8, height: 8, borderRadius: "50%", background: G.coral }} />}
               {isActive && <div style={{ position: "absolute", bottom: 2, width: 28, height: 3, borderRadius: 2, background: G.blue }} />}
@@ -5081,47 +5054,6 @@ const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevel
   );
 };
 
-const Step3_Pool = ({ value, onChange, onNext, onBack }) => {
-  const { t } = useTranslation("onboarding");
-  return (
-  <div className="fade-up">
-    <h2 style={onboardingTitleStyle()}>{t("pool.title")}</h2>
-    <p style={{ fontSize: 16, fontWeight: 600, color: G.ink, lineHeight: 1.35, marginBottom: 8 }}>
-      {t("pool.lead")}
-    </p>
-    <p style={{ fontSize: 14, color: G.inkLight, lineHeight: 1.5, marginBottom: 20 }}>
-      {t("pool.hint")}
-    </p>
-    <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-      {POOLS.map(p => {
-        const isActive = Number(value) === p.id;
-        return (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onChange(p.id)}
-            style={{
-              flex: 1,
-              padding: "16px 14px",
-              borderRadius: 14,
-              border: `2px solid ${isActive ? G.blue : G.greyLight}`,
-              background: isActive ? G.blueLight : G.surface,
-              color: isActive ? G.blue : G.ink,
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            {p.id === 50 ? t("pool.m50") : t("pool.m25")}
-          </button>
-        );
-      })}
-    </div>
-    <Btn onClick={onNext} disabled={!value}>{t("common.continue")}</Btn>
-    <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.backShort")}</button>
-  </div>
-  );
-};
 
 // ── Helpers temps /100 m (T100) ───────────────────────────────────────────
 function parsePaceInput(raw, maxSecs = 9 * 60) {
@@ -5244,514 +5176,6 @@ const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, tota
   );
 };
 
-const onboardingNumInp = {
-  width: "100%",
-  padding: "14px 16px",
-  borderRadius: 12,
-  border: `1.5px solid ${G.greyLight}`,
-  fontSize: 18,
-  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-  fontWeight: 700,
-  color: G.ink,
-  background: G.surface,
-  outline: "none",
-  textAlign: "center",
-  boxSizing: "border-box",
-};
-
-/** Naissance · poids · taille — commun à tous les programmes */
-const StepPhysique = ({ birthMonth, birthDay, birthYear, weightKg, heightCm, onChange, onPatch, onNext, onBack }) => {
-  const { t } = useTranslation("onboarding");
-  const nowY = new Date().getFullYear();
-  const dim = daysInBirthMonth(birthMonth, birthYear);
-  const dayN = Number(birthDay);
-  const dayOk = Number.isFinite(dayN) && dayN >= 1 && dayN <= dim;
-  const ageN = computeAgeFromBirth(birthMonth, birthYear, new Date(), birthDay);
-  const wN = parseFloat(String(weightKg).replace(",", "."));
-  const hN = parseInt(heightCm, 10);
-  const ageOk = dayOk && ageN != null && ageN >= 10 && ageN <= 90;
-  const weightOk = Number.isFinite(wN) && wN >= 30 && wN <= 250;
-  const heightOk = Number.isFinite(hN) && hN >= 100 && hN <= 230;
-  const canNext = ageOk && weightOk && heightOk;
-
-  const setBirth = (day, month, year) => {
-    const d = day === "" || day == null ? "" : Number(day);
-    const m = month === "" || month == null ? "" : Number(month);
-    const y = year === "" || year == null ? "" : Number(year);
-    const maxD = daysInBirthMonth(m, y);
-    const clampedDay = d === "" ? "" : Math.min(Math.max(1, d), maxD);
-    const age = computeAgeFromBirth(m, y, new Date(), clampedDay);
-    const patch = {
-      birthDay: clampedDay === "" ? "" : clampedDay,
-      birthMonth: m === "" ? "" : m,
-      birthYear: y === "" ? "" : y,
-      ...(age != null ? { age } : { age: "" }),
-    };
-    if (typeof onPatch === "function") onPatch(patch);
-    else {
-      onChange("birthDay", patch.birthDay);
-      onChange("birthMonth", patch.birthMonth);
-      onChange("birthYear", patch.birthYear);
-      onChange("age", patch.age);
-    }
-  };
-
-  const dayOptions = [];
-  for (let d = 1; d <= dim; d++) dayOptions.push(d);
-
-  return (
-    <div className="fade-up">
-      <h2 style={onboardingTitleStyle()}>{t("physique.title")}</h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        {t("physique.lead")}
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}` }}>
-          <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-            {t("physique.birth")}
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.4fr 1fr", gap: 8 }}>
-            <select
-              value={birthDay === "" || birthDay == null ? "" : Number(birthDay)}
-              onChange={(e) => {
-                const raw = e.target.value;
-                setBirth(raw === "" ? "" : Number(raw), birthMonth, birthYear);
-              }}
-              aria-label={t("physique.day")}
-              style={{ ...onboardingNumInp, cursor: "pointer", textAlign: "left", fontSize: 16 }}
-            >
-              <option value="">{t("physique.day")}</option>
-              {dayOptions.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-            <select
-              value={birthMonth === "" || birthMonth == null ? "" : Number(birthMonth)}
-              onChange={(e) => {
-                const raw = e.target.value;
-                setBirth(birthDay, raw === "" ? "" : Number(raw), birthYear);
-              }}
-              aria-label={t("physique.month")}
-              style={{ ...onboardingNumInp, cursor: "pointer", textAlign: "left", fontSize: 16 }}
-            >
-              <option value="">{t("physique.month")}</option>
-              {BIRTH_MONTH_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{t(`months.${o.value}`)}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1900}
-              max={nowY}
-              value={birthYear ?? ""}
-              onChange={(e) => {
-                const raw = e.target.value;
-                setBirth(birthDay, birthMonth, raw === "" ? "" : Number(raw));
-              }}
-              placeholder={t("physique.year")}
-              aria-label={t("physique.year")}
-              style={onboardingNumInp}
-            />
-          </div>
-        </div>
-        {[
-          { key: "weightKg", label: t("physique.weight"), value: weightKg, placeholder: t("physique.weightPh"), inputMode: "decimal" },
-          { key: "heightCm", label: t("physique.height"), value: heightCm, placeholder: t("physique.heightPh"), inputMode: "numeric" },
-        ].map((f) => (
-          <div key={f.key} style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}` }}>
-            <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-              {f.label}
-            </label>
-            <input
-              type="number"
-              inputMode={f.inputMode}
-              value={f.value}
-              onChange={(e) => onChange(f.key, e.target.value)}
-              placeholder={f.placeholder}
-              style={onboardingNumInp}
-            />
-          </div>
-        ))}
-      </div>
-      <Btn onClick={onNext} disabled={!canNext}>{t("common.continue")}</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
-    </div>
-  );
-};
-
-/** Blessure + consentement santé (art. 9) — un seul écran. */
-const StepInjury = ({
-  injuryStatus,
-  injuryZone,
-  injurySeverity,
-  healthDeclaration,
-  healthConsent,
-  onChangeStatus,
-  onChangeZone,
-  onChangeSeverity,
-  onChangeDeclaration,
-  onChangeConsent,
-  onNext,
-  onRefuse,
-  onBack,
-}) => {
-  const { t } = useTranslation("onboarding");
-  const consented = !!healthConsent;
-  const canNext = !consented
-    || injuryStatus === "aucune"
-    || (injuryStatus === "oui" && injuryZone && injurySeverity && healthDeclaration);
-  return (
-    <div className="fade-up">
-      <h2 style={onboardingTitleStyle()}>{t("injury.title")}</h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
-        {t("injury.lead")}
-      </p>
-      <label style={{
-        display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 12,
-        padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${G.greyLight}`, background: G.surface,
-        fontSize: 13, lineHeight: 1.5, color: G.ink, cursor: "pointer",
-      }}>
-        <input
-          type="checkbox"
-          checked={consented}
-          onChange={(e) => onChangeConsent(e.target.checked)}
-          style={{ marginTop: 3, flexShrink: 0 }}
-        />
-        <span>{t("health.checkbox")}</span>
-      </label>
-      <details style={{ marginBottom: 16 }}>
-        <summary style={{ cursor: "pointer", color: G.blue, fontWeight: 700, fontSize: 14, listStyle: "none" }}>
-          {t("injury.learnMore")}
-        </summary>
-        <div style={{ marginTop: 10, fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
-          <p>{t("health.body")}</p>
-          <p style={{ marginTop: 8 }}>{t("health.medical")}</p>
-        </div>
-      </details>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-        {[
-          { id: "aucune", label: t("injury.none"), desc: t("injury.noneDesc") },
-          { id: "oui", label: t("injury.yes"), desc: t("injury.yesDesc") },
-        ].map((opt) => {
-          const active = injuryStatus === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => onChangeStatus(opt.id)}
-              style={{
-                padding: "16px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
-                border: `2px solid ${active ? G.blue : G.greyLight}`,
-                background: active ? G.blueLight : G.surface,
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.blue : G.ink }}>{opt.label}</div>
-              <div style={{ fontSize: 13, color: G.grey, marginTop: 2 }}>{opt.desc}</div>
-            </button>
-          );
-        })}
-      </div>
-      {injuryStatus === "oui" && !consented && (
-        <p style={{ fontSize: 13, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>{t("injury.consentHint")}</p>
-      )}
-      {injuryStatus === "oui" && consented && (
-        <div style={{ background: G.surface, borderRadius: 14, padding: "16px 18px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{t("injury.zone")}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-            {INJURY_ZONES.map((z) => {
-              const active = injuryZone === z.id;
-              return (
-                <button
-                  key={z.id}
-                  type="button"
-                  onClick={() => onChangeZone(z.id)}
-                  style={{
-                    padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 600,
-                    border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                    background: active ? G.blueLight : G.surface,
-                    color: active ? G.blue : G.ink,
-                  }}
-                >
-                  {t(`injury.zones.${z.id}`)}
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{t("injury.severity")}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
-            {INJURY_SEVERITIES.map((s) => {
-              const active = injurySeverity === s.id;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => onChangeSeverity(s.id)}
-                  style={{
-                    padding: "12px 14px", borderRadius: 12, textAlign: "left", cursor: "pointer",
-                    border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                    background: active ? G.blueLight : G.greyXLight,
-                  }}
-                >
-                  <div style={{ fontSize: 14, fontWeight: 700, color: active ? G.blue : G.ink }}>{t(`injury.severities.${s.id}.label`)}</div>
-                  <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{t(`injury.severities.${s.id}.desc`)}</div>
-                </button>
-              );
-            })}
-          </div>
-          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey }}>
-            <input
-              type="checkbox"
-              checked={!!healthDeclaration}
-              onChange={(e) => onChangeDeclaration(e.target.checked)}
-              style={{ marginTop: 2, flexShrink: 0 }}
-            />
-            <span>{t("health.declaration")}</span>
-          </label>
-        </div>
-      )}
-      <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>{t("health.safety")}</p>
-      <Btn onClick={onNext} disabled={!canNext}>
-        {consented ? t("common.continue") : t("injury.continueWithout")}
-      </Btn>
-      <button
-        type="button"
-        onClick={onRefuse}
-        style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}
-      >
-        {t("injury.refuse")}
-      </button>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
-    </div>
-  );
-};
-
-const EQUIPMENT_OPTS = [
-  { id: "palmes" },
-  { id: "tuba" },
-  { id: "pull" },
-  { id: "planche" },
-  { id: "plaquettes" },
-];
-const eqLabel = (id) => i18n.t(`equipment.${id}`, { ns: "onboarding", defaultValue: id });
-
-/** Matériel dispo — même multi-sélection à tous les niveaux (plusieurs ou aucun). */
-const StepEquipment = ({ equipment, onChange, onNext, onBack }) => {
-  const { t } = useTranslation("onboarding");
-  const selected = Array.isArray(equipment) ? equipment : [];
-  const answered = Array.isArray(equipment); // null = pas encore répondu
-
-  const toggle = (id) => {
-    if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
-    else onChange([...selected, id]);
-  };
-
-  const chooseNone = () => onChange([]);
-
-  const handleNext = () => {
-    // Continuer sans choix = aucun matériel (plus de null = inventaire inconnu)
-    if (!Array.isArray(equipment)) onChange([]);
-    onNext();
-  };
-
-  return (
-    <div className="fade-up">
-      <h2 style={onboardingTitleStyle()}>
-        {t("equipment.title")}
-      </h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        {t("equipment.lead")}
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-        {EQUIPMENT_OPTS.map((o) => {
-          const active = selected.includes(o.id);
-          return (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => toggle(o.id)}
-              style={{
-                padding: "14px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
-                border: `2px solid ${active ? G.blue : G.greyLight}`,
-                background: active ? G.blueLight : G.surface,
-                fontWeight: 700, fontSize: 15, color: G.ink,
-              }}
-            >
-              {active ? "✓ " : ""}{t(`equipment.${o.id}`)}
-            </button>
-          );
-        })}
-      </div>
-      <button
-        type="button"
-        onClick={chooseNone}
-        style={{
-          width: "100%", marginBottom: 12, padding: "12px 18px", borderRadius: 14, cursor: "pointer",
-          border: `2px solid ${answered && selected.length === 0 ? G.blue : G.greyLight}`,
-          background: answered && selected.length === 0 ? G.blueLight : G.surface,
-          fontWeight: 700, fontSize: 14, color: G.ink,
-        }}
-      >
-        {answered && selected.length === 0 ? "✓ " : ""}{t("equipment.noneShort")}
-      </button>
-
-      <Btn onClick={handleNext}>{t("common.continue")}</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
-    </div>
-  );
-};
-
-/** Nages préférées — style (crawl / 4 nages) + nage favorite */
-const StepSwimPrefs = ({
-  swimStyle,
-  preferredStroke,
-  onChangeStyle,
-  onChangeStroke,
-  onNext,
-  onBack,
-  isLast = false,
-  hideFourNages = false,
-}) => {
-  const { t } = useTranslation("onboarding");
-  useEffect(() => {
-    if (hideFourNages && swimStyle !== "crawl") onChangeStyle("crawl");
-  }, [hideFourNages, swimStyle, onChangeStyle]);
-
-  const canNext = hideFourNages ? !!preferredStroke : !!swimStyle && !!preferredStroke;
-  return (
-    <div className="fade-up">
-      <h2 style={onboardingTitleStyle()}>{t("prefs.title")}</h2>
-      <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
-        {hideFourNages ? t("prefs.leadOpen") : t("prefs.lead")}
-      </p>
-
-      {!hideFourNages && (
-        <>
-      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-        {t("prefs.style")}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
-        {SWIM_STYLES.map((s) => {
-          const active = swimStyle === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onChangeStyle(s.id)}
-              style={{
-                padding: "16px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
-                border: `2px solid ${active ? G.blue : G.greyLight}`,
-                background: active ? G.blue : G.surface,
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.white : G.ink }}>{t(`prefs.${s.id}.label`)}</div>
-              <div style={{ fontSize: 13, color: active ? "rgba(255,255,255,0.75)" : G.grey, marginTop: 2 }}>{t(`prefs.${s.id}.desc`)}</div>
-            </button>
-          );
-        })}
-      </div>
-        </>
-      )}
-
-      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-        {t("prefs.stroke")}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
-        {PREFERRED_STROKES.map((s) => {
-          const active = preferredStroke === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onChangeStroke(s.id)}
-              style={{
-                padding: "16px 14px", borderRadius: 14, cursor: "pointer",
-                border: `2px solid ${active ? G.blue : G.greyLight}`,
-                background: active ? G.blueLight : G.surface,
-                fontSize: 15, fontWeight: 700,
-                color: active ? G.blue : G.ink,
-              }}
-            >
-              {t(`prefs.strokes.${s.id}`)}
-            </button>
-          );
-        })}
-      </div>
-
-      <Btn onClick={onNext} disabled={!canNext}>{isLast ? t("common.generate") : t("common.continue")}</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
-    </div>
-  );
-};
-
-/** Focus d’entraînement du cycle (objectif plan). */
-const StepTrainingFocus = ({
-  value,
-  onChange,
-  onNext,
-  onBack,
-  isLast = false,
-  equipmentSummary = null,
-  onEditProfile = null,
-}) => (
-  <div className="fade-up">
-    <h2 style={onboardingTitleStyle()}>
-      Sur quoi veux-tu mettre l’accent ?
-    </h2>
-    <p style={{ fontSize: 14, color: G.grey, marginBottom: 16, lineHeight: 1.45 }}>
-      On orientera le cycle autour de cette priorité.
-    </p>
-
-    {equipmentSummary != null && (
-      <div style={{
-        background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16,
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-      }}>
-        <div style={{ fontSize: 13, color: G.ink, lineHeight: 1.4, minWidth: 0 }}>
-          <span style={{ fontWeight: 700 }}>Matériel disponible: </span>
-          {equipmentSummary}
-        </div>
-        {onEditProfile && (
-          <button
-            type="button"
-            onClick={onEditProfile}
-            style={{
-              flexShrink: 0, background: "none", border: "none", color: G.blue,
-              fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4,
-            }}
-          >
-            Modifier
-          </button>
-        )}
-      </div>
-    )}
-
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
-      {TRAINING_FOCUS_OPTIONS.map((o) => {
-        const active = value === o.id;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => onChange(o.id)}
-            style={{
-              padding: "16px 18px", borderRadius: 14, textAlign: "left", cursor: "pointer",
-              border: `2px solid ${active ? G.blue : G.greyLight}`,
-              background: active ? G.blueLight : G.surface,
-            }}
-          >
-            <div style={{ fontSize: 16, fontWeight: 700, color: active ? G.blueDeep : G.ink }}>{o.label}</div>
-            <div style={{ fontSize: 13, color: active ? G.blue : G.grey, marginTop: 2 }}>{o.desc}</div>
-          </button>
-        );
-      })}
-    </div>
-
-    <Btn onClick={onNext} disabled={!value}>{isLast ? "Générer mon plan" : "Continuer"}</Btn>
-    <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>← Retour</button>
-  </div>
-);
 
 /**
  * Questionnaire plan — plein écran (visiteur) ou onglet Programme (compte).
@@ -7440,9 +6864,10 @@ const SessionCard = ({
               onClick={e => { e.stopPropagation(); setShowTooltip(false); }}
               style={{
                 position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 50,
-                background: G.ink, color: G.inverse, fontSize: 12, lineHeight: 1.5,
+                background: G.surface, color: G.ink, fontSize: 12, lineHeight: 1.5,
                 padding: "10px 14px", borderRadius: 12, width: 230,
-                boxShadow: "0 8px 28px rgba(0,0,0,0.22)", cursor: "pointer",
+                border: `1px solid ${G.greyLight}`,
+                boxShadow: "0 8px 28px rgba(0,0,0,0.45)", cursor: "pointer",
                 textAlign: "left", fontWeight: 400,
               }}
             >
@@ -8955,9 +8380,15 @@ const Dashboard = ({
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
   const [poolOpen, setPoolOpen] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
   const next = findNextSession(plan);
   const preview = next?.session ? sessionCardModel(next.session) : null;
   const hasSwum = stats.totalSessions > 0;
+  const showProfileNudge = !!plan && shouldShowProfileNudge(profile, { dismissed: nudgeDismissed });
+  const currentWeekIdx = (plan?.weeks || []).findIndex((w) => !(w.sessions || []).every(isSessionResolved));
+  const weekMetersRow = !isLoop && stats.weeklyData?.length
+    ? stats.weeklyData[currentWeekIdx >= 0 ? currentWeekIdx : 0]
+    : null;
 
   const firstName = user?.user_metadata?.firstname
     || (() => {
@@ -9029,6 +8460,16 @@ const Dashboard = ({
           )}
         </div>
 
+        {showProfileNudge && (
+          <ProfileNudgeCard
+            onOpenProfile={() => onTabChange?.("profile")}
+            onDismiss={() => {
+              dismissProfileNudge(user?.id);
+              setNudgeDismissed(true);
+            }}
+          />
+        )}
+
         {!plan && (
           <div style={{
             background: G.surface, borderRadius: 20, padding: "22px 18px", marginBottom: 16,
@@ -9069,6 +8510,25 @@ const Dashboard = ({
                   : (isPremium ? "C’est parti — je nage" : "S’abonner pour nager")}
               </button>
             </SessionHeroCard>
+          </div>
+        )}
+
+        {hasSwum && weekMetersRow && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 16,
+            background: G.surface, border: `1px solid ${G.greyLight}`,
+            borderRadius: 16, padding: "14px 16px", marginBottom: 16,
+          }}>
+            <WeekStatRing value={weekMetersRow.done} max={weekMetersRow.total} />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey }}>
+                {weekMetersRow.label}
+              </div>
+              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: G.ink, letterSpacing: "-0.03em", marginTop: 2 }}>
+                {weekMetersRow.done}
+                <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, fontFamily: FONT }}> / {weekMetersRow.total} m</span>
+              </div>
+            </div>
           </div>
         )}
 
@@ -11711,6 +11171,12 @@ export default function App() {
   const plan            = activePlanEntry?.plan    ?? null;
   const activeProfile   = activePlanEntry?.profile ?? BLANK_PROFILE;
 
+  useEffect(() => {
+    if (activeTab !== "buddies") return;
+    const n = plan ? computeStats(plan).totalSessions : 0;
+    if (n < 1) setActiveTab("home");
+  }, [activeTab, plan]);
+
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
   useEffect(() => {
@@ -12162,7 +11628,10 @@ export default function App() {
   useEffect(() => {
     if (!user || screen !== "onboarding") return;
     setScreen("app");
-    if (plans.length === 0 || addingPlan) setActiveTab("plan");
+    // Plans encore en chargement : ne pas écraser l'onglet courant (loadUserData
+    // envoie lui-même sur Programme quand le compte n'a réellement aucun plan).
+    const confirmedNoPlan = plansHydratedRef.current && plans.length === 0;
+    if (confirmedNoPlan || addingPlan) setActiveTab("plan");
   }, [user, screen, plans.length, addingPlan]);
 
   // Analytics V1 — plan_viewed
@@ -13966,6 +13435,7 @@ export default function App() {
 
   const goal  = GOALS.find(g => g.id === activeProfile.goal);
   const stats = plan ? computeStats(plan) : null;
+  const hasSwumNav = (stats?.totalSessions || 0) > 0;
 
   if (authLoading) return (
     <>
@@ -14134,11 +13604,11 @@ export default function App() {
           onEditProfile: () => setActiveTab("profile"),
         }} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
-        {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} />}
+        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={setActiveTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
 
         <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav user={user} />
-        <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} hideBuddies={(!stats || stats.totalSessions < 1) && activeTab !== "buddies"} />
+        <BottomNav active={activeTab} onChange={setActiveTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
         <SettingsDrawer
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
@@ -14149,6 +13619,7 @@ export default function App() {
           onRefreshStatus={handleRefreshStatus}
           onGoProfile={() => setActiveTab("profile")}
           onGoBuddies={() => setActiveTab("buddies")}
+          showBuddies={hasSwumNav}
           onOpenAuth={openAuth}
           onSignOut={handleSignOut}
           onDeleteAccount={handleDeleteAccount}
@@ -14219,6 +13690,7 @@ export default function App() {
             weeksBlocked={null}
             planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
             trialEligible={!accessState.trialUsed}
+            canDismiss={upgradeSoftContext !== "trial_expired"}
           />
         )}
         {replaceConfirmOpen && (

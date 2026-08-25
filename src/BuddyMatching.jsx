@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Component, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Users, MapPin, MessageCircle, Settings, Search, Waves,
   Shield, Loader2, UserPlus, EyeOff, Flag, Ban, PhoneOff, Link2,
-  AlertTriangle, CheckCircle2, X,
+  AlertTriangle, CheckCircle2, X, Lock,
 } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
 import { trackEvent } from "./lib/analytics.js";
@@ -68,12 +68,12 @@ const G = {
   blueLight: "var(--myswym-blue-light, #0a162c)",
   blueMid: "var(--myswym-blue-mid, #3d8fff)",
   blueDeep: "var(--myswym-blue-deep, #3d8fff)",
-  water: "#00B4D8",
-  waterLight: "#E0F7FA",
-  coral: "#FF4757",
-  coralLight: "#FFE8EA",
-  mint: "#00C48C",
-  mintLight: "#E6FFF6",
+  water: "#22c3e0",
+  waterLight: "#0c2a32",
+  coral: "#FF6B78",
+  coralLight: "#3a151a",
+  mint: "#2dd4a0",
+  mintLight: "#0c2a20",
   white: "#FFFFFF",
   glass: "var(--myswym-glass, rgba(0, 5, 20, 0.92))",
 };
@@ -98,11 +98,11 @@ const checkboxStyle = (checked) => ({
   flexShrink: 0,
   appearance: "none",
   WebkitAppearance: "none",
-  border: "2px solid #111827",
-  borderRadius: 0,
+  border: "2px solid rgba(0, 107, 253, 0.45)",
+  borderRadius: 6,
   background: checked
     ? `center / 12px 12px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E"), ${G.blue}`
-    : "#FFFFFF",
+    : "transparent",
   cursor: "pointer",
 });
 
@@ -271,7 +271,7 @@ function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
 
 function BuddyTopBar({ user, onOpenMenu, onTabChange }) {
   const avatarUrl = user?.user_metadata?.avatar_url;
-  const firstName = user?.user_metadata?.firstname || user?.email?.split("@")[0] || "N";
+  const firstName = String(user?.user_metadata?.firstname || user?.email?.split("@")[0] || "N");
   const initials = firstName.slice(0, 2).toUpperCase();
 
   return (
@@ -303,7 +303,67 @@ function BuddyTopBar({ user, onOpenMenu, onTabChange }) {
   );
 }
 
-export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }) {
+function BuddyLockedScreen({ onOpenMenu, onTabChange, onUpgrade }) {
+  return (
+    <div style={{ background: "transparent", minHeight: "100dvh", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)" }}>
+      <div style={{
+        position: "sticky", top: 0, zIndex: 20,
+        padding: "calc(var(--safe-top) + 10px) var(--app-pad-x) 10px",
+        background: "var(--myswym-glass, rgba(0, 5, 20, 0.92))",
+        backdropFilter: "blur(16px)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <button type="button" onClick={onOpenMenu} aria-label="Menu" style={{ width: 44, height: 44, border: "none", background: "none", color: G.ink, cursor: "pointer" }}>
+          <Users size={20} />
+        </button>
+        <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, sans-serif", fontWeight: 700, fontSize: 16, color: G.ink }}>Binômes</div>
+        <div style={{ width: 44 }} />
+      </div>
+      <div className="app-shell" style={{ paddingTop: 24 }}>
+        <div style={{
+          background: G.surface, border: `1px solid ${G.greyLight}`, borderRadius: 20,
+          padding: "28px 20px", textAlign: "center",
+        }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
+            background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Lock size={22} color={G.blue} />
+          </div>
+          <h2 style={{ margin: 0, fontFamily: "Space Grotesk, ui-sans-serif, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink }}>
+            Matching entre abonnés
+          </h2>
+          <p style={{ margin: "10px 0 20px", fontSize: 14, lineHeight: 1.5, color: G.grey }}>
+            Uniquement entre nageurs qui ont un abonnement.
+            <br></br>L’essai 7 jours n’ouvre pas cette partie.
+          </p>
+          <button
+            type="button"
+            onClick={() => onUpgrade?.("buddies")}
+            style={{
+              width: "100%", minHeight: 48, border: "none", borderRadius: 12, cursor: "pointer",
+              background: G.blue, color: "#fff", fontWeight: 700, fontSize: 15,
+            }}
+          >
+            Voir l’abonnement
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange?.("home")}
+            style={{
+              width: "100%", marginTop: 8, minHeight: 44, border: "none", background: "none",
+              color: G.grey, fontSize: 14, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            Retour à l’accueil
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
   const [view, setView] = useState("list");
   const [form, setForm] = useState(() => defaultBuddyForm(user, profile));
   const [buddies, setBuddies] = useState([]);
@@ -336,65 +396,77 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
   const hasPhoneReady = !!(form.phone_share_ready && normalizeWhatsAppE164(form.whatsapp_e164));
   const profileReady = !!form.is_discoverable;
 
+  const connectionRows = useMemo(() => (Array.isArray(connections) ? connections : []), [connections]);
+  const buddyRows = useMemo(() => (Array.isArray(buddies) ? buddies : []), [buddies]);
+
   const connectionByPeer = useMemo(() => {
     const map = new Map();
-    for (const c of connections) {
-      if (!c.peer_user_id) continue;
+    for (const c of connectionRows) {
+      if (!c?.peer_user_id) continue;
       if (["pending", "accepted"].includes(c.status)) map.set(c.peer_user_id, c);
     }
     return map;
-  }, [connections]);
+  }, [connectionRows]);
 
   const pendingIncoming = useMemo(
-    () => connections.filter((c) => c.status === "pending" && c.recipient_id === user?.id),
-    [connections, user?.id],
+    () => connectionRows.filter((c) => c.status === "pending" && c.recipient_id === user?.id),
+    [connectionRows, user?.id],
   );
 
   const activeConnections = useMemo(
-    () => connections.filter((c) => c.status === "accepted" || (c.status === "pending" && c.requester_id === user?.id)),
-    [connections, user?.id],
+    () => connectionRows.filter((c) => c.status === "accepted" || (c.status === "pending" && c.requester_id === user?.id)),
+    [connectionRows, user?.id],
   );
 
   const loadList = useCallback(async () => {
     if (!user?.id) return;
     setLoadingList(true);
-    const { data, error } = await fetchDiscoverableBuddies({
-      city: cityFilter,
-      level: levelFilter || undefined,
-      goalCategory: goalFilter || undefined,
-      excludeUserId: user.id,
-    });
-    if (error) setMsg({ type: "err", text: error.message || "Impossible de charger les profils." });
-    else setBuddies(data);
+    try {
+      const { data, error } = await fetchDiscoverableBuddies({
+        city: cityFilter,
+        level: levelFilter || undefined,
+        goalCategory: goalFilter || undefined,
+        excludeUserId: user.id,
+      });
+      setBuddies(Array.isArray(data) ? data : []);
+      if (error) setMsg({ type: "err", text: typeof error.message === "string" ? error.message : "Impossible de charger les profils." });
+    } catch (err) {
+      setBuddies([]);
+      setMsg({ type: "err", text: typeof err?.message === "string" ? err.message : "Impossible de charger les profils." });
+    }
     setLoadingList(false);
   }, [user?.id, cityFilter, levelFilter, goalFilter]);
 
   const loadOwn = useCallback(async () => {
     if (!user?.id) return;
     setLoadingForm(true);
-    const { data, error } = await fetchOwnBuddyProfile(user.id);
-    if (error) {
-      setMsg({ type: "err", text: error.message });
-    } else if (data) {
-      setForm({
-        display_name: data.display_name,
-        city: data.city || "",
-        radius_km: data.radius_km || 15,
-        level: data.level || profile?.level || "régulier",
-        goal_category: data.goal_category || "eau_libre",
-        outing_types: normalizeOutingTypes(data.outing_types),
-        availability_days: normalizeAvailabilityDays(data.availability_days),
-        availability_slots: normalizeAvailabilitySlots(data.availability_slots),
-        bio: data.bio || "",
-        whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : "",
-        is_discoverable: data.is_discoverable,
-        phone_share_ready: !!(data.phone_share_ready || data.consent_whatsapp),
-        phone_verified: !!data.phone_verified,
-        phone_ownership_ack: !!(data.phone_share_ready || data.consent_whatsapp),
-        avatar_url: data.avatar_url || user?.user_metadata?.avatar_url || "",
-      });
-    } else {
-      setForm(defaultBuddyForm(user, profile));
+    try {
+      const { data, error } = await fetchOwnBuddyProfile(user.id);
+      if (error) {
+        setMsg({ type: "err", text: typeof error.message === "string" ? error.message : "Impossible de charger ton profil binôme." });
+      } else if (data) {
+        setForm({
+          display_name: data.display_name,
+          city: data.city || "",
+          radius_km: data.radius_km || 15,
+          level: data.level || profile?.level || "régulier",
+          goal_category: data.goal_category || "eau_libre",
+          outing_types: normalizeOutingTypes(data.outing_types),
+          availability_days: normalizeAvailabilityDays(data.availability_days),
+          availability_slots: normalizeAvailabilitySlots(data.availability_slots),
+          bio: data.bio || "",
+          whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : "",
+          is_discoverable: data.is_discoverable,
+          phone_share_ready: !!(data.phone_share_ready || data.consent_whatsapp),
+          phone_verified: !!data.phone_verified,
+          phone_ownership_ack: !!(data.phone_share_ready || data.consent_whatsapp),
+          avatar_url: data.avatar_url || user?.user_metadata?.avatar_url || "",
+        });
+      } else {
+        setForm(defaultBuddyForm(user, profile));
+      }
+    } catch (err) {
+      setMsg({ type: "err", text: typeof err?.message === "string" ? err.message : "Impossible de charger ton profil binôme." });
     }
     setLoadingForm(false);
   }, [user, profile]);
@@ -402,13 +474,18 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
   const loadConnections = useCallback(async () => {
     if (!user?.id) return;
     setLoadingConn(true);
-    const [{ data, error }, mod] = await Promise.all([
-      fetchMyBuddyConnections(user.id),
-      fetchOwnModeration(user.id),
-    ]);
-    if (error) setMsg({ type: "err", text: error.message });
-    else setConnections(data);
-    setModeration(mod.data);
+    try {
+      const [{ data, error }, mod] = await Promise.all([
+        fetchMyBuddyConnections(user.id),
+        fetchOwnModeration(user.id),
+      ]);
+      setConnections(Array.isArray(data) ? data : []);
+      if (error) setMsg({ type: "err", text: typeof error.message === "string" ? error.message : "Impossible de charger tes relations." });
+      setModeration(mod?.data ?? null);
+    } catch (err) {
+      setConnections([]);
+      setMsg({ type: "err", text: typeof err?.message === "string" ? err.message : "Impossible de charger tes relations." });
+    }
     setLoadingConn(false);
   }, [user?.id]);
 
@@ -701,7 +778,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
             borderRadius: 12, padding: "10px 12px", marginBottom: 14,
             color: msg.type === "ok" ? "#00897B" : G.coral, fontSize: 13, lineHeight: 1.45,
           }}>
-            {msg.text}
+            {typeof msg.text === "string" ? msg.text : "Une erreur est survenue."}
           </div>
         )}
 
@@ -776,7 +853,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
                 <Loader2 size={28} />
                 <div style={{ marginTop: 12, fontSize: 14 }}>Chargement…</div>
               </div>
-            ) : buddies.length === 0 ? (
+            ) : buddyRows.length === 0 ? (
               <div style={{ textAlign: "center", padding: "32px 16px", background: G.surface, borderRadius: 20, border: `1px solid ${G.greyLight}` }}>
                 <Waves size={36} color={G.blueMid} style={{ marginBottom: 12 }} />
                 <div style={{ fontSize: 16, fontWeight: 700, color: G.ink, marginBottom: 8 }}>
@@ -792,9 +869,9 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  {buddies.length} profil{buddies.length > 1 ? "s" : ""} disponible{buddies.length > 1 ? "s" : ""}
+                  {buddyRows.length} profil{buddyRows.length > 1 ? "s" : ""} disponible{buddyRows.length > 1 ? "s" : ""}
                 </div>
-                {buddies.map((b) => (
+                {buddyRows.map((b) => (
                   <BuddyCard
                     key={b.user_id}
                     buddy={b}
@@ -1417,5 +1494,89 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange }
         </Modal>
       )}
     </div>
+  );
+}
+
+function BuddyCrashFallback({ onOpenMenu, onTabChange }) {
+  return (
+    <div style={{ background: "transparent", minHeight: "100dvh", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)" }}>
+      <div className="app-shell" style={{ paddingTop: 48 }}>
+        <div style={{
+          background: G.surface, border: `1px solid ${G.greyLight}`, borderRadius: 20,
+          padding: "28px 20px", textAlign: "center",
+        }}>
+          <h2 style={{ margin: 0, fontFamily: "Space Grotesk, ui-sans-serif, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink }}>
+            Binômes indisponible
+          </h2>
+          <p style={{ margin: "10px 0 20px", fontSize: 14, lineHeight: 1.5, color: G.grey }}>
+            Impossible d’ouvrir cet écran. Reviens à l’accueil et réessaie.
+          </p>
+          <button
+            type="button"
+            onClick={() => onTabChange?.("home")}
+            style={{
+              width: "100%", minHeight: 48, border: "none", borderRadius: 12, cursor: "pointer",
+              background: G.blue, color: "#fff", fontWeight: 700, fontSize: 15,
+            }}
+          >
+            Retour à l’accueil
+          </button>
+          {onOpenMenu && (
+            <button
+              type="button"
+              onClick={onOpenMenu}
+              style={{
+                width: "100%", marginTop: 8, minHeight: 44, border: "none", background: "none",
+                color: G.grey, fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              Ouvrir le menu
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+class BuddyErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <BuddyCrashFallback
+          onOpenMenu={this.props.onOpenMenu}
+          onTabChange={this.props.onTabChange}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange, canUseBuddies = false, onUpgrade }) {
+  return (
+    <BuddyErrorBoundary onOpenMenu={onOpenMenu} onTabChange={onTabChange}>
+      {!canUseBuddies ? (
+        <BuddyLockedScreen
+          onOpenMenu={onOpenMenu}
+          onTabChange={onTabChange}
+          onUpgrade={onUpgrade}
+        />
+      ) : (
+        <BuddyMatchingPaid
+          user={user}
+          profile={profile}
+          onOpenMenu={onOpenMenu}
+          onTabChange={onTabChange}
+        />
+      )}
+    </BuddyErrorBoundary>
   );
 }
