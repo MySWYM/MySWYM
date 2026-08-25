@@ -5346,12 +5346,9 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     <div className="sheet-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink, marginBottom: 8, textAlign: "center" }}>
+        <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink, marginBottom: 18, textAlign: "center" }}>
           Partage ta séance
         </h3>
-        <p style={{ fontSize: 13, color: G.grey, textAlign: "center", margin: "0 0 18px", lineHeight: 1.4 }}>
-          Image + légende avec ton lien d’invitation MySWYM.
-        </p>
         <div style={{ background: `linear-gradient(145deg, #06101F 0%, #0033A0 100%)`, borderRadius: 20, padding: 24, marginBottom: 16, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -40, right: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(0,87,253,0.35)" }} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
@@ -5583,9 +5580,6 @@ const SessionExportBar = ({
           <Share2 size={13} /> Partager
         </button>
       </div>
-      <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
-        Texte prêt pour Strava (avec ton lien d’invitation), ou image à poster.
-      </p>
     </div>
   );
 };
