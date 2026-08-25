@@ -2,7 +2,7 @@
  * Catalogues onboarding / profil — extrait App.jsx vague 2.
  */
 import {
-  Activity, Waves, Shield, Award, Trophy, RotateCcw, Target,
+  Activity, Waves, Shield, Award, Trophy, RotateCcw, Target, TrendingUp,
 } from "lucide-react";
 import i18n from "../i18n/index.js";
 
