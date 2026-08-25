@@ -1,5 +1,6 @@
 /**
  * Vue synthèse / préparation d’une séance (pas le mode bassin).
+ * 3 blocs phase : Échauffement · Corps · Retour au calme.
  */
 import { useMemo, useState } from "react";
 import { Play, Lock } from "lucide-react";
@@ -15,6 +16,28 @@ const EQUIPMENT_LABELS = {
   plaquettes: "Plaquettes",
   elastique: "Élastique",
 };
+
+function phaseTone(sectionId, G) {
+  if (sectionId === "warm") {
+    return {
+      accent: "#3d8fff",
+      border: "rgba(61, 143, 255, 0.28)",
+      headerBg: "rgba(61, 143, 255, 0.10)",
+    };
+  }
+  if (sectionId === "cool") {
+    return {
+      accent: "#5eead4",
+      border: "rgba(94, 234, 212, 0.22)",
+      headerBg: "rgba(94, 234, 212, 0.08)",
+    };
+  }
+  return {
+    accent: G.blue,
+    border: G.greyLight,
+    headerBg: G.blueLight,
+  };
+}
 
 export default function WorkoutPrepView({
   session,
@@ -102,34 +125,80 @@ export default function WorkoutPrepView({
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        {sections.map((section) => (
-          <div key={section.id}>
-            <div style={{
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: section.id === "warm" ? "#0097A7" : section.id === "cool" ? "#00897B" : G.grey,
-              marginBottom: 10,
-            }}>
-              {section.label}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {section.exercises.map((ex, i) => (
-                <div key={ex.id} style={{ filter: locked && i > 1 ? "blur(3px)" : "none", opacity: locked && i > 1 ? 0.75 : 1 }}>
-                  <WorkoutExerciseCard
-                    exercise={locked && i > 1 ? { ...ex, main: "••••••", cue: "Premium", volumeLabel: "•••", strokeLabel: null, educatif: null, children: [], cues: [] } : ex}
-                    colors={G}
-                    accent={accent}
-                    onOpenDrill={setDrill}
-                    compact={embedded}
-                  />
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {sections.map((section) => {
+          const tone = phaseTone(section.id, G);
+          return (
+            <section
+              key={section.id}
+              aria-label={section.label}
+              style={{
+                borderRadius: 18,
+                border: `1px solid ${tone.border}`,
+                background: G.surface,
+                overflow: "hidden",
+              }}
+            >
+              <header style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: embedded ? "12px 14px" : "14px 16px",
+                background: tone.headerBg,
+                borderBottom: `1px solid ${tone.border}`,
+              }}>
+                <div style={{
+                  fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: "-0.01em",
+                  color: tone.accent,
+                }}>
+                  {section.label}
                 </div>
-              ))}
-            </div>
-          </div>
-        ))}
+                {section.metersLabel && (
+                  <div style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: G.inkLight,
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {section.metersLabel}
+                  </div>
+                )}
+              </header>
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 0,
+                padding: embedded ? "6px 8px 10px" : "8px 10px 12px",
+              }}>
+                {section.exercises.map((ex, i) => (
+                  <div
+                    key={ex.id}
+                    style={{
+                      filter: locked && section.id === "main" && i > 1 ? "blur(3px)" : "none",
+                      opacity: locked && section.id === "main" && i > 1 ? 0.75 : 1,
+                      marginTop: i === 0 ? 0 : 8,
+                    }}
+                  >
+                    <WorkoutExerciseCard
+                      exercise={locked && section.id === "main" && i > 1
+                        ? { ...ex, main: "••••••", cue: "Premium", volumeLabel: "•••", strokeLabel: null, educatif: null, children: [], cues: [] }
+                        : ex}
+                      colors={G}
+                      accent={{ bg: tone.headerBg, color: tone.accent }}
+                      onOpenDrill={setDrill}
+                      compact={embedded}
+                      nested
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       {showStart && (

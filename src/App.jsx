@@ -78,6 +78,7 @@ import {
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
+import { buildWorkoutView } from "./lib/workout-display.js";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
 
@@ -6117,6 +6118,8 @@ const SessionCard = ({
   const intensity = parseIntensity(session.intensity);
   const details = expandCompoundDetailLines(session.details || []);
   const detailGroups = groupSessionDetails(details);
+  const workoutPreview = buildWorkoutView(session);
+  const phaseCount = workoutPreview.sections?.length || 0;
   const blockCount = detailGroups.reduce((n, g) => {
     if (g.type === "block") return n + 1;
     if (g.type === "work") return n + g.lines.length;
@@ -6450,7 +6453,7 @@ const SessionCard = ({
               color: G.inkLight, fontSize: 13, fontWeight: 600,
             }}
           >
-            <span>{expanded ? "Masquer le détail" : `${blockCount} bloc${blockCount > 1 ? "s" : ""}`}</span>
+            <span>{expanded ? "Masquer le détail" : phaseCount >= 2 ? `${phaseCount} phases` : `${blockCount} bloc${blockCount > 1 ? "s" : ""}`}</span>
             {expanded ? <ChevronUp size={14} color={G.greyMid} /> : <ChevronDown size={14} color={G.greyMid} />}
           </button>
           {expanded && (
