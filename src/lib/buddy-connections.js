@@ -1,4 +1,5 @@
 import { supabase } from "../supabase.js";
+import { requirePaidBuddies } from "./buddy-access.js";
 import { normalizeWhatsAppE164, formatWhatsAppDisplay, buildWhatsAppLink } from "./buddy-profiles.js";
 
 export const BUDDY_REPORT_THRESHOLD = 3;
@@ -48,6 +49,8 @@ export async function requestBuddyConnection({
   safetyAck,
   sharePhoneConsent,
 }) {
+  const gate = await requirePaidBuddies();
+  if (!gate.ok) return { data: null, error: gate.error };
   if (!requesterId || !recipientId) {
     return { data: null, error: { message: "Utilisateurs manquants." } };
   }
@@ -136,6 +139,8 @@ export async function grantPhoneShare(connectionId, userId) {
   if (!connectionId || !userId) {
     return { data: null, error: { message: "Paramètres manquants." } };
   }
+  const gate = await requirePaidBuddies();
+  if (!gate.ok) return { data: null, error: gate.error };
   const { data, error } = await supabase.rpc("set_buddy_phone_share", {
     p_connection_id: connectionId,
     p_share: true,
@@ -146,9 +151,11 @@ export async function grantPhoneShare(connectionId, userId) {
 
 export async function fetchMyBuddyConnections(userId) {
   if (!userId) return { data: [], error: null };
+  const gate = await requirePaidBuddies();
+  if (!gate.ok) return { data: [], error: gate.error };
 
   const { data, error } = await supabase.rpc("get_my_buddy_connections");
-  if (!error) return { data: data ?? [], error: null };
+  if (!error) return { data: Array.isArray(data) ? data : [], error: null };
 
   // Fallback sans RPC enrichie
   const fallback = await supabase
@@ -161,7 +168,7 @@ export async function fetchMyBuddyConnections(userId) {
   if (fallback.error) return { data: [], error: fallback.error };
 
   return {
-    data: (fallback.data ?? []).map((c) => ({
+    data: (Array.isArray(fallback.data) ? fallback.data : []).map((c) => ({
       ...c,
       peer_user_id: c.requester_id === userId ? c.recipient_id : c.requester_id,
       peer_display_name: "Nageur",
@@ -173,6 +180,8 @@ export async function fetchMyBuddyConnections(userId) {
 }
 
 export async function fetchConnectionPhones(connectionId) {
+  const gate = await requirePaidBuddies();
+  if (!gate.ok) return { data: null, error: gate.error };
   const { data, error } = await supabase.rpc("get_connection_phones", {
     p_connection_id: connectionId,
   });

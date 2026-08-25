@@ -102,8 +102,13 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
   switch (softContext) {
     case "after_first_session":
       return {
-        headline: "Ton coach a noté la séance",
-        subtitle: "Abonne-toi pour que le plan s’adapte vraiment à toi — 9,99€/mois sans engagement, ou 4,99€/mois sur 12 mois.",
+        headline: "Analyse terminée.",
+        subtitle: "Le plan peut s’adapter à cette séance. Abonne-toi : 9,99 €/mois sans engagement, ou 4,99 €/mois sur 12 mois.",
+      };
+    case "buddies":
+      return {
+        headline: "Binômes, entre abonnés",
+        subtitle: "Prénom, ville et téléphone restent entre nageurs qui ont un abonnement. L’essai n’ouvre pas le matching.",
       };
     case "trial_required":
       return {

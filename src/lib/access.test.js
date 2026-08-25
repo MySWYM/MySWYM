@@ -143,8 +143,40 @@ const nowSec = Math.floor(Date.now() / 1000);
 }
 
 {
-  const noUser = getAccessState(null);
-  assert.equal(noUser.isFrozen, false);
+  const trial = getAccessState(userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.TRIAL,
+    trial_ends_at: new Date(Date.now() + 86400000).toISOString(),
+  }));
+  assert.equal(trial.hasPremiumAccess, true);
+  assert.equal(trial.canUseBuddies, false, "trial must not access buddy PII matching");
+}
+
+{
+  const paying = getAccessState(userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.ACTIVE,
+    subscription_end: nowSec + 86400,
+  }));
+  assert.equal(paying.canUseBuddies, true);
+}
+
+{
+  const canceled = getAccessState(userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.CANCELED,
+    subscription_end: nowSec + 86400,
+    cancel_at_period_end: true,
+  }));
+  assert.equal(canceled.canUseBuddies, true, "paid period remaining keeps buddies");
+}
+
+{
+  const expired = getAccessState(userWith({
+    subscription: "free",
+    subscription_status: ACCESS_STATUS.EXPIRED,
+  }));
+  assert.equal(expired.canUseBuddies, false);
 }
 
 console.log("access.test.js OK");

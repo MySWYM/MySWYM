@@ -68,6 +68,8 @@ export function getAccessState(user) {
     cancelAtPeriodEnd,
     entitledByStatus,
     hasPremiumAccess,
+    /** Matching PII (tél., ville, prénom) : abo payant seulement, pas l’essai. */
+    canUseBuddies: hasPremiumAccess && status !== ACCESS_STATUS.TRIAL,
     isFrozen: Boolean(user) && !hasPremiumAccess,
     canGenerateProgram: hasPremiumAccess,
     canUpdateProgram: hasPremiumAccess,

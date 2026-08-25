@@ -1,4 +1,5 @@
 import { supabase } from "../supabase.js";
+import { requirePaidBuddies } from "./buddy-access.js";
 
 export const BUDDY_GOAL_CATEGORIES = [
   { id: "eau_libre", label: "Eau libre" },
@@ -197,17 +198,26 @@ export function buildWhatsAppLink(e164, { senderName, buddyName, city, outingLab
 export function goalCategoryFromProfile(profile) {
   const cat = profile?.category;
   if (cat === "eau_libre" || cat === "triathlon" || cat === "progression") return cat;
-  if (profile?.goal?.startsWith("open_water")) return "eau_libre";
-  if (profile?.goal?.startsWith("triathlon")) return "triathlon";
+  const goal = typeof profile?.goal === "string" ? profile.goal : "";
+  if (goal.startsWith("open_water")) return "eau_libre";
+  if (goal.startsWith("triathlon")) return "triathlon";
   return "mixte";
 }
 
+function asBuddyRows(data) {
+  return Array.isArray(data) ? data : [];
+}
+
 export function defaultBuddyForm(user, trainingProfile) {
-  const displayName =
-    user?.user_metadata?.firstname
-    || user?.user_metadata?.full_name?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || "Nageur";
+  const metaName = user?.user_metadata?.firstname;
+  const fullName = user?.user_metadata?.full_name;
+  const emailName = typeof user?.email === "string" ? user.email.split("@")[0] : "";
+  const displayName = (
+    (typeof metaName === "string" && metaName.trim())
+    || (typeof fullName === "string" && fullName.trim().split(" ")[0])
+    || emailName
+    || "Nageur"
+  );
 
   return {
     display_name: displayName,
@@ -244,6 +254,9 @@ export async function fetchOwnBuddyProfile(userId) {
  * Fallback : select limité si la RPC n'est pas encore déployée (sans whatsapp).
  */
 export async function fetchDiscoverableBuddies({ city, level, goalCategory, excludeUserId } = {}) {
+  const gate = await requirePaidBuddies();
+  if (!gate.ok) return { data: [], error: gate.error };
+
   const { data, error } = await supabase.rpc("get_buddy_directory", {
     p_city: city?.trim() || null,
     p_level: level || null,
@@ -252,7 +265,7 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
   });
 
   if (!error) {
-    const rows = (data ?? []).map(stripPhoneFromBuddy);
+    const rows = asBuddyRows(data).map(stripPhoneFromBuddy);
     const filtered = excludeUserId
       ? rows.filter((r) => r.user_id !== excludeUserId)
       : rows;
@@ -274,18 +287,21 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
 
   const fallback = await q;
   return {
-    data: (fallback.data ?? []).map(stripPhoneFromBuddy),
+    data: asBuddyRows(fallback.data).map(stripPhoneFromBuddy),
     error: fallback.error,
   };
 }
 
 function stripPhoneFromBuddy(row) {
-  if (!row) return row;
+  if (!row || typeof row !== "object") return row;
   const { whatsapp_e164: _w, consent_whatsapp: _c, phone_share_ready: _p, ...safe } = row;
   return safe;
 }
 
 export async function upsertBuddyProfile(userId, form) {
+  const gate = await requirePaidBuddies();
+  if (!gate.ok) return { data: null, error: gate.error };
+
   const whatsapp = normalizeWhatsAppE164(form.whatsapp_e164);
   const discoverable = !!form.is_discoverable;
   const phoneShareReady = !!form.phone_share_ready;
