@@ -236,9 +236,10 @@ export function PolitiqueConfidentialitePage() {
         "Durée : jusqu’à déconnexion Strava ou suppression du compte.",
       ]} />
 
-      <H3>2.6 Buddy Matching (profil public sans numéro)</H3>
+      <H3>2.6 Buddy Matching (profil public sans numéro affiché)</H3>
       <Ul items={[
-        "Données : prénom affiché, ville / zone, rayon, niveau, objectif, types de sortie, disponibilités, bio, avatar.",
+        "Données affichées : prénom, ville / zone, rayon, niveau, objectif, types de sortie, disponibilités, bio, avatar.",
+        "Condition d’apparition : profil publié avec ville, numéro enregistré et consentement de principe de partage (le numéro n’est pas affiché dans l’annuaire).",
         "Finalité : apparaître dans l’annuaire Buddy et permettre aux autres membres de proposer une mise en relation.",
         "Base légale : exécution du contrat / intérêt légitime pour l’annuaire ; le numéro de téléphone n’est jamais affiché sur ce profil public.",
       ]} />
