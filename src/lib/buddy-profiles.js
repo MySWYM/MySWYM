@@ -250,8 +250,9 @@ export async function fetchOwnBuddyProfile(userId) {
 }
 
 /**
- * Annuaire sans numéro — RPC security definer (exclut blocs / suspens).
- * Fallback : select limité si la RPC n'est pas encore déployée (sans whatsapp).
+ * Annuaire public (sans numéro affiché) — RPC security definer.
+ * Visibilité = publié + ville + numéro prêt (phone_share_ready + whatsapp).
+ * Fallback : mêmes filtres si la RPC n'est pas encore déployée.
  */
 export async function fetchDiscoverableBuddies({ city, level, goalCategory, excludeUserId } = {}) {
   const gate = await requirePaidBuddies();
@@ -272,11 +273,14 @@ export async function fetchDiscoverableBuddies({ city, level, goalCategory, excl
     return { data: filtered, error: null };
   }
 
-  // Fallback legacy (migration pas encore appliquée) — colonnes publiques uniquement
+  // Fallback legacy — colonnes publiques uniquement ; filtre numéro sans le sélectionner
   let q = supabase
     .from("buddy_profiles")
     .select(BUDDY_PUBLIC_FIELDS.join(", "))
     .eq("is_discoverable", true)
+    .eq("phone_share_ready", true)
+    .not("whatsapp_e164", "is", null)
+    .neq("city", "")
     .order("updated_at", { ascending: false })
     .limit(50);
 
@@ -310,9 +314,25 @@ export async function upsertBuddyProfile(userId, form) {
     return { data: null, error: { message: "Indique ta ville ou zone de sortie." } };
   }
 
-  // Le numéro n'est jamais publié sur l'annuaire. Il est stocké uniquement
-  // pour un éventuel partage après acceptation mutuelle + consentement explicite.
-  if (phoneShareReady) {
+  // Publier = apparaître dans l’annuaire → ville + numéro prêt + consentement.
+  // Le numéro n’est jamais affiché dans l’annuaire ; uniquement révélé après match mutuel.
+  if (discoverable) {
+    if (!phoneShareReady) {
+      return {
+        data: null,
+        error: { message: "Pour publier ton profil, enregistre un numéro et accepte le consentement de partage." },
+      };
+    }
+    if (!whatsapp) {
+      return { data: null, error: { message: "Numéro invalide (ex. 06 12 34 56 78)." } };
+    }
+    if (!form.phone_ownership_ack && !form.phone_verified) {
+      return {
+        data: null,
+        error: { message: "Confirme que ce numéro t’appartient avant de publier ton profil." },
+      };
+    }
+  } else if (phoneShareReady) {
     if (!whatsapp) {
       return { data: null, error: { message: "Numéro invalide (ex. 06 12 34 56 78)." } };
     }
@@ -374,7 +394,7 @@ export async function disableBuddyProfile(userId) {
   return { data, error };
 }
 
-/** Masque le numéro partout (profil + prêt à partager). */
+/** Masque le numéro partout et retire de l’annuaire (plus de gate téléphone). */
 export async function clearBuddyPhone(userId) {
   const { data, error } = await supabase
     .from("buddy_profiles")
@@ -383,6 +403,7 @@ export async function clearBuddyPhone(userId) {
       consent_whatsapp: false,
       phone_share_ready: false,
       phone_verified: false,
+      is_discoverable: false,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)

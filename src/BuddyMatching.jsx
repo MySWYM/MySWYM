@@ -530,7 +530,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
   const openRequestModal = (buddy) => {
     if (!gateMatching()) return;
     if (!profileReady) {
-      setMsg({ type: "err", text: "Publie ton profil buddy (sans exposer ton numéro) pour demander une mise en relation." });
+      setMsg({ type: "err", text: "Publie ton profil buddy (ville, numéro et consentements) pour demander une mise en relation." });
       setView("form");
       return;
     }
@@ -542,10 +542,22 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
 
   const handleSave = async (discoverable) => {
     if (!user?.id) return;
-    if (form.phone_share_ready && !form.phone_ownership_ack && !form.phone_verified) {
-      setPhoneConsentError(true);
-      setMsg({ type: "err", text: "Confirme que le numéro t’appartient (consentement distinct du compte et des données de santé)." });
-      return;
+    if (discoverable || form.phone_share_ready) {
+      if (!form.phone_ownership_ack && !form.phone_verified) {
+        setPhoneConsentError(true);
+        setMsg({ type: "err", text: "Confirme que le numéro t’appartient (consentement distinct du compte et des données de santé)." });
+        return;
+      }
+    }
+    if (discoverable) {
+      if (!form.city?.trim()) {
+        setMsg({ type: "err", text: "Indique ta ville ou zone de sortie pour publier." });
+        return;
+      }
+      if (!form.phone_share_ready || !normalizeWhatsAppE164(form.whatsapp_e164)) {
+        setMsg({ type: "err", text: "Pour publier, enregistre un numéro valide et accepte le consentement de partage." });
+        return;
+      }
     }
     setSaving(true);
     setMsg(null);
@@ -602,8 +614,10 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
         phone_share_ready: false,
         phone_verified: false,
         phone_ownership_ack: false,
+        is_discoverable: false,
       }));
-      setMsg({ type: "ok", text: "Numéro masqué. Les partages en cours sont à révoquer aussi dans « Mes mises en relation »." });
+      setMsg({ type: "ok", text: "Numéro masqué et profil retiré de l’annuaire. Révoque aussi les partages dans « Mes mises en relation » si besoin." });
+      await loadList();
     }
     setSaving(false);
   };
@@ -831,8 +845,9 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
             }}>
               <Shield size={18} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ fontSize: 12, color: G.blueDeep, lineHeight: 1.5 }}>
-                Ton numéro n’apparaît jamais sur l’annuaire. Il n’est échangé qu’après acceptation mutuelle
-                et consentement explicite de partage (distinct du compte et des données de santé).
+                Ton numéro n’apparaît jamais sur l’annuaire. Pour y figurer, il faut une ville, un numéro
+                enregistré et le consentement de partage — l’échange du n° n’a lieu qu’après acceptation mutuelle
+                (distinct du compte et des données de santé).
               </div>
             </div>
 
@@ -875,15 +890,15 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 16px" }}>
                   {activeFilters
                     ? "Élargis la ville ou retire un filtre."
-                    : "Publie ton profil pour apparaître. Le numéro reste privé jusqu’à un accord mutuel."}
+                    : "Publie ton profil (ville + numéro + consentement) pour apparaître. Le n° reste privé jusqu’à un accord mutuel."}
                 </p>
                 {!activeFilters && (
                   <div style={{ textAlign: "left", background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: G.ink, lineHeight: 1.5 }}>
                     <div style={{ fontWeight: 700, marginBottom: 8, color: G.grey, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>Pour être visible</div>
                     <div style={{ marginBottom: 6 }}>{form.city?.trim() ? "✓" : "○"} Ville / zone</div>
                     <div style={{ marginBottom: 6 }}>{(form.availability_days || []).length ? "✓" : "○"} Disponibilités</div>
-                    <div style={{ marginBottom: 6 }}>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
-                    <div>{hasPhoneReady ? "✓" : "○"} Numéro prêt (pour matcher, pas pour l’annuaire)</div>
+                    <div style={{ marginBottom: 6 }}>{hasPhoneReady ? "✓" : "○"} Numéro + consentement</div>
+                    <div>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
                   </div>
                 )}
                 <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 12, padding: "12px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
@@ -1226,8 +1241,8 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                   autoComplete="tel"
                 />
                 <div style={{ fontSize: 12, color: G.grey, marginTop: 8, lineHeight: 1.5 }}>
-                  Ce numéro n’apparaît pas sur ton profil public. Il n’est révélé qu’à un binôme après acceptation mutuelle
-                  et un consentement explicite au moment de la mise en relation.
+                  Requis pour apparaître dans l’annuaire, mais jamais affiché dessus. Révélé uniquement à un binôme
+                  après acceptation mutuelle et un consentement explicite au moment de la mise en relation.
                   {form.phone_verified
                     ? " · Numéro vérifié."
                     : " · Vérification SMS à venir ; pour l’instant, e-mail vérifié + déclaration de propriété."}
@@ -1292,7 +1307,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                     opacity: saving ? 0.7 : 1,
                   }}
                 >
-                  {saving ? "Enregistrement…" : form.is_discoverable ? "Mettre à jour · visible" : "Publier mon profil (sans n°)"}
+                  {saving ? "Enregistrement…" : form.is_discoverable ? "Mettre à jour · visible" : "Publier mon profil"}
                 </button>
                 <button
                   type="button"
