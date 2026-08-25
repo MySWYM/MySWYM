@@ -810,6 +810,18 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
           </div>
         )}
 
+        {!suspended && moderation?.report_count > 0 && (
+          <div style={{
+            background: G.goldLight, borderRadius: 16, padding: "12px 14px", marginBottom: 16,
+            color: G.gold, fontSize: 12, lineHeight: 1.45, fontWeight: 600,
+            border: "1px solid rgba(251, 191, 36, 0.35)",
+          }}>
+            Modération : {moderation.report_count} signalement{moderation.report_count > 1 ? "s" : ""} reçu{moderation.report_count > 1 ? "s" : ""} sur ton profil.
+            Au-delà de {BUDDY_REPORT_THRESHOLD}, l’accès matching peut être suspendu.
+            Tu peux signaler ou bloquer un nageur depuis Relations.
+          </div>
+        )}
+
         {view === "list" && (
           <>
             <div style={{
@@ -854,17 +866,37 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                 <div style={{ marginTop: 12, fontSize: 14 }}>Chargement…</div>
               </div>
             ) : buddyRows.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "32px 16px", background: G.surface, borderRadius: 20, border: `1px solid ${G.greyLight}` }}>
+              <div style={{ textAlign: "center", padding: "28px 16px", background: G.surface, borderRadius: 20, border: `1px solid ${G.greyLight}` }}>
                 <Waves size={36} color={G.blueMid} style={{ marginBottom: 12 }} />
                 <div style={{ fontSize: 16, fontWeight: 700, color: G.ink, marginBottom: 8 }}>
-                  {activeFilters ? "Aucun profil pour ces filtres" : "Pas encore de binôme dans ta zone"}
+                  {activeFilters ? "Aucun profil pour ces filtres" : "Annuaire encore vide ici"}
                 </div>
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 16px" }}>
-                  Publie ton profil (sans exposer ton numéro) pour apparaître dans l’annuaire.
+                  {activeFilters
+                    ? "Élargis la ville ou retire un filtre."
+                    : "Publie ton profil pour apparaître. Le numéro reste privé jusqu’à un accord mutuel."}
                 </p>
-                <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 12, padding: "12px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-                  Créer mon profil buddy
+                {!activeFilters && (
+                  <div style={{ textAlign: "left", background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: G.ink, lineHeight: 1.5 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 8, color: G.grey, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>Pour être visible</div>
+                    <div style={{ marginBottom: 6 }}>{form.city?.trim() ? "✓" : "○"} Ville / zone</div>
+                    <div style={{ marginBottom: 6 }}>{(form.availability_days || []).length ? "✓" : "○"} Disponibilités</div>
+                    <div style={{ marginBottom: 6 }}>{form.is_discoverable ? "✓" : "○"} Profil publié</div>
+                    <div>{hasPhoneReady ? "✓" : "○"} Numéro prêt (pour matcher, pas pour l’annuaire)</div>
+                  </div>
+                )}
+                <button type="button" onClick={() => setView("form")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 12, padding: "12px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
+                  {profileReady ? "Compléter mon profil" : "Créer mon profil buddy"}
                 </button>
+                {activeFilters && (
+                  <button
+                    type="button"
+                    onClick={() => { setCityFilter(""); setLevelFilter(""); setGoalFilter(""); }}
+                    style={{ display: "block", width: "100%", marginTop: 8, minHeight: 44, border: "none", background: "none", color: G.grey, fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Effacer les filtres
+                  </button>
+                )}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

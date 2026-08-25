@@ -23,6 +23,7 @@ import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
+import ProfileSection from "./ui/ProfileSection.jsx";
 import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel } from "./lib/plan-reveal.js";
 import {
   dismissProfileNudge,
@@ -74,7 +75,6 @@ import {
   maxPaceGainFromT100,
   projectedPaceAtWeek,
 } from "./lib/swim-pace.js";
-import { buildPlanReadyInsights, getUpgradeCopy } from "./lib/coach-insights.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
@@ -87,20 +87,6 @@ const sportsPersistence = createSportsPersistence(supabase);
 const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
 const isAuthPath = (pathname) => pathname in AUTH_PATHS;
 
-const REF_STORAGE_KEY = "myswym_ref";
-const captureReferralFromUrl = () => {
-  try {
-    const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref?.trim()) localStorage.setItem(REF_STORAGE_KEY, ref.trim().toUpperCase());
-  } catch { /* ignore */ }
-};
-const getStoredReferralCode = () => {
-  try { return (localStorage.getItem(REF_STORAGE_KEY) || "").toUpperCase(); } catch { return ""; }
-};
-const resolveReferralCode = (user) => {
-  const fromMeta = String(user?.user_metadata?.referred_by || "").toUpperCase();
-  return fromMeta || getStoredReferralCode() || undefined;
-};
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import SupportBubble from "./SupportBubble.jsx";
@@ -111,7 +97,11 @@ import i18n, { getStoredLanguage } from "./i18n/index.js";
 import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import BuddyMatching from "./BuddyMatching.jsx";
-import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
+import FeedbackModal from "./sheets/FeedbackModal.jsx";
+import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
+import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
+import UpgradeModal from "./sheets/UpgradeModal.jsx";
+import { captureReferralFromUrl, resolveReferralCode } from "./lib/referral.js";
 import {
   legalHref,
   ACCOUNT_DELETE_WARNING,
@@ -1274,16 +1264,6 @@ const VOLUME_ADJ_HARD = 0.88;
 const VOLUME_ADJ_SESSION_EASY = 1.03;
 const VOLUME_ADJ_SESSION_HARD = 0.97;
 const clampVolumeAdj = (v) => Math.min(VOLUME_ADJ_MAX, Math.max(VOLUME_ADJ_MIN, v));
-
-const SESSION_FEEDBACK_TAGS = [
-  "trop long",
-  "trop court",
-  "incompréhensible",
-  "éducatifs top",
-  "trop intensif",
-  "j'ai adoré",
-  "douleur / gêne",
-];
 
 /** Scale les distances dans une ligne de détail (N×Xm, pyramides, Xm) sans double-comptage. */
 const scaleDetailLineMeters = (line, ratio) => {
@@ -3319,8 +3299,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
 
         {onSwimmerProfileChange && (
           <>
-            <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 12 }}>Mon profil</div>
+            <ProfileSection id="profile-physique" title="Mon profil" summary="Âge, poids, taille" defaultOpen={false}>
               {(() => {
                 const nowY = new Date().getFullYear();
                 const birthMonth = profile?.birthMonth ?? "";
@@ -3433,10 +3412,14 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                   </>
                 );
               })()}
-            </div>
+            </ProfileSection>
 
-            <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 6 }}>Ma natation</div>
+            <ProfileSection
+              id="profile-natation"
+              title="Ma natation"
+              summary={`${Number(profile?.pool) === 50 ? "50 m" : "25 m"} · ${profile?.level || "niveau"} · ${profile?.sessionsPerWeek ? `${profile.sessionsPerWeek}×/sem` : "fréquence"}`}
+              defaultOpen
+            >
               <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
                 Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
               </p>
@@ -3469,7 +3452,11 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => onSwimmerProfileChange({ pool: p.id })}
+                      onClick={() => {
+                        onSwimmerProfileChange({ pool: p.id });
+                        setMsg({ type: "ok", text: `Bassin ${p.label} — les prochaines séances tiendront compte de cette longueur.` });
+                        setTimeout(() => setMsg(null), 3500);
+                      }}
                       style={{
                         flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
                         border: `1.5px solid ${active ? G.blue : G.greyLight}`,
@@ -3545,15 +3532,21 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                   );
                 })}
               </div>
-            </div>
+            </ProfileSection>
           </>
         )}
 
-        <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-          {onEquipmentChange && (
+        {onEquipmentChange && (
+        <ProfileSection
+          id="profile-equipment"
+          title="Mon matériel"
+          summary={Array.isArray(profile?.equipment) && profile.equipment.length > 0
+            ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
+            : "Aucun matériel"}
+          defaultOpen={false}
+        >
             <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Mon matériel</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginBottom: 10 }}>
                 {!editingEquipment ? (
                   <button
                     type="button"
@@ -3561,7 +3554,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                       setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
                       setEditingEquipment(true);
                     }}
-                    style={{ background: "none", border: "none", color: G.blue, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4 }}
+                    style={{ background: "none", border: "none", color: G.blue, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4, minHeight: 44 }}
                   >
                     Modifier
                   </button>
@@ -3626,7 +3619,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                       onClick={() => {
                         onEquipmentChange([...draftEquipment]);
                         setEditingEquipment(false);
-                        setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées." });
+                        setMsg({ type: "ok", text: "Matériel enregistré. Les prochaines séances utiliseront ce matos (pas de regen rétroactive)." });
                         setTimeout(() => setMsg(null), 3500);
                       }}
                       style={{
@@ -3640,12 +3633,16 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                 </div>
               )}
             </div>
-          )}
-        </div>
+        </ProfileSection>
+        )}
 
         {onSwimmerProfileChange && (
-          <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, marginBottom: 12 }}>Santé et blessures</div>
+          <ProfileSection
+            id="profile-health"
+            title="Santé et blessures"
+            summary={profile?.injuryStatus === "oui" ? "Blessure déclarée" : (profile?.injuryStatus === "aucune" ? "Aucune blessure" : "À compléter")}
+            defaultOpen={false}
+          >
             <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               {[
@@ -3744,7 +3741,7 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
                 {HEALTH_CONSENT_CHECKBOX}
               </span>
             </label>
-          </div>
+          </ProfileSection>
         )}
 
         <div style={{ marginBottom: 24 }}>
@@ -5389,45 +5386,6 @@ const ShareModal = ({ session, goalLabel, onClose }) => {
   );
 };
 
-// ── FEEDBACK MODAL — smiley system ────────────────────────────────────────
-// SVG faces — Apple-style minimal, no emoji
-const FaceGood = ({ size = 56, color = "#00C48C" }) => (
-  <svg width={size} height={size} viewBox="0 0 56 56" fill="none">
-    <circle cx="28" cy="28" r="26" stroke={color} strokeWidth="2.5" fill="none"/>
-    <circle cx="20" cy="23" r="2.5" fill={color}/>
-    <circle cx="36" cy="23" r="2.5" fill={color}/>
-    <path d="M18 33 Q28 43 38 33" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-  </svg>
-);
-const FaceMid = ({ size = 56, color = "#FF9F0A" }) => (
-  <svg width={size} height={size} viewBox="0 0 56 56" fill="none">
-    <circle cx="28" cy="28" r="26" stroke={color} strokeWidth="2.5" fill="none"/>
-    <circle cx="20" cy="23" r="2.5" fill={color}/>
-    <circle cx="36" cy="23" r="2.5" fill={color}/>
-    <path d="M19 36 H37" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-  </svg>
-);
-const FaceTired = ({ size = 56, color = "#FF3B30" }) => (
-  <svg width={size} height={size} viewBox="0 0 56 56" fill="none">
-    <circle cx="28" cy="28" r="26" stroke={color} strokeWidth="2.5" fill="none"/>
-    <circle cx="20" cy="23" r="2.5" fill={color}/>
-    <circle cx="36" cy="23" r="2.5" fill={color}/>
-    <path d="M18 39 Q28 29 38 39" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-  </svg>
-);
-
-const SMILEY_OPTS = [
-  { id: "easy", Face: FaceGood,  label: "En forme",         sub: "Séances faciles à tenir",     color: "#00C48C", bg: "#E6FFF6" },
-  { id: "ok",   Face: FaceMid,   label: "Correct",          sub: "Effort modéré — bon rythme",  color: "#FF9F0A", bg: "#FFF8EE" },
-  { id: "hard", Face: FaceTired, label: "Difficile",        sub: "Fatigue ou surcharge",        color: "#FF3B30", bg: "#FFF0EF" },
-];
-
-const SESSION_SMILEY_OPTS = [
-  { id: "easy", Face: FaceGood,  label: "Trop facile", color: "#00C48C", bg: "#E6FFF6" },
-  { id: "ok",   Face: FaceMid,   label: "Bien",        color: "#FF9F0A", bg: "#FFF8EE" },
-  { id: "hard", Face: FaceTired, label: "Difficile",   color: "#FF9F0A", bg: "#FFF8EE" },
-  { id: "too_hard", Face: FaceTired, label: "Trop difficile", color: "#FF3B30", bg: "#FFF0EF" },
-];
 
 const ConfirmSheet = ({
   title,
@@ -5503,209 +5461,7 @@ const ConfirmSheet = ({
   </div>
 );
 
-const FeedbackModal = ({ weekNumber, onSubmit, onSkip, isPremium }) => {
-  const [selected, setSelected] = useState(null);
 
-  const confirm = (id) => {
-    setSelected(id);
-    // Légère vibration tactile si disponible
-    if (navigator.vibrate) navigator.vibrate(40);
-    // Soumettre après une courte animation
-    setTimeout(() => onSubmit({ rating: id, motivation: id, pain: "none", comment: null }), 320);
-  };
-
-  return (
-    <div className="sheet-overlay">
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))" }}>
-        {/* Handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-
-        <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
-          Semaine {weekNumber} terminée
-        </p>
-        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 24, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
-          Comment tu t'es senti·e ?
-        </h3>
-        <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: isPremium ? 28 : 12, lineHeight: 1.5 }}>
-          {isPremium
-            ? "Ta réponse ajuste le volume des prochaines séances."
-            : "On enregistre ton ressenti pour suivre ta progression."}
-        </p>
-        {!isPremium && (
-          <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 28, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
-            Aperçu coach : trop dur → volume −12 % la semaine suivante. Abonne-toi pour appliquer.
-          </p>
-        )}
-
-        {/* 3 smiley cards */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-          {SMILEY_OPTS.map(o => {
-            const isActive = selected === o.id;
-            return (
-              <button key={o.id} onClick={() => confirm(o.id)} style={{
-                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
-                padding: "18px 8px", borderRadius: 20,
-                border: `2px solid ${isActive ? o.color : G.greyLight}`,
-                background: isActive ? o.bg : G.surface,
-                cursor: "pointer", transition: "all 0.18s",
-                transform: isActive ? "scale(1.04)" : "scale(1)",
-              }}>
-                <o.Face size={52} color={o.color} />
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: isActive ? o.color : G.ink, marginBottom: 2 }}>{o.label}</div>
-                  <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.3 }}>{o.sub}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <button onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
-          Passer
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const SessionFeedbackSheet = ({ sessionTitle, initial, onSubmit, onSkip, isPremium, healthConsent = false }) => {
-  const [rating, setRating] = useState(initial?.rating ?? null);
-  const [tags, setTags] = useState(() => Array.isArray(initial?.tags) ? [...initial.tags] : []);
-  const [comment, setComment] = useState(initial?.comment ?? "");
-  const availableTags = healthConsent
-    ? SESSION_FEEDBACK_TAGS
-    : SESSION_FEEDBACK_TAGS.filter((t) => t !== "douleur / gêne");
-
-  const toggleTag = (tag) => {
-    if (tag === "douleur / gêne" && !healthConsent) return;
-    setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-  };
-
-  const save = () => {
-    if (!rating) return;
-    if (navigator.vibrate) navigator.vibrate(40);
-    onSubmit({
-      rating,
-      tags,
-      comment: comment.trim() || null,
-    });
-  };
-
-  return (
-    <div className="sheet-overlay">
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "28px 28px 0 0", padding: "24px 20px", paddingBottom: "max(32px, env(safe-area-inset-bottom))", maxHeight: "90dvh", overflowY: "auto" }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-
-        <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
-          Retour séance
-        </p>
-        <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink, textAlign: "center", marginBottom: 6 }}>
-          Comment c'était ?
-        </h3>
-        {sessionTitle && (
-          <p style={{ color: G.grey, fontSize: 13, textAlign: "center", marginBottom: 8, lineHeight: 1.4 }}>
-            {sessionTitle}
-          </p>
-        )}
-        <p style={{ color: G.grey, fontSize: 13, textAlign: "center", marginBottom: isPremium ? 20 : 10, lineHeight: 1.45 }}>
-          {isPremium
-            ? "Ton ressenti affine le volume des prochaines séances."
-            : "Ton avis nous aide à améliorer les séances."}
-        </p>
-        {!isPremium && (
-          <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 20, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
-            Aperçu coach : 1er retour « trop dur » → micro −3 % volume. Abonne-toi pour appliquer.
-          </p>
-        )}
-
-        <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-          {SESSION_SMILEY_OPTS.map(o => {
-            const isActive = rating === o.id;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => setRating(o.id)}
-                style={{
-                  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                  padding: "14px 6px", borderRadius: 18,
-                  border: `2px solid ${isActive ? o.color : G.greyLight}`,
-                  background: isActive ? o.bg : G.surface,
-                  cursor: "pointer", transition: "all 0.18s",
-                  transform: isActive ? "scale(1.03)" : "scale(1)",
-                }}
-              >
-                <o.Face size={44} color={o.color} />
-                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? o.color : G.ink }}>{o.label}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <p style={{ fontSize: 12, fontWeight: 700, color: G.inkLight, marginBottom: 10 }}>
-          Qu'est-ce qui cloche (ou pas) ?
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          {availableTags.map(tag => {
-            const on = tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                style={{
-                  padding: "8px 12px", borderRadius: 100, cursor: "pointer",
-                  border: `1.5px solid ${on ? G.blue : G.greyLight}`,
-                  background: on ? G.blueLight : G.surface,
-                  color: on ? G.blue : G.grey, fontSize: 12, fontWeight: 600,
-                }}
-              >
-                {tag}
-              </button>
-            );
-          })}
-        </div>
-        {!healthConsent && (
-          <p style={{ fontSize: 11, color: G.greyMid, marginBottom: 12, lineHeight: 1.4 }}>
-            Le tag « douleur / gêne » nécessite ton consentement données de santé (Paramètres / onboarding).
-          </p>
-        )}
-
-        <input
-          type="text"
-          value={comment}
-          onChange={e => setComment(e.target.value)}
-          placeholder="Un commentaire ? (optionnel)"
-          maxLength={280}
-          style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "12px 14px", borderRadius: 12, marginBottom: 16,
-            border: `1.5px solid ${G.greyLight}`, background: G.greyXLight,
-            fontSize: 14, color: G.ink, fontFamily: "inherit", outline: "none",
-          }}
-        />
-
-        <button
-          type="button"
-          onClick={save}
-          disabled={!rating}
-          style={{
-            width: "100%", padding: "14px", borderRadius: 14, border: "none",
-            background: rating ? G.blue : G.greyLight,
-            color: rating ? G.white : G.greyMid,
-            fontSize: 15, fontWeight: 700, cursor: rating ? "pointer" : "not-allowed",
-            marginBottom: 8,
-          }}
-        >
-          Enregistrer
-        </button>
-        <button type="button" onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
-          Passer
-        </button>
-      </div>
-    </div>
-  );
-};
 
 // ── BADGE TOAST ───────────────────────────────────────────────────────────
 const BadgeToast = ({ badgeId }) => {
@@ -5951,122 +5707,6 @@ const ReferralShareCard = () => {
   );
 };
 
-const PlanReadySheet = ({ plan, profile, onContinue, onDismiss, loading }) => {
-  const goal = GOALS.find((g) => g.id === profile?.goal);
-  const weeks = plan?.totalRealWeeks || plan?.weeks?.length || 0;
-  const freq = profile?.sessionsPerWeek || 0;
-  const firstSession = plan?.weeks?.[0]?.sessions?.[0];
-  const isLoop = !!plan?.isSessionLoop || !!plan?.isProgression;
-  const insights = buildPlanReadyInsights(plan, profile);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
-  const [err, setErr] = useState(null);
-  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
-
-  useEffect(() => {
-    if (legalReady) setErr(null);
-  }, [legalReady]);
-
-  const handleAcceptTerms = (checked) => {
-    setAcceptTerms(checked);
-    setErr(null);
-  };
-
-  const handleAcceptWithdrawal = (checked) => {
-    setAcceptWithdrawal(checked);
-    setErr(null);
-  };
-
-  const handleContinue = () => {
-    const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
-    if (gateError) {
-      setErr(gateError);
-      return;
-    }
-    setErr(null);
-    onContinue?.();
-  };
-
-  return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onDismiss?.()}>
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <Check size={26} color={G.white} />
-          </div>
-          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 8 }}>
-            {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
-          </h3>
-          <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-            Débloque les séances et l’adaptation coach — 7 jours offerts sans carte à l’inscription. Ensuite tes séances se mettent en pause.
-          </p>
-        </div>
-
-        <div style={{ background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 16, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 8 }}>{goal?.label || "Objectif"}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 12, color: G.grey }}>
-            {!isLoop && weeks > 0 && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{weeks} semaines</span>}
-            {freq > 0 && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{freq}× / semaine</span>}
-            {profile?.level && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{profile.level}</span>}
-            {profile?.pool && <span style={{ background: G.surface, borderRadius: 8, padding: "6px 10px" }}>{profile.pool} m</span>}
-          </div>
-          {firstSession?.title && (
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${G.greyLight}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Aperçu 1ʳᵉ séance</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>{firstSession.title}</div>
-              {firstSession.distance != null && (
-                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 4 }}>{firstSession.distance} m</div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {insights.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
-              Ce que ton coach a déjà calibré
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {insights.map((insight) => (
-                <div
-                  key={insight.id}
-                  style={{
-                    display: "flex", alignItems: "flex-start", gap: 10,
-                    background: G.surface, border: `1px solid ${G.greyLight}`,
-                    borderRadius: 12, padding: "10px 12px",
-                  }}
-                >
-                  <Check size={14} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4, fontWeight: 600 }}>{insight.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <CheckoutLegalGates
-          acceptTerms={acceptTerms}
-          onAcceptTerms={handleAcceptTerms}
-          acceptWithdrawal={acceptWithdrawal}
-          onAcceptWithdrawal={handleAcceptWithdrawal}
-          ink={G.ink}
-          muted={G.inkLight}
-          linkColor={G.blueMid}
-          idPrefix="plan-ready-legal"
-        />
-
-        {err && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: G.coral, fontSize: 13 }}>{err}</div>}
-        <Btn variant="blue" onClick={handleContinue} disabled={loading}>
-          {loading ? "Redirection…" : "S’abonner — débloquer mon coach"}
-        </Btn>
-        <button type="button" onClick={onDismiss} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
-          Voir l’aperçu sans activer
-        </button>
-      </div>
-    </div>
-  );
-};
 
 const CancelSurveySheet = ({ onChoose, onSkip }) => {
   const reasons = [
@@ -6164,248 +5804,6 @@ const TrialExpiredFreeze = ({ onSubscribe, onSignOut }) => (
   </div>
 );
 
-const UpgradeModal = ({ onClose, weeksBlocked, softContext = null, trialEligible = true, planWeeks = 0, canDismiss = true }) => {
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState("monthly_flex");
-  const [user, setUser] = useState(null);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
-  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
-
-  useEffect(() => {
-    captureReferralFromUrl();
-    supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
-  }, []);
-
-  useEffect(() => {
-    if (legalReady) setErr(null);
-  }, [legalReady]);
-
-  const hasReferral = Boolean(resolveReferralCode(user));
-  const showTrialOffer = false;
-  const isAnnual = period === "annual";
-  const isCommit = period === "monthly_commit";
-  const selectedPriceId = priceIdForPlan(period);
-  const trialEnded = softContext === "trial_expired" || !!weeksBlocked;
-  const resolvedContext = trialEnded && softContext !== "trial_expired" ? "trial_expired" : softContext;
-  const copy = getUpgradeCopy(resolvedContext, {
-    weeks: planWeeks || 0,
-    trialEligible,
-  });
-  const headline = copy.headline;
-  const subtitle = copy.subtitle;
-
-  const handleAcceptTerms = (checked) => {
-    setAcceptTerms(checked);
-    setErr(null);
-  };
-
-  const handleAcceptWithdrawal = (checked) => {
-    setAcceptWithdrawal(checked);
-    setErr(null);
-  };
-
-  const callFunction = async (fnName, body) => {
-    const { data: refreshData } = await supabase.auth.refreshSession();
-    const session = refreshData?.session;
-    if (!session) throw new Error("Connecte-toi d'abord.");
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fnName}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY },
-      body: JSON.stringify(body),
-    });
-    return res.json();
-  };
-
-  const handleCheckout = async () => {
-    if (loading) return;
-    const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
-    if (gateError) {
-      setErr(gateError);
-      return;
-    }
-    setLoading(true); setErr(null);
-    try {
-      const priceId = selectedPriceId;
-      const referralCode = resolveReferralCode(user);
-      trackEvent("checkout_started", {
-        source: "upgrade_modal",
-        price_id: priceId,
-        soft_context: softContext || null,
-      }, { essential: true });
-      const json = await callFunction("create-checkout", {
-        origin: window.location.origin,
-        priceId,
-        ...(referralCode ? { referralCode } : {}),
-      });
-      if (json.url) { window.location.href = json.url; return; }
-      if (json.alreadySubscribed) {
-        setErr(json.error || "Tu as déjà un abonnement en cours.");
-        setLoading(false);
-        return;
-      }
-      throw new Error(json.error || "Lien de paiement introuvable");
-    } catch (e) { setErr(e.message || "Erreur."); setLoading(false); }
-  };
-
-  const ctaLabel = isAnnual
-    ? `Démarrer — ${PRICING.annual.label}/an`
-    : isCommit
-      ? `Démarrer — ${PRICING.monthlyCommit.label}/mois · 12 mois`
-      : showTrialOffer
-        ? `Essai 7 jours — puis ${PRICING.monthlyFlex.label}/mois`
-        : hasReferral
-          ? "Démarrer — −20% parrainage"
-          : `Démarrer — ${PRICING.monthlyFlex.label}/mois`;
-
-  return (
-    <div className="sheet-overlay" onClick={e => canDismiss && e.target === e.currentTarget && onClose()}>
-      <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 24px" }} />
-        <div style={{ textAlign: "center", marginBottom: 24, paddingTop: 8 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 18, background: G.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <Zap size={26} color={G.white} />
-          </div>
-          <h3 style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 34, fontWeight: 800, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8 }}>
-            {headline}
-          </h3>
-          <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.6 }}>{subtitle}</p>
-          <p style={{ color: G.greyMid, fontSize: 12, marginTop: 10, lineHeight: 1.4 }}>
-            {PRICING_SUMMARY_FR} · résiliation via le portail Stripe
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-          <button type="button" onClick={() => setPeriod("monthly_flex")} style={{
-            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "monthly_flex" ? G.blue : G.greyLight}`,
-            background: period === "monthly_flex" ? G.blueLight : G.surface,
-            position: "relative",
-          }}>
-            {hasReferral && period === "monthly_flex" && (
-              <div style={{
-                position: "absolute", top: 8, right: 8,
-                background: "#22C55E", color: G.white,
-                fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 6,
-              }}>−20%</div>
-            )}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly_flex" ? G.blue : G.grey, letterSpacing: "0.04em" }}>MENSUEL</div>
-                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 2 }}>{PRICING.monthlyFlex.commitmentFr}</div>
-              </div>
-              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink }}>
-                {PRICING.monthlyFlex.label}<span style={{ fontSize: 13, fontWeight: 600, color: G.grey }}> /mois</span>
-              </div>
-            </div>
-          </button>
-
-          <button type="button" onClick={() => setPeriod("monthly_commit")} style={{
-            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "monthly_commit" ? G.blue : G.greyLight}`,
-            background: period === "monthly_commit" ? G.blueLight : G.surface,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: period === "monthly_commit" ? G.blue : G.grey, letterSpacing: "0.04em" }}>MENSUEL 12 MOIS</div>
-                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 2 }}>{PRICING.monthlyCommit.commitmentFr}</div>
-              </div>
-              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink }}>
-                {PRICING.monthlyCommit.label}<span style={{ fontSize: 13, fontWeight: 600, color: G.grey }}> /mois</span>
-              </div>
-            </div>
-          </button>
-
-          <button type="button" onClick={() => setPeriod("annual")} style={{
-            width: "100%", padding: "12px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left",
-            border: `2px solid ${period === "annual" ? G.blue : G.greyLight}`,
-            background: period === "annual" ? G.blueLight : G.surface,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: period === "annual" ? G.blue : G.grey, letterSpacing: "0.04em" }}>ANNUEL</div>
-                <div style={{ fontSize: 12, color: G.greyMid, marginTop: 2 }}>{PRICING.annual.commitmentFr}</div>
-              </div>
-              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 800, color: G.ink }}>
-                {PRICING.annual.label}<span style={{ fontSize: 13, fontWeight: 600, color: G.grey }}> /an</span>
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {showTrialOffer && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.blueLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
-              7 jours offerts sans carte à l’inscription · ensuite tes séances se mettent en pause
-            </span>
-          </div>
-        )}
-
-        {isCommit && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
-              {PRICING.monthlyCommit.label}/mois pendant 12 mois · engagement d’un an
-            </span>
-          </div>
-        )}
-
-        {isAnnual && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.4, textAlign: "center" }}>
-              {PRICING.annual.label} facturés une fois · pas de remboursement au prorata hors cas légaux
-            </span>
-          </div>
-        )}
-
-        {hasReferral && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#15803D" }}>Parrainage actif — −20% auto au paiement</span>
-          </div>
-        )}
-
-        {!hasReferral && (
-          <p style={{ fontSize: 12, color: G.greyMid, textAlign: "center", marginBottom: 16, lineHeight: 1.4 }}>
-            Un ami t’a parrainé ? −20% auto au paiement.
-          </p>
-        )}
-
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-            Inclus avec Premium
-          </div>
-          {PREMIUM_TIER_LINES.map((line, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: i < PREMIUM_TIER_LINES.length - 1 ? 8 : 0 }}>
-              <Check size={14} color={G.blue} style={{ flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>{line}</span>
-            </div>
-          ))}
-        </div>
-
-        <CheckoutLegalGates
-          acceptTerms={acceptTerms}
-          onAcceptTerms={handleAcceptTerms}
-          acceptWithdrawal={acceptWithdrawal}
-          onAcceptWithdrawal={handleAcceptWithdrawal}
-          ink={G.ink}
-          muted={G.inkLight}
-          linkColor={G.blueMid}
-          idPrefix="upgrade-modal-legal"
-        />
-
-        {err && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: G.coral, fontSize: 13 }}>{err}</div>}
-        <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
-          {loading ? "Redirection…" : ctaLabel}
-        </Btn>
-        {canDismiss && (
-          <button type="button" onClick={onClose} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
-            Retour
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const PremiumTeaser = ({ onUpgrade }) => (
   <div style={{ margin: "0 0 16px", borderRadius: 20, overflow: "hidden", border: `1px solid ${G.greyLight}` }}>
@@ -8372,6 +7770,104 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
+/** Après la 1re séance : une carte secondaire + le reste derrière « Voir plus ». */
+const HomeSecondaryStack = ({
+  plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
+}) => {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const coachWeek = plan?.weeks?.length
+    ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
+    : 0;
+
+  const primary = isPremium && plan?.weeks?.length > 0
+    ? "coach"
+    : plan
+      ? "pace"
+      : "strava";
+
+  return (
+    <>
+      {primary === "coach" && (
+        <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} />
+      )}
+      {primary === "pace" && (
+        <PacePersonalizationCard
+          pace100={profile?.pace100}
+          isPremium={isPremium}
+          onSave={onPaceUpdate}
+          onUpgrade={onUpgrade}
+        />
+      )}
+      {primary === "strava" && (
+        <StravaSection
+          user={user}
+          plan={plan}
+          profile={profile}
+          currentPace100={profile?.pace100}
+          onPaceUpdate={onPaceUpdate}
+          onValidateSession={onValidateSession}
+          showProgramActions={false}
+          isPremium={isPremium}
+          onUpgrade={onUpgrade}
+        />
+      )}
+
+      {!moreOpen ? (
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          style={{
+            width: "100%", marginBottom: 16, minHeight: 48, borderRadius: 14,
+            border: `1px solid ${G.greyLight}`, background: G.surface,
+            color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer",
+          }}
+        >
+          Voir plus — allure, Strava, badges
+        </button>
+      ) : (
+        <>
+          {primary !== "pace" && plan && (
+            <PacePersonalizationCard
+              pace100={profile?.pace100}
+              isPremium={isPremium}
+              onSave={onPaceUpdate}
+              onUpgrade={onUpgrade}
+            />
+          )}
+          {plan && (
+            <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
+          )}
+          {primary !== "strava" && (
+            <StravaSection
+              user={user}
+              plan={plan}
+              profile={profile}
+              currentPace100={profile?.pace100}
+              onPaceUpdate={onPaceUpdate}
+              onValidateSession={onValidateSession}
+              showProgramActions={false}
+              isPremium={isPremium}
+              onUpgrade={onUpgrade}
+            />
+          )}
+          {plan && <HomeBadgesSection plan={plan} />}
+          <HomeBlogCarousel />
+          <button
+            type="button"
+            onClick={() => setMoreOpen(false)}
+            style={{
+              width: "100%", marginBottom: 8, minHeight: 44, border: "none", background: "none",
+              color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
+            }}
+          >
+            Réduire
+          </button>
+        </>
+      )}
+    </>
+  );
+};
+
 const Dashboard = ({
   plan, profile, onTabChange, onSignOut, user,
   isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
@@ -8559,44 +8055,17 @@ const Dashboard = ({
           <PremiumTeaser onUpgrade={onUpgrade} />
         )}
 
-        {hasSwum && isPremium && plan?.weeks?.length > 0 && (
-          <CoachCard
-            plan={plan}
-            profile={profile}
-            currentWeekIndex={Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))}
-          />
-        )}
-
-        {hasSwum && plan && (
-          <PacePersonalizationCard
-            pace100={profile?.pace100}
-            isPremium={isPremium}
-            onSave={onPaceUpdate}
-            onUpgrade={onUpgrade}
-          />
-        )}
-
-        {hasSwum && plan && (
-          <PaceEvolutionCard plan={plan} profile={profile} isPremium={isPremium} onUpgrade={onUpgrade} />
-        )}
-
         {hasSwum && (
-          <StravaSection
-            user={user}
+          <HomeSecondaryStack
             plan={plan}
             profile={profile}
-            currentPace100={profile?.pace100}
+            user={user}
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
             onPaceUpdate={onPaceUpdate}
             onValidateSession={onValidateSession}
-            showProgramActions={false}
-            isPremium={isPremium}
-            onUpgrade={onUpgrade}
           />
         )}
-
-        {hasSwum && plan && <HomeBadgesSection plan={plan} />}
-
-        {hasSwum && <HomeBlogCarousel />}
       </div>
     </div>
   );
