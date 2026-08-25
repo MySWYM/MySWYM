@@ -21,7 +21,7 @@ Base : https://staging.myswym.app
 - [ ] Ouvrir Accueil + Programme : séances visibles
 - [ ] Valider / marquer une séance → reste après refresh
 - [ ] Mettre l’onglet en arrière-plan 30s → revenir : plan intact
-- [ ] (Optionnel) 2ᵉ appareil : progression la plus récente gagne
+- [ ] (Optionnel) 2ᵉ appareil : progression la plus récente gagne + **toast** « Séances mises à jour… » / « Programme synchronisé… »
 
 ## 3. Génération / Loading
 
@@ -66,3 +66,11 @@ npm run test:e2e
 # ou contre staging :
 npm run test:e2e:staging
 ```
+
+Buddy (compte test) :
+
+```bash
+E2E_EMAIL=… E2E_PASSWORD=… npm run test:e2e:staging -- e2e/buddy.spec.js
+```
+
+Sans credentials, le spec Buddy est **skip** (les 5 smokes publics restent verts).

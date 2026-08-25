@@ -15,6 +15,7 @@ import {
 } from "./lib/analytics.js";
 import { scrollAppToTop } from "./lib/scroll-app.js";
 import { shouldApplyRemotePlanSync } from "./lib/plan-sync-guard.js";
+import { describePlanSyncChange } from "./lib/plan-sync-message.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
@@ -8461,6 +8462,12 @@ export default function App() {
           && (mergedProgress < currentProgress || localFreq === mergedFreq || localTime >= remoteTime)
         ) return;
 
+        const syncInfo = describePlanSyncChange({
+          beforePlans: plans,
+          afterPlans: enforced,
+          beforeActiveId: activePlanId,
+          afterActiveId: single.activeId,
+        });
         setPlans(enforced);
         setActivePlanId(single.activeId);
         setPlanHistory(single.history);
@@ -8468,6 +8475,13 @@ export default function App() {
         if (single.activeId) localStorage.setItem(`myswym_active_${user.id}`, single.activeId);
         localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(single.history));
         localStorage.setItem(`myswym_plans_updated_${user.id}`, updatedAt);
+        if (syncInfo?.message) {
+          showToast(syncInfo.message, 4500);
+          track("plan_sync_applied", {
+            reason: syncInfo.reason,
+            context: "visibility_sync",
+          });
+        }
       } catch {}
     };
     const onVisible = () => { if (document.visibilityState === "visible") syncFromRemote(); };

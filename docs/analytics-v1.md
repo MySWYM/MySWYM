@@ -38,6 +38,7 @@ Consentement cookies requis (`myswym_cookie_consent_v1=accepted`) avant tout env
 | `subscription_started` | Sync Stripe → status active | premium | `userId` |
 | `app_opened` | Boot app (1× / onglet) | premium? | sessionStorage |
 | `ui_error` | ErrorBoundary, `window.onerror`, `unhandledrejection`, Buddy OTP | reason, context, error_kind, pathname | — |
+| `plan_sync_applied` | Re-sync visibility a réellement appliqué un merge remote | reason (`progress_up` / `plan_count` / …), context | — |
 | `generation_failed` | Timeout Loading / échec génération plan | reason, context | — |
 
 > Observabilité crashes : **PostHog only** (`trackUiError` / `installGlobalErrorHandlers`). Pas de Sentry pour l’instant.
