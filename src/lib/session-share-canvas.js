@@ -3,8 +3,9 @@
  * @param {object} session
  * @param {string} [goalLabel]
  * @param {{ label?: string, color?: string } | null} [badge]
+ * @param {{ code?: string|null, shareUrl?: string|null } | null} [invite]
  */
-export function createShareCanvas(session, goalLabel, badge = null) {
+export function createShareCanvas(session, goalLabel, badge = null, invite = null) {
   const W = 1080;
   const H = 1080;
   const canvas = document.createElement("canvas");
@@ -135,12 +136,35 @@ export function createShareCanvas(session, goalLabel, badge = null) {
   if (goalLabel) {
     ctx.fillStyle = "rgba(255,255,255,0.35)";
     ctx.font = "500 26px Geist, ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText(`Objectif · ${goalLabel}`, 72, 860);
+    ctx.fillText(`Objectif · ${goalLabel}`, 72, 840);
   }
 
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  ctx.font = "500 24px Geist, ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText("myswym.app", 72, 980);
+  // Invite footer
+  const code = invite?.code ? String(invite.code).toUpperCase() : "";
+  let urlLabel = "myswym.app";
+  if (invite?.shareUrl) {
+    try {
+      const u = new URL(invite.shareUrl);
+      urlLabel = `${u.host}${u.pathname}${u.search}`.replace(/\/$/, "");
+    } catch {
+      urlLabel = String(invite.shareUrl).replace(/^https?:\/\//, "");
+    }
+  } else if (code) {
+    urlLabel = `myswym.app/inscription?ref=${code}`;
+  }
+
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.font = "500 22px Geist, ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText("Rejoins-moi sur MySWYM", 72, 920);
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = "600 24px Geist, ui-sans-serif, system-ui, sans-serif";
+  const urlDraw = urlLabel.length > 42 ? `${urlLabel.slice(0, 41)}…` : urlLabel;
+  ctx.fillText(urlDraw, 72, 960);
+  if (code) {
+    ctx.fillStyle = "#8EB3FF";
+    ctx.font = "700 26px Geist, ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText(`Code · ${code}`, 72, 1010);
+  }
 
   return canvas;
 }

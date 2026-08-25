@@ -13,8 +13,11 @@ function formatDurationLabel(duration) {
 
 /**
  * Texte plat structuré (3 phases) — collable dans Strava / WhatsApp.
+ * @param {object} session
+ * @param {{ withBrandFooter?: boolean }} [opts]
  */
-export function formatSessionPlainText(session) {
+export function formatSessionPlainText(session, opts = {}) {
+  const withBrandFooter = opts.withBrandFooter !== false;
   if (!session) return "";
   const view = buildWorkoutView(session);
   const head = [
@@ -50,7 +53,7 @@ export function formatSessionPlainText(session) {
     body.push("");
   }
 
-  body.push("— MySWYM · myswym.app");
+  if (withBrandFooter) body.push("— MySWYM · myswym.app");
   return [...head, ...body].join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
@@ -145,10 +148,12 @@ export function openSessionPrint(session) {
 
 /**
  * Copie dans le presse-papiers (async).
+ * @param {object} session
+ * @param {string} [textOverride] — si fourni, copie ce texte tel quel
  * @returns {Promise<boolean>}
  */
-export async function copySessionText(session) {
-  const text = formatSessionPlainText(session);
+export async function copySessionText(session, textOverride = null) {
+  const text = textOverride || formatSessionPlainText(session);
   if (!text) return false;
   try {
     if (navigator?.clipboard?.writeText) {
