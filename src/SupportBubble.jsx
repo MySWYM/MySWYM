@@ -6,11 +6,13 @@ import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/sup
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
 const BLUE = "#006bfd";
-const INK = "var(--myswym-ink, #f4f8fa)";
-const MUTED = "var(--myswym-ink-light, #9bb0c8)";
-const LINE = "var(--myswym-grey-light, rgba(0, 107, 253, 0.22))";
-const SURFACE = "var(--myswym-surface, #06101f)";
-const PAGE = "var(--myswym-bg, #000514)";
+/** Thème clair du widget — contraste avec le fond sombre de l’app. */
+const INK = "#0b1526";
+const MUTED = "#5c6b7e";
+const LINE = "rgba(11, 21, 38, 0.1)";
+const SURFACE = "#ffffff";
+const PAGE = "#f3f6fa";
+const BUBBLE = "#e8eef5";
 const ARTHUR_PHOTO = "/coach.webp";
 
 /** FAQ rule-based — produit + vocabulaire / méthode natation MySWYM. */
@@ -263,9 +265,9 @@ function bubbleAlign(role) {
 
 function bubbleColors(role) {
   if (role === "user") return { background: BLUE, color: "#fff", border: "none" };
-  if (role === "agent") return { background: SURFACE, color: INK, border: `1px solid ${LINE}` };
+  if (role === "agent") return { background: BUBBLE, color: INK, border: "none" };
   if (role === "system") return { background: "transparent", color: MUTED, border: "none" };
-  return { background: SURFACE, color: INK, border: `1px solid ${LINE}` };
+  return { background: BUBBLE, color: INK, border: "none" };
 }
 
 function roleLabel(role) {
@@ -781,8 +783,8 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                   <div
                     style={{
                       alignSelf: "flex-start",
-                      background: SURFACE,
-                      border: `1px solid ${LINE}`,
+                      background: BUBBLE,
+                      border: "none",
                       color: MUTED,
                       borderRadius: "14px 14px 14px 4px",
                       padding: "10px 14px",
@@ -845,7 +847,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                         fontFamily: FONT,
                         color: INK,
                         outline: "none",
-                        background: SURFACE,
+                        background: PAGE,
                       }}
                     />
                     <button
@@ -857,7 +859,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                         height: 44,
                         borderRadius: "50%",
                         border: "none",
-                        background: input.trim() && !busy ? BLUE : "#d7dee6",
+                        background: input.trim() && !busy ? BLUE : "#c5ced9",
                         color: "#fff",
                         cursor: input.trim() && !busy ? "pointer" : "default",
                         display: "flex",
@@ -903,6 +905,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                   justifyContent: "space-between",
                   padding: "12px 10px 10px 16px",
                   borderBottom: `1px solid ${LINE}`,
+                  background: SURFACE,
                 }}
               >
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>
@@ -913,7 +916,15 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                 </button>
               </div>
 
-              <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  background: PAGE,
+                }}
+              >
                 {tab === "home" && (
                   <div style={{ padding: "22px 18px 18px" }}>
                     <div aria-hidden style={{ marginBottom: 14 }}>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
-  User, Users, ExternalLink, Bell, Shield, RotateCcw, LogOut, Trash2,
+  User, Users, ExternalLink, RotateCcw, LogOut, Trash2,
   ChevronRight, Link2, CreditCard, X,
 } from "lucide-react";
 import { G } from "./theme/palette.js";
@@ -30,7 +30,6 @@ export default function SettingsDrawer({
   onGoProfile,
   onGoBuddies,
   showBuddies = false,
-  onOpenAuth,
   onSignOut,
   onDeleteAccount,
   plan,
@@ -137,16 +136,6 @@ export default function SettingsDrawer({
             </div>
             <ChevronRight size={18} color={G.greyMid} />
           </a>
-          <div style={{ ...menuRow, cursor: "default" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Bell size={18} color={G.gold} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Notifications</div>
-                <div style={{ fontSize: 12, color: G.grey }}>Badges, abonnement, actus et alertes dans le header</div>
-              </div>
-            </div>
-            <Shield size={16} color={G.greyMid} />
-          </div>
           <button type="button" onClick={onRefreshStatus} style={{ ...menuRow, borderBottom: "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <RotateCcw size={18} color={G.mint} />
@@ -248,16 +237,6 @@ export default function SettingsDrawer({
         </div>
 
         <div style={{ background: G.greyXLight, borderRadius: 20, padding: "8px 16px" }}>
-          <button type="button" onClick={() => { onClose(); onOpenAuth?.("password"); }} style={menuRow}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Shield size={18} color={G.blue} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Changer de compte</div>
-                <div style={{ fontSize: 12, color: G.grey }}>{user?.email || "Se connecter avec un autre compte"}</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
           <button type="button" onClick={onSignOut} style={{ ...menuRow, color: G.coral }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <LogOut size={18} color={G.coral} />
