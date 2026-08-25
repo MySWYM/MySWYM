@@ -130,15 +130,16 @@ import {
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
-  Camera, Trash2, Users, ExternalLink, Info, Pencil, Printer, Share2,
+  Camera, Trash2, Users, ExternalLink, Info, Pencil, Share2,
 } from "lucide-react";
 import {
   copySessionText,
-  openSessionPrint,
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
+import { buildSessionSharePack } from "./lib/session-share-pack.js";
+import { fetchReferralInvite } from "./lib/referral-share.js";
 
 applyTheme();
 
@@ -5292,31 +5293,52 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     ? (BADGE_DEFS.find((d) => d.id === badge) || { label: badge, color: G.gold })
     : null;
   const canvasBadge = badgeMeta ? { label: badgeMeta.label, color: badgeMeta.color } : null;
+  const [invite, setInvite] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchReferralInvite().then((inv) => {
+      if (!cancelled) setInvite(inv);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const pack = buildSessionSharePack(session, invite || {}, {
+    badgeLabel: badgeMeta?.label || null,
+  });
 
   const handleDownload = () => {
-    const canvas = createShareCanvas(session, goalLabel, canvasBadge);
+    const canvas = createShareCanvas(session, goalLabel, canvasBadge, invite);
     const link = document.createElement("a");
     link.download = "myswym-seance.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
   const handleShare = async () => {
+    const canvas = createShareCanvas(session, goalLabel, canvasBadge, invite);
     if (!navigator.share) { handleDownload(); return; }
-    const canvas = createShareCanvas(session, goalLabel, canvasBadge);
     canvas.toBlob(async (blob) => {
       try {
-        await navigator.share({
-          files: [new File([blob], "myswym-seance.png", { type: "image/png" })],
+        const file = new File([blob], "myswym-seance.png", { type: "image/png" });
+        const payload = {
+          files: [file],
           title: "Ma séance MySWYM",
-          text: badgeMeta ? `Badge débloqué : ${badgeMeta.label}` : "Séance terminée sur MySWYM",
-        });
+          text: pack.caption,
+        };
+        if (navigator.canShare && !navigator.canShare(payload)) {
+          await navigator.share({ title: payload.title, text: pack.caption });
+          return;
+        }
+        await navigator.share(payload);
       } catch { handleDownload(); }
     });
   };
   const handleCopyStrava = async () => {
-    const ok = await copySessionText(session);
+    const ok = await copySessionText(session, pack.clipboardText);
     if (ok) {
-      /* toast léger via titre temporaire non nécessaire */
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -5328,7 +5350,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           Partage ta séance
         </h3>
         <p style={{ fontSize: 13, color: G.grey, textAlign: "center", margin: "0 0 18px", lineHeight: 1.4 }}>
-          Image pour Instagram / Stories, ou texte pour Strava.
+          Image + légende avec ton lien d’invitation MySWYM.
         </p>
         <div style={{ background: `linear-gradient(145deg, #06101F 0%, #0033A0 100%)`, borderRadius: 20, padding: 24, marginBottom: 16, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -40, right: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(0,87,253,0.35)" }} />
@@ -5345,7 +5367,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: G.white, marginBottom: 16 }}>{session.title}</div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: invite?.code ? 14 : 0 }}>
             {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
               <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px" }}>
                 <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 2 }}>{s.l}</div>
@@ -5353,6 +5375,11 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
               </div>
             ))}
           </div>
+          {invite?.code && (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>
+              Invite · code <strong style={{ color: G.white }}>{invite.code}</strong>
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
           <Btn onClick={handleDownload} variant="secondary" style={{ flex: 1 }}>Télécharger</Btn>
@@ -5365,12 +5392,15 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           onClick={handleCopyStrava}
           style={{
             width: "100%", padding: "12px", borderRadius: 12, marginBottom: 6,
-            border: `1px solid ${G.greyLight}`, background: G.greyXLight,
-            color: G.inkLight, fontWeight: 600, fontSize: 13, cursor: "pointer",
+            border: `1px solid ${copied ? G.mint : G.greyLight}`,
+            background: copied ? G.mint : G.greyXLight,
+            color: copied ? G.white : G.inkLight, fontWeight: 600, fontSize: 13, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
-          <Copy size={14} /> Copier pour Strava / WhatsApp
+          {copied
+            ? <><CheckCheck size={14} /> Copié (séance + invite)</>
+            : <><Copy size={14} /> Copier pour Strava / WhatsApp</>}
         </button>
         <button onClick={onClose} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Fermer</button>
       </div>
@@ -5508,22 +5538,34 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
 };
 
 const SessionExportBar = ({
-  session, isPremium, onUpgrade, onShare, showShare = false,
+  session, isPremium, onUpgrade, onShare,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [invite, setInvite] = useState(null);
+
+  useEffect(() => {
+    if (!isPremium) return undefined;
+    let cancelled = false;
+    fetchReferralInvite().then((inv) => {
+      if (!cancelled) setInvite(inv);
+    });
+    return () => { cancelled = true; };
+  }, [isPremium]);
+
   const runCopy = async (e) => {
     e?.stopPropagation?.();
     if (!isPremium) { onUpgrade?.("session_locked"); return; }
-    const ok = await copySessionText(session);
+    const pack = buildSessionSharePack(session, invite || {});
+    const ok = await copySessionText(session, pack.clipboardText);
     if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
-  const runPrint = (e) => {
+  const runShareImage = (e) => {
     e?.stopPropagation?.();
     if (!isPremium) { onUpgrade?.("session_locked"); return; }
-    openSessionPrint(session);
+    if (onShare) onShare(session);
   };
   const btn = {
     flex: 1, minWidth: 110, padding: "10px 12px", borderRadius: 12,
@@ -5535,19 +5577,14 @@ const SessionExportBar = ({
     <div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button type="button" onClick={runCopy} style={{ ...btn, background: copied ? G.mint : G.surface, borderColor: copied ? G.mint : G.greyLight, color: copied ? G.white : G.inkLight }}>
-          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Strava</>}
+          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Copier Strava</>}
         </button>
-        <button type="button" onClick={runPrint} style={btn}>
-          <Printer size={13} /> Imprimer
+        <button type="button" onClick={runShareImage} style={btn}>
+          <Share2 size={13} /> Partager
         </button>
-        {showShare && onShare && (
-          <button type="button" onClick={() => onShare(session)} style={btn}>
-            <Share2 size={13} /> Image
-          </button>
-        )}
       </div>
       <p style={{ fontSize: 11, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.4 }}>
-        Copie le texte dans la description Strava, ou imprime pour le bord du bassin.
+        Texte prêt pour Strava (avec ton lien d’invitation), ou image à poster.
       </p>
     </div>
   );
@@ -5797,23 +5834,11 @@ const ReferralShareCard = () => {
     let cancelled = false;
     (async () => {
       try {
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        const session = refreshData?.session;
-        if (!session) throw new Error("Non connecté");
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ensure-referral-code`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: "{}",
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Erreur parrainage");
+        const inv = await fetchReferralInvite();
+        if (!inv) throw new Error("Impossible de charger le lien");
         if (!cancelled) {
-          setCode(json.code);
-          setShareUrl(json.shareUrl);
+          setCode(inv.code);
+          setShareUrl(inv.shareUrl);
         }
       } catch (e) {
         if (!cancelled) setErr(e.message || "Impossible de charger le lien");
@@ -5827,7 +5852,12 @@ const ReferralShareCard = () => {
   const copy = async () => {
     if (!shareUrl) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      const text = [
+        "Rejoins-moi sur MySWYM",
+        shareUrl,
+        code ? `Code parrain : ${code} (−20 % sur la 1re facture)` : null,
+      ].filter(Boolean).join("\n");
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* ignore */ }
@@ -5859,7 +5889,7 @@ const ReferralShareCard = () => {
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
-            {copied ? <><CheckCheck size={15} /> Lien copié</> : <><Copy size={15} /> Copier le lien d’invitation</>}
+            {copied ? <><CheckCheck size={15} /> Message d’invite copié</> : <><Copy size={15} /> Copier le message d’invitation</>}
           </button>
         </>
       )}
@@ -6653,7 +6683,6 @@ const SessionCard = ({
                   isPremium={isPremium}
                   onUpgrade={onUpgrade}
                   onShare={onShare}
-                  showShare={!!done && !!onShare}
                 />
               </div>
             </div>
@@ -6682,7 +6711,6 @@ const SessionCard = ({
             isPremium={isPremium}
             onUpgrade={onUpgrade}
             onShare={onShare}
-            showShare={!!done && !!onShare}
           />
         </div>
       )}
@@ -7264,7 +7292,6 @@ const ProgressionLoopView = ({
               isPremium={isPremium}
               onUpgrade={onUpgrade}
               onShare={onShare}
-              showShare={!!resolved && !!onShare}
             />
           </div>
         </div>
