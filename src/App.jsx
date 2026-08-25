@@ -124,7 +124,7 @@ import {
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
   Bell, CreditCard, Link2, ChevronRight, Eye, EyeOff,
-  Camera, Trash2, Users, ExternalLink,
+  Camera, Trash2, Users, ExternalLink, Info, Pencil,
 } from "lucide-react";
 
 applyTheme();
@@ -1622,7 +1622,7 @@ const PaceEvolutionCard = ({ plan, profile, isPremium, onUpgrade }) => {
         </div>
         <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: 0 }}>
           {!pace100
-            ? "Renseigne ton temps 100 m (T100) ci-dessous pour voir la courbe de progression possible."
+            ? "Renseigne ton temps 100 m ci-dessus pour voir la courbe de progression possible."
             : "Ton plan est trop court pour afficher une courbe."}
         </p>
       </div>
@@ -3231,11 +3231,15 @@ const ProfileTab = ({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange
           <button
             type="button"
             onClick={() => { setNameInput(displayName); setEditingName(true); }}
+            aria-label="Modifier le nom d’utilisateur"
             style={{ background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, padding: 8, minHeight: 44 }}
           >
             <span style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>{displayName}</span>
-            <div style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Settings size={11} color={G.blue} />
+            <div
+              aria-hidden
+              style={{ width: 20, height: 20, borderRadius: 6, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <Pencil size={11} color={G.blue} strokeWidth={2.4} />
             </div>
           </button>
         )}
@@ -7576,17 +7580,11 @@ const HomeBadgesSection = ({ plan }) => {
 };
 
 // ── Carte T100 — levier conversion Premium (accueil) ───────────────────────
-const PACE_BENEFITS = [
-  "Séances plus personnalisées",
-  "Allures plus précises",
-  "Progression plus rapide",
-  "Intensités adaptées à ton niveau",
-];
-
 const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
   const [val, setVal] = useState(pace100 || null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   useEffect(() => {
     setVal(pace100 || null);
@@ -7610,57 +7608,68 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
   return (
     <div className="fade-up" style={{
       background: G.surface,
-      borderRadius: 24,
-      padding: "22px 20px",
+      borderRadius: 20,
+      padding: "18px 16px",
       marginBottom: 16,
       border: `1px solid ${G.greyLight}`,
       boxShadow: "0 1px 2px rgba(25,28,30,0.03), 0 12px 32px rgba(53,93,163,0.08)",
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 16, flexShrink: 0,
-          background: `linear-gradient(145deg, ${G.blueLight} 0%, ${G.surface} 100%)`,
-          border: `1px solid ${G.blueMid}44`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <Timer size={22} color={G.blue} strokeWidth={2.2} />
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        gap: 10, marginBottom: 10,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>
+            Meilleur temps 100&nbsp;m
+          </span>
+          <button
+            type="button"
+            onClick={() => setInfoOpen((o) => !o)}
+            aria-expanded={infoOpen}
+            aria-controls="pace-t100-info"
+            aria-label={infoOpen ? "Masquer l’aide T100" : "Pourquoi et comment renseigner le T100"}
+            style={{
+              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+              border: `1px solid ${G.blueMid}55`,
+              background: infoOpen ? G.blueLight : "transparent",
+              color: G.blue,
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", padding: 0,
+            }}
+          >
+            <Info size={13} strokeWidth={2.4} />
+          </button>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 style={{
-            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-            fontSize: 18, fontWeight: 800, color: G.ink,
-            margin: "0 0 6px", lineHeight: 1.25, letterSpacing: "-0.02em",
-          }}>
-            Améliore la précision de tes séances
-          </h2>
-          <p style={{ fontSize: 14, color: G.grey, margin: 0, lineHeight: 1.5 }}>
-            Entre ton meilleur temps sur 100&nbsp;m pour permettre à MySWYM de créer des séances encore plus adaptées à ton niveau et à tes objectifs.
-          </p>
-        </div>
+        {!isPremium && <Lock size={14} color={G.greyMid} aria-hidden />}
       </div>
 
-      <ul style={{ listStyle: "none", margin: "0 0 18px", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-        {PACE_BENEFITS.map((b) => (
-          <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: 600, color: G.inkLight }}>
-            <span style={{
-              width: 20, height: 20, borderRadius: 7, flexShrink: 0,
-              background: G.mintLight, display: "inline-flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Check size={12} color={G.mint} strokeWidth={3} />
-            </span>
-            {b}
-          </li>
-        ))}
-      </ul>
+      {infoOpen && (
+        <div
+          id="pace-t100-info"
+          role="region"
+          style={{
+            marginBottom: 12,
+            padding: "12px 14px",
+            borderRadius: 12,
+            background: G.blueLight,
+            border: `1px solid ${G.blueMid}33`,
+            fontSize: 13,
+            color: G.inkLight,
+            lineHeight: 1.5,
+          }}
+        >
+          <p style={{ margin: "0 0 8px" }}>
+            <strong style={{ color: G.ink }}>Pourquoi&nbsp;?</strong>{" "}
+            Ce meilleur 100&nbsp;m crawl sert de référence unique pour calibrer tes allures et intensités.
+          </p>
+          <p style={{ margin: 0 }}>
+            <strong style={{ color: G.ink }}>Comment&nbsp;?</strong>{" "}
+            100&nbsp;m crawl, départ dans l’eau (pas de plongeon) et note ton meilleur temps.
+          </p>
+        </div>
+      )}
 
       <div style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>Meilleur temps 100 m</span>
-          <span style={{ fontSize: 12, color: G.grey, display: "inline-flex", alignItems: "center", gap: 5 }}>
-            {!isPremium && <Lock size={12} color={G.greyMid} />}
-            ex : 1:45
-          </span>
-        </div>
         {isPremium ? (
           <PaceInput
             placeholder="1:45"
@@ -7677,7 +7686,7 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
             aria-label="Débloquer le temps au 100 m avec Premium"
             style={{
               display: "block", width: "100%", boxSizing: "border-box",
-              padding: "16px 14px", fontSize: 24,
+              padding: "14px 12px", fontSize: 22,
               fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
               textAlign: "center", letterSpacing: "0.06em",
               border: `2px solid ${G.greyLight}`,
@@ -7698,8 +7707,8 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
             onClick={handleSave}
             disabled={!canSave}
             style={{
-              width: "100%", padding: "14px", borderRadius: 14, border: "none",
-              minHeight: 48,
+              width: "100%", padding: "12px", borderRadius: 14, border: "none",
+              minHeight: 44,
               cursor: canSave ? "pointer" : "not-allowed",
               background: saved ? G.mint : canSave ? G.blue : G.greyLight,
               color: saved || canSave ? G.white : G.greyMid,
@@ -7712,58 +7721,36 @@ const PacePersonalizationCard = ({ pace100, isPremium, onSave, onUpgrade }) => {
           </button>
           {saved && (
             <p style={{
-              margin: "14px 0 0", fontSize: 13, fontWeight: 600, color: G.mint,
-              lineHeight: 1.45, textAlign: "center",
+              margin: "10px 0 0", fontSize: 12, fontWeight: 600, color: G.mint,
+              lineHeight: 1.4, textAlign: "center",
             }}>
-              ✅ Ton niveau est enregistré. Tes prochaines séances seront encore plus personnalisées.
+              Temps enregistré — tes prochaines séances s’adaptent.
             </p>
           )}
           {!saved && pace100 && !hasChange && (
             <p style={{
-              margin: "12px 0 0", fontSize: 12, color: G.grey, textAlign: "center", lineHeight: 1.4,
+              margin: "10px 0 0", fontSize: 12, color: G.grey, textAlign: "center", lineHeight: 1.4,
             }}>
-              Niveau actif : {secToDisplay(pace100)} /100&nbsp;m — tu peux le mettre à jour à tout moment.
+              Actif : {secToDisplay(pace100)} /100&nbsp;m
             </p>
           )}
         </>
       ) : (
-        <>
-          <button
-            type="button"
-            onClick={onUpgrade}
-            style={{
-              width: "100%", padding: "14px", borderRadius: 14, border: "none",
-              minHeight: 48, cursor: "pointer",
-              background: G.greyXLight, color: G.greyMid,
-              fontWeight: 700, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              opacity: 0.9,
-            }}
-          >
-            <Lock size={14} color={G.greyMid} />
-            Enregistrer
-          </button>
-          <p style={{
-            margin: "16px 0 12px", fontSize: 13, color: G.inkLight, lineHeight: 1.5, textAlign: "center",
-          }}>
-            Débloque cette fonctionnalité avec MySWYM Premium pour obtenir des séances adaptées à ton véritable niveau.
-          </p>
-          <button
-            type="button"
-            onClick={onUpgrade}
-            style={{
-              width: "100%", padding: "14px", borderRadius: 14, border: "none",
-              minHeight: 48, cursor: "pointer",
-              background: G.blue, color: G.white,
-              fontWeight: 700, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              boxShadow: "0 4px 16px rgba(53,93,163,0.22)",
-            }}
-          >
-            <Zap size={15} color={G.white} />
-            Passer à Premium
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={onUpgrade}
+          style={{
+            width: "100%", padding: "12px", borderRadius: 14, border: "none",
+            minHeight: 44, cursor: "pointer",
+            background: G.blue, color: G.white,
+            fontWeight: 700, fontSize: 15,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            boxShadow: "0 4px 16px rgba(53,93,163,0.22)",
+          }}
+        >
+          <Lock size={14} color={G.white} />
+          Débloquer avec Premium
+        </button>
       )}
     </div>
   );
