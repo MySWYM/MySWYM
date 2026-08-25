@@ -412,6 +412,38 @@ export async function clearBuddyPhone(userId) {
   return { data, error };
 }
 
+async function callBuddyPhoneOtp(body) {
+  const { data: refreshData } = await supabase.auth.refreshSession();
+  const session = refreshData?.session;
+  if (!session) return { data: null, error: { message: "Connecte-toi d’abord." } };
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/buddy-phone-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) return { data: null, error: { message: json.error || "Erreur vérification." } };
+  return { data: json, error: null };
+}
+
+/** Envoie un code (SMS si Twilio, sinon e-mail compte). */
+export async function sendBuddyPhoneOtp(phoneRaw) {
+  const phone = normalizeWhatsAppE164(phoneRaw);
+  if (!phone) return { data: null, error: { message: "Numéro invalide (ex. 06 12 34 56 78)." } };
+  return callBuddyPhoneOtp({ action: "send", phone });
+}
+
+/** Confirme le code → phone_verified. */
+export async function confirmBuddyPhoneOtp(phoneRaw, code) {
+  const phone = normalizeWhatsAppE164(phoneRaw);
+  if (!phone) return { data: null, error: { message: "Numéro invalide." } };
+  return callBuddyPhoneOtp({ action: "confirm", phone, code });
+}
+
 export function labelForGoalCategory(id) {
   return BUDDY_GOAL_CATEGORIES.find((g) => g.id === id)?.label || id;
 }

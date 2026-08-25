@@ -34,6 +34,8 @@ import {
   toggleAvailabilityDay,
   toggleAvailabilitySlot,
   toggleOutingType,
+  sendBuddyPhoneOtp,
+  confirmBuddyPhoneOtp,
   upsertBuddyProfile,
 } from "./lib/buddy-profiles.js";
 import {
@@ -391,6 +393,9 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
   const [reportReason, setReportReason] = useState("harassment");
   const [reportDetails, setReportDetails] = useState("");
   const [busyAction, setBusyAction] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpChannel, setOtpChannel] = useState(null);
 
   const emailOk = isEmailVerified(user);
   const suspended = !!moderation?.buddy_suspended;
@@ -616,10 +621,62 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
         phone_ownership_ack: false,
         is_discoverable: false,
       }));
+      setOtpCode("");
+      setOtpChannel(null);
       setMsg({ type: "ok", text: "Numéro masqué et profil retiré de l’annuaire. Révoque aussi les partages dans « Mes mises en relation » si besoin." });
       await loadList();
     }
     setSaving(false);
+  };
+
+  const handleSendPhoneOtp = async () => {
+    setOtpBusy(true);
+    setMsg(null);
+    const { data, error } = await sendBuddyPhoneOtp(form.whatsapp_e164);
+    setOtpBusy(false);
+    if (error) {
+      setMsg({ type: "err", text: error.message });
+      return;
+    }
+    setOtpChannel(data?.channel || null);
+    setMsg({
+      type: "ok",
+      text: data?.channel === "sms"
+        ? "Code envoyé par SMS."
+        : "Code envoyé par e-mail (SMS si Twilio est configuré).",
+    });
+  };
+
+  const handleConfirmPhoneOtp = async () => {
+    setOtpBusy(true);
+    setMsg(null);
+    const { error } = await confirmBuddyPhoneOtp(form.whatsapp_e164, otpCode);
+    setOtpBusy(false);
+    if (error) {
+      setMsg({ type: "err", text: error.message });
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      phone_verified: true,
+      phone_share_ready: true,
+      phone_ownership_ack: true,
+    }));
+    setOtpCode("");
+    setMsg({ type: "ok", text: "Numéro vérifié." });
+    if (user?.id) {
+      const { data } = await fetchOwnBuddyProfile(user.id);
+      if (data) {
+        setForm((f) => ({
+          ...f,
+          ...data,
+          whatsapp_e164: data.whatsapp_e164 ? formatWhatsAppDisplay(data.whatsapp_e164) : f.whatsapp_e164,
+          phone_verified: true,
+          phone_share_ready: true,
+          phone_ownership_ack: true,
+        }));
+      }
+    }
   };
 
   const submitRequest = async () => {
@@ -1248,7 +1305,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                   après acceptation mutuelle et un consentement explicite au moment de la mise en relation.
                   {form.phone_verified
                     ? " · Numéro vérifié."
-                    : " · Vérification SMS à venir ; pour l’instant, e-mail vérifié + déclaration de propriété."}
+                    : " · Envoie un code pour vérifier le numéro (SMS si configuré, sinon e-mail)."}
                 </div>
 
                 <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, cursor: "pointer" }}>
@@ -1280,6 +1337,50 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                     Je confirme que ce numéro m’appartient et que je suis joignable dessus.
                   </span>
                 </label>
+
+                {!form.phone_verified && form.whatsapp_e164 && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${G.greyLight}` }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>
+                      Vérifier le numéro
+                    </div>
+                    <button
+                      type="button"
+                      disabled={otpBusy || saving}
+                      onClick={handleSendPhoneOtp}
+                      style={{
+                        width: "100%", padding: "12px", borderRadius: 12, border: "none",
+                        background: G.blueLight, color: G.blue, fontWeight: 700, fontSize: 13,
+                        cursor: otpBusy ? "wait" : "pointer", minHeight: 44, marginBottom: 10,
+                      }}
+                    >
+                      {otpBusy ? "Envoi…" : otpChannel ? "Renvoyer le code" : "Envoyer un code"}
+                    </button>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="Code à 6 chiffres"
+                      style={inp}
+                      aria-label="Code de vérification"
+                    />
+                    <button
+                      type="button"
+                      disabled={otpBusy || saving || otpCode.length !== 6}
+                      onClick={handleConfirmPhoneOtp}
+                      style={{
+                        width: "100%", marginTop: 10, padding: "12px", borderRadius: 12, border: "none",
+                        background: G.blue, color: G.white, fontWeight: 700, fontSize: 13,
+                        cursor: otpCode.length === 6 ? "pointer" : "not-allowed",
+                        opacity: otpCode.length === 6 ? 1 : 0.5, minHeight: 44,
+                      }}
+                    >
+                      Confirmer le code
+                    </button>
+                  </div>
+                )}
 
                 {form.whatsapp_e164 && (
                   <button

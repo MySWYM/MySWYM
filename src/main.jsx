@@ -1,11 +1,10 @@
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode, useEffect, useState, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import './i18n/index.js'
 import './theme/fonts.css'
 import './index.css'
-import App from './App.jsx'
 import Landing from './Landing.jsx'
 import HowItWorksPage from './HowItWorksPage.jsx'
 import FaqPage from './FaqPage.jsx'
@@ -19,16 +18,37 @@ import MerciPage from './Merci.jsx'
 import NotFoundPage from './NotFound.jsx'
 import CookieBanner from './CookieBanner.jsx'
 import { hasPerformanceConsent } from './lib/cookie-consent.js'
-import { ConversionFlow } from './conversion/ConversionFlow.tsx'
-import SessionPyramidPreview from './SessionPyramidPreview.jsx'
-import ArthurAdminShell from './ArthurAdminShell.jsx'
-import ArthurAdminHome from './ArthurAdminHome.jsx'
-import ArthurNageursAdmin from './ArthurNageursAdmin.jsx'
-import ArthurInstagramAdmin from './ArthurInstagramAdmin.jsx'
-import ArthurReadinessAdmin from './ArthurReadinessAdmin.jsx'
 import VersionGate from './VersionGate.jsx'
 import { LocaleSync } from './i18n/locale-routing.jsx'
 import { localeFromPathname, withLocalePrefix } from './i18n/locale-path.js'
+
+const App = lazy(() => import('./App.jsx'))
+const ConversionFlow = lazy(() => import('./conversion/ConversionFlow.tsx').then((m) => ({ default: m.ConversionFlow })))
+const SessionPyramidPreview = lazy(() => import('./SessionPyramidPreview.jsx'))
+const ArthurAdminShell = lazy(() => import('./ArthurAdminShell.jsx'))
+const ArthurAdminHome = lazy(() => import('./ArthurAdminHome.jsx'))
+const ArthurNageursAdmin = lazy(() => import('./ArthurNageursAdmin.jsx'))
+const ArthurInstagramAdmin = lazy(() => import('./ArthurInstagramAdmin.jsx'))
+const ArthurReadinessAdmin = lazy(() => import('./ArthurReadinessAdmin.jsx'))
+
+function RouteFallback() {
+  return (
+    <div
+      style={{
+        minHeight: '100dvh',
+        background: '#000514',
+        color: '#b4c6db',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Geist, ui-sans-serif, system-ui, sans-serif',
+        fontSize: 14,
+      }}
+    >
+      Chargement…
+    </div>
+  )
+}
 
 /** Ancienne home marketing `/accueil` → `/fr` ; `/homepage` → `/`. */
 function RedirectToHome() {
@@ -175,6 +195,7 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <LocaleSync />
       <LegacyQueryRedirects />
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         {/* App (questionnaire + plans) — pas de préfixe /fr */}
         <Route path="/app" element={<App />} />
@@ -206,6 +227,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/fr">{frMarketingRoutes()}</Route>
         {enMarketingRoutes()}
       </Routes>
+      </Suspense>
       <CookieBanner />
       <ConsentedSpeedInsights />
     </BrowserRouter>
