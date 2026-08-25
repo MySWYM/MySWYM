@@ -7,6 +7,7 @@ import {
 import BrandLogo from "./BrandLogo.jsx";
 import { trackEvent, trackUiError } from "./lib/analytics.js";
 import { resolveAvatarUrl } from "./lib/avatar.js";
+import { humanizeBuddyOtpError } from "./lib/buddy-otp-messages.js";
 import { supabase } from "./supabase.js";
 import {
   BUDDY_DAYS,
@@ -24,7 +25,6 @@ import {
   formatAvailabilityLabel,
   formatRadiusLabel,
   formatWhatsAppDisplay,
-  humanizeBuddyOtpError,
   labelForGoalCategory,
   labelForLevel,
   labelsForOutingTypes,

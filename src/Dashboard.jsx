@@ -24,11 +24,11 @@ import {
   shouldShowProfileNudge,
 } from "./lib/profile-nudge.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
+import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { getTabUi } from "./tab-ui-registry.js";
 
 /** Badges sur l’accueil / profil : colorés si débloqués, grisés sinon. */
 export function HomeBadgesSection({ plan }) {
-  const { computeStats, checkBadges, BADGE_DEFS } = getTabUi();
   const stats = computeStats(plan);
   const earned = checkBadges(stats);
   const earnedSet = new Set(earned);
@@ -212,7 +212,6 @@ export default function Dashboard({
 }) {
   const {
     AppTopBar,
-    computeStats,
     WeekProjectionCard,
     PremiumTeaser,
     getTypeMeta,

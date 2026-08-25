@@ -4925,26 +4925,29 @@ const PlanSelector = ({
 };
 
 
-registerTabUi({
-  AppTopBar,
-  OnboardingWizard,
-  ProgressionLoopView,
-  PlanSelector,
-  PremiumBanner,
-  PremiumTeaser,
-  WeekProjectionCard,
-  ResetConfirmButton,
-  UpdateProgramCard,
-  WeekCard,
-  MonAllureCard,
-  StravaSection,
-  GOALS,
-  CATEGORIES,
-  BADGE_DEFS,
-  computeStats,
-  checkBadges,
-  getTypeMeta,
-});
+function registerAppTabUi() {
+  registerTabUi({
+    AppTopBar,
+    OnboardingWizard,
+    ProgressionLoopView,
+    PlanSelector,
+    PremiumBanner,
+    PremiumTeaser,
+    WeekProjectionCard,
+    ResetConfirmButton,
+    UpdateProgramCard,
+    WeekCard,
+    MonAllureCard,
+    StravaSection,
+    GOALS,
+    CATEGORIES,
+    BADGE_DEFS,
+    computeStats,
+    checkBadges,
+    getTypeMeta,
+  });
+}
+registerAppTabUi();
 
 // ── BADGES TAB ─────────────────────────────────────────────────────────────
 const BadgesTab = ({ plan }) => {
@@ -7452,6 +7455,11 @@ const BLANK_PROFILE = {
 };
 
 export default function App() {
+  useEffect(() => {
+    // Re-register après HMR (évite crash getTabUi / écran blanc)
+    registerAppTabUi();
+  }, []);
+
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);

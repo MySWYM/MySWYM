@@ -3,8 +3,6 @@ import { requirePaidBuddies } from "./buddy-access.js";
 import { sortBuddiesForViewer } from "./buddy-match-rank.js";
 import { humanizeBuddyOtpError } from "./buddy-otp-messages.js";
 
-export { humanizeBuddyOtpError };
-
 export const BUDDY_GOAL_CATEGORIES = [
   { id: "eau_libre", label: "Eau libre" },
   { id: "triathlon", label: "Triathlon" },

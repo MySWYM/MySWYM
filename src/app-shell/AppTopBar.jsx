@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Settings } from "lucide-react";
 import BrandLogo from "../BrandLogo.jsx";
 import { G } from "../theme/palette.js";
@@ -29,7 +29,10 @@ export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null
   const initials = firstName.slice(0, 2).toUpperCase();
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
-  const notificationItems = buildInAppNotifications({ user, plan });
+  const notificationItems = useMemo(
+    () => buildInAppNotifications({ user, plan }),
+    [user, plan],
+  );
   const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user));
   const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
 
@@ -48,7 +51,9 @@ export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null
       writeSeenNotifications(user, bootstrapSeen);
       setSeenMap(bootstrapSeen);
     }
-  }, [user, notificationItems]);
+    // notificationItems identity is memoized on user/plan — avoid render loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per user/plan
+  }, [user?.id, plan]);
 
   const markNotificationsAsRead = (items = notificationItems) => {
     if (!items.length) return;
