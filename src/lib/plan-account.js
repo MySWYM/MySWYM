@@ -5,6 +5,26 @@
 import { supabase } from "../supabase.js";
 import { planProgressScore } from "./plan-progress-merge.js";
 import { enforceSingleActivePlan } from "./swimmer-profile.js";
+import {
+  storedPlansUpdatedAtMs,
+  loadRemotePlansIfNewer,
+  parseUserPlansBlob,
+  userPlansUpsertRow,
+} from "./plan-account-egress.js";
+
+export {
+  PLANS_AUTOSAVE_DEBOUNCE_MS,
+  USER_PLANS_META_SELECT,
+  USER_PLANS_BLOB_SELECT,
+  storedPlansUpdatedAtMs,
+  shouldFetchRemotePlanBlob,
+  parseUserPlansBlob,
+  userPlansUpsertRow,
+  fetchUserPlansMeta,
+  fetchUserPlansBlob,
+  fetchUserPlansLegacy,
+  loadRemotePlansIfNewer,
+} from "./plan-account-egress.js";
 
 export const planFingerprint = (entry) => {
   const p = entry?.profile ?? {};
@@ -111,23 +131,19 @@ export const persistAccountPlans = async (userId, localPlans, activePlanId, dele
   let remoteActive = null;
   let remoteHistory = [];
   let remoteTime = 0;
+  const storedTime = storedPlansUpdatedAtMs(userId);
   try {
-    const { data } = await supabase
-      .from("user_plans")
-      .select("plans_json, active_plan_id, plan_history, updated_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (Array.isArray(data?.plans_json)) remotePlans = data.plans_json;
-    remoteActive = data?.active_plan_id || null;
-    if (Array.isArray(data?.plan_history)) remoteHistory = data.plan_history;
-    remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
+    const loaded = await loadRemotePlansIfNewer(supabase, userId, storedTime);
+    if (!loaded.error && loaded.fetchedBlob && loaded.data) {
+      const parsed = parseUserPlansBlob(loaded.data);
+      remotePlans = parsed.plans;
+      remoteActive = parsed.active;
+      remoteHistory = parsed.history;
+      remoteTime = parsed.updatedAt;
+    }
   } catch { /* offline / network */ }
 
-  let localTime = Date.now();
-  try {
-    const ts = localStorage.getItem(`myswym_plans_updated_${userId}`);
-    if (ts) localTime = Math.max(new Date(ts).getTime() || 0, localTime);
-  } catch { /* ignore */ }
+  const localTime = storedTime || Date.now();
 
   const { plans: mergedRaw, active: activeRaw } = mergePlanLists(
     localPlans || [],
@@ -160,29 +176,30 @@ export const persistAccountPlans = async (userId, localPlans, activePlanId, dele
   } catch { /* ignore */ }
 
   if (merged.length === 0) {
-    const { error } = await supabase.from("user_plans").upsert({
-      user_id: userId,
-      plans_json: [],
-      active_plan_id: null,
-      plan_history: history,
-      profile: null,
-      plan: null,
-      updated_at: now,
-    }, { onConflict: "user_id" });
+    const { error } = await supabase.from("user_plans").upsert(
+      userPlansUpsertRow({
+        userId,
+        plans: [],
+        activePlanId: null,
+        history,
+        updatedAt: now,
+      }),
+      { onConflict: "user_id" },
+    );
     if (!error) writeDeletedPlanIds(userId, new Set());
     return { plans: [], active: null, history, error: error || null };
   }
 
-  const activeEntry = merged.find((e) => e.id === active) ?? merged[0];
-  const { error } = await supabase.from("user_plans").upsert({
-    user_id: userId,
-    plans_json: merged,
-    active_plan_id: active,
-    plan_history: history,
-    profile: activeEntry?.profile ?? null,
-    plan: activeEntry?.plan ?? null,
-    updated_at: now,
-  }, { onConflict: "user_id" });
+  const { error } = await supabase.from("user_plans").upsert(
+    userPlansUpsertRow({
+      userId,
+      plans: merged,
+      activePlanId: active,
+      history,
+      updatedAt: now,
+    }),
+    { onConflict: "user_id" },
+  );
 
   if (error) {
     if (import.meta.env.DEV) console.warn("[plans] upsert failed", error.message);
