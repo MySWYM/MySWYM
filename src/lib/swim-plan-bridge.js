@@ -38,6 +38,7 @@ import {
   resolveHardConstraints,
   scaleSessionLinesToVolume,
 } from "./sports-engine/index.js";
+import { eventBandFromGoal } from "./sports-engine/race-event.js";
 import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
 import {
   normalizeTargetSessionDistance,
@@ -927,6 +928,28 @@ const LOOP_VARIANTS_BY_FAMILY = {
   ],
 };
 
+/** Après la phase facile : ordre des variantes selon la bande d'épreuve (short / mid / long). */
+const LOOP_VARIANT_ORDER_BY_BAND = {
+  eau_libre: {
+    short: ["ow_sight", "ow_seuil", "ow_vitesse", "ow_tech", "ow_aero", "ow_jambes"],
+    mid: ["ow_aero", "ow_sight", "ow_seuil", "ow_long", "ow_tech", "ow_draft", "ow_jambes"],
+    long: ["ow_long", "ow_aero", "ow_tech", "ow_jambes", "ow_sight"],
+  },
+  triathlon: {
+    short: ["tri_start", "tri_seuil", "tri_tech", "tri_sight", "tri_jambes", "tri_aero"],
+    mid: ["tri_aero", "tri_seuil", "tri_sight", "tri_tech", "tri_ow", "tri_jambes", "tri_mix"],
+    long: ["tri_aero", "tri_ow", "tri_jambes", "tri_tech", "tri_seuil", "tri_sight"],
+  },
+};
+
+function loopVariantsForEvent(family, goal) {
+  const all = LOOP_VARIANTS_BY_FAMILY[family] || LOOP_VARIANTS_BY_FAMILY.progression;
+  const order = LOOP_VARIANT_ORDER_BY_BAND[family]?.[eventBandFromGoal(goal)];
+  if (!order) return all;
+  const byId = Object.fromEntries(all.map((v) => [v.id, v]));
+  return order.map((id) => byId[id]).filter(Boolean);
+}
+
 const LOOP_EASY_BY_FAMILY = {
   progression: [
     { id: "easy_tech", focus: "Première séance — douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
@@ -1236,7 +1259,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     return { session, focus: variant.focus, week };
   }
 
-  const variants = LOOP_VARIANTS_BY_FAMILY[family] || LOOP_VARIANTS_BY_FAMILY.progression;
+  const variants = loopVariantsForEvent(family, profile.goal);
   const easyVariants = LOOP_EASY_BY_FAMILY[family] || LOOP_EASY_BY_FAMILY.progression;
   const variant = easyPhase
     ? easyVariants[c % easyVariants.length]

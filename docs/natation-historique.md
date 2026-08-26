@@ -18,7 +18,9 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
-| 2026-08-25 | UX 4 nages + crawl pur | Profil : « Sais-tu nager du 4 nages ? » (Oui/Non) ; nage favorite seulement si Oui. Diplômes : pas de choix. Tri/eau libre : choix OK. `swimStyle=crawl` → séances 100 % crawl (composeur + QG `crawl_only`, pas de dos en alt/échauff/RAC). | ✅ active |
+| 2026-08-26 | Avancé = 4 nages | Niveau Avancé : plus de question 4 nages, `swimStyle=4_nages` (bouton + moteur). Un ancien Avancé resté en crawl est traité 4 nages. Intermédiaire garde Oui/Non. Débutant reste crawl. | ✅ active |
+| 2026-08-26 | 4 nages sans nage favorite | Profil : uniquement Oui/Non 4 nages. Débutant : pas de question, crawl. Mix 4 nages = 40/20/20/20, plus de pondération favorite. | ✅ active |
+| 2026-08-25 | UX 4 nages + crawl pur | Profil : « Sais-tu nager du 4 nages ? » (Oui/Non) ; nage favorite seulement si Oui. Diplômes : pas de choix. Tri/eau libre : choix OK. `swimStyle=crawl` → séances 100 % crawl (composeur + QG `crawl_only`, pas de dos en alt/échauff/RAC). | ↩ remplacée |
 | 2026-08-15 | Merge séance validée | Hotfix prod : `FORCE_PLAN_REGEN` ne bypass plus le merge. Séance `completed`/`skipped` conservée ; non validée régénérée ; semaine feedback/satisfaction intacte ; structure incompatible → fallback semaine. One-shot = `version < PLAN_VERSION` (option A), pas à chaque ouverture. | ✅ active |
 | 2026-08-16 | Éducatifs 4 nages Excel | Séances `strokeFocus=4n` : ~40 % technique = éducatifs Arthur tagués `4_nages` filtrés par « niveau Arthur » ; ~60 % = nages explicites (mix). Découverte 4n : dos à deux bras / papillon un bras / papillon baleine — pas flèche forcée. Plus d’« éducatif libre » inventé dans l’IM drill. | ✅ active |
 | 2026-08-15 | Niveaux Excel éducatifs | « niveau Arthur » = gate produit. `parseArthurEducatifLevels` : « adaptable à tous niveaux » n’ouvre plus la Découverte ; sélection = `levels.includes(niveau)` (+ allowlist Découverte règle 8). Petit chien / toucher cuisse / 6 battements hors Découverte ; grand chien reste via notes Excel. | ✅ active |

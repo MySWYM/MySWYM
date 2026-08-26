@@ -6,21 +6,24 @@ import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "../C
 import { buildPlanReadyInsights } from "../lib/coach-insights.js";
 import { sessionCardModel } from "../lib/plan-reveal.js";
 import SessionHeroCard from "../SessionHeroCard.jsx";
+import { canonicalizeGoal } from "../lib/sports-engine/race-event.js";
 
 /** Labels objectifs (sous-ensemble affiché dans le sheet post-génération). */
 const GOAL_LABELS = {
   progression: "Nager & Progresser",
+  triathlon_xs: "Triathlon XS",
   triathlon_sprint: "Triathlon Sprint",
   triathlon_olympic: "Triathlon Olympique",
-  triathlon_half: "Half Ironman",
-  triathlon_ironman: "Ironman",
-  open_water_5k: "Eau libre 5 km",
-  open_water_10k: "Eau libre 10 km",
+  triathlon_half: "Triathlon Half",
+  triathlon_ironman: "Triathlon Full",
+  open_water_short: "Eau libre courte",
+  open_water_mid: "Eau libre moyenne",
+  open_water_long: "Eau libre longue",
   bnssa: "BNSSA",
 };
 
 export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, loading }) {
-  const goalLabel = GOAL_LABELS[profile?.goal] || profile?.goal || "Objectif";
+  const goalLabel = GOAL_LABELS[canonicalizeGoal(profile?.goal)] || profile?.goal || "Objectif";
   const weeks = plan?.totalRealWeeks || plan?.weeks?.length || 0;
   const freq = profile?.sessionsPerWeek || 0;
   const firstSession = plan?.weeks?.[0]?.sessions?.[0];

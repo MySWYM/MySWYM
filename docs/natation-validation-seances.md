@@ -60,20 +60,16 @@ Rappels pédagogiques :
 
 ## Quatre nages
 
-UX profil : « Sais-tu nager du 4 nages ? » → Non = `swimStyle=crawl` (nage favorite masquée, forcée crawl) ; Oui = `4_nages` + « Quelle est ta nage favorite ? ».  
-Diplômes (BNSSA, BPJEPS, pompiers, CAEPMNS) : pas de choix 4 nages. Triathlon / eau libre : choix autorisé.
+UX profil (**Intermédiaire seulement**) : « Sais-tu nager du 4 nages ? » → Non = `swimStyle=crawl` ; Oui = `4_nages`. Pas de nage favorite.  
+Débutant : pas de question, crawl seulement. **Avancé : pas de question, 4 nages** (`isFourNagesDeclared` vrai même si `swimStyle` restait crawl). Diplômes : pas de choix 4 nages.
 
 Si `swimStyle=crawl` / `strokeFocus=crawl` : **aucune** ligne ni set en dos, brasse, papillon ou « au choix » (quality gate `crawl_only`).
 
-Le crawl garde toujours la plus grande part du volume en case 4 nages.  
-Sans préférence : 40 % crawl, 20 % dos, 20 % brasse, 20 % papillon.  
-Avec préférence crawl : 50 / 17 / 17 / 16.  
-Avec préférence dos, brasse ou papillon : 40 % crawl, 30 % nage préférée, 15 % et 15 % pour les deux autres.
+Le crawl garde toujours la plus grande part du volume en case 4 nages. Mix défaut : 40 % crawl, 20 % dos, 20 % brasse, 20 % papillon.
 
 Autres contrôles :
 
 - Case `quatre nages` = crawl + dos + brasse + papillon dans **chaque** séance, blocs nagés explicites (pas un seul intitulé « 4 nages »).
-- `swimStyle=4_nages` prime sur la nage préférée (ne pas transformer la préférence en séance mono-nage).
 - Papillon fractionné (longueur de bassin), jamais omis ni remplacé par ondulation seule.
 - Formats IM olympiques (pap → dos → brasse → crawl) explicites ; Découverte : pas d’IM enchaîné.
 - Eau libre / triathlon : IM piscine seulement si 4 nages déclaré (`swimStyle=4_nages`).

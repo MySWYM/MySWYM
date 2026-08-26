@@ -3,10 +3,11 @@
  * UX simple → valeur moteur interne. Compatible futurs niveaux.
  *
  * swimStyle=4_nages : l'utilisateur nage les 4 nages → strokeFocus=4n.
- * preferredStroke pondère le mix, il ne remplace pas le 4 nages.
+ * Débutant : toujours crawl. Avancé : toujours 4 nages. Plus de nage favorite.
  */
 
 import { isFourNagesDeclared, isFourNagesStyle } from "./four-nages-mix.js";
+import { isDebutantLevelId } from "../onboarding-level-gate.js";
 
 /** @typedef {'crawl'|'dos'|'brasse'|'papillon'|'4n'|'mixte'} StrokeFocus */
 
@@ -38,11 +39,13 @@ export const STROKE_UX_TO_FOCUS = Object.freeze({
 
 /**
  * Normalise le choix de nage depuis le profil.
- * 4 nages (case cochée) prime sur la nage préférée.
- * swimStyle=crawl = 100 % crawl (ignore preferredStroke).
+ * swimStyle=crawl = 100 % crawl.
+ * Débutant = crawl (pas de 4 nages). Avancé = 4 nages.
  * Défaut : crawl pour eau libre / triathlon ; mixte sinon.
  */
 export function normalizeStrokeFocus(profile = {}, objectifV1 = null) {
+  if (isDebutantLevelId(profile.level) || isDebutantLevelId(profile.levelRaw)) return "crawl";
+
   if (isFourNagesDeclared(profile) || isFourNagesStyle(profile.strokeFocus)) return "4n";
 
   if (String(profile.swimStyle || "").toLowerCase() === "crawl") return "crawl";
@@ -50,7 +53,6 @@ export function normalizeStrokeFocus(profile = {}, objectifV1 = null) {
   const raw =
     profile.strokeFocus ||
     profile.strokesPreference ||
-    profile.preferredStroke ||
     profile.swimStyle ||
     null;
 

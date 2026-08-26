@@ -69,4 +69,40 @@ describe("buildProgressionLoopSession families", () => {
     );
     assert.notEqual(a.focus, b.focus);
   });
+
+  it("long open water prefers a continuous block after easy phase", () => {
+    const { session } = buildProgressionLoopSession(
+      { goal: "open_water_long", category: "eau_libre", level: "sportif", pool: 25 },
+      3,
+      true,
+    );
+    assert.equal(session.loopVariant, "ow_long");
+  });
+
+  it("maps legacy 25k to the long-oriented loop", () => {
+    const { session } = buildProgressionLoopSession(
+      { goal: "open_water_25k", category: "eau_libre", level: "sportif", pool: 25 },
+      3,
+      true,
+    );
+    assert.equal(session.loopVariant, "ow_long");
+  });
+
+  it("triathlon XS prefers start work after easy phase", () => {
+    const { session } = buildProgressionLoopSession(
+      { goal: "triathlon_xs", category: "triathlon", level: "sportif", pool: 25 },
+      3,
+      true,
+    );
+    assert.equal(session.loopVariant, "tri_start");
+  });
+
+  it("triathlon Full prefers aero after easy phase", () => {
+    const { session } = buildProgressionLoopSession(
+      { goal: "triathlon_ironman", category: "triathlon", level: "sportif", pool: 25 },
+      3,
+      true,
+    );
+    assert.equal(session.loopVariant, "tri_aero");
+  });
 });

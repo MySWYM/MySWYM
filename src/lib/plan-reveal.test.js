@@ -22,12 +22,16 @@ ok(shouldShowPlanReveal({}) === true, "first plan shows reveal");
 ok(shouldShowPlanReveal({ addingPlan: false }) === true, "onboarding generate shows reveal");
 ok(shouldShowPlanReveal({ addingPlan: true }) === false, "extra plan skips reveal");
 
-ok(revealGoalLabel({ goal: "triathlon_sprint" }) === "Triathlon S · Sprint", "sprint label");
+ok(revealGoalLabel({ goal: "triathlon_sprint" }) === "Triathlon Sprint", "sprint label");
+ok(revealGoalLabel({ goal: "open_water_25k" }) === "Eau libre longue", "legacy 25k → longue");
+ok(revealGoalLabel({ goal: "open_water_short" }) === "Eau libre courte", "canonical short");
 ok(revealGoalLabel({ category: "progression" }) === "Nager", "category fallback matches landing");
 ok(revealGoalLabel({ category: "diplome" }) === "Diplômes", "diploma landing name");
 ok(revealGoalLabel({}) === "Ton objectif", "empty fallback");
 
-ok(revealLevelLabel({ level: "sportif" }) === "Sportif", "sportif");
+ok(revealLevelLabel({ level: "sportif" }) === "Intermédiaire", "sportif → intermédiaire");
+ok(revealLevelLabel({ level: "régulier" }) === "Débutant", "régulier → débutant");
+ok(revealLevelLabel({ level: "performance" }) === "Avancé", "performance → avancé");
 ok(revealLevelLabel({ level: "découverte" }) === "Découverte", "accented level");
 ok(revealLevelLabel({ level: "decouverte" }) === "Découverte", "unaccented level");
 

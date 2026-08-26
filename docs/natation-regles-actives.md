@@ -23,7 +23,7 @@
 
 9. **Matériel** — Le matériel déclaré indique ce que le nageur peut utiliser, jamais ce qu’il doit utiliser. Une séance peut être sans matériel même si l’inventaire est rempli. Lorsqu’un matériel est utilisé, il doit être affiché explicitement sur la ligne d’exercice concernée. Jamais pull-buoy + palmes dans une même séance ; matériel lié à l’éducatif, jamais tiré au sort.
 
-10. **Quatre nages** — Question UX : « Sais-tu nager du 4 nages ? » (Non → `swimStyle=crawl` ; Oui → `4_nages` + nage favorite). Diplômes : pas de choix. Triathlon / eau libre : choix autorisé. Si crawl : séances **100 % crawl** (pas de dos / brasse / papillon). Si 4 nages : le crawl garde la plus grande part du volume (sans préférence 40/20/20/20 ; avec préférence crawl 50/17/17/16 ; autre préférence 40/30/15/15). Case 4 nages = blocs nagés explicites ; papillon fractionné, jamais omis.
+10. **Quatre nages** — Question UX (Profil, **Intermédiaire seulement**) : « Sais-tu nager du 4 nages ? » (Non → `swimStyle=crawl` ; Oui → `4_nages`). Pas de nage favorite. **Débutant** : pas de question, crawl seulement. **Avancé** : pas de question, 4 nages (même si un ancien profil restait en crawl). Diplômes : pas de choix. Si crawl : séances **100 % crawl** (pas de dos / brasse / papillon). Si 4 nages : mix défaut 40/20/20/20, blocs nagés explicites ; papillon fractionné, jamais omis.
 
 11. **Affichage nageur (D9)** — Jamais `souple` ni `Z1` visibles. Remplacer par une intention concrète (`nage facile` / `relâché` / `facile` / `mise en route` / `retour au calme`…).
 

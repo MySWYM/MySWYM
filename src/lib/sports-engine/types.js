@@ -15,6 +15,7 @@ import { normalizeStrokeFocus } from "./stroke-focus.js";
 import { normalizeRaceTarget } from "./race-target.js";
 import { parseTrainingWish, trainingWishToHints } from "./training-wish.js";
 import { normalizeTargetSessionDistance } from "./session-distance-pref.js";
+import { canonicalizeGoal, eventBandFromGoal, raceSwimMetersFromGoal } from "./race-event.js";
 
 export const OBJECTIF_V1 = {
   NAGER_PROGRESSER: "nager_progresser",
@@ -68,7 +69,7 @@ export function normalizeProfileEquipment(equipment) {
 
 /** Mapping goal/category onboarding → objectif V1 */
 export function mapGoalToObjectifV1(profile = {}) {
-  const goal = profile.goal || "";
+  const goal = canonicalizeGoal(profile.goal) || profile.goal || "";
   const category = profile.category || "";
   // Objectifs explicites d'abord (reprendre ≠ nager_progresser même si category=progression)
   if (goal === "reprendre") return OBJECTIF_V1.REPRENDRE;
@@ -125,6 +126,7 @@ export function normalizeUiLevel(level) {
 export function buildSportProfile(profile = {}, opts = {}) {
   const uiLevel = normalizeUiLevel(profile.level);
   const objectifV1 = mapGoalToObjectifV1(profile);
+  const goal = canonicalizeGoal(profile.goal) || profile.goal || "";
   const equipmentRaw = Array.isArray(profile.equipment)
     ? profile.equipment.filter((e) => EQUIPMENT_IDS.includes(e) || ["pullbuoy", "pull-buoy", "élastique", "elastique", "fins", "snorkel"].includes(String(e).toLowerCase()))
     : null;
@@ -137,7 +139,9 @@ export function buildSportProfile(profile = {}, opts = {}) {
     level: uiLevel,
     levelRaw: profile.level || "",
     category: profile.category || "",
-    goal: profile.goal || "",
+    goal,
+    raceBand: eventBandFromGoal(goal),
+    raceSwimMeters: raceSwimMetersFromGoal(goal),
     objectifV1,
     profilObj: objectifV1ToProfilObj(objectifV1),
     pool: profile.pool === 25 ? 25 : 50,

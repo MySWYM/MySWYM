@@ -32,9 +32,10 @@ import {
 import i18n from "./i18n/index.js";
 
 import {
-  GOALS, CATEGORIES, LEVELS, FREQUENCIES, POOLS, SWIM_STYLES, PREFERRED_STROKES,
-  EQUIPMENT_OPTS, eqLabel, goalHidesFourNagesChoice,
+  CATEGORIES, FREQUENCIES, POOLS, SWIM_STYLES,
+  EQUIPMENT_OPTS, eqLabel, hidesFourNagesChoice, findGoalById, levelsForPicker, findLevelById,
 } from "./lib/onboarding-catalog.jsx";
+import { impliedSwimStyleForLevel, isBeginnerBlockedForGoal } from "./lib/onboarding-level-gate.js";
 
 export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMenu, onTabChange, onEquipmentChange, onSwimmerProfileChange }) {
   const { t: to } = useTranslation("onboarding");
@@ -167,8 +168,8 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
 
   const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
   const initials = displayName.slice(0, 2).toUpperCase();
-  const levelLabel = LEVELS.find(l => l.id === profile?.level)?.label || profile?.level || "Nageur";
-  const goalLabel = GOALS.find(g => g.id === profile?.goal)?.label
+  const levelLabel = findLevelById(profile?.level)?.label || profile?.level || "Nageur";
+  const goalLabel = findGoalById(profile?.goal)?.label
     || CATEGORIES.find(c => c.id === profile?.category)?.label
     || "Mon objectif";
 
@@ -507,18 +508,25 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
               </p>
               <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                {LEVELS.map((l) => {
+                {levelsForPicker(profile?.level).map((l) => {
                   const active = profile?.level === l.id;
+                  const blocked = isBeginnerBlockedForGoal(profile?.goal) && l.id === "régulier";
                   return (
                     <button
                       key={l.id}
                       type="button"
-                      onClick={() => onSwimmerProfileChange({ level: l.id })}
+                      disabled={blocked && !active}
+                      onClick={() => {
+                        if (blocked && !active) return;
+                        const implied = impliedSwimStyleForLevel(l.id);
+                        onSwimmerProfileChange(implied ? { level: l.id, swimStyle: implied } : { level: l.id });
+                      }}
                       style={{
-                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        padding: "8px 12px", borderRadius: 10, cursor: blocked && !active ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700,
                         border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                         background: active ? G.blueLight : G.surface,
-                        color: active ? G.blue : G.ink,
+                        color: blocked && !active ? G.grey : active ? G.blue : G.ink,
+                        opacity: blocked && !active ? 0.55 : 1,
                       }}
                     >
                       {l.label}
@@ -526,6 +534,11 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                   );
                 })}
               </div>
+              {isBeginnerBlockedForGoal(profile?.goal) ? (
+                <p style={{ fontSize: 12, color: G.grey, lineHeight: 1.4, margin: "-6px 0 14px" }}>
+                  {to("level.beginnerBlocked")}
+                </p>
+              ) : null}
               <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Bassin</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                 {POOLS.map((p) => {
@@ -572,28 +585,19 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                   );
                 })}
               </div>
-              {!goalHidesFourNagesChoice(profile) && (
+              {!hidesFourNagesChoice(profile) && (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                     Sais-tu nager du 4 nages ?
                   </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: profile?.swimStyle === "4_nages" ? 14 : 0 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
                     {SWIM_STYLES.map((s) => {
                       const active = (profile?.swimStyle || "crawl") === s.id;
                       return (
                         <button
                           key={s.id}
                           type="button"
-                          onClick={() => {
-                            if (s.id === "crawl") {
-                              onSwimmerProfileChange({ swimStyle: "crawl", preferredStroke: "crawl" });
-                            } else {
-                              onSwimmerProfileChange({
-                                swimStyle: "4_nages",
-                                preferredStroke: profile?.preferredStroke || "crawl",
-                              });
-                            }
-                          }}
+                          onClick={() => onSwimmerProfileChange({ swimStyle: s.id })}
                           style={{
                             flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
                             border: `1.5px solid ${active ? G.blue : G.greyLight}`,
@@ -606,33 +610,6 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                       );
                     })}
                   </div>
-                  {profile?.swimStyle === "4_nages" && (
-                    <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                        Quelle est ta nage favorite ?
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        {PREFERRED_STROKES.map((s) => {
-                          const active = profile?.preferredStroke === s.id;
-                          return (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => onSwimmerProfileChange({ preferredStroke: s.id })}
-                              style={{
-                                padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                                border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                                background: active ? G.blueLight : G.surface,
-                                color: active ? G.blue : G.ink,
-                              }}
-                            >
-                              {s.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
                 </>
               )}
             </ProfileSection>

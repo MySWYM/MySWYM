@@ -5,6 +5,7 @@ import { G } from "./theme/palette.js";
 import CoachCard from "./CoachCard.jsx";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { getTabUi } from "./tab-ui-registry.js";
+import { findGoalById } from "./lib/onboarding-catalog.jsx";
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 export default function PlanTab({
@@ -113,7 +114,7 @@ export default function PlanTab({
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
 
-  const planLabel = GOALS.find(g => g.id === profile.goal)?.label
+  const planLabel = findGoalById(profile.goal, GOALS)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
                  || "Mon plan";
   return (

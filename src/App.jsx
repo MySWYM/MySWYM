@@ -115,7 +115,7 @@ import {
   GOALS,
   CATEGORIES,
   SUB_GOALS,
-  LEVELS,
+  ONBOARDING_LEVELS,
   FREQUENCIES,
   POOLS,
   SWIM_STYLES,
@@ -129,7 +129,10 @@ import {
   getLvlIndex,
   DIPLOMA_GOAL_IDS,
   goalHidesFourNagesChoice,
+  findGoalById,
+  findLevelById,
 } from "./lib/onboarding-catalog.jsx";
+import { impliedSwimStyleForLevel, isBeginnerBlockedForGoal, isBeginnerLevelId } from "./lib/onboarding-level-gate.js";
 import ProfileTab from "./ProfileTab.jsx";
 import SettingsDrawer from "./SettingsDrawer.jsx";
 
@@ -512,7 +515,7 @@ const css = `
 const capitalizeLabel = (value = "") => value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
 const pluralizeSessions = (count) => `${count} séance${count > 1 ? "s" : ""}`;
 const getPlanPrimaryLabel = (entry) => {
-  const goalLabel = GOALS.find((g) => g.id === entry?.profile?.goal)?.label;
+  const goalLabel = findGoalById(entry?.profile?.goal)?.label;
   if (goalLabel) return goalLabel;
   return CATEGORIES.find((c) => c.id === entry?.profile?.category)?.label || "Plan";
 };
@@ -520,7 +523,7 @@ const getPlanSecondaryLabel = (entry) => {
   const profile = entry?.profile || {};
   const meta = [];
   if (isProgressionGoal(profile.goal) || usesSessionLoop(profile)) {
-    if (profile.level) meta.push(capitalizeLabel(profile.level));
+    if (profile.level) meta.push(findLevelById(profile.level)?.label || capitalizeLabel(profile.level));
     meta.push(profile.sessionsPerWeek ? pluralizeSessions(profile.sessionsPerWeek) : "Séance du jour");
     if (profile.eventDate) {
       const days = Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000));
@@ -2449,31 +2452,45 @@ const Step1_Category = ({ onSelect }) => {
       {t("category.lead")}
     </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {CATEGORIES.map(cat => (
-        <button key={cat.id} type="button" onClick={() => onSelect(cat.id)}
+      {CATEGORIES.map(cat => {
+        const soon = !!cat.comingSoon;
+        return (
+        <button key={cat.id} type="button" disabled={soon}
+          onClick={() => { if (!soon) onSelect(cat.id); }}
+          aria-label={soon ? `${t(`category.${cat.id}`)}. ${t("category.comingSoon")}` : undefined}
           style={{
             display: "flex", alignItems: "center", gap: 14, padding: "16px 16px",
             borderRadius: 18, border: `1px solid ${G.greyLight}`, background: G.surface,
-            cursor: "pointer", textAlign: "left", minHeight: 72,
+            cursor: soon ? "not-allowed" : "pointer", textAlign: "left", minHeight: 72,
           }}>
           <span style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: G.blueLight, color: G.blue,
+            background: G.blueLight, color: soon ? G.greyMid : G.blue,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <cat.Icon size={20} strokeWidth={2} />
           </span>
           <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: soon ? G.grey : G.ink }}>
               {t(`category.${cat.id}`)}
             </span>
             <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>
               {t(`category.${cat.id}Desc`)}
             </span>
           </span>
-          <ArrowRight size={16} color={G.greyMid} style={{ flexShrink: 0 }} />
+          {soon ? (
+            <span style={{
+              flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+              textTransform: "uppercase", color: G.greyMid, whiteSpace: "nowrap",
+            }}>
+              {t("category.comingSoon")}
+            </span>
+          ) : (
+            <ArrowRight size={16} color={G.greyMid} style={{ flexShrink: 0 }} />
+          )}
         </button>
-      ))}
+        );
+      })}
     </div>
   </div>
   );
@@ -2745,7 +2762,7 @@ const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevel
       {t("level.lead")}
     </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-      {LEVELS.map(l => {
+      {ONBOARDING_LEVELS.map(l => {
         const isActive = value === l.id;
         const isDisabled = disabledLevels.includes(l.id);
         return (
@@ -2760,12 +2777,16 @@ const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevel
               cursor: isDisabled ? "default" : "pointer", textAlign: "left", opacity: isDisabled ? 0.55 : 1,
             }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? G.blue : G.ink }}>{t(`level.${l.id}.label`)}</div>
-            {!isDisabled && <div style={{ fontSize: 13, color: isActive ? G.inkLight : G.grey, marginTop: 2 }}>{t(`level.${l.id}.desc`)}</div>}
+            {isDisabled ? (
+              <div style={{ fontSize: 13, color: G.grey, marginTop: 4, lineHeight: 1.4 }}>{t("level.beginnerBlocked")}</div>
+            ) : (
+              <div style={{ fontSize: 13, color: isActive ? G.inkLight : G.grey, marginTop: 2 }}>{t(`level.${l.id}.desc`)}</div>
+            )}
           </button>
         );
       })}
     </div>
-    <Btn onClick={onNext} disabled={!value}>{t("common.continue")}</Btn>
+    <Btn onClick={onNext} disabled={!value || disabledLevels.includes(value)}>{t("common.continue")}</Btn>
     <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.backShort")}</button>
   </div>
   );
@@ -2919,7 +2940,7 @@ const OnboardingWizard = ({
   const isProgression = profile.category === "progression";
   const isDiplome = profile.category === "diplome";
   const noDate = isProgression;
-  const disabledLevels = [];
+  const disabledLevels = isBeginnerBlockedForGoal(profile.goal) ? ["régulier"] : [];
 
   const totalSteps = isGoalMode
     ? (isProgression ? 1 : 3)
@@ -2943,6 +2964,7 @@ const OnboardingWizard = ({
   };
 
   const goAfterCategory = (cat) => {
+    if (CATEGORIES.find((c) => c.id === cat)?.comingSoon) return;
     if (cat === "progression") {
       const extra = { category: cat, goal: "progression", pace100: null };
       patchProfile(extra);
@@ -2966,7 +2988,11 @@ const OnboardingWizard = ({
       patchProfile({ goal: goalId, level: "sportif" });
       setStep(5);
     } else {
-      update("goal", goalId);
+      const next = { goal: goalId };
+      if (isBeginnerBlockedForGoal(goalId) && isBeginnerLevelId(profile.level)) {
+        next.level = "";
+      }
+      patchProfile(next);
       setStep(3);
     }
   };
@@ -3005,7 +3031,10 @@ const OnboardingWizard = ({
 
       {!isGoalMode && step === 3 && !isDiplome && (
         <Step3_Level
-          value={profile.level} onChange={v => update("level", v)}
+          value={profile.level} onChange={v => {
+            const implied = impliedSwimStyleForLevel(v);
+            patchProfile(implied ? { level: v, swimStyle: implied } : { level: v });
+          }}
           total={totalSteps}
           disabledLevels={disabledLevels}
           onNext={() => {
@@ -4598,7 +4627,7 @@ const ProgressionLoopView = ({
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
   const [poolOpen, setPoolOpen] = useState(false);
-  const loopTitle = GOALS.find((g) => g.id === profile?.goal)?.label
+  const loopTitle = findGoalById(profile?.goal)?.label
     || CATEGORIES.find((c) => c.id === profile?.category)?.label
     || "Nager & Progresser";
   const daysToEvent = profile?.eventDate
@@ -10075,7 +10104,7 @@ export default function App() {
 
   const skipCancelSurvey = () => proceedToStripePortal(null);
 
-  const goal  = GOALS.find(g => g.id === activeProfile.goal);
+  const goal  = findGoalById(activeProfile.goal);
   const stats = plan ? computeStats(plan) : null;
   const hasSwumNav = (stats?.totalSessions || 0) > 0;
 

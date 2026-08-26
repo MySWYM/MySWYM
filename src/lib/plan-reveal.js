@@ -5,6 +5,8 @@
 import { buildWorkoutView } from "./workout-display.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
 
+import { canonicalizeGoal } from "./sports-engine/race-event.js";
+
 const CATEGORY_LABELS = {
   progression: "Nager",
   triathlon: "Triathlon",
@@ -15,16 +17,19 @@ const CATEGORY_LABELS = {
 const GOAL_LABELS = {
   progression: "Nager",
   triathlon_xs: "Triathlon XS",
-  triathlon_sprint: "Triathlon S · Sprint",
-  triathlon_olympic: "Triathlon M · Olympique",
-  triathlon_half: "Triathlon L · Half-Ironman",
-  triathlon_ironman: "Triathlon XXL · Ironman",
-  open_water_500: "Eau libre 500 m",
-  open_water_1k: "Eau libre 1 km",
-  open_water_2_5k: "Eau libre 2,5 km",
-  open_water_5k: "Eau libre 5 km",
-  open_water_10k: "Eau libre 10 km",
-  open_water_25k: "Eau libre 25 km",
+  triathlon_sprint: "Triathlon Sprint",
+  triathlon_olympic: "Triathlon Olympique",
+  triathlon_half: "Triathlon Half",
+  triathlon_ironman: "Triathlon Full",
+  open_water_short: "Eau libre courte",
+  open_water_mid: "Eau libre moyenne",
+  open_water_long: "Eau libre longue",
+  open_water_500: "Eau libre courte",
+  open_water_1k: "Eau libre courte",
+  open_water_2_5k: "Eau libre moyenne",
+  open_water_5k: "Eau libre moyenne",
+  open_water_10k: "Eau libre longue",
+  open_water_25k: "Eau libre longue",
   bnssa: "Prépa BNSSA",
   bpjeps_aan: "Prépa BPJEPS AAN",
   caepmns: "Prépa CAEPMNS",
@@ -37,11 +42,12 @@ const GOAL_LABELS = {
 const LEVEL_LABELS = {
   decouverte: "Découverte",
   découverte: "Découverte",
-  beginner: "Découverte",
-  regulier: "Régulier",
-  régulier: "Régulier",
-  sportif: "Sportif",
-  performance: "Performance",
+  beginner: "Débutant",
+  regulier: "Débutant",
+  régulier: "Débutant",
+  sportif: "Intermédiaire",
+  performance: "Avancé",
+  advanced: "Avancé",
 };
 
 export const PLAN_REVEAL_MIN_MS = 1400;
@@ -51,7 +57,7 @@ export function shouldShowPlanReveal({ addingPlan = false } = {}) {
 }
 
 export function revealGoalLabel(profile = {}) {
-  const goal = String(profile.goal || "").trim();
+  const goal = canonicalizeGoal(String(profile.goal || "").trim());
   if (GOAL_LABELS[goal]) return GOAL_LABELS[goal];
   const cat = String(profile.category || "").trim();
   return CATEGORY_LABELS[cat] || "Ton objectif";

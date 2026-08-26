@@ -3,6 +3,8 @@
  * Philosophie : « apprendre à s'entraîner » (vs Découverte = aisance).
  */
 
+import { scaleMaxContinuousForRaceBand } from "./race-event.js";
+
 export function maxContinuousForRegulier(brief = {}) {
   const known = Number(brief.maxContinuousDistance) || 0;
   const confidence = Number(brief.capacity?.confidence) || 0;
@@ -15,7 +17,7 @@ export function maxContinuousForRegulier(brief = {}) {
   if (brief.objectif === "reprendre" || brief.sessionIntent === "reprise") {
     max = Math.min(max, 100);
   }
-  return Math.max(100, max);
+  return Math.max(100, scaleMaxContinuousForRaceBand(max, brief));
 }
 
 export const REGULIER_INTENTS = Object.freeze({
