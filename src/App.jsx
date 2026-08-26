@@ -103,6 +103,11 @@ import {
   readDeletedPlanIds,
   writeDeletedPlanIds,
   persistAccountPlans,
+  PLANS_AUTOSAVE_DEBOUNCE_MS,
+  storedPlansUpdatedAtMs,
+  loadRemotePlansIfNewer,
+  parseUserPlansBlob,
+  fetchUserPlansLegacy,
 } from "./lib/plan-account.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { AppShell, BottomNav, Loading, AppTopBar } from "./app-shell/index.js";
@@ -1931,7 +1936,7 @@ const StravaSection = ({
   const loadActivities = async () => {
     const { data } = await supabase
       .from("strava_activities")
-      .select("strava_activity_id, activity_type, title, distance, duration, pace, calories, heart_rate, activity_date, raw_data")
+      .select("strava_activity_id, activity_type, title, distance, duration, pace, calories, heart_rate, activity_date")
       .eq("user_id", user.id)
       .in("activity_type", ["Swim", "OpenWaterSwim"])
       .order("activity_date", { ascending: false })
@@ -7550,6 +7555,12 @@ export default function App() {
   const deletedPlanIdsRef = useRef(new Set());
   /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
+  const plansRef = useRef(plans);
+  const activePlanIdRef = useRef(activePlanId);
+  const planHistoryRef = useRef(planHistory);
+  plansRef.current = plans;
+  activePlanIdRef.current = activePlanId;
+  planHistoryRef.current = planHistory;
   /** Évite un double enchaînement (effet + bouton, Strict Mode). */
   const loopAdvanceKeyRef = useRef(null);
   /** Reprise questionnaire → checkout / génération après auth ou Stripe (évite stale closures). */
@@ -8183,25 +8194,29 @@ export default function App() {
       if (ts) localUpdatedAt = new Date(ts).getTime() || 0;
     } catch {}
 
-    // 2. Supabase — source de vérité cross-device (comparée au cache local)
-    let remotePlans = null, remoteActive = null, remoteUpdatedAt = 0, remoteUpdatedIso = null;
+    // 2. Supabase — source de vérité cross-device (blob seulement si plus récent que le cache)
+    let remotePlans = null, remoteActive = null, remoteUpdatedAt = 0;
     let remoteHistory = [];
     try {
-      const { data, error } = await supabase.from("user_plans")
-        .select("profile, plan, plans_json, active_plan_id, plan_history, updated_at")
-        .eq("user_id", userId).single();
-      if (data && !error) {
-        remoteUpdatedIso = data.updated_at || null;
-        if (data.updated_at) remoteUpdatedAt = new Date(data.updated_at).getTime() || 0;
-        if (Array.isArray(data.plan_history)) remoteHistory = data.plan_history;
-        if (Array.isArray(data.plans_json) && data.plans_json.length > 0) {
-          remotePlans = data.plans_json;
-          remoteActive = data.active_plan_id;
-        } else if (data.profile && data.plan) {
-          const id = `plan_${Date.now()}`;
-          remotePlans = [{ id, profile: data.profile, plan: data.plan }];
-          remoteActive = id;
+      const loaded = await loadRemotePlansIfNewer(supabase, userId, localUpdatedAt);
+      if (!loaded.error && loaded.fetchedBlob && loaded.data) {
+        const parsed = parseUserPlansBlob(loaded.data);
+        remoteUpdatedAt = parsed.updatedAt;
+        remoteHistory = parsed.history;
+        if (parsed.plans.length > 0) {
+          remotePlans = parsed.plans;
+          remoteActive = parsed.active;
+        } else {
+          const { data: legacy } = await fetchUserPlansLegacy(supabase, userId);
+          if (legacy?.profile && legacy?.plan) {
+            const id = `plan_${Date.now()}`;
+            remotePlans = [{ id, profile: legacy.profile, plan: legacy.plan }];
+            remoteActive = id;
+          }
         }
+      } else if (loaded.skipped) {
+        remoteUpdatedAt = loaded.remoteTime || 0;
+        remoteActive = loaded.activePlanId || null;
       }
     } catch {}
 
@@ -8389,60 +8404,64 @@ export default function App() {
 
   useEffect(() => {
     if (!user || plans.length === 0 || !plansHydratedRef.current) return;
-    const saveGen = ++plansSaveGenRef.current;
-    const save = async () => {
-      const snapshot = plans;
-      const activeSnap = activePlanId;
-      const historySnap = planHistory;
-      const { plans: merged, active, history, error } = await persistAccountPlans(
-        user.id, snapshot, activeSnap, deletedPlanIdsRef.current, historySnap
-      );
-      if (saveGen !== plansSaveGenRef.current) return;
-      if (error) {
-        if (import.meta.env.DEV) console.warn("[plans] autosave failed", error.message);
-        return;
-      }
-      deletedPlanIdsRef.current = new Set();
-      if (Array.isArray(history)) setPlanHistory(history);
-      const mergedIds = merged.map((e) => e.id).sort().join(",");
-      const currentIds = snapshot.map((e) => e.id).sort().join(",");
-      if (mergedIds !== currentIds || active !== activeSnap) {
-        setPlans(merged);
-        setActivePlanId(active);
-      }
-    };
-    save();
+    const timeoutId = setTimeout(() => {
+      const saveGen = ++plansSaveGenRef.current;
+      const snapshot = plansRef.current;
+      const activeSnap = activePlanIdRef.current;
+      const historySnap = planHistoryRef.current;
+      (async () => {
+        const { plans: merged, active, history, error } = await persistAccountPlans(
+          user.id, snapshot, activeSnap, deletedPlanIdsRef.current, historySnap
+        );
+        if (saveGen !== plansSaveGenRef.current) return;
+        if (error) {
+          if (import.meta.env.DEV) console.warn("[plans] autosave failed", error.message);
+          return;
+        }
+        deletedPlanIdsRef.current = new Set();
+        if (Array.isArray(history)) setPlanHistory(history);
+        const mergedIds = merged.map((e) => e.id).sort().join(",");
+        const currentIds = snapshot.map((e) => e.id).sort().join(",");
+        if (mergedIds !== currentIds || active !== activeSnap) {
+          setPlans(merged);
+          setActivePlanId(active);
+        }
+      })();
+    }, PLANS_AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
   }, [plans, activePlanId, planHistory, user]);
 
-  // Re-sync au retour sur l'app : fusionne cache local + Supabase (ne jamais écraser un plan d'un autre appareil)
+  // Re-sync au retour sur l'app : blob JSON seulement si remote plus récent
   useEffect(() => {
     if (!user) return;
+    const userId = user.id;
     const syncFromRemote = async () => {
       try {
+        const currentPlans = plansRef.current;
+        const currentActive = activePlanIdRef.current;
+        const currentHistory = planHistoryRef.current;
         let localPlans = [];
-        const localRaw = localStorage.getItem(`myswym_plans_${user.id}`);
-        const localActive = localStorage.getItem(`myswym_active_${user.id}`);
-        const localTs = localStorage.getItem(`myswym_plans_updated_${user.id}`);
-        const localTime = localTs ? new Date(localTs).getTime() : 0;
+        const localRaw = localStorage.getItem(`myswym_plans_${userId}`);
+        const localActive = localStorage.getItem(`myswym_active_${userId}`);
+        const localTime = storedPlansUpdatedAtMs(userId);
         if (localRaw) {
           const parsed = JSON.parse(localRaw);
           if (Array.isArray(parsed)) localPlans = parsed;
         }
 
-        const { data, error } = await supabase.from("user_plans")
-          .select("plans_json, active_plan_id, plan_history, updated_at")
-          .eq("user_id", user.id).single();
-        if (error) return;
-        const remotePlans = Array.isArray(data?.plans_json) ? data.plans_json : [];
-        const remoteHistory = Array.isArray(data?.plan_history) ? data.plan_history : [];
-        const remoteTime = data?.updated_at ? new Date(data.updated_at).getTime() : 0;
+        const loaded = await loadRemotePlansIfNewer(supabase, userId, localTime);
+        if (loaded.error || loaded.skipped || !loaded.data) return;
+        const parsedRemote = parseUserPlansBlob(loaded.data);
+        const remotePlans = parsedRemote.plans;
+        const remoteHistory = parsedRemote.history;
+        const remoteTime = parsedRemote.updatedAt;
         if (!localPlans.length && !remotePlans.length) return;
 
         const enforce = (p) => p;
         const { plans: merged, active, updatedAt } = mergePlanLists(
-          localPlans, remotePlans, localActive, data?.active_plan_id, localTime, remoteTime, activePlanId, deletedPlanIdsRef.current
+          localPlans, remotePlans, localActive, parsedRemote.active, localTime, remoteTime, currentActive, deletedPlanIdsRef.current
         );
-        const histSeed = [...planHistory];
+        const histSeed = [...currentHistory];
         for (const h of remoteHistory) {
           if (h?.id && !histSeed.some((x) => x?.id === h.id)) histSeed.push(h);
         }
@@ -8450,14 +8469,12 @@ export default function App() {
         const enforced = single.plans.map(e => ({ ...e, plan: enforce(e.plan) }));
 
         const mergedIds = enforced.map(e => e.id).sort().join(",");
-        const currentIds = plans.map(e => e.id).sort().join(",");
+        const currentIds = currentPlans.map(e => e.id).sort().join(",");
         const mergedProgress = enforced.reduce((s, e) => s + planProgressScore(e), 0);
-        const currentProgress = plans.reduce((s, e) => s + planProgressScore(e), 0);
-        // Ne pas écraser un changement de fréquence local (2×→3×) si la progression est égale
-        const localFreq = plans.find(e => e.id === activePlanId)?.profile?.sessionsPerWeek;
+        const currentProgress = currentPlans.reduce((s, e) => s + planProgressScore(e), 0);
+        const localFreq = currentPlans.find(e => e.id === currentActive)?.profile?.sessionsPerWeek;
         const mergedFreq = enforced.find(e => e.id === single.activeId)?.profile?.sessionsPerWeek;
 
-        // Garde anti-effacement : local plus récent ou plus de progression → ne pas écraser la mémoire
         if (!shouldApplyRemotePlanSync({
           localTime,
           remoteTime,
@@ -8467,24 +8484,24 @@ export default function App() {
 
         if (
           mergedIds === currentIds
-          && enforced.length === plans.length
+          && enforced.length === currentPlans.length
           && mergedProgress <= currentProgress
           && (mergedProgress < currentProgress || localFreq === mergedFreq || localTime >= remoteTime)
         ) return;
 
         const syncInfo = describePlanSyncChange({
-          beforePlans: plans,
+          beforePlans: currentPlans,
           afterPlans: enforced,
-          beforeActiveId: activePlanId,
+          beforeActiveId: currentActive,
           afterActiveId: single.activeId,
         });
         setPlans(enforced);
         setActivePlanId(single.activeId);
         setPlanHistory(single.history);
-        localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(enforced));
-        if (single.activeId) localStorage.setItem(`myswym_active_${user.id}`, single.activeId);
-        localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(single.history));
-        localStorage.setItem(`myswym_plans_updated_${user.id}`, updatedAt);
+        localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(enforced));
+        if (single.activeId) localStorage.setItem(`myswym_active_${userId}`, single.activeId);
+        localStorage.setItem(`myswym_plan_history_${userId}`, JSON.stringify(single.history));
+        localStorage.setItem(`myswym_plans_updated_${userId}`, updatedAt);
         if (syncInfo?.message) {
           showToast(syncInfo.message, 4500);
           track("plan_sync_applied", {
@@ -8497,7 +8514,7 @@ export default function App() {
     const onVisible = () => { if (document.visibilityState === "visible") syncFromRemote(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [user?.id, isPremium, plans, activePlanId]);
+  }, [user?.id]);
 
 
   // Migration : plans version < PLAN_VERSION — régénère le contenu, merge séance par séance.
