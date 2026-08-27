@@ -78,6 +78,33 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
+  // Contraste d’allures : garder souple + progressif, pas de pastille SOUPLE
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m crawl (75 m souple + 25 m progressif)"],
+    sets: [{ block: "depart", label: "100 m crawl (75 m souple + 25 m progressif)" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.effortLabel, null);
+  assert.match(ex.cue || "", /75 m souple/);
+  assert.match(ex.cue || "", /25 m progressif/);
+  assert.ok(!/^\(75 m \+ 25 m\)$/.test(ex.cue || ""), `cue trop vide: ${ex.cue}`);
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-8 × 100 m crawl (50 m moyen + 25 m vite + 25 m souple), repos 45 s"],
+    sets: [{ block: "corps", label: "8 × 100 m crawl (50 m moyen + 25 m vite + 25 m souple), repos 45 s" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.effortLabel, null);
+  assert.match(ex.cue || "", /moyen/);
+  assert.match(ex.cue || "", /vite/);
+  assert.match(ex.cue || "", /souple/);
+}
+
+{
   assert.ok(formatRestLabel("R20")?.includes("Récup"));
   assert.ok(formatRestLabel("D1'45\"")?.includes("Départ"));
 }

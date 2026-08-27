@@ -70,10 +70,44 @@ function estimateSetPartMeters(part) {
 
 /** Jeton opaque (sans le mot « souple ») pour survivre à humanizeArthurDisplayTerms. */
 const SOUPLE_TOKEN = "__MS_RECUP__";
+const PROGRESSIF_TOKEN = "__MS_PROG__";
+const DESCENDANT_TOKEN = "__MS_DESC__";
+
+/**
+ * Contraste d’allures dans une parenthèse Sheet :
+ * « (75 m souple + 25 m progressif) », « (50 m moyen + 25 m vite + 25 m souple) ».
+ * ≠ un simple « crawl souple » dans un mix de nages.
+ */
+export function hasContrastingPaces(text) {
+  const parens = String(text || "").match(/\(([^)]+)\)/g) || [];
+  for (const block of parens) {
+    const inner = block.slice(1, -1);
+    const meterCount = [...inner.matchAll(/\d+\s*m\b/gi)].length;
+    if (meterCount < 2) continue;
+    const efforts = new Set();
+    if (/\bsouple\b/i.test(inner)) efforts.add("souple");
+    if (/\bprogressif\b/i.test(inner)) efforts.add("progressif");
+    if (/\bdescendant\b/i.test(inner)) efforts.add("descendant");
+    if (/\bmoyen\b/i.test(inner)) efforts.add("moyen");
+    if (/\b(vite|rapide|à bloc|a bloc)\b/i.test(inner)) efforts.add("vite");
+    if (/\blent\b/i.test(inner)) efforts.add("lent");
+    if (/\bfacile\b/i.test(inner)) efforts.add("facile");
+    if (/\bsoutenu\b/i.test(inner)) efforts.add("soutenu");
+    if (efforts.size >= 2) return true;
+  }
+  return false;
+}
 
 /** Protège « souple » avant humanisation D9 (toCoach / prettify → facile). */
 function protectSoupleForPipeline(raw) {
   const s = String(raw ?? "");
+  if (hasContrastingPaces(s)) {
+    // Garde les allures en place (pas de pastille unique) ; protège aussi progressif/descendant du cleanCueNoise.
+    return s
+      .replace(/\bsouple\b/gi, SOUPLE_TOKEN)
+      .replace(/\bprogressif\b/gi, PROGRESSIF_TOKEN)
+      .replace(/\bdescendant\b/gi, DESCENDANT_TOKEN);
+  }
   if (!extractSoupleEffort(s)) return s;
   return s
     .replace(/(\w)\*+souple\b/gi, `$1 ${SOUPLE_TOKEN}`)
@@ -83,7 +117,24 @@ function protectSoupleForPipeline(raw) {
 
 function restoreSoupleAfterPipeline(line) {
   const s = String(line ?? "");
-  if (!s.includes(SOUPLE_TOKEN)) return s;
+  const hasTokens =
+    s.includes(SOUPLE_TOKEN) || s.includes(PROGRESSIF_TOKEN) || s.includes(DESCENDANT_TOKEN);
+  if (!hasTokens) return s;
+
+  const restoredPreview = s
+    .replace(new RegExp(SOUPLE_TOKEN, "g"), "souple")
+    .replace(new RegExp(PROGRESSIF_TOKEN, "g"), "progressif")
+    .replace(new RegExp(DESCENDANT_TOKEN, "g"), "descendant");
+
+  // Contraste d’allures : remettre les mots dans la parenthèse (pas « — souple » en fin)
+  if (
+    s.includes(PROGRESSIF_TOKEN) ||
+    s.includes(DESCENDANT_TOKEN) ||
+    hasContrastingPaces(restoredPreview)
+  ) {
+    return restoredPreview.replace(/\s{2,}/g, " ").trim();
+  }
+
   const cleaned = s
     .replace(new RegExp(`\\s*${SOUPLE_TOKEN}`, "g"), "")
     .replace(/\s{2,}/g, " ")
@@ -263,17 +314,27 @@ export function scrubLegacyNormalWording(text) {
     .trim();
 }
 
-/** Détecte une allure « souple » (récup / relâchement) dans une ligne Sheet ou composeur. */
+/** Détecte une allure « souple » (récup / relâchement) dans une ligne Sheet ou composeur.
+ * Pas de pastille si « souple » n’est qu’une des allures d’un contraste (75 m souple + 25 m progressif).
+ */
 export function extractSoupleEffort(...parts) {
   const blob = parts.filter(Boolean).join(" ");
   if (!blob) return null;
   const t = scrubLegacyNormalWording(blob).toLowerCase();
-  return /\bsouple\b/.test(t) ? "souple" : null;
+  if (!/\bsouple\b/.test(t)) return null;
+  if (hasContrastingPaces(t)) {
+    const outside = t.replace(/\([^)]*\)/g, " ");
+    return /\bsouple\b/.test(outside) ? "souple" : null;
+  }
+  return "souple";
 }
 
-/** Retire le mot souple du texte affiché (la pastille porte l’info). */
+/** Retire le mot souple du texte affiché (la pastille porte l’info).
+ * Ne touche pas aux contrastes d’allures dans une parenthèse.
+ */
 export function stripSoupleMarkers(text) {
   if (!text) return text;
+  if (hasContrastingPaces(text)) return scrubLegacyNormalWording(text);
   return scrubLegacyNormalWording(text)
     .replace(/\bsouple\b/gi, " ")
     .replace(/\s{2,}/g, " ")
