@@ -87,7 +87,10 @@ export default function WorkoutExerciseCard({
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
   const stroke = exercise.strokeLabel;
   const primaryCue = exercise.cue;
-  const showSouple = exercise.effortLabel === "souple" || exercise.kind === "cool";
+  const showSouple =
+    exercise.section !== "warm"
+    && exercise.kind !== "warm"
+    && (exercise.effortLabel === "souple" || exercise.kind === "cool");
 
   return (
     <div
