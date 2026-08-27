@@ -30,18 +30,21 @@ let cache = null;
 let inflight = null;
 
 export function isNatationSheetCatalogueEnabled() {
-  try {
-    if (typeof import.meta !== "undefined" && import.meta.env) {
-      const v = import.meta.env.VITE_NATATION_SHEET_CATALOGUE;
-      if (v === "0" || v === "false") return false;
-      if (v === "1" || v === "true") return true;
-      // Défaut : actif en dev local seulement
-      return !!import.meta.env.DEV;
+  const raw = (() => {
+    try {
+      if (typeof import.meta !== "undefined" && import.meta.env) {
+        return import.meta.env.VITE_NATATION_SHEET_CATALOGUE;
+      }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* ignore */
-  }
-  return process.env.VITE_NATATION_SHEET_CATALOGUE === "1" || process.env.NODE_ENV !== "production";
+    return typeof process !== "undefined" ? process.env.VITE_NATATION_SHEET_CATALOGUE : undefined;
+  })();
+  if (raw === "0" || raw === "false") return false;
+  if (raw === "1" || raw === "true") return true;
+  // Vague 1 : ON dans le navigateur (staging/prod inclus). Kill-switch = VITE_…=0.
+  // Node / tests : OFF (pas de fetch Google).
+  return typeof window !== "undefined";
 }
 
 export function clearNatationSheetCache() {

@@ -24,8 +24,8 @@ describe("usesSessionLoop", () => {
 });
 
 describe("buildProgressionLoopSession families", () => {
-  it("returns a single session for triathlon", () => {
-    const { week, session, focus } = buildProgressionLoopSession(
+  it("returns a single session for triathlon", async () => {
+    const { week, session, focus } = await buildProgressionLoopSession(
       { goal: "triathlon_sprint", category: "triathlon", level: "sportif", pool: 25, sessionsPerWeek: 3 },
       0,
       true,
@@ -36,8 +36,8 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(focus, "Séance n°1");
   });
 
-  it("returns eau libre oriented first sessions", () => {
-    const { focus, session } = buildProgressionLoopSession(
+  it("returns eau libre oriented first sessions", async () => {
+    const { focus, session } = await buildProgressionLoopSession(
       { goal: "open_water_1k", category: "eau_libre", level: "régulier", pool: 50 },
       0,
       false,
@@ -47,8 +47,8 @@ describe("buildProgressionLoopSession families", () => {
     assert.ok(session.distance);
   });
 
-  it("returns diplôme exam content after easy phase", () => {
-    const { session, focus } = buildProgressionLoopSession(
+  it("returns diplôme exam content after easy phase", async () => {
+    const { session, focus } = await buildProgressionLoopSession(
       { goal: "bnssa", category: "diplome", level: "sportif", pool: 25 },
       3,
       true,
@@ -59,14 +59,14 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(session.title, "Séance n°1");
   });
 
-  it("increments Séance n° with validations (ordinal), not variety cursor", () => {
-    const a = buildProgressionLoopSession(
+  it("increments Séance n° with validations (ordinal), not variety cursor", async () => {
+    const a = await buildProgressionLoopSession(
       { goal: "progression", category: "progression", level: "régulier", pool: 25 },
       6,
       false,
       { ordinalIndex: 0 },
     );
-    const b = buildProgressionLoopSession(
+    const b = await buildProgressionLoopSession(
       { goal: "progression", category: "progression", level: "régulier", pool: 25 },
       7,
       false,
@@ -84,14 +84,14 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(loopSessionOrdinalIndex({ isSessionLoop: true, history: [{}, {}] }), 2);
   });
 
-  it("rotates variants so consecutive cursors differ", () => {
-    const a = buildProgressionLoopSession(
+  it("rotates variants so consecutive cursors differ", async () => {
+    const a = await buildProgressionLoopSession(
       { goal: "triathlon_olympic", category: "triathlon", level: "sportif", pool: 50 },
       3,
       true,
       { ordinalIndex: 0 },
     );
-    const b = buildProgressionLoopSession(
+    const b = await buildProgressionLoopSession(
       { goal: "triathlon_olympic", category: "triathlon", level: "sportif", pool: 50 },
       4,
       true,
@@ -102,8 +102,8 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(b.session.title, "Séance n°1");
   });
 
-  it("long open water prefers a continuous block after easy phase", () => {
-    const { session } = buildProgressionLoopSession(
+  it("long open water prefers a continuous block after easy phase", async () => {
+    const { session } = await buildProgressionLoopSession(
       { goal: "open_water_long", category: "eau_libre", level: "sportif", pool: 25 },
       3,
       true,
@@ -111,8 +111,8 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(session.loopVariant, "ow_long");
   });
 
-  it("maps legacy 25k to the long-oriented loop", () => {
-    const { session } = buildProgressionLoopSession(
+  it("maps legacy 25k to the long-oriented loop", async () => {
+    const { session } = await buildProgressionLoopSession(
       { goal: "open_water_25k", category: "eau_libre", level: "sportif", pool: 25 },
       3,
       true,
@@ -120,8 +120,8 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(session.loopVariant, "ow_long");
   });
 
-  it("triathlon XS prefers start work after easy phase", () => {
-    const { session } = buildProgressionLoopSession(
+  it("triathlon XS prefers start work after easy phase", async () => {
+    const { session } = await buildProgressionLoopSession(
       { goal: "triathlon_xs", category: "triathlon", level: "sportif", pool: 25 },
       3,
       true,
@@ -129,8 +129,8 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(session.loopVariant, "tri_start");
   });
 
-  it("triathlon Full prefers aero after easy phase", () => {
-    const { session } = buildProgressionLoopSession(
+  it("triathlon Full prefers aero after easy phase", async () => {
+    const { session } = await buildProgressionLoopSession(
       { goal: "triathlon_ironman", category: "triathlon", level: "sportif", pool: 25 },
       3,
       true,

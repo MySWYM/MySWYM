@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-27 | Sheet Nager = source unique | Familles `01`–`03` : await catalogue, **interdit** de retomber sur le composeur si le Sheet rate (toast / séance inchangée). Flag ON dans le navigateur par défaut ; kill-switch `VITE_NATATION_SHEET_CATALOGUE=0`. | ✅ active |
 | 2026-08-27 | Variété éducatifs Sheet | Soft-branch : anti-doublon sur les **5 derniers** éducatifs de l’historique (+ éducatif courant à la régénération). Si le pool est trop petit → recyclage autorisé. | ✅ active |
 | 2026-08-27 | Traçabilité séance (support) | Chaque séance expose sa provenance : `session-provenance.js` → `Réf. 01-42` (onglet Sheet + ligne) dans la vue séance et l'historique, clic = copie de la ligne complète. Réf. jointe automatiquement aux messages support (Telegram, ligne `🏊`) et aux events PostHog (`composedBy`, `sheetFamily`, `sheetN`). **« Séance n°6 » = 6e validation du nageur, jamais la ligne du Sheet.** | ✅ active |
 | 2026-08-27 | Catalogue Sheet vague 1 | Soft-branch étendu à **Nager 01–03** (débutant crawl, intermédiaire crawl, 4 nages). Triathlon / eau libre / diplômes = pas encore. `SHEET_SOFT_FAMILIES`. | ✅ active |

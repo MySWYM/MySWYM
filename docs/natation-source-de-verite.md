@@ -28,7 +28,7 @@
 | Banque drills / catalogues | Catalogue versionné dans le code (`exercise-library`, `swim-banks`, éducatifs) | Source bibliothèque |
 | Templates Gold | Supabase `session_templates` (`quality=gold` / `coach_approved`) | Modèles validés Arthur |
 | Bridge plan | `swim-plan-bridge.js` | Branche le profil vers le composeur |
-| Catalogue Sheet (soft) | `natation-sheet/` + `VITE_NATATION_SHEET_CATALOGUE` | Vague 1 : Nager `01`–`03` via `SHEET_SOFT_FAMILIES` ; éducatif = `sheetEducatif` |
+| Catalogue Sheet (soft) | `natation-sheet/` + flag (ON navigateur ; `=0` kill) | Vague 1 : Nager `01`–`03` **obligatoire** (await, pas de composeur de secours) ; éducatif = `sheetEducatif` |
 | Provenance séance (support) | `session-provenance.js` + `support-context.js` | Réf. `onglet-ligne` affichée / copiée, jointe au support et aux events |
 | Ancien moteur | `SESSION_TEMPLATES` / `PHASE_PATTERNS` (ex. BNSSA, BPJEPS, pompiers) | Fallback temporaire seulement |
 | Générateur legacy coach | `swim-session-generator.js` | Ne décide plus en concurrence avec `composeSession` |

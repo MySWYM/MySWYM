@@ -39,7 +39,7 @@ Autres règles de structure :
 - Lignes compactes `A · B · C — Z2` → sous-séries verticales à l’affichage.
 - Échauffement + retour au calme obligatoires (sauf OW déjà structuré autrement).
 - Éducatifs : le niveau utilisateur doit figurer dans `levels` dérivés du « niveau Arthur » Excel. « adaptable à tous niveaux » n’ouvre pas la Découverte ; Découverte reste aussi bornée à flèche + grand chien (+ allowlist). Case 4 nages : mêmes niveaux Excel sur les éducatifs tagués `4_nages` (corps/IM gardent les 4 nages explicites).
-- Soft-branch catalogue Sheet (`composedBy=natation-sheet`) : sélection + fiche « Voir l’éducatif » = colonnes de l’onglet **Éducatifs** du Google Sheet (`sheetEducatif`). Pas de `matchEducatif` / fiches Arthur `.js` sur ces séances. **Vague 1** : objectifs Nager & Progresser → familles `01`–`03` selon niveau / 4 nages. Tri / OW / diplômes = composeur jusqu’aux vagues suivantes. Variété : pas le même éducatif que les **5 derniers** de l’historique (ni celui de la séance courante à la régénération) ; recyclage seulement si le pool filtré est vide.
+- Soft-branch catalogue Sheet (`composedBy=natation-sheet`) : sélection + fiche « Voir l’éducatif » = colonnes de l’onglet **Éducatifs** du Google Sheet (`sheetEducatif`). Pas de `matchEducatif` / fiches Arthur `.js` sur ces séances. **Vague 1** : objectifs Nager & Progresser → familles `01`–`03` selon niveau / 4 nages. Tri / OW / diplômes = composeur jusqu’aux vagues suivantes. Variété : pas le même éducatif que les **5 derniers** de l’historique (ni celui de la séance courante à la régénération) ; recyclage seulement si le pool filtré est vide. **Pas de fallback composeur** sur `01`–`03` : si le catalogue est KO → erreur / toast, on ne sort pas de `C-…`.
 
 ---
 

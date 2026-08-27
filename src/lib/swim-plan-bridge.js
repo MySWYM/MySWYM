@@ -41,8 +41,9 @@ import {
 import { eventBandFromGoal } from "./sports-engine/race-event.js";
 import {
   isNatationSheetCatalogueEnabled,
-  tryComposeFromSheetCache,
+  composeFromNatationSheet,
 } from "./natation-sheet/client.js";
+import { sheetFamilyIdFromProfile } from "./natation-sheet/parse.js";
 import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
 import {
   normalizeTargetSessionDistance,
@@ -1269,13 +1270,14 @@ export function loopDisplaySession(plan) {
 
 /**
  * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
+ * Nager 01–03 (Sheet) : await catalogue, **pas** de fallback composeur silencieux.
  * @param {object} profile
  * @param {number} cursor — index de variété / seed (peut bouger sans validation)
  * @param {boolean} isPremium
- * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number }} [opts]
- * @returns {{ session: object, focus: string, week: object }}
+ * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number, currentEducatif?: string|null }} [opts]
+ * @returns {Promise<{ session: object|null, focus: string, week: object, sheetError?: boolean, sheetErrorMessage?: string }>}
  */
-export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false, opts = {}) {
+export async function buildProgressionLoopSession(profile, cursor = 0, isPremium = false, opts = {}) {
   const c = Math.max(0, Number(cursor) || 0);
   const ordinalIndex = Math.max(
     0,
@@ -1333,14 +1335,19 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
   const weekNum = c + 1;
 
   let session = null;
+  let sheetError = false;
+  let sheetErrorMessage = null;
 
-  // Catalogue Google Sheet (local / flag) — soft-branch familles mappées
-  if (isNatationSheetCatalogueEnabled()) {
+  // Catalogue Google Sheet — Nager 01–03 : source obligatoire (pas de composeur de secours)
+  const sheetFamily = sheetFamilyIdFromProfile(profile);
+  const sheetLocked = Boolean(sheetFamily) && isNatationSheetCatalogueEnabled();
+
+  if (sheetLocked) {
     try {
       const excludeNs = [];
       const curN = opts.currentSheetN;
       if (curN != null && Number.isFinite(Number(curN))) excludeNs.push(Number(curN));
-      const fromSheet = tryComposeFromSheetCache(
+      const fromSheet = await composeFromNatationSheet(
         { ...profile, equipment: sport.equipment },
         {
           cursor: c,
@@ -1358,11 +1365,27 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       }
     } catch (err) {
       console.warn("[natation-sheet] loop", err?.message || err);
+      sheetErrorMessage = err?.message || String(err);
+    }
+    if (!session) {
+      sheetError = true;
+      sheetErrorMessage =
+        sheetErrorMessage || `Catalogue Sheet «${sheetFamily}» indisponible`;
+      const week = {
+        number: 1,
+        focus: sessionTitle,
+        tip: null,
+        feedback: null,
+        isBilan: false,
+        isTest: false,
+        sessions: [],
+      };
+      return { session: null, focus: sessionTitle, week, sheetError, sheetErrorMessage };
     }
   }
 
-  // Composeur pédagogique (échauffements / RAC / éducatifs / corps fun Arthur)
-  if (!session && isComposerEnabledForLevel(sport.level)) {
+  // Composeur pédagogique — uniquement hors familles Sheet Nager (tri / OW / etc.)
+  if (!session && !sheetLocked && isComposerEnabledForLevel(sport.level)) {
     const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sport.level);
     const baseVol =
       preferred ||
@@ -1535,7 +1558,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     sessions: [session],
   };
 
-  return { session, focus: sessionTitle, week };
+  return { session, focus: sessionTitle, week, sheetError: false };
 }
 
 /** Clé ISO semaine (ex. 2026-W32) pour plafonner les générations gratuites. */

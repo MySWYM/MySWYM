@@ -7361,11 +7361,14 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   if (sessionLoop) {
     const cursor = 0;
     const wkKey = isoWeekKey(new Date(referenceTime));
-    const { week } = buildProgressionLoopSession(
+    const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
       { ...profile, sessionsPerWeek: 1 },
       cursor,
       isPremium,
     );
+    if (sheetError || !week?.sessions?.length) {
+      throw new Error(sheetErrorMessage || "Catalogue Google Sheet indisponible");
+    }
     return {
       weeks: [week],
       previewWeeks: [],
@@ -7465,7 +7468,7 @@ const withLoopGenerationCounters = (plan, premium) => {
 const loopSessionKey = (s) => (s ? `${s.title || ""}|${s.distance || ""}` : "");
 
 /** Archive + génère la séance suivante. Idempotent si la séance est déjà dans l'historique. */
-const buildAdvancedLoopPlan = (entryPlan, entryProfile, archivedSession, isPremium, tasteProfile) => {
+const buildAdvancedLoopPlan = async (entryPlan, entryProfile, archivedSession, isPremium, tasteProfile) => {
   const prevHist = entryPlan.history || [];
   const alreadyInHist = !!(archivedSession && prevHist.some(
     (s) => loopSessionKey(s) === loopSessionKey(archivedSession),
@@ -7482,12 +7485,20 @@ const buildAdvancedLoopPlan = (entryPlan, entryProfile, archivedSession, isPremi
     (entryPlan.sessionCursor ?? 0) + (alreadyInHist ? 0 : 1),
     history.length,
   );
-  const { week } = buildProgressionLoopSession(
+  const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
     { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
     nextCursor,
     isPremium,
     { ordinalIndex: history.length, history },
   );
+  if (sheetError || !week?.sessions?.length) {
+    return {
+      plan: { ...base, weeks: entryPlan.weeks, loopBlocked: null },
+      blockedReason: null,
+      sheetError: true,
+      sheetErrorMessage: sheetErrorMessage || "Catalogue Google Sheet indisponible",
+    };
+  }
   let next = {
     ...base,
     sessionCursor: nextCursor,
@@ -8639,7 +8650,7 @@ export default function App() {
       if (generated.isSessionLoop && p.isSessionLoop) {
         const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
         const history = p.history || [];
-        const { week } = buildProgressionLoopSession(
+        const { week, sheetError } = await buildProgressionLoopSession(
           { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj },
           cursor,
           premium,
@@ -8651,7 +8662,8 @@ export default function App() {
         updated.weekGenCount = p.weekGenCount ?? generated.weekGenCount;
         updated.sessionCursor = cursor;
         updated.volumeAdj = p.volumeAdj ?? 1;
-        updated.weeks = [week];
+        // Sheet KO : garder la séance actuelle plutôt qu'un composeur / semaine vide
+        updated.weeks = sheetError || !week?.sessions?.length ? (p.weeks ?? [week]) : [week];
         updated.loopBlocked = p.loopBlocked ?? null;
       } else if (generated.isSessionLoop && !p.isSessionLoop) {
         // Legacy 12 sem. → boucle : reset compteurs, nouvelle 1ʳᵉ séance
@@ -8739,15 +8751,28 @@ export default function App() {
     const key = `${activePlanId}:${plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
     if (loopAdvanceKeyRef.current === key) return;
     loopAdvanceKeyRef.current = key;
-    const { plan: next, blockedReason } = buildAdvancedLoopPlan(
-      entry.plan,
-      entry.profile,
-      cur,
-      isPremium,
-      plan.taste || tasteProfile,
-    );
-    setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: next } : e)));
-    setLoopPaywall(blockedReason);
+    let cancelled = false;
+    (async () => {
+      const { plan: next, blockedReason, sheetError, sheetErrorMessage } = await buildAdvancedLoopPlan(
+        entry.plan,
+        entry.profile,
+        cur,
+        isPremium,
+        plan.taste || tasteProfile,
+      );
+      if (cancelled) return;
+      if (sheetError) {
+        loopAdvanceKeyRef.current = null;
+        setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+      setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: next } : e)));
+      setLoopPaywall(blockedReason);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [screen, isPremium, loopCurrentResolved, plan?.loopBlocked, sessionFeedbackTarget, activePlanId]);
 
   useEffect(() => {
@@ -9114,32 +9139,41 @@ export default function App() {
   };
   resumePendingRef.current = resumePendingOnboarding;
 
-  const advanceProgressionLoop = (entryPlan, entryProfile, archivedSession) => {
-    const { plan: next, blockedReason } = buildAdvancedLoopPlan(
+  const advanceProgressionLoop = async (entryPlan, entryProfile, archivedSession) => {
+    const { plan: next, blockedReason, sheetError, sheetErrorMessage } = await buildAdvancedLoopPlan(
       entryPlan,
       entryProfile,
       archivedSession,
       isPremium,
       entryPlan.taste || tasteProfile,
     );
+    if (sheetError) {
+      setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+      setTimeout(() => setToast(null), 4000);
+      return null;
+    }
     if (blockedReason) setLoopPaywall(blockedReason);
     else setLoopPaywall(null);
     return next;
   };
 
-  const finishLoopSessionAndAdvance = (archivedSession) => {
+  const finishLoopSessionAndAdvance = async (archivedSession) => {
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry?.plan?.isSessionLoop) return;
+    const markedPlan = {
+      ...entry.plan,
+      weeks: [{
+        ...entry.plan.weeks[0],
+        sessions: [{ ...archivedSession }],
+      }],
+    };
+    const nextPlan = await advanceProgressionLoop(markedPlan, entry.profile, archivedSession);
+    if (!nextPlan) {
+      loopAdvanceKeyRef.current = null;
+      return;
+    }
     setPlans((prev) => {
-      const next = prev.map((entry) => {
-        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-        const markedPlan = {
-          ...entry.plan,
-          weeks: [{
-            ...entry.plan.weeks[0],
-            sessions: [{ ...archivedSession }],
-          }],
-        };
-        return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
-      });
+      const next = prev.map((e) => (e.id === activePlanId ? { ...e, plan: nextPlan } : e));
       stampPlansLocalCache(next, activePlanId);
       return next;
     });
@@ -9150,37 +9184,43 @@ export default function App() {
     const cur = entry?.plan?.weeks?.[0]?.sessions?.[0];
     if (!entry?.plan?.isSessionLoop || !cur || !isSessionResolved(cur)) return;
     loopAdvanceKeyRef.current = `${activePlanId}:${entry.plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
-    finishLoopSessionAndAdvance(cur);
+    void finishLoopSessionAndAdvance(cur);
   };
 
-  const handleRegenerateLoopSession = () => {
+  const handleRegenerateLoopSession = async () => {
     if (!canUpdateProgram) {
       openUpgrade("trial_expired");
       return;
     }
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry?.plan?.isSessionLoop) return;
+    const cur = entry.plan.weeks?.[0]?.sessions?.[0];
+    if (!cur || isSessionResolved(cur)) return;
+    const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
+    const ordinalIndex = loopSessionOrdinalIndex(entry.plan);
+    const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
+      { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+      nextCursor,
+      true,
+      {
+        ordinalIndex,
+        history: entry.plan.history || [],
+        currentSheetN: cur?.sheetMeta?.n,
+        currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
+      },
+    );
+    if (sheetError || !week?.sessions?.length) {
+      setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
     setPlans((prev) => {
-      const next = prev.map((entry) => {
-        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-        const cur = entry.plan.weeks?.[0]?.sessions?.[0];
-        if (!cur || isSessionResolved(cur)) return entry;
-        // Nouveau seed sans archiver — cursor bump pour variété, pas le n° nageur
-        const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
-        const ordinalIndex = loopSessionOrdinalIndex(entry.plan);
-        const { week } = buildProgressionLoopSession(
-          { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
-          nextCursor,
-          true,
-          {
-            ordinalIndex,
-            history: entry.plan.history || [],
-            currentSheetN: cur?.sheetMeta?.n,
-            currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
-          },
-        );
+      const next = prev.map((e) => {
+        if (e.id !== activePlanId || !e.plan?.isSessionLoop) return e;
         return {
-          ...entry,
+          ...e,
           plan: {
-            ...entry.plan,
+            ...e.plan,
             sessionCursor: nextCursor,
             weeks: [week],
           },
@@ -9318,7 +9358,7 @@ export default function App() {
         pendingFeedbackRef.current = { weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived };
         queueSessionCelebrate(archived, active.plan);
       } else {
-        finishLoopSessionAndAdvance(archived);
+        void finishLoopSessionAndAdvance(archived);
       }
       return;
     }
@@ -9423,7 +9463,7 @@ export default function App() {
     setSessionFeedbackTarget(null);
     scrollAppToTop();
     if (target?.loopMode && target.archived) {
-      finishLoopSessionAndAdvance(target.archived);
+      void finishLoopSessionAndAdvance(target.archived);
       return;
     }
     if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
@@ -9487,19 +9527,47 @@ export default function App() {
         const step = rating === "easy" ? 1.03 : rating === "hard" ? 0.97 : 1;
         volumeAdj = Math.min(1.3, Math.max(0.7, volumeAdj * step));
       }
-      setPlans((prev) => prev.map((e) => {
-        if (e.id !== activePlanId) return e;
-        const markedPlan = {
-          ...e.plan,
-          taste: nextTaste,
-          volumeAdj,
-          weeks: [{
-            ...e.plan.weeks[0],
-            sessions: [{ ...archivedWithFb }],
-          }],
-        };
-        return { ...e, plan: advanceProgressionLoop(markedPlan, { ...e.profile, taste: nextTaste }, archivedWithFb) };
-      }));
+      const entry = plans.find((e) => e.id === activePlanId);
+      if (!entry) {
+        setSessionFeedbackTarget(null);
+        return;
+      }
+      const markedPlan = {
+        ...entry.plan,
+        taste: nextTaste,
+        volumeAdj,
+        weeks: [{
+          ...entry.plan.weeks[0],
+          sessions: [{ ...archivedWithFb }],
+        }],
+      };
+      void (async () => {
+        const nextPlan = await advanceProgressionLoop(
+          markedPlan,
+          { ...entry.profile, taste: nextTaste },
+          archivedWithFb,
+        );
+        if (nextPlan) {
+          setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: nextPlan } : e)));
+        } else {
+          // Sheet KO : au moins enregistrer feedback + taste sur la séance validée
+          setPlans((prev) => prev.map((e) => {
+            if (e.id !== activePlanId) return e;
+            return {
+              ...e,
+              plan: {
+                ...e.plan,
+                taste: nextTaste,
+                volumeAdj,
+                weeks: [{
+                  ...e.plan.weeks[0],
+                  sessions: [{ ...archivedWithFb }],
+                }],
+              },
+            };
+          }));
+        }
+      })();
       setSessionFeedbackTarget(null);
       if (user) {
         sportsPersistence.insertSessionFeedback(user.id, {
@@ -9828,7 +9896,7 @@ export default function App() {
       }
       const nextCursor = (activePlanEntry.plan.sessionCursor ?? 0) + 1;
       const ordinalIndex = loopSessionOrdinalIndex(activePlanEntry.plan);
-      const { week } = buildProgressionLoopSession(
+      return buildProgressionLoopSession(
         { ...nextProfile, sessionsPerWeek: 1, taste, volumeAdj: activePlanEntry.plan.volumeAdj },
         nextCursor,
         true,
@@ -9838,21 +9906,28 @@ export default function App() {
           currentSheetN: cur?.sheetMeta?.n,
           currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
         },
-      );
-      setPlans((prev) => prev.map((e) => {
-        if (e.id !== planIdToUpdate) return e;
-        return {
-          ...e,
-          profile: nextProfile,
-          plan: {
-            ...e.plan,
-            sessionCursor: nextCursor,
-            weeks: [week],
-          },
-        };
-      }));
-      if (toast) showToast("Séance du jour mise à jour avec ton profil.", 4000);
-      return Promise.resolve();
+      ).then(({ week, sheetError, sheetErrorMessage }) => {
+        if (sheetError || !week?.sessions?.length) {
+          setPlans((prev) => prev.map((e) => (e.id === planIdToUpdate ? { ...e, profile: nextProfile } : e)));
+          if (toast) {
+            showToast(sheetErrorMessage || "Profil enregistré — catalogue séances indisponible, séance inchangée.", 4500);
+          }
+          return;
+        }
+        setPlans((prev) => prev.map((e) => {
+          if (e.id !== planIdToUpdate) return e;
+          return {
+            ...e,
+            profile: nextProfile,
+            plan: {
+              ...e.plan,
+              sessionCursor: nextCursor,
+              weeks: [week],
+            },
+          };
+        }));
+        if (toast) showToast("Séance du jour mise à jour avec ton profil.", 4000);
+      });
     }
 
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
