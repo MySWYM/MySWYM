@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-27 | Allures Sheet (tips) | Pastilles ⓘ sur séances : **Souple**, **Moyen** (ou « allure régulière »), **Progressif**, **Vite**, **À bloc**. Vocabulaire Sheet int/avancé ; débutant reste sur facile/souple. | ✅ active |
 | 2026-08-27 | Éducatif ≠ matos | Tirage éducatif Sheet = **niveau + nage** seulement. Matos fiche = optionnel (`et/ou`) : utilisé uniquement sur `{matériel}`, et seulement s’il est dans l’inventaire nageur. | ✅ active |
 | 2026-08-27 | Éducatif jamais 2× d’affilée | Sheet : le dernier éducatif est en exclusion dure ; recyclage seulement s’il n’existe aucune autre option compatible (niveau/matos). | ✅ active |
 | 2026-08-27 | Sheet Nager = source unique | Familles `01`–`03` : await catalogue, **interdit** de retomber sur le composeur si le Sheet rate (toast / séance inchangée). Flag ON dans le navigateur par défaut ; kill-switch `VITE_NATATION_SHEET_CATALOGUE=0`. | ✅ active |

@@ -1,5 +1,6 @@
 /**
  * Carte exercice compacte (pas de tiroir / dépliable).
+ * Allures Sheet (int / avancé) : pastilles ⓘ Souple · Moyen · Progressif · Vite · À bloc.
  */
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -8,15 +9,61 @@ import { Info, X } from "lucide-react";
 const ALLURE_TIPS = {
   souple: {
     title: "Souple",
+    label: "Souple",
+    tone: "mint",
     body:
       "Allure lente et relâchée, pour récupérer. Tu ne forces pas — tu te détends avant de reprendre l’effort.",
   },
+  moyen: {
+    title: "Moyen",
+    label: "Moyen",
+    tone: "neutral",
+    body:
+      "Allure régulière, tenable sur toute la série. Ni trop facile, ni à fond — tu gardes le même rythme.",
+  },
   progressif: {
     title: "Progressif",
+    label: "Progressif",
+    tone: "blue",
     body:
       "Tu accélères au fil de la distance : départ facile, fin plus soutenue.",
   },
+  vite: {
+    title: "Vite",
+    label: "Vite",
+    tone: "coral",
+    body:
+      "Allure plus soutenue, qualité d’effort. Tu nages plus vite qu’en rythme moyen, sans forcer jusqu’à l’échec.",
+  },
+  abloc: {
+    title: "À bloc",
+    label: "À bloc",
+    tone: "coral",
+    body:
+      "Sprint court : tu donnes le maximum sur la distance indiquée, puis tu récupères bien.",
+  },
 };
+
+/** Ordre d’affichage des pastilles. */
+const ALLURE_CHIP_ORDER = ["souple", "moyen", "progressif", "vite", "abloc"];
+
+function detectAllureTips(exercise) {
+  const blob = `${exercise?.cue || ""} ${exercise?.main || ""} ${exercise?.raw || ""}`.toLowerCase();
+  const found = new Set();
+
+  const showSouplePill =
+    exercise?.section !== "warm"
+    && exercise?.kind !== "warm"
+    && (exercise?.effortLabel === "souple" || exercise?.kind === "cool");
+  if (showSouplePill || /\bsouple\b/.test(blob)) found.add("souple");
+
+  if (/\bmoyen\b/.test(blob) || /allure\s+r[eé]guli[eè]re/.test(blob)) found.add("moyen");
+  if (/\bprogressif\b/.test(blob)) found.add("progressif");
+  if (/\b(vite|rapide)\b/.test(blob)) found.add("vite");
+  if (/\b(à\s*bloc|a\s*bloc)\b/.test(blob)) found.add("abloc");
+
+  return ALLURE_CHIP_ORDER.filter((k) => found.has(k));
+}
 
 function MetaPill({ children, tone = "neutral", G }) {
   const bg = tone === "blue" ? G.blueLight : G.greyXLight;
@@ -82,14 +129,27 @@ function AllureTipSheet({ tipKey, onClose, colors: G }) {
   );
 }
 
-function AllureInfoChip({ label, onClick, G, tone = "mint" }) {
-  const bg = tone === "mint" ? (G.mintLight || G.greyXLight) : (G.blueLight || G.greyXLight);
-  const color = tone === "mint" ? (G.mint || G.inkLight) : (G.blue || G.inkLight);
+function AllureInfoChip({ tipKey, onClick, G }) {
+  const tip = ALLURE_TIPS[tipKey];
+  if (!tip) return null;
+  const tone = tip.tone || "neutral";
+  let bg = G.greyXLight;
+  let color = G.inkLight;
+  if (tone === "mint") {
+    bg = G.mintLight || G.greyXLight;
+    color = G.mint || G.inkLight;
+  } else if (tone === "blue") {
+    bg = G.blueLight || G.greyXLight;
+    color = G.blue || G.inkLight;
+  } else if (tone === "coral") {
+    bg = G.coralLight || G.blueLight || G.greyXLight;
+    color = G.coral || G.blue || G.inkLight;
+  }
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Qu’est-ce que ${label.toLowerCase()} ?`}
+      aria-label={`Qu’est-ce que ${tip.label.toLowerCase()} ?`}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -107,7 +167,7 @@ function AllureInfoChip({ label, onClick, G, tone = "mint" }) {
         minHeight: 28,
       }}
     >
-      {label}
+      {tip.label}
       <Info size={12} strokeWidth={2.5} />
     </button>
   );
@@ -127,13 +187,7 @@ export default function WorkoutExerciseCard({
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
   const stroke = exercise.strokeLabel;
   const primaryCue = exercise.cue;
-  const showSouple =
-    exercise.section !== "warm"
-    && exercise.kind !== "warm"
-    && (exercise.effortLabel === "souple" || exercise.kind === "cool");
-  const showProgressif = /\bprogressif\b/i.test(
-    `${primaryCue || ""} ${exercise.main || ""} ${exercise.raw || ""}`,
-  );
+  const allureChips = detectAllureTips(exercise);
 
   return (
     <div
@@ -178,12 +232,9 @@ export default function WorkoutExerciseCard({
               </span>
             ) : null}
           </span>
-          {showSouple ? (
-            <AllureInfoChip label="Souple" onClick={() => setTipKey("souple")} G={G} tone="mint" />
-          ) : null}
-          {showProgressif ? (
-            <AllureInfoChip label="Progressif" onClick={() => setTipKey("progressif")} G={G} tone="blue" />
-          ) : null}
+          {allureChips.map((key) => (
+            <AllureInfoChip key={key} tipKey={key} onClick={() => setTipKey(key)} G={G} />
+          ))}
         </div>
 
         {primaryCue && volume && (
