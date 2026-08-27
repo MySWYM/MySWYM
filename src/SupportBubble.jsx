@@ -343,7 +343,7 @@ const iconBtn = {
  */
 export default function SupportBubble({ aboveBottomNav = false, user = null }) {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState("messages");
+  const [tab, setTab] = useState("home");
   const [view, setView] = useState("tabs");
   const [faqMessages, setFaqMessages] = useState([WELCOME]);
   const [thread, setThread] = useState({ conversation: null, messages: [] });
@@ -461,7 +461,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
       return;
     }
     setView("tabs");
-    setTab("messages");
+    setTab("home");
     setOpen(true);
     setError("");
   };
