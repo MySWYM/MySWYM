@@ -161,6 +161,7 @@ export async function handleSupportHttp(
         userId: auth.userId,
         message,
         priorMessages: body.priorMessages,
+        context: body.context,
       });
       if (snap.error === "message_invalide") {
         json(res, 400, { ok: false, error: "message requis" });

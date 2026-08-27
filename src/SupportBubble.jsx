@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronRight, CircleHelp, Home, MessageCircle, Send, X } from "lucide-react";
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
+import { getSupportSessionRef } from "./lib/support-context.js";
 
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
@@ -311,6 +312,19 @@ function ArthurAvatar({ size = 44, radius = 12 }) {
   );
 }
 
+/** Mascotte MySWYM. Accueil du widget seulement — le fil garde la photo d'Arthur. */
+function LoutreAvatar({ height = 92 }) {
+  return (
+    <img
+      src="/loutre-chatbox.webp"
+      alt=""
+      width={Math.round((height * 480) / 427)}
+      height={height}
+      style={{ height, width: "auto", display: "block" }}
+    />
+  );
+}
+
 const iconBtn = {
   width: 36,
   height: 36,
@@ -496,7 +510,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
     setSending(true);
     setError("");
     try {
-      const json = await sendSupportLive(text, prior);
+      const json = await sendSupportLive(text, prior, getSupportSessionRef());
       if (!json.ok) {
         setInput(text);
         setError(json.error || "Impossible d’envoyer. Réessaie dans un instant.");
@@ -927,14 +941,15 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
               >
                 {tab === "home" && (
                   <div style={{ padding: "22px 18px 18px" }}>
-                    <div aria-hidden style={{ marginBottom: 14 }}>
-                      <ArthurAvatar size={44} radius={12} />
+                    <div aria-hidden style={{ marginBottom: 10, marginLeft: -6 }}>
+                      <LoutreAvatar height={92} />
                     </div>
                     <h4 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>
                       {firstName ? `Salut ${firstName}` : "Salut"}
                     </h4>
                     <p style={{ margin: "0 0 18px", fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-                      Comment on peut t’aider ?
+                      Moi c’est la loutre MySWYM, bras droit d’Arthur — et la seule ici
+                      qui n’a jamais eu besoin de palmes. Comment je peux t’aider ?
                     </p>
                     {hasHistory ? (
                       <button

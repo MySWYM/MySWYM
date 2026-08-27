@@ -228,13 +228,15 @@ for (const [level, equipment, objectif, seed] of [
   ok(sessionFitsEquipment(r.session.details, []), "p-none fits");
 }
 
-// Inventaire : posséder pull + palmes OK ; les combiner dans une séance, non
+// Inventaire : posséder pull + palmes OK ; les combiner sur la même ligne, non
 {
   const owned = ["palmes", "pull"];
   const sport = buildSportProfile({ level: "régulier", goal: "progression", equipment: owned });
   ok(owned.every((id) => sport.equipment.includes(id)), "inventory may own both");
-  ok(hasPullPalmesConflict(["8×50 palmes", "4×100 pull-buoy"]), "conflict across lines");
-  ok(!sessionFitsEquipment(["8×50 palmes", "4×100 pull-buoy"], owned), "session rejects combo");
+  ok(!hasPullPalmesConflict(["8×50 palmes", "4×100 pull-buoy"]), "OK across different lines");
+  ok(hasPullPalmesConflict(["8×50 crawl avec pull-buoy et palmes"]), "conflict on same line");
+  ok(sessionFitsEquipment(["8×50 palmes", "4×100 pull-buoy"], owned), "session allows combo across lines");
+  ok(!sessionFitsEquipment(["8×50 crawl avec pull et palmes"], owned), "session rejects same-line combo");
   const r = composeSession(briefFrom({
     level: "régulier",
     equipment: owned,
@@ -245,8 +247,23 @@ for (const [level, equipment, objectif, seed] of [
     sessionIntent: "endurance",
   }));
   ok(r.ok, `own-both ${r.reason || ""}`);
-  ok(!hasPullPalmesConflict(r.session.details || []), "compose never mixes pull+palmes");
-  const fakeBoth = {
+  ok(!hasPullPalmesConflict(r.session.details || []), "compose never mixes pull+palmes on one line");
+  const fakeSameLine = {
+    details: ["8×50 crawl avec pull-buoy et palmes (Z2)"],
+    distance: "400m",
+    duration: 40,
+    equipmentRequired: ["palmes", "pull"],
+    equipmentUsed: ["palmes", "pull"],
+    volumeFromSets: 400,
+    trainingDistance: 400,
+    type: "ENDURANCE",
+    title: "Fake same line",
+    intensity: "Z2",
+  };
+  const vSame = validateComposedSession(fakeSameLine, briefFrom({ level: "régulier", equipment: owned, seed: "qg-same" }));
+  ok(!vSame.ok, "QG reject pull+palmes same exercise");
+  ok((vSame.errors || []).some((e) => String(e).includes("pull + palmes")), "QG names conflict");
+  const fakeAcross = {
     details: ["8×50 palmes (Z2)", "4×100 pull-buoy (Z2)"],
     distance: "900m",
     duration: 40,
@@ -255,12 +272,11 @@ for (const [level, equipment, objectif, seed] of [
     volumeFromSets: 900,
     trainingDistance: 900,
     type: "ENDURANCE",
-    title: "Fake both",
+    title: "Fake across",
     intensity: "Z2",
   };
-  const vBoth = validateComposedSession(fakeBoth, briefFrom({ level: "régulier", equipment: owned, seed: "qg-both" }));
-  ok(!vBoth.ok, "QG reject pull+palmes séance");
-  ok((vBoth.errors || []).some((e) => String(e).includes("pull + palmes")), "QG names conflict");
+  const vAcross = validateComposedSession(fakeAcross, briefFrom({ level: "régulier", equipment: owned, seed: "qg-across" }));
+  ok(vAcross.ok || !(vAcross.errors || []).some((e) => String(e).includes("pull + palmes")), "QG allows across lines");
 }
 
 // Négatif QG

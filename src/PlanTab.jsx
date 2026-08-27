@@ -20,7 +20,6 @@ export default function PlanTab({
     ProgressionLoopView,
     PlanSelector,
     PremiumBanner,
-    WeekProjectionCard,
     ResetConfirmButton,
     UpdateProgramCard,
     WeekCard,
@@ -173,8 +172,6 @@ export default function PlanTab({
             currentWeekIndex={currentWeekIndex >= 0 ? currentWeekIndex : 0}
           />
         )}
-
-        <WeekProjectionCard plan={plan} profile={profile} />
 
         {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
 

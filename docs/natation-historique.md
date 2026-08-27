@@ -18,6 +18,10 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-27 | Traçabilité séance (support) | Chaque séance expose sa provenance : `session-provenance.js` → `Réf. 01-42` (onglet Sheet + ligne) dans la vue séance et l'historique, clic = copie de la ligne complète. Réf. jointe automatiquement aux messages support (Telegram, ligne `🏊`) et aux events PostHog (`composedBy`, `sheetFamily`, `sheetN`). **« Séance n°6 » = 6e validation du nageur, jamais la ligne du Sheet.** | ✅ active |
+| 2026-08-27 | Catalogue Sheet vague 1 | Soft-branch étendu à **Nager 01–03** (débutant crawl, intermédiaire crawl, 4 nages). Triathlon / eau libre / diplômes = pas encore. `SHEET_SOFT_FAMILIES`. | ✅ active |
+| 2026-08-27 | Fiches éducatifs Sheet | Séances `composedBy=natation-sheet` : « Voir l’éducatif » = onglet Éducatifs du Google Sheet (`sheetEducatif`), pas `arthur-educatif-fiches.js` / `matchEducatif`. Niveaux & consignes = colonnes Sheet. | ✅ active |
+| 2026-08-27 | Matos pull+palmes | Interdit **dans le même exercice** (même ligne), plus « même séance / même jour ». Posséder les deux OK. Soft-branch catalogue Google Sheet en local (`VITE_NATATION_SHEET_CATALOGUE`). | ✅ active |
 | 2026-08-26 | Avancé = 4 nages | Niveau Avancé : plus de question 4 nages, `swimStyle=4_nages` (bouton + moteur). Un ancien Avancé resté en crawl est traité 4 nages. Intermédiaire garde Oui/Non. Débutant reste crawl. | ✅ active |
 | 2026-08-26 | 4 nages sans nage favorite | Profil : uniquement Oui/Non 4 nages. Débutant : pas de question, crawl. Mix 4 nages = 40/20/20/20, plus de pondération favorite. | ✅ active |
 | 2026-08-25 | UX 4 nages + crawl pur | Profil : « Sais-tu nager du 4 nages ? » (Oui/Non) ; nage favorite seulement si Oui. Diplômes : pas de choix. Tri/eau libre : choix OK. `swimStyle=crawl` → séances 100 % crawl (composeur + QG `crawl_only`, pas de dos en alt/échauff/RAC). | ↩ remplacée |

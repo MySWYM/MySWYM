@@ -222,7 +222,103 @@ export function formatRestLabel(rest) {
   return s;
 }
 
-/** Extrait « 8 × 50 m » et « CRAWL » d’un main pour la hiérarchie visuelle. */
+/**
+ * Aligne le libellé UI sur le Sheet (plus de « crawl normal » / « dos normal »).
+ */
+export function scrubLegacyNormalWording(text) {
+  if (!text) return text;
+  return String(text)
+    .replace(/\b(crawl|dos|brasse|papillon|nage)\s+normal(e)?\b/gi, "$1")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .trim();
+}
+
+/**
+ * Sous-texte d'intensité générique (pas d'info utile sous le volume).
+ * Ex. « Facile, sans forcer », « Allure tenable, focus économie ».
+ */
+export function isSoftFillCue(cue) {
+  const t = String(cue || "")
+    .trim()
+    .toLowerCase()
+    .replace(/,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return true;
+  if (
+    /^(facile|très facile|confortable|soutenu|relâché|relache|sans forcer|normal)(\s+(facile|sans forcer|relâché|relache|normal))*$/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  if (/^nage normale?$/.test(t)) return true;
+  if (/allure tenable/.test(t) && /economie|économie/.test(t)) return true;
+  if (/^focus (economie|économie|geste)$/.test(t)) return true;
+  if (/^(mise en route|retour au calme)$/.test(t)) return true;
+  if (/^(nage libre|crawl|dos|brasse|mix|au choix)\s+(facile|souple)$/i.test(t)) return true;
+  if (/^allure r[eé]guli[eè]re$/.test(t)) return true;
+  return false;
+}
+
+/**
+ * Déduit le libellé nage pour l’UI :
+ * - 4 nages / médley / 4 strokes → « 4 NAGES »
+ * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE »
+ * - sinon nage unique / nage au choix
+ */
+export function inferStrokeLabel(blob) {
+  const text = String(blob || "").trim();
+  if (!text) return { label: null, consumePrefix: null };
+
+  const lower = text.toLowerCase();
+
+  if (/\b4\s*nages\b/.test(lower) || /\bm[eé]dley\b/.test(lower) || /(^|[^a-z])im([^a-z]|$)/i.test(lower)) {
+    const m = text.match(/^(4\s*nages|m[eé]dley|im)\b/i);
+    return { label: "4 NAGES", consumePrefix: m ? m[0] : null };
+  }
+
+  const strokes = new Set();
+  if (/\bcrawl\b/.test(lower) || /\bnl\b/.test(lower)) strokes.add("crawl");
+  if (/\bdos\b/.test(lower)) strokes.add("dos");
+  if (/\bbrasse\b/.test(lower)) strokes.add("brasse");
+  if (/\bpapillon\b/.test(lower)) strokes.add("papillon");
+  const free = /\b(nage\s+libre|nage\s+au\s+choix|au\s+choix)\b/.test(lower);
+  const mixWord = /\bmix(te)?\b/.test(lower);
+
+  if (strokes.size >= 4) {
+    return { label: "4 NAGES", consumePrefix: null };
+  }
+
+  const isMixte = strokes.size >= 2 || (strokes.size >= 1 && free) || mixWord;
+  if (isMixte) {
+    // Consommer seulement un préfixe « mix » / « mixte » seul en tête
+    const m = text.match(/^(mix(te)?)\b/i);
+    const onlyMixPrefix = m && strokes.size === 0 && !free;
+    return { label: "MIXTE", consumePrefix: onlyMixPrefix ? m[0] : null };
+  }
+
+  const freeMatch = text.match(/^(nage\s+libre|nage\s+au\s+choix|au\s+choix)\b/i);
+  if (freeMatch) {
+    return { label: "NAGE AU CHOIX", consumePrefix: freeMatch[0] };
+  }
+  if (free) {
+    return { label: "NAGE AU CHOIX", consumePrefix: null };
+  }
+
+  const strokeMatch = text.match(/^(crawl|dos|brasse|papillon|nl)\b/i);
+  if (strokeMatch) {
+    const raw = strokeMatch[1].toLowerCase();
+    if (raw === "nl") return { label: "CRAWL", consumePrefix: strokeMatch[0] };
+    return { label: strokeMatch[1].toUpperCase(), consumePrefix: strokeMatch[0] };
+  }
+
+  return { label: null, consumePrefix: null };
+}
+
+/** Extrait « 8 × 50 m » et « CRAWL » / « MIXTE » d’un main pour la hiérarchie visuelle. */
 export function splitHeadline(main) {
   if (!main) return { volume: null, stroke: null, rest: main };
   let text = String(main).trim();
@@ -237,12 +333,11 @@ export function splitHeadline(main) {
     text = text.slice(sm[0].length).trim();
   }
   text = text.replace(/^[-–—·:,]\s*/, "");
-  const strokeMatch = text.match(/^(crawl|dos|brasse|papillon|nl|mix|4\s*nages|médley|im)\b/i);
-  let stroke = null;
-  if (strokeMatch) {
-    stroke = strokeMatch[1].toUpperCase().replace(/\s+/g, " ");
-    if (stroke === "NL") stroke = "CRAWL";
-    text = text.slice(strokeMatch[0].length).trim().replace(/^[-–—·:,]\s*/, "");
+
+  const inferred = inferStrokeLabel(text);
+  let stroke = inferred.label;
+  if (inferred.consumePrefix) {
+    text = text.slice(inferred.consumePrefix.length).trim().replace(/^[-–—·:,]\s*/, "");
   }
   return { volume, stroke, rest: text || null };
 }
@@ -300,9 +395,28 @@ export function buildWorkoutView(session = {}) {
       pyramid?.volume ||
       parseMetersFromLine(parsed?.main || raw) ||
       childParsed.reduce((a, c) => a + parseMetersFromLine(c.main), 0);
-    const headline = splitHeadline(parsed?.main);
-    const cuePrimary = parsed?.cues?.[0] || headline.rest || null;
-    const educatif = matchEducatif([parsed?.main, cuePrimary, ...(parsed?.cues || []), ...childParsed.map((c) => c.main)].filter(Boolean).join(" — "));
+    const headline = splitHeadline(scrubLegacyNormalWording(parsed?.main));
+    let cuePrimary = scrubLegacyNormalWording(parsed?.cues?.[0] || headline.rest || null);
+    if (isSoftFillCue(cuePrimary)) cuePrimary = null;
+    const cues = (parsed?.cues || [])
+      .map((c) => scrubLegacyNormalWording(c))
+      .filter((c) => c && !isSoftFillCue(c));
+    if (!cuePrimary && cues[0]) cuePrimary = cues[0];
+    const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
+    const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" — ");
+    let educatif = null;
+    if (session.composedBy === "natation-sheet") {
+      // Source de vérité = onglet Éducatifs du Sheet (attaché à la séance)
+      const sheetFiche = session.sheetEducatif;
+      if (sheetFiche?.name) {
+        const re = new RegExp(sheetFiche.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+        if (re.test(blob) || re.test(String(mainClean || ""))) {
+          educatif = sheetFiche;
+        }
+      }
+    } else {
+      educatif = matchEducatif(blob);
+    }
     index += 1;
     exercises.push({
       id: `ex_${index}`,
@@ -311,11 +425,11 @@ export function buildWorkoutView(session = {}) {
       raw,
       kind: parsed?.kind || "work",
       label: parsed?.label || null,
-      main: parsed?.main || stripDetailPrefix(raw),
+      main: mainClean,
       volumeLabel: headline.volume || (pyramid ? `${pyramid.volume} m` : null),
       strokeLabel: headline.stroke,
       cue: cuePrimary,
-      cues: parsed?.cues || [],
+      cues,
       rest: parsed?.rest || null,
       restLabel: formatRestLabel(parsed?.rest),
       steps: parsed?.steps || null,
@@ -324,7 +438,7 @@ export function buildWorkoutView(session = {}) {
         main: c.main,
         rest: c.rest,
         restLabel: formatRestLabel(c.rest),
-        cues: c.cues || [],
+        cues: (c.cues || []).filter((x) => !isSoftFillCue(x)),
         headline: splitHeadline(c.main),
       })),
       meters,

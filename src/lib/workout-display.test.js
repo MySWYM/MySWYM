@@ -9,6 +9,23 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
+  const h = splitHeadline("100 m nage libre souple");
+  assert.equal(h.volume, "100 m");
+  assert.equal(h.stroke, "NAGE AU CHOIX");
+  assert.equal(h.rest, "souple");
+  assert.equal(splitHeadline("200 m au choix").stroke, "NAGE AU CHOIX");
+}
+
+{
+  assert.equal(splitHeadline("200 m en alternant (75 m crawl et 25 m dos)").stroke, "MIXTE");
+  assert.equal(splitHeadline("200 m crawl / dos").stroke, "MIXTE");
+  assert.equal(splitHeadline("8 × 50 m : 25 m crawl + 25 m au choix").stroke, "MIXTE");
+  assert.equal(splitHeadline("300 m mix").stroke, "MIXTE");
+  assert.equal(splitHeadline("4 × 100 m 4 nages").stroke, "4 NAGES");
+  assert.equal(splitHeadline("400 m médley").stroke, "4 NAGES");
+}
+
+{
   assert.ok(formatRestLabel("R20")?.includes("Récup"));
   assert.ok(formatRestLabel("D1'45\"")?.includes("Départ"));
 }
@@ -93,6 +110,105 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(view.sections.length, 3);
   assert.ok(view.sections.find((s) => s.id === "warm")?.metersLabel);
   assert.equal(view.sections.find((s) => s.id === "main")?.exercises.length, 2);
+}
+
+{
+  // Catalogue Sheet → 3 encadrés via sets.block
+  const session = {
+    title: "Séance · Flèche",
+    distance: "1400m",
+    details: [
+      "-100 m nage libre souple",
+      "-50 m crawl",
+      "-100 m crawl (25 m Flèche + 25 m crawl)",
+      "-2 × 50 m crawl allure régulière, repos 20 s",
+      "-200 m crawl",
+      "-100 m nage libre souple",
+    ],
+    sets: [
+      { block: "depart", label: "100 m nage libre souple" },
+      { block: "depart", label: "50 m crawl" },
+      { block: "depart", label: "100 m crawl (25 m Flèche + 25 m crawl)" },
+      { block: "corps", label: "2 × 50 m crawl allure régulière, repos 20 s" },
+      { block: "corps", label: "200 m crawl" },
+      { block: "fin", label: "100 m nage libre souple" },
+    ],
+  };
+  const view = buildWorkoutView(session);
+  assert.equal(view.sections.length, 3);
+  assert.equal(view.sections[0].id, "warm");
+  assert.equal(view.sections[0].label, "Échauffement");
+  assert.equal(view.sections[1].id, "main");
+  assert.equal(view.sections[1].label, "Corps de séance");
+  assert.equal(view.sections[2].id, "cool");
+  assert.equal(view.sections[2].label, "Retour au calme");
+  assert.equal(view.sections[0].exercises.length, 3);
+  assert.equal(view.sections[1].exercises.length, 2);
+  assert.equal(view.sections[2].exercises.length, 1);
+}
+
+{
+  // Sous-lignes d'intensité génériques masquées
+  const session = {
+    title: "Soft cues",
+    distance: "900m",
+    details: [
+      "-100 m nage libre souple",
+      "-4 × 100 m crawl — allure tenable, focus économie — repos 25s",
+      "-100 m crawl facile — sans forcer",
+      "-200 m crawl — confortable",
+      "-50 m dos Normal",
+    ],
+  };
+  const view = buildWorkoutView(session);
+  for (const ex of view.exercises) {
+    assert.equal(ex.cue, null, `cue soft: ${ex.raw} → ${ex.cue}`);
+  }
+  const dos = view.exercises.find((e) => e.strokeLabel === "DOS");
+  assert.equal(dos?.volumeLabel, "50 m");
+  assert.equal(dos?.cue, null);
+}
+
+{
+  // « crawl normal » legacy → aligné Sheet (« crawl »)
+  const session = {
+    details: ["-100 m crawl (25 m Minimum de coup de bras + 25 m crawl normal)"],
+  };
+  const ex = buildWorkoutView(session).exercises[0];
+  assert.equal(ex.cue, "(25 m Minimum de coup de bras + 25 m crawl)");
+  assert.ok(!/normal/i.test(ex.cue));
+}
+
+{
+  // Catalogue Sheet : fiche = onglet Éducatifs, jamais matchEducatif / Arthur .js
+  const sheetFiche = {
+    id: "sheet:toucher cuisse",
+    name: "toucher cuisse",
+    shortDescription: "Aller au bout de la traction",
+    objective: "Aller au bout de la traction",
+    cue: "Toucher la cuisse avec le pouce en fin de traction",
+    level: "Intermédiaire · Avancé",
+    equipment: "palmes",
+    mistakes: [],
+    ficheSource: "sheet",
+  };
+  const session = {
+    composedBy: "natation-sheet",
+    sheetEducatif: sheetFiche,
+    details: ["-100 m crawl (25 m toucher cuisse + 25 m crawl)"],
+  };
+  const ex = buildWorkoutView(session).exercises[0];
+  assert.equal(ex.educatif?.ficheSource, "sheet");
+  assert.equal(ex.educatif?.name, "toucher cuisse");
+  assert.ok(!/débutant/i.test(ex.educatif?.level || ""));
+  assert.equal(ex.educatif?.cue, sheetFiche.cue);
+
+  // Sans sheetEducatif attaché : pas de fallback Arthur
+  const orphan = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m crawl (25 m toucher cuisse + 25 m crawl)"],
+  }).exercises[0];
+  assert.equal(orphan.educatif, null);
 }
 
 console.log("workout-display.test.js PASS");

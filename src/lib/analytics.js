@@ -7,6 +7,7 @@
 import posthog from "posthog-js";
 import { supabase } from "../supabase.js";
 import { hasAnalyticsConsent } from "./cookie-consent.js";
+import { buildSessionProvenance } from "./session-provenance.js";
 
 const SESSION_KEY = "myswym_session_id_v1";
 const ONCE_PREFIX = "myswym_ph_once_";
@@ -51,6 +52,9 @@ const ALLOWED_PROPS = new Set([
   "equipmentCount",
   "hasEquipment",
   "equipmentUsedCount",
+  "composedBy",
+  "sheetFamily",
+  "sheetN",
   "error_kind",
   "pathname",
 ]);
@@ -225,7 +229,11 @@ export function personPropertiesFromProfile(profile, { premium } = {}) {
 
 export function sessionAnalyticsProps(profile, session, { planWeek, sessionIndex, phase } = {}) {
   const volume = Number.parseInt(String(session?.distance ?? "").replace(/[^\d]/g, ""), 10);
+  const provenance = buildSessionProvenance(session);
   return sanitizeProperties({
+    composedBy: provenance?.source || null,
+    sheetFamily: provenance?.familyId || null,
+    sheetN: provenance?.sheetN ?? null,
     level: normalizeAnalyticsLevel(profile?.level),
     objective: normalizeAnalyticsObjective(profile),
     planWeek: planWeek ?? null,

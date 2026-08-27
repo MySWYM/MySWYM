@@ -13,6 +13,7 @@ import {
   parseOperatorText,
   parseSupportCodeFromText,
   isLandingContactNotify,
+  sanitizeSupportContext,
 } from "./parse.js";
 import {
   isTelegramConfigured,
@@ -234,6 +235,7 @@ async function notifyOperator(
     userId: string;
     body: string;
     isNew: boolean;
+    context?: string | null;
     telegram?: TelegramPort;
   },
 ): Promise<void> {
@@ -247,6 +249,7 @@ async function notifyOperator(
     email: who.email,
     body: input.body,
     isNew: input.isNew,
+    context: input.context,
   });
   const sent = await port.sendMessage(chatId, text);
   if (!sent?.messageId) return;
@@ -300,6 +303,8 @@ export async function sendSupportMessage(input: {
   userId: string;
   message: string;
   priorMessages?: unknown;
+  /** Réf. séance (onglet + ligne Sheet) pour retrouver la source côté support. */
+  context?: unknown;
   admin?: SupabaseClient;
   telegram?: TelegramPort;
 }): Promise<SupportSnapshot & { error?: string }> {
@@ -352,6 +357,7 @@ export async function sendSupportMessage(input: {
     userId: input.userId,
     body,
     isNew,
+    context: sanitizeSupportContext(input.context),
     telegram: input.telegram,
   });
 

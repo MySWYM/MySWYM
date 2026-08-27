@@ -4,7 +4,7 @@
  */
 import { buildWorkoutView } from "./workout-display.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
-
+import { withLoopSessionTitle, loopSessionOrdinalIndex } from "./swim-plan-bridge.js";
 import { canonicalizeGoal } from "./sports-engine/race-event.js";
 
 const CATEGORY_LABELS = {
@@ -96,7 +96,8 @@ export function sessionCardModel(session) {
   const view = buildWorkoutView(session);
   const blocks = (view.sections || []).slice(0, 3).map((s) => ({
     label: s.label,
-    detail: sectionDetail(s),
+    // Total du bloc (échauff / corps / RAC) — pas la 1ʳᵉ ligne d’exo
+    detail: s.metersLabel || (s.meters > 0 ? `${s.meters} m` : sectionDetail(s)),
   })).filter((b) => b.detail);
   return {
     title: view.header.title || session.title || "Séance 1",
@@ -130,7 +131,11 @@ export function sessionWhyLine(session, profile = {}) {
 }
 
 export function sessionPreviewFromPlan(plan) {
-  return sessionCardModel(plan?.weeks?.[0]?.sessions?.[0] || null);
+  const raw = plan?.weeks?.[0]?.sessions?.[0] || null;
+  const session = plan?.isSessionLoop
+    ? withLoopSessionTitle(raw, loopSessionOrdinalIndex(plan))
+    : raw;
+  return sessionCardModel(session);
 }
 
 /** Prochaine séance à nager (boucle = séance courante). */
@@ -138,9 +143,10 @@ export function findNextSession(plan) {
   const weeks = plan?.weeks;
   if (!Array.isArray(weeks) || weeks.length === 0) return null;
   if (plan.isSessionLoop) {
-    const session = weeks[0]?.sessions?.[0];
-    if (!session) return null;
-    return { weekIndex: 0, sessionIndex: 0, session, resolved: isSessionResolved(session) };
+    const raw = weeks[0]?.sessions?.[0];
+    if (!raw) return null;
+    const session = withLoopSessionTitle(raw, loopSessionOrdinalIndex(plan));
+    return { weekIndex: 0, sessionIndex: 0, session, resolved: isSessionResolved(raw) };
   }
   const wi = weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   if (wi < 0) {
@@ -171,7 +177,11 @@ export function buildPlanRevealModel(plan, profile) {
     weeks,
     frequency,
     isLoop,
-    session: sessionCardModel(plan?.weeks?.[0]?.sessions?.[0] || null),
+    session: sessionCardModel(
+      plan?.isSessionLoop
+        ? withLoopSessionTitle(plan?.weeks?.[0]?.sessions?.[0] || null, loopSessionOrdinalIndex(plan))
+        : (plan?.weeks?.[0]?.sessions?.[0] || null),
+    ),
     barCount: isLoop ? 0 : Math.min(12, Math.max(0, weeks)),
   };
 }

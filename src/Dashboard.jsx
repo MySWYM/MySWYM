@@ -406,6 +406,8 @@ export default function Dashboard({
               isPremium={isPremium}
               showStart
               startLabel="C’est parti — je nage"
+              profile={profile}
+              planId={activePlanId}
               whyLine={sessionWhyLine(next.session, profile)}
               onUpgrade={onUpgrade}
               onStart={() => setPoolOpen(true)}

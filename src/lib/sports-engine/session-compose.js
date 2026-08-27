@@ -21,13 +21,19 @@ export function detectEquipmentInDetails(details = []) {
 }
 
 /**
- * Pull-buoy (entre les jambes → bras seuls, pas de battements)
- * et palmes (battements) sont incompatibles dans la même séance.
- * Posséder les deux dans l'inventaire est OK ; les combiner le même jour, non.
+ * Pull-buoy et palmes sont incompatibles **dans le même exercice** (même ligne).
+ * Posséder les deux, ou les utiliser le même jour sur des lignes différentes, est OK.
  */
 export function hasPullPalmesConflict(source) {
-  const text = Array.isArray(source) ? source.filter(Boolean).join(" ") : String(source || "");
-  return /pull/i.test(text) && /palmes?/i.test(text);
+  const chunks = Array.isArray(source) ? source.filter(Boolean) : [String(source || "")];
+  for (const chunk of chunks) {
+    for (const line of String(chunk).split(/\n+/)) {
+      const t = line.trim();
+      if (!t) continue;
+      if (/pull/i.test(t) && /palmes?/i.test(t)) return true;
+    }
+  }
+  return false;
 }
 
 /**

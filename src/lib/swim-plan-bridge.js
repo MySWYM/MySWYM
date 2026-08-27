@@ -39,6 +39,10 @@ import {
   scaleSessionLinesToVolume,
 } from "./sports-engine/index.js";
 import { eventBandFromGoal } from "./sports-engine/race-event.js";
+import {
+  isNatationSheetCatalogueEnabled,
+  tryComposeFromSheetCache,
+} from "./natation-sheet/client.js";
 import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
 import {
   normalizeTargetSessionDistance,
@@ -1233,30 +1237,68 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
 }
 
 /**
+ * Titre nageur du mode boucle : Séance n°1, n°2…
+ * `ordinalIndex` = nb de séances déjà validées/archivées (0 → n°1).
+ * Indépendant de `sessionCursor` (variété / régénération).
+ */
+export function formatLoopSessionTitle(ordinalIndex = 0) {
+  return `Séance n°${Math.max(0, Number(ordinalIndex) || 0) + 1}`;
+}
+
+/** Nb de séances validées (base 0 pour la séance courante non encore archivée). */
+export function loopSessionOrdinalIndex(plan) {
+  if (!plan?.isSessionLoop) return 0;
+  return Array.isArray(plan.history) ? plan.history.length : 0;
+}
+
+/** Force le titre affiché (plans déjà stockés avec un focus marketing). */
+export function withLoopSessionTitle(session, ordinalIndex = 0) {
+  if (!session) return session;
+  const title = formatLoopSessionTitle(ordinalIndex);
+  return session.title === title ? session : { ...session, title };
+}
+
+/**
+ * Séance courante d’un plan boucle, titre = numéro nageur (pas le cursor de variété).
+ */
+export function loopDisplaySession(plan) {
+  const sess = plan?.weeks?.[0]?.sessions?.[0] || null;
+  if (!sess || !plan?.isSessionLoop) return sess;
+  return withLoopSessionTitle(sess, loopSessionOrdinalIndex(plan));
+}
+
+/**
  * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
  * @param {object} profile
- * @param {number} cursor — index de variété (0 = 1ʳᵉ séance)
+ * @param {number} cursor — index de variété / seed (peut bouger sans validation)
  * @param {boolean} isPremium
+ * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number }} [opts]
  * @returns {{ session: object, focus: string, week: object }}
  */
-export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false) {
+export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false, opts = {}) {
   const c = Math.max(0, Number(cursor) || 0);
+  const ordinalIndex = Math.max(
+    0,
+    Number(opts.ordinalIndex != null ? opts.ordinalIndex : c) || 0,
+  );
   const easyPhase = c < 3;
   const family = loopFamilyFromProfile(profile);
+  const sessionTitle = formatLoopSessionTitle(ordinalIndex);
 
   // Diplôme : templates examen (pas le générateur coach générique)
   if (family === "diplome") {
-    const { variant, session } = buildDiplomaLoopSessionPayload(profile, c, easyPhase);
+    const { variant, session: diplomaSession } = buildDiplomaLoopSessionPayload(profile, c, easyPhase);
+    const session = { ...diplomaSession, title: sessionTitle };
     const week = {
       number: 1,
-      focus: variant.focus,
+      focus: sessionTitle,
       tip: null,
       feedback: null,
       isBilan: false,
       isTest: false,
       sessions: [session],
     };
-    return { session, focus: variant.focus, week };
+    return { session, focus: sessionTitle, week };
   }
 
   const variants = loopVariantsForEvent(family, profile.goal);
@@ -1292,8 +1334,30 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
 
   let session = null;
 
+  // Catalogue Google Sheet (local / flag) — soft-branch familles mappées
+  if (isNatationSheetCatalogueEnabled()) {
+    try {
+      const excludeNs = [];
+      const curN = opts.currentSheetN;
+      if (curN != null && Number.isFinite(Number(curN))) excludeNs.push(Number(curN));
+      const fromSheet = tryComposeFromSheetCache(
+        { ...profile, equipment: sport.equipment },
+        { cursor: c, history: opts.history || [], excludeNs },
+      );
+      if (fromSheet) {
+        session = {
+          ...fromSheet,
+          title: sessionTitle,
+          objectives: variant.objectives,
+        };
+      }
+    } catch (err) {
+      console.warn("[natation-sheet] loop", err?.message || err);
+    }
+  }
+
   // Composeur pédagogique (échauffements / RAC / éducatifs / corps fun Arthur)
-  if (isComposerEnabledForLevel(sport.level)) {
+  if (!session && isComposerEnabledForLevel(sport.level)) {
     const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sport.level);
     const baseVol =
       preferred ||
@@ -1357,7 +1421,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     if (result.ok && result.session) {
       session = {
         ...result.session,
-        title: focusLabel,
+        title: sessionTitle,
         objectives: variant.objectives,
         loopVariant: variant.id,
         composedBy: "session-composer",
@@ -1408,14 +1472,14 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     const raw = weekData.sessions[0];
     session = {
       ...toMySwymSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly),
-      title: focusLabel,
+      title: sessionTitle,
       objectives: variant.objectives,
       loopVariant: variant.id,
     };
   }
   }
 
-  // Ancre distance moyenne (questionnaire) — scale soft si renseignée
+  // Ancre distance moyenne — pas sur les séances Sheet (on garde le cahier tel quel)
   const sportLevel =
     profile.level === "découverte" || profile.level === "beginner"
       ? "decouverte"
@@ -1427,7 +1491,12 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
             ? "performance"
             : "regulier";
   const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sportLevel);
-  if (preferred && session && session.composedBy !== "session-composer") {
+  if (
+    preferred &&
+    session &&
+    session.composedBy !== "session-composer" &&
+    session.composedBy !== "natation-sheet"
+  ) {
     const scale = sessionDistancePhaseScale({
       typeSemaine,
       effectivePhase: easyPhase ? "base" : "development",
@@ -1446,9 +1515,14 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     }
   }
 
+  // Titre boucle = numéro de séance (cursor 0 → n°1 ; +1 à chaque validation)
+  if (session) {
+    session = { ...session, title: sessionTitle };
+  }
+
   const week = {
     number: 1,
-    focus: focusLabel,
+    focus: sessionTitle,
     tip: null,
     feedback: null,
     isBilan: false,
@@ -1456,7 +1530,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     sessions: [session],
   };
 
-  return { session, focus: focusLabel, week };
+  return { session, focus: sessionTitle, week };
 }
 
 /** Clé ISO semaine (ex. 2026-W32) pour plafonner les générations gratuites. */

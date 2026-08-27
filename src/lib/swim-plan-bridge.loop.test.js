@@ -32,8 +32,8 @@ describe("buildProgressionLoopSession families", () => {
     );
     assert.equal(week.sessions.length, 1);
     assert.ok(session.details?.length > 0);
-    assert.ok(focus);
-    assert.ok(/triathlon|douce|Sensations|Technique/i.test(focus));
+    assert.equal(session.title, "Séance n°1");
+    assert.equal(focus, "Séance n°1");
   });
 
   it("returns eau libre oriented first sessions", () => {
@@ -42,7 +42,8 @@ describe("buildProgressionLoopSession families", () => {
       0,
       false,
     );
-    assert.ok(/eau libre|douce|Sighting|Technique/i.test(focus));
+    assert.equal(focus, "Séance n°1");
+    assert.equal(session.title, "Séance n°1");
     assert.ok(session.distance);
   });
 
@@ -51,9 +52,36 @@ describe("buildProgressionLoopSession families", () => {
       { goal: "bnssa", category: "diplome", level: "sportif", pool: 25 },
       3,
       true,
+      { ordinalIndex: 0 },
     );
     assert.ok(session.details.some((l) => /apnée|remorquage|palmes|mannequin/i.test(l)));
-    assert.ok(focus);
+    assert.equal(focus, "Séance n°1");
+    assert.equal(session.title, "Séance n°1");
+  });
+
+  it("increments Séance n° with validations (ordinal), not variety cursor", () => {
+    const a = buildProgressionLoopSession(
+      { goal: "progression", category: "progression", level: "régulier", pool: 25 },
+      6,
+      false,
+      { ordinalIndex: 0 },
+    );
+    const b = buildProgressionLoopSession(
+      { goal: "progression", category: "progression", level: "régulier", pool: 25 },
+      7,
+      false,
+      { ordinalIndex: 1 },
+    );
+    assert.equal(a.session.title, "Séance n°1");
+    assert.equal(b.session.title, "Séance n°2");
+  });
+
+  it("formatLoopSessionTitle mirrors ordinal index", async () => {
+    const { formatLoopSessionTitle, loopSessionOrdinalIndex } = await import("./swim-plan-bridge.js");
+    assert.equal(formatLoopSessionTitle(0), "Séance n°1");
+    assert.equal(formatLoopSessionTitle(7), "Séance n°8");
+    assert.equal(loopSessionOrdinalIndex({ isSessionLoop: true, history: [] }), 0);
+    assert.equal(loopSessionOrdinalIndex({ isSessionLoop: true, history: [{}, {}] }), 2);
   });
 
   it("rotates variants so consecutive cursors differ", () => {
@@ -61,13 +89,17 @@ describe("buildProgressionLoopSession families", () => {
       { goal: "triathlon_olympic", category: "triathlon", level: "sportif", pool: 50 },
       3,
       true,
+      { ordinalIndex: 0 },
     );
     const b = buildProgressionLoopSession(
       { goal: "triathlon_olympic", category: "triathlon", level: "sportif", pool: 50 },
       4,
       true,
+      { ordinalIndex: 0 },
     );
-    assert.notEqual(a.focus, b.focus);
+    assert.notEqual(a.session.loopVariant, b.session.loopVariant);
+    assert.equal(a.session.title, "Séance n°1");
+    assert.equal(b.session.title, "Séance n°1");
   });
 
   it("long open water prefers a continuous block after easy phase", () => {

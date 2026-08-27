@@ -32,18 +32,29 @@ export function wantsHumanHandoff(text: string): boolean {
   return HUMAN_RE.test(String(text || "").trim());
 }
 
+/** Réf. séance envoyée par l'app (onglet + ligne du Sheet). Une ligne, bornée. */
+export function sanitizeSupportContext(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const line = raw.replace(/[\r\n\t]+/g, " ").replace(/\s{2,}/g, " ").trim();
+  if (!line) return null;
+  return line.slice(0, 300);
+}
+
 export function formatOperatorNotify(input: {
   shortCode: string;
   displayName: string;
   email?: string | null;
   body: string;
   isNew: boolean;
+  context?: string | null;
 }): string {
   const who = [input.displayName, input.email].filter(Boolean).join(" · ");
   const flag = input.isNew ? "nouvelle conversation" : "suite";
+  const context = sanitizeSupportContext(input.context);
   return [
     `💬 Support · ${input.shortCode}`,
     `${who || "Nageur"} (${flag})`,
+    ...(context ? [`🏊 ${context}`] : []),
     "",
     input.body,
     "",

@@ -18,7 +18,9 @@ import { shouldApplyRemotePlanSync } from "./lib/plan-sync-guard.js";
 import { describePlanSyncChange } from "./lib/plan-sync-message.js";
 import { readSeenNotifications, writeSeenNotifications } from "./lib/in-app-notifications.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
+import { prefetchNatationCatalogue } from "./lib/natation-sheet/client.js";
+import { buildSessionProvenance } from "./lib/session-provenance.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, formatLoopSessionTitle, loopDisplaySession, loopSessionOrdinalIndex, withLoopSessionTitle, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G, G_DARK, applyTheme } from "./theme/palette.js";
 import PlanRevealView from "./PlanRevealView.jsx";
@@ -4243,6 +4245,8 @@ const SessionCard = ({
                 isPremium={isPremium}
                 embedded
                 showStart={!resolved}
+                profile={analyticsCtx?.profile || null}
+                planId={analyticsCtx?.planId || null}
                 whyLine={sessionWhyLine(session)}
                 onUpgrade={() => onUpgrade?.("session_locked")}
                 onTooHard={
@@ -4623,10 +4627,29 @@ const ProgressionLoopView = ({
   onOpenMenu,
   onTabChange,
 }) => {
-  const session = plan?.weeks?.[0]?.sessions?.[0];
+  const session = loopDisplaySession(plan) || plan?.weeks?.[0]?.sessions?.[0];
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
   const [poolOpen, setPoolOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(null);
+  const HISTORY_PREVIEW = 3;
+  // ordinal = rang réel de validation, conservé malgré le slice/reverse d'affichage
+  const historyItems = (Array.isArray(plan?.history) ? plan.history : [])
+    .map((s, idx) => ({ session: s, ordinal: idx }))
+    .slice(-12)
+    .reverse();
+  const historyVisible = historyOpen ? historyItems : historyItems.slice(0, HISTORY_PREVIEW);
+  const copyHistoryRef = async (key, line) => {
+    if (!line) return;
+    try {
+      await navigator.clipboard.writeText(line);
+      setCopiedRef(key);
+      setTimeout(() => setCopiedRef(null), 2000);
+    } catch {
+      /* clipboard indisponible — la réf reste lisible à l'écran */
+    }
+  };
   const loopTitle = findGoalById(profile?.goal)?.label
     || CATEGORIES.find((c) => c.id === profile?.category)?.label
     || "Nager & Progresser";
@@ -4713,8 +4736,6 @@ const ProgressionLoopView = ({
       )}
 
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
-        {!isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="card" />}
-
         <div className="ms-session-card" style={{ marginBottom: 14, padding: "16px 18px 18px" }}>
           <WorkoutPrepView
             session={session}
@@ -4722,6 +4743,9 @@ const ProgressionLoopView = ({
             accent={{ bg: getTypeMeta(session.type).bg, color: getTypeMeta(session.type).color }}
             isPremium={isPremium}
             showStart={!resolved}
+            loopCursor={loopSessionOrdinalIndex(plan)}
+            profile={profile}
+            planId={activePlanId}
             startLabel={isPremium ? "Commencer la séance" : "S’abonner pour nager"}
             onUpgrade={onUpgrade}
             onStart={() => {
@@ -4750,8 +4774,6 @@ const ProgressionLoopView = ({
             />
           </div>
         </div>
-
-        <WeekProjectionCard plan={plan} profile={profile} />
 
         {poolOpen && (
           <PoolMode
@@ -4832,35 +4854,8 @@ const ProgressionLoopView = ({
           </div>
         )}
 
-        {/* Régénérer */}
-        <div style={{ marginBottom: 16 }}>
-          <button
-            type="button"
-            disabled={!isPremium || resolved}
-            onClick={() => isPremium && !resolved && onRegenerate?.()}
-            style={{
-              width: "100%", padding: "13px 16px", borderRadius: 14, fontSize: 14, fontWeight: 700,
-              border: `1.5px solid ${isPremium && !resolved ? G.blue : G.greyLight}`,
-              background: isPremium && !resolved ? G.blueLight : G.greyXLight,
-              color: isPremium && !resolved ? G.blue : G.greyMid,
-              cursor: isPremium && !resolved ? "pointer" : "not-allowed",
-              opacity: isPremium && !resolved ? 1 : 0.7,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            }}
-          >
-            {!isPremium && <Lock size={14} />}
-            <RotateCcw size={14} />
-            Régénérer la séance
-          </button>
-          {!isPremium && (
-            <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.45, textAlign: "center" }}>
-              Régénération illimitée avec Premium.
-            </p>
-          )}
-        </div>
-
-        {/* Historique Premium */}
-        {showHistory && isPremium && (plan.history?.length > 0) && (
+        {/* Historique Premium — 3 visibles, le reste derrière « Voir plus » */}
+        {showHistory && isPremium && historyItems.length > 0 && (
           <div style={{
             background: G.surface, borderRadius: 18, padding: "16px",
             border: `1px solid ${G.greyLight}`, marginBottom: 12,
@@ -4869,27 +4864,74 @@ const ProgressionLoopView = ({
               Historique
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[...(plan.history || [])].slice(-12).reverse().map((s, i) => (
-                <div key={`${s.title}-${i}`} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                  padding: "8px 0", borderBottom: i < Math.min(11, plan.history.length - 1) ? `1px solid ${G.greyXLight}` : "none",
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {s.title}
+              {historyVisible.map(({ session: s, ordinal }, i) => {
+                const rowKey = `${s.title}-${ordinal}`;
+                const prov = buildSessionProvenance(s, {
+                  loopOrdinal: ordinal,
+                  profile,
+                  planId: activePlanId,
+                });
+                return (
+                  <div key={rowKey} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                    padding: "8px 0", borderBottom: i < historyVisible.length - 1 ? `1px solid ${G.greyXLight}` : "none",
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {s.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: G.greyMid, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span>{s.distance} · {s.completed ? "Terminée" : "Abandonnée"}</span>
+                        {prov && (
+                          <button
+                            type="button"
+                            onClick={() => copyHistoryRef(rowKey, prov.supportLine)}
+                            title={prov.shortLabel}
+                            aria-label={`Copier la référence séance ${prov.refCode} pour le support`}
+                            style={{
+                              border: "none", background: "none", padding: 0, cursor: "pointer",
+                              fontSize: 11, fontWeight: 700, color: G.greyMid,
+                              textDecoration: "underline", textUnderlineOffset: 2,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {copiedRef === rowKey ? "réf. copiée" : `réf. ${prov.refCode}`}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: G.greyMid }}>
-                      {s.distance} · {s.completed ? "Terminée" : "Abandonnée"}
-                    </div>
+                    {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.coral} />}
                   </div>
-                  {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.greyMid} />}
-                </div>
-              ))}
+                );
+              })}
             </div>
+            {historyItems.length > HISTORY_PREVIEW && !historyOpen && (
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(true)}
+                style={{
+                  width: "100%", marginTop: 10, minHeight: 44, borderRadius: 12,
+                  border: `1px solid ${G.greyLight}`, background: G.bg,
+                  color: G.blue, fontWeight: 700, fontSize: 13, cursor: "pointer",
+                }}
+              >
+                Voir plus
+              </button>
+            )}
+            {historyItems.length > HISTORY_PREVIEW && historyOpen && (
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(false)}
+                style={{
+                  width: "100%", marginTop: 8, minHeight: 40, border: "none", background: "none",
+                  color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
+                }}
+              >
+                Réduire
+              </button>
+            )}
           </div>
         )}
-
-        {isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="subtle" />}
       </div>
     </div>
   );
@@ -7301,6 +7343,7 @@ const computePlanTotalWeeks = (profile, referenceTime = Date.now()) => {
 
 const generatePlan = async (profile, isPremium = false, referenceTime = Date.now(), { skipDelay = false } = {}) => {
   const templatesP = loadSessionTemplates(supabase);
+  prefetchNatationCatalogue();
   if (!skipDelay) await new Promise(r => setTimeout(r, 1800));
   await templatesP;
   const { level, sessionsPerWeek: freq, pool, goal } = profile;
@@ -7443,6 +7486,7 @@ const buildAdvancedLoopPlan = (entryPlan, entryProfile, archivedSession, isPremi
     { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
     nextCursor,
     isPremium,
+    { ordinalIndex: history.length, history },
   );
   let next = {
     ...base,
@@ -8136,6 +8180,7 @@ export default function App() {
   // Banque séances Supabase (lecture publique) — avant / pendant generatePlan
   useEffect(() => {
     loadSessionTemplates(supabase);
+    prefetchNatationCatalogue();
   }, []);
 
   async function loadUserData(userId, userIsPremium = false) {
@@ -8593,12 +8638,14 @@ export default function App() {
       };
       if (generated.isSessionLoop && p.isSessionLoop) {
         const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
+        const history = p.history || [];
         const { week } = buildProgressionLoopSession(
           { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj },
           cursor,
           premium,
+          { ordinalIndex: history.length, history },
         );
-        updated.history = p.history || [];
+        updated.history = history;
         updated.freeSessionsUsed = p.freeSessionsUsed ?? generated.freeSessionsUsed;
         updated.weekGenKey = p.weekGenKey ?? generated.weekGenKey;
         updated.weekGenCount = p.weekGenCount ?? generated.weekGenCount;
@@ -8645,6 +8692,38 @@ export default function App() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [user?.id, screen, isPremium, plans.length]);
+
+  // Boucle : titres legacy → Séance n°X (ordinal = validations, pas sessionCursor)
+  useEffect(() => {
+    setPlans((prev) => {
+      let changed = false;
+      const next = prev.map((e) => {
+        if (!e.plan?.isSessionLoop) return e;
+        const ordinal = loopSessionOrdinalIndex(e.plan);
+        const title = formatLoopSessionTitle(ordinal);
+        const week0 = e.plan.weeks?.[0];
+        const sess = week0?.sessions?.[0];
+        if (!sess) return e;
+        if (sess.title === title && week0.focus === title) return e;
+        changed = true;
+        return {
+          ...e,
+          plan: {
+            ...e.plan,
+            weeks: [
+              {
+                ...week0,
+                focus: title,
+                sessions: [{ ...sess, title }, ...(week0.sessions || []).slice(1)],
+              },
+              ...(e.plan.weeks || []).slice(1),
+            ],
+          },
+        };
+      });
+      return changed ? next : prev;
+    });
+  }, [plans.length, activePlanId, plan?.isSessionLoop, plan?.history?.length]);
 
   // Boucle progression : déblocage auto + filet « séance validée sans enchaînement » (reload après feedback)
   const loopCurrentResolved = loopSessionNeedsAdvance(plan);
@@ -9084,12 +9163,18 @@ export default function App() {
         if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
         const cur = entry.plan.weeks?.[0]?.sessions?.[0];
         if (!cur || isSessionResolved(cur)) return entry;
-        // Nouveau seed sans archiver — cursor bump pour variété
+        // Nouveau seed sans archiver — cursor bump pour variété, pas le n° nageur
         const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
+        const ordinalIndex = loopSessionOrdinalIndex(entry.plan);
         const { week } = buildProgressionLoopSession(
           { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
           nextCursor,
           true,
+          {
+            ordinalIndex,
+            history: entry.plan.history || [],
+            currentSheetN: cur?.sheetMeta?.n,
+          },
         );
         return {
           ...entry,
@@ -9741,10 +9826,16 @@ export default function App() {
         return Promise.resolve();
       }
       const nextCursor = (activePlanEntry.plan.sessionCursor ?? 0) + 1;
+      const ordinalIndex = loopSessionOrdinalIndex(activePlanEntry.plan);
       const { week } = buildProgressionLoopSession(
         { ...nextProfile, sessionsPerWeek: 1, taste, volumeAdj: activePlanEntry.plan.volumeAdj },
         nextCursor,
         true,
+        {
+          ordinalIndex,
+          history: activePlanEntry.plan.history || [],
+          currentSheetN: cur?.sheetMeta?.n,
+        },
       );
       setPlans((prev) => prev.map((e) => {
         if (e.id !== planIdToUpdate) return e;
@@ -9834,6 +9925,8 @@ export default function App() {
     }
     const shouldApply = canUpdateProgram && (
       nextPatch.pool !== undefined
+      || nextPatch.level !== undefined
+      || nextPatch.sessionsPerWeek !== undefined
       || nextPatch.swimStyle !== undefined
       || nextPatch.favoriteStroke !== undefined
       || nextPatch.knowsFourNages !== undefined

@@ -39,6 +39,7 @@ Autres règles de structure :
 - Lignes compactes `A · B · C — Z2` → sous-séries verticales à l’affichage.
 - Échauffement + retour au calme obligatoires (sauf OW déjà structuré autrement).
 - Éducatifs : le niveau utilisateur doit figurer dans `levels` dérivés du « niveau Arthur » Excel. « adaptable à tous niveaux » n’ouvre pas la Découverte ; Découverte reste aussi bornée à flèche + grand chien (+ allowlist). Case 4 nages : mêmes niveaux Excel sur les éducatifs tagués `4_nages` (corps/IM gardent les 4 nages explicites).
+- Soft-branch catalogue Sheet (`composedBy=natation-sheet`) : sélection + fiche « Voir l’éducatif » = colonnes de l’onglet **Éducatifs** du Google Sheet (`sheetEducatif`). Pas de `matchEducatif` / fiches Arthur `.js` sur ces séances. **Vague 1** : objectifs Nager & Progresser → familles `01`–`03` selon niveau / 4 nages. Tri / OW / diplômes = composeur jusqu’aux vagues suivantes.
 
 ---
 
@@ -47,7 +48,7 @@ Autres règles de structure :
 Le matériel déclaré indique ce que le nageur peut utiliser, jamais ce qu’il doit utiliser.  
 Une séance peut être sans matériel même si l’inventaire est rempli.  
 Lorsqu’un matériel est utilisé, il doit être affiché explicitement sur la ligne d’exercice concernée.  
-Les contraintes existantes restent actives : jamais pull-buoy + palmes dans une même séance ; matériel lié à l’éducatif, jamais tiré au sort.
+Les contraintes existantes restent actives : jamais pull-buoy + palmes **dans le même exercice** (même ligne) ; matériel lié à l’éducatif, jamais tiré au sort.
 
 Rappels pédagogiques :
 
@@ -98,3 +99,11 @@ Autres contrôles :
 - Ton : français, tutoiement, consignes actionnables.
 - Fun : contrastes, pas 2 séries d’affilée à la même allure, pas de monolithes répétitifs.
 - Vocabulaire : **godilles** (sculling) ; **rattrapé** (catch-up) ; **coulée** (pas sortie en apnée).
+
+## Traçabilité support
+
+- Chaque séance affiche une réf. discrète `Réf. <onglet>-<ligne>` (ex. `01-42`) en bas de la vue séance et dans l'historique. Clic = copie de la ligne complète (`session-provenance.js`).
+- Une séance composée hors Sheet affiche `Réf. C-1500` et la mention « pas de ligne Sheet » : **ne jamais inventer un n° de ligne** pour un fallback composeur.
+- `Séance n°6` (titre nageur) = 6e validation, **≠** ligne du Sheet. Les deux figurent dans la réf. copiée (`UI n°6 | Sheet «01 Nager deb crawl» ligne n°42`).
+- La réf. de la dernière séance vue part automatiquement avec les messages support (ligne `🏊` dans Telegram) et dans les events PostHog (`composedBy`, `sheetFamily`, `sheetN`).
+- Vue séance partagée publiquement (`SessionLiveView`) : pas de réf. affichée.

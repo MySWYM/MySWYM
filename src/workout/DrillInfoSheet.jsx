@@ -80,10 +80,6 @@ export default function DrillInfoSheet({ educatif, onClose, colors: G }) {
           </a>
         )}
 
-        <p style={{ margin: "0 0 14px", fontSize: 15, color: G.inkLight, lineHeight: 1.5 }}>
-          {educatif.shortDescription}
-        </p>
-
         {(educatif.level || educatif.equipment) && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             {educatif.level ? (
@@ -101,12 +97,14 @@ export default function DrillInfoSheet({ educatif, onClose, colors: G }) {
           </div>
         )}
 
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
-            Objectif
+        {educatif.objective ? (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+              Objectif
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: G.ink, lineHeight: 1.4 }}>{educatif.objective}</div>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: G.ink, lineHeight: 1.4 }}>{educatif.objective}</div>
-        </div>
+        ) : null}
 
         <div style={{
           background: G.greyXLight, borderRadius: 14, padding: "14px 16px", marginBottom: 14,

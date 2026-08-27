@@ -11,6 +11,7 @@
 | --- | --- |
 | Décisions pédagogiques Arthur | Excel validé + règles actives Arthur |
 | Bibliothèque utilisée par le composeur | Catalogue versionné dans le code |
+| Catalogue soft Google Sheet (flag local) | Live Sheet = séances + onglet Éducatifs ; fiches UI via `sheetEducatif`, pas `.js` Arthur. **Vague 1** : Nager 01–03 seulement. |
 | Séances Gold / modèles validés | Supabase `session_templates` |
 | Composition, contrôles et rendu | Un seul point d’entrée : `composeSession` |
 | Ancien moteur | Fallback technique temporaire, jamais une source de décision concurrente |
@@ -27,6 +28,8 @@
 | Banque drills / catalogues | Catalogue versionné dans le code (`exercise-library`, `swim-banks`, éducatifs) | Source bibliothèque |
 | Templates Gold | Supabase `session_templates` (`quality=gold` / `coach_approved`) | Modèles validés Arthur |
 | Bridge plan | `swim-plan-bridge.js` | Branche le profil vers le composeur |
+| Catalogue Sheet (soft) | `natation-sheet/` + `VITE_NATATION_SHEET_CATALOGUE` | Vague 1 : Nager `01`–`03` via `SHEET_SOFT_FAMILIES` ; éducatif = `sheetEducatif` |
+| Provenance séance (support) | `session-provenance.js` + `support-context.js` | Réf. `onglet-ligne` affichée / copiée, jointe au support et aux events |
 | Ancien moteur | `SESSION_TEMPLATES` / `PHASE_PATTERNS` (ex. BNSSA, BPJEPS, pompiers) | Fallback temporaire seulement |
 | Générateur legacy coach | `swim-session-generator.js` | Ne décide plus en concurrence avec `composeSession` |
 

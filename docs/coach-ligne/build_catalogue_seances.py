@@ -340,8 +340,8 @@ def deb_ech(i: int) -> str:
     return join([
         "100 m nage libre souple",
         "50 m crawl",
-        f"50 m {a} normal",
-        "100 m crawl (25 m {éducatif} + 25 m crawl normal)",
+        f"50 m {a}",
+        "100 m crawl (25 m {éducatif} + 25 m crawl)",
     ])  # 300
 
 
@@ -639,16 +639,16 @@ def session_int_crawl(fam, i, role, bande, phase=None):
         if ech_m >= 300:
             core = ech_m - 100
             ech = join([int_c_ech(core, method, i) if core >= 200 else f"{core} m crawl souple",
-                        "100 m crawl (25 m {éducatif} + 25 m crawl normal)"])
+                        "100 m crawl (25 m {éducatif} + 25 m crawl)"])
             if meters_of(ech) != ech_m:
                 ech = join([f"{ech_m - 100} m crawl souple",
-                            "100 m crawl (25 m {éducatif} + 25 m crawl normal)"])
+                            "100 m crawl (25 m {éducatif} + 25 m crawl)"])
         else:
             ech = join([f"{ech_m - 100} m crawl souple" if ech_m > 100 else "100 m crawl souple",
-                        "100 m crawl (25 m {éducatif} + 25 m crawl normal)"]) if ech_m >= 200 else ech
+                        "100 m crawl (25 m {éducatif} + 25 m crawl)"]) if ech_m >= 200 else ech
     if meters_of(ech) != ech_m:
         ech = join([f"{ech_m - 100} m crawl souple",
-                    "100 m crawl (25 m {éducatif} + 25 m crawl normal)"])
+                    "100 m crawl (25 m {éducatif} + 25 m crawl)"])
     bloc = int_c_bloc(role, bloc_m, i, fam["flavor"], method)
     if not str(role).startswith(("test", "deload")):
         bloc = inject_marker(bloc, i, fam["flavor"], False, bloc_m)
