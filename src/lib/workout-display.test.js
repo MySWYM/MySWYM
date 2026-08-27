@@ -288,6 +288,22 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
     details: ["-100 m crawl (25 m toucher cuisse + 25 m crawl)"],
   }).exercises[0];
   assert.equal(orphan.educatif, null);
+
+  // 4 nages : plusieurs fiches sur la même ligne
+  const fourFiches = [
+    { id: "sheet:pap", name: "Pap un bras", ficheSource: "sheet" },
+    { id: "sheet:dos", name: "Dos deux bras", ficheSource: "sheet" },
+    { id: "sheet:br", name: "Coulée brasse", ficheSource: "sheet" },
+    { id: "sheet:cr", name: "Flèche", ficheSource: "sheet" },
+  ];
+  const fourEx = buildWorkoutView({
+    composedBy: "natation-sheet",
+    sheetEducatif: fourFiches[0],
+    sheetEducatifs: fourFiches,
+    details: ["-100 m 4 nages Pap un bras (pap) + Dos deux bras (dos) + Coulée brasse (brasse) + Flèche (crawl)"],
+  }).exercises[0];
+  assert.equal(fourEx.educatifs?.length, 4);
+  assert.equal(fourEx.educatif?.name, "Pap un bras");
 }
 
 console.log("workout-display.test.js PASS");

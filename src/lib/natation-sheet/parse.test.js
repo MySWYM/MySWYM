@@ -5,16 +5,19 @@
 import {
   fillPlaceholders,
   lineAllowsMateriel,
+  lineHasFourNagesEducatifs,
   materializeSession,
   parseEducatifsCsv,
   parseSessionsCsv,
   pickEducatif,
+  pickFourNagesEducatifs,
   pickMaterielForLine,
   pickSession,
   excludeSheetNsFromHistory,
   excludeEducatifNamesFromHistory,
   educatifRowToUiFiche,
   sheetFamilyIdFromProfile,
+  formatFourNagesEducatifsLabel,
 } from "./parse.js";
 
 function ok(cond, msg) {
@@ -29,11 +32,14 @@ Petit chien,crawl,non,oui,oui,x,y,"pull-buoy et/ou tubas",oui,
 Grand chien,crawl,oui,oui,oui,x,y,"pull-buoy et/ou tubas",oui,
 Flèche,crawl,oui,oui,oui,x,y,"tubas et/ou palmes",oui,
 Ignore moi,crawl,oui,oui,oui,x,y,,non,
+Pap un bras,papillon,non,oui,oui,x,y,,oui,
+Dos deux bras,dos,non,oui,oui,x,y,,oui,
+Coulée brasse,brasse,non,oui,oui,x,y,,oui,
 `;
 
 const edu = parseEducatifsCsv(eduCsv);
-ok(edu.length === 4, "4 rows");
-ok(edu.filter((e) => e.garder).length === 3, "3 garder");
+ok(edu.length === 7, "7 rows");
+ok(edu.filter((e) => e.garder).length === 6, "6 garder");
 ok(edu.find((e) => e.nom === "Grand chien").debutant, "grand chien deb");
 ok(
   edu.find((e) => e.nom === "Petit chien").materiel.includes("pull") &&
@@ -215,5 +221,45 @@ ok(
   sheetFamilyIdFromProfile({ goal: "open_water_5k", level: "sportif", swimStyle: "crawl" }) === null,
   "vague1 OW pas encore branché",
 );
+
+ok(lineHasFourNagesEducatifs("100 m 4 nages éducatifs"), "détecte 4 nages + éducatifs");
+ok(lineHasFourNagesEducatifs("4 × 50 m (25 m {éducatif} + 25 m) (4 nages)"), "détecte 4 nages + {éducatif}");
+ok(!lineHasFourNagesEducatifs("100 m crawl {éducatif}"), "pas 4 nages → mono");
+
+const four = pickFourNagesEducatifs(edu, { levelBand: "intermediaire" }, () => 0);
+ok(four.papillon?.nage === "papillon", "1 papillon");
+ok(four.dos?.nage === "dos", "1 dos");
+ok(four.brasse?.nage === "brasse", "1 brasse");
+ok(/crawl/.test(four.crawl?.nage || ""), "1 crawl");
+ok(four.list.length === 4, "quatuor");
+const fourNames = new Set(four.list.map((e) => e.nom));
+ok(fourNames.size === 4, "4 noms distincts");
+
+const label = formatFourNagesEducatifsLabel(four);
+ok(/pap\)/.test(label) && /dos\)/.test(label) && /\+/.test(label), "label 4 nages");
+
+const sess4Csv = `n°,bande,total_m,échauffement,bloc de séance,retour au calme,contrôle_somme
+1,intermédiaire,1400,"100 m 4 nages éducatifs","8 × 50 m 4 nages","100 m",1400
+`;
+const sess4 = parseSessionsCsv(sess4Csv, { hasPhase: false });
+const filled4 = materializeSession(
+  sess4[0],
+  edu,
+  { levelBand: "intermediaire", nage: "4_nages" },
+  () => 0,
+);
+ok(!/éducatifs?/i.test(filled4.echauffement), "mot éducatif remplacé");
+ok(/100 m 4 nages /.test(filled4.echauffement), "distance inchangée");
+ok(filled4.educatifs?.length === 4, "4 éducatifs attachés");
+ok(
+  /Pap un bras|Dos deux bras|Coulée brasse|Flèche|Grand chien|Petit chien/.test(filled4.echauffement),
+  "noms réels dans la ligne",
+);
+
+const histEdu4 = excludeEducatifNamesFromHistory(
+  [{ sheetMeta: { educatifs: ["Pap un bras", "Dos deux bras", "Coulée brasse", "Petit chien"] } }],
+  5,
+);
+ok(histEdu4.length === 4, "historique multi-éducatifs");
 
 console.log("natation-sheet/parse.test.js OK");

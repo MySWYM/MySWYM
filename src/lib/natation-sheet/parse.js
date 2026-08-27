@@ -38,6 +38,9 @@ export const SHEET_RECENT_EXCLUDE = 10;
 /** Fenêtre anti-doublon éducatifs (onglet Éducatifs) — plus courte : pool souvent petit. */
 export const SHEET_RECENT_EDUCATIFS = 5;
 
+/** Ordre IM pour les séances « 4 nages + éducatifs ». */
+export const FOUR_NAGES_STROKES = Object.freeze(["papillon", "dos", "brasse", "crawl"]);
+
 export function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -292,21 +295,58 @@ export function normalizeEducatifKey(name) {
     .replace(/\p{M}/gu, "");
 }
 
+/** Normalise la colonne Nage du Sheet → papillon|dos|brasse|crawl|toutes|autre. */
+export function normalizeNageKey(raw) {
+  const t = String(raw || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (!t) return "";
+  if (/^(toutes|all|4n|4_nages|im)$/.test(t) || /4\s*nages/.test(t)) return "toutes";
+  if (/pap|fly|butterfly/.test(t)) return "papillon";
+  if (/dos|back/.test(t)) return "dos";
+  if (/brasse|breast/.test(t)) return "brasse";
+  if (/crawl|nl|free|nage\s*libre/.test(t)) return "crawl";
+  return t;
+}
+
+/** Ligne Sheet : « 4 nages » + « éducatif(s) » → 1 éducatif par nage. */
+export function lineHasFourNagesEducatifs(line) {
+  const s = String(line || "");
+  if (!/4\s*nages/i.test(s)) return false;
+  return /[ée]ducatif/i.test(s);
+}
+
+export function sessionHasFourNagesEducatifs(session) {
+  const blob = [session?.echauffement, session?.bloc, session?.rac].map((x) => String(x || "")).join("\n");
+  return String(blob)
+    .split("\n")
+    .some((line) => lineHasFourNagesEducatifs(line));
+}
+
 /** Noms d’éducatifs déjà vus (historique + optionnel courant) — plus récents d’abord. */
 export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_EDUCATIFS) {
   const list = Array.isArray(history) ? history : [];
   const names = [];
   const seen = new Set();
-  for (let i = list.length - 1; i >= 0 && names.length < limit; i--) {
-    const raw =
-      list[i]?.sheetMeta?.educatif ||
-      list[i]?.sheetEducatif?.name ||
-      list[i]?.composerWhy?.educatif ||
-      null;
+  const push = (raw) => {
     const key = normalizeEducatifKey(raw);
-    if (!key || seen.has(key)) continue;
+    if (!key || seen.has(key) || names.length >= limit) return;
     seen.add(key);
     names.push(String(raw).trim());
+  };
+  for (let i = list.length - 1; i >= 0 && names.length < limit; i--) {
+    const row = list[i];
+    const multi =
+      row?.sheetMeta?.educatifs ||
+      row?.composerWhy?.educatifs ||
+      (Array.isArray(row?.sheetEducatifs) ? row.sheetEducatifs.map((f) => f?.name) : null);
+    if (Array.isArray(multi) && multi.length) {
+      for (const n of multi) push(n);
+      continue;
+    }
+    push(row?.sheetMeta?.educatif || row?.sheetEducatif?.name || row?.composerWhy?.educatif || null);
   }
   return names;
 }
@@ -318,17 +358,21 @@ export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_ED
  */
 export function pickEducatif(educatifs, opts, rng = Math.random) {
   const band = opts.levelBand || "intermediaire";
-  const nageWant = String(opts.nage || "crawl").toLowerCase();
+  const nageWant = normalizeNageKey(opts.nage || "crawl");
   let pool = (educatifs || []).filter((e) => e.garder);
   pool = pool.filter((e) => {
     if (band === "debutant") return e.debutant;
     if (band === "avance") return e.avance;
     return e.intermediaire;
   });
-  if (nageWant && nageWant !== "4_nages" && nageWant !== "4n") {
+  if (nageWant && nageWant !== "toutes") {
     const byNage = pool.filter((e) => {
-      const n = String(e.nage || "");
-      return !n || n === nageWant || n === "toutes" || n.split(/[,/]+/).map((x) => x.trim()).includes(nageWant);
+      const parts = String(e.nage || "")
+        .split(/[,/]+/)
+        .map((x) => normalizeNageKey(x.trim()))
+        .filter(Boolean);
+      if (!parts.length) return true;
+      return parts.includes(nageWant) || parts.includes("toutes");
     });
     if (byNage.length) pool = byNage;
   }
@@ -354,6 +398,42 @@ export function pickEducatif(educatifs, opts, rng = Math.random) {
 }
 
 /**
+ * 1 éducatif par nage (ordre IM). Noms distincts dans le quatuor si le pool le permet.
+ * @returns {{ papillon: EducatifRow|null, dos: EducatifRow|null, brasse: EducatifRow|null, crawl: EducatifRow|null, list: EducatifRow[] }}
+ */
+export function pickFourNagesEducatifs(educatifs, opts, rng = Math.random) {
+  const used = [];
+  /** @type {Record<string, EducatifRow|null>} */
+  const byStroke = {};
+  for (const stroke of FOUR_NAGES_STROKES) {
+    const pick = pickEducatif(
+      educatifs,
+      {
+        ...opts,
+        nage: stroke,
+        hardExcludeNames: [...(opts.hardExcludeNames || []), ...used],
+        excludeNames: [...(opts.excludeNames || []), ...used],
+      },
+      rng,
+    );
+    byStroke[stroke] = pick;
+    if (pick?.nom) used.push(pick.nom);
+  }
+  const list = FOUR_NAGES_STROKES.map((s) => byStroke[s]).filter(Boolean);
+  return { ...byStroke, list };
+}
+
+/** Libellé des 4 noms (distances inchangées — on ne touche qu’aux noms). */
+export function formatFourNagesEducatifsLabel(byStroke) {
+  return FOUR_NAGES_STROKES.map((stroke) => {
+    const nom = byStroke?.[stroke]?.nom || "éducatif";
+    const short =
+      stroke === "papillon" ? "pap" : stroke === "brasse" ? "brasse" : stroke === "dos" ? "dos" : "crawl";
+    return `${nom} (${short})`;
+  }).join(" + ");
+}
+
+/**
  * Pull + palmes interdits sur la même ligne d'exercice (pas sur la séance entière).
  * @param {string} line
  * @param {string[]} adding
@@ -367,11 +447,34 @@ export function lineAllowsMateriel(line, adding = []) {
 
 /**
  * @param {string} text
- * @param {{ educatifNom: string, materielLabel?: string|null }} fill
+ * @param {{ educatifNom?: string, materielLabel?: string|null, fourNagesLabel?: string|null, fourNagesByStroke?: Record<string, {nom?: string}|null>|null }} fill
  */
 export function fillPlaceholders(text, fill) {
   let out = String(text || "");
-  if (fill.educatifNom) {
+  const by = fill.fourNagesByStroke || null;
+  if (by) {
+    const aliases = {
+      papillon: ["papillon", "pap", "butterfly"],
+      dos: ["dos", "back"],
+      brasse: ["brasse", "breast"],
+      crawl: ["crawl", "nl", "free"],
+    };
+    for (const stroke of FOUR_NAGES_STROKES) {
+      const nom = by[stroke]?.nom;
+      if (!nom) continue;
+      for (const a of aliases[stroke]) {
+        out = out.replaceAll(`{éducatif_${a}}`, nom).replaceAll(`{educatif_${a}}`, nom);
+      }
+    }
+  }
+  if (fill.fourNagesLabel && lineHasFourNagesEducatifs(out)) {
+    // Distances inchangées : on remplace seulement le trou / le mot « éducatif(s) »
+    if (/\{éducatif\}|\{educatif\}/i.test(out)) {
+      out = out.replaceAll("{éducatif}", fill.fourNagesLabel).replaceAll("{educatif}", fill.fourNagesLabel);
+    } else {
+      out = out.replace(/[ée]ducatifs?/gi, fill.fourNagesLabel);
+    }
+  } else if (fill.educatifNom) {
     out = out.replaceAll("{éducatif}", fill.educatifNom).replaceAll("{educatif}", fill.educatifNom);
   }
   if (fill.materielLabel) {
@@ -410,27 +513,47 @@ export function pickMaterielForLine(edu, equipment, line, rng = Math.random) {
 /**
  * @param {SessionRow} session
  * @param {EducatifRow[]} educatifs
- * @param {{ levelBand: string, nage?: string, equipment?: string[]|null }} opts
+ * @param {{ levelBand: string, nage?: string, equipment?: string[]|null, excludeNames?: string[], hardExcludeNames?: string[] }} opts
  * @param {() => number} [rng]
  */
 export function materializeSession(session, educatifs, opts, rng = Math.random) {
-  const edu = pickEducatif(educatifs, opts, rng);
+  const blob = [session?.echauffement, session?.bloc, session?.rac].map((x) => String(x || "")).join("\n");
+  const wantsFour =
+    sessionHasFourNagesEducatifs(session) || /\{[ée]ducatif_(pap|dos|brasse|crawl)/i.test(blob);
+  const four = wantsFour ? pickFourNagesEducatifs(educatifs, opts, rng) : null;
+  const fourLabel = four ? formatFourNagesEducatifsLabel(four) : null;
+  // Séance mono-nage (ou lignes hors « 4 nages éducatifs ») : 1 éducatif comme avant
+  const edu =
+    (!wantsFour && pickEducatif(educatifs, opts, rng)) ||
+    four?.crawl ||
+    four?.list?.[0] ||
+    pickEducatif(educatifs, opts, rng);
   const educatifNom = edu?.nom || "éducatif";
   const fillBlock = (block) => {
     const lines = String(block || "").split("\n");
     return lines
       .map((line) => {
+        const isFourLine = lineHasFourNagesEducatifs(line);
+        const hasStrokePh = /\{[ée]ducatif_(pap|dos|brasse|crawl)/i.test(line);
         let materielLabel = null;
-        if (/\{matériel\}|\{materiel\}/i.test(line) && edu) {
-          materielLabel = pickMaterielForLine(edu, opts.equipment, line, rng);
+        const matosSource = isFourLine || hasStrokePh ? four?.crawl || edu : edu;
+        if (/\{matériel\}|\{materiel\}/i.test(line) && matosSource) {
+          materielLabel = pickMaterielForLine(matosSource, opts.equipment, line, rng);
         }
-        return fillPlaceholders(line, { educatifNom, materielLabel });
+        return fillPlaceholders(line, {
+          educatifNom: isFourLine ? undefined : educatifNom,
+          fourNagesLabel: isFourLine ? fourLabel : null,
+          fourNagesByStroke: isFourLine || hasStrokePh ? four : null,
+          materielLabel,
+        });
       })
       .join("\n");
   };
   return {
     ...session,
     educatif: edu,
+    educatifs: four?.list?.length ? four.list : edu ? [edu] : [],
+    educatifsByStroke: four || null,
     echauffement: fillBlock(session.echauffement),
     bloc: fillBlock(session.bloc),
     rac: fillBlock(session.rac),

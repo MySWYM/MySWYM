@@ -566,17 +566,25 @@ export function buildWorkoutView(session = {}) {
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
     const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" — ");
     let educatif = null;
+    let educatifs = [];
     if (session.composedBy === "natation-sheet") {
       // Source de vérité = onglet Éducatifs du Sheet (attaché à la séance)
-      const sheetFiche = session.sheetEducatif;
-      if (sheetFiche?.name) {
+      const fiches = Array.isArray(session.sheetEducatifs) && session.sheetEducatifs.length
+        ? session.sheetEducatifs
+        : session.sheetEducatif?.name
+          ? [session.sheetEducatif]
+          : [];
+      for (const sheetFiche of fiches) {
+        if (!sheetFiche?.name) continue;
         const re = new RegExp(sheetFiche.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
         if (re.test(blob) || re.test(String(mainClean || ""))) {
-          educatif = sheetFiche;
+          educatifs.push(sheetFiche);
         }
       }
+      educatif = educatifs[0] || null;
     } else {
       educatif = matchEducatif(blob);
+      if (educatif) educatifs = [educatif];
     }
     index += 1;
     exercises.push({
@@ -606,6 +614,7 @@ export function buildWorkoutView(session = {}) {
       meters,
       educatifId: educatif?.id || null,
       educatif,
+      educatifs: educatifs.length ? educatifs : null,
     });
   };
 

@@ -251,10 +251,16 @@ export default function WorkoutExerciseCard({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
           {exercise.restLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
           {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
-          {exercise.educatif && (
+          {(exercise.educatifs?.length
+            ? exercise.educatifs
+            : exercise.educatif
+              ? [exercise.educatif]
+              : []
+          ).map((fiche, i) => (
             <button
+              key={fiche.id || fiche.name || i}
               type="button"
-              onClick={() => onOpenDrill?.(exercise.educatif)}
+              onClick={() => onOpenDrill?.(fiche)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 border: "none", background: G.blueLight, color: G.blue,
@@ -262,9 +268,12 @@ export default function WorkoutExerciseCard({
                 cursor: "pointer", minHeight: 32,
               }}
             >
-              <Info size={12} /> Voir l’éducatif
+              <Info size={12} />{" "}
+              {exercise.educatifs?.length > 1
+                ? `Voir · ${fiche.name}`
+                : "Voir l’éducatif"}
             </button>
-          )}
+          ))}
         </div>
       </div>
 

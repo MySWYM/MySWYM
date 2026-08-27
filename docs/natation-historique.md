@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-27 | 4 nages + éducatifs | Sheet : dès qu’une ligne contient **« 4 nages » + « éducatif(s) »**, tirage **1 éducatif par nage** (pap → dos → brasse → crawl). Distances inchangées ; seuls les noms sont injectés. Anti-doublon par nage ; 4 fiches « Voir · … ». | ✅ active |
 | 2026-08-27 | Allures Sheet (tips) | Pastilles ⓘ sur séances : **Souple**, **Moyen** (ou « allure régulière »), **Progressif**, **Vite**, **À bloc**. Vocabulaire Sheet int/avancé ; débutant reste sur facile/souple. | ✅ active |
 | 2026-08-27 | Éducatif ≠ matos | Tirage éducatif Sheet = **niveau + nage** seulement. Matos fiche = optionnel (`et/ou`) : utilisé uniquement sur `{matériel}`, et seulement s’il est dans l’inventaire nageur. | ✅ active |
 | 2026-08-27 | Éducatif jamais 2× d’affilée | Sheet : le dernier éducatif est en exclusion dure ; recyclage seulement s’il n’existe aucune autre option compatible (niveau/matos). | ✅ active |

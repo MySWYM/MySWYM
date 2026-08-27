@@ -255,10 +255,11 @@ export default function PoolMode({
           </div>
         )}
 
-        {ex.educatif && (
+        {(ex.educatifs?.length ? ex.educatifs : ex.educatif ? [ex.educatif] : []).map((fiche) => (
           <button
+            key={fiche.id || fiche.name}
             type="button"
-            onClick={() => setDrill(ex.educatif)}
+            onClick={() => setDrill(fiche)}
             style={{
               alignSelf: "flex-start",
               marginTop: 4,
@@ -272,9 +273,9 @@ export default function PoolMode({
               minHeight: 44,
             }}
           >
-            Voir l’éducatif · {ex.educatif.name}
+            Voir l’éducatif · {fiche.name}
           </button>
-        )}
+        ))}
       </div>
 
       {onTooHard && (

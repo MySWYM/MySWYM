@@ -148,7 +148,16 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
     ...excludeEducatifNamesFromHistory(opts.history, SHEET_RECENT_EDUCATIFS),
     ...(opts.excludeEducatifs || []),
   ];
-  if (opts.currentEducatif) recentEducatifs.unshift(String(opts.currentEducatif));
+  if (Array.isArray(opts.currentEducatifs) && opts.currentEducatifs.length) {
+    for (const n of opts.currentEducatifs) {
+      if (n) recentEducatifs.unshift(String(n));
+    }
+  } else if (opts.currentEducatif) {
+    // Séance 4 nages : « A · B · C · D » → exclure chaque nom
+    for (const part of String(opts.currentEducatif).split(/\s*·\s*/)) {
+      if (part.trim()) recentEducatifs.unshift(part.trim());
+    }
+  }
   // Dédupe en gardant l’ordre (le plus récent = hard exclude)
   const seenEdu = new Set();
   const orderedEducatifs = [];
@@ -194,8 +203,11 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
   ];
 
   const distance = filled.total_m;
-  const eduName = filled.educatif?.nom;
-  const sheetEducatif = educatifRowToUiFiche(filled.educatif);
+  const eduList = Array.isArray(filled.educatifs) ? filled.educatifs : filled.educatif ? [filled.educatif] : [];
+  const eduNames = eduList.map((e) => e?.nom).filter(Boolean);
+  const sheetEducatifs = eduList.map(educatifRowToUiFiche).filter(Boolean);
+  const sheetEducatif = sheetEducatifs[0] || null;
+  const eduName = eduNames.length > 1 ? eduNames.join(" · ") : eduNames[0] || null;
   return {
     type: "ENDURANCE",
     title: `Séance · ${distance} m`,
@@ -209,21 +221,24 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
     trainingDistance: distance,
     volumeFromSets: distance,
     composedBy: "natation-sheet",
-    /** Fiche éducatif = onglet Sheet (pas arthur-educatif-fiches.js) */
+    /** Fiche(s) éducatif = onglet Sheet (pas arthur-educatif-fiches.js) */
     sheetEducatif,
+    sheetEducatifs: sheetEducatifs.length ? sheetEducatifs : null,
     sheetMeta: {
       familyId,
       n: filled.n,
       phase: filled.phase,
       bande: filled.bande,
-      educatif: eduName || null,
+      educatif: eduName,
+      educatifs: eduNames.length ? eduNames : null,
       total_m: filled.total_m,
     },
     composerWhy: {
       source: "natation-sheet",
       familyId,
       sessionN: filled.n,
-      educatif: eduName || null,
+      educatif: eduName,
+      educatifs: eduNames.length ? eduNames : null,
       excludeNs,
       excludeEducatifs,
       hardExcludeNames,
