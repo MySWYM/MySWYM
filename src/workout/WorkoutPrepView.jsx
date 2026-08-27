@@ -221,7 +221,7 @@ export default function WorkoutPrepView({
                   >
                     <WorkoutExerciseCard
                       exercise={locked && section.id === "main" && i > 1
-                        ? { ...ex, main: "••••••", cue: "Premium", volumeLabel: "•••", strokeLabel: null, educatif: null, children: [], cues: [] }
+                        ? { ...ex, main: "••••••", cue: "Premium", volumeLabel: "•••", strokeLabel: null, educatif: null, educatifs: null, children: [], cues: [] }
                         : ex}
                       colors={G}
                       accent={{ bg: tone.headerBg, color: tone.accent }}
@@ -334,7 +334,14 @@ export default function WorkoutPrepView({
         </button>
       )}
 
-      {drill && <DrillInfoSheet educatif={drill} onClose={() => setDrill(null)} colors={G} />}
+      {drill && (
+        <DrillInfoSheet
+          educatif={Array.isArray(drill) ? undefined : drill}
+          educatifs={Array.isArray(drill) ? drill : undefined}
+          onClose={() => setDrill(null)}
+          colors={G}
+        />
+      )}
     </div>
   );
 }

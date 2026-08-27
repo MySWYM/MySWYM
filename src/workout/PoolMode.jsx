@@ -255,27 +255,36 @@ export default function PoolMode({
           </div>
         )}
 
-        {(ex.educatifs?.length ? ex.educatifs : ex.educatif ? [ex.educatif] : []).map((fiche) => (
-          <button
-            key={fiche.id || fiche.name}
-            type="button"
-            onClick={() => setDrill(fiche)}
-            style={{
-              alignSelf: "flex-start",
-              marginTop: 4,
-              border: "none",
-              background: "none",
-              color: G.blue,
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: "10px 0",
-              minHeight: 44,
-            }}
-          >
-            Voir l’éducatif · {fiche.name}
-          </button>
-        ))}
+        {(() => {
+          const drills =
+            Array.isArray(ex.educatifs) && ex.educatifs.length
+              ? ex.educatifs
+              : ex.educatif
+                ? [ex.educatif]
+                : [];
+          if (!drills.length) return null;
+          const multi = drills.length > 1;
+          return (
+            <button
+              type="button"
+              onClick={() => setDrill(multi ? drills : drills[0])}
+              style={{
+                alignSelf: "flex-start",
+                marginTop: 4,
+                border: "none",
+                background: "none",
+                color: G.blue,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                padding: "10px 0",
+                minHeight: 44,
+              }}
+            >
+              {multi ? "Voir les éducatifs" : `Voir l’éducatif · ${drills[0].name}`}
+            </button>
+          );
+        })()}
       </div>
 
       {onTooHard && (
@@ -381,7 +390,14 @@ export default function PoolMode({
         </button>
       </div>
 
-      {drill && <DrillInfoSheet educatif={drill} onClose={() => setDrill(null)} colors={G} />}
+      {drill && (
+        <DrillInfoSheet
+          educatif={Array.isArray(drill) ? undefined : drill}
+          educatifs={Array.isArray(drill) ? drill : undefined}
+          onClose={() => setDrill(null)}
+          colors={G}
+        />
+      )}
     </div>,
     document.body,
   );

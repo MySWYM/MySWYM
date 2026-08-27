@@ -186,7 +186,15 @@ export default function WorkoutExerciseCard({
 
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
   const stroke = exercise.strokeLabel;
-  const primaryCue = exercise.cue;
+  const drills =
+    Array.isArray(exercise.educatifs) && exercise.educatifs.length
+      ? exercise.educatifs
+      : exercise.educatif
+        ? [exercise.educatif]
+        : [];
+  const multiDrills = drills.length > 1;
+  // Liste longue « Nom (pap) + … » → résumé ; détails dans le sheet
+  const primaryCue = multiDrills ? "4 éducatifs (1 / nage)" : exercise.cue;
   const allureChips = detectAllureTips(exercise);
 
   return (
@@ -251,16 +259,10 @@ export default function WorkoutExerciseCard({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
           {exercise.restLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
           {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
-          {(exercise.educatifs?.length
-            ? exercise.educatifs
-            : exercise.educatif
-              ? [exercise.educatif]
-              : []
-          ).map((fiche, i) => (
+          {drills.length > 0 && (
             <button
-              key={fiche.id || fiche.name || i}
               type="button"
-              onClick={() => onOpenDrill?.(fiche)}
+              onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 border: "none", background: G.blueLight, color: G.blue,
@@ -269,11 +271,9 @@ export default function WorkoutExerciseCard({
               }}
             >
               <Info size={12} />{" "}
-              {exercise.educatifs?.length > 1
-                ? `Voir · ${fiche.name}`
-                : "Voir l’éducatif"}
+              {multiDrills ? "Voir les éducatifs" : "Voir l’éducatif"}
             </button>
-          ))}
+          )}
         </div>
       </div>
 
