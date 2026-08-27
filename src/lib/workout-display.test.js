@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
-import { buildWorkoutView, splitHeadline, formatRestLabel, parseMetersFromLine } from "./workout-display.js";
+import {
+  buildWorkoutView,
+  splitHeadline,
+  formatRestLabel,
+  parseMetersFromLine,
+  scrubLegacyNormalWording,
+} from "./workout-display.js";
 import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js";
+
+{
+  assert.equal(scrubLegacyNormalWording("Jambes crawl avec planche,"), "Jambes crawl avec planche");
+  assert.equal(scrubLegacyNormalWording("Avec palmes,"), "Avec palmes");
+  assert.equal(scrubLegacyNormalWording("crawl normal"), "crawl");
+}
 
 {
   const h = splitHeadline("8 × 50 m crawl — respiration 3 temps");

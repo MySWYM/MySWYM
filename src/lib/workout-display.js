@@ -224,6 +224,7 @@ export function formatRestLabel(rest) {
 
 /**
  * Aligne le libellé UI sur le Sheet (plus de « crawl normal » / « dos normal »).
+ * Retire aussi les virgules décoratives en fin de consigne (souvent dans le Sheet).
  */
 export function scrubLegacyNormalWording(text) {
   if (!text) return text;
@@ -232,6 +233,7 @@ export function scrubLegacyNormalWording(text) {
     .replace(/\s{2,}/g, " ")
     .replace(/\(\s+/g, "(")
     .replace(/\s+\)/g, ")")
+    .replace(/,+\s*$/g, "")
     .trim();
 }
 
