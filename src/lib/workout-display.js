@@ -310,9 +310,68 @@ export function isSoftFillCue(cue) {
 }
 
 /**
+ * Répartition des nages pour le badge MIXTE (fidèle au Sheet).
+ * Ex. « (75 m crawl et 25 m dos) » → « 75 crawl / 25 dos »
+ * Ex. « crawl / dos » → « crawl / dos »
+ * @returns {string|null}
+ */
+export function extractMixteRepartition(text) {
+  const t = String(text || "");
+  if (!t.trim()) return null;
+
+  const normStroke = (raw) => {
+    const s = String(raw || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+    if (s === "nl" || s === "nage libre") return s === "nage libre" ? "au choix" : "crawl";
+    return s;
+  };
+
+  const fromPairs = (src) => {
+    const parts = [];
+    const re = /(\d+)\s*m\s+(crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)\b/gi;
+    let m;
+    while ((m = re.exec(src))) {
+      parts.push(`${m[1]} ${normStroke(m[2])}`);
+    }
+    return parts.length >= 2 ? parts.join(" / ") : null;
+  };
+
+  const paren = t.match(/\(([^)]*(?:crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)[^)]*)\)/i);
+  if (paren) {
+    const fromParen = fromPairs(paren[1]);
+    if (fromParen) return fromParen;
+  }
+
+  const fromLine = fromPairs(t);
+  if (fromLine) return fromLine;
+
+  const slash = t.match(
+    /\b(crawl|dos|brasse|papillon)\s*[\/·|]\s*(crawl|dos|brasse|papillon|au\s+choix)\b/i,
+  );
+  if (slash) return `${normStroke(slash[1])} / ${normStroke(slash[2])}`;
+
+  const ordered = [];
+  const seen = new Set();
+  for (const m of t.matchAll(/\b(crawl|dos|brasse|papillon)\b/gi)) {
+    const s = normStroke(m[1]);
+    if (!seen.has(s)) {
+      seen.add(s);
+      ordered.push(s);
+    }
+  }
+  if (/\b(au\s+choix|nage\s+libre)\b/i.test(t) && !seen.has("au choix")) {
+    ordered.push("au choix");
+  }
+  if (ordered.length >= 2) return ordered.join(" / ");
+  return null;
+}
+
+/**
  * Déduit le libellé nage pour l’UI :
  * - 4 nages / médley / 4 strokes → « 4 NAGES »
- * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE »
+ * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE » (+ répartition si connue)
  * - sinon nage unique / nage au choix
  */
 export function inferStrokeLabel(blob) {
@@ -340,10 +399,13 @@ export function inferStrokeLabel(blob) {
 
   const isMixte = strokes.size >= 2 || (strokes.size >= 1 && free) || mixWord;
   if (isMixte) {
-    // Consommer seulement un préfixe « mix » / « mixte » seul en tête
     const m = text.match(/^(mix(te)?)\b/i);
     const onlyMixPrefix = m && strokes.size === 0 && !free;
-    return { label: "MIXTE", consumePrefix: onlyMixPrefix ? m[0] : null };
+    const repart = extractMixteRepartition(text);
+    return {
+      label: repart ? `MIXTE · ${repart}` : "MIXTE",
+      consumePrefix: onlyMixPrefix ? m[0] : null,
+    };
   }
 
   const freeMatch = text.match(/^(nage\s+libre|nage\s+au\s+choix|au\s+choix)\b/i);
