@@ -4,6 +4,7 @@
  */
 
 /** @typedef {{ nom: string, nage: string, debutant: boolean, intermediaire: boolean, avance: boolean, utilite: string, comment: string, materiel: string[], garder: boolean, notes: string }} EducatifRow */
+/** materiel = alternatives optionnelles (Sheet « et/ou ») ; ne gate pas le tirage d’éducatif */
 /** @typedef {{ n: number, phase: string|null, bande: string, total_m: number, echauffement: string, bloc: string, rac: string }} SessionRow */
 
 export const SHEET_FAMILIES = Object.freeze([
@@ -92,11 +93,26 @@ function yes(v) {
 }
 
 function splitMateriel(raw) {
-  return String(raw || "")
-    .split(/[,;/|]+/)
+  const s = String(raw || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (!s || /^(aucun|none|no|rien|-)$/i.test(s)) return [];
+  // « pull-buoy et/ou tubas », « palmes et/ou tubas ou pull-buoy… » = alternatives optionnelles
+  const parts = s
+    .split(/\s*(?:et\/ou|et\/ ou|\/|,|;|\bou\b|\|)\s*/i)
     .map((x) => x.trim())
-    .filter(Boolean)
-    .map(normalizeMaterielToken);
+    .filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  for (const part of parts) {
+    const tok = normalizeMaterielToken(part);
+    if (!tok || tok === "aucun" || seen.has(tok)) continue;
+    seen.add(tok);
+    out.push(tok);
+  }
+  return out;
 }
 
 /** @param {string} token */
@@ -295,7 +311,7 @@ export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_ED
 
 /**
  * @param {EducatifRow[]} educatifs
- * @param {{ levelBand: 'debutant'|'intermediaire'|'avance', nage?: string, equipment?: string[]|null, excludeNames?: string[], hardExcludeNames?: string[] }} opts
+ * @param {{ levelBand: 'debutant'|'intermediaire'|'avance', nage?: string, excludeNames?: string[], hardExcludeNames?: string[] }} opts
  * @param {() => number} [rng]
  */
 export function pickEducatif(educatifs, opts, rng = Math.random) {
@@ -308,33 +324,26 @@ export function pickEducatif(educatifs, opts, rng = Math.random) {
     return e.intermediaire;
   });
   if (nageWant && nageWant !== "4_nages" && nageWant !== "4n") {
-    const byNage = pool.filter((e) => !e.nage || e.nage === nageWant || e.nage === "toutes");
+    const byNage = pool.filter((e) => {
+      const n = String(e.nage || "");
+      return !n || n === nageWant || n === "toutes" || n.split(/[,/]+/).map((x) => x.trim()).includes(nageWant);
+    });
     if (byNage.length) pool = byNage;
   }
-  // Prefer drills whose optional matos is subset of owned (or empty matos)
-  const owned = Array.isArray(opts.equipment) ? opts.equipment.map(normalizeMaterielToken) : null;
-  if (owned) {
-    const fit = pool.filter((e) => e.materiel.every((m) => owned.includes(m) || m === ""));
-    if (fit.length) pool = fit;
-    else {
-      const soft = pool.filter((e) => !e.materiel.length);
-      if (soft.length) pool = soft;
-    }
-  }
+  // Matériel = optionnel sur la fiche : ne filtre JAMAIS le choix d’éducatif.
+  // Le matos n’intervient que sur le placeholder {matériel} (voir pickMaterielForLine).
 
   const applyExclude = (names, { hard }) => {
     const exclude = new Set((names || []).map(normalizeEducatifKey).filter(Boolean));
     if (!exclude.size) return;
     const fresh = pool.filter((e) => !exclude.has(normalizeEducatifKey(e.nom)));
-    // soft : recyclage si pool vide ; hard : jamais le même d’affilée s’il reste une autre option
-    if (fresh.length || hard) {
-      if (fresh.length) pool = fresh;
+    if (fresh.length) pool = fresh;
+    else if (!hard) {
+      /* soft : recyclage si pool vide */
     }
   };
 
-  // 1) Interdit le dernier éducatif tant qu’il existe une alternative
   applyExclude(opts.hardExcludeNames, { hard: true });
-  // 2) Évite les 4 précédents ; recyclage OK si le pool devient vide
   applyExclude(opts.excludeNames, { hard: false });
 
   if (!pool.length) return null;
@@ -377,15 +386,16 @@ export function fillPlaceholders(text, fill) {
 }
 
 /**
- * Choisit un matos pour une ligne, compatible profil + pas pull+palmes sur la ligne.
+ * Matos optionnel pour une ligne `{matériel}` : tirage parmi la fiche ∩ inventaire nageur.
+ * Jamais un matos non déclaré par l’utilisateur. Pull+palmes interdit sur la même ligne.
  * @param {EducatifRow} edu
- * @param {string[]} | null equipment
+ * @param {string[]|null|undefined} equipment
  * @param {string} line
  * @param {() => number} [rng]
  */
 export function pickMaterielForLine(edu, equipment, line, rng = Math.random) {
   if (!Array.isArray(equipment) || !equipment.length) return null;
-  const owned = equipment.map(normalizeMaterielToken);
+  const owned = equipment.map(normalizeMaterielToken).filter(Boolean);
   const candidates = (edu?.materiel || []).filter((m) => owned.includes(m));
   const ok = candidates.filter((m) => lineAllowsMateriel(line, [m === "pull" ? "pull-buoy" : m]));
   if (!ok.length) return null;

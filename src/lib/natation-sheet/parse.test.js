@@ -9,6 +9,7 @@ import {
   parseEducatifsCsv,
   parseSessionsCsv,
   pickEducatif,
+  pickMaterielForLine,
   pickSession,
   excludeSheetNsFromHistory,
   excludeEducatifNamesFromHistory,
@@ -24,9 +25,9 @@ function ok(cond, msg) {
 }
 
 const eduCsv = `Nom,Nage,Débutant,Intermédiaire,Avancé,À quoi ça sert,Comment on le fait,Matériel optionnel,Garder,Notes
-Petit chien,crawl,non,oui,oui,x,y,"pull-buoy, tubas",oui,
-Grand chien,crawl,oui,oui,oui,x,y,"pull-buoy, tubas",oui,
-Flèche,crawl,oui,oui,oui,x,y,"tubas, palmes",oui,
+Petit chien,crawl,non,oui,oui,x,y,"pull-buoy et/ou tubas",oui,
+Grand chien,crawl,oui,oui,oui,x,y,"pull-buoy et/ou tubas",oui,
+Flèche,crawl,oui,oui,oui,x,y,"tubas et/ou palmes",oui,
 Ignore moi,crawl,oui,oui,oui,x,y,,non,
 `;
 
@@ -34,7 +35,16 @@ const edu = parseEducatifsCsv(eduCsv);
 ok(edu.length === 4, "4 rows");
 ok(edu.filter((e) => e.garder).length === 3, "3 garder");
 ok(edu.find((e) => e.nom === "Grand chien").debutant, "grand chien deb");
-ok(edu.find((e) => e.nom === "Petit chien").materiel.includes("pull"), "pull norm");
+ok(
+  edu.find((e) => e.nom === "Petit chien").materiel.includes("pull") &&
+    edu.find((e) => e.nom === "Petit chien").materiel.includes("tuba"),
+  "et/ou → alternatives pull + tuba",
+);
+ok(
+  edu.find((e) => e.nom === "Flèche").materiel.includes("tuba") &&
+    edu.find((e) => e.nom === "Flèche").materiel.includes("palmes"),
+  "et/ou flèche",
+);
 
 const sessCsv = `n°,bande,total_m,échauffement,bloc de séance,retour au calme,contrôle_somme
 1,débutant,1400,"100 m souple
@@ -76,9 +86,16 @@ const histEdu = excludeEducatifNamesFromHistory(
 ok(histEdu[0] === "Flèche" || histEdu[0] === "Grand chien", "history educatifs");
 ok(histEdu.filter((n) => /flèche/i.test(n)).length === 1, "dedupe educatif");
 
-const eduPick = pickEducatif(edu, { levelBand: "debutant", nage: "crawl", equipment: ["palmes", "tuba"] }, () => 0);
+const eduPick = pickEducatif(edu, { levelBand: "debutant", nage: "crawl" }, () => 0);
 ok(eduPick && eduPick.debutant, "deb educatif");
 ok(eduPick.nom !== "Petit chien", "petit chien not debutant");
+
+const eduNoMatosGate = pickEducatif(
+  edu,
+  { levelBand: "debutant", nage: "crawl", hardExcludeNames: ["Grand chien"] },
+  () => 0,
+);
+ok(eduNoMatosGate && eduNoMatosGate.nom === "Flèche", "éducatif = niveau, pas matos");
 
 const eduAvoid = pickEducatif(
   edu,
@@ -111,13 +128,11 @@ const eduFallback = pickEducatif(
   {
     levelBand: "debutant",
     nage: "crawl",
-    equipment: ["palmes", "tuba"],
-    hardExcludeNames: ["Flèche"],
-    excludeNames: ["Grand chien", "Petit chien"],
+    hardExcludeNames: ["Flèche", "Grand chien"],
   },
   () => 0,
 );
-ok(eduFallback && eduFallback.nom === "Flèche", "un seul compatible → recyclage du dernier OK");
+ok(eduFallback && eduFallback.debutant, "pool trop petit → recyclage OK");
 
 const filled = materializeSession(
   sessions[0],
@@ -128,6 +143,21 @@ const filled = materializeSession(
 ok(!filled.echauffement.includes("{éducatif}"), "filled educatif");
 ok(/Flèche|Grand chien/.test(filled.echauffement), "real name");
 ok(!filled.bloc.includes("{matériel}") || /palmes|tuba|pull/.test(filled.bloc) || !filled.bloc.includes("{"), "materiel handled");
+
+ok(
+  pickMaterielForLine({ materiel: ["pull", "tuba", "palmes"] }, ["tuba"], "200 m crawl {matériel}", () => 0) ===
+    "tuba",
+  "matériel ∈ inventaire",
+);
+ok(
+  pickMaterielForLine({ materiel: ["palmes"] }, [], "200 m crawl {matériel}", () => 0) === null,
+  "pas d’inventaire → pas de matériel",
+);
+ok(
+  pickMaterielForLine({ materiel: ["plaquettes"] }, ["palmes", "tuba"], "200 m crawl {matériel}", () => 0) ===
+    null,
+  "matos fiche hors inventaire → null",
+);
 
 ok(lineAllowsMateriel("4 × 50 m crawl", ["palmes"]), "palmes alone ok");
 ok(!lineAllowsMateriel("4 × 50 m crawl pull-buoy", ["palmes"]), "pull+palmes line no");
