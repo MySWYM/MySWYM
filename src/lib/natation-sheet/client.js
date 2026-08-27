@@ -17,8 +17,10 @@ import {
   pickSession,
   sheetFamilyIdFromProfile,
   excludeSheetNsFromHistory,
+  excludeEducatifNamesFromHistory,
   educatifRowToUiFiche,
   SHEET_RECENT_EXCLUDE,
+  SHEET_RECENT_EDUCATIFS,
 } from "./parse.js";
 
 const CACHE_TTL_MS = 30_000;
@@ -107,7 +109,7 @@ export function prefetchNatationCatalogue() {
  * Sync si cache chaud ; sinon null (le caller garde composeSession).
  *
  * @param {object} profile
- * @param {{ cursor?: number, rng?: () => number, history?: object[], excludeNs?: number[] }} opts
+ * @param {{ cursor?: number, rng?: () => number, history?: object[], excludeNs?: number[], excludeEducatifs?: string[], currentEducatif?: string|null }} opts
  */
 export function tryComposeFromSheetCache(profile, opts = {}) {
   if (!isNatationSheetCatalogueEnabled() || !cache) return null;
@@ -138,10 +140,15 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
         ? "4_nages"
         : style;
   const equipment = Array.isArray(profile.equipment) ? profile.equipment : profile.equipment === null ? null : [];
+  const excludeEducatifs = [
+    ...excludeEducatifNamesFromHistory(opts.history, SHEET_RECENT_EDUCATIFS),
+    ...(opts.excludeEducatifs || []),
+  ];
+  if (opts.currentEducatif) excludeEducatifs.push(String(opts.currentEducatif));
   const filled = materializeSession(
     picked,
     cache.educatifs,
-    { levelBand, nage, equipment },
+    { levelBand, nage, equipment, excludeNames: excludeEducatifs },
     opts.rng || Math.random,
   );
 
@@ -203,6 +210,7 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
       sessionN: filled.n,
       educatif: eduName || null,
       excludeNs,
+      excludeEducatifs,
     },
     engineWhy: `sheet=${familyId} · n°${filled.n} · ${filled.total_m}m`,
   };

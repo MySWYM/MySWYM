@@ -1342,7 +1342,12 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
       if (curN != null && Number.isFinite(Number(curN))) excludeNs.push(Number(curN));
       const fromSheet = tryComposeFromSheetCache(
         { ...profile, equipment: sport.equipment },
-        { cursor: c, history: opts.history || [], excludeNs },
+        {
+          cursor: c,
+          history: opts.history || [],
+          excludeNs,
+          currentEducatif: opts.currentEducatif || null,
+        },
       );
       if (fromSheet) {
         session = {

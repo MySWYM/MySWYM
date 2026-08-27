@@ -11,6 +11,7 @@ import {
   pickEducatif,
   pickSession,
   excludeSheetNsFromHistory,
+  excludeEducatifNamesFromHistory,
   educatifRowToUiFiche,
   sheetFamilyIdFromProfile,
 } from "./parse.js";
@@ -64,9 +65,43 @@ const histNs = excludeSheetNsFromHistory(
 );
 ok(histNs[0] === 5 && histNs.includes(2) && histNs.includes(1), "history ns newest first");
 
+const histEdu = excludeEducatifNamesFromHistory(
+  [
+    { sheetMeta: { educatif: "Flèche" } },
+    { sheetMeta: { educatif: "Grand chien" } },
+    { sheetEducatif: { name: "Flèche" } },
+  ],
+  5,
+);
+ok(histEdu[0] === "Flèche" || histEdu[0] === "Grand chien", "history educatifs");
+ok(histEdu.filter((n) => /flèche/i.test(n)).length === 1, "dedupe educatif");
+
 const eduPick = pickEducatif(edu, { levelBand: "debutant", nage: "crawl", equipment: ["palmes", "tuba"] }, () => 0);
 ok(eduPick && eduPick.debutant, "deb educatif");
 ok(eduPick.nom !== "Petit chien", "petit chien not debutant");
+
+const eduAvoid = pickEducatif(
+  edu,
+  {
+    levelBand: "intermediaire",
+    nage: "crawl",
+    excludeNames: ["Flèche", "Grand chien"],
+  },
+  () => 0,
+);
+ok(eduAvoid && eduAvoid.nom === "Petit chien", "exclude recent → autre éducatif");
+
+const eduFallback = pickEducatif(
+  edu,
+  {
+    levelBand: "debutant",
+    nage: "crawl",
+    equipment: ["palmes", "tuba"],
+    excludeNames: ["Flèche", "Grand chien", "Petit chien"],
+  },
+  () => 0,
+);
+ok(eduFallback && eduFallback.debutant, "pool trop petit → recyclage autorisé");
 
 const filled = materializeSession(
   sessions[0],

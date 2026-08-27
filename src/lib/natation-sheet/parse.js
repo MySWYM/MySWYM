@@ -34,6 +34,9 @@ export const SHEET_SOFT_FAMILIES = Object.freeze([
 /** Fenêtre anti-doublon : ne pas retraiter ces N dernières séances Sheet. */
 export const SHEET_RECENT_EXCLUDE = 10;
 
+/** Fenêtre anti-doublon éducatifs (onglet Éducatifs) — plus courte : pool souvent petit. */
+export const SHEET_RECENT_EDUCATIFS = 5;
+
 export function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -263,9 +266,36 @@ export function excludeSheetNsFromHistory(history, limit = SHEET_RECENT_EXCLUDE)
   return ns;
 }
 
+function normalizeEducatifKey(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
+
+/** Noms d’éducatifs déjà vus (historique + optionnel courant) — plus récents d’abord. */
+export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_EDUCATIFS) {
+  const list = Array.isArray(history) ? history : [];
+  const names = [];
+  const seen = new Set();
+  for (let i = list.length - 1; i >= 0 && names.length < limit; i--) {
+    const raw =
+      list[i]?.sheetMeta?.educatif ||
+      list[i]?.sheetEducatif?.name ||
+      list[i]?.composerWhy?.educatif ||
+      null;
+    const key = normalizeEducatifKey(raw);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    names.push(String(raw).trim());
+  }
+  return names;
+}
+
 /**
  * @param {EducatifRow[]} educatifs
- * @param {{ levelBand: 'debutant'|'intermediaire'|'avance', nage?: string, equipment?: string[]|null }} opts
+ * @param {{ levelBand: 'debutant'|'intermediaire'|'avance', nage?: string, equipment?: string[]|null, excludeNames?: string[] }} opts
  * @param {() => number} [rng]
  */
 export function pickEducatif(educatifs, opts, rng = Math.random) {
@@ -290,6 +320,14 @@ export function pickEducatif(educatifs, opts, rng = Math.random) {
       const soft = pool.filter((e) => !e.materiel.length);
       if (soft.length) pool = soft;
     }
+  }
+  const exclude = new Set(
+    (opts.excludeNames || []).map(normalizeEducatifKey).filter(Boolean),
+  );
+  if (exclude.size) {
+    const fresh = pool.filter((e) => !exclude.has(normalizeEducatifKey(e.nom)));
+    // Si le pool est trop petit, on autorise le recyclage plutôt que bloquer.
+    if (fresh.length) pool = fresh;
   }
   if (!pool.length) return null;
   const i = Math.floor(rng() * pool.length) % pool.length;

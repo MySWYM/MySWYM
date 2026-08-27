@@ -9174,6 +9174,7 @@ export default function App() {
             ordinalIndex,
             history: entry.plan.history || [],
             currentSheetN: cur?.sheetMeta?.n,
+            currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
           },
         );
         return {
@@ -9835,6 +9836,7 @@ export default function App() {
           ordinalIndex,
           history: activePlanEntry.plan.history || [],
           currentSheetN: cur?.sheetMeta?.n,
+          currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
         },
       );
       setPlans((prev) => prev.map((e) => {
