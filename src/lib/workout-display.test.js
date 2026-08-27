@@ -65,6 +65,19 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
+  // « souple » dans la parenthèse ne doit pas effacer la répartition MIXTE
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m en alternant (75 m crawl souple et 25 m dos)"],
+    sets: [{ block: "corps", label: "100 m en alternant (75 m crawl souple et 25 m dos)" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "MIXTE");
+  assert.equal(ex.effortLabel, "souple");
+  assert.equal(ex.cue, "(75 m crawl et 25 m dos)");
+}
+
+{
   assert.ok(formatRestLabel("R20")?.includes("Récup"));
   assert.ok(formatRestLabel("D1'45\"")?.includes("Départ"));
 }

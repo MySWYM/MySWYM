@@ -482,7 +482,11 @@ export function buildWorkoutView(session = {}) {
       parseMetersFromLine(parsed?.main || raw) ||
       childParsed.reduce((a, c) => a + parseMetersFromLine(c.main), 0);
     const headline = splitHeadline(scrubLegacyNormalWording(parsed?.main));
-    let cuePrimary = scrubLegacyNormalWording(parsed?.cues?.[0] || headline.rest || null);
+    const firstCue = parsed?.cues?.[0] ? scrubLegacyNormalWording(parsed.cues[0]) : null;
+    // Ne pas laisser un cue « souple » (pastille) écraser la répartition MIXTE (headline.rest)
+    let cuePrimary = scrubLegacyNormalWording(
+      (firstCue && !isSoftFillCue(firstCue) ? firstCue : null) || headline.rest || null,
+    );
     const effortLabel =
       headline.effort ||
       extractSoupleEffort(parsed?.main, cuePrimary, ...(parsed?.cues || []), raw);
@@ -495,6 +499,9 @@ export function buildWorkoutView(session = {}) {
       .map((c) => (effortLabel ? stripSoupleMarkers(c) : c))
       .filter((c) => c && !isSoftFillCue(c));
     if (!cuePrimary && cues[0]) cuePrimary = cues[0];
+    if (!cuePrimary && headline.rest && !isSoftFillCue(headline.rest)) {
+      cuePrimary = headline.rest;
+    }
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
     const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" — ");
     let educatif = null;
