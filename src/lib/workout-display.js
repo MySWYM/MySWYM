@@ -300,6 +300,7 @@ export function formatRestLabel(rest) {
  * Aligne le libellé UI sur le Sheet (plus de « crawl normal » / « dos normal »).
  * Retire aussi les virgules décoratives en fin de consigne (souvent dans le Sheet).
  * Normalise `crawl*souple` → `crawl souple` (astérisque Sheet).
+ * Sheet « (1, 1 inversé) » → « 1× normal · 1× inversé ».
  */
 export function scrubLegacyNormalWording(text) {
   if (!text) return text;
@@ -307,6 +308,11 @@ export function scrubLegacyNormalWording(text) {
     .replace(/(\w)\*+(\w)/g, "$1 $2")
     .replace(/\*/g, " ")
     .replace(/\b(crawl|dos|brasse|papillon|nage)\s+normal(e)?\b/gi, "$1")
+    // (1, 1 inversé) / 2, 2 inversé → 1× normal · 1× inversé
+    .replace(
+      /\(?\s*(\d+)\s*,\s*(\d+)\s+invers[ée]s?\s*\)?/gi,
+      (_, a, b) => `${a}× normal · ${b}× inversé`,
+    )
     .replace(/\s{2,}/g, " ")
     .replace(/\(\s+/g, "(")
     .replace(/\s+\)/g, ")")

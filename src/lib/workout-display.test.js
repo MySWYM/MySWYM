@@ -13,6 +13,21 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(scrubLegacyNormalWording("Avec palmes,"), "Avec palmes");
   assert.equal(scrubLegacyNormalWording("crawl normal"), "crawl");
   assert.equal(scrubLegacyNormalWording("crawl*souple"), "crawl souple");
+  assert.equal(scrubLegacyNormalWording("(1, 1 inversé)"), "1× normal · 1× inversé");
+  assert.equal(scrubLegacyNormalWording("(2, 2 inversé)"), "2× normal · 2× inversé");
+  assert.equal(scrubLegacyNormalWording("1, 1 inversé"), "1× normal · 1× inversé");
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-4 × 100 m crawl (1, 1 inversé), repos 20 s"],
+    sets: [{ block: "corps", label: "4 × 100 m crawl (1, 1 inversé), repos 20 s" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "CRAWL");
+  assert.equal(ex.cue, "1× normal · 1× inversé");
+  assert.ok(!/\(1,\s*1/i.test(ex.cue || ""));
 }
 
 {
