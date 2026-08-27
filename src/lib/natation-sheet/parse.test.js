@@ -41,10 +41,13 @@ ok(
   "et/ou → alternatives pull + tuba",
 );
 ok(
-  edu.find((e) => e.nom === "Flèche").materiel.includes("tuba") &&
-    edu.find((e) => e.nom === "Flèche").materiel.includes("palmes"),
-  "et/ou flèche",
+  edu.find((e) => e.nom === "Petit chien").materielRaw === "pull-buoy et/ou tubas",
+  "materielRaw = texte Sheet",
 );
+
+const ficheMat = educatifRowToUiFiche(edu.find((e) => e.nom === "Flèche"));
+ok(ficheMat.equipment === "tubas et/ou palmes", "fiche recopie le Sheet tel quel");
+
 
 const sessCsv = `n°,bande,total_m,échauffement,bloc de séance,retour au calme,contrôle_somme
 1,débutant,1400,"100 m souple
@@ -170,6 +173,7 @@ const fiche = educatifRowToUiFiche({
   utilite: "Aller au bout de la traction",
   comment: "Toucher la cuisse avec le pouce",
   materiel: ["palmes"],
+  materielRaw: "palmes et/ou tubas ou pull-buoy et/ou tubas",
   notes: "",
   garder: true,
   nage: "crawl",
@@ -179,7 +183,10 @@ ok(fiche.ficheSource === "sheet", "fiche source sheet");
 ok(!/débutant/i.test(fiche.level || ""), "pas débutant dans niveau");
 ok(/Intermédiaire/i.test(fiche.level), "intermédiaire");
 ok(fiche.cue.includes("cuisse"), "consigne sheet");
-
+ok(
+  fiche.equipment === "palmes et/ou tubas ou pull-buoy et/ou tubas",
+  "matériel optionnel = texte Sheet brut",
+);
 ok(
   sheetFamilyIdFromProfile({ goal: "progression", level: "régulier", swimStyle: "crawl" }) ===
     "01 Nager deb crawl",

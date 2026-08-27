@@ -3,8 +3,8 @@
  * Source live = Sheet ; ce module est pur (pas de fetch).
  */
 
-/** @typedef {{ nom: string, nage: string, debutant: boolean, intermediaire: boolean, avance: boolean, utilite: string, comment: string, materiel: string[], garder: boolean, notes: string }} EducatifRow */
-/** materiel = alternatives optionnelles (Sheet « et/ou ») ; ne gate pas le tirage d’éducatif */
+/** @typedef {{ nom: string, nage: string, debutant: boolean, intermediaire: boolean, avance: boolean, utilite: string, comment: string, materiel: string[], materielRaw: string, garder: boolean, notes: string }} EducatifRow */
+/** materiel = alternatives pour {matériel} ; materielRaw = texte Sheet affiché tel quel */
 /** @typedef {{ n: number, phase: string|null, bande: string, total_m: number, echauffement: string, bloc: string, rac: string }} SessionRow */
 
 export const SHEET_FAMILIES = Object.freeze([
@@ -165,6 +165,7 @@ export function parseEducatifsCsv(csvText) {
     const row = rows[r];
     const nom = String(row[iNom] || "").trim();
     if (!nom) continue;
+    const matRaw = iMat >= 0 ? String(row[iMat] || "").trim() : "";
     out.push({
       nom,
       nage: String(iNage >= 0 ? row[iNage] || "" : "")
@@ -175,7 +176,8 @@ export function parseEducatifsCsv(csvText) {
       avance: iAv >= 0 ? yes(row[iAv]) : false,
       utilite: iUtil >= 0 ? String(row[iUtil] || "").trim() : "",
       comment: iHow >= 0 ? String(row[iHow] || "").trim() : "",
-      materiel: iMat >= 0 ? splitMateriel(row[iMat]) : [],
+      materiel: splitMateriel(matRaw),
+      materielRaw: matRaw,
       garder: iGard >= 0 ? yes(row[iGard]) : true,
       notes: iNotes >= 0 ? String(row[iNotes] || "").trim() : "",
     });
@@ -445,13 +447,8 @@ export function educatifRowToUiFiche(row) {
   if (row.debutant) levels.push("Débutant");
   if (row.intermediaire) levels.push("Intermédiaire");
   if (row.avance) levels.push("Avancé");
-  const mat = Array.isArray(row.materiel)
-    ? row.materiel.filter(Boolean).map((m) => {
-        if (m === "pull") return "pull-buoy";
-        if (m === "tuba") return "tuba";
-        return m;
-      })
-    : [];
+  // Affichage = texte Sheet brut (ex. « palmes et/ou tubas ou pull-buoy et/ou tubas »)
+  const equipmentRaw = String(row.materielRaw || "").trim();
   return {
     id: `sheet:${String(row.nom).trim().toLowerCase()}`,
     name: String(row.nom).trim(),
@@ -459,7 +456,7 @@ export function educatifRowToUiFiche(row) {
     objective: String(row.utilite || "").trim() || "Éducatif technique",
     cue: String(row.comment || "").trim() || String(row.utilite || "").trim(),
     level: levels.length ? levels.join(" · ") : null,
-    equipment: mat.length ? mat.join(", ") : null,
+    equipment: equipmentRaw || null,
     mistakes: row.notes ? [String(row.notes).trim()].filter(Boolean) : [],
     ficheSource: "sheet",
     videoUrl: null,
