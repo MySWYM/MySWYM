@@ -310,68 +310,41 @@ export function isSoftFillCue(cue) {
 }
 
 /**
- * Répartition des nages pour le badge MIXTE (fidèle au Sheet).
- * Ex. « (75 m crawl et 25 m dos) » → « 75 crawl / 25 dos »
- * Ex. « crawl / dos » → « crawl / dos »
+ * Répartition MIXTE pour le sous-texte (style Sheet, entre parenthèses).
+ * Ex. « en alternant (75 m crawl et 25 m dos) » → « (75 m crawl et 25 m dos) »
+ * Ex. « crawl / dos » → « (crawl / dos) »
+ * Ex. « 25 m crawl + 25 m au choix » → « (25 m crawl + 25 m au choix) »
  * @returns {string|null}
  */
-export function extractMixteRepartition(text) {
+export function formatMixteRepartitionCue(text) {
   const t = String(text || "");
   if (!t.trim()) return null;
 
-  const normStroke = (raw) => {
-    const s = String(raw || "")
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
-    if (s === "nl" || s === "nage libre") return s === "nage libre" ? "au choix" : "crawl";
-    return s;
-  };
-
-  const fromPairs = (src) => {
-    const parts = [];
-    const re = /(\d+)\s*m\s+(crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)\b/gi;
-    let m;
-    while ((m = re.exec(src))) {
-      parts.push(`${m[1]} ${normStroke(m[2])}`);
-    }
-    return parts.length >= 2 ? parts.join(" / ") : null;
-  };
-
   const paren = t.match(/\(([^)]*(?:crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)[^)]*)\)/i);
-  if (paren) {
-    const fromParen = fromPairs(paren[1]);
-    if (fromParen) return fromParen;
-  }
+  if (paren) return `(${paren[1].replace(/\s+/g, " ").trim()})`;
 
-  const fromLine = fromPairs(t);
-  if (fromLine) return fromLine;
+  const pairs = [...t.matchAll(/(\d+)\s*m\s+(crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)\b/gi)];
+  if (pairs.length >= 2) {
+    return `(${pairs
+      .map((m) => {
+        const stroke = String(m[2]).toLowerCase().replace(/^nl$/, "crawl");
+        return `${m[1]} m ${stroke}`;
+      })
+      .join(" + ")})`;
+  }
 
   const slash = t.match(
     /\b(crawl|dos|brasse|papillon)\s*[\/·|]\s*(crawl|dos|brasse|papillon|au\s+choix)\b/i,
   );
-  if (slash) return `${normStroke(slash[1])} / ${normStroke(slash[2])}`;
+  if (slash) return `(${slash[1].toLowerCase()} / ${slash[2].toLowerCase()})`;
 
-  const ordered = [];
-  const seen = new Set();
-  for (const m of t.matchAll(/\b(crawl|dos|brasse|papillon)\b/gi)) {
-    const s = normStroke(m[1]);
-    if (!seen.has(s)) {
-      seen.add(s);
-      ordered.push(s);
-    }
-  }
-  if (/\b(au\s+choix|nage\s+libre)\b/i.test(t) && !seen.has("au choix")) {
-    ordered.push("au choix");
-  }
-  if (ordered.length >= 2) return ordered.join(" / ");
   return null;
 }
 
 /**
  * Déduit le libellé nage pour l’UI :
  * - 4 nages / médley / 4 strokes → « 4 NAGES »
- * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE » (+ répartition si connue)
+ * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE »
  * - sinon nage unique / nage au choix
  */
 export function inferStrokeLabel(blob) {
@@ -401,11 +374,7 @@ export function inferStrokeLabel(blob) {
   if (isMixte) {
     const m = text.match(/^(mix(te)?)\b/i);
     const onlyMixPrefix = m && strokes.size === 0 && !free;
-    const repart = extractMixteRepartition(text);
-    return {
-      label: repart ? `MIXTE · ${repart}` : "MIXTE",
-      consumePrefix: onlyMixPrefix ? m[0] : null,
-    };
+    return { label: "MIXTE", consumePrefix: onlyMixPrefix ? m[0] : null };
   }
 
   const freeMatch = text.match(/^(nage\s+libre|nage\s+au\s+choix|au\s+choix)\b/i);
@@ -450,7 +419,12 @@ export function splitHeadline(main) {
   if (inferred.consumePrefix) {
     text = text.slice(inferred.consumePrefix.length).trim().replace(/^[-–—·:,]\s*/, "");
   }
-  const rest = stripSoupleMarkers(text);
+  let rest = stripSoupleMarkers(text);
+  // MIXTE : répartition en sous-texte style Sheet « (75 m crawl et 25 m dos) »
+  if (stroke === "MIXTE") {
+    const repartCue = formatMixteRepartitionCue(text);
+    if (repartCue) rest = repartCue;
+  }
   return { volume, stroke, rest: rest || null, effort };
 }
 

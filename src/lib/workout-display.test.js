@@ -51,20 +51,15 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
-  assert.equal(
-    splitHeadline("200 m en alternant (75 m crawl et 25 m dos)").stroke,
-    "MIXTE · 75 crawl / 25 dos",
-  );
-  assert.equal(splitHeadline("200 m crawl / dos").stroke, "MIXTE · crawl / dos");
-  assert.equal(
-    splitHeadline("8 × 50 m : 25 m crawl + 25 m au choix").stroke,
-    "MIXTE · 25 crawl / 25 au choix",
-  );
+  const mix = splitHeadline("200 m en alternant (75 m crawl et 25 m dos)");
+  assert.equal(mix.stroke, "MIXTE");
+  assert.equal(mix.rest, "(75 m crawl et 25 m dos)");
+  assert.equal(splitHeadline("200 m crawl / dos").stroke, "MIXTE");
+  assert.equal(splitHeadline("200 m crawl / dos").rest, "(crawl / dos)");
+  assert.equal(splitHeadline("8 × 50 m : 25 m crawl + 25 m au choix").stroke, "MIXTE");
+  assert.equal(splitHeadline("8 × 50 m : 25 m crawl + 25 m au choix").rest, "(25 m crawl + 25 m au choix)");
   assert.equal(splitHeadline("300 m mix").stroke, "MIXTE");
-  assert.equal(
-    splitHeadline("200 m en alternant (50 m dos et 50 m brasse)").stroke,
-    "MIXTE · 50 dos / 50 brasse",
-  );
+  assert.equal(splitHeadline("200 m en alternant (50 m dos et 50 m brasse)").rest, "(50 m dos et 50 m brasse)");
   assert.equal(splitHeadline("4 × 100 m 4 nages").stroke, "4 NAGES");
   assert.equal(splitHeadline("400 m médley").stroke, "4 NAGES");
 }
