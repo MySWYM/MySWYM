@@ -5,10 +5,17 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 
-const SOUPLE_TIP = {
-  title: "Souple",
-  body:
-    "Allure lente et relâchée, pour récupérer. Tu ne forces pas — tu te détends avant de reprendre l’effort.",
+const ALLURE_TIPS = {
+  souple: {
+    title: "Souple",
+    body:
+      "Allure lente et relâchée, pour récupérer. Tu ne forces pas — tu te détends avant de reprendre l’effort.",
+  },
+  progressif: {
+    title: "Progressif",
+    body:
+      "Tu accélères au fil de la distance : départ facile, fin plus soutenue.",
+  },
 };
 
 function MetaPill({ children, tone = "neutral", G }) {
@@ -25,13 +32,15 @@ function MetaPill({ children, tone = "neutral", G }) {
   );
 }
 
-function SoupleTipSheet({ onClose, colors: G }) {
+function AllureTipSheet({ tipKey, onClose, colors: G }) {
+  const tip = ALLURE_TIPS[tipKey];
+  if (!tip) return null;
   return createPortal(
     <div
       className="sheet-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label={SOUPLE_TIP.title}
+      aria-label={tip.title}
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
       <div
@@ -49,7 +58,7 @@ function SoupleTipSheet({ onClose, colors: G }) {
               Allure
             </div>
             <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15 }}>
-              {SOUPLE_TIP.title}
+              {tip.title}
             </h3>
           </div>
           <button
@@ -65,11 +74,42 @@ function SoupleTipSheet({ onClose, colors: G }) {
           </button>
         </div>
         <p style={{ margin: 0, fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
-          {SOUPLE_TIP.body}
+          {tip.body}
         </p>
       </div>
     </div>,
     document.body,
+  );
+}
+
+function AllureInfoChip({ label, onClick, G, tone = "mint" }) {
+  const bg = tone === "mint" ? (G.mintLight || G.greyXLight) : (G.blueLight || G.greyXLight);
+  const color = tone === "mint" ? (G.mint || G.inkLight) : (G.blue || G.inkLight);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Qu’est-ce que ${label.toLowerCase()} ?`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        border: `1px solid ${G.greyLight}`,
+        background: bg,
+        color,
+        fontSize: 11,
+        fontWeight: 800,
+        padding: "4px 9px",
+        borderRadius: 999,
+        cursor: "pointer",
+        letterSpacing: "0.02em",
+        textTransform: "uppercase",
+        minHeight: 28,
+      }}
+    >
+      {label}
+      <Info size={12} strokeWidth={2.5} />
+    </button>
   );
 }
 
@@ -81,7 +121,7 @@ export default function WorkoutExerciseCard({
   compact = false,
   nested = false,
 }) {
-  const [soupleOpen, setSoupleOpen] = useState(false);
+  const [tipKey, setTipKey] = useState(null);
   if (!exercise) return null;
 
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
@@ -91,6 +131,9 @@ export default function WorkoutExerciseCard({
     exercise.section !== "warm"
     && exercise.kind !== "warm"
     && (exercise.effortLabel === "souple" || exercise.kind === "cool");
+  const showProgressif = /\bprogressif\b/i.test(
+    `${primaryCue || ""} ${exercise.main || ""} ${exercise.raw || ""}`,
+  );
 
   return (
     <div
@@ -136,30 +179,10 @@ export default function WorkoutExerciseCard({
             ) : null}
           </span>
           {showSouple ? (
-            <button
-              type="button"
-              onClick={() => setSoupleOpen(true)}
-              aria-label="Qu’est-ce que souple ?"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                border: `1px solid ${G.greyLight}`,
-                background: G.mintLight || G.greyXLight,
-                color: G.mint || G.inkLight,
-                fontSize: 11,
-                fontWeight: 800,
-                padding: "4px 9px",
-                borderRadius: 999,
-                cursor: "pointer",
-                letterSpacing: "0.02em",
-                textTransform: "uppercase",
-                minHeight: 28,
-              }}
-            >
-              Souple
-              <Info size={12} strokeWidth={2.5} />
-            </button>
+            <AllureInfoChip label="Souple" onClick={() => setTipKey("souple")} G={G} tone="mint" />
+          ) : null}
+          {showProgressif ? (
+            <AllureInfoChip label="Progressif" onClick={() => setTipKey("progressif")} G={G} tone="blue" />
           ) : null}
         </div>
 
@@ -194,7 +217,7 @@ export default function WorkoutExerciseCard({
         </div>
       </div>
 
-      {soupleOpen ? <SoupleTipSheet onClose={() => setSoupleOpen(false)} colors={G} /> : null}
+      {tipKey ? <AllureTipSheet tipKey={tipKey} onClose={() => setTipKey(null)} colors={G} /> : null}
     </div>
   );
 }
