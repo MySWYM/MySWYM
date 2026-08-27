@@ -5,6 +5,11 @@ import {
   formatRestLabel,
   parseMetersFromLine,
   scrubLegacyNormalWording,
+  parseDepartInterval,
+  formatDepartChip,
+  formatDepartHuman,
+  stripDepartMarkers,
+  stripSprintMarkers,
 } from "./workout-display.js";
 import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js";
 
@@ -16,6 +21,33 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(scrubLegacyNormalWording("(1, 1 inversé)"), "1× normal · 1× inversé");
   assert.equal(scrubLegacyNormalWording("(2, 2 inversé)"), "2× normal · 2× inversé");
   assert.equal(scrubLegacyNormalWording("1, 1 inversé"), "1× normal · 1× inversé");
+}
+
+{
+  assert.equal(parseDepartInterval("départ toutes les 2 min")?.seconds, 120);
+  assert.equal(parseDepartInterval("D2'")?.seconds, 120);
+  assert.equal(parseDepartInterval("D1'30\"")?.seconds, 90);
+  assert.equal(formatDepartChip(120), "D2'");
+  assert.equal(formatDepartChip(90), "D1'30\"");
+  assert.equal(formatDepartHuman(120), "2 minutes");
+  assert.equal(stripDepartMarkers("Sprint, départ toutes les 2 min"), "Sprint");
+  assert.equal(stripSprintMarkers("Sprint"), null);
+  assert.equal(formatRestLabel("D2'"), null);
+  assert.ok(/Récup/i.test(formatRestLabel("repos 30 s")));
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-8 × 50 m crawl — Sprint, départ toutes les 2 min"],
+    sets: [{ block: "corps", label: "8 × 50 m crawl — Sprint, départ toutes les 2 min" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.departLabel, "D2'");
+  assert.equal(ex.departSeconds, 120);
+  assert.equal(ex.sprint, true);
+  assert.ok(!/départ/i.test(ex.cue || ""));
+  assert.ok(!/sprint/i.test(ex.cue || ""));
 }
 
 {
@@ -121,7 +153,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 
 {
   assert.ok(formatRestLabel("R20")?.includes("Récup"));
-  assert.ok(formatRestLabel("D1'45\"")?.includes("Départ"));
+  assert.equal(formatRestLabel("D1'45\""), null, "D… = pastille départ, pas MetaPill récup");
 }
 
 {

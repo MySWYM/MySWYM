@@ -290,10 +290,76 @@ export function formatDurationShort(mins) {
 export function formatRestLabel(rest) {
   if (!rest) return null;
   const s = String(rest);
-  if (/^D/i.test(s)) return s.replace(/^D/i, "Départ ");
+  // Les D… deviennent une pastille départ (D2'), pas « Départ … » en MetaPill récup
+  if (/^D/i.test(s)) return null;
   if (/^R(\d+)/i.test(s)) return `Récup. ${s.replace(/^R/i, "")}`;
   if (/repos/i.test(s)) return s.replace(/repos/i, "Récup.");
   return s;
+}
+
+/**
+ * Extrait un intervalle de départ à la montre depuis une ligne Sheet / composeur.
+ * @returns {{ seconds: number, raw: string } | null}
+ */
+export function parseDepartInterval(text) {
+  const s = String(text || "");
+  let m = s.match(/\bD\s*(\d+)\s*['′]\s*(\d{1,2})?\s*["″]?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] != null && String(m[2]).length ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+  }
+  m = s.match(/d[ée]part\s+(?:toutes\s+les\s+)?(\d+)\s*min(?:utes?)?(?:\s+(\d+)\s*s(?:ec(?:ondes?)?)?)?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+  }
+  return null;
+}
+
+/** Pastille bassin : D2' / D1'30" */
+export function formatDepartChip(seconds) {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  if (s === 0) return `D${m}'`;
+  return `D${m}'${String(s).padStart(2, "0")}"`;
+}
+
+/** Phrase tip : « 2 minutes » / « 1 minute 30 » */
+export function formatDepartHuman(seconds) {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  if (m === 0) return `${s} s`;
+  if (s === 0) return m === 1 ? "1 minute" : `${m} minutes`;
+  return `${m} min ${s}`;
+}
+
+export function stripDepartMarkers(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/,?\s*d[ée]part\s+(?:toutes\s+les\s+)?\d+\s*min(?:utes?)?(?:\s+\d+\s*s(?:ec(?:ondes?)?)?)?/gi, "")
+      .replace(/\bD\s*\d+\s*['′]\s*\d{0,2}\s*["″]?/gi, "")
+      .replace(/\s*[,;·]+\s*$/g, "")
+      .replace(/^\s*[,;·]+\s*/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim() || null
+  );
+}
+
+export function stripSprintMarkers(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/\bsprints?\b/gi, " ")
+      .replace(/\s*[,;·]+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+      .trim() || null
+  );
 }
 
 /**
@@ -561,7 +627,7 @@ export function buildWorkoutView(session = {}) {
       cuePrimary = stripSoupleMarkers(cuePrimary);
     }
     if (isSoftFillCue(cuePrimary)) cuePrimary = null;
-    const cues = (parsed?.cues || [])
+    let cues = (parsed?.cues || [])
       .map((c) => scrubLegacyNormalWording(c))
       .map((c) => (effortLabel ? stripSoupleMarkers(c) : c))
       .filter((c) => c && !isSoftFillCue(c));
@@ -570,6 +636,26 @@ export function buildWorkoutView(session = {}) {
       cuePrimary = headline.rest;
     }
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
+
+    // Départ à la montre → pastille D2' (pas dans le sous-texte)
+    const departBlob = [parsed?.rest, cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
+    const departParsed =
+      (parsed?.rest && /^D/i.test(String(parsed.rest)) ? parseDepartInterval(parsed.rest) : null) ||
+      parseDepartInterval(departBlob);
+    const departLabel = departParsed ? formatDepartChip(departParsed.seconds) : null;
+    const departSeconds = departParsed ? departParsed.seconds : null;
+    if (departLabel) {
+      cuePrimary = stripDepartMarkers(cuePrimary);
+      cues = cues.map((c) => stripDepartMarkers(c)).filter(Boolean);
+    }
+
+    const sprintBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
+    const hasSprint = /\bsprints?\b/i.test(sprintBlob);
+    if (hasSprint) {
+      cuePrimary = stripSprintMarkers(cuePrimary);
+      cues = cues.map((c) => stripSprintMarkers(c)).filter(Boolean);
+    }
+
     const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" — ");
     let educatif = null;
     let educatifs = [];
@@ -604,10 +690,13 @@ export function buildWorkoutView(session = {}) {
       volumeLabel: headline.volume || (pyramid ? `${pyramid.volume} m` : null),
       strokeLabel: headline.stroke,
       effortLabel: effortLabel || null,
+      sprint: hasSprint,
       cue: cuePrimary,
       cues,
       rest: parsed?.rest || null,
       restLabel: formatRestLabel(parsed?.rest),
+      departLabel,
+      departSeconds,
       steps: parsed?.steps || null,
       pyramid,
       children: childParsed.map((c) => ({
