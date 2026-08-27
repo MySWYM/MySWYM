@@ -19,6 +19,7 @@ import {
   excludeSheetNsFromHistory,
   excludeEducatifNamesFromHistory,
   educatifRowToUiFiche,
+  normalizeEducatifKey,
   SHEET_RECENT_EXCLUDE,
   SHEET_RECENT_EDUCATIFS,
 } from "./parse.js";
@@ -143,15 +144,26 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
         ? "4_nages"
         : style;
   const equipment = Array.isArray(profile.equipment) ? profile.equipment : profile.equipment === null ? null : [];
-  const excludeEducatifs = [
+  const recentEducatifs = [
     ...excludeEducatifNamesFromHistory(opts.history, SHEET_RECENT_EDUCATIFS),
     ...(opts.excludeEducatifs || []),
   ];
-  if (opts.currentEducatif) excludeEducatifs.push(String(opts.currentEducatif));
+  if (opts.currentEducatif) recentEducatifs.unshift(String(opts.currentEducatif));
+  // Dédupe en gardant l’ordre (le plus récent = hard exclude)
+  const seenEdu = new Set();
+  const orderedEducatifs = [];
+  for (const name of recentEducatifs) {
+    const key = normalizeEducatifKey(name);
+    if (!key || seenEdu.has(key)) continue;
+    seenEdu.add(key);
+    orderedEducatifs.push(String(name).trim());
+  }
+  const hardExcludeNames = orderedEducatifs.slice(0, 1);
+  const excludeEducatifs = orderedEducatifs.slice(1);
   const filled = materializeSession(
     picked,
     cache.educatifs,
-    { levelBand, nage, equipment, excludeNames: excludeEducatifs },
+    { levelBand, nage, equipment, excludeNames: excludeEducatifs, hardExcludeNames },
     opts.rng || Math.random,
   );
 
@@ -214,6 +226,7 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
       educatif: eduName || null,
       excludeNs,
       excludeEducatifs,
+      hardExcludeNames,
     },
     engineWhy: `sheet=${familyId} · n°${filled.n} · ${filled.total_m}m`,
   };

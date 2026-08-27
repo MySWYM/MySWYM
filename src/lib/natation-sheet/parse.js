@@ -266,7 +266,7 @@ export function excludeSheetNsFromHistory(history, limit = SHEET_RECENT_EXCLUDE)
   return ns;
 }
 
-function normalizeEducatifKey(name) {
+export function normalizeEducatifKey(name) {
   return String(name || "")
     .trim()
     .toLowerCase()
@@ -295,7 +295,7 @@ export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_ED
 
 /**
  * @param {EducatifRow[]} educatifs
- * @param {{ levelBand: 'debutant'|'intermediaire'|'avance', nage?: string, equipment?: string[]|null, excludeNames?: string[] }} opts
+ * @param {{ levelBand: 'debutant'|'intermediaire'|'avance', nage?: string, equipment?: string[]|null, excludeNames?: string[], hardExcludeNames?: string[] }} opts
  * @param {() => number} [rng]
  */
 export function pickEducatif(educatifs, opts, rng = Math.random) {
@@ -321,14 +321,22 @@ export function pickEducatif(educatifs, opts, rng = Math.random) {
       if (soft.length) pool = soft;
     }
   }
-  const exclude = new Set(
-    (opts.excludeNames || []).map(normalizeEducatifKey).filter(Boolean),
-  );
-  if (exclude.size) {
+
+  const applyExclude = (names, { hard }) => {
+    const exclude = new Set((names || []).map(normalizeEducatifKey).filter(Boolean));
+    if (!exclude.size) return;
     const fresh = pool.filter((e) => !exclude.has(normalizeEducatifKey(e.nom)));
-    // Si le pool est trop petit, on autorise le recyclage plutôt que bloquer.
-    if (fresh.length) pool = fresh;
-  }
+    // soft : recyclage si pool vide ; hard : jamais le même d’affilée s’il reste une autre option
+    if (fresh.length || hard) {
+      if (fresh.length) pool = fresh;
+    }
+  };
+
+  // 1) Interdit le dernier éducatif tant qu’il existe une alternative
+  applyExclude(opts.hardExcludeNames, { hard: true });
+  // 2) Évite les 4 précédents ; recyclage OK si le pool devient vide
+  applyExclude(opts.excludeNames, { hard: false });
+
   if (!pool.length) return null;
   const i = Math.floor(rng() * pool.length) % pool.length;
   return pool[i];

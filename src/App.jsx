@@ -7489,7 +7489,15 @@ const buildAdvancedLoopPlan = async (entryPlan, entryProfile, archivedSession, i
     { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
     nextCursor,
     isPremium,
-    { ordinalIndex: history.length, history },
+    {
+      ordinalIndex: history.length,
+      history,
+      currentSheetN: archivedSession?.sheetMeta?.n,
+      currentEducatif:
+        archivedSession?.sheetMeta?.educatif ||
+        archivedSession?.sheetEducatif?.name ||
+        null,
+    },
   );
   if (sheetError || !week?.sessions?.length) {
     return {

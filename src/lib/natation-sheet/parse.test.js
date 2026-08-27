@@ -91,17 +91,33 @@ const eduAvoid = pickEducatif(
 );
 ok(eduAvoid && eduAvoid.nom === "Petit chien", "exclude recent → autre éducatif");
 
+const eduNoRepeat = pickEducatif(
+  edu,
+  {
+    levelBand: "intermediaire",
+    nage: "crawl",
+    hardExcludeNames: ["Petit chien"],
+    excludeNames: ["Flèche", "Grand chien", "Petit chien"],
+  },
+  () => 0,
+);
+ok(
+  eduNoRepeat && eduNoRepeat.nom !== "Petit chien",
+  "hard exclude → jamais le même d’affilée s’il reste une option",
+);
+
 const eduFallback = pickEducatif(
   edu,
   {
     levelBand: "debutant",
     nage: "crawl",
     equipment: ["palmes", "tuba"],
-    excludeNames: ["Flèche", "Grand chien", "Petit chien"],
+    hardExcludeNames: ["Flèche"],
+    excludeNames: ["Grand chien", "Petit chien"],
   },
   () => 0,
 );
-ok(eduFallback && eduFallback.debutant, "pool trop petit → recyclage autorisé");
+ok(eduFallback && eduFallback.nom === "Flèche", "un seul compatible → recyclage du dernier OK");
 
 const filled = materializeSession(
   sessions[0],
