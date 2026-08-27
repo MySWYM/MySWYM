@@ -68,8 +68,31 @@ function estimateSetPartMeters(part) {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+/** Jeton opaque (sans le mot « souple ») pour survivre à humanizeArthurDisplayTerms. */
+const SOUPLE_TOKEN = "__MS_RECUP__";
+
+/** Protège « souple » avant humanisation D9 (toCoach / prettify → facile). */
+function protectSoupleForPipeline(raw) {
+  const s = String(raw ?? "");
+  if (!extractSoupleEffort(s)) return s;
+  return s
+    .replace(/(\w)\*+souple\b/gi, `$1 ${SOUPLE_TOKEN}`)
+    .replace(/\*+souple\b/gi, ` ${SOUPLE_TOKEN}`)
+    .replace(/\bsouple\b/gi, SOUPLE_TOKEN);
+}
+
+function restoreSoupleAfterPipeline(line) {
+  const s = String(line ?? "");
+  if (!s.includes(SOUPLE_TOKEN)) return s;
+  const cleaned = s
+    .replace(new RegExp(`\\s*${SOUPLE_TOKEN}`, "g"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return `${cleaned} — souple`;
+}
+
 export function expandCompoundDetailLines(details = []) {
-  const source = toCoachDetailLines(details);
+  const source = toCoachDetailLines((details || []).map(protectSoupleForPipeline));
   const out = [];
   for (const raw of source) {
     const full = String(raw ?? "");
@@ -93,7 +116,7 @@ export function expandCompoundDetailLines(details = []) {
       out.push(text);
     }
   }
-  return out.map((line) => prettifySessionDetailLine(line));
+  return out.map((line) => restoreSoupleAfterPipeline(prettifySessionDetailLine(line)));
 }
 
 export function groupSessionDetails(details = []) {
@@ -225,16 +248,37 @@ export function formatRestLabel(rest) {
 /**
  * Aligne le libellé UI sur le Sheet (plus de « crawl normal » / « dos normal »).
  * Retire aussi les virgules décoratives en fin de consigne (souvent dans le Sheet).
+ * Normalise `crawl*souple` → `crawl souple` (astérisque Sheet).
  */
 export function scrubLegacyNormalWording(text) {
   if (!text) return text;
   return String(text)
+    .replace(/(\w)\*+(\w)/g, "$1 $2")
+    .replace(/\*/g, " ")
     .replace(/\b(crawl|dos|brasse|papillon|nage)\s+normal(e)?\b/gi, "$1")
     .replace(/\s{2,}/g, " ")
     .replace(/\(\s+/g, "(")
     .replace(/\s+\)/g, ")")
     .replace(/,+\s*$/g, "")
     .trim();
+}
+
+/** Détecte une allure « souple » (récup / relâchement) dans une ligne Sheet ou composeur. */
+export function extractSoupleEffort(...parts) {
+  const blob = parts.filter(Boolean).join(" ");
+  if (!blob) return null;
+  const t = scrubLegacyNormalWording(blob).toLowerCase();
+  return /\bsouple\b/.test(t) ? "souple" : null;
+}
+
+/** Retire le mot souple du texte affiché (la pastille porte l’info). */
+export function stripSoupleMarkers(text) {
+  if (!text) return text;
+  return scrubLegacyNormalWording(text)
+    .replace(/\bsouple\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+    .trim() || null;
 }
 
 /**
@@ -322,8 +366,8 @@ export function inferStrokeLabel(blob) {
 
 /** Extrait « 8 × 50 m » et « CRAWL » / « MIXTE » d’un main pour la hiérarchie visuelle. */
 export function splitHeadline(main) {
-  if (!main) return { volume: null, stroke: null, rest: main };
-  let text = String(main).trim();
+  if (!main) return { volume: null, stroke: null, rest: main, effort: null };
+  let text = scrubLegacyNormalWording(main);
   let volume = null;
   const nx = text.match(/^(\d+\s*[x×]\s*\d+\s*m)\b/i);
   const sm = text.match(/^(\d+\s*m)\b/i);
@@ -336,12 +380,16 @@ export function splitHeadline(main) {
   }
   text = text.replace(/^[-–—·:,]\s*/, "");
 
+  const effort = extractSoupleEffort(text);
+  if (effort) text = stripSoupleMarkers(text) || "";
+
   const inferred = inferStrokeLabel(text);
   let stroke = inferred.label;
   if (inferred.consumePrefix) {
     text = text.slice(inferred.consumePrefix.length).trim().replace(/^[-–—·:,]\s*/, "");
   }
-  return { volume, stroke, rest: text || null };
+  const rest = stripSoupleMarkers(text);
+  return { volume, stroke, rest: rest || null, effort };
 }
 
 function sectionForKind(kind, cues, main) {
@@ -399,9 +447,16 @@ export function buildWorkoutView(session = {}) {
       childParsed.reduce((a, c) => a + parseMetersFromLine(c.main), 0);
     const headline = splitHeadline(scrubLegacyNormalWording(parsed?.main));
     let cuePrimary = scrubLegacyNormalWording(parsed?.cues?.[0] || headline.rest || null);
+    const effortLabel =
+      headline.effort ||
+      extractSoupleEffort(parsed?.main, cuePrimary, ...(parsed?.cues || []), raw);
+    if (effortLabel) {
+      cuePrimary = stripSoupleMarkers(cuePrimary);
+    }
     if (isSoftFillCue(cuePrimary)) cuePrimary = null;
     const cues = (parsed?.cues || [])
       .map((c) => scrubLegacyNormalWording(c))
+      .map((c) => (effortLabel ? stripSoupleMarkers(c) : c))
       .filter((c) => c && !isSoftFillCue(c));
     if (!cuePrimary && cues[0]) cuePrimary = cues[0];
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
@@ -430,6 +485,7 @@ export function buildWorkoutView(session = {}) {
       main: mainClean,
       volumeLabel: headline.volume || (pyramid ? `${pyramid.volume} m` : null),
       strokeLabel: headline.stroke,
+      effortLabel: effortLabel || null,
       cue: cuePrimary,
       cues,
       rest: parsed?.rest || null,

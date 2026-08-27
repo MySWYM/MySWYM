@@ -12,6 +12,27 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(scrubLegacyNormalWording("Jambes crawl avec planche,"), "Jambes crawl avec planche");
   assert.equal(scrubLegacyNormalWording("Avec palmes,"), "Avec palmes");
   assert.equal(scrubLegacyNormalWording("crawl normal"), "crawl");
+  assert.equal(scrubLegacyNormalWording("crawl*souple"), "crawl souple");
+}
+
+{
+  const h = splitHeadline("100 m crawl*souple");
+  assert.equal(h.volume, "100 m");
+  assert.equal(h.stroke, "CRAWL");
+  assert.equal(h.effort, "souple");
+  assert.equal(h.rest, null);
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m crawl*souple"],
+    sets: [{ block: "corps", label: "100 m crawl*souple" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "CRAWL");
+  assert.equal(ex.effortLabel, "souple");
+  assert.ok(!/souple/i.test(ex.cue || ""), "souple n’est plus en sous-texte");
 }
 
 {
@@ -24,7 +45,8 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   const h = splitHeadline("100 m nage libre souple");
   assert.equal(h.volume, "100 m");
   assert.equal(h.stroke, "NAGE AU CHOIX");
-  assert.equal(h.rest, "souple");
+  assert.equal(h.effort, "souple");
+  assert.equal(h.rest, null);
   assert.equal(splitHeadline("200 m au choix").stroke, "NAGE AU CHOIX");
 }
 

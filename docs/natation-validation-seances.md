@@ -91,7 +91,7 @@ Autres contrôles :
 
 ## Rendu nageur
 
-- Jamais `souple` ni `Z1` dans les consignes visibles (D9).
+- Jamais `souple` ni `Z1` dans les consignes visibles (D9), **sauf** pastille d’allure `Souple ⓘ` quand le Sheet / la ligne porte ce marqueur (`crawl*souple`, `crawl souple`) — tip récupération, pas le mot en sous-texte libre.
 - Tous les chemins de sortie (`finalizeCoachSession`, `attachFourNagesCoverage`, `buildConfirmeArchetypeSession`) passent par `sanitizeSessionDetails` / `humanizeArthurDisplayTerms`. Les banques peuvent encore contenir `souple`/`Z1` en interne.
 - Jamais `(facile @2)` / `@2` / `@3` dans un titre.
 - Restitution coach : une ligne = distance + nage + intensité + repos ; pas de headlines moteur ni marketing.
