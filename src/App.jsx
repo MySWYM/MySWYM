@@ -161,6 +161,7 @@ import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
 import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
+import WhatsNewSheet, { hasSeenWhatsNew } from "./sheets/WhatsNewSheet.jsx";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -7699,6 +7700,7 @@ export default function App() {
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [showPlanReady, setShowPlanReady] = useState(false);
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [planReveal, setPlanReveal] = useState(null);
   const [sessionCelebrate, setSessionCelebrate] = useState(null);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
@@ -7941,6 +7943,31 @@ export default function App() {
       clearTimeout(t);
     };
   }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
+
+  // Pop « Nouveautés » one-shot (pas de reset plan / quiz).
+  useEffect(() => {
+    if (screen !== "app" || !user || !plan) return;
+    if (showWhatsNew || hasSeenWhatsNew()) return;
+    if (showUpgrade || showPlanReady || softPaywallPending) return;
+    if (sessionCelebrate || sessionFeedbackTarget !== null || feedbackWeek !== null) return;
+    if (loopPaywall || replaceConfirmOpen || deletePlanId) return;
+    const t = setTimeout(() => setShowWhatsNew(true), 600);
+    return () => clearTimeout(t);
+  }, [
+    screen,
+    user,
+    plan,
+    showWhatsNew,
+    showUpgrade,
+    showPlanReady,
+    softPaywallPending,
+    sessionCelebrate,
+    sessionFeedbackTarget,
+    feedbackWeek,
+    loopPaywall,
+    replaceConfirmOpen,
+    deletePlanId,
+  ]);
 
   const exitAuthToQuiz = () => {
     forceAuthRef.current = false;
@@ -10796,6 +10823,9 @@ export default function App() {
             onContinue={startMonthlyCheckout}
             onDismiss={() => setShowPlanReady(false)}
           />
+        )}
+        {showWhatsNew && !showPlanReady && !showUpgrade && (
+          <WhatsNewSheet onDismiss={() => setShowWhatsNew(false)} />
         )}
         {showUpgrade && (
           <UpgradeModal
