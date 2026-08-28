@@ -29,8 +29,8 @@ const BULLETS = [
     body: "Les semaines allégées et de test s’enchaînent vers ta date, sans casser ton rythme de travail.",
   },
   {
-    title: "Séances coach (Sheet)",
-    body: "Triathlon, eau libre et Nager : des séances du cahier coach, avec éducatifs adaptés à ton niveau.",
+    title: "+1000 nouvelles séances",
+    body: "Triathlon, eau libre et Nager : un catalogue coach enrichi, avec éducatifs adaptés à ton niveau.",
   },
 ];
 
