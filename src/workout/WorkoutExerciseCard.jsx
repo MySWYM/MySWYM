@@ -63,9 +63,42 @@ const ALLURE_TIPS = {
     label: "Enchaînement",
     tone: "blue",
     body:
-      "Plusieurs allures dans la même série, dans l’ordre indiqué sous la ligne. Lent = nage lente contrôlée ; souple = récupération — ce n’est pas la même chose.",
+      "Plusieurs allures dans la même série, dans l’ordre indiqué sous la ligne.",
   },
 };
+
+/** Glossaire court pour la liste du tip Enchaînement. */
+const ALLURE_LIST_BLURB = {
+  lent: "nage lente et contrôlée (technique / qualité)",
+  moyen: "rythme régulier, tenable sur toute la série",
+  progressif: "tu accélères au fil de la distance",
+  vite: "plus soutenu que le moyen, sans aller à l’échec",
+  souple: "récupération : lente et relâchée",
+  abloc: "maximum sur la distance, puis bonne récup",
+  sprint: "effort court et explosif, puis bonne récup",
+  facile: "confortable, sans forcer",
+  soutenu: "effort marqué mais tenable",
+  descendant: "tu ralentis au fil de la distance",
+};
+
+function tipKeyFromAllureToken(token) {
+  const t = String(token || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (t === "rapide" || t === "vite") return "vite";
+  if (t === "a bloc" || t === "à bloc") return "abloc";
+  if (ALLURE_TIPS[t] && t !== "enchainement") return t;
+  return null;
+}
+
+function capitalizeAllureLabel(token) {
+  const s = String(token || "").trim();
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 /** Ordre d’affichage des pastilles allure. */
 const ALLURE_CHIP_ORDER = [
@@ -258,14 +291,70 @@ function TipSheetShell({ eyebrow, title, onClose, colors: G, children }) {
 function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
   const tip = ALLURE_TIPS[tipKey];
   if (!tip) return null;
-  let body = tip.body;
-  if (tipKey === "enchainement" && enchainement?.cue) {
-    body = `Sur cette série, enchaîne dans l’ordre : ${enchainement.cue}. Lent = nage lente contrôlée ; souple = récupération — ce n’est pas la même chose.`;
+
+  if (tipKey === "enchainement" && enchainement?.steps?.length >= 2) {
+    const steps = enchainement.steps;
+    const keys = steps.map((st) => tipKeyFromAllureToken(st.allure));
+    const showLentSouple = keys.includes("lent") || keys.includes("souple");
+    const isRepStyle = /\d+\s+(lent|moyen|rapide|vite|souple|progressif|facile|soutenu|descendant|à\s*bloc|a\s*bloc)/i.test(
+      enchainement.cue || "",
+    );
+
+    return (
+      <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose} colors={G}>
+        <p style={{ margin: "0 0 14px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+          Sur cette série, enchaîne les allures dans cet ordre.
+        </p>
+        <ul
+          style={{
+            margin: "0 0 16px",
+            padding: "0 0 0 18px",
+            listStyle: "disc",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          {steps.map((st, i) => {
+            const key = keys[i];
+            const tipRow = key ? ALLURE_TIPS[key] : null;
+            const label = tipRow?.label || capitalizeAllureLabel(st.allure);
+            const blurb = (key && ALLURE_LIST_BLURB[key]) || tipRow?.body || "";
+            const countPrefix =
+              isRepStyle && Number(st.n) >= 1 ? `${st.n}× ` : "";
+            return (
+              <li
+                key={`${st.allure}-${i}`}
+                style={{ fontSize: 15, color: G.inkLight, lineHeight: 1.45, fontWeight: 600 }}
+              >
+                <span style={{ color: G.ink, fontWeight: 800 }}>
+                  {countPrefix}{label}
+                </span>
+                {blurb ? (
+                  <span>
+                    {" — "}
+                    {blurb}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        {showLentSouple ? (
+          <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
+            <span style={{ color: G.inkLight, fontWeight: 800 }}>Lent ≠ souple</span>
+            {" — "}
+            lent = allure lente contrôlée ; souple = récupération relâchée. Ce n’est pas la même chose.
+          </p>
+        ) : null}
+      </TipSheetShell>
+    );
   }
+
   return (
     <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose} colors={G}>
       <p style={{ margin: 0, fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
-        {body}
+        {tip.body}
       </p>
     </TipSheetShell>
   );
