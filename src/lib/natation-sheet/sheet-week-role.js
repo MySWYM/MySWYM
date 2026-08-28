@@ -3,19 +3,34 @@
  *
  * Avec eventDate :
  *   S0 + S-1     → deload (S0 = semaine course, max 2 séances)
- *   S-2 → S-6    → construction (interdit test)
- *   S-7 et avant → cycle ancré sur J : S-7 test, S-8 deload,
- *                  puis 7 construction → test → deload (S-16, S-17…)
+ *   S-2 → S-5    → construction (interdit test / allégée cycle)
+ *   S-6 et avant → cycle ancré sur J (longueur 8) :
+ *                  S-6 = allégée ; S-7 = test (depuis J : allégée puis test) ;
+ *                  6 travail entre les couples
+ *                  (ex. S-15 test → S-14 allégée → S-13…S-8 travail → S-7 test → S-6 allégée)
  *
- * Sans eventDate : cycle seul (ancre = planStart ou index de semaines).
+ * Début de plan : les 2 premières semaines (weekIndex 0..1) forcent
+ * construction sur le cycle loin / sans date — pas de test ni allégée « cycle ».
+ * S0 / S-1 course restent prioritaires (taper intact).
+ *
+ * Sans eventDate : même cycle 6 travail → allégée → test (+ garde 2 sem.).
  *
  * Notation : S0 = semaine du jour J ; S-1 = semaine d’avant ; J-1 = veille (jours).
  */
 
 const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
 
+/** Semaines de travail dans le cycle loin de J (avant le couple allégée+test). */
+export const FAR_WORK_WEEKS = 6;
+/** Cycle loin : 6 travail + 1 allégée + 1 test. */
+export const FAR_CYCLE_LEN = FAR_WORK_WEEKS + 2;
+/** Pas de test / allégée « cycle » avant N semaines de plan. */
+export const EARLY_PLAN_MIN_CONSTRUCTION = 2;
+/** Plus près de J autorisé pour test / allégée cycle (S-6). */
+export const FAR_CYCLE_MIN_S_INDEX = 6;
+
 /** @typedef {'construction'|'test'|'deload'} SheetPhase */
-/** @typedef {'S0'|'S-1'|'S-2_S-6'|'far'|'no_date'} SheetWeekBand */
+/** @typedef {'S0'|'S-1'|'S-2_S-5'|'far'|'no_date'} SheetWeekBand */
 
 /**
  * Lundi 00:00 local de la semaine contenant `date`.
@@ -46,39 +61,57 @@ export function weeksBeforeRaceWeek(eventDate, now = new Date()) {
 }
 
 /**
- * Position dans le cycle 9 semaines (0..8) — sans date de course.
- * 0–6 construction · 7 test · 8 deload
+ * Position dans le cycle 8 semaines — sans date de course.
+ * 0–5 construction · 6 deload · 7 test (allégée puis test)
  * @param {number} weekIndex — semaines depuis ancre (≥0)
  */
 export function farCyclePhase(weekIndex) {
   const w = Math.max(0, Math.floor(Number(weekIndex) || 0));
-  const pos = w % 9;
-  if (pos <= 6) return "construction";
-  if (pos === 7) return "test";
-  return "deload";
+  const pos = w % FAR_CYCLE_LEN;
+  if (pos < FAR_WORK_WEEKS) return "construction";
+  if (pos === FAR_WORK_WEEKS) return "deload";
+  return "test";
 }
 
 /**
  * @param {number} weekIndex
  */
 export function farCyclePosition(weekIndex) {
-  return Math.max(0, Math.floor(Number(weekIndex) || 0)) % 9;
+  return Math.max(0, Math.floor(Number(weekIndex) || 0)) % FAR_CYCLE_LEN;
 }
 
 /**
  * Cycle loin de J, ancré sur l’index S (semaines avant course).
- * S-7 → test, S-8 → deload, S-9…S-15 → construction, S-16 → test…
- * @param {number} sIndex — weeksBeforeRaceWeek (≥ 7)
+ * S-6 → allégée ; S-7 → test ; depuis J : allégée puis test → 6 travail → …
+ * (S-14 allégée, S-15 test, S-13…S-8 travail, S-6 allégée, S-7 test).
+ * @param {number} sIndex — weeksBeforeRaceWeek (≥ 6)
  * @returns {{ phase: SheetPhase, cyclePosition: number }}
  */
 export function farCycleFromRaceSIndex(sIndex) {
-  const s = Math.max(7, Math.floor(Number(sIndex) || 7));
-  const pos = (s - 7) % 9;
+  const s = Math.max(FAR_CYCLE_MIN_S_INDEX, Math.floor(Number(sIndex) || FAR_CYCLE_MIN_S_INDEX));
+  const pos = (s - FAR_CYCLE_MIN_S_INDEX) % FAR_CYCLE_LEN;
   /** @type {SheetPhase} */
   let phase = "construction";
-  if (pos === 0) phase = "test";
-  else if (pos === 1) phase = "deload";
+  if (pos === 0) phase = "deload";
+  else if (pos === 1) phase = "test";
   return { phase, cyclePosition: pos };
+}
+
+/**
+ * Garde début de plan : pas de test / allégée cycle avant 2 semaines.
+ * Ne s’applique pas aux bandes course S0 / S-1.
+ * @param {SheetPhase} phase
+ * @param {number|null|undefined} planWeekIndex
+ * @param {{ skip?: boolean }} [opts]
+ * @returns {SheetPhase}
+ */
+export function applyEarlyPlanConstructionGuard(phase, planWeekIndex, opts = {}) {
+  if (opts.skip) return phase;
+  if (phase !== "test" && phase !== "deload") return phase;
+  if (planWeekIndex == null || !Number.isFinite(Number(planWeekIndex))) return phase;
+  const wi = Math.floor(Number(planWeekIndex));
+  if (wi < EARLY_PLAN_MIN_CONSTRUCTION) return "construction";
+  return phase;
 }
 
 const BANNERS = Object.freeze({
@@ -97,11 +130,12 @@ const BANNERS = Object.freeze({
  *   weekIndex?: number|null,
  *   now?: Date,
  * }} opts
- * weekIndex = semaines depuis début de plan (cycle sans date uniquement).
+ * weekIndex = semaines depuis début de plan (garde 2 sem. + cycle sans date).
  */
 export function resolveSheetWeekRole(opts = {}) {
   const now = opts.now instanceof Date ? opts.now : new Date();
   const sIndex = weeksBeforeRaceWeek(opts.eventDate, now);
+  const planWeekIndex = resolveCycleWeekIndex(opts, now);
 
   /** @type {SheetWeekBand} */
   let band = "no_date";
@@ -114,6 +148,7 @@ export function resolveSheetWeekRole(opts = {}) {
   let cycleWeekIndex = null;
   /** @type {number|null} */
   let cyclePosition = null;
+  let earlyGuardApplied = false;
 
   if (sIndex != null && sIndex >= 0) {
     if (sIndex === 0) {
@@ -126,15 +161,17 @@ export function resolveSheetWeekRole(opts = {}) {
       band = "S-1";
       phase = "deload";
       label = "Semaine allégée (S-1)";
-    } else if (sIndex >= 2 && sIndex <= 6) {
-      band = "S-2_S-6";
+    } else if (sIndex >= 2 && sIndex <= 5) {
+      band = "S-2_S-5";
       phase = "construction";
       label = "Construction (approche course)";
     } else {
-      // S-7+ : cycle ancré sur J (S-7 = test)
+      // S-6+ : cycle ancré sur J (S-6 = allégée, S-7 = test)
       band = "far";
       const far = farCycleFromRaceSIndex(sIndex);
-      phase = far.phase;
+      const guarded = applyEarlyPlanConstructionGuard(far.phase, planWeekIndex);
+      earlyGuardApplied = guarded !== far.phase;
+      phase = guarded;
       cyclePosition = far.cyclePosition;
       cycleWeekIndex = sIndex;
       label =
@@ -142,7 +179,9 @@ export function resolveSheetWeekRole(opts = {}) {
           ? "Semaine test"
           : phase === "deload"
             ? "Semaine allégée"
-            : "Construction";
+            : earlyGuardApplied
+              ? "Construction (début de plan)"
+              : "Construction";
     }
   } else if (sIndex != null && sIndex < 0) {
     // Après course : construction douce
@@ -152,12 +191,20 @@ export function resolveSheetWeekRole(opts = {}) {
   } else {
     // Pas de date → cycle seul
     band = "no_date";
-    const wi = resolveCycleWeekIndex(opts, now);
-    phase = farCyclePhase(wi);
-    cycleWeekIndex = wi;
-    cyclePosition = farCyclePosition(wi);
+    const raw = farCyclePhase(planWeekIndex);
+    const guarded = applyEarlyPlanConstructionGuard(raw, planWeekIndex);
+    earlyGuardApplied = guarded !== raw;
+    phase = guarded;
+    cycleWeekIndex = planWeekIndex;
+    cyclePosition = farCyclePosition(planWeekIndex);
     label =
-      phase === "test" ? "Semaine test" : phase === "deload" ? "Semaine allégée" : "Construction";
+      phase === "test"
+        ? "Semaine test"
+        : phase === "deload"
+          ? "Semaine allégée"
+          : earlyGuardApplied
+            ? "Construction (début de plan)"
+            : "Construction";
   }
 
   const bannerKey = isRaceWeek ? "race_week" : phase;
@@ -171,6 +218,8 @@ export function resolveSheetWeekRole(opts = {}) {
     isRaceWeek,
     cycleWeekIndex,
     cyclePosition,
+    earlyGuardApplied,
+    planWeekIndex,
   };
 }
 
@@ -221,9 +270,11 @@ export function sheetPhaseShortLabel(role) {
 
 /**
  * Timeline de semaines pour l’accueil (tri / event Sheet).
- * Avec date de course : de la semaine courante jusqu’à S0 (piste complète).
+ * Avec date de course : de la semaine calendaire (S-n aujourd’hui) jusqu’à S0.
+ * `weekIndex` (semaines de plan déjà enchaînées) déplace « cette semaine »
+ * le long de la piste : Semaine 1 → S-n, Semaine 2 → S-(n−1), etc.
  * `maxWeeks` optionnel = plafond d’affichage (tests / UI contrainte).
- * Sans date : un cycle 9 semaines à partir de `weekIndex`.
+ * Sans date : un cycle FAR_CYCLE_LEN semaines à partir de `weekIndex`.
  *
  * @param {{
  *   eventDate?: string|Date|null,
@@ -257,13 +308,15 @@ export function buildEventWeekTimeline(opts = {}) {
   if (sNow != null && sNow >= 0) {
     const fullCount = sNow + 1;
     const count = maxWeeks == null ? fullCount : Math.min(fullCount, maxWeeks);
+    const currentIdx = Math.min(baseWeekIndex, Math.max(0, count - 1));
     for (let i = 0; i < count; i++) {
       const s = sNow - i;
       const fakeNow = new Date(now.getTime() + i * MS_WEEK);
+      // weekIndex = rang de plan sur la piste (0 = 1re semaine), pas le curseur courant + i
       const role = resolveSheetWeekRole({
         eventDate: opts.eventDate,
         planStart: opts.planStart,
-        weekIndex: baseWeekIndex + i,
+        weekIndex: i,
         now: fakeNow,
       });
       weeks.push({
@@ -273,7 +326,7 @@ export function buildEventWeekTimeline(opts = {}) {
         phase: role.phase,
         shortLabel: sheetPhaseShortLabel(role),
         label: role.label,
-        isCurrent: i === 0,
+        isCurrent: i === currentIdx,
         isRaceWeek: !!role.isRaceWeek,
       });
     }
@@ -283,12 +336,12 @@ export function buildEventWeekTimeline(opts = {}) {
       truncated: maxWeeks != null && fullCount > maxWeeks,
       weeksBeforeRace: sNow,
       eventDate: opts.eventDate || null,
-      current: weeks[0] || null,
+      current: weeks[currentIdx] || weeks[0] || null,
     };
   }
 
-  // Pas de date (ou après course) : afficher un cycle 9 semaines
-  for (let i = 0; i < 9; i++) {
+  // Pas de date (ou après course) : afficher un cycle FAR_CYCLE_LEN semaines
+  for (let i = 0; i < FAR_CYCLE_LEN; i++) {
     const wi = baseWeekIndex + i;
     const role = resolveSheetWeekRole({
       eventDate: null,
