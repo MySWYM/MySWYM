@@ -40,7 +40,41 @@ const iso = (ms) => new Date(ms).toISOString();
     trial_ends_at: iso(now - 3 * 86400000),
   };
   assert.equal(hasConsumedValidTrialWindow(consumed), true);
-  assert.equal(shouldGrantCardlessTrial(consumed, { userCreatedAt: iso(now - 30 * 86400000) }), false);
+  assert.equal(
+    shouldGrantCardlessTrial(consumed, { userCreatedAt: iso(now - 30 * 86400000) }),
+    true,
+    "campagne RETRIAL_ON_LOGIN : essai brûlé → nouveau grant au login",
+  );
+}
+
+{
+  const payingStillCovered = {
+    access_status: ACCESS_STATUS.canceled,
+    trial_used: true,
+    trial_started_at: iso(now - 40 * 86400000),
+    trial_ends_at: iso(now - 33 * 86400000),
+    subscription_ends_at: iso(now + 5 * 86400000),
+  };
+  assert.equal(
+    shouldGrantCardlessTrial(payingStillCovered),
+    false,
+    "désabo encore couvert par la période payée → pas de re-essai",
+  );
+}
+
+{
+  const canceledLapsed = {
+    access_status: ACCESS_STATUS.canceled,
+    trial_used: true,
+    trial_started_at: iso(now - 40 * 86400000),
+    trial_ends_at: iso(now - 33 * 86400000),
+    subscription_ends_at: iso(now - 2 * 86400000),
+  };
+  assert.equal(
+    shouldGrantCardlessTrial(canceledLapsed),
+    true,
+    "désabo hors période → re-essai campagne",
+  );
 }
 
 {

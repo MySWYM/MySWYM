@@ -48,6 +48,14 @@ export const TRIAL_LENGTH_DAYS = 7;
 /** Fenêtre minimale pour considérer qu’un essai MySWYM a vraiment été accordé. */
 const MIN_GRANTED_TRIAL_MS = (TRIAL_LENGTH_DAYS - 1) * 24 * 60 * 60 * 1000;
 
+/**
+ * Campagne pré-lancement Soft Sheet : au prochain sync/login, nouveau 7j
+ * pour tout compte **sans accès en cours** (essai brûlé, gelé, désabo hors période).
+ * Les abo Stripe actifs / canceled encore couverts restent intacts (hasEntitlement).
+ * Remettre à false après la campagne.
+ */
+export const RETRIAL_ON_LOGIN = true;
+
 export function stripEntitlementFromUserMeta(meta: Record<string, unknown> | undefined) {
   const next = { ...(meta ?? {}) };
   for (const key of ENTITLEMENT_KEYS) delete next[key];
@@ -140,6 +148,7 @@ export function buildTrialState(userId: string, current?: Partial<AccessStateRow
  * Un essai sans carte par compte, à la première connexion.
  * Réaccorde si l’essai n’a jamais eu de fenêtre valide, ou s’il s’est terminé
  * avant la création du compte Auth (customer Stripe d’un autre essai / e-mail).
+ * Campagne RETRIAL_ON_LOGIN : aussi si essai déjà consommé / désabo sans accès restant.
  */
 export function shouldGrantCardlessTrial(
   current?: Partial<AccessStateRow> | null,
@@ -158,6 +167,7 @@ export function shouldGrantCardlessTrial(
   const createdMs = parseIsoMs(opts?.userCreatedAt);
   const trialEndMs = parseIsoMs(current.trial_ends_at);
   if (createdMs != null && trialEndMs != null && trialEndMs <= createdMs) return true;
+  if (RETRIAL_ON_LOGIN) return true;
   return false;
 }
 

@@ -22,7 +22,7 @@ import {
 } from "./preserve-progress.js";
 
 /** Aligné App.jsx PLAN_VERSION — métadonnées uniquement. */
-export const ARTHUR_PLAN_VERSION = 48;
+export const ARTHUR_PLAN_VERSION = 49;
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
