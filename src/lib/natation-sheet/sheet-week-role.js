@@ -5,9 +5,9 @@
  *   S0 + S-1     → deload (S0 = semaine course, max 2 séances)
  *   S-2 → S-5    → construction (interdit test / allégée cycle)
  *   S-6 et avant → cycle ancré sur J (longueur 8) :
- *                  S-6 = test ; S-7 = allégée (couple allégée → test vers J) ;
+ *                  S-6 = allégée ; S-7 = test (depuis J : allégée puis test) ;
  *                  6 travail entre les couples
- *                  (ex. S-15 allégée → S-14 test → S-13…S-8 travail → S-7 allégée → S-6 test)
+ *                  (ex. S-15 test → S-14 allégée → S-13…S-8 travail → S-7 test → S-6 allégée)
  *
  * Début de plan : les 2 premières semaines (weekIndex 0..1) forcent
  * construction sur le cycle loin / sans date — pas de test ni allégée « cycle ».
@@ -82,8 +82,8 @@ export function farCyclePosition(weekIndex) {
 
 /**
  * Cycle loin de J, ancré sur l’index S (semaines avant course).
- * S-6 → test ; S-7 → allégée ; vers J : allégée → test → 6 travail → …
- * (S-15 allégée, S-14 test, S-13…S-8 travail, S-7 allégée, S-6 test).
+ * S-6 → allégée ; S-7 → test ; depuis J : allégée puis test → 6 travail → …
+ * (S-14 allégée, S-15 test, S-13…S-8 travail, S-6 allégée, S-7 test).
  * @param {number} sIndex — weeksBeforeRaceWeek (≥ 6)
  * @returns {{ phase: SheetPhase, cyclePosition: number }}
  */
@@ -92,8 +92,8 @@ export function farCycleFromRaceSIndex(sIndex) {
   const pos = (s - FAR_CYCLE_MIN_S_INDEX) % FAR_CYCLE_LEN;
   /** @type {SheetPhase} */
   let phase = "construction";
-  if (pos === 0) phase = "test";
-  else if (pos === 1) phase = "deload";
+  if (pos === 0) phase = "deload";
+  else if (pos === 1) phase = "test";
   return { phase, cyclePosition: pos };
 }
 
@@ -166,7 +166,7 @@ export function resolveSheetWeekRole(opts = {}) {
       phase = "construction";
       label = "Construction (approche course)";
     } else {
-      // S-6+ : cycle ancré sur J (S-6 = test)
+      // S-6+ : cycle ancré sur J (S-6 = allégée, S-7 = test)
       band = "far";
       const far = farCycleFromRaceSIndex(sIndex);
       const guarded = applyEarlyPlanConstructionGuard(far.phase, planWeekIndex);

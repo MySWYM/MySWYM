@@ -1,5 +1,5 @@
 /**
- * Tests calendrier Sheet — couple allégée→test vers J (S-7→S-6), 6 travail, garde 2 sem.
+ * Tests calendrier Sheet — depuis J : S-6 allégée → S-7 test ; 6 travail ; garde 2 sem.
  * Usage : node src/lib/natation-sheet/sheet-week-role.test.js
  */
 import assert from "node:assert/strict";
@@ -41,12 +41,12 @@ assert.equal(farCyclePhase(6), "deload");
 assert.equal(farCyclePhase(7), "test");
 assert.equal(farCyclePhase(8), "construction");
 
-assert.equal(farCycleFromRaceSIndex(6).phase, "test");
-assert.equal(farCycleFromRaceSIndex(7).phase, "deload", "S-7 allégée puis S-6 test");
+assert.equal(farCycleFromRaceSIndex(6).phase, "deload");
+assert.equal(farCycleFromRaceSIndex(7).phase, "test", "depuis J : S-6 allégée puis S-7 test");
 assert.equal(farCycleFromRaceSIndex(8).phase, "construction");
 assert.equal(farCycleFromRaceSIndex(13).phase, "construction");
-assert.equal(farCycleFromRaceSIndex(14).phase, "test");
-assert.equal(farCycleFromRaceSIndex(15).phase, "deload");
+assert.equal(farCycleFromRaceSIndex(14).phase, "deload");
+assert.equal(farCycleFromRaceSIndex(15).phase, "test");
 
 assert.equal(applyEarlyPlanConstructionGuard("test", 0), "construction");
 assert.equal(applyEarlyPlanConstructionGuard("deload", 1), "construction");
@@ -74,7 +74,7 @@ assert.equal(applyEarlyPlanConstructionGuard("test", 2), "test");
     now: new Date("2026-07-15T12:00:00"),
     weekIndex: 10,
   });
-  assert.equal(s6.phase, "test");
+  assert.equal(s6.phase, "deload");
 
   const s6early = resolveSheetWeekRole({
     eventDate: race,
@@ -89,14 +89,14 @@ assert.equal(applyEarlyPlanConstructionGuard("test", 2), "test");
     now: new Date("2026-07-08T12:00:00"),
     weekIndex: 10,
   });
-  assert.equal(s7.phase, "deload");
+  assert.equal(s7.phase, "test");
 
   const s7early = resolveSheetWeekRole({
     eventDate: race,
     now: new Date("2026-07-08T12:00:00"),
     weekIndex: 0,
   });
-  assert.equal(s7early.phase, "construction", "garde début : pas d’allégée cycle trop tôt");
+  assert.equal(s7early.phase, "construction", "garde début : pas de test cycle trop tôt");
 }
 
 {
@@ -117,10 +117,10 @@ assert.equal(sheetPhaseShortLabel({ phase: "deload", isRaceWeek: true }), "Cours
   assert.equal(weeksBeforeRaceWeek(race, nowS9), 9);
   const byLabel = Object.fromEntries(atS9.weeks.map((w) => [w.sLabel, w.shortLabel]));
   assert.equal(byLabel["S-9"], "Travail");
-  // Début de plan : garde 2 sem. → S-9 / S-8 travail ; S-7 allégée / S-6 test OK
+  // Début de plan : garde 2 sem. → S-9 / S-8 travail ; S-7 test / S-6 allégée OK
   assert.equal(byLabel["S-8"], "Travail");
-  assert.equal(byLabel["S-7"], "Allégée");
-  assert.equal(byLabel["S-6"], "Test");
+  assert.equal(byLabel["S-7"], "Test");
+  assert.equal(byLabel["S-6"], "Allégée");
   assert.equal(byLabel["S-5"], "Travail");
   assert.equal(byLabel["S-1"], "Allégée");
   assert.equal(byLabel["S0"], "Course");
@@ -134,11 +134,11 @@ assert.equal(sheetPhaseShortLabel({ phase: "deload", isRaceWeek: true }), "Cours
     weekIndex: 20,
   });
   const byLabel = Object.fromEntries(far.weeks.map((w) => [w.sLabel, w.shortLabel]));
-  assert.equal(byLabel["S-6"], "Test");
-  assert.equal(byLabel["S-7"], "Allégée", "vers J : allégée puis test");
+  assert.equal(byLabel["S-6"], "Allégée");
+  assert.equal(byLabel["S-7"], "Test", "depuis J : allégée puis test");
   assert.equal(byLabel["S-5"], "Travail");
-  assert.equal(byLabel["S-14"], "Test");
-  assert.equal(byLabel["S-15"], "Allégée");
+  assert.equal(byLabel["S-14"], "Allégée");
+  assert.equal(byLabel["S-15"], "Test");
 }
 
 {
