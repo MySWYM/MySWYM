@@ -5,3 +5,4 @@ export { default as UpgradeModal } from "./UpgradeModal.jsx";
 export { default as ConfirmSheet } from "./ConfirmSheet.jsx";
 export { default as CancelSurveySheet } from "./CancelSurveySheet.jsx";
 export { default as TrialExpiredFreeze } from "./TrialExpiredFreeze.jsx";
+export { default as WhatsNewSheet, hasSeenWhatsNew, markWhatsNewSeen, WHATS_NEW_STORAGE_KEY } from "./WhatsNewSheet.jsx";
