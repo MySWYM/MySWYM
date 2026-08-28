@@ -1,10 +1,11 @@
 /**
- * Ajoute les automations marketing manquantes (idempotent par nom).
+ * Automations marketing v2 (idempotent par nom).
  * Usage: node --env-file=.env.local scripts/setup-resend-automations-v2.mjs
  *
- * Déjà créées en v1 : nurture J+3, cancel immédiat.
- * Ici : J+1 activation, trial J-1, winback J+14, referral post-pay, comeback séance.
+ * Pour mettre à jour le design des templates : npm run email:republish
  */
+import { getAutomationTemplates } from "./_lib/email-html.mjs";
+
 const API = "https://api.resend.com";
 const KEY = process.env.RESEND_API_KEY;
 if (!KEY) {
@@ -14,6 +15,7 @@ if (!KEY) {
 
 const FROM = process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
 const REPLY = process.env.EMAIL_REPLY_TO || "contact@myswym.app";
+const APP = process.env.APP_URL || "https://myswym.app";
 
 async function api(method, path, body) {
   const res = await fetch(`${API}${path}`, {
@@ -37,31 +39,6 @@ async function api(method, path, body) {
     throw err;
   }
   return data;
-}
-
-function emailHtml({ title, paragraphs, ctaLabel, ctaUrl = "https://myswym.app/app" }) {
-  const body = paragraphs
-    .map(
-      (t) =>
-        `<p style="color:#434751;font-size:15px;line-height:24px;margin:0 0 12px">${t}</p>`,
-    )
-    .join("");
-  return `<!doctype html><html lang="fr"><body style="margin:0;padding:24px 12px;background:#f8f9fc;font-family:Lexend,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-  <div style="max-width:560px;margin:0 auto">
-    <p style="color:#355da3;font-size:22px;font-weight:800;margin:0 0 20px">MySWYM</p>
-    <div style="background:#fff;border:1px solid rgba(53,93,163,0.12);border-radius:12px;padding:28px 24px">
-      <h1 style="color:#191c1e;font-size:22px;margin:0 0 12px">${title}</h1>
-      ${body}
-      <p style="text-align:center;margin:28px 0 8px">
-        <a href="${ctaUrl}" style="background:#355da3;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;display:inline-block">${ctaLabel}</a>
-      </p>
-    </div>
-    <p style="color:#5d5e61;font-size:12px;margin:28px 0 4px">MySWYM · plans de natation structurés</p>
-    <p style="color:#5d5e61;font-size:12px;margin:0">
-      <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#5d5e61">Se désabonner</a>
-      · contact@myswym.app
-    </p>
-  </div></body></html>`;
 }
 
 async function ensureEvent(name, schema) {
@@ -130,76 +107,16 @@ async function main() {
     sessionTitle: "string",
   });
 
+  const catalog = getAutomationTemplates(APP);
+  const byName = Object.fromEntries(catalog.map((t) => [t.name, t]));
   const existing = await listAutomationNames();
 
-  const tplActivation = await createAndPublishTemplate({
-    name: "automation-activation-j1",
-    subject: "Ta première séance MySWYM en 2 minutes",
-    html: emailHtml({
-      title: "Ouvre l’app, coche ta première séance",
-      paragraphs: [
-        "{{{GREETING}}}, ton compte est prêt. La suite est simple : ouvre ton plan et lance la séance du jour.",
-        "Pas besoin d’être parfait — juste le prochain coup de bras. On structure le reste.",
-      ],
-      ctaLabel: "Voir ma séance",
-    }),
-  });
+  const tplActivation = await createAndPublishTemplate(byName["automation-activation-j1"]);
+  const tplTrial = await createAndPublishTemplate(byName["automation-trial-ending"]);
+  const tplWinback = await createAndPublishTemplate(byName["automation-winback-j14"]);
+  const tplReferral = await createAndPublishTemplate(byName["automation-referral-invite"]);
+  const tplComeback = await createAndPublishTemplate(byName["automation-comeback-session"]);
 
-  const tplTrial = await createAndPublishTemplate({
-    name: "automation-trial-ending",
-    subject: "Demain, ton essai Premium se termine",
-    html: emailHtml({
-      title: "Plus qu’un jour d’essai",
-      paragraphs: [
-        "{{{GREETING}}}, ton essai MySWYM se termine demain.",
-        "Si tu continues, tu gardes ton plan complet, le multi-plans et les départs chronométrés — 4,99 € / mois, sans engagement.",
-        "Tu peux aussi annuler avant la fin de l’essai : 0 €.",
-      ],
-      ctaLabel: "Gérer mon essai",
-    }),
-  });
-
-  const tplWinback = await createAndPublishTemplate({
-    name: "automation-winback-j14",
-    subject: "On garde ta place dans le bassin",
-    html: emailHtml({
-      title: "Envie de reprendre ?",
-      paragraphs: [
-        "{{{GREETING}}}, ça fait deux semaines. Ton compte MySWYM est toujours là, avec ton historique.",
-        "Quand tu veux, tu reprends un plan adapté — sans repartir de zéro.",
-      ],
-      ctaLabel: "Reprendre Premium",
-    }),
-  });
-
-  const tplReferral = await createAndPublishTemplate({
-    name: "automation-referral-invite",
-    subject: "Offre −20% à un nageur pote",
-    html: emailHtml({
-      title: "Parraine un nageur",
-      paragraphs: [
-        "{{{GREETING}}}, merci d’être Premium. Tu peux inviter un ami : il bénéficie de −20% sur sa 1ère facture, et tu reçois 4,99 € de crédit quand il s’abonne.",
-        "Le lien se trouve dans Réglages → Parraine un nageur.",
-      ],
-      ctaLabel: "Ouvrir mes réglages",
-      ctaUrl: "https://myswym.app/app",
-    }),
-  });
-
-  const tplComeback = await createAndPublishTemplate({
-    name: "automation-comeback-session",
-    subject: "L’eau t’attend — on reprend ?",
-    html: emailHtml({
-      title: "3 jours sans séance",
-      paragraphs: [
-        "{{{GREETING}}}, pas de jugement — juste un rappel doux. Ta semaine MySWYM est toujours là.",
-        "Une séance courte suffit pour reprendre le fil.",
-      ],
-      ctaLabel: "Voir ma séance",
-    }),
-  });
-
-  // J+1 : pas d’abo → activation
   await createAutomationIfMissing(existing, {
     name: "Activation — J+1 sans abo",
     status: "enabled",
@@ -215,7 +132,7 @@ async function main() {
         type: "send_email",
         config: {
           from: FROM,
-          subject: "Ta première séance MySWYM en 2 minutes",
+          subject: byName["automation-activation-j1"].subject,
           reply_to: REPLY,
           template: {
             id: tplActivation,
@@ -230,7 +147,6 @@ async function main() {
     ],
   });
 
-  // Trial J-1 : event trial.ending_soon (émis par marketing-cron, fenêtre exacte)
   await createAutomationIfMissing(existing, {
     name: "Essai — rappel J-1",
     status: "enabled",
@@ -241,7 +157,7 @@ async function main() {
         type: "send_email",
         config: {
           from: FROM,
-          subject: "Demain, ton essai Premium se termine",
+          subject: byName["automation-trial-ending"].subject,
           reply_to: REPLY,
           template: {
             id: tplTrial,
@@ -253,7 +169,6 @@ async function main() {
     connections: [{ from: "start", to: "send", type: "default" }],
   });
 
-  // Win-back J+14 après cancel
   await createAutomationIfMissing(existing, {
     name: "Win-back — J+14 après cancel",
     status: "enabled",
@@ -265,7 +180,7 @@ async function main() {
         type: "send_email",
         config: {
           from: FROM,
-          subject: "On garde ta place dans le bassin",
+          subject: byName["automation-winback-j14"].subject,
           reply_to: REPLY,
           template: {
             id: tplWinback,
@@ -280,7 +195,6 @@ async function main() {
     ],
   });
 
-  // Referral 1j après abo
   await createAutomationIfMissing(existing, {
     name: "Parrainage — J+1 après abo",
     status: "enabled",
@@ -292,7 +206,7 @@ async function main() {
         type: "send_email",
         config: {
           from: FROM,
-          subject: "Offre −20% à un nageur pote",
+          subject: byName["automation-referral-invite"].subject,
           reply_to: REPLY,
           template: {
             id: tplReferral,
@@ -307,7 +221,6 @@ async function main() {
     ],
   });
 
-  // Comeback : inscrit, 3j sans séance cochée
   await createAutomationIfMissing(existing, {
     name: "Comeback — 3j sans séance",
     status: "enabled",
@@ -323,7 +236,7 @@ async function main() {
         type: "send_email",
         config: {
           from: FROM,
-          subject: "L’eau t’attend — on reprend ?",
+          subject: byName["automation-comeback-session"].subject,
           reply_to: REPLY,
           template: {
             id: tplComeback,
@@ -338,7 +251,8 @@ async function main() {
     ],
   });
 
-  console.log("\nOK — v2 automations ready. Dashboard: https://resend.com/automations");
+  console.log("\nOK — v2 automations ready. Design update: npm run email:republish");
+  console.log("Dashboard: https://resend.com/automations");
 }
 
 main().catch((e) => {

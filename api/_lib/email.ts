@@ -94,8 +94,8 @@ export async function sendWelcomeEmail(
     category: "welcome",
     to: input.to,
     subject: firstName
-      ? `Bienvenue sur MySWYM, ${firstName}`
-      : "Bienvenue sur MySWYM",
+      ? `${firstName}, ton bassin t’attend`
+      : "Ton bassin t’attend — MySWYM",
     react: WelcomeEmail({ firstName }),
     userId: input.userId,
   });
@@ -107,7 +107,7 @@ export async function sendVerificationEmail(
   return sendReactEmail({
     category: "verification",
     to: input.to,
-    subject: "Confirme ton email MySWYM",
+    subject: "1 clic pour activer MySWYM",
     react: VerificationEmail({ confirmUrl: input.confirmUrl }),
     userId: input.userId,
   });
@@ -119,7 +119,7 @@ export async function sendResetPasswordEmail(
   return sendReactEmail({
     category: "reset_password",
     to: input.to,
-    subject: "Réinitialise ton mot de passe MySWYM",
+    subject: "Réinitialise ton mot de passe",
     react: ResetPasswordEmail({ resetUrl: input.resetUrl }),
     userId: input.userId,
   });
@@ -131,7 +131,7 @@ export async function sendSubscriptionConfirmationEmail(
   return sendReactEmail({
     category: "subscription_confirmation",
     to: input.to,
-    subject: `Abonnement confirmé — ${input.planLabel}`,
+    subject: `C’est parti — Premium actif (${input.planLabel})`,
     react: SubscriptionConfirmationEmail({
       planLabel: input.planLabel,
       manageUrl: input.manageUrl,

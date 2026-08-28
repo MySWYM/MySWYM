@@ -45,7 +45,8 @@
     "test:e2e:staging": "BASE_URL=https://staging.myswym.app playwright test",
     "email": "email dev --dir api/_lib/emails",
     "email:test": "node scripts/send-test-email.mjs",
-    "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs"
+    "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs",
+    "email:republish": "node --env-file=.env.local scripts/republish-resend-templates.mjs"
   },
   "dependencies": {
     "@fontsource/geist": "^5.3.0",

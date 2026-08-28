@@ -1,6 +1,10 @@
 import * as React from "react";
 import { Text } from "@react-email/components";
-import { EmailLayout, emailText } from "./components/EmailLayout";
+import {
+  EmailBullets,
+  EmailLayout,
+  emailText,
+} from "./components/EmailLayout";
 import { emailBrand } from "./components/brand";
 
 export type WelcomeEmailProps = {
@@ -11,21 +15,28 @@ export function WelcomeEmail({ firstName = "nageur" }: WelcomeEmailProps) {
   const name = firstName.trim() || "nageur";
   return (
     <EmailLayout
-      preview={`Bienvenue sur MySWYM, ${name} — ton plan t’attend.`}
-      ctaLabel="Ouvrir mon plan"
+      preview="Ouvre ton plan — la 1ʳᵉ séance est déjà là."
+      eyebrow="Compte créé"
+      ctaLabel="Ouvrir ma 1ʳᵉ séance"
       ctaUrl={`${emailBrand.site}/app`}
     >
-      <Text style={emailText.h1}>Bienvenue, {name}</Text>
-      <Text style={emailText.p}>
-        Ton compte MySWYM est prêt. On a conçu un générateur de séances clair,
-        progressif, adapté à ton niveau et à ton objectif — sans blabla.
+      <Text style={emailText.h1}>
+        {name !== "nageur" ? `${name}, on nage.` : "On nage."}
       </Text>
       <Text style={emailText.p}>
-        Prochaine étape : ouvre l’app, vérifie ton profil, et lance ta première
-        semaine.
+        Ton compte MySWYM est prêt. Ton plan est déjà structuré — clair,
+        progressif, adapté à ton niveau.
       </Text>
+      <EmailBullets
+        items={[
+          "Ouvre l’app et lance ta 1ʳᵉ séance",
+          "Coche-la après — le coach s’ajuste à ton ressenti",
+          "Essai 7 jours sans carte : tu testes, tu décides",
+        ]}
+      />
       <Text style={emailText.muted}>
-        Une question ? Écris-nous à {emailBrand.contact} — on répond sous 24–48 h.
+        Une question ? Écris-nous à {emailBrand.contact} — on répond sous
+        24–48 h.
       </Text>
     </EmailLayout>
   );

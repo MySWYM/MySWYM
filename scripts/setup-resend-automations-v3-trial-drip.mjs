@@ -5,9 +5,11 @@
  * Usage:
  *   node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs
  *
- * Stoppe l’email si subscription.canceled pendant le délai (annulation essai).
- * Le rappel J-1 (trial.ending_soon) reste géré par marketing-cron + automation v2.
+ * Pour mettre à jour le design des templates existants :
+ *   npm run email:republish
  */
+import { getAutomationTemplates } from "./_lib/email-html.mjs";
+
 const API = "https://api.resend.com";
 const KEY = process.env.RESEND_API_KEY;
 if (!KEY) {
@@ -41,31 +43,6 @@ async function api(method, path, body) {
     throw err;
   }
   return data;
-}
-
-function emailHtml({ title, paragraphs, ctaLabel, ctaUrl = `${APP}/app` }) {
-  const body = paragraphs
-    .map(
-      (t) =>
-        `<p style="color:#434751;font-size:15px;line-height:24px;margin:0 0 12px">${t}</p>`,
-    )
-    .join("");
-  return `<!doctype html><html lang="fr"><body style="margin:0;padding:24px 12px;background:#f8f9fc;font-family:Lexend,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-  <div style="max-width:560px;margin:0 auto">
-    <p style="color:#355da3;font-size:22px;font-weight:800;margin:0 0 20px">MySWYM</p>
-    <div style="background:#fff;border:1px solid rgba(53,93,163,0.12);border-radius:12px;padding:28px 24px">
-      <h1 style="color:#191c1e;font-size:22px;margin:0 0 12px">${title}</h1>
-      ${body}
-      <p style="text-align:center;margin:28px 0 8px">
-        <a href="${ctaUrl}" style="background:#355da3;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;display:inline-block">${ctaLabel}</a>
-      </p>
-    </div>
-    <p style="color:#5d5e61;font-size:12px;margin:28px 0 4px">MySWYM · ton coach natation</p>
-    <p style="color:#5d5e61;font-size:12px;margin:0">
-      <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#5d5e61">Se désabonner</a>
-      · contact@myswym.app
-    </p>
-  </div></body></html>`;
 }
 
 async function ensureEvent(name, schema) {
@@ -110,7 +87,6 @@ async function createAutomationIfMissing(existing, payload) {
   return created;
 }
 
-/** trial.started → wait cancel (timeout) → send */
 function trialDripAutomation({ name, timeout, subject, templateId }) {
   return {
     name,
@@ -154,57 +130,20 @@ async function main() {
     userId: "string",
   });
 
+  const catalog = getAutomationTemplates(APP);
+  const byName = Object.fromEntries(catalog.map((t) => [t.name, t]));
   const existing = await listAutomationNames();
 
-  const tplJ1 = await createAndPublishTemplate({
-    name: "automation-trial-j1",
-    subject: "Jour 1 — coche ta première séance",
-    html: emailHtml({
-      title: "Ton coach t’attend dans l’eau",
-      paragraphs: [
-        "{{{GREETING}}}, ton essai Premium a démarré. La meilleure façon de le sentir : ouvrir ton plan et faire la 1ʳᵉ séance.",
-        "Après la séance, dis-nous si c’était trop facile ou trop dur — ton volume des prochaines semaines s’ajuste.",
-        "Pas besoin d’être parfait. Juste le prochain coup de bras.",
-      ],
-      ctaLabel: "Voir ma 1ʳᵉ séance",
-    }),
-  });
-
-  const tplJ3 = await createAndPublishTemplate({
-    name: "automation-trial-j3",
-    subject: "Jour 3 — ton plan s’adapte à toi",
-    html: emailHtml({
-      title: "3 jours d’essai — où en es-tu ?",
-      paragraphs: [
-        "{{{GREETING}}}, à mi-parcours de ton essai, le coach MySWYM vaut surtout si tu coches des séances et donnes ton ressenti.",
-        "Trop dur → on baisse le volume. Trop facile → on monte un cran. C’est ça, un vrai suivi.",
-        "Si tu n’as pas encore nagé : une séance courte suffit pour reprendre le fil.",
-      ],
-      ctaLabel: "Ouvrir mon plan",
-    }),
-  });
-
-  const tplJ6 = await createAndPublishTemplate({
-    name: "automation-trial-j6",
-    subject: "Plus qu’un jour d’essai Premium",
-    html: emailHtml({
-      title: "Garde ton coach après demain",
-      paragraphs: [
-        "{{{GREETING}}}, ton essai se termine bientôt.",
-        "Si tu continues : plan jusqu’à ton événement, allures à la seconde, adaptation après chaque feedback — 4,99 € / mois, sans engagement.",
-        "Tu préfères arrêter ? Annule avant la fin de l’essai = 0 €. Sinon, tu gardes ton coach.",
-      ],
-      ctaLabel: "Continuer Premium",
-      ctaUrl: `${APP}/tarifs`,
-    }),
-  });
+  const tplJ1 = await createAndPublishTemplate(byName["automation-trial-j1"]);
+  const tplJ3 = await createAndPublishTemplate(byName["automation-trial-j3"]);
+  const tplJ6 = await createAndPublishTemplate(byName["automation-trial-j6"]);
 
   await createAutomationIfMissing(
     existing,
     trialDripAutomation({
       name: "Essai Premium — J+1 première séance",
       timeout: "1 day",
-      subject: "Jour 1 — coche ta première séance",
+      subject: byName["automation-trial-j1"].subject,
       templateId: tplJ1,
     }),
   );
@@ -214,7 +153,7 @@ async function main() {
     trialDripAutomation({
       name: "Essai Premium — J+3 adaptation",
       timeout: "3 days",
-      subject: "Jour 3 — ton plan s’adapte à toi",
+      subject: byName["automation-trial-j3"].subject,
       templateId: tplJ3,
     }),
   );
@@ -224,21 +163,15 @@ async function main() {
     trialDripAutomation({
       name: "Essai Premium — J+6 conversion",
       timeout: "6 days",
-      subject: "Plus qu’un jour d’essai Premium",
+      subject: byName["automation-trial-j6"].subject,
       templateId: tplJ6,
     }),
   );
 
   console.log(`
 OK — drip essai J1/J3/J6 prêt.
+Pour mettre à jour le design sans recréer : npm run email:republish
 Dashboard: https://resend.com/automations
-
-Ensuite (J-1 filet) :
-  POST \${SUPABASE_URL}/functions/v1/marketing-cron
-  Header: x-myswym-email-secret
-  Body: { "dry_run": false }
-
-Ou laisse GitHub Action .github/workflows/marketing-cron.yml tourner chaque jour.
 `);
 }
 
