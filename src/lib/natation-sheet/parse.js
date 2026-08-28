@@ -25,11 +25,14 @@ export const SHEET_FAMILIES = Object.freeze([
 
 export const EDUCATIFS_SHEET = "Éducatifs";
 
-/** Familles branchées soft — vague 1 = Nager seulement. Étendre ici à chaque vague. */
+/** Familles branchées soft — vague 1 Nager + vague 2 XS/Sprint. Étendre ici à chaque vague. */
 export const SHEET_SOFT_FAMILIES = Object.freeze([
   "01 Nager deb crawl",
   "02 Nager crawl",
   "03 Nager 4 nages",
+  "04 XS-Sprint deb crawl",
+  "05 XS-Sprint crawl",
+  "06 XS-Sprint 4 nages",
 ]);
 
 /** Fenêtre anti-doublon : ne pas retraiter ces N dernières séances Sheet. */
@@ -587,9 +590,15 @@ export function educatifRowToUiFiche(row) {
   };
 }
 
+/** Objectifs Triathlon XS / Sprint (même onglets Sheet 04–06). */
+export function isXsSprintGoal(goal) {
+  const g = String(goal || "").toLowerCase();
+  return g === "triathlon_xs" || g === "triathlon_sprint";
+}
+
 /** Mappe profil MySWYM → id feuille Sheet.
- * Vague 1 soft (prudence) : familles Nager 01–03 seulement.
- * Triathlon / eau libre = vagues suivantes (retour null → composeur).
+ * Soft : Nager 01–03 + XS/Sprint 04–06.
+ * Oly/Half/Full, eau libre, diplômes = vagues suivantes (retour null → composeur).
  */
 export function sheetFamilyIdFromProfile(profile = {}) {
   const goal = String(profile.goal || "").toLowerCase();
@@ -616,14 +625,20 @@ export function sheetFamilyIdFromProfile(profile = {}) {
     goal === "nager" ||
     goal.startsWith("prog_");
 
+  /** Même grille niveau / 4 nages pour Nager et XS-Sprint. */
+  const byLevel = (debId, crawlId, fourId) => {
+    if (isDeb) return debId;
+    if (four || isAv) return fourId;
+    return crawlId;
+  };
+
+  if (isXsSprintGoal(goal)) {
+    return byLevel("04 XS-Sprint deb crawl", "05 XS-Sprint crawl", "06 XS-Sprint 4 nages");
+  }
+
   if (!isNager) return null;
 
-  // Débutant = toujours crawl (règle produit), famille 01
-  if (isDeb) return "01 Nager deb crawl";
-  // Intermédiaire Oui 4 nages + Avancé → 03
-  if (four || isAv) return "03 Nager 4 nages";
-  // Intermédiaire crawl → 02
-  return "02 Nager crawl";
+  return byLevel("01 Nager deb crawl", "02 Nager crawl", "03 Nager 4 nages");
 }
 
 export function levelBandFromProfile(profile = {}) {

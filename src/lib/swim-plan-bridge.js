@@ -1270,7 +1270,7 @@ export function loopDisplaySession(plan) {
 
 /**
  * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
- * Nager 01–03 (Sheet) : await catalogue, **pas** de fallback composeur silencieux.
+ * Familles Sheet soft (Nager 01–03, XS/Sprint 04–06) : await catalogue, **pas** de fallback composeur silencieux.
  * @param {object} profile
  * @param {number} cursor — index de variété / seed (peut bouger sans validation)
  * @param {boolean} isPremium
@@ -1338,7 +1338,7 @@ export async function buildProgressionLoopSession(profile, cursor = 0, isPremium
   let sheetError = false;
   let sheetErrorMessage = null;
 
-  // Catalogue Google Sheet — Nager 01–03 : source obligatoire (pas de composeur de secours)
+  // Catalogue Google Sheet — familles soft : source obligatoire (pas de composeur de secours)
   const sheetFamily = sheetFamilyIdFromProfile(profile);
   const sheetLocked = Boolean(sheetFamily) && isNatationSheetCatalogueEnabled();
 
@@ -1384,7 +1384,7 @@ export async function buildProgressionLoopSession(profile, cursor = 0, isPremium
     }
   }
 
-  // Composeur pédagogique — uniquement hors familles Sheet Nager (tri / OW / etc.)
+  // Composeur pédagogique — uniquement hors familles Sheet soft (Oly+ / OW / etc.)
   if (!session && !sheetLocked && isComposerEnabledForLevel(sport.level)) {
     const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sport.level);
     const baseVol =

@@ -214,12 +214,32 @@ ok(
   "vague1 avancé → 03",
 );
 ok(
-  sheetFamilyIdFromProfile({ goal: "triathlon_sprint", level: "sportif", swimStyle: "crawl" }) === null,
-  "vague1 tri pas encore branché",
+  sheetFamilyIdFromProfile({ goal: "triathlon_sprint", level: "sportif", swimStyle: "crawl" }) ===
+    "05 XS-Sprint crawl",
+  "vague2 sprint int crawl → 05",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "triathlon_xs", level: "régulier", swimStyle: "crawl" }) ===
+    "04 XS-Sprint deb crawl",
+  "vague2 XS deb → 04",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "triathlon_xs", level: "sportif", swimStyle: "4_nages" }) ===
+    "06 XS-Sprint 4 nages",
+  "vague2 XS int 4n → 06",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "triathlon_sprint", level: "performance", swimStyle: "crawl" }) ===
+    "06 XS-Sprint 4 nages",
+  "vague2 sprint avancé → 06",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "triathlon_olympic", level: "sportif", swimStyle: "crawl" }) === null,
+  "vague2 Oly pas encore branché",
 );
 ok(
   sheetFamilyIdFromProfile({ goal: "open_water_5k", level: "sportif", swimStyle: "crawl" }) === null,
-  "vague1 OW pas encore branché",
+  "vague2 OW pas encore branché",
 );
 
 ok(lineHasFourNagesEducatifs("100 m 4 nages éducatifs"), "détecte 4 nages + éducatifs");
