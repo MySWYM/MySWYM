@@ -63,7 +63,7 @@ const ALLURE_TIPS = {
     label: "Enchaînement",
     tone: "blue",
     body:
-      "Plusieurs allures dans la même série, dans l’ordre indiqué. Lent = nage lente contrôlée ; souple = récupération — ce n’est pas la même chose.",
+      "Plusieurs allures dans la même série, dans l’ordre indiqué sous la ligne. Lent = nage lente contrôlée ; souple = récupération — ce n’est pas la même chose.",
   },
 };
 

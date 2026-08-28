@@ -11,6 +11,8 @@ import {
   stripDepartMarkers,
   stripSprintMarkers,
   parseRepAllureEnchainement,
+  parseSequentialAllureEnchainement,
+  parseAllureEnchainement,
   hasContrastingPaces,
   parseRestInterval,
   formatRestChip,
@@ -36,6 +38,19 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(enc.steps.length, 4);
   assert.ok(hasContrastingPaces("(1 lent, 1 moyen, 1 rapide, 1 souple)"));
   assert.equal(parseRepAllureEnchainement("200 m crawl souple"), null);
+  assert.equal(parseAllureEnchainement("200 m crawl souple"), null);
+}
+
+{
+  const seq = parseSequentialAllureEnchainement("4 × 100 m crawl lent progressif R15\"");
+  assert.ok(seq);
+  assert.equal(seq.cue, "lent · progressif");
+  assert.equal(seq.steps.length, 2);
+  const seq3 = parseAllureEnchainement("6 × 100 m crawl souple moyen vite R45\"");
+  assert.ok(seq3);
+  assert.equal(seq3.cue, "souple · moyen · vite");
+  assert.ok(hasContrastingPaces("crawl souple moyen vite"));
+  assert.equal(parseSequentialAllureEnchainement("200 m crawl souple"), null);
 }
 
 {
@@ -51,6 +66,31 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(ex.cue, "1 lent · 1 moyen · 1 rapide · 1 souple");
   assert.equal(ex.effortLabel, null, "pas de pastille souple unique sur un enchaînement");
   assert.ok(/\bsouple\b/.test(ex.cue), "souple conservé dans le cue (≠ strip)");
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ['-4 × 100 m crawl lent progressif R15"'],
+    sets: [{ block: "depart", label: '4 × 100 m crawl lent progressif R15"' }],
+  });
+  const ex = view.exercises[0];
+  assert.ok(ex.allureEnchainement);
+  assert.equal(ex.cue, "lent · progressif");
+  assert.equal(ex.effortLabel, null);
+  assert.equal(ex.strokeLabel, "CRAWL");
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ['-6 × 100 m crawl souple moyen vite R45"'],
+    sets: [{ block: "corps", label: '6 × 100 m crawl souple moyen vite R45"' }],
+  });
+  const ex = view.exercises[0];
+  assert.ok(ex.allureEnchainement);
+  assert.equal(ex.cue, "souple · moyen · vite");
+  assert.equal(ex.effortLabel, null, "pas de pastille souple seule");
 }
 
 {
@@ -160,7 +200,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
-  // Contraste d’allures : garder souple + progressif, pas de pastille SOUPLE
+  // Contraste d’allures : garder souple + progressif, pastille ENCHAÎNEMENT (pas SOUPLE seule)
   const view = buildWorkoutView({
     composedBy: "natation-sheet",
     details: ["-100 m crawl (75 m souple + 25 m progressif)"],
@@ -168,6 +208,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   });
   const ex = view.exercises[0];
   assert.equal(ex.effortLabel, null);
+  assert.ok(ex.allureEnchainement);
   assert.match(ex.cue || "", /75 m souple/);
   assert.match(ex.cue || "", /25 m progressif/);
   assert.ok(!/^\(75 m \+ 25 m\)$/.test(ex.cue || ""), `cue trop vide: ${ex.cue}`);
@@ -181,6 +222,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   });
   const ex = view.exercises[0];
   assert.equal(ex.effortLabel, null);
+  assert.ok(ex.allureEnchainement);
   assert.match(ex.cue || "", /moyen/);
   assert.match(ex.cue || "", /vite/);
   assert.match(ex.cue || "", /souple/);

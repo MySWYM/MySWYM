@@ -73,14 +73,30 @@ const SOUPLE_TOKEN = "__MS_RECUP__";
 const PROGRESSIF_TOKEN = "__MS_PROG__";
 const DESCENDANT_TOKEN = "__MS_DESC__";
 
+const ALLURE_WORD_RE =
+  "lent|moyen|rapide|vite|souple|progressif|descendant|facile|soutenu|à\\s*bloc|a\\s*bloc";
+
+function normalizeAllureToken(raw, { mapViteToRapide = false } = {}) {
+  let allure = String(raw || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (allure === "a bloc") allure = "à bloc";
+  if (mapViteToRapide && allure === "vite") allure = "rapide";
+  return allure;
+}
+
 /**
  * Contraste d’allures dans une parenthèse Sheet :
  * « (75 m souple + 25 m progressif) », « (50 m moyen + 25 m vite + 25 m souple) ».
  * Ou enchaînement par reps : « (1 lent, 1 moyen, 1 rapide, 1 souple) ».
+ * Ou suite libre : « crawl lent progressif », « crawl souple moyen vite ».
  * ≠ un simple « crawl souple » dans un mix de nages.
  */
 export function hasContrastingPaces(text) {
-  if (parseRepAllureEnchainement(text)) return true;
+  if (parseAllureEnchainement(text)) return true;
   const parens = String(text || "").match(/\(([^)]+)\)/g) || [];
   for (const block of parens) {
     const inner = block.slice(1, -1);
@@ -100,9 +116,6 @@ export function hasContrastingPaces(text) {
   return false;
 }
 
-const ALLURE_WORD_RE =
-  "lent|moyen|rapide|vite|souple|progressif|descendant|facile|soutenu|à\\s*bloc|a\\s*bloc";
-
 /**
  * Série multi-allures type Sheet « (1 lent, 1 moyen, 1 rapide, 1 souple) ».
  * Lent ≠ souple : lent = allure lente ; souple = récup.
@@ -119,14 +132,7 @@ export function parseRepAllureEnchainement(text) {
   let match;
   while ((match = stepRe.exec(scope)) !== null) {
     const n = parseInt(match[1], 10);
-    let allure = String(match[2] || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{M}/gu, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (allure === "a bloc") allure = "à bloc";
-    if (allure === "vite") allure = "rapide"; // wording Sheet « rapide » préféré dans le cue
+    const allure = normalizeAllureToken(match[2], { mapViteToRapide: true });
     if (!Number.isFinite(n) || n <= 0 || !allure) continue;
     steps.push({ n, allure });
     seenAllures.add(allure);
@@ -134,6 +140,38 @@ export function parseRepAllureEnchainement(text) {
   if (steps.length < 2 || seenAllures.size < 2) return null;
   const cue = steps.map((st) => `${st.n} ${st.allure}`).join(" · ");
   return { steps, cue, raw: m ? m[0] : cue };
+}
+
+/**
+ * Suite d’allures sans compteur : « lent progressif », « souple moyen vite »,
+ * ou contraste mètres « (50 m moyen + 25 m vite + 25 m souple) ».
+ * @returns {{ steps: { n: number, allure: string }[], cue: string, raw: string } | null}
+ */
+export function parseSequentialAllureEnchainement(text) {
+  const s = String(text || "");
+  if (!s.trim()) return null;
+  const tokenRe = new RegExp(`\\b(${ALLURE_WORD_RE})\\b`, "gi");
+  const ordered = [];
+  const seen = new Set();
+  let match;
+  while ((match = tokenRe.exec(s)) !== null) {
+    const allure = normalizeAllureToken(match[1], { mapViteToRapide: false });
+    if (!allure || seen.has(allure)) continue;
+    seen.add(allure);
+    ordered.push(allure);
+  }
+  if (ordered.length < 2) return null;
+  const steps = ordered.map((allure) => ({ n: 1, allure }));
+  const cue = ordered.join(" · ");
+  return { steps, cue, raw: cue };
+}
+
+/**
+ * Enchaînement multi-allures : reps numérotées en priorité, sinon suite libre.
+ * @returns {{ steps: { n: number, allure: string }[], cue: string, raw: string } | null}
+ */
+export function parseAllureEnchainement(text) {
+  return parseRepAllureEnchainement(text) || parseSequentialAllureEnchainement(text);
 }
 
 /** Protège « souple » avant humanisation D9 (toCoach / prettify → facile). */
@@ -708,9 +746,9 @@ export function buildWorkoutView(session = {}) {
       (firstCue && !isSoftFillCue(firstCue) ? firstCue : null) || headline.rest || null,
     );
 
-    // Enchaînement multi-allures (1 lent, 1 moyen…) — avant strip souple (lent ≠ souple)
+    // Enchaînement multi-allures (1 lent… ou lent progressif / souple moyen vite…)
     const enchainBlob = [parsed?.main, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
-    const allureEnchainement = parseRepAllureEnchainement(enchainBlob);
+    const allureEnchainement = parseAllureEnchainement(enchainBlob);
 
     const effortLabel = allureEnchainement
       ? null
@@ -729,7 +767,15 @@ export function buildWorkoutView(session = {}) {
       cuePrimary = headline.rest;
     }
     if (allureEnchainement) {
-      cuePrimary = allureEnchainement.cue;
+      // Reps numérotées / suite libre → cue « lent · progressif »
+      // Contraste mètres « (75 m souple + 25 m progressif) » → garder les distances
+      const isRepStyle = Boolean(parseRepAllureEnchainement(enchainBlob));
+      const cueHasMeterSplit =
+        /\d+\s*m\b[\s\S]*\d+\s*m\b/i.test(String(cuePrimary || "")) ||
+        /\(\s*\d+\s*m\b[^)]*\d+\s*m\b/i.test(enchainBlob);
+      if (isRepStyle || !cueHasMeterSplit) {
+        cuePrimary = allureEnchainement.cue;
+      }
     }
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
 
