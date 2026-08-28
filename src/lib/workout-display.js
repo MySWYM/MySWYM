@@ -568,6 +568,24 @@ export function isSoftFillCue(cue) {
 }
 
 /**
+ * Cue qui ne fait que répéter une pastille d’allure (LENT, SOUPLE…).
+ * Ne pas appliquer quand le cue est l’ordre d’un enchaînement (« lent · progressif »).
+ */
+export function isRedundantAllureCue(cue) {
+  const t = String(cue || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return true;
+  return /^(lent|moyen|souple|progressif|vite|rapide|facile|soutenu|descendant|a bloc|sprint|sprints)$/i.test(
+    t,
+  );
+}
+
+/**
  * Répartition MIXTE pour le sous-texte (style Sheet, entre parenthèses).
  * Ex. « en alternant (75 m crawl et 25 m dos) » → « (75 m crawl et 25 m dos) »
  * Ex. « crawl / dos » → « (crawl / dos) »
@@ -814,7 +832,12 @@ export function buildWorkoutView(session = {}) {
       if (isRepStyle || !cueHasMeterSplit) {
         cuePrimary = allureEnchainement.cue;
       }
+    } else if (isRedundantAllureCue(cuePrimary)) {
+      // Pastille LENT / SOUPLE / … déjà dans le titre → pas de doublon gris
+      cuePrimary = null;
     }
+    cues = cues.filter((c) => !isRedundantAllureCue(c));
+    if (!cuePrimary && cues[0] && !isRedundantAllureCue(cues[0])) cuePrimary = cues[0];
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
 
     // Départ à la montre → pastille D2' (pas dans le sous-texte)

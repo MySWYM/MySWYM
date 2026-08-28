@@ -216,6 +216,33 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
+  // Pastille LENT → pas de sous-texte « Lent »
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m crawl ou 4 nages lent"],
+    sets: [{ block: "depart", label: "100 m crawl ou 4 nages lent" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "CRAWL OU 4N");
+  assert.equal(ex.cue, null, "pas de doublon Lent sous pastille LENT");
+  assert.equal(buildWorkoutView({
+    details: ["-8 × 50 m crawl lent"],
+    sets: [{ block: "corps", label: "8 × 50 m crawl lent" }],
+  }).exercises[0].cue, null);
+}
+
+{
+  // Enchaînement : garder l’ordre en sous-texte
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-4 × 100 m crawl lent progressif"],
+    sets: [{ block: "corps", label: "4 × 100 m crawl lent progressif" }],
+  });
+  assert.ok(view.exercises[0].allureEnchainement);
+  assert.equal(view.exercises[0].cue, "lent · progressif");
+}
+
+{
   // « souple » dans la parenthèse ne doit pas effacer la répartition MIXTE
   const view = buildWorkoutView({
     composedBy: "natation-sheet",
