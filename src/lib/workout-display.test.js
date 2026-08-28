@@ -12,6 +12,8 @@ import {
   stripSprintMarkers,
   parseRepAllureEnchainement,
   hasContrastingPaces,
+  parseRestInterval,
+  formatRestChip,
 } from "./workout-display.js";
 import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js";
 
@@ -61,7 +63,12 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(stripDepartMarkers("Sprint, départ toutes les 2 min"), "Sprint");
   assert.equal(stripSprintMarkers("Sprint"), null);
   assert.equal(formatRestLabel("D2'"), null);
-  assert.ok(/Récup/i.test(formatRestLabel("repos 30 s")));
+  assert.equal(formatRestLabel("repos 30 s"), null, "repos → pastille R, pas MetaPill");
+  assert.equal(parseRestInterval("repos 30 s")?.seconds, 30);
+  assert.equal(parseRestInterval("R20")?.seconds, 20);
+  assert.equal(parseRestInterval("R1'30\"")?.seconds, 90);
+  assert.equal(formatRestChip(30), 'R30"');
+  assert.equal(formatRestChip(90), "R1'30\"");
 }
 
 {
@@ -180,8 +187,20 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
-  assert.ok(formatRestLabel("R20")?.includes("Récup"));
+  assert.ok(formatRestLabel("R20") == null, "R… = pastille récup");
   assert.equal(formatRestLabel("D1'45\""), null, "D… = pastille départ, pas MetaPill récup");
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-8 × 50 m crawl, repos 30 s"],
+    sets: [{ block: "corps", label: "8 × 50 m crawl, repos 30 s" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.restChip, 'R30"');
+  assert.equal(ex.restSeconds, 30);
+  assert.equal(ex.restLabel, null);
 }
 
 {

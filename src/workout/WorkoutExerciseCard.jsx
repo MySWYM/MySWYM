@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
-import { formatDepartHuman } from "../lib/workout-display.js";
+import { formatDepartHuman, formatRestHuman } from "../lib/workout-display.js";
 
 const ALLURE_TIPS = {
   souple: {
@@ -294,6 +294,20 @@ function DepartTipSheet({ label, seconds, onClose, colors: G }) {
   );
 }
 
+function RestTipSheet({ label, seconds, onClose, colors: G }) {
+  const human = formatRestHuman(seconds);
+  return (
+    <TipSheetShell eyebrow="Récupération" title={label || "R…"} onClose={onClose} colors={G}>
+      <p style={{ margin: "0 0 12px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+        Tu t’arrêtes {human} entre les reps (ou à la fin de la série). Le chrono de pause commence quand tu arrives au mur.
+      </p>
+      <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
+        Ce n’est pas un départ à la montre (D…) : avec R, tu repartis après ta pause, pas à un intervalle fixe sur l’horloge.
+      </p>
+    </TipSheetShell>
+  );
+}
+
 function chipToneStyles(tone, G) {
   let bg = G.greyXLight;
   let color = G.inkLight;
@@ -333,7 +347,7 @@ function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName 
         borderRadius: 999,
         cursor: "pointer",
         letterSpacing: "0.02em",
-        textTransform: tipKey === "depart" ? "none" : "uppercase",
+        textTransform: tipKey ? "uppercase" : "none",
         minHeight: 28,
         fontVariantNumeric: "tabular-nums",
       }}
@@ -354,6 +368,7 @@ export default function WorkoutExerciseCard({
 }) {
   const [tipKey, setTipKey] = useState(null);
   const [departOpen, setDepartOpen] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
   if (!exercise) return null;
 
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
@@ -369,6 +384,8 @@ export default function WorkoutExerciseCard({
   const allureChips = detectAllureTips(exercise);
   const departLabel = exercise.departLabel || null;
   const departSeconds = exercise.departSeconds || 60;
+  const restChip = exercise.restChip || null;
+  const restSeconds = exercise.restSeconds || 30;
 
   return (
     <div
@@ -416,6 +433,16 @@ export default function WorkoutExerciseCard({
           {allureChips.map((key) => (
             <AllureInfoChip key={key} tipKey={key} onClick={() => setTipKey(key)} G={G} />
           ))}
+          {restChip ? (
+            <AllureInfoChip
+              tipKey={null}
+              label={restChip}
+              tone="blue"
+              ariaName={`récupération ${restChip}`}
+              onClick={() => setRestOpen(true)}
+              G={G}
+            />
+          ) : null}
           {departLabel ? (
             <AllureInfoChip
               tipKey={null}
@@ -440,7 +467,7 @@ export default function WorkoutExerciseCard({
         )}
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-          {exercise.restLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
+          {exercise.restLabel && !restChip && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
           {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
           {drills.length > 0 && (
             <button
@@ -466,6 +493,14 @@ export default function WorkoutExerciseCard({
           onClose={() => setTipKey(null)}
           colors={G}
           enchainement={exercise.allureEnchainement}
+        />
+      ) : null}
+      {restOpen && restChip ? (
+        <RestTipSheet
+          label={restChip}
+          seconds={restSeconds}
+          onClose={() => setRestOpen(false)}
+          colors={G}
         />
       ) : null}
       {departOpen ? (

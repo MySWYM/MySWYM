@@ -328,11 +328,60 @@ export function formatDurationShort(mins) {
 export function formatRestLabel(rest) {
   if (!rest) return null;
   const s = String(rest);
-  // Les D… deviennent une pastille départ (D2'), pas « Départ … » en MetaPill récup
+  // D… / R… / repos → pastilles D2' / R30" (plus MetaPill « Récup. »)
   if (/^D/i.test(s)) return null;
-  if (/^R(\d+)/i.test(s)) return `Récup. ${s.replace(/^R/i, "")}`;
-  if (/repos/i.test(s)) return s.replace(/repos/i, "Récup.");
+  if (parseRestInterval(s)) return null;
   return s;
+}
+
+/**
+ * Extrait une récupération fixe (R… / repos).
+ * @returns {{ seconds: number, raw: string } | null}
+ */
+export function parseRestInterval(text) {
+  const s = String(text || "");
+  let m = s.match(/\bR\s*(\d+)\s*['′]\s*(\d{1,2})?\s*["″]?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] != null && String(m[2]).length ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) {
+      return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+    }
+  }
+  m = s.match(/\bR\s*(\d+)\s*["″]?\b/i);
+  if (m) {
+    const sec = parseInt(m[1], 10);
+    if (Number.isFinite(sec) && sec > 0) return { seconds: sec, raw: m[0] };
+  }
+  m = s.match(/repos\s+(\d+)\s*min(?:utes?)?(?:\s+(\d+)\s*s(?:ec(?:ondes?)?)?)?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) {
+      return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+    }
+  }
+  m = s.match(/repos\s+(\d+)\s*s(?:ec(?:ondes?)?)?/i);
+  if (m) {
+    const sec = parseInt(m[1], 10);
+    if (Number.isFinite(sec) && sec > 0) return { seconds: sec, raw: m[0] };
+  }
+  return null;
+}
+
+/** Pastille récup : R30" / R1'30" */
+export function formatRestChip(seconds) {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  if (m === 0) return `R${s}"`;
+  if (s === 0) return `R${m}'`;
+  return `R${m}'${String(s).padStart(2, "0")}"`;
+}
+
+/** Phrase tip récup */
+export function formatRestHuman(seconds) {
+  return formatDepartHuman(seconds);
 }
 
 /**
@@ -696,6 +745,11 @@ export function buildWorkoutView(session = {}) {
       cues = cues.map((c) => stripDepartMarkers(c)).filter(Boolean);
     }
 
+    const restFromField =
+      parsed?.rest && !/^D/i.test(String(parsed.rest)) ? parseRestInterval(parsed.rest) : null;
+    const restChip = restFromField ? formatRestChip(restFromField.seconds) : null;
+    const restSeconds = restFromField ? restFromField.seconds : null;
+
     const sprintBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
     const hasSprint = /\bsprints?\b/i.test(sprintBlob);
     if (hasSprint) {
@@ -743,17 +797,24 @@ export function buildWorkoutView(session = {}) {
       cues,
       rest: parsed?.rest || null,
       restLabel: formatRestLabel(parsed?.rest),
+      restChip,
+      restSeconds,
       departLabel,
       departSeconds,
       steps: parsed?.steps || null,
       pyramid,
-      children: childParsed.map((c) => ({
-        main: c.main,
-        rest: c.rest,
-        restLabel: formatRestLabel(c.rest),
-        cues: (c.cues || []).filter((x) => !isSoftFillCue(x)),
-        headline: splitHeadline(c.main),
-      })),
+      children: childParsed.map((c) => {
+        const childRest = c.rest && !/^D/i.test(String(c.rest)) ? parseRestInterval(c.rest) : null;
+        return {
+          main: c.main,
+          rest: c.rest,
+          restLabel: formatRestLabel(c.rest),
+          restChip: childRest ? formatRestChip(childRest.seconds) : null,
+          restSeconds: childRest ? childRest.seconds : null,
+          cues: (c.cues || []).filter((x) => !isSoftFillCue(x)),
+          headline: splitHeadline(c.main),
+        };
+      }),
       meters,
       educatifId: educatif?.id || null,
       educatif,
