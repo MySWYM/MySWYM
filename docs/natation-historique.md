@@ -20,6 +20,7 @@
 | --- | --- | --- | --- |
 | 2026-08-28 | Relance essai + plans v49 | `RETRIAL_ON_LOGIN` : nouveau 7j au sync/login si plus d’accès (abo Stripe intacts). `PLAN_VERSION` 49 : regen one-shot merge (validées gardées) ; boucle → semaine N séances Sheet. | ✅ active |
 | 2026-08-28 | Boucle semaine N séances | Programme boucle : génère / affiche une **semaine** de `sessionsPerWeek` séances (cap S0 = 2). Expansion des plans 1 séance existants. Advance semaine quand toutes résolues. | ✅ active |
+| 2026-08-28 | Planning S-n = progression | Pastille « cette semaine » sur EventWeekPlanCard avance avec les semaines de plan validées (Semaine 2 → S-(n−1)), pas seulement le calendrier. | ✅ active |
 | 2026-08-28 | Couple S-6 allégée / S-7 test | Depuis J : **S-6 allégée → S-7 test** ; pas avant S-6 ; garde **2 sem.** début. 6 travail entre les couples. | ✅ active |
 | 2026-08-28 | Couple allégée→test + S-6 | Vers J : **S-7 allégée → S-6 test** ; pas de couple avant S-6 (S-2→S-5 travail). Garde début : **2 sem. travail**. 6 travail entre les couples. | ↩ remplacée |
 | 2026-08-28 | Couple allégée→test | Vers J : **allégée puis test** (S-8 allégée, S-7 test) ; 6 travail entre les couples. Garde 4 sem. début intacte. | ↩ remplacée |

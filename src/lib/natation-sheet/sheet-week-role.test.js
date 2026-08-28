@@ -115,6 +115,8 @@ assert.equal(sheetPhaseShortLabel({ phase: "deload", isRaceWeek: true }), "Cours
     weekIndex: 0,
   });
   assert.equal(weeksBeforeRaceWeek(race, nowS9), 9);
+  assert.equal(atS9.current?.sLabel, "S-9");
+  assert.equal(atS9.weeks.find((w) => w.isCurrent)?.sLabel, "S-9");
   const byLabel = Object.fromEntries(atS9.weeks.map((w) => [w.sLabel, w.shortLabel]));
   assert.equal(byLabel["S-9"], "Travail");
   // Début de plan : garde 2 sem. → S-9 / S-8 travail ; S-7 test / S-6 allégée OK
@@ -124,6 +126,16 @@ assert.equal(sheetPhaseShortLabel({ phase: "deload", isRaceWeek: true }), "Cours
   assert.equal(byLabel["S-5"], "Travail");
   assert.equal(byLabel["S-1"], "Allégée");
   assert.equal(byLabel["S0"], "Course");
+
+  // Progression plan : Semaine 2 → pastille sur S-8 (pas le calendrier S-9)
+  const atS9w1 = buildEventWeekTimeline({
+    eventDate: race,
+    now: nowS9,
+    weekIndex: 1,
+  });
+  assert.equal(atS9w1.current?.sLabel, "S-8");
+  assert.equal(atS9w1.weeks.find((w) => w.isCurrent)?.sLabel, "S-8");
+  assert.equal(atS9w1.weeks[0].isCurrent, false);
 }
 
 {
