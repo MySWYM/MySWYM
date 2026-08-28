@@ -161,6 +161,7 @@ import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
 import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
+import WhatsNewSheet, { hasSeenWhatsNew, markWhatsNewSeen } from "./sheets/WhatsNewSheet.jsx";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -7699,6 +7700,8 @@ export default function App() {
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [showPlanReady, setShowPlanReady] = useState(false);
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [whatsNewLoading, setWhatsNewLoading] = useState(false);
   const [planReveal, setPlanReveal] = useState(null);
   const [sessionCelebrate, setSessionCelebrate] = useState(null);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
@@ -7941,6 +7944,31 @@ export default function App() {
       clearTimeout(t);
     };
   }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
+
+  // Pop « Nouveautés » one-shot (pas de reset plan / quiz).
+  useEffect(() => {
+    if (screen !== "app" || !user || !plan) return;
+    if (showWhatsNew || hasSeenWhatsNew()) return;
+    if (showUpgrade || showPlanReady || softPaywallPending) return;
+    if (sessionCelebrate || sessionFeedbackTarget !== null || feedbackWeek !== null) return;
+    if (loopPaywall || replaceConfirmOpen || deletePlanId) return;
+    const t = setTimeout(() => setShowWhatsNew(true), 600);
+    return () => clearTimeout(t);
+  }, [
+    screen,
+    user,
+    plan,
+    showWhatsNew,
+    showUpgrade,
+    showPlanReady,
+    softPaywallPending,
+    sessionCelebrate,
+    sessionFeedbackTarget,
+    feedbackWeek,
+    loopPaywall,
+    replaceConfirmOpen,
+    deletePlanId,
+  ]);
 
   const exitAuthToQuiz = () => {
     forceAuthRef.current = false;
@@ -9466,6 +9494,111 @@ export default function App() {
     setTimeout(() => setToast(null), 3200);
   };
 
+  /** Continuer WhatsNew : rafraîchit la semaine boucle (ouvert → Sheet), garde les validées. */
+  const handleWhatsNewContinue = async () => {
+    if (whatsNewLoading) return;
+    markWhatsNewSeen();
+    const entry = plans.find((e) => e.id === activePlanId);
+    const loopOk = entry?.plan?.isSessionLoop && usesSessionLoop(entry.profile);
+
+    if (!loopOk) {
+      setShowWhatsNew(false);
+      setToast("C’est noté — bonne nage !");
+      setTimeout(() => setToast(null), 2800);
+      return;
+    }
+
+    if (!canUpdateProgram) {
+      setShowWhatsNew(false);
+      openUpgrade("trial_expired");
+      return;
+    }
+
+    const sessions = entry.plan.weeks?.[0]?.sessions || [];
+    const openIdxs = sessions
+      .map((s, i) => (!isSessionResolved(s) ? i : -1))
+      .filter((i) => i >= 0);
+
+    if (openIdxs.length === 0) {
+      setShowWhatsNew(false);
+      setToast("Semaine déjà validée — les nouvelles séances arriveront à la suivante.");
+      setTimeout(() => setToast(null), 3600);
+      return;
+    }
+
+    setWhatsNewLoading(true);
+    try {
+      const history = entry.plan.history || [];
+      const spw = Math.max(1, Math.min(5, Number(entry.profile.sessionsPerWeek) || 3));
+      const weekIndex = Math.floor(history.length / spw);
+      const resolvedPrefix = sessions.filter(isSessionResolved);
+      const lastResolved = resolvedPrefix[resolvedPrefix.length - 1] || null;
+      const cursor0 = Math.max(entry.plan.sessionCursor ?? 0, history.length);
+      const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopWeek(
+        { ...entry.profile, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+        cursor0,
+        true,
+        {
+          ordinalIndex: history.length + resolvedPrefix.length,
+          history: [...history, ...resolvedPrefix],
+          sessionCount: openIdxs.length,
+          currentSheetN: lastResolved?.sheetMeta?.n,
+          currentEducatif:
+            lastResolved?.sheetMeta?.educatif || lastResolved?.sheetEducatif?.name || null,
+          planStart: entry.plan.startDate,
+          weekIndex,
+        },
+      );
+      if (sheetError || !week?.sessions?.length) {
+        setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+        setTimeout(() => setToast(null), 4000);
+        setShowWhatsNew(false);
+        return;
+      }
+
+      let fill = 0;
+      const mergedSessions = sessions.map((s, i) => {
+        if (isSessionResolved(s)) return s;
+        const next = week.sessions[fill++];
+        return next
+          ? { ...next, title: formatLoopWeekSessionTitle(i) }
+          : s;
+      });
+
+      const week0 = entry.plan.weeks[0] || {};
+      setPlans((prev) => {
+        const next = prev.map((e) => {
+          if (e.id !== activePlanId) return e;
+          return {
+            ...e,
+            plan: {
+              ...e.plan,
+              sessionCursor: cursor0 + Math.max(0, week.sessions.length - 1),
+              weeks: [{
+                ...week0,
+                ...week,
+                number: week0.number || week.number,
+                sessions: mergedSessions,
+                feedback: week0.feedback || null,
+              }],
+            },
+          };
+        });
+        stampPlansLocalCache(next, activePlanId);
+        return next;
+      });
+      setShowWhatsNew(false);
+      setToast("Semaine mise à jour avec le nouveau catalogue.");
+      setTimeout(() => setToast(null), 3600);
+    } catch {
+      setShowWhatsNew(false);
+      setToast("Mise à jour impossible pour le moment — réessaie plus tard.");
+      setTimeout(() => setToast(null), 3600);
+    } finally {
+      setWhatsNewLoading(false);
+    }
+  };
+
   const handleComplete = (weekIndex, sessionIndex, status) => {
     const resolvedStatus = status || "done";
     if (!isPremium && resolvedStatus !== "reset") {
@@ -10795,6 +10928,12 @@ export default function App() {
             loading={planReadyLoading}
             onContinue={startMonthlyCheckout}
             onDismiss={() => setShowPlanReady(false)}
+          />
+        )}
+        {showWhatsNew && !showPlanReady && !showUpgrade && (
+          <WhatsNewSheet
+            loading={whatsNewLoading}
+            onContinue={() => { void handleWhatsNewContinue(); }}
           />
         )}
         {showUpgrade && (
