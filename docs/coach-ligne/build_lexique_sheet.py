@@ -221,23 +221,24 @@ def sheet_familles(wb):
     for i, row in enumerate(rows, 3):
         for c, v in enumerate(row, 1):
             ws.cell(i, c, v)
-    style_body(ws, 3, 9, 3)
-    autosize(ws, [28, 32, 32])
+    last = 2 + len(rows)
+    style_body(ws, 3, last, 3)
+    autosize(ws, [28, 36, 32])
 
 
 def sheet_calcul(wb):
     ws = wb.create_sheet("6 · Calcul D (indicatif)", 5)
-    add_title(ws, "Comment l’app calcule D (tu peux faire corriger les marges)", 4)
+    add_title(ws, "Comment l’app calcule D (marges = code pace-placeholders.js)", 4)
     headers = ["Intent", "Idée nage vs T100", "Marge repos ajoutée", "Exemple T100=1:30 · ×100 m"]
     for i, h in enumerate(headers, 1):
         ws.cell(2, i, h)
     style_header(ws, 2, 4)
     rows = [
-        ("facile", "~1,35 × T100 (Z1)", "+25 s", "≈ D2'25\" – D2'30\""),
-        ("endurance", "milieu Z1/Z2–Z3", "+15 s", "≈ D2' – D2'10\""),
-        ("seuil", "~1,08–1,12 × T100", "+12 s", "≈ D1'50\" – D2'"),
-        ("VO2", "proche / sous T100", "+15 s (incomplète)", "≈ D1'40\" – D1'50\""),
-        ("sprint", "plus vite que VO2", "+28 s (complète)", "≈ D1'50\" – D2'05\" (repos long)"),
+        ("facile", "zone easy (Z1)", "+25 s", "≈ D2'25\" – D2'30\""),
+        ("endurance", "milieu easy / seuil", "+15 s", "≈ D2' – D2'10\""),
+        ("seuil", "zone threshold", "+12 s", "≈ D1'50\" – D2'"),
+        ("VO2", "proche / un cran sous sprint", "+15 s (incomplète)", "≈ D1'40\" – D1'50\""),
+        ("sprint", "plus vite que VO2 (max court)", "+28 s (complète)", "≈ D1'50\" – D2'05\" (repos long)"),
     ]
     for i, row in enumerate(rows, 3):
         for c, v in enumerate(row, 1):
@@ -248,13 +249,110 @@ def sheet_calcul(wb):
         9,
         1,
         "Formule : D = arrondi 5 s ( T100 × mult × (distance_rep/100) + marge ). "
-        "Distance lue sur la ligne (8 × 50 m → 50). Débutant / sans T100 / non Premium → {D:} devient « repos 30 s ».",
+        "Distance lue sur la ligne (8 × 50 m → 50). Débutant / sans T100 / non Premium → {D:} devient « repos 30 s » ; {@:} retiré.",
     )
     ws.cell(9, 1).fill = fill_warn
     ws.cell(9, 1).font = font_bold
     ws.cell(9, 1).alignment = wrap
     ws.row_dimensions[9].height = 50
-    autosize(ws, [14, 28, 28, 36])
+    autosize(ws, [14, 32, 28, 36])
+
+
+def sheet_notes(wb):
+    """Onglet Notes — pièges + règles coach à avoir sous les yeux en rédigeant."""
+    ws = wb.create_sheet("7 · Notes", 6)
+    add_title(ws, "Notes coach — pièges, colonnes Sheet, calendrier vers J", 3)
+    headers = ["Sujet", "Règle", "Détail"]
+    for i, h in enumerate(headers, 1):
+        ws.cell(2, i, h)
+    style_header(ws, 2, 3)
+
+    rows = [
+        (
+            "Colonne Notes (onglet Éducatifs)",
+            "Libre — pour toi, pas un filtre app",
+            "L’app lit Nom, Nage, niveaux oui/non, utilité, comment, Matériel optionnel, Garder. "
+            "La colonne Notes du Sheet éducatifs n’oriente pas le tirage : c’est ton mémo coach.",
+        ),
+        (
+            "Garder = oui",
+            "Seul filtre « actif »",
+            "Un éducatif avec Garder ≠ oui n’entre jamais dans le tirage.",
+        ),
+        (
+            "Matériel optionnel",
+            "et/ou = alternatives",
+            "Ne gate pas le choix de l’éducatif. Remplit {matériel} seulement si ∩ inventaire nageur. "
+            "Jamais pull-buoy + palmes sur la même ligne d’exercice.",
+        ),
+        (
+            "Débutant",
+            "Jamais {D:} / {@:}",
+            "Sur 01 / 04 / 09 : mots souple / moyen + repos … s. Sinon l’app force repos 30 s.",
+        ),
+        (
+            "Inter / Avancé + pace",
+            "Premium + T100",
+            "Sans T100 ou hors Premium → même fallback (repos / token retiré).",
+        ),
+        (
+            "D fixe vs {D:}",
+            "Ne pas mélanger",
+            "Une ligne avec D2' (horloge bassin) + {D:seuil} = conflit. Un seul type de départ.",
+        ),
+        (
+            "4 nages + éducatifs",
+            "1 éducatif / nage",
+            "Écrire « 4 nages » + « éducatif(s) » → pap → dos → brasse → crawl. Distances Sheet inchangées.",
+        ),
+        (
+            "Anti-doublon éducatif",
+            "Pas 2× d’affilée",
+            "Dernier éducatif exclu en dur ; variété sur ~5 derniers si le pool le permet.",
+        ),
+        (
+            "Calendrier vers J (tri / OW)",
+            "S-6 allégée · S-7 test",
+            "Depuis J : S0 course (max 2 séances) · S-1 allégée · S-2→S-5 travail · "
+            "S-6 allégée cycle · S-7 test · puis 6 travail entre chaque couple. "
+            "Pas de test/allégée cycle avant S-6. Début de plan : 2 sem. travail avant le 1er couple.",
+        ),
+        (
+            "Planning app",
+            "Pastille = progression",
+            "« Cette semaine » avance avec les semaines validées (Semaine 2 → S-n−1), pas seulement le calendrier civil.",
+        ),
+        (
+            "Soft-branch 01–13",
+            "Pas de fallback composeur",
+            "Familles soft = Sheet obligatoire. Diplômes restent composeur (pas d’onglet Sheet).",
+        ),
+        (
+            "Réf. séance",
+            "UI n° ≠ ligne Sheet",
+            "Pastille Réf. 01-42 = onglet + ligne n. « Séance n°6 » = compteur nageur (validations).",
+        ),
+        (
+            "Orthographe tokens",
+            "Exact",
+            "{D:endurance} {D:VO2} — pas d’espace ; alias (moyen, vite…) OK mais préfère le canonique.",
+        ),
+        (
+            "Regen Excel",
+            "python3 docs/coach-ligne/build_lexique_sheet.py",
+            "Régénère lexique-sheet-myswym.xlsx. Coller / partager hors repo si tu travailles surtout sur Google Sheet.",
+        ),
+    ]
+    for i, row in enumerate(rows, 3):
+        for c, v in enumerate(row, 1):
+            ws.cell(i, c, v)
+            if c == 1:
+                ws.cell(i, c).font = font_bold
+    last = 2 + len(rows)
+    style_body(ws, 3, last, 3)
+    for r in range(3, last + 1):
+        ws.row_dimensions[r].height = 48
+    autosize(ws, [28, 28, 78])
 
 
 def main():
@@ -268,6 +366,7 @@ def main():
     sheet_rediger(wb)
     sheet_familles(wb)
     sheet_calcul(wb)
+    sheet_notes(wb)
     wb.save(OUT)
     print(f"OK → {OUT}")
 
