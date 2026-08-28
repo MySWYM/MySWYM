@@ -5,24 +5,24 @@
  *   S0 + S-1     → deload (S0 = semaine course, max 2 séances)
  *   S-2 → S-6    → construction (interdit test)
  *   S-7 et avant → cycle ancré sur J (longueur 8) :
- *                  S-7 = test ;
- *                  en avançant vers J : 6 travail → test → allégée
- *                  (ex. S-15 test → S-14 allégée → S-13…S-8 travail → S-7 test)
+ *                  S-7 = test ; S-8 = allégée (couple allégée → test vers J) ;
+ *                  6 travail entre les couples
+ *                  (ex. S-16 allégée → S-15 test → S-14…S-9 travail → S-8 allégée → S-7 test)
  *
  * Début de plan : les 4 premières semaines (weekIndex 0..3) forcent
  * construction sur le cycle loin / sans date — pas de test ni allégée « cycle ».
  * S0 / S-1 course restent prioritaires (taper intact).
  *
- * Sans eventDate : même cycle 6 travail → test → allégée (+ garde 4 sem.).
+ * Sans eventDate : même cycle 6 travail → allégée → test (+ garde 4 sem.).
  *
  * Notation : S0 = semaine du jour J ; S-1 = semaine d’avant ; J-1 = veille (jours).
  */
 
 const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
 
-/** Semaines de travail dans le cycle loin de J (avant test + allégée). */
+/** Semaines de travail dans le cycle loin de J (avant le couple allégée+test). */
 export const FAR_WORK_WEEKS = 6;
-/** Cycle loin : 6 travail + 1 test + 1 allégée. */
+/** Cycle loin : 6 travail + 1 allégée + 1 test. */
 export const FAR_CYCLE_LEN = FAR_WORK_WEEKS + 2;
 /** Pas de test / allégée « cycle » avant N semaines de plan. */
 export const EARLY_PLAN_MIN_CONSTRUCTION = 4;
@@ -60,15 +60,15 @@ export function weeksBeforeRaceWeek(eventDate, now = new Date()) {
 
 /**
  * Position dans le cycle 8 semaines — sans date de course.
- * 0–5 construction · 6 test · 7 deload
+ * 0–5 construction · 6 deload · 7 test (allégée puis test)
  * @param {number} weekIndex — semaines depuis ancre (≥0)
  */
 export function farCyclePhase(weekIndex) {
   const w = Math.max(0, Math.floor(Number(weekIndex) || 0));
   const pos = w % FAR_CYCLE_LEN;
   if (pos < FAR_WORK_WEEKS) return "construction";
-  if (pos === FAR_WORK_WEEKS) return "test";
-  return "deload";
+  if (pos === FAR_WORK_WEEKS) return "deload";
+  return "test";
 }
 
 /**
@@ -80,8 +80,8 @@ export function farCyclePosition(weekIndex) {
 
 /**
  * Cycle loin de J, ancré sur l’index S (semaines avant course).
- * S-7 → test ; en avançant vers J : test → allégée → 6 travail → test…
- * (S-15 test, S-14 allégée, S-13…S-8 travail, S-7 test).
+ * S-7 → test ; S-8 → allégée ; vers J : allégée → test → 6 travail → …
+ * (S-16 allégée, S-15 test, S-14…S-9 travail, S-8 allégée, S-7 test).
  * @param {number} sIndex — weeksBeforeRaceWeek (≥ 7)
  * @returns {{ phase: SheetPhase, cyclePosition: number }}
  */
@@ -91,7 +91,7 @@ export function farCycleFromRaceSIndex(sIndex) {
   /** @type {SheetPhase} */
   let phase = "construction";
   if (pos === 0) phase = "test";
-  else if (pos === FAR_CYCLE_LEN - 1) phase = "deload";
+  else if (pos === 1) phase = "deload";
   return { phase, cyclePosition: pos };
 }
 
