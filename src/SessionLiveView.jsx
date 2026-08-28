@@ -86,6 +86,7 @@ export default function SessionLiveView({
         accent={accent}
         isPremium={isPremium}
         showStart={showCta}
+        showProvenance={false}
         startLabel={ctaLabel || (isPremium ? "Commencer la séance" : "S’abonner pour nager")}
         onUpgrade={onUpgrade}
         onStart={() => {

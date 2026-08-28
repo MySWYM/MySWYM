@@ -8,6 +8,7 @@ import { isFourNagesDeclared } from "./four-nages-mix.js";
 import { maxContinuousForDecouverte } from "./decouverte-intents.js";
 import { maxContinuousForRegulier } from "./regulier-intents.js";
 import { maxContinuousForSportif } from "./sportif-intents.js";
+import { scaleMaxContinuousForRaceBand } from "./race-event.js";
 
 export const FORBIDDEN_PAIN_INTENTS = Object.freeze([
   "threshold",
@@ -198,6 +199,8 @@ export function resolveHardConstraints(brief = {}) {
     if (level === "decouverte") maxContinuous = maxContinuousForDecouverte(brief);
     else if (level === "regulier") maxContinuous = maxContinuousForRegulier(brief);
     else maxContinuous = maxContinuousForSportif(brief, { stroke: "crawl" });
+  } else if (level !== "decouverte") {
+    maxContinuous = scaleMaxContinuousForRaceBand(maxContinuous, brief);
   }
   if (taperConstraints?.maxContinuous) {
     maxContinuous = Math.min(maxContinuous, taperConstraints.maxContinuous);

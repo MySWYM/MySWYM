@@ -7,6 +7,7 @@ export default function ConfirmSheet({
   confirmLabel = "Supprimer",
   cancelLabel = "Annuler",
   destructive = true,
+  icon: Icon = Trash2,
   onConfirm,
   onCancel,
 }) {
@@ -32,7 +33,7 @@ export default function ConfirmSheet({
             margin: "0 auto 16px",
           }}
         >
-          <Trash2 size={22} color={destructive ? G.coral : G.blue} />
+          <Icon size={22} color={destructive ? G.coral : G.blue} />
         </div>
         <h3
           id="confirm-sheet-title"

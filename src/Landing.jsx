@@ -28,7 +28,7 @@ import SessionHeroCard from "./SessionHeroCard.jsx";
 import "./landing/landing.css";
 
 const OBJECTIVE_TABS = [
-  { id: "progression", labelKey: "tabProgression", tagKey: "tagLevel", kindKey: "kindLevels", cards: ["p1", "p2", "p3", "p4"], media: "/nagerprogresser-objectif-landing.webp", width: 1672, height: 941 },
+  { id: "progression", labelKey: "tabProgression", tagKey: "tagLevel", kindKey: "kindLevels", cards: ["p1", "p2", "p3"], media: "/nagerprogresser-objectif-landing.webp", width: 1672, height: 941 },
   {
     id: "triathlon",
     labelKey: "tabTriathlon",
@@ -39,8 +39,8 @@ const OBJECTIVE_TABS = [
     width: 1672,
     height: 941,
   },
-  { id: "openwater", labelKey: "tabOpenwater", tagKey: "tagDistance", kindKey: "kindDistances", cards: ["w1", "w2", "w3", "w4", "w5", "w6"], media: "/Eaulibre-objectif-landing.webp", width: 1536, height: 1024 },
-  { id: "diploma", labelKey: "tabDiploma", tagKey: "tagDiploma", kindKey: "kindDiplomas", cards: ["d1", "d2", "d3"], media: "/Sauveteur-objectif-landing.webp", width: 1536, height: 1024 },
+  { id: "openwater", labelKey: "tabOpenwater", tagKey: "tagDistance", kindKey: "kindBands", cards: ["w1", "w2", "w3"], media: "/Eaulibre-objectif-landing.webp", width: 1536, height: 1024 },
+  { id: "diploma", labelKey: "tabDiploma", tagKey: "tagDiploma", kindKey: "kindDiplomas", cards: ["d1", "d2", "d3"], media: "/Sauveteur-objectif-landing.webp", width: 1536, height: 1024, comingSoon: true },
 ];
 
 const INCLUDE_ITEMS = [
@@ -201,9 +201,12 @@ function Objectives() {
                 key={item.id}
                 value={item.id}
                 id={`lp-obj-tab-${item.id}`}
-                className="lp-obj-tab"
+                className={`lp-obj-tab${item.comingSoon ? " is-soon" : ""}`}
               >
                 {t(`objectives.${item.labelKey}`)}
+                {item.comingSoon ? (
+                  <span className="lp-obj-tab-soon">{t("objectives.comingSoonShort")}</span>
+                ) : null}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -243,6 +246,17 @@ function Objectives() {
                   ref={item.id === tabId ? scrollerRef : undefined}
                 >
                   {item.cards.map((key) => (
+                    item.comingSoon ? (
+                      <div key={key} className="lp-obj-card is-soon" aria-disabled="true">
+                        <p className="lp-card-kicker">{t(`objectives.${item.tagKey}`)}</p>
+                        <h3 className="lp-obj-card-title">{t(`objectives.${key}Title`)}</h3>
+                        <p className="lp-obj-card-meta">{t(`objectives.${key}Meta`)}</p>
+                        <p className="lp-obj-card-desc">{t(`objectives.${key}Desc`)}</p>
+                        <span className="lp-obj-card-cta">
+                          {t("objectives.comingSoon")}
+                        </span>
+                      </div>
+                    ) : (
                     <LocalizedLink key={key} to={landingCtaPath(key, cta.href)} className="lp-obj-card">
                       <p className="lp-card-kicker">{t(`objectives.${item.tagKey}`)}</p>
                       <h3 className="lp-obj-card-title">{t(`objectives.${key}Title`)}</h3>
@@ -253,6 +267,7 @@ function Objectives() {
                         <ArrowRight size={16} />
                       </span>
                     </LocalizedLink>
+                    )
                   ))}
                 </div>
                 <button

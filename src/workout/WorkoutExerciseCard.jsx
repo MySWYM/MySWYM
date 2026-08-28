@@ -1,9 +1,142 @@
 /**
- * Carte exercice compacte (fermée) + détail dépliable.
+ * Carte exercice compacte (pas de tiroir / dépliable).
+ * Allures Sheet : pastilles ⓘ + Enchaînement (multi-allures) ; Lent ≠ Souple.
+ * Départ à la montre : pastille D2' + tip horloge de bassin (4 aiguilles).
  */
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import PyramidBlockViz from "../PyramidBlockViz.jsx";
+import { createPortal } from "react-dom";
+import { Info, X } from "lucide-react";
+import { formatDepartHuman, formatRestHuman } from "../lib/workout-display.js";
+
+const ALLURE_TIPS = {
+  souple: {
+    title: "Souple",
+    label: "Souple",
+    tone: "mint",
+    body:
+      "Allure de récupération : lente et relâchée. Tu ne forces pas — tu te détends. À ne pas confondre avec « lent » (allure lente contrôlée, pas une récup).",
+  },
+  lent: {
+    title: "Lent",
+    label: "Lent",
+    tone: "neutral",
+    body:
+      "Allure lente et contrôlée : tu nages volontairment moins vite pour la technique ou la qualité. Ce n’est pas du souple (récup).",
+  },
+  moyen: {
+    title: "Moyen",
+    label: "Moyen",
+    tone: "neutral",
+    body:
+      "Allure régulière, tenable sur toute la série. Ni trop facile, ni à fond — tu gardes le même rythme.",
+  },
+  progressif: {
+    title: "Progressif",
+    label: "Progressif",
+    tone: "blue",
+    body:
+      "Tu accélères au fil de la distance : départ facile, fin plus soutenue.",
+  },
+  vite: {
+    title: "Vite",
+    label: "Vite",
+    tone: "coral",
+    body:
+      "Allure plus soutenue, qualité d’effort. Tu nages plus vite qu’en rythme moyen, sans forcer jusqu’à l’échec.",
+  },
+  abloc: {
+    title: "À bloc",
+    label: "À bloc",
+    tone: "coral",
+    body:
+      "Sprint court : tu donnes le maximum sur la distance indiquée, puis tu récupères bien.",
+  },
+  sprint: {
+    title: "Sprint",
+    label: "Sprint",
+    tone: "coral",
+    body:
+      "Effort court et explosif. Tu donnes le maximum sur la distance, puis tu récupères bien avant la suivante.",
+  },
+  enchainement: {
+    title: "Enchaînement",
+    label: "Enchaînement",
+    tone: "blue",
+    body:
+      "Plusieurs allures dans la même série, dans l’ordre indiqué sous la ligne.",
+  },
+};
+
+/** Glossaire court pour la liste du tip Enchaînement. */
+const ALLURE_LIST_BLURB = {
+  lent: "nage lente et contrôlée (technique / qualité)",
+  moyen: "rythme régulier, tenable sur toute la série",
+  progressif: "tu accélères au fil de la distance",
+  vite: "plus soutenu que le moyen, sans aller à l’échec",
+  souple: "récupération : lente et relâchée",
+  abloc: "maximum sur la distance, puis bonne récup",
+  sprint: "effort court et explosif, puis bonne récup",
+  facile: "confortable, sans forcer",
+  soutenu: "effort marqué mais tenable",
+  descendant: "tu ralentis au fil de la distance",
+};
+
+function tipKeyFromAllureToken(token) {
+  const t = String(token || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (t === "rapide" || t === "vite") return "vite";
+  if (t === "a bloc" || t === "à bloc") return "abloc";
+  if (ALLURE_TIPS[t] && t !== "enchainement") return t;
+  return null;
+}
+
+function capitalizeAllureLabel(token) {
+  const s = String(token || "").trim();
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Ordre d’affichage des pastilles allure. */
+const ALLURE_CHIP_ORDER = [
+  "enchainement",
+  "souple",
+  "lent",
+  "moyen",
+  "progressif",
+  "vite",
+  "abloc",
+  "sprint",
+];
+
+function detectAllureTips(exercise) {
+  // Multi-allures dans une série → une seule pastille
+  if (exercise?.allureEnchainement?.steps?.length >= 2) {
+    return ["enchainement"];
+  }
+
+  const blob = `${exercise?.cue || ""} ${exercise?.main || ""} ${exercise?.raw || ""}`.toLowerCase();
+  const found = new Set();
+
+  const showSouplePill =
+    exercise?.section !== "warm"
+    && exercise?.kind !== "warm"
+    && (exercise?.effortLabel === "souple" || exercise?.kind === "cool");
+  if (showSouplePill || /\bsouple\b/.test(blob)) found.add("souple");
+
+  // Lent ≠ souple
+  if (/\blent\b/.test(blob)) found.add("lent");
+  if (/\bmoyen\b/.test(blob) || /allure\s+r[eé]guli[eè]re/.test(blob)) found.add("moyen");
+  if (/\bprogressif\b/.test(blob)) found.add("progressif");
+  if (/\b(vite|rapide)\b/.test(blob)) found.add("vite");
+  if (/\b(à\s*bloc|a\s*bloc)\b/.test(blob)) found.add("abloc");
+  if (exercise?.sprint || /\bsprints?\b/.test(blob)) found.add("sprint");
+
+  return ALLURE_CHIP_ORDER.filter((k) => found.has(k));
+}
 
 function MetaPill({ children, tone = "neutral", G }) {
   const bg = tone === "blue" ? G.blueLight : G.greyXLight;
@@ -19,27 +152,389 @@ function MetaPill({ children, tone = "neutral", G }) {
   );
 }
 
+/** Horloge de bassin type 4 aiguilles (Colorado Timing). 1 tour = 60 s.
+ * Reste ≤ 30 s → « N tours + Xs » ; reste > 30 s → « (N+1) tours moins Ys ».
+ */
+function paceClockTourParts(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds) || 0));
+  if (s <= 0) {
+    return { mode: "exact", laps: 1, remSec: 0, minusSec: 0, total: 60 };
+  }
+  const fullLaps = Math.floor(s / 60);
+  const remSec = s % 60;
+  if (remSec === 0) {
+    return { mode: "exact", laps: fullLaps, remSec: 0, minusSec: 0, total: s };
+  }
+  if (remSec <= 30) {
+    if (fullLaps === 0) {
+      return { mode: "seconds", laps: 0, remSec, minusSec: 0, total: s };
+    }
+    return { mode: "plus", laps: fullLaps, remSec, minusSec: 0, total: s };
+  }
+  // ex. 1'50" → 2 tours moins 10 s ; 50" → 1 tour moins 10 s
+  return {
+    mode: "minus",
+    laps: fullLaps + 1,
+    remSec,
+    minusSec: 60 - remSec,
+    total: s,
+  };
+}
+
+function lapWord(n) {
+  return n === 1 ? "Un tour" : `${n} tours`;
+}
+
+function paceClockCaption(seconds) {
+  const p = paceClockTourParts(seconds);
+  const eq = ` (= ${formatDepartHuman(p.total)})`;
+  if (p.mode === "seconds") {
+    return `${p.remSec} s sur l’horloge`;
+  }
+  if (p.mode === "exact") {
+    return p.laps === 1
+      ? "Un tour d’aiguille (= 1 minute)"
+      : `${p.laps} tours d’aiguille${eq}`;
+  }
+  if (p.mode === "plus") {
+    return `${lapWord(p.laps)} + ${p.remSec} s sur l’horloge${eq}`;
+  }
+  return `${lapWord(p.laps)} moins ${p.minusSec} s${eq}`;
+}
+
+function paceClockBodySuffix(seconds) {
+  const p = paceClockTourParts(seconds);
+  if (p.mode === "exact") {
+    if (p.total <= 60) return "";
+    return ` (après ${p.laps} tour${p.laps > 1 ? "s" : ""})`;
+  }
+  if (p.mode === "seconds") return "";
+  if (p.mode === "plus") {
+    return p.laps === 1
+      ? ` (après 1 tour et ${p.remSec} s)`
+      : ` (après ${p.laps} tours et ${p.remSec} s)`;
+  }
+  return p.laps === 1
+    ? ` (après 1 tour moins ${p.minusSec} s)`
+    : ` (après ${p.laps} tours moins ${p.minusSec} s)`;
+}
+
+function PaceClock({ seconds = 120, size = 160 }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.42;
+  const handR = r * 0.78;
+  const colors = ["#e11d48", "#eab308", "#22c55e", "#3b82f6"];
+  // 4 aiguilles aux quarts d’heure (0 / 15 / 30 / 45 s)
+  const hands = [0, 15, 30, 45].map((sec, i) => {
+    const deg = (sec / 60) * 360;
+    const rad = ((deg - 90) * Math.PI) / 180;
+    return {
+      color: colors[i],
+      x2: cx + handR * Math.cos(rad),
+      y2: cy + handR * Math.sin(rad),
+    };
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        <circle cx={cx} cy={cy} r={r} fill="#0a162c" stroke="#1e3a5f" strokeWidth={3} />
+        {Array.from({ length: 60 }, (_, i) => {
+          const deg = (i / 60) * 360;
+          const rad = ((deg - 90) * Math.PI) / 180;
+          const major = i % 5 === 0;
+          const inner = r - (major ? 10 : 5);
+          const outer = r - 2;
+          return (
+            <line
+              key={i}
+              x1={cx + inner * Math.cos(rad)}
+              y1={cy + inner * Math.sin(rad)}
+              x2={cx + outer * Math.cos(rad)}
+              y2={cy + outer * Math.sin(rad)}
+              stroke={major ? "#e2e8f0" : "#64748b"}
+              strokeWidth={major ? 2 : 1}
+            />
+          );
+        })}
+        {[0, 15, 30, 45].map((sec) => {
+          const deg = (sec / 60) * 360;
+          const rad = ((deg - 90) * Math.PI) / 180;
+          const tx = cx + (r - 22) * Math.cos(rad);
+          const ty = cy + (r - 22) * Math.sin(rad);
+          const label = sec === 0 ? "60" : String(sec);
+          return (
+            <text
+              key={`n${sec}`}
+              x={tx}
+              y={ty}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#94a3b8"
+              fontSize={11}
+              fontWeight={700}
+            >
+              {label}
+            </text>
+          );
+        })}
+        {hands.map((h, i) => (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={h.x2}
+            y2={h.y2}
+            stroke={h.color}
+            strokeWidth={3}
+            strokeLinecap="round"
+          />
+        ))}
+        <circle cx={cx} cy={cy} r={5} fill="#f8fafc" />
+      </svg>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textAlign: "center", lineHeight: 1.35 }}>
+        {paceClockCaption(seconds)}
+      </div>
+    </div>
+  );
+}
+
+function TipSheetShell({ eyebrow, title, onClose, colors: G, children }) {
+  return createPortal(
+    <div
+      className="sheet-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        className="sheet-panel scale-in"
+        style={{
+          background: G.surface,
+          borderRadius: "24px 24px 0 0",
+          padding: "20px 20px max(28px, env(safe-area-inset-bottom))",
+          maxHeight: "85dvh",
+          overflowY: "auto",
+        }}
+      >
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+              {eyebrow}
+            </div>
+            <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15 }}>
+              {title}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            style={{
+              width: 44, height: 44, borderRadius: 12, border: `1px solid ${G.greyLight}`,
+              background: G.greyXLight, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+            }}
+          >
+            <X size={18} color={G.ink} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
+  const tip = ALLURE_TIPS[tipKey];
+  if (!tip) return null;
+
+  if (tipKey === "enchainement" && enchainement?.steps?.length >= 2) {
+    const steps = enchainement.steps;
+    const keys = steps.map((st) => tipKeyFromAllureToken(st.allure));
+    const showLentSouple = keys.includes("lent") || keys.includes("souple");
+    const isRepStyle = /\d+\s+(lent|moyen|rapide|vite|souple|progressif|facile|soutenu|descendant|à\s*bloc|a\s*bloc)/i.test(
+      enchainement.cue || "",
+    );
+
+    return (
+      <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose} colors={G}>
+        <p style={{ margin: "0 0 14px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+          Sur cette série, enchaîne les allures dans cet ordre.
+        </p>
+        <ul
+          style={{
+            margin: "0 0 16px",
+            padding: "0 0 0 18px",
+            listStyle: "disc",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          {steps.map((st, i) => {
+            const key = keys[i];
+            const tipRow = key ? ALLURE_TIPS[key] : null;
+            const label = tipRow?.label || capitalizeAllureLabel(st.allure);
+            const blurb = (key && ALLURE_LIST_BLURB[key]) || tipRow?.body || "";
+            const countPrefix =
+              isRepStyle && Number(st.n) >= 1 ? `${st.n}× ` : "";
+            return (
+              <li
+                key={`${st.allure}-${i}`}
+                style={{ fontSize: 15, color: G.inkLight, lineHeight: 1.45, fontWeight: 600 }}
+              >
+                <span style={{ color: G.ink, fontWeight: 800 }}>
+                  {countPrefix}{label}
+                </span>
+                {blurb ? (
+                  <span>
+                    {" — "}
+                    {blurb}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        {showLentSouple ? (
+          <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
+            <span style={{ color: G.inkLight, fontWeight: 800 }}>Lent ≠ souple</span>
+            {" — "}
+            lent = allure lente contrôlée ; souple = récupération relâchée. Ce n’est pas la même chose.
+          </p>
+        ) : null}
+      </TipSheetShell>
+    );
+  }
+
+  return (
+    <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose} colors={G}>
+      <p style={{ margin: 0, fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+        {tip.body}
+      </p>
+    </TipSheetShell>
+  );
+}
+
+function DepartTipSheet({ label, seconds, onClose, colors: G }) {
+  const human = formatDepartHuman(seconds);
+  return (
+    <TipSheetShell eyebrow="Départ à la montre" title={label || "D…"} onClose={onClose} colors={G}>
+      <p style={{ margin: "0 0 16px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+        Tu repars toutes les {human}. Regarde l’horloge de bassin : tu pars quand une aiguille est sur un repère, et tu repars quand elle revient au même endroit
+        {paceClockBodySuffix(seconds)}.
+      </p>
+      <div style={{
+        background: G.greyXLight,
+        borderRadius: 16,
+        padding: "16px 12px",
+        marginBottom: 14,
+      }}>
+        <PaceClock seconds={seconds || 60} />
+      </div>
+      <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
+        Plus tu nages vite, plus tu récupères avant le prochain départ. Les 4 aiguilles colorées servent aux différentes lignes du bassin.
+      </p>
+    </TipSheetShell>
+  );
+}
+
+function RestTipSheet({ label, seconds, onClose, colors: G }) {
+  const human = formatRestHuman(seconds);
+  return (
+    <TipSheetShell eyebrow="Récupération" title={label || "R…"} onClose={onClose} colors={G}>
+      <p style={{ margin: "0 0 12px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+        Tu t’arrêtes {human} entre les reps (ou à la fin de la série). Le chrono de pause commence quand tu arrives au mur.
+      </p>
+      <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
+        Ce n’est pas un départ à la montre (D…) : avec R, tu repartis après ta pause, pas à un intervalle fixe sur l’horloge.
+      </p>
+    </TipSheetShell>
+  );
+}
+
+function chipToneStyles(tone, G) {
+  let bg = G.greyXLight;
+  let color = G.inkLight;
+  if (tone === "mint") {
+    bg = G.mintLight || G.greyXLight;
+    color = G.mint || G.inkLight;
+  } else if (tone === "blue") {
+    bg = G.blueLight || G.greyXLight;
+    color = G.blue || G.inkLight;
+  } else if (tone === "coral") {
+    bg = G.coralLight || G.blueLight || G.greyXLight;
+    color = G.coral || G.blue || G.inkLight;
+  }
+  return { bg, color };
+}
+
+function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName }) {
+  const tip = tipKey ? ALLURE_TIPS[tipKey] : null;
+  const resolvedLabel = label || tip?.label;
+  if (!resolvedLabel) return null;
+  const { bg, color } = chipToneStyles(tip?.tone || tone, G);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Qu’est-ce que ${ariaName || resolvedLabel.toLowerCase()} ?`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        border: `1px solid ${G.greyLight}`,
+        background: bg,
+        color,
+        fontSize: 11,
+        fontWeight: 800,
+        padding: "4px 9px",
+        borderRadius: 999,
+        cursor: "pointer",
+        letterSpacing: "0.02em",
+        textTransform: tipKey ? "uppercase" : "none",
+        minHeight: 28,
+        fontVariantNumeric: "tabular-nums",
+      }}
+    >
+      {resolvedLabel}
+      <Info size={12} strokeWidth={2.5} />
+    </button>
+  );
+}
+
 export default function WorkoutExerciseCard({
   exercise,
   colors: G,
   accent,
-  defaultOpen = false,
   onOpenDrill,
   compact = false,
   nested = false,
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [tipKey, setTipKey] = useState(null);
+  const [departOpen, setDepartOpen] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
   if (!exercise) return null;
 
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
   const stroke = exercise.strokeLabel;
-  const primaryCue = exercise.cue;
-  const hasDetails =
-    (exercise.cues && exercise.cues.length > 1) ||
-    (exercise.children && exercise.children.length > 0) ||
-    exercise.pyramid ||
-    exercise.educatif ||
-    (exercise.steps && exercise.steps.length > 0);
+  const drills =
+    Array.isArray(exercise.educatifs) && exercise.educatifs.length
+      ? exercise.educatifs
+      : exercise.educatif
+        ? [exercise.educatif]
+        : [];
+  const multiDrills = drills.length > 1;
+  const primaryCue = multiDrills ? "4 éducatifs (1 / nage)" : exercise.cue;
+  const allureChips = detectAllureTips(exercise);
+  const departLabel = exercise.departLabel || null;
+  const departSeconds = exercise.departSeconds || 60;
+  const restChip = exercise.restChip || null;
+  const restSeconds = exercise.restSeconds || 30;
 
   return (
     <div
@@ -48,147 +543,124 @@ export default function WorkoutExerciseCard({
         borderRadius: nested ? 12 : 16,
         border: nested ? "none" : `1px solid ${G.greyLight}`,
         overflow: "hidden",
+        padding: compact ? "14px 14px" : "16px 16px",
+        minHeight: 56,
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
       }}
     >
-      <button
-        type="button"
-        onClick={() => hasDetails && setOpen((v) => !v)}
-        aria-expanded={open}
-        style={{
-          width: "100%",
-          textAlign: "left",
-          border: "none",
-          background: "none",
-          cursor: hasDetails ? "pointer" : "default",
-          padding: compact ? "14px 14px" : "16px 16px",
-          minHeight: 56,
-          display: "flex",
-          gap: 12,
-          alignItems: "flex-start",
-        }}
-      >
-        <div style={{
-          width: 28, height: 28, borderRadius: 9, flexShrink: 0, marginTop: 2,
-          background: accent?.bg || G.blueLight, color: accent?.color || G.blue,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, fontWeight: 800,
-        }}>
-          {exercise.index}
-        </div>
+      <div style={{
+        width: 28, height: 28, borderRadius: 9, flexShrink: 0, marginTop: 2,
+        background: accent?.bg || G.blueLight, color: accent?.color || G.blue,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 12, fontWeight: 800,
+      }}>
+        {exercise.index}
+      </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: compact ? 17 : 18,
-            fontWeight: 800,
-            color: G.ink,
-            lineHeight: 1.2,
-            letterSpacing: "-0.01em",
-          }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: compact ? 17 : 18,
+          fontWeight: 800,
+          color: G.ink,
+          lineHeight: 1.2,
+          letterSpacing: "-0.01em",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          <span>
             {volume || exercise.main}
             {stroke ? (
               <span style={{ color: accent?.color || G.blue, fontWeight: 800 }}>
                 {" · "}{stroke}
               </span>
             ) : null}
-          </div>
-
-          {primaryCue && volume && (
-            <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35, fontWeight: 600 }}>
-              {primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)}
-            </div>
-          )}
-          {!volume && exercise.main && primaryCue && (
-            <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35 }}>
-              {primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)}
-            </div>
-          )}
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-            {exercise.restLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
-            {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
-            {exercise.kind === "cool" && <MetaPill G={G}>Souple</MetaPill>}
-            {exercise.educatif && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenDrill?.(exercise.educatif);
-                }}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
-                  border: "none", background: G.blueLight, color: G.blue,
-                  fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 10,
-                  cursor: "pointer", minHeight: 32,
-                }}
-              >
-                <Info size={12} /> Voir l’éducatif
-              </button>
-            )}
-          </div>
+          </span>
+          {allureChips.map((key) => (
+            <AllureInfoChip key={key} tipKey={key} onClick={() => setTipKey(key)} G={G} />
+          ))}
+          {/* Avec départ D…, le R est redondant (récup déjà dans le cycle de départ) */}
+          {restChip && !departLabel ? (
+            <AllureInfoChip
+              tipKey={null}
+              label={restChip}
+              tone="blue"
+              ariaName={`récupération ${restChip}`}
+              onClick={() => setRestOpen(true)}
+              G={G}
+            />
+          ) : null}
+          {departLabel ? (
+            <AllureInfoChip
+              tipKey={null}
+              label={departLabel}
+              tone="blue"
+              ariaName={`départ ${departLabel}`}
+              onClick={() => setDepartOpen(true)}
+              G={G}
+            />
+          ) : null}
         </div>
 
-        {hasDetails && (
-          <div style={{ paddingTop: 4, color: G.greyMid, flexShrink: 0 }}>
-            {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        {primaryCue && volume && (
+          <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35, fontWeight: 600 }}>
+            {primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)}
           </div>
         )}
-      </button>
+        {!volume && exercise.main && primaryCue && (
+          <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35 }}>
+            {primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)}
+          </div>
+        )}
 
-      {open && hasDetails && (
-        <div style={{ padding: "0 16px 16px 56px" }}>
-          {exercise.pyramid && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{
-                fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 8, lineHeight: 1.35,
-              }}>
-                {exercise.pyramid.steps.join(" → ")}
-              </div>
-              <PyramidBlockViz
-                steps={exercise.pyramid.steps}
-                peak={exercise.pyramid.peak}
-                volume={exercise.pyramid.volume}
-                rest={exercise.pyramid.rest}
-                label={exercise.pyramid.label}
-                accent={accent?.color || G.blue}
-              />
-            </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {exercise.restLabel && !restChip && !departLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
+          {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
+          {drills.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                border: "none", background: G.blueLight, color: G.blue,
+                fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 10,
+                cursor: "pointer", minHeight: 32,
+              }}
+            >
+              <Info size={12} />{" "}
+              {multiDrills ? "Voir les éducatifs" : "Voir l’éducatif"}
+            </button>
           )}
-
-          {exercise.steps && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-              {exercise.steps.map((s) => (
-                <span key={s} style={{
-                  fontSize: 12, fontWeight: 600, color: G.inkLight,
-                  background: G.greyXLight, padding: "5px 9px", borderRadius: 8,
-                }}>{s}</span>
-              ))}
-            </div>
-          )}
-
-          {exercise.children?.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
-              {exercise.children.map((c, i) => (
-                <div key={i} style={{
-                  display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start",
-                }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: G.inkLight, lineHeight: 1.35 }}>
-                    {c.headline?.volume || c.main}
-                    {c.headline?.stroke ? ` · ${c.headline.stroke}` : ""}
-                    {c.headline?.rest ? ` — ${c.headline.rest}` : ""}
-                  </div>
-                  {c.restLabel && <MetaPill G={G} tone="blue">{c.restLabel}</MetaPill>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {exercise.cues?.slice(exercise.cue ? 1 : 0).map((c, i) => (
-            <div key={i} style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, marginTop: 4 }}>
-              {c.charAt(0).toUpperCase() + c.slice(1)}
-            </div>
-          ))}
         </div>
-      )}
+      </div>
+
+      {tipKey ? (
+        <AllureTipSheet
+          tipKey={tipKey}
+          onClose={() => setTipKey(null)}
+          colors={G}
+          enchainement={exercise.allureEnchainement}
+        />
+      ) : null}
+      {restOpen && restChip ? (
+        <RestTipSheet
+          label={restChip}
+          seconds={restSeconds}
+          onClose={() => setRestOpen(false)}
+          colors={G}
+        />
+      ) : null}
+      {departOpen ? (
+        <DepartTipSheet
+          label={departLabel}
+          seconds={departSeconds}
+          onClose={() => setDepartOpen(false)}
+          colors={G}
+        />
+      ) : null}
     </div>
   );
 }

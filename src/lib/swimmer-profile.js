@@ -4,6 +4,8 @@
  * Un utilisateur = un profil ; un seul plan actif (plans_json length ≤ 1).
  */
 
+import { impliedSwimStyleForLevel } from "./onboarding-level-gate.js";
+
 export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "level",
   "pool",
@@ -155,14 +157,17 @@ export function defaultSessionDistanceForLevel(level) {
 
 /**
  * Complète les champs reportés après le questionnaire court
- * (bassin 25 m, aucun matos, crawl, distance selon le niveau). N’écrase pas un choix déjà fait.
+ * (bassin 25 m, aucun matos, nage selon le niveau, distance selon le niveau).
+ * Débutant → crawl ; Avancé → 4 nages (écrase un ancien crawl). Intermédiaire : n’écrase pas un choix déjà fait.
  */
 export function applyFirstPlanDefaults(profile = {}) {
   const next = { ...profile };
   const pool = Number(next.pool);
   next.pool = pool === 50 ? 50 : 25;
   if (!Array.isArray(next.equipment)) next.equipment = [];
-  if (!next.swimStyle) next.swimStyle = "crawl";
+  const implied = impliedSwimStyleForLevel(next.level);
+  if (implied) next.swimStyle = implied;
+  else if (!next.swimStyle) next.swimStyle = "crawl";
   if (!next.preferredStroke) next.preferredStroke = "crawl";
   if (!(Number(next.targetSessionDistance) > 0)) {
     next.targetSessionDistance = defaultSessionDistanceForLevel(next.level);

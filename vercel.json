@@ -116,6 +116,7 @@
   "rewrites": [
     { "source": "/api/support", "destination": "/api/contact?kind=app-support" },
     { "source": "/api/telegram/webhook", "destination": "/api/contact" },
+    { "source": "/api/natation-sheet", "destination": "/api/contact?kind=natation-sheet" },
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
     { "source": "/((?!api|assets|favicon).*)", "destination": "/index.html" }

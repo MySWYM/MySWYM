@@ -15,6 +15,7 @@ import {
   isTelegramUpdate,
   parseOperatorText,
   parseSupportCodeFromText,
+  sanitizeSupportContext,
   wantsHumanHandoff,
 } from "./parse.js";
 import { isSupportRequest } from "./http.js";
@@ -148,6 +149,34 @@ test("notify format is replyable", () => {
   assert.match(text, /nouvelle conversation/);
   assert.match(text, /\/close/);
   assert.equal(parseSupportCodeFromText(text), "deadbeef");
+  assert.ok(!/🏊/.test(text), "pas de ligne séance sans contexte");
+});
+
+test("notify carries the session ref when the app sends one", () => {
+  const text = formatOperatorNotify({
+    shortCode: "deadbeef",
+    displayName: "Marie",
+    body: "Cette séance est trop dure",
+    isNew: false,
+    context: "MySWYM séance | UI n°6 | Sheet «01 Nager deb crawl» ligne n°42 | 1500m",
+  });
+  assert.match(text, /🏊 MySWYM séance \| UI n°6 \| Sheet «01 Nager deb crawl» ligne n°42/);
+  assert.equal(parseSupportCodeFromText(text), "deadbeef", "le code reste parsable");
+
+  // Une réf multi-lignes ou géante ne casse pas le format Telegram
+  const messy = formatOperatorNotify({
+    shortCode: "deadbeef",
+    displayName: "Marie",
+    body: "Bug",
+    isNew: false,
+    context: `ligne1\nligne2\t${"x".repeat(500)}`,
+  });
+  const contextLine = messy.split("\n").find((l) => l.startsWith("🏊")) || "";
+  assert.equal(contextLine.replace(/^🏊 /, "").length, 300, "réf bornée à 300");
+  assert.match(contextLine, /^🏊 ligne1 ligne2 x+$/, "sauts de ligne et tabs aplatis");
+
+  assert.equal(sanitizeSupportContext("   "), null);
+  assert.equal(sanitizeSupportContext(42), null);
 });
 
 test("user close notifies operator", () => {

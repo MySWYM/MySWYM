@@ -39,6 +39,9 @@ Autres règles de structure :
 - Lignes compactes `A · B · C — Z2` → sous-séries verticales à l’affichage.
 - Échauffement + retour au calme obligatoires (sauf OW déjà structuré autrement).
 - Éducatifs : le niveau utilisateur doit figurer dans `levels` dérivés du « niveau Arthur » Excel. « adaptable à tous niveaux » n’ouvre pas la Découverte ; Découverte reste aussi bornée à flèche + grand chien (+ allowlist). Case 4 nages : mêmes niveaux Excel sur les éducatifs tagués `4_nages` (corps/IM gardent les 4 nages explicites).
+- Soft-branch catalogue Sheet (`composedBy=natation-sheet`) : sélection + fiche « Voir l’éducatif » = colonnes de l’onglet **Éducatifs** du Google Sheet (`sheetEducatif` / `sheetEducatifs`). Pas de `matchEducatif` / fiches Arthur `.js` sur ces séances. **Soft 01–13** : Nager `01`–`03` ; triathlon XS/Sprint `04`–`06` ; Oly/Half/Full `07`–`08` ; eau libre courte `09`–`11` / moy-long `12`–`13`. Diplômes = composeur (pas d’onglet Sheet). Éducatif tiré au **niveau** (pas au matos). `{matériel}` = optionnel, tirage parmi la fiche ∩ inventaire. Variété : pas le même éducatif d’affilée (soft sur les 5 derniers). **Ligne « 4 nages » + « éducatif(s) »** → 4 éducatifs (1/nage, ordre IM) ; distances Sheet inchangées. **Pas de fallback composeur** sur les familles soft.
+- **Pace Sheet** : tokens `{D:facile}` `{D:endurance}` `{D:seuil}` `{D:VO2}` `{D:sprint}` et `{@:…}` (mêmes intents). Calcul depuis le **T100** si **intermédiaire ou avancé + Premium + T100**. **Débutant = jamais** (`{D:}` → `repos 30 s`, `{@:}` retiré). Alias : moyen→endurance, vite/course→seuil, souple→facile. Lexique Excel : `docs/coach-ligne/lexique-sheet-myswym.xlsx` (régénérer via `python3 docs/coach-ligne/build_lexique_sheet.py`).
+- **Calendrier event Sheet (XS/Sprint…)** : rôle de semaine depuis `eventDate` (S0 = semaine du jour J). **S0 + S-1** = deload (S0 : max 2 séances) ; **S-2 → S-6** = construction (pas de test) ; **S-7+** = cycle ancré sur J (**S-7 = test**, S-8 = deload, puis 7 construction → test → deload : S-16, S-17…). Sans date = cycle seul (index plan). Bandeau séance + planning accueil (`sheetWeekRole` / `EventWeekPlanCard`).
 
 ---
 
@@ -47,7 +50,7 @@ Autres règles de structure :
 Le matériel déclaré indique ce que le nageur peut utiliser, jamais ce qu’il doit utiliser.  
 Une séance peut être sans matériel même si l’inventaire est rempli.  
 Lorsqu’un matériel est utilisé, il doit être affiché explicitement sur la ligne d’exercice concernée.  
-Les contraintes existantes restent actives : jamais pull-buoy + palmes dans une même séance ; matériel lié à l’éducatif, jamais tiré au sort.
+Les contraintes existantes restent actives : jamais pull-buoy + palmes **dans le même exercice** (même ligne) ; matériel lié à l’éducatif, jamais tiré au sort.
 
 Rappels pédagogiques :
 
@@ -60,20 +63,16 @@ Rappels pédagogiques :
 
 ## Quatre nages
 
-UX profil : « Sais-tu nager du 4 nages ? » → Non = `swimStyle=crawl` (nage favorite masquée, forcée crawl) ; Oui = `4_nages` + « Quelle est ta nage favorite ? ».  
-Diplômes (BNSSA, BPJEPS, pompiers, CAEPMNS) : pas de choix 4 nages. Triathlon / eau libre : choix autorisé.
+UX profil (**Intermédiaire seulement**) : « Sais-tu nager du 4 nages ? » → Non = `swimStyle=crawl` ; Oui = `4_nages`. Pas de nage favorite.  
+Débutant : pas de question, crawl seulement. **Avancé : pas de question, 4 nages** (`isFourNagesDeclared` vrai même si `swimStyle` restait crawl). Diplômes : pas de choix 4 nages.
 
 Si `swimStyle=crawl` / `strokeFocus=crawl` : **aucune** ligne ni set en dos, brasse, papillon ou « au choix » (quality gate `crawl_only`).
 
-Le crawl garde toujours la plus grande part du volume en case 4 nages.  
-Sans préférence : 40 % crawl, 20 % dos, 20 % brasse, 20 % papillon.  
-Avec préférence crawl : 50 / 17 / 17 / 16.  
-Avec préférence dos, brasse ou papillon : 40 % crawl, 30 % nage préférée, 15 % et 15 % pour les deux autres.
+Le crawl garde toujours la plus grande part du volume en case 4 nages. Mix défaut : 40 % crawl, 20 % dos, 20 % brasse, 20 % papillon.
 
 Autres contrôles :
 
 - Case `quatre nages` = crawl + dos + brasse + papillon dans **chaque** séance, blocs nagés explicites (pas un seul intitulé « 4 nages »).
-- `swimStyle=4_nages` prime sur la nage préférée (ne pas transformer la préférence en séance mono-nage).
 - Papillon fractionné (longueur de bassin), jamais omis ni remplacé par ondulation seule.
 - Formats IM olympiques (pap → dos → brasse → crawl) explicites ; Découverte : pas d’IM enchaîné.
 - Eau libre / triathlon : IM piscine seulement si 4 nages déclaré (`swimStyle=4_nages`).
@@ -94,7 +93,7 @@ Autres contrôles :
 
 ## Rendu nageur
 
-- Jamais `souple` ni `Z1` dans les consignes visibles (D9).
+- Jamais `souple` ni `Z1` dans les consignes visibles (D9), **sauf** pastille d’allure `Souple ⓘ` quand le Sheet / la ligne porte ce marqueur (`crawl*souple`, `crawl souple`) — tip récupération, pas le mot en sous-texte libre.
 - Tous les chemins de sortie (`finalizeCoachSession`, `attachFourNagesCoverage`, `buildConfirmeArchetypeSession`) passent par `sanitizeSessionDetails` / `humanizeArthurDisplayTerms`. Les banques peuvent encore contenir `souple`/`Z1` en interne.
 - Jamais `(facile @2)` / `@2` / `@3` dans un titre.
 - Restitution coach : une ligne = distance + nage + intensité + repos ; pas de headlines moteur ni marketing.
@@ -102,3 +101,11 @@ Autres contrôles :
 - Ton : français, tutoiement, consignes actionnables.
 - Fun : contrastes, pas 2 séries d’affilée à la même allure, pas de monolithes répétitifs.
 - Vocabulaire : **godilles** (sculling) ; **rattrapé** (catch-up) ; **coulée** (pas sortie en apnée).
+
+## Traçabilité support
+
+- Chaque séance affiche une réf. discrète `Réf. <onglet>-<ligne>` (ex. `01-42`) en bas de la vue séance et dans l'historique. Clic = copie de la ligne complète (`session-provenance.js`).
+- Une séance composée hors Sheet affiche `Réf. C-1500` et la mention « pas de ligne Sheet » : **ne jamais inventer un n° de ligne** pour un fallback composeur.
+- `Séance n°6` (titre nageur) = 6e validation, **≠** ligne du Sheet. Les deux figurent dans la réf. copiée (`UI n°6 | Sheet «01 Nager deb crawl» ligne n°42`).
+- La réf. de la dernière séance vue part automatiquement avec les messages support (ligne `🏊` dans Telegram) et dans les events PostHog (`composedBy`, `sheetFamily`, `sheetN`).
+- Vue séance partagée publiquement (`SessionLiveView`) : pas de réf. affichée.

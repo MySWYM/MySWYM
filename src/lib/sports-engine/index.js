@@ -15,6 +15,14 @@ export {
 } from "./types.js";
 
 export {
+  EVENT_BANDS,
+  canonicalizeGoal,
+  eventBandFromGoal,
+  raceSwimMetersFromGoal,
+  scaleMaxContinuousForRaceBand,
+} from "./race-event.js";
+
+export {
   estimateCapacity,
   applyCapacitySignalUpdate,
   blankCapacityDimensions,

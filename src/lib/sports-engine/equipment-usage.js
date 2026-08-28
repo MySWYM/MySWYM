@@ -1,9 +1,8 @@
 /**
  * Matériel : pédagogie d'abord (éducatif → outil), jamais au hasard sur le titre.
- * Interdit pull + palmes dans la même séance :
- * pull-buoy entre les jambes = pas de battements (bras seuls) ;
- * palmes = battements. Les deux en même temps n'ont aucun sens.
- * Inventaire : on peut posséder les deux ; on ne les combine pas le même jour.
+ * Interdit pull + palmes dans le même exercice (même ligne) :
+ * pull-buoy entre les jambes = pas de battements ; palmes = battements.
+ * Posséder les deux, ou les utiliser le même jour sur des lignes distinctes : OK.
  * Engagement : inventaire non vide hors récup/taper → ≥1 item visible quand possible.
  * @typedef {'none'|'optional'|'meaningful'} EquipmentUsage
  */
@@ -152,7 +151,7 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
       ? wishPrefer
       : prefer.filter((e) => available.includes(e)).length
         ? prefer.filter((e) => available.includes(e))
-        : available.filter((e) => e !== "pull" || !available.includes("palmes"));
+        : available;
     const pick = pickOne(fallbackPool.length ? fallbackPool : available, typeof rng === "function" ? rng : Math.random);
     if (pick) {
       applied.push(pick);
@@ -161,23 +160,18 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     }
   }
 
-  const palmesOn = applied.includes("palmes");
   const canPull =
     available.includes("pull") &&
-    !palmesOn &&
     !quality &&
     !/vitesse|vo2|test/.test(intent);
   const rollC = typeof rng === "function" ? rng() : Math.random();
-  if (canPull && rollC < 0.4 && !wishPrefer.includes("palmes")) {
+  if (canPull && rollC < 0.4 && !applied.includes("pull") && !wishPrefer.includes("palmes")) {
+    // Autorisé même si palmes déjà dans la séance : conflit géré à la ligne d'exo.
     applied.push("pull");
     corpsNote.push("pull-buoy");
   }
 
-  if (applied.includes("pull") && applied.includes("palmes")) {
-    applied.splice(applied.indexOf("pull"), 1);
-    const idx = corpsNote.indexOf("pull-buoy");
-    if (idx >= 0) corpsNote.splice(idx, 1);
-  }
+  // Plus de purge session-wide pull+palmes — règle = même exercice seulement.
 
   const usage =
     applied.length === 0

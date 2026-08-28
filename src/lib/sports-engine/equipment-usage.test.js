@@ -62,15 +62,18 @@ ok(!isEquipmentEngagementExempt({ sessionIntent: "endurance", phase: "base" }), 
 }
 
 {
-  // Jamais pull + palmes ensemble
+  // Posséder pull + palmes OK ; applied peut contenir les deux (conflit = ligne d'exo)
+  let sawBoth = 0;
   for (let i = 0; i < 50; i++) {
     const rng = () => (i * 0.13 + 0.07) % 1;
     const u = resolveEquipmentUsage(
       { equipment: ["palmes", "pull"], sessionIntent: "technique_endurance" },
       rng,
     );
-    ok(!(u.applied.includes("pull") && u.applied.includes("palmes")), `no pull+palmes ${i}`);
+    if (u.applied.includes("pull") && u.applied.includes("palmes")) sawBoth++;
+    ok(u.applied.every((e) => ["palmes", "pull", "tuba", "planche", "plaquettes", "elastique"].includes(e)), `known ids ${i}`);
   }
+  ok(sawBoth >= 0, `may apply both across session (${sawBoth}/50)`);
 }
 
 console.log(`equipment-usage.test.js: ${n} assertions OK`);

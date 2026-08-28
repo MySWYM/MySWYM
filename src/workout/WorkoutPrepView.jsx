@@ -2,9 +2,12 @@
  * Vue synthèse / préparation d’une séance (pas le mode bassin).
  * 3 blocs phase : Échauffement · Corps · Retour au calme.
  */
-import { useMemo, useState } from "react";
-import { Play, Lock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Play, Lock, Check, Copy } from "lucide-react";
 import { buildWorkoutView } from "../lib/workout-display.js";
+import { formatLoopSessionTitle } from "../lib/swim-plan-bridge.js";
+import { buildSessionProvenance } from "../lib/session-provenance.js";
+import { setSupportSessionRef } from "../lib/support-context.js";
 import WorkoutExerciseCard from "./WorkoutExerciseCard.jsx";
 import DrillInfoSheet from "./DrillInfoSheet.jsx";
 
@@ -33,9 +36,9 @@ function phaseTone(sectionId, G) {
     };
   }
   return {
-    accent: G.blue,
-    border: G.greyLight,
-    headerBg: G.blueLight,
+    accent: "#f87171",
+    border: "rgba(248, 113, 113, 0.28)",
+    headerBg: "rgba(248, 113, 113, 0.10)",
   };
 }
 
@@ -52,13 +55,44 @@ export default function WorkoutPrepView({
   whyLine = null,
   lockedPreview = false,
   embedded = false,
+  /** Si number : force le titre « Séance n°X » (index = validations, 0 → n°1). */
+  loopCursor = null,
+  /** Contexte support : permet de retrouver l'onglet / la ligne Sheet. */
+  profile = null,
+  planId = null,
+  showProvenance = true,
 }) {
   const view = useMemo(() => buildWorkoutView(session), [session]);
   const [drill, setDrill] = useState(null);
+  const [refCopied, setRefCopied] = useState(false);
   const locked = !isPremium || lockedPreview;
   const cta = startLabel || (locked ? "Activer l’essai pour nager" : "Commencer la séance");
 
+  const provenance = useMemo(
+    () => buildSessionProvenance(session, { loopOrdinal: loopCursor, profile, planId }),
+    [session, loopCursor, profile, planId],
+  );
+
+  useEffect(() => {
+    if (!showProvenance || !provenance?.supportLine) return;
+    setSupportSessionRef(provenance.supportLine);
+  }, [showProvenance, provenance?.supportLine]);
+
+  const copyRef = async () => {
+    if (!provenance?.supportLine) return;
+    try {
+      await navigator.clipboard.writeText(provenance.supportLine);
+      setRefCopied(true);
+      setTimeout(() => setRefCopied(false), 2000);
+    } catch {
+      /* clipboard indisponible (http, permissions) — la réf reste lisible à l'écran */
+    }
+  };
+
   const { header, sections } = view;
+  const displayTitle = loopCursor != null
+    ? formatLoopSessionTitle(loopCursor)
+    : header.title;
   const metaBits = [
     header.distanceLabel,
     header.durationLabel,
@@ -82,7 +116,7 @@ export default function WorkoutPrepView({
             lineHeight: 1.15,
             letterSpacing: "-0.03em",
           }}>
-            {header.title}
+            {displayTitle}
           </h2>
           {metaBits.length > 0 && (
             <div style={{
@@ -95,6 +129,36 @@ export default function WorkoutPrepView({
               {metaBits.join(" · ")}
             </div>
           )}
+          {session?.sheetWeekRole?.banner ? (
+            <div
+              style={{
+                marginTop: 12,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: session.sheetWeekRole.isRaceWeek
+                  ? "rgba(248, 113, 113, 0.12)"
+                  : session.sheetWeekRole.phase === "test"
+                    ? "rgba(251, 191, 36, 0.14)"
+                    : "rgba(61, 143, 255, 0.10)",
+                border: `1px solid ${
+                  session.sheetWeekRole.isRaceWeek
+                    ? "rgba(248, 113, 113, 0.28)"
+                    : session.sheetWeekRole.phase === "test"
+                      ? "rgba(251, 191, 36, 0.35)"
+                      : "rgba(61, 143, 255, 0.22)"
+                }`,
+                fontSize: 13,
+                fontWeight: 600,
+                color: G.inkLight,
+                lineHeight: 1.45,
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: G.ink, marginBottom: 4 }}>
+                {session.sheetWeekRole.label}
+              </div>
+              {session.sheetWeekRole.banner}
+            </div>
+          ) : null}
           {(equipmentLabel || header.intensityCue) && (
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
               {equipmentLabel && (
@@ -187,7 +251,7 @@ export default function WorkoutPrepView({
                   >
                     <WorkoutExerciseCard
                       exercise={locked && section.id === "main" && i > 1
-                        ? { ...ex, main: "••••••", cue: "Premium", volumeLabel: "•••", strokeLabel: null, educatif: null, children: [], cues: [] }
+                        ? { ...ex, main: "••••••", cue: "Premium", volumeLabel: "•••", strokeLabel: null, educatif: null, educatifs: null, children: [], cues: [] }
                         : ex}
                       colors={G}
                       accent={{ bg: tone.headerBg, color: tone.accent }}
@@ -203,9 +267,39 @@ export default function WorkoutPrepView({
         })}
       </div>
 
+      {showProvenance && provenance && (
+        <button
+          type="button"
+          onClick={copyRef}
+          title={provenance.shortLabel}
+          aria-label={`Copier la référence séance ${provenance.refCode} pour le support`}
+          style={{
+            marginTop: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 10px",
+            minHeight: 32,
+            borderRadius: 999,
+            border: `1px solid ${G.greyLight}`,
+            background: "transparent",
+            color: G.greyMid,
+            fontSize: 11,
+            fontWeight: 600,
+            fontVariantNumeric: "tabular-nums",
+            cursor: "pointer",
+          }}
+        >
+          {refCopied
+            ? <Check size={12} color={G.mint} strokeWidth={3} />
+            : <Copy size={12} color={G.greyMid} />}
+          {refCopied ? "Réf. copiée" : `Réf. ${provenance.refCode}`}
+        </button>
+      )}
+
       {whyLine && (
         <p style={{
-          margin: "0 0 14px",
+          margin: "14px 0",
           padding: "10px 12px",
           borderRadius: 12,
           background: G.blueLight,
@@ -270,7 +364,14 @@ export default function WorkoutPrepView({
         </button>
       )}
 
-      {drill && <DrillInfoSheet educatif={drill} onClose={() => setDrill(null)} colors={G} />}
+      {drill && (
+        <DrillInfoSheet
+          educatif={Array.isArray(drill) ? undefined : drill}
+          educatifs={Array.isArray(drill) ? drill : undefined}
+          onClose={() => setDrill(null)}
+          colors={G}
+        />
+      )}
     </div>
   );
 }

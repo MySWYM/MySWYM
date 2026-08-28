@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Award, Lock, Flame, Waves, Trophy, TrendingUp,
 } from "lucide-react";
@@ -7,10 +7,12 @@ import { G } from "./theme/palette.js";
 import CoachCard from "./CoachCard.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
+import EventWeekPlanCard from "./EventWeekPlanCard.jsx";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
+import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
 import { track, sessionAnalyticsProps } from "./lib/analytics.js";
 import {
   getSessionRemindersEnabled,
@@ -23,6 +25,10 @@ import {
   isProfileNudgeDismissed,
   shouldShowProfileNudge,
 } from "./lib/profile-nudge.js";
+import {
+  hasSeenAllureUnlockTip,
+  shouldShowAllureUnlockTip,
+} from "./lib/allure-unlock-tip.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { getTabUi } from "./tab-ui-registry.js";
@@ -109,28 +115,21 @@ export function HomeBadgesSection({ plan }) {
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-/** Après la 1re séance : une carte secondaire + le reste derrière « Voir plus ». */
+/** Après la 1re séance : coach, allure, Strava et badges — tout visible. */
 function HomeSecondaryStack({
   plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
 }) {
   const { MonAllureCard, StravaSection } = getTabUi();
-  const [moreOpen, setMoreOpen] = useState(false);
   const coachWeek = plan?.weeks?.length
     ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
     : 0;
 
-  const primary = isPremium && plan?.weeks?.length > 0
-    ? "coach"
-    : plan
-      ? "pace"
-      : "strava";
-
   return (
     <>
-      {primary === "coach" && (
+      {isPremium && plan?.weeks?.length > 0 && (
         <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} />
       )}
-      {primary === "pace" && (
+      {plan && (
         <MonAllureCard
           profile={profile}
           pace100={profile?.pace100}
@@ -139,69 +138,18 @@ function HomeSecondaryStack({
           onUpgrade={onUpgrade}
         />
       )}
-      {primary === "strava" && (
-        <StravaSection
-          user={user}
-          plan={plan}
-          profile={profile}
-          currentPace100={profile?.pace100}
-          onPaceUpdate={onPaceUpdate}
-          onValidateSession={onValidateSession}
-          showProgramActions={false}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-        />
-      )}
-
-      {!moreOpen ? (
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          style={{
-            width: "100%", marginBottom: 16, minHeight: 48, borderRadius: 14,
-            border: `1px solid ${G.greyLight}`, background: G.surface,
-            color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer",
-          }}
-        >
-          Voir plus
-        </button>
-      ) : (
-        <>
-          {primary !== "pace" && plan && (
-            <MonAllureCard
-              profile={profile}
-              pace100={profile?.pace100}
-              isPremium={isPremium}
-              onSave={onPaceUpdate}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {primary !== "strava" && (
-            <StravaSection
-              user={user}
-              plan={plan}
-              profile={profile}
-              currentPace100={profile?.pace100}
-              onPaceUpdate={onPaceUpdate}
-              onValidateSession={onValidateSession}
-              showProgramActions={false}
-              isPremium={isPremium}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {plan && <HomeBadgesSection plan={plan} />}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(false)}
-            style={{
-              width: "100%", marginBottom: 8, minHeight: 44, border: "none", background: "none",
-              color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
-            }}
-          >
-            Réduire
-          </button>
-        </>
-      )}
+      <StravaSection
+        user={user}
+        plan={plan}
+        profile={profile}
+        currentPace100={profile?.pace100}
+        onPaceUpdate={onPaceUpdate}
+        onValidateSession={onValidateSession}
+        showProgramActions={false}
+        isPremium={isPremium}
+        onUpgrade={onUpgrade}
+      />
+      {plan && <HomeBadgesSection plan={plan} />}
     </>
   );
 }
@@ -221,14 +169,32 @@ export default function Dashboard({
   const [poolOpen, setPoolOpen] = useState(false);
   const [homePrepOpen, setHomePrepOpen] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
+  const [allureTipDismissed, setAllureTipDismissed] = useState(() => hasSeenAllureUnlockTip(user?.id));
   const next = findNextSession(plan);
   const preview = next?.session ? sessionCardModel(next.session) : null;
   const hasSwum = stats.totalSessions > 0;
   const showProfileNudge = !!plan && shouldShowProfileNudge(profile, { dismissed: nudgeDismissed, hasSwum });
+  const showAllureTip = shouldShowAllureUnlockTip(profile, {
+    dismissed: allureTipDismissed,
+    hasSwum,
+    hasPlan: !!plan,
+  });
   const currentWeekIdx = (plan?.weeks || []).findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   const weekMetersRow = !isLoop && stats.weeklyData?.length
     ? stats.weeklyData[currentWeekIdx >= 0 ? currentWeekIdx : 0]
     : null;
+
+  useEffect(() => {
+    setAllureTipDismissed(hasSeenAllureUnlockTip(user?.id));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!showAllureTip) return;
+    track("allure_unlock_tip_viewed", {
+      isPremium: !!isPremium,
+      hasPace: !!profile?.pace100,
+    }, { onceKey: `allure_unlock_tip:${user?.id || "anon"}` });
+  }, [showAllureTip, isPremium, profile?.pace100, user?.id]);
 
   const firstName = user?.user_metadata?.firstname
     || (() => {
@@ -368,7 +334,13 @@ export default function Dashboard({
 
         {preview && (
           <div style={{ marginBottom: 16 }}>
-            <SessionHeroCard preview={preview} kicker={next.resolved ? "Séance faite" : "Séance du jour"}>
+            <SessionHeroCard
+              preview={{
+                ...preview,
+                title: next.resolved ? "Séance faite" : "Séance à venir",
+              }}
+              hideKicker
+            >
               <button
                 type="button"
                 className="ms-plan-reveal-btn"
@@ -383,6 +355,14 @@ export default function Dashboard({
               </button>
             </SessionHeroCard>
           </div>
+        )}
+
+        {plan && (
+          <EventWeekPlanCard
+            plan={plan}
+            profile={profile}
+            onOpenProfile={() => onTabChange?.("profile")}
+          />
         )}
 
         {homePrepOpen && next?.session && !next.resolved && (
@@ -406,6 +386,8 @@ export default function Dashboard({
               isPremium={isPremium}
               showStart
               startLabel="C’est parti — je nage"
+              profile={profile}
+              planId={activePlanId}
               whyLine={sessionWhyLine(next.session, profile)}
               onUpgrade={onUpgrade}
               onStart={() => setPoolOpen(true)}
@@ -489,6 +471,17 @@ export default function Dashboard({
             onUpgrade={onUpgrade}
             onPaceUpdate={onPaceUpdate}
             onValidateSession={onValidateSession}
+          />
+        )}
+
+        {showAllureTip && (
+          <AllureUnlockSheet
+            userId={user?.id}
+            isPremium={isPremium}
+            initialPace100={profile?.pace100 || null}
+            onSave={onPaceUpdate}
+            onUpgrade={onUpgrade}
+            onDismiss={() => setAllureTipDismissed(true)}
           />
         )}
       </div>

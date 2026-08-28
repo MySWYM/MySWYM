@@ -22,12 +22,16 @@ ok(shouldShowPlanReveal({}) === true, "first plan shows reveal");
 ok(shouldShowPlanReveal({ addingPlan: false }) === true, "onboarding generate shows reveal");
 ok(shouldShowPlanReveal({ addingPlan: true }) === false, "extra plan skips reveal");
 
-ok(revealGoalLabel({ goal: "triathlon_sprint" }) === "Triathlon S · Sprint", "sprint label");
+ok(revealGoalLabel({ goal: "triathlon_sprint" }) === "Triathlon Sprint", "sprint label");
+ok(revealGoalLabel({ goal: "open_water_25k" }) === "Eau libre longue", "legacy 25k → longue");
+ok(revealGoalLabel({ goal: "open_water_short" }) === "Eau libre courte", "canonical short");
 ok(revealGoalLabel({ category: "progression" }) === "Nager", "category fallback matches landing");
 ok(revealGoalLabel({ category: "diplome" }) === "Diplômes", "diploma landing name");
 ok(revealGoalLabel({}) === "Ton objectif", "empty fallback");
 
-ok(revealLevelLabel({ level: "sportif" }) === "Sportif", "sportif");
+ok(revealLevelLabel({ level: "sportif" }) === "Intermédiaire", "sportif → intermédiaire");
+ok(revealLevelLabel({ level: "régulier" }) === "Débutant", "régulier → débutant");
+ok(revealLevelLabel({ level: "performance" }) === "Avancé", "performance → avancé");
 ok(revealLevelLabel({ level: "découverte" }) === "Découverte", "accented level");
 ok(revealLevelLabel({ level: "decouverte" }) === "Découverte", "unaccented level");
 
@@ -51,7 +55,8 @@ ok(preview.title === "Pose les bases", "session title");
 ok(preview.distanceLabel.includes("1") && preview.distanceLabel.toLowerCase().includes("m"), "distance");
 ok(preview.durationLabel === "~35 min", "duration");
 ok(preview.blocks.length >= 2, `warm/main/cool blocks, got ${preview.blocks.length}`);
-ok(preview.blocks.some((b) => /échauff/i.test(b.label) || /échauff/i.test(b.detail)), "warm block present");
+ok(preview.blocks.some((b) => /échauff/i.test(b.label)), "warm block present");
+ok(preview.blocks.every((b) => /\d[\d\s]*m/i.test(b.detail)), "each block shows meter total");
 
 const loop = buildPlanRevealModel(
   { isSessionLoop: true, weeks: [{ sessions: [session] }] },
@@ -79,9 +84,17 @@ ok(nextOpen?.session?.title === "B" && nextOpen.weekIndex === 0 && nextOpen.reso
 
 const nextLoop = findNextSession({
   isSessionLoop: true,
+  history: [],
   weeks: [{ sessions: [{ title: "Today" }] }],
 });
-ok(nextLoop?.weekIndex === 0 && nextLoop.session.title === "Today", "loop current");
+ok(nextLoop?.weekIndex === 0 && nextLoop.session.title === "Séance n°1", "loop current → titre nageur");
+
+const nextLoop2 = findNextSession({
+  isSessionLoop: true,
+  history: [{ title: "Séance n°1" }],
+  weeks: [{ sessions: [{ title: "Whatever" }] }],
+});
+ok(nextLoop2?.session.title === "Séance n°2", "loop after 1 validation");
 
 const nextDone = findNextSession({
   weeks: [{ sessions: [{ title: "A", completed: true }, { title: "B", skipped: "missed" }] }],

@@ -7,6 +7,7 @@ import {
   parseOnboardingPrefill,
   profilePatchFromPrefill,
   stepFromPrefill,
+  isComingSoonCategory,
   LANDING_CARD_PREFILL,
 } from "./landing-onboarding.js";
 
@@ -20,17 +21,26 @@ function ok(cond, msg) {
 }
 
 ok(landingCtaPath("t2") === "/app?category=triathlon&goal=triathlon_sprint", "sprint URL");
-ok(landingCtaPath("p3") === "/app?category=progression&level=sportif", "sportif URL");
-ok(landingCtaPath("unknown") === "/app", "unknown card stays /app");
-ok(Object.keys(LANDING_CARD_PREFILL).length === 18, "all landing cards mapped");
+ok(decodeURIComponent(landingCtaPath("p1")) === "/app?category=progression&level=régulier", "beginner URL");
+ok(landingCtaPath("p3") === "/app?category=progression&level=performance", "advanced URL");
+ok(parseOnboardingPrefill("?category=progression&level=découverte").level === "régulier", "legacy découverte → régulier");
+ok(landingCtaPath("w2") === "/app?category=eau_libre&goal=open_water_mid", "ow mid URL");
+ok(parseOnboardingPrefill("?category=eau_libre&goal=open_water_25k").goal === "open_water_long", "legacy 25k → long");
+ok(Object.keys(LANDING_CARD_PREFILL).length === 15, "all landing cards mapped");
 
 const sprint = parseOnboardingPrefill("?category=triathlon&goal=triathlon_sprint");
 ok(sprint.category === "triathlon" && sprint.goal === "triathlon_sprint", "parse sprint");
-ok(parseOnboardingPrefill("?category=hacker") === null, "reject unknown category");
+ok(landingCtaPath("d1") === "/app", "diploma card has no prefill URL");
+ok(parseOnboardingPrefill("?category=diplome&goal=bnssa") === null, "reject diploma prefill");
+ok(isComingSoonCategory("diplome") === true, "diploma marked coming soon");
+ok(isComingSoonCategory("triathlon") === false, "triathlon not coming soon");
 ok(parseOnboardingPrefill("?category=triathlon&goal=nope").goal == null, "drop unknown goal");
 
 ok(profilePatchFromPrefill(sprint).goal === "triathlon_sprint", "patch triathlon");
 ok(profilePatchFromPrefill({ category: "progression", level: "sportif" }).goal === "progression", "progression goal");
+ok(profilePatchFromPrefill({ category: "progression", level: "performance" }).swimStyle === "4_nages", "avancé 4 nages");
+ok(profilePatchFromPrefill({ category: "progression", level: "régulier" }).swimStyle === "crawl", "débutant crawl");
+ok(profilePatchFromPrefill({ category: "progression", level: "sportif" }).swimStyle == null, "intermédiaire choisit");
 ok(profilePatchFromPrefill({ category: "diplome", goal: "bnssa" }).level === "sportif", "diploma level");
 
 ok(stepFromPrefill(sprint) === 3, "triathlon skips to level");

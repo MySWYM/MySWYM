@@ -5,6 +5,7 @@ import { composeSessionBlueprint } from "./session-compose.js";
 import { explainSessionWhy } from "./types.js";
 import { normalizeStrokeFocus } from "./stroke-focus.js";
 import { resolveHardConstraints } from "./composer-constraints.js";
+import { eventBandFromGoal, raceSwimMetersFromGoal } from "./race-event.js";
 
 const FOCUS_DECOUVERTE = ["technique_fleche", "technique_grand_chien"];
 
@@ -98,6 +99,9 @@ export function buildSessionBrief({
   let brief = {
     level,
     objectif,
+    goal: sport?.goal || "",
+    raceBand: sport?.raceBand || eventBandFromGoal(sport?.goal),
+    raceSwimMeters: sport?.raceSwimMeters ?? raceSwimMetersFromGoal(sport?.goal),
     phase: phaseName,
     family,
     keySession: !!role.isKeySession,

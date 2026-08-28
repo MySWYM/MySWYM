@@ -18,7 +18,9 @@ import { shouldApplyRemotePlanSync } from "./lib/plan-sync-guard.js";
 import { describePlanSyncChange } from "./lib/plan-sync-message.js";
 import { readSeenNotifications, writeSeenNotifications } from "./lib/in-app-notifications.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
+import { prefetchNatationCatalogue } from "./lib/natation-sheet/client.js";
+import { buildSessionProvenance } from "./lib/session-provenance.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, buildProgressionLoopWeek, expandLoopWeekSessions, formatLoopSessionTitle, formatLoopWeekSessionTitle, loopDisplaySession, loopSessionOrdinalIndex, withLoopSessionTitle, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G, G_DARK, applyTheme } from "./theme/palette.js";
 import PlanRevealView from "./PlanRevealView.jsx";
@@ -115,7 +117,7 @@ import {
   GOALS,
   CATEGORIES,
   SUB_GOALS,
-  LEVELS,
+  ONBOARDING_LEVELS,
   FREQUENCIES,
   POOLS,
   SWIM_STYLES,
@@ -129,7 +131,10 @@ import {
   getLvlIndex,
   DIPLOMA_GOAL_IDS,
   goalHidesFourNagesChoice,
+  findGoalById,
+  findLevelById,
 } from "./lib/onboarding-catalog.jsx";
+import { impliedSwimStyleForLevel, isBeginnerBlockedForGoal, isBeginnerLevelId } from "./lib/onboarding-level-gate.js";
 import ProfileTab from "./ProfileTab.jsx";
 import SettingsDrawer from "./SettingsDrawer.jsx";
 
@@ -512,7 +517,7 @@ const css = `
 const capitalizeLabel = (value = "") => value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
 const pluralizeSessions = (count) => `${count} séance${count > 1 ? "s" : ""}`;
 const getPlanPrimaryLabel = (entry) => {
-  const goalLabel = GOALS.find((g) => g.id === entry?.profile?.goal)?.label;
+  const goalLabel = findGoalById(entry?.profile?.goal)?.label;
   if (goalLabel) return goalLabel;
   return CATEGORIES.find((c) => c.id === entry?.profile?.category)?.label || "Plan";
 };
@@ -520,7 +525,7 @@ const getPlanSecondaryLabel = (entry) => {
   const profile = entry?.profile || {};
   const meta = [];
   if (isProgressionGoal(profile.goal) || usesSessionLoop(profile)) {
-    if (profile.level) meta.push(capitalizeLabel(profile.level));
+    if (profile.level) meta.push(findLevelById(profile.level)?.label || capitalizeLabel(profile.level));
     meta.push(profile.sessionsPerWeek ? pluralizeSessions(profile.sessionsPerWeek) : "Séance du jour");
     if (profile.eventDate) {
       const days = Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000));
@@ -601,8 +606,142 @@ const formatDuration = (mins) => {
   return `${Math.floor(mins / 60)}h${mins % 60 ? (mins % 60).toString().padStart(2, "0") : ""}`;
 };
 
-const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
+const SKIP_LABELS = { missed: "Sautée", not_done: "Pas nagée" };
 const INSTAGRAM_MYSWYM = "https://www.instagram.com/myswym.app/";
+
+/** Sheet de validation séance (faite / sautée / pas nagée). */
+function SessionMarkSheet({ sessionTitle, onPick, onClose }) {
+  const options = [
+    {
+      id: "done",
+      label: "Je l’ai faite",
+      sub: "Valider et avancer",
+      icon: Check,
+      primary: true,
+    },
+    {
+      id: "missed",
+      label: "Je l’ai sautée",
+      sub: "Pas le temps / oublié",
+      icon: RotateCcw,
+      color: G.gold,
+    },
+    {
+      id: "not_done",
+      label: "Je n’ai pas nagé",
+      sub: "Autre raison",
+      icon: X,
+      color: G.greyMid,
+    },
+  ];
+
+  return createPortal(
+    <div
+      className="sheet-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Marquer la séance"
+      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        className="sheet-panel scale-in"
+        style={{
+          background: G.surface,
+          borderRadius: "24px 24px 0 0",
+          padding: "20px 18px max(28px, env(safe-area-inset-bottom))",
+          maxHeight: "85dvh",
+          overflowY: "auto",
+        }}
+      >
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+              Séance
+            </div>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1.2, fontFamily: FONT_DISPLAY }}>
+              Comment s’est passée la séance ?
+            </h3>
+            {sessionTitle ? (
+              <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: G.inkLight, lineHeight: 1.35 }}>
+                {sessionTitle}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            style={{
+              width: 44, height: 44, borderRadius: 14, flexShrink: 0, cursor: "pointer",
+              border: `1px solid ${G.greyLight}`, background: G.greyXLight,
+              color: G.ink, display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {options.map((opt) => {
+            if (opt.primary) {
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onPick?.(opt.id)}
+                  style={{
+                    width: "100%", minHeight: 52, borderRadius: 14, border: "none", cursor: "pointer",
+                    background: G.mint, color: G.white, padding: "14px 16px",
+                    display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+                  }}
+                >
+                  <span style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: "rgba(255,255,255,0.22)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <opt.icon size={18} color={G.white} />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: 16, fontWeight: 800, lineHeight: 1.2 }}>{opt.label}</span>
+                    <span style={{ display: "block", fontSize: 12, fontWeight: 600, opacity: 0.9, marginTop: 2 }}>{opt.sub}</span>
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onPick?.(opt.id)}
+                style={{
+                  width: "100%", minHeight: 52, borderRadius: 14, cursor: "pointer",
+                  border: `1px solid ${G.greyLight}`, background: G.greyXLight,
+                  color: G.ink, padding: "12px 14px",
+                  display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: `${opt.color}22`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <opt.icon size={16} color={opt.color} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{opt.label}</span>
+                  <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: G.grey, marginTop: 2 }}>{opt.sub}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 /** Enlève le préfixe coach `-` / `·` pour l'affichage. */
 const stripDetailPrefix = (raw) => String(raw || "").trim().replace(/^[-–—·]\s*/, "");
@@ -2449,31 +2588,45 @@ const Step1_Category = ({ onSelect }) => {
       {t("category.lead")}
     </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {CATEGORIES.map(cat => (
-        <button key={cat.id} type="button" onClick={() => onSelect(cat.id)}
+      {CATEGORIES.map(cat => {
+        const soon = !!cat.comingSoon;
+        return (
+        <button key={cat.id} type="button" disabled={soon}
+          onClick={() => { if (!soon) onSelect(cat.id); }}
+          aria-label={soon ? `${t(`category.${cat.id}`)}. ${t("category.comingSoon")}` : undefined}
           style={{
             display: "flex", alignItems: "center", gap: 14, padding: "16px 16px",
             borderRadius: 18, border: `1px solid ${G.greyLight}`, background: G.surface,
-            cursor: "pointer", textAlign: "left", minHeight: 72,
+            cursor: soon ? "not-allowed" : "pointer", textAlign: "left", minHeight: 72,
           }}>
           <span style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: G.blueLight, color: G.blue,
+            background: G.blueLight, color: soon ? G.greyMid : G.blue,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <cat.Icon size={20} strokeWidth={2} />
           </span>
           <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: soon ? G.grey : G.ink }}>
               {t(`category.${cat.id}`)}
             </span>
             <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, lineHeight: 1.35 }}>
               {t(`category.${cat.id}Desc`)}
             </span>
           </span>
-          <ArrowRight size={16} color={G.greyMid} style={{ flexShrink: 0 }} />
+          {soon ? (
+            <span style={{
+              flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+              textTransform: "uppercase", color: G.greyMid, whiteSpace: "nowrap",
+            }}>
+              {t("category.comingSoon")}
+            </span>
+          ) : (
+            <ArrowRight size={16} color={G.greyMid} style={{ flexShrink: 0 }} />
+          )}
         </button>
-      ))}
+        );
+      })}
     </div>
   </div>
   );
@@ -2745,7 +2898,7 @@ const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevel
       {t("level.lead")}
     </p>
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-      {LEVELS.map(l => {
+      {ONBOARDING_LEVELS.map(l => {
         const isActive = value === l.id;
         const isDisabled = disabledLevels.includes(l.id);
         return (
@@ -2760,12 +2913,16 @@ const Step3_Level = ({ value, onChange, onNext, onBack, total = 6, disabledLevel
               cursor: isDisabled ? "default" : "pointer", textAlign: "left", opacity: isDisabled ? 0.55 : 1,
             }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: isDisabled ? G.grey : isActive ? G.blue : G.ink }}>{t(`level.${l.id}.label`)}</div>
-            {!isDisabled && <div style={{ fontSize: 13, color: isActive ? G.inkLight : G.grey, marginTop: 2 }}>{t(`level.${l.id}.desc`)}</div>}
+            {isDisabled ? (
+              <div style={{ fontSize: 13, color: G.grey, marginTop: 4, lineHeight: 1.4 }}>{t("level.beginnerBlocked")}</div>
+            ) : (
+              <div style={{ fontSize: 13, color: isActive ? G.inkLight : G.grey, marginTop: 2 }}>{t(`level.${l.id}.desc`)}</div>
+            )}
           </button>
         );
       })}
     </div>
-    <Btn onClick={onNext} disabled={!value}>{t("common.continue")}</Btn>
+    <Btn onClick={onNext} disabled={!value || disabledLevels.includes(value)}>{t("common.continue")}</Btn>
     <button type="button" onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.backShort")}</button>
   </div>
   );
@@ -2919,7 +3076,7 @@ const OnboardingWizard = ({
   const isProgression = profile.category === "progression";
   const isDiplome = profile.category === "diplome";
   const noDate = isProgression;
-  const disabledLevels = [];
+  const disabledLevels = isBeginnerBlockedForGoal(profile.goal) ? ["régulier"] : [];
 
   const totalSteps = isGoalMode
     ? (isProgression ? 1 : 3)
@@ -2943,6 +3100,7 @@ const OnboardingWizard = ({
   };
 
   const goAfterCategory = (cat) => {
+    if (CATEGORIES.find((c) => c.id === cat)?.comingSoon) return;
     if (cat === "progression") {
       const extra = { category: cat, goal: "progression", pace100: null };
       patchProfile(extra);
@@ -2966,7 +3124,11 @@ const OnboardingWizard = ({
       patchProfile({ goal: goalId, level: "sportif" });
       setStep(5);
     } else {
-      update("goal", goalId);
+      const next = { goal: goalId };
+      if (isBeginnerBlockedForGoal(goalId) && isBeginnerLevelId(profile.level)) {
+        next.level = "";
+      }
+      patchProfile(next);
       setStep(3);
     }
   };
@@ -3005,7 +3167,10 @@ const OnboardingWizard = ({
 
       {!isGoalMode && step === 3 && !isDiplome && (
         <Step3_Level
-          value={profile.level} onChange={v => update("level", v)}
+          value={profile.level} onChange={v => {
+            const implied = impliedSwimStyleForLevel(v);
+            patchProfile(implied ? { level: v, swimStyle: implied } : { level: v });
+          }}
           total={totalSteps}
           disabledLevels={disabledLevels}
           onNext={() => {
@@ -3363,7 +3528,7 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 48; // v48 = pédagogie Arthur composeur live (échauffements, RAC, éducatifs, fun)
+const PLAN_VERSION = 49; // v49 = Soft Sheet 01–13 + semaine boucle N + tip allure
 // false : one-shot = version < PLAN_VERSION. Ne jamais s'en servir pour bypasser le merge.
 const FORCE_PLAN_REGEN = false;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
@@ -3879,11 +4044,13 @@ const SessionCard = ({
   session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback,
   defaultExpanded = false, isPremium = false, onUpgrade, hideCheckbox = false,
   analyticsCtx = null,
+  displayTitle = null,
 }) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
   const tm = getTypeMeta(session.type);
+  const titleShown = displayTitle || session.title;
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -3938,13 +4105,6 @@ const SessionCard = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!showMenu) return;
-    const close = () => setShowMenu(false);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, [showMenu]);
-
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
     if (!isPremium) {
@@ -3956,8 +4116,13 @@ const SessionCard = ({
       setShowMenu(false);
     } else {
       emitSessionStarted();
-      setShowMenu(v => !v);
+      setShowMenu(true);
     }
+  };
+
+  const pickStatus = (id) => {
+    onComplete(weekIndex, sessionIndex, id);
+    setShowMenu(false);
   };
 
   const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
@@ -4024,7 +4189,7 @@ const SessionCard = ({
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{titleShown}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -4037,10 +4202,10 @@ const SessionCard = ({
               <button
                 type="button"
                 onClick={handleCheckboxClick}
-                aria-label={locked ? "Débloque Premium pour marquer la séance" : resolved ? "Réinitialiser la séance" : "Marquer la séance"}
+                aria-label={locked ? "Débloque Premium pour marquer la séance" : resolved ? "Annuler le statut" : "Marquer la séance"}
                 style={{
                   width: 44, height: 44, borderRadius: "50%",
-                  border: `2px solid ${locked ? G.greyLight : checkboxColor}`,
+                  border: `2px solid ${locked ? G.greyLight : (resolved ? checkboxColor : G.blue)}`,
                   background: locked ? G.greyXLight : (resolved ? checkboxColor : "transparent"),
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
@@ -4051,42 +4216,19 @@ const SessionCard = ({
                 {!locked && done && <Check size={16} color={G.white} />}
                 {!locked && skipped === "missed" && <RotateCcw size={15} color={G.white} />}
                 {!locked && skipped === "not_done" && <X size={15} color={G.white} />}
+                {!locked && !resolved && <Check size={16} color={G.blue} style={{ opacity: 0.35 }} />}
               </button>
-              )}
-              {!hideCheckbox && !locked && showMenu && (
-                <div
-                  onClick={e => e.stopPropagation()}
-                  style={{
-                    position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 60,
-                    background: G.surface, borderRadius: 14, padding: 6,
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.14)", border: `1px solid ${G.greyLight}`,
-                    minWidth: 172,
-                  }}
-                >
-                  {[
-                    { id: "done", label: "Séance faite", icon: Check, color: G.mint },
-                    { id: "missed", label: "Oubliée", icon: RotateCcw, color: G.gold },
-                    { id: "not_done", label: "Pas faite", icon: X, color: G.grey },
-                  ].map(opt => (
-                    <button
-                      key={opt.id}
-                      onClick={() => { onComplete(weekIndex, sessionIndex, opt.id); setShowMenu(false); }}
-                      style={{
-                        width: "100%", padding: "10px 10px", borderRadius: 10, border: "none",
-                        background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                        fontSize: 13, fontWeight: 600, color: G.ink, textAlign: "left",
-                      }}
-                    >
-                      <span style={{ width: 24, height: 24, borderRadius: 8, background: `${opt.color}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <opt.icon size={12} color={opt.color} />
-                      </span>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
               )}
             </div>
           </div>
+
+          {showMenu && !locked && (
+            <SessionMarkSheet
+              sessionTitle={titleShown}
+              onClose={() => setShowMenu(false)}
+              onPick={pickStatus}
+            />
+          )}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             <span style={{
@@ -4100,12 +4242,6 @@ const SessionCard = ({
               <Timer size={11} color={G.greyMid} />
               {formatDuration(session.duration)}
             </span>
-            {!locked && intensity.zone && (
-              <span style={{
-                fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.surface,
-                border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
-              }}>{intensity.zone}</span>
-            )}
             {!locked && Array.isArray(session.equipmentUsed) && session.equipmentUsed.length > 0 && (
               <span style={{
                 fontSize: 11, fontWeight: 600, color: G.inkLight, background: G.surface,
@@ -4214,13 +4350,11 @@ const SessionCard = ({
                 isPremium={isPremium}
                 embedded
                 showStart={!resolved}
-                whyLine={sessionWhyLine(session)}
+                profile={analyticsCtx?.profile || null}
+                planId={analyticsCtx?.planId || null}
+                whyLine={null}
                 onUpgrade={() => onUpgrade?.("session_locked")}
-                onTooHard={
-                  !resolved && isPremium
-                    ? () => onEditFeedback?.(weekIndex, sessionIndex)
-                    : undefined
-                }
+                onTooHard={undefined}
                 onStart={() => {
                   if (!isPremium) {
                     onUpgrade?.("session_locked");
@@ -4280,7 +4414,7 @@ const SessionCard = ({
 };
 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
-const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade, analyticsCtx = null }) => {
+const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade, analyticsCtx = null, weekLocalTitles = false }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
@@ -4332,10 +4466,12 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
                 </span>
               )}
             </div>
-            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {week.focus}
-            </p>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {week.focus && !/^Séance(\s+n°)?\s*\d+/i.test(String(week.focus)) && (
+              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {week.focus}
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: week.focus && !/^Séance(\s+n°)?\s*\d+/i.test(String(week.focus)) ? 0 : 4 }}>
               {totalDist > 0 && (
                 <span style={{
                   fontSize: 11, fontWeight: 700,
@@ -4386,6 +4522,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
               session={s}
               weekIndex={weekIndex}
               sessionIndex={i}
+              displayTitle={weekLocalTitles ? formatLoopWeekSessionTitle(i) : null}
               onComplete={onComplete}
               onShare={onShare}
               onEditFeedback={onEditFeedback}
@@ -4594,11 +4731,36 @@ const ProgressionLoopView = ({
   onOpenMenu,
   onTabChange,
 }) => {
-  const session = plan?.weeks?.[0]?.sessions?.[0];
+  const week0 = plan?.weeks?.[0];
+  const weekSessions = week0?.sessions || [];
+  const multiSessionWeek = weekSessions.length > 1;
+  const openSessionIndex = weekSessions.findIndex((s) => !isSessionResolved(s));
+  const session = multiSessionWeek
+    ? (openSessionIndex >= 0 ? weekSessions[openSessionIndex] : weekSessions[0])
+    : (loopDisplaySession(plan) || weekSessions[0]);
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
   const [poolOpen, setPoolOpen] = useState(false);
-  const loopTitle = GOALS.find((g) => g.id === profile?.goal)?.label
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(null);
+  const HISTORY_PREVIEW = 3;
+  // ordinal = rang réel de validation, conservé malgré le slice/reverse d'affichage
+  const historyItems = (Array.isArray(plan?.history) ? plan.history : [])
+    .map((s, idx) => ({ session: s, ordinal: idx }))
+    .slice(-12)
+    .reverse();
+  const historyVisible = historyOpen ? historyItems : historyItems.slice(0, HISTORY_PREVIEW);
+  const copyHistoryRef = async (key, line) => {
+    if (!line) return;
+    try {
+      await navigator.clipboard.writeText(line);
+      setCopiedRef(key);
+      setTimeout(() => setCopiedRef(null), 2000);
+    } catch {
+      /* clipboard indisponible — la réf reste lisible à l'écran */
+    }
+  };
+  const loopTitle = findGoalById(profile?.goal)?.label
     || CATEGORIES.find((c) => c.id === profile?.category)?.label
     || "Nager & Progresser";
   const daysToEvent = profile?.eventDate
@@ -4651,7 +4813,9 @@ const ProgressionLoopView = ({
                 fontSize: 12, fontWeight: 600, color: G.inkLight,
                 background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
               }}>
-                Séance du jour
+                {multiSessionWeek
+                  ? `${weekSessions.filter(isSessionResolved).length}/${weekSessions.length} séances`
+                  : "Séance du jour"}
               </span>
               {daysToEvent != null && (
                 <span style={{
@@ -4684,8 +4848,21 @@ const ProgressionLoopView = ({
       )}
 
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
-        {!isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="card" />}
-
+        {multiSessionWeek ? (
+          <WeekCard
+            week={week0}
+            weekIndex={0}
+            onComplete={onComplete}
+            onShare={onShare}
+            onEditFeedback={onEditFeedback}
+            isCurrentWeek
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+            weekLocalTitles
+            analyticsCtx={{ planId: activePlanId, profile }}
+          />
+        ) : (
+          <>
         <div className="ms-session-card" style={{ marginBottom: 14, padding: "16px 18px 18px" }}>
           <WorkoutPrepView
             session={session}
@@ -4693,6 +4870,9 @@ const ProgressionLoopView = ({
             accent={{ bg: getTypeMeta(session.type).bg, color: getTypeMeta(session.type).color }}
             isPremium={isPremium}
             showStart={!resolved}
+            loopCursor={loopSessionOrdinalIndex(plan)}
+            profile={profile}
+            planId={activePlanId}
             startLabel={isPremium ? "Commencer la séance" : "S’abonner pour nager"}
             onUpgrade={onUpgrade}
             onStart={() => {
@@ -4721,8 +4901,6 @@ const ProgressionLoopView = ({
             />
           </div>
         </div>
-
-        <WeekProjectionCard plan={plan} profile={profile} />
 
         {poolOpen && (
           <PoolMode
@@ -4790,6 +4968,8 @@ const ProgressionLoopView = ({
             </button>
           </div>
         )}
+          </>
+        )}
 
         {!isPremium && (
           <div style={{
@@ -4803,35 +4983,8 @@ const ProgressionLoopView = ({
           </div>
         )}
 
-        {/* Régénérer */}
-        <div style={{ marginBottom: 16 }}>
-          <button
-            type="button"
-            disabled={!isPremium || resolved}
-            onClick={() => isPremium && !resolved && onRegenerate?.()}
-            style={{
-              width: "100%", padding: "13px 16px", borderRadius: 14, fontSize: 14, fontWeight: 700,
-              border: `1.5px solid ${isPremium && !resolved ? G.blue : G.greyLight}`,
-              background: isPremium && !resolved ? G.blueLight : G.greyXLight,
-              color: isPremium && !resolved ? G.blue : G.greyMid,
-              cursor: isPremium && !resolved ? "pointer" : "not-allowed",
-              opacity: isPremium && !resolved ? 1 : 0.7,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            }}
-          >
-            {!isPremium && <Lock size={14} />}
-            <RotateCcw size={14} />
-            Régénérer la séance
-          </button>
-          {!isPremium && (
-            <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 4px 0", lineHeight: 1.45, textAlign: "center" }}>
-              Régénération illimitée avec Premium.
-            </p>
-          )}
-        </div>
-
-        {/* Historique Premium */}
-        {showHistory && isPremium && (plan.history?.length > 0) && (
+        {/* Historique Premium — 3 visibles, le reste derrière « Voir plus » */}
+        {showHistory && isPremium && historyItems.length > 0 && (
           <div style={{
             background: G.surface, borderRadius: 18, padding: "16px",
             border: `1px solid ${G.greyLight}`, marginBottom: 12,
@@ -4840,27 +4993,74 @@ const ProgressionLoopView = ({
               Historique
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[...(plan.history || [])].slice(-12).reverse().map((s, i) => (
-                <div key={`${s.title}-${i}`} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                  padding: "8px 0", borderBottom: i < Math.min(11, plan.history.length - 1) ? `1px solid ${G.greyXLight}` : "none",
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {s.title}
+              {historyVisible.map(({ session: s, ordinal }, i) => {
+                const rowKey = `${s.title}-${ordinal}`;
+                const prov = buildSessionProvenance(s, {
+                  loopOrdinal: ordinal,
+                  profile,
+                  planId: activePlanId,
+                });
+                return (
+                  <div key={rowKey} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                    padding: "8px 0", borderBottom: i < historyVisible.length - 1 ? `1px solid ${G.greyXLight}` : "none",
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {formatLoopSessionTitle(ordinal)}
+                      </div>
+                      <div style={{ fontSize: 11, color: G.greyMid, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span>{s.distance} · {s.completed ? "Terminée" : "Abandonnée"}</span>
+                        {prov && (
+                          <button
+                            type="button"
+                            onClick={() => copyHistoryRef(rowKey, prov.supportLine)}
+                            title={prov.shortLabel}
+                            aria-label={`Copier la référence séance ${prov.refCode} pour le support`}
+                            style={{
+                              border: "none", background: "none", padding: 0, cursor: "pointer",
+                              fontSize: 11, fontWeight: 700, color: G.greyMid,
+                              textDecoration: "underline", textUnderlineOffset: 2,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {copiedRef === rowKey ? "réf. copiée" : `réf. ${prov.refCode}`}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: G.greyMid }}>
-                      {s.distance} · {s.completed ? "Terminée" : "Abandonnée"}
-                    </div>
+                    {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.coral} />}
                   </div>
-                  {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.greyMid} />}
-                </div>
-              ))}
+                );
+              })}
             </div>
+            {historyItems.length > HISTORY_PREVIEW && !historyOpen && (
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(true)}
+                style={{
+                  width: "100%", marginTop: 10, minHeight: 44, borderRadius: 12,
+                  border: `1px solid ${G.greyLight}`, background: G.bg,
+                  color: G.blue, fontWeight: 700, fontSize: 13, cursor: "pointer",
+                }}
+              >
+                Voir plus
+              </button>
+            )}
+            {historyItems.length > HISTORY_PREVIEW && historyOpen && (
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(false)}
+                style={{
+                  width: "100%", marginTop: 8, minHeight: 40, border: "none", background: "none",
+                  color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
+                }}
+              >
+                Réduire
+              </button>
+            )}
           </div>
         )}
-
-        {isPremium && !embed && <ResetConfirmButton onReset={onReset} variant="subtle" />}
       </div>
     </div>
   );
@@ -7272,6 +7472,7 @@ const computePlanTotalWeeks = (profile, referenceTime = Date.now()) => {
 
 const generatePlan = async (profile, isPremium = false, referenceTime = Date.now(), { skipDelay = false } = {}) => {
   const templatesP = loadSessionTemplates(supabase);
+  prefetchNatationCatalogue();
   if (!skipDelay) await new Promise(r => setTimeout(r, 1800));
   await templatesP;
   const { level, sessionsPerWeek: freq, pool, goal } = profile;
@@ -7289,11 +7490,15 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   if (sessionLoop) {
     const cursor = 0;
     const wkKey = isoWeekKey(new Date(referenceTime));
-    const { week } = buildProgressionLoopSession(
-      { ...profile, sessionsPerWeek: 1 },
+    const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopWeek(
+      { ...profile, taste: profile.taste, volumeAdj: profile.volumeAdj },
       cursor,
       isPremium,
+      { ordinalIndex: 0, history: [], planStart: referenceTime },
     );
+    if (sheetError || !week?.sessions?.length) {
+      throw new Error(sheetErrorMessage || "Catalogue Google Sheet indisponible");
+    }
     return {
       weeks: [week],
       previewWeeks: [],
@@ -7301,7 +7506,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
       isPremium,
       isProgression: progression,
       isSessionLoop: true,
-      sessionCursor: cursor,
+      sessionCursor: Math.max(0, week.sessions.length - 1),
       freeSessionsUsed: isPremium ? 0 : 1,
       weekGenKey: wkKey,
       weekGenCount: isPremium ? 0 : 1,
@@ -7393,7 +7598,7 @@ const withLoopGenerationCounters = (plan, premium) => {
 const loopSessionKey = (s) => (s ? `${s.title || ""}|${s.distance || ""}` : "");
 
 /** Archive + génère la séance suivante. Idempotent si la séance est déjà dans l'historique. */
-const buildAdvancedLoopPlan = (entryPlan, entryProfile, archivedSession, isPremium, tasteProfile) => {
+const buildAdvancedLoopPlan = async (entryPlan, entryProfile, archivedSession, isPremium, tasteProfile) => {
   const prevHist = entryPlan.history || [];
   const alreadyInHist = !!(archivedSession && prevHist.some(
     (s) => loopSessionKey(s) === loopSessionKey(archivedSession),
@@ -7410,11 +7615,29 @@ const buildAdvancedLoopPlan = (entryPlan, entryProfile, archivedSession, isPremi
     (entryPlan.sessionCursor ?? 0) + (alreadyInHist ? 0 : 1),
     history.length,
   );
-  const { week } = buildProgressionLoopSession(
-    { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
+  const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopWeek(
+    { ...entryProfile, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
     nextCursor,
     isPremium,
+    {
+      ordinalIndex: history.length,
+      history,
+      currentSheetN: archivedSession?.sheetMeta?.n,
+      currentEducatif:
+        archivedSession?.sheetMeta?.educatif ||
+        archivedSession?.sheetEducatif?.name ||
+        null,
+      planStart: entryPlan.startDate,
+    },
   );
+  if (sheetError || !week?.sessions?.length) {
+    return {
+      plan: { ...base, weeks: entryPlan.weeks, loopBlocked: null },
+      blockedReason: null,
+      sheetError: true,
+      sheetErrorMessage: sheetErrorMessage || "Catalogue Google Sheet indisponible",
+    };
+  }
   let next = {
     ...base,
     sessionCursor: nextCursor,
@@ -8107,6 +8330,7 @@ export default function App() {
   // Banque séances Supabase (lecture publique) — avant / pendant generatePlan
   useEffect(() => {
     loadSessionTemplates(supabase);
+    prefetchNatationCatalogue();
   }, []);
 
   async function loadUserData(userId, userIsPremium = false) {
@@ -8564,18 +8788,27 @@ export default function App() {
       };
       if (generated.isSessionLoop && p.isSessionLoop) {
         const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
-        const { week } = buildProgressionLoopSession(
-          { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj },
+        const history = p.history || [];
+        const spw = Math.max(1, Number(profileForGen.sessionsPerWeek) || 3);
+        const { week, sheetError } = await buildProgressionLoopWeek(
+          { ...profileForGen, volumeAdj: p.volumeAdj },
           cursor,
           premium,
+          {
+            ordinalIndex: history.length,
+            history,
+            planStart: originalStartDate || generated.startDate,
+            weekIndex: Math.floor(history.length / spw),
+          },
         );
-        updated.history = p.history || [];
+        updated.history = history;
         updated.freeSessionsUsed = p.freeSessionsUsed ?? generated.freeSessionsUsed;
         updated.weekGenKey = p.weekGenKey ?? generated.weekGenKey;
         updated.weekGenCount = p.weekGenCount ?? generated.weekGenCount;
         updated.sessionCursor = cursor;
         updated.volumeAdj = p.volumeAdj ?? 1;
-        updated.weeks = [week];
+        // Sheet KO : garder la semaine actuelle plutôt qu'un composeur / semaine vide
+        updated.weeks = sheetError || !week?.sessions?.length ? (p.weeks ?? [week]) : [week];
         updated.loopBlocked = p.loopBlocked ?? null;
       } else if (generated.isSessionLoop && !p.isSessionLoop) {
         // Legacy 12 sem. → boucle : reset compteurs, nouvelle 1ʳᵉ séance
@@ -8617,29 +8850,111 @@ export default function App() {
     return () => { cancelled = true; };
   }, [user?.id, screen, isPremium, plans.length]);
 
-  // Boucle progression : déblocage auto + filet « séance validée sans enchaînement » (reload après feedback)
+  // Boucle : titres semaine = Séance 1/2/3 ; mono-séance = Séance n° (global)
+  useEffect(() => {
+    setPlans((prev) => {
+      let changed = false;
+      const next = prev.map((e) => {
+        if (!e.plan?.isSessionLoop) return e;
+        const week0 = e.plan.weeks?.[0];
+        const sessions = week0?.sessions || [];
+        if (!sessions.length) return e;
+        const histLen = loopSessionOrdinalIndex(e.plan);
+        const multi = sessions.length > 1;
+        const retitled = sessions.map((s, i) => {
+          const title = multi
+            ? formatLoopWeekSessionTitle(i)
+            : formatLoopSessionTitle(histLen);
+          return s.title === title ? s : { ...s, title };
+        });
+        const titlesChanged = retitled.some((s, i) => s !== sessions[i]);
+        const keepFocus = multi
+          || (week0.focus && !/^Séance n°\d+/i.test(String(week0.focus || "")));
+        const nextFocus = keepFocus ? week0.focus : formatLoopSessionTitle(histLen);
+        if (!titlesChanged && week0.focus === nextFocus) return e;
+        changed = true;
+        return {
+          ...e,
+          plan: {
+            ...e.plan,
+            weeks: [
+              { ...week0, focus: nextFocus, sessions: retitled },
+              ...(e.plan.weeks || []).slice(1),
+            ],
+          },
+        };
+      });
+      return changed ? next : prev;
+    });
+  }, [plans.length, activePlanId, plan?.isSessionLoop, plan?.history?.length, plan?.weeks?.[0]?.sessions?.length]);
+
+  // Boucle : compléter la semaine courante jusqu’à N séances (choix profil)
+  useEffect(() => {
+    if (screen !== "app" || !plan?.isSessionLoop || !activePlanId || !isPremium) return;
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry) return;
+    let cancelled = false;
+    (async () => {
+      const expanded = await expandLoopWeekSessions(entry.plan, entry.profile, isPremium);
+      if (cancelled || !expanded) return;
+      setPlans((prev) => {
+        const next = prev.map((e) => (e.id === activePlanId ? { ...e, plan: expanded } : e));
+        stampPlansLocalCache(next, activePlanId);
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [screen, activePlanId, isPremium, plan?.isSessionLoop, plan?.weeks?.[0]?.sessions?.length, activeProfile?.sessionsPerWeek]);
+
+  // Boucle progression : déblocage auto + filet « semaine validée sans enchaînement »
   const loopCurrentResolved = loopSessionNeedsAdvance(plan);
   useEffect(() => {
     if (screen !== "app" || !plan?.isSessionLoop) return;
     if (sessionFeedbackTarget !== null) return;
-    const cur = plan.weeks?.[0]?.sessions?.[0];
-    if (!cur || !isSessionResolved(cur)) return;
+    const sessions = plan.weeks?.[0]?.sessions || [];
+    if (!sessions.length || !sessions.every(isSessionResolved)) return;
+    const cur = sessions[sessions.length - 1];
     const gate = loopCanGenerateNext(plan, isPremium);
     if (!gate.ok && !isPremium) return;
     const entry = plans.find((e) => e.id === activePlanId);
     if (!entry) return;
-    const key = `${activePlanId}:${plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
+    const key = `${activePlanId}:${plan.sessionCursor ?? 0}:${loopSessionKey(cur)}:week`;
     if (loopAdvanceKeyRef.current === key) return;
     loopAdvanceKeyRef.current = key;
-    const { plan: next, blockedReason } = buildAdvancedLoopPlan(
-      entry.plan,
-      entry.profile,
-      cur,
-      isPremium,
-      plan.taste || tasteProfile,
-    );
-    setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: next } : e)));
-    setLoopPaywall(blockedReason);
+    let cancelled = false;
+    (async () => {
+      // Assure history complète avant génération
+      let hist = entry.plan.history || [];
+      for (const s of sessions) {
+        if (!hist.some((h) => loopSessionKey(h) === loopSessionKey(s))) {
+          hist = [...hist, {
+            ...s,
+            title: formatLoopSessionTitle(hist.length),
+            archivedAt: new Date().toISOString(),
+          }];
+        }
+      }
+      const marked = { ...entry.plan, history: hist, weeks: entry.plan.weeks };
+      const { plan: next, blockedReason, sheetError, sheetErrorMessage } = await buildAdvancedLoopPlan(
+        marked,
+        entry.profile,
+        cur,
+        isPremium,
+        plan.taste || tasteProfile,
+      );
+      if (cancelled) return;
+      if (sheetError) {
+        loopAdvanceKeyRef.current = null;
+        setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+      setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: next } : e)));
+      setLoopPaywall(blockedReason);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [screen, isPremium, loopCurrentResolved, plan?.loopBlocked, sessionFeedbackTarget, activePlanId]);
 
   useEffect(() => {
@@ -9006,32 +9321,76 @@ export default function App() {
   };
   resumePendingRef.current = resumePendingOnboarding;
 
-  const advanceProgressionLoop = (entryPlan, entryProfile, archivedSession) => {
-    const { plan: next, blockedReason } = buildAdvancedLoopPlan(
+  const advanceProgressionLoop = async (entryPlan, entryProfile, archivedSession) => {
+    const { plan: next, blockedReason, sheetError, sheetErrorMessage } = await buildAdvancedLoopPlan(
       entryPlan,
       entryProfile,
       archivedSession,
       isPremium,
       entryPlan.taste || tasteProfile,
     );
+    if (sheetError) {
+      setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+      setTimeout(() => setToast(null), 4000);
+      return null;
+    }
     if (blockedReason) setLoopPaywall(blockedReason);
     else setLoopPaywall(null);
     return next;
   };
 
-  const finishLoopSessionAndAdvance = (archivedSession) => {
-    setPlans((prev) => {
-      const next = prev.map((entry) => {
-        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-        const markedPlan = {
-          ...entry.plan,
-          weeks: [{
-            ...entry.plan.weeks[0],
-            sessions: [{ ...archivedSession }],
-          }],
-        };
-        return { ...entry, plan: advanceProgressionLoop(markedPlan, entry.profile, archivedSession) };
+  const finishLoopSessionAndAdvance = async (archivedSession, sessionIndex = 0) => {
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry?.plan?.isSessionLoop) return;
+    const week0 = entry.plan.weeks?.[0] || { sessions: [] };
+    const sessions = (week0.sessions || []).map((s, i) => (
+      i === sessionIndex ? { ...archivedSession } : s
+    ));
+    const prevHist = entry.plan.history || [];
+    const alreadyInHist = prevHist.some((s) => loopSessionKey(s) === loopSessionKey(archivedSession));
+    // Historique = compteur global (Séance n°16…), pas le titre local « Séance 1 »
+    const archivedForHist = {
+      ...archivedSession,
+      title: formatLoopSessionTitle(prevHist.length),
+      archivedAt: new Date().toISOString(),
+    };
+    const history = alreadyInHist
+      ? prevHist
+      : [...prevHist, archivedForHist];
+
+    const weekDone = sessions.length > 0 && sessions.every(isSessionResolved);
+    if (!weekDone) {
+      const nextPlan = {
+        ...entry.plan,
+        history,
+        weeks: [{
+          ...week0,
+          sessions: sessions.map((s, i) => ({ ...s, title: formatLoopWeekSessionTitle(i) })),
+        }],
+        loopBlocked: null,
+      };
+      setPlans((prev) => {
+        const next = prev.map((e) => (e.id === activePlanId ? { ...e, plan: nextPlan } : e));
+        stampPlansLocalCache(next, activePlanId);
+        return next;
       });
+      loopAdvanceKeyRef.current = null;
+      return;
+    }
+
+    // Semaine terminée → nouvelle semaine N séances
+    const markedPlan = {
+      ...entry.plan,
+      history,
+      weeks: [{ ...week0, sessions }],
+    };
+    const nextPlan = await advanceProgressionLoop(markedPlan, entry.profile, archivedForHist);
+    if (!nextPlan) {
+      loopAdvanceKeyRef.current = null;
+      return;
+    }
+    setPlans((prev) => {
+      const next = prev.map((e) => (e.id === activePlanId ? { ...e, plan: nextPlan } : e));
       stampPlansLocalCache(next, activePlanId);
       return next;
     });
@@ -9039,42 +9398,71 @@ export default function App() {
 
   const handleAdvanceLoopSession = () => {
     const entry = plans.find((e) => e.id === activePlanId);
-    const cur = entry?.plan?.weeks?.[0]?.sessions?.[0];
-    if (!entry?.plan?.isSessionLoop || !cur || !isSessionResolved(cur)) return;
+    const sessions = entry?.plan?.weeks?.[0]?.sessions || [];
+    const si = sessions.findIndex((s) => isSessionResolved(s) && !((entry.plan.history || []).some(
+      (h) => loopSessionKey(h) === loopSessionKey(s),
+    )));
+    // Prefer last resolved not yet advanced, else first resolved
+    let idx = si;
+    if (idx < 0) {
+      idx = sessions.findIndex((s) => isSessionResolved(s));
+    }
+    if (!entry?.plan?.isSessionLoop || idx < 0) return;
+    const cur = sessions[idx];
     loopAdvanceKeyRef.current = `${activePlanId}:${entry.plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
-    finishLoopSessionAndAdvance(cur);
+    void finishLoopSessionAndAdvance(cur, idx);
   };
 
-  const handleRegenerateLoopSession = () => {
+  const handleRegenerateLoopSession = async () => {
     if (!canUpdateProgram) {
       openUpgrade("trial_expired");
       return;
     }
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry?.plan?.isSessionLoop) return;
+    const sessions = entry.plan.weeks?.[0]?.sessions || [];
+    const si = sessions.findIndex((s) => !isSessionResolved(s));
+    const cur = si >= 0 ? sessions[si] : null;
+    if (!cur) return;
+    const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
+    const ordinalIndex = loopSessionOrdinalIndex(entry.plan) + si;
+    const { session: nextSession, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
+      { ...entry.profile, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+      nextCursor,
+      true,
+      {
+        ordinalIndex,
+        history: [...(entry.plan.history || []), ...sessions.slice(0, si)],
+        currentSheetN: cur?.sheetMeta?.n,
+        currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
+        planStart: entry.plan.startDate,
+      },
+    );
+    if (sheetError || !nextSession) {
+      setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
     setPlans((prev) => {
-      const next = prev.map((entry) => {
-        if (entry.id !== activePlanId || !entry.plan?.isSessionLoop) return entry;
-        const cur = entry.plan.weeks?.[0]?.sessions?.[0];
-        if (!cur || isSessionResolved(cur)) return entry;
-        // Nouveau seed sans archiver — cursor bump pour variété
-        const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
-        const { week } = buildProgressionLoopSession(
-          { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
-          nextCursor,
-          true,
-        );
+      const next = prev.map((e) => {
+        if (e.id !== activePlanId || !e.plan?.isSessionLoop) return e;
+        const week0 = e.plan.weeks[0];
         return {
-          ...entry,
+          ...e,
           plan: {
-            ...entry.plan,
+            ...e.plan,
             sessionCursor: nextCursor,
-            weeks: [week],
+            weeks: [{
+              ...week0,
+              sessions: (week0.sessions || []).map((s, i) => (i === si ? nextSession : s)),
+            }],
           },
         };
       });
       stampPlansLocalCache(next, activePlanId);
       return next;
     });
-    setToast("Séance du jour remplacée — la précédente n’était pas validée.");
+    setToast("Séance remplacée — la précédente n’était pas validée.");
     setTimeout(() => setToast(null), 3200);
   };
 
@@ -9087,14 +9475,17 @@ export default function App() {
 
     const activeForAnalytics = plans.find((e) => e.id === activePlanId);
     const sessForAnalytics = activeForAnalytics?.plan?.isSessionLoop
-      ? activeForAnalytics?.plan?.weeks?.[0]?.sessions?.[0]
+      ? activeForAnalytics?.plan?.weeks?.[0]?.sessions?.[
+          Number.isFinite(sessionIndex) && sessionIndex >= 0
+            ? sessionIndex
+            : 0
+        ]
       : activeForAnalytics?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
-    const weekForAnalytics = activeForAnalytics?.plan?.isSessionLoop
-      ? activeForAnalytics?.plan?.weeks?.[0]
-      : activeForAnalytics?.plan?.weeks?.[weekIndex];
+    const weekForAnalytics = activeForAnalytics?.plan?.weeks?.[weekIndex]
+      || activeForAnalytics?.plan?.weeks?.[0];
     const analyticsBase = sessionAnalyticsProps(activeForAnalytics?.profile, sessForAnalytics, {
       planWeek: weekForAnalytics?.number ?? weekIndex + 1,
-      sessionIndex: activeForAnalytics?.plan?.isSessionLoop ? 0 : sessionIndex,
+      sessionIndex: sessionIndex ?? 0,
       phase: weekForAnalytics?.phase || sessForAnalytics?.phase,
     });
     const sessOnce = `${activePlanId || "plan"}:${weekIndex}:${sessionIndex}`;
@@ -9148,7 +9539,11 @@ export default function App() {
 
     // ── Boucle Nager & Progresser ──
     if (active?.plan?.isSessionLoop && resolvedStatus !== "reset") {
-      const cur = active.plan.weeks?.[0]?.sessions?.[0];
+      const sessions = active.plan.weeks?.[0]?.sessions || [];
+      const si = Number.isFinite(sessionIndex) && sessionIndex >= 0
+        ? sessionIndex
+        : sessions.findIndex((s) => !isSessionResolved(s));
+      const cur = sessions[si >= 0 ? si : 0];
       if (!cur || isSessionResolved(cur)) return;
 
       const archived = {
@@ -9171,17 +9566,18 @@ export default function App() {
         }
       }
 
-      // Marque résolue tout de suite (verrouille)
+      // Marque résolue tout de suite (verrouille) — garde les autres séances de la semaine
       setPlans((prev) => {
         const next = prev.map((entry) => {
           if (entry.id !== activePlanId) return entry;
+          const week0 = entry.plan.weeks[0];
           return {
             ...entry,
             plan: {
               ...entry.plan,
               weeks: [{
-                ...entry.plan.weeks[0],
-                sessions: [{ ...archived }],
+                ...week0,
+                sessions: (week0.sessions || []).map((s, i) => (i === si ? { ...archived } : s)),
               }],
             },
           };
@@ -9191,19 +9587,24 @@ export default function App() {
       });
 
       if (resolvedStatus === "done") {
-        // Statut completed en base dès la validation — indépendant de la fiche de retour
         if (user) {
           sportsPersistence.markSessionStatus(user.id, {
             planId: activePlanId,
             weekIndex: 0,
-            sessionIndex: 0,
+            sessionIndex: si,
             status: "completed",
           }).then(() => {});
         }
-        pendingFeedbackRef.current = { weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived };
+        pendingFeedbackRef.current = {
+          weekIndex: 0,
+          sessionIndex: si,
+          promptWeekAfter: false,
+          loopMode: true,
+          archived,
+        };
         queueSessionCelebrate(archived, active.plan);
       } else {
-        finishLoopSessionAndAdvance(archived);
+        void finishLoopSessionAndAdvance(archived, si);
       }
       return;
     }
@@ -9308,7 +9709,7 @@ export default function App() {
     setSessionFeedbackTarget(null);
     scrollAppToTop();
     if (target?.loopMode && target.archived) {
-      finishLoopSessionAndAdvance(target.archived);
+      void finishLoopSessionAndAdvance(target.archived, target.sessionIndex ?? 0);
       return;
     }
     if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
@@ -9364,7 +9765,7 @@ export default function App() {
       ...(hasPainTag ? { pain: true } : {}),
     }, { onceKey: `feedback_submitted:${activePlanId || "plan"}:${weekIndex}:${sessionIndex}:${feedback.at}` });
 
-    // Boucle progression : feedback sur la séance archivée, puis avance
+    // Boucle progression : feedback sur la séance, puis avance (semaine ou séance suivante)
     if (loopMode) {
       const archivedWithFb = { ...(archived || prevSession), feedback };
       let volumeAdj = plan?.volumeAdj ?? 1;
@@ -9372,25 +9773,35 @@ export default function App() {
         const step = rating === "easy" ? 1.03 : rating === "hard" ? 0.97 : 1;
         volumeAdj = Math.min(1.3, Math.max(0.7, volumeAdj * step));
       }
+      const entry = plans.find((e) => e.id === activePlanId);
+      if (!entry) {
+        setSessionFeedbackTarget(null);
+        return;
+      }
+      const si = sessionIndex ?? 0;
       setPlans((prev) => prev.map((e) => {
         if (e.id !== activePlanId) return e;
-        const markedPlan = {
-          ...e.plan,
-          taste: nextTaste,
-          volumeAdj,
-          weeks: [{
-            ...e.plan.weeks[0],
-            sessions: [{ ...archivedWithFb }],
-          }],
+        const week0 = e.plan.weeks[0];
+        return {
+          ...e,
+          plan: {
+            ...e.plan,
+            taste: nextTaste,
+            volumeAdj,
+            weeks: [{
+              ...week0,
+              sessions: (week0.sessions || []).map((s, i) => (i === si ? { ...archivedWithFb } : s)),
+            }],
+          },
         };
-        return { ...e, plan: advanceProgressionLoop(markedPlan, { ...e.profile, taste: nextTaste }, archivedWithFb) };
       }));
       setSessionFeedbackTarget(null);
+      void finishLoopSessionAndAdvance(archivedWithFb, si);
       if (user) {
         sportsPersistence.insertSessionFeedback(user.id, {
           planId: activePlanId,
           weekIndex: 0,
-          sessionIndex: 0,
+          sessionIndex: si,
           sessionType: archivedWithFb?.type ?? null,
           sessionTitle: archivedWithFb?.title ?? null,
           difficulty: rating,
@@ -9712,25 +10123,39 @@ export default function App() {
         return Promise.resolve();
       }
       const nextCursor = (activePlanEntry.plan.sessionCursor ?? 0) + 1;
-      const { week } = buildProgressionLoopSession(
+      const ordinalIndex = loopSessionOrdinalIndex(activePlanEntry.plan);
+      return buildProgressionLoopSession(
         { ...nextProfile, sessionsPerWeek: 1, taste, volumeAdj: activePlanEntry.plan.volumeAdj },
         nextCursor,
         true,
-      );
-      setPlans((prev) => prev.map((e) => {
-        if (e.id !== planIdToUpdate) return e;
-        return {
-          ...e,
-          profile: nextProfile,
-          plan: {
-            ...e.plan,
-            sessionCursor: nextCursor,
-            weeks: [week],
-          },
-        };
-      }));
-      if (toast) showToast("Séance du jour mise à jour avec ton profil.", 4000);
-      return Promise.resolve();
+        {
+          ordinalIndex,
+          history: activePlanEntry.plan.history || [],
+          currentSheetN: cur?.sheetMeta?.n,
+          currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
+        },
+      ).then(({ week, sheetError, sheetErrorMessage }) => {
+        if (sheetError || !week?.sessions?.length) {
+          setPlans((prev) => prev.map((e) => (e.id === planIdToUpdate ? { ...e, profile: nextProfile } : e)));
+          if (toast) {
+            showToast(sheetErrorMessage || "Profil enregistré — catalogue séances indisponible, séance inchangée.", 4500);
+          }
+          return;
+        }
+        setPlans((prev) => prev.map((e) => {
+          if (e.id !== planIdToUpdate) return e;
+          return {
+            ...e,
+            profile: nextProfile,
+            plan: {
+              ...e.plan,
+              sessionCursor: nextCursor,
+              weeks: [week],
+            },
+          };
+        }));
+        if (toast) showToast("Séance du jour mise à jour avec ton profil.", 4000);
+      });
     }
 
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
@@ -9805,6 +10230,8 @@ export default function App() {
     }
     const shouldApply = canUpdateProgram && (
       nextPatch.pool !== undefined
+      || nextPatch.level !== undefined
+      || nextPatch.sessionsPerWeek !== undefined
       || nextPatch.swimStyle !== undefined
       || nextPatch.favoriteStroke !== undefined
       || nextPatch.knowsFourNages !== undefined
@@ -10075,7 +10502,7 @@ export default function App() {
 
   const skipCancelSurvey = () => proceedToStripePortal(null);
 
-  const goal  = GOALS.find(g => g.id === activeProfile.goal);
+  const goal  = findGoalById(activeProfile.goal);
   const stats = plan ? computeStats(plan) : null;
   const hasSwumNav = (stats?.totalSessions || 0) > 0;
 

@@ -97,7 +97,8 @@ export async function handleTelegramWebhook(
   }
   try {
     const result = await handleOperatorInbound({ inbound });
-    json(res, 200, { ok: true, ...result });
+    // result porte déjà `ok` — pas de doublon (TS2783 bloque le build Vercel)
+    json(res, 200, result);
   } catch (err) {
     console.error("[support] telegram inbound", err instanceof Error ? err.message : err);
     json(res, 200, { ok: true, error: "processed_with_error" });
@@ -161,6 +162,7 @@ export async function handleSupportHttp(
         userId: auth.userId,
         message,
         priorMessages: body.priorMessages,
+        context: body.context,
       });
       if (snap.error === "message_invalide") {
         json(res, 400, { ok: false, error: "message requis" });

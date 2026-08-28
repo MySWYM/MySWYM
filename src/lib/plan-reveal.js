@@ -4,6 +4,8 @@
  */
 import { buildWorkoutView } from "./workout-display.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
+import { withLoopSessionTitle, loopSessionOrdinalIndex } from "./swim-plan-bridge.js";
+import { canonicalizeGoal } from "./sports-engine/race-event.js";
 
 const CATEGORY_LABELS = {
   progression: "Nager",
@@ -15,16 +17,19 @@ const CATEGORY_LABELS = {
 const GOAL_LABELS = {
   progression: "Nager",
   triathlon_xs: "Triathlon XS",
-  triathlon_sprint: "Triathlon S · Sprint",
-  triathlon_olympic: "Triathlon M · Olympique",
-  triathlon_half: "Triathlon L · Half-Ironman",
-  triathlon_ironman: "Triathlon XXL · Ironman",
-  open_water_500: "Eau libre 500 m",
-  open_water_1k: "Eau libre 1 km",
-  open_water_2_5k: "Eau libre 2,5 km",
-  open_water_5k: "Eau libre 5 km",
-  open_water_10k: "Eau libre 10 km",
-  open_water_25k: "Eau libre 25 km",
+  triathlon_sprint: "Triathlon Sprint",
+  triathlon_olympic: "Triathlon Olympique",
+  triathlon_half: "Triathlon Half",
+  triathlon_ironman: "Triathlon Full",
+  open_water_short: "Eau libre courte",
+  open_water_mid: "Eau libre moyenne",
+  open_water_long: "Eau libre longue",
+  open_water_500: "Eau libre courte",
+  open_water_1k: "Eau libre courte",
+  open_water_2_5k: "Eau libre moyenne",
+  open_water_5k: "Eau libre moyenne",
+  open_water_10k: "Eau libre longue",
+  open_water_25k: "Eau libre longue",
   bnssa: "Prépa BNSSA",
   bpjeps_aan: "Prépa BPJEPS AAN",
   caepmns: "Prépa CAEPMNS",
@@ -37,11 +42,12 @@ const GOAL_LABELS = {
 const LEVEL_LABELS = {
   decouverte: "Découverte",
   découverte: "Découverte",
-  beginner: "Découverte",
-  regulier: "Régulier",
-  régulier: "Régulier",
-  sportif: "Sportif",
-  performance: "Performance",
+  beginner: "Débutant",
+  regulier: "Débutant",
+  régulier: "Débutant",
+  sportif: "Intermédiaire",
+  performance: "Avancé",
+  advanced: "Avancé",
 };
 
 export const PLAN_REVEAL_MIN_MS = 1400;
@@ -51,7 +57,7 @@ export function shouldShowPlanReveal({ addingPlan = false } = {}) {
 }
 
 export function revealGoalLabel(profile = {}) {
-  const goal = String(profile.goal || "").trim();
+  const goal = canonicalizeGoal(String(profile.goal || "").trim());
   if (GOAL_LABELS[goal]) return GOAL_LABELS[goal];
   const cat = String(profile.category || "").trim();
   return CATEGORY_LABELS[cat] || "Ton objectif";
@@ -90,7 +96,8 @@ export function sessionCardModel(session) {
   const view = buildWorkoutView(session);
   const blocks = (view.sections || []).slice(0, 3).map((s) => ({
     label: s.label,
-    detail: sectionDetail(s),
+    // Total du bloc (échauff / corps / RAC) — pas la 1ʳᵉ ligne d’exo
+    detail: s.metersLabel || (s.meters > 0 ? `${s.meters} m` : sectionDetail(s)),
   })).filter((b) => b.detail);
   return {
     title: view.header.title || session.title || "Séance 1",
@@ -124,7 +131,11 @@ export function sessionWhyLine(session, profile = {}) {
 }
 
 export function sessionPreviewFromPlan(plan) {
-  return sessionCardModel(plan?.weeks?.[0]?.sessions?.[0] || null);
+  const raw = plan?.weeks?.[0]?.sessions?.[0] || null;
+  const session = plan?.isSessionLoop
+    ? withLoopSessionTitle(raw, loopSessionOrdinalIndex(plan))
+    : raw;
+  return sessionCardModel(session);
 }
 
 /** Prochaine séance à nager (boucle = séance courante). */
@@ -132,9 +143,19 @@ export function findNextSession(plan) {
   const weeks = plan?.weeks;
   if (!Array.isArray(weeks) || weeks.length === 0) return null;
   if (plan.isSessionLoop) {
-    const session = weeks[0]?.sessions?.[0];
-    if (!session) return null;
-    return { weekIndex: 0, sessionIndex: 0, session, resolved: isSessionResolved(session) };
+    const sessions = weeks[0]?.sessions || [];
+    if (!sessions.length) return null;
+    let si = sessions.findIndex((s) => !isSessionResolved(s));
+    const resolvedAll = si < 0;
+    if (si < 0) si = sessions.length - 1;
+    const raw = sessions[si];
+    const session = withLoopSessionTitle(
+      raw,
+      resolvedAll
+        ? Math.max(0, loopSessionOrdinalIndex(plan) - 1)
+        : loopSessionOrdinalIndex(plan) + si,
+    );
+    return { weekIndex: 0, sessionIndex: si, session, resolved: resolvedAll || isSessionResolved(raw) };
   }
   const wi = weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   if (wi < 0) {
@@ -165,7 +186,11 @@ export function buildPlanRevealModel(plan, profile) {
     weeks,
     frequency,
     isLoop,
-    session: sessionCardModel(plan?.weeks?.[0]?.sessions?.[0] || null),
+    session: sessionCardModel(
+      plan?.isSessionLoop
+        ? withLoopSessionTitle(plan?.weeks?.[0]?.sessions?.[0] || null, loopSessionOrdinalIndex(plan))
+        : (plan?.weeks?.[0]?.sessions?.[0] || null),
+    ),
     barCount: isLoop ? 0 : Math.min(12, Math.max(0, weeks)),
   };
 }

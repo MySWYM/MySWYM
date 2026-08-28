@@ -38,12 +38,23 @@ import {
   resolveHardConstraints,
   scaleSessionLinesToVolume,
 } from "./sports-engine/index.js";
+import { eventBandFromGoal } from "./sports-engine/race-event.js";
+import {
+  isNatationSheetCatalogueEnabled,
+  composeFromNatationSheet,
+} from "./natation-sheet/client.js";
+import { sheetFamilyIdFromProfile, isEventFamilyId } from "./natation-sheet/parse.js";
+import {
+  applySheetWeekSessionCap,
+  resolveSheetWeekRole,
+} from "./natation-sheet/sheet-week-role.js";
 import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
 import {
   normalizeTargetSessionDistance,
   sessionDistancePhaseScale,
 } from "./sports-engine/session-distance-pref.js";
 import { sessionTemplatesReady } from "./session-templates-store.js";
+import { isSessionResolved } from "./plan-progress-merge.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -927,6 +938,28 @@ const LOOP_VARIANTS_BY_FAMILY = {
   ],
 };
 
+/** Après la phase facile : ordre des variantes selon la bande d'épreuve (short / mid / long). */
+const LOOP_VARIANT_ORDER_BY_BAND = {
+  eau_libre: {
+    short: ["ow_sight", "ow_seuil", "ow_vitesse", "ow_tech", "ow_aero", "ow_jambes"],
+    mid: ["ow_aero", "ow_sight", "ow_seuil", "ow_long", "ow_tech", "ow_draft", "ow_jambes"],
+    long: ["ow_long", "ow_aero", "ow_tech", "ow_jambes", "ow_sight"],
+  },
+  triathlon: {
+    short: ["tri_start", "tri_seuil", "tri_tech", "tri_sight", "tri_jambes", "tri_aero"],
+    mid: ["tri_aero", "tri_seuil", "tri_sight", "tri_tech", "tri_ow", "tri_jambes", "tri_mix"],
+    long: ["tri_aero", "tri_ow", "tri_jambes", "tri_tech", "tri_seuil", "tri_sight"],
+  },
+};
+
+function loopVariantsForEvent(family, goal) {
+  const all = LOOP_VARIANTS_BY_FAMILY[family] || LOOP_VARIANTS_BY_FAMILY.progression;
+  const order = LOOP_VARIANT_ORDER_BY_BAND[family]?.[eventBandFromGoal(goal)];
+  if (!order) return all;
+  const byId = Object.fromEntries(all.map((v) => [v.id, v]));
+  return order.map((id) => byId[id]).filter(Boolean);
+}
+
 const LOOP_EASY_BY_FAMILY = {
   progression: [
     { id: "easy_tech", focus: "Première séance — douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
@@ -1210,33 +1243,286 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
 }
 
 /**
- * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
- * @param {object} profile
- * @param {number} cursor — index de variété (0 = 1ʳᵉ séance)
- * @param {boolean} isPremium
- * @returns {{ session: object, focus: string, week: object }}
+ * Titre nageur du mode boucle : Séance n°1, n°2…
+ * `ordinalIndex` = nb de séances déjà validées/archivées (0 → n°1).
+ * Indépendant de `sessionCursor` (variété / régénération).
  */
-export function buildProgressionLoopSession(profile, cursor = 0, isPremium = false) {
+export function formatLoopSessionTitle(ordinalIndex = 0) {
+  return `Séance n°${Math.max(0, Number(ordinalIndex) || 0) + 1}`;
+}
+
+/** Titre dans la semaine courante (Séance 1, 2, 3…) — pas le compteur global. */
+export function formatLoopWeekSessionTitle(indexInWeek = 0) {
+  return `Séance ${Math.max(0, Number(indexInWeek) || 0) + 1}`;
+}
+
+/** Nb de séances validées (base 0 pour la séance courante non encore archivée). */
+export function loopSessionOrdinalIndex(plan) {
+  if (!plan?.isSessionLoop) return 0;
+  return Array.isArray(plan.history) ? plan.history.length : 0;
+}
+
+/** Force le titre affiché (plans déjà stockés avec un focus marketing). */
+export function withLoopSessionTitle(session, ordinalIndex = 0) {
+  if (!session) return session;
+  const title = formatLoopSessionTitle(ordinalIndex);
+  return session.title === title ? session : { ...session, title };
+}
+
+/**
+ * Séance courante d’un plan boucle = première non résolue (ou la dernière si tout est fait).
+ */
+export function loopDisplaySession(plan) {
+  if (!plan?.isSessionLoop) return plan?.weeks?.[0]?.sessions?.[0] || null;
+  const sessions = plan?.weeks?.[0]?.sessions || [];
+  if (!sessions.length) return null;
+  const histLen = loopSessionOrdinalIndex(plan);
+  const openIdx = sessions.findIndex((s) => !isSessionResolved(s));
+  const si = openIdx >= 0 ? openIdx : sessions.length - 1;
+  const ordinalIndex = openIdx >= 0 ? histLen + openIdx : Math.max(0, histLen - 1);
+  return withLoopSessionTitle(sessions[si], ordinalIndex);
+}
+
+/**
+ * Nb de séances à générer pour la semaine courante de boucle.
+ * Cap Sheet S0 (course) = 2 via applySheetWeekSessionCap.
+ */
+export function effectiveLoopSessionsPerWeek(profile = {}, opts = {}) {
+  const spw = Math.max(1, Math.min(5, Number(profile.sessionsPerWeek) || 3));
+  const family = sheetFamilyIdFromProfile(profile);
+  if (!isEventFamilyId(family) && !String(profile.goal || "").startsWith("triathlon")) {
+    return spw;
+  }
+  const role = resolveSheetWeekRole({
+    eventDate: profile.eventDate || null,
+    planStart: opts.planStart || profile.planStartedAt || profile.createdAt || null,
+    weekIndex: opts.weekIndex,
+    now: opts.now,
+  });
+  return applySheetWeekSessionCap(role, spw);
+}
+
+/**
+ * Génère une semaine boucle de N séances (N = sessionsPerWeek, plafonné S0).
+ * @returns {Promise<{ week: object, sessions: object[], sheetError?: boolean, sheetErrorMessage?: string }>}
+ */
+export async function buildProgressionLoopWeek(profile, cursor = 0, isPremium = false, opts = {}) {
+  const baseOrdinal = Math.max(0, Number(opts.ordinalIndex != null ? opts.ordinalIndex : 0) || 0);
+  const weekIndex =
+    opts.weekIndex != null
+      ? opts.weekIndex
+      : Math.floor(baseOrdinal / Math.max(1, Number(profile.sessionsPerWeek) || 3));
+  const n = Math.max(
+    1,
+    Number(opts.sessionCount) ||
+      effectiveLoopSessionsPerWeek(profile, {
+        planStart: opts.planStart,
+        weekIndex,
+        now: opts.now,
+      }),
+  );
+
+  const sessions = [];
+  let sheetError = false;
+  let sheetErrorMessage = null;
+  let lastEducatif = opts.currentEducatif || null;
+  let lastSheetN = opts.currentSheetN;
+  const seedHistory = Array.isArray(opts.history) ? [...opts.history] : [];
+
+  for (let i = 0; i < n; i++) {
+    const { session, sheetError: err, sheetErrorMessage: msg } = await buildProgressionLoopSession(
+      profile,
+      Math.max(0, Number(cursor) || 0) + i,
+      isPremium,
+      {
+        ordinalIndex: baseOrdinal + i,
+        history: [...seedHistory, ...sessions],
+        currentSheetN: lastSheetN,
+        currentEducatif: lastEducatif,
+        planStart: opts.planStart,
+        weekIndex,
+      },
+    );
+    if (err || !session) {
+      sheetError = true;
+      sheetErrorMessage = msg || "Catalogue Google Sheet indisponible";
+      if (i === 0) {
+        return {
+          week: {
+            number: weekIndex + 1,
+            focus: `Semaine ${weekIndex + 1}`,
+            tip: null,
+            feedback: null,
+            isBilan: false,
+            isTest: false,
+            sessions: [],
+          },
+          sessions: [],
+          sheetError: true,
+          sheetErrorMessage,
+        };
+      }
+      break;
+    }
+    sessions.push(session);
+    lastSheetN = session?.sheetMeta?.n ?? lastSheetN;
+    lastEducatif =
+      session?.sheetMeta?.educatif || session?.sheetEducatif?.name || lastEducatif;
+  }
+
+  // Affichage semaine : Séance 1 / 2 / 3 (le n° global va dans l’historique à l’archivage)
+  for (let i = 0; i < sessions.length; i++) {
+    sessions[i] = { ...sessions[i], title: formatLoopWeekSessionTitle(i) };
+  }
+
+  const role = resolveSheetWeekRole({
+    eventDate: profile.eventDate || null,
+    planStart: opts.planStart || profile.planStartedAt || profile.createdAt || null,
+    weekIndex,
+    now: opts.now,
+  });
+  const focus =
+    role?.isRaceWeek
+      ? "Semaine de course"
+      : role?.phase === "test"
+        ? "Semaine test"
+        : role?.phase === "deload"
+          ? "Semaine allégée"
+          : `Semaine ${weekIndex + 1}`;
+
+  const week = {
+    number: weekIndex + 1,
+    focus,
+    tip: role?.banner || null,
+    feedback: null,
+    isBilan: false,
+    isTest: role?.phase === "test",
+    phase: role?.phase || null,
+    sheetWeekRole: role || null,
+    sessions,
+  };
+
+  return { week, sessions, sheetError: false, sheetErrorMessage: null };
+}
+
+/**
+ * Complète weeks[0].sessions jusqu’à N sans toucher aux séances déjà présentes.
+ * @returns {Promise<object|null>} plan mis à jour, ou null si rien à faire / erreur totale
+ */
+export async function expandLoopWeekSessions(plan, profile, isPremium = false, opts = {}) {
+  if (!plan?.isSessionLoop || !profile) return null;
+  const existing = Array.isArray(plan.weeks?.[0]?.sessions) ? [...plan.weeks[0].sessions] : [];
+  const history = Array.isArray(plan.history) ? plan.history : [];
+  const weekIndex = Math.floor(history.length / Math.max(1, Number(profile.sessionsPerWeek) || 3));
+  const n = effectiveLoopSessionsPerWeek(profile, {
+    planStart: opts.planStart || plan.startDate,
+    weekIndex,
+    now: opts.now,
+  });
+  if (existing.length >= n) return null;
+
+  const cursor0 = Math.max(plan.sessionCursor ?? 0, history.length);
+  const need = n - existing.length;
+  const add = [];
+  let lastEducatif =
+    existing[existing.length - 1]?.sheetMeta?.educatif ||
+    existing[existing.length - 1]?.sheetEducatif?.name ||
+    null;
+  let lastSheetN = existing[existing.length - 1]?.sheetMeta?.n;
+
+  for (let i = 0; i < need; i++) {
+    const ordinalIndex = history.length + existing.length + i;
+    const { session, sheetError } = await buildProgressionLoopSession(
+      { ...profile, taste: plan.taste || profile.taste, volumeAdj: plan.volumeAdj },
+      cursor0 + existing.length + i,
+      isPremium,
+      {
+        ordinalIndex,
+        history: [...history, ...existing, ...add],
+        currentSheetN: lastSheetN,
+        currentEducatif: lastEducatif,
+        planStart: plan.startDate,
+        weekIndex,
+      },
+    );
+    if (sheetError || !session) break;
+    add.push(session);
+    lastSheetN = session?.sheetMeta?.n ?? lastSheetN;
+    lastEducatif =
+      session?.sheetMeta?.educatif || session?.sheetEducatif?.name || lastEducatif;
+  }
+  if (!add.length) return null;
+
+  const role = resolveSheetWeekRole({
+    eventDate: profile.eventDate || null,
+    planStart: plan.startDate,
+    weekIndex,
+  });
+  const week0 = plan.weeks[0] || {};
+  const merged = [...existing, ...add].map((s, i) => ({
+    ...s,
+    title: formatLoopWeekSessionTitle(i),
+  }));
+  return {
+    ...plan,
+    sessionCursor: cursor0 + existing.length + add.length - 1,
+    weeks: [{
+      ...week0,
+      number: week0.number || weekIndex + 1,
+      focus:
+        week0.focus && existing.length > 0
+          ? week0.focus
+          : role?.isRaceWeek
+            ? "Semaine de course"
+            : role?.phase === "test"
+              ? "Semaine test"
+              : role?.phase === "deload"
+                ? "Semaine allégée"
+                : `Semaine ${weekIndex + 1}`,
+      tip: week0.tip || role?.banner || null,
+      sheetWeekRole: week0.sheetWeekRole || role || null,
+      phase: week0.phase || role?.phase || null,
+      sessions: merged,
+    }],
+  };
+}
+
+/**
+ * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
+ * Familles Sheet soft (Nager 01–03, triathlon 04–08, OW 09–13) : await catalogue, **pas** de fallback composeur silencieux.
+ * @param {object} profile
+ * @param {number} cursor — index de variété / seed (peut bouger sans validation)
+ * @param {boolean} isPremium
+ * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number, currentEducatif?: string|null, planStart?: *, weekIndex?: number }} [opts]
+ * @returns {Promise<{ session: object|null, focus: string, week: object, sheetError?: boolean, sheetErrorMessage?: string }>}
+ */
+export async function buildProgressionLoopSession(profile, cursor = 0, isPremium = false, opts = {}) {
   const c = Math.max(0, Number(cursor) || 0);
+  const ordinalIndex = Math.max(
+    0,
+    Number(opts.ordinalIndex != null ? opts.ordinalIndex : c) || 0,
+  );
   const easyPhase = c < 3;
   const family = loopFamilyFromProfile(profile);
+  const sessionTitle = formatLoopSessionTitle(ordinalIndex);
 
   // Diplôme : templates examen (pas le générateur coach générique)
   if (family === "diplome") {
-    const { variant, session } = buildDiplomaLoopSessionPayload(profile, c, easyPhase);
+    const { variant, session: diplomaSession } = buildDiplomaLoopSessionPayload(profile, c, easyPhase);
+    const session = { ...diplomaSession, title: sessionTitle };
     const week = {
       number: 1,
-      focus: variant.focus,
+      focus: sessionTitle,
       tip: null,
       feedback: null,
       isBilan: false,
       isTest: false,
       sessions: [session],
     };
-    return { session, focus: variant.focus, week };
+    return { session, focus: sessionTitle, week };
   }
 
-  const variants = LOOP_VARIANTS_BY_FAMILY[family] || LOOP_VARIANTS_BY_FAMILY.progression;
+  const variants = loopVariantsForEvent(family, profile.goal);
   const easyVariants = LOOP_EASY_BY_FAMILY[family] || LOOP_EASY_BY_FAMILY.progression;
   const variant = easyPhase
     ? easyVariants[c % easyVariants.length]
@@ -1268,9 +1554,61 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
   const weekNum = c + 1;
 
   let session = null;
+  let sheetError = false;
+  let sheetErrorMessage = null;
 
-  // Composeur pédagogique (échauffements / RAC / éducatifs / corps fun Arthur)
-  if (isComposerEnabledForLevel(sport.level)) {
+  // Catalogue Google Sheet — familles soft : source obligatoire (pas de composeur de secours)
+  const sheetFamily = sheetFamilyIdFromProfile(profile);
+  const sheetLocked = Boolean(sheetFamily) && isNatationSheetCatalogueEnabled();
+
+  if (sheetLocked) {
+    try {
+      const excludeNs = [];
+      const curN = opts.currentSheetN;
+      if (curN != null && Number.isFinite(Number(curN))) excludeNs.push(Number(curN));
+      const fromSheet = await composeFromNatationSheet(
+        { ...profile, equipment: sport.equipment },
+        {
+          cursor: c,
+          history: opts.history || [],
+          excludeNs,
+          currentEducatif: opts.currentEducatif || null,
+          isPremium: !!isPremium,
+          ordinalIndex: opts.ordinalIndex ?? c,
+          planStart: opts.planStart || profile.planStartedAt || null,
+          weekIndex: opts.weekIndex,
+        },
+      );
+      if (fromSheet) {
+        session = {
+          ...fromSheet,
+          title: sessionTitle,
+          objectives: variant.objectives,
+        };
+      }
+    } catch (err) {
+      console.warn("[natation-sheet] loop", err?.message || err);
+      sheetErrorMessage = err?.message || String(err);
+    }
+    if (!session) {
+      sheetError = true;
+      sheetErrorMessage =
+        sheetErrorMessage || `Catalogue Sheet «${sheetFamily}» indisponible`;
+      const week = {
+        number: 1,
+        focus: sessionTitle,
+        tip: null,
+        feedback: null,
+        isBilan: false,
+        isTest: false,
+        sessions: [],
+      };
+      return { session: null, focus: sessionTitle, week, sheetError, sheetErrorMessage };
+    }
+  }
+
+  // Composeur pédagogique — uniquement hors familles Sheet soft (Oly+ / OW / etc.)
+  if (!session && !sheetLocked && isComposerEnabledForLevel(sport.level)) {
     const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sport.level);
     const baseVol =
       preferred ||
@@ -1334,7 +1672,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     if (result.ok && result.session) {
       session = {
         ...result.session,
-        title: focusLabel,
+        title: sessionTitle,
         objectives: variant.objectives,
         loopVariant: variant.id,
         composedBy: "session-composer",
@@ -1385,14 +1723,14 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     const raw = weekData.sessions[0];
     session = {
       ...toMySwymSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly),
-      title: focusLabel,
+      title: sessionTitle,
       objectives: variant.objectives,
       loopVariant: variant.id,
     };
   }
   }
 
-  // Ancre distance moyenne (questionnaire) — scale soft si renseignée
+  // Ancre distance moyenne — pas sur les séances Sheet (on garde le cahier tel quel)
   const sportLevel =
     profile.level === "découverte" || profile.level === "beginner"
       ? "decouverte"
@@ -1404,7 +1742,12 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
             ? "performance"
             : "regulier";
   const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sportLevel);
-  if (preferred && session && session.composedBy !== "session-composer") {
+  if (
+    preferred &&
+    session &&
+    session.composedBy !== "session-composer" &&
+    session.composedBy !== "natation-sheet"
+  ) {
     const scale = sessionDistancePhaseScale({
       typeSemaine,
       effectivePhase: easyPhase ? "base" : "development",
@@ -1423,9 +1766,14 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     }
   }
 
+  // Titre boucle = numéro de séance (cursor 0 → n°1 ; +1 à chaque validation)
+  if (session) {
+    session = { ...session, title: sessionTitle };
+  }
+
   const week = {
     number: 1,
-    focus: focusLabel,
+    focus: sessionTitle,
     tip: null,
     feedback: null,
     isBilan: false,
@@ -1433,7 +1781,7 @@ export function buildProgressionLoopSession(profile, cursor = 0, isPremium = fal
     sessions: [session],
   };
 
-  return { session, focus: focusLabel, week };
+  return { session, focus: sessionTitle, week, sheetError: false };
 }
 
 /** Clé ISO semaine (ex. 2026-W32) pour plafonner les générations gratuites. */

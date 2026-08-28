@@ -3,6 +3,8 @@
  * Références qualité (pas de séances hardcodées).
  */
 
+import { scaleMaxContinuousForRaceBand } from "./race-event.js";
+
 /**
  * Capacité continue stroke-aware.
  * 500 m 4N continu ≠ 500 m crawl continu.
@@ -47,7 +49,7 @@ export function maxContinuousForSportif(brief = {}, opts = {}) {
     max = Math.min(max, Math.round(max * 0.6 / 50) * 50 || 100);
   }
 
-  return Math.max(200, max);
+  return Math.max(200, scaleMaxContinuousForRaceBand(max, brief));
 }
 
 export const SPORTIF_INTENTS = Object.freeze({

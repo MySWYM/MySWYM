@@ -75,6 +75,64 @@ function sitemapPlugin() {
 /** Version client exposée au Version Gate (override via VITE_APP_VERSION). */
 const APP_VERSION = process.env.VITE_APP_VERSION || '1.0.1'
 
+function natationSheetDevApi(env) {
+  const id = String(env.NATATION_SHEET_ID || '')
+    .replace(/"/g, '')
+    .trim()
+  return {
+    name: 'natation-sheet-dev-api',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url || ''
+        if (!url.startsWith('/api/natation-sheet')) return next()
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          res.statusCode = 405
+          res.end('method_not_allowed')
+          return
+        }
+        if (!id) {
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'missing_NATATION_SHEET_ID' }))
+          return
+        }
+        try {
+          const u = new URL(url, 'http://localhost')
+          const sheet = (u.searchParams.get('sheet') || '').trim()
+          if (!sheet) {
+            res.statusCode = 400
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ error: 'missing_sheet' }))
+            return
+          }
+          const gUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`
+          const upstream = await fetch(gUrl, { redirect: 'follow' })
+          if (!upstream.ok) {
+            res.statusCode = 502
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ error: 'upstream', status: upstream.status }))
+            return
+          }
+          const csv = await upstream.text()
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.setHeader('Cache-Control', 'no-store')
+          res.end(JSON.stringify({ sheet, csv, bytes: csv.length }))
+        } catch (err) {
+          res.statusCode = 502
+          res.setHeader('Content-Type', 'application/json')
+          res.end(
+            JSON.stringify({
+              error: 'fetch_failed',
+              message: err?.message || String(err),
+            }),
+          )
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -83,7 +141,7 @@ export default defineConfig(({ mode }) => {
     env.VERCEL_AUTOMATION_BYPASS_SECRET || env.DEV_API_BYPASS_SECRET || ''
 
   return {
-    plugins: [react(), tailwindcss(), sitemapPlugin()],
+    plugins: [react(), tailwindcss(), sitemapPlugin(), natationSheetDevApi(env)],
     define: {
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
     },

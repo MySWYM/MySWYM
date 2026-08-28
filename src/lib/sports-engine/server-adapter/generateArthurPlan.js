@@ -14,6 +14,7 @@ import {
 } from "../../swim-plan-bridge.js";
 import { loadSessionTemplates } from "../../session-templates-store.js";
 import { normalizeProfileEquipment } from "../types.js";
+import { canonicalizeGoal } from "../race-event.js";
 import { buildPhaseListForProfile, PLAN_TIPS, isProgressionGoal } from "./plan-phases.js";
 import {
   mergePreservingProgress,
@@ -21,7 +22,7 @@ import {
 } from "./preserve-progress.js";
 
 /** Aligné App.jsx PLAN_VERSION — métadonnées uniquement. */
-export const ARTHUR_PLAN_VERSION = 48;
+export const ARTHUR_PLAN_VERSION = 49;
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -135,8 +136,9 @@ export function normalizeArthurProfile(input = {}) {
   // Objectif générique "triathlon" → variante olympique par défaut
   if (base.goal === "triathlon") base.goal = "triathlon_olympic";
   if (base.goal === "eau_libre" || base.goal === "open_water") {
-    base.goal = "open_water_1k";
+    base.goal = "open_water_short";
   }
+  if (base.goal) base.goal = canonicalizeGoal(base.goal);
 
   if (!base.category) {
     const g = String(base.goal || "");

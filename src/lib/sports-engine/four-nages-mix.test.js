@@ -11,6 +11,7 @@ import {
   measureStrokeVolume,
   mixWithinTolerance,
   normalizeStrokeFocus,
+  isFourNagesDeclared,
   FOUR_STROKES,
   IM_ORDER,
   buildFourNagesImSets,
@@ -135,6 +136,9 @@ console.log("4N0 allocate + normalize");
   assert(FOUR_STROKES.every((s) => a50[s] >= 50 && a50[s] % 50 === 0), "50m quantum");
   assert(a50.dos > a50.brasse && a50.crawl >= a50.dos, "dos pondéré, crawl majoritaire");
   assert(normalizeStrokeFocus({ swimStyle: "4_nages", preferredStroke: "brasse" }) === "4n", "style 4n");
+  assert(isFourNagesDeclared({ level: "performance", swimStyle: "crawl" }), "avancé implique 4 nages");
+  assert(!isFourNagesDeclared({ level: "régulier", swimStyle: "4_nages" }), "débutant refuse 4 nages");
+  assert(!isFourNagesDeclared({ level: "sportif", swimStyle: "crawl" }), "intermédiaire crawl = crawl");
 }
 
 console.log("4N1 sans préférence — les 4 nages");
@@ -149,30 +153,26 @@ console.log("4N1 sans préférence — les 4 nages");
   console.log(`   crawl ${pct(m.pct.crawl)} dos ${pct(m.pct.dos)} brasse ${pct(m.pct.brasse)} pap ${pct(m.pct.papillon)}`);
 }
 
-console.log("4N2 préférence crawl ≈ 50 %");
+console.log("4N2 nage favorite ignorée (mix défaut)");
 {
   const r = composeSession(brief4n({ preferredStroke: "crawl", seed: "4n2", pool: 25 }));
   assert(r.ok, `4N2 ${r.reason}`);
   const m = measureStrokeVolume(r.session);
   assert(m.allPresent, "4N2 quatre nages");
-    assert(Math.abs(m.pct.crawl - 0.5) <= 0.12, `4N2 crawl ${pct(m.pct.crawl)}`);
-  console.log(`   crawl ${pct(m.pct.crawl)} (cible 50%)`);
+  const mix = fourNagesMix(null);
+  assert(mixWithinTolerance(m, mix, { pool: 25, maxPctPoints: 0.12 }), `4N2 mix crawl=${pct(m.pct.crawl)}`);
+  console.log(`   crawl ${pct(m.pct.crawl)} (défaut, pref ignorée)`);
 }
 
-console.log("4N3 préférence dos / brasse / papillon");
+console.log("4N3 nage favorite dos/brasse/papillon ignorée");
 {
   for (const pref of ["dos", "brasse", "papillon"]) {
     const r = composeSession(brief4n({ preferredStroke: pref, seed: `4n3-${pref}`, pool: 25 }));
     assert(r.ok, `4N3 ${pref} ${r.reason}`);
     const m = measureStrokeVolume(r.session);
     assert(m.allPresent, `4N3 ${pref} présence`);
-    assert(Math.abs(m.pct.crawl - 0.4) <= 0.12, `4N3 ${pref} crawl ${pct(m.pct.crawl)}`);
-    assert(Math.abs(m.pct[pref] - 0.3) <= 0.12, `4N3 ${pref} ${pct(m.pct[pref])}`);
-    const others = FOUR_STROKES.filter((s) => s !== "crawl" && s !== pref);
-    for (const s of others) {
-      assert(Math.abs(m.pct[s] - 0.15) <= 0.12, `4N3 ${pref} ${s} ${pct(m.pct[s])}`);
-    }
-    console.log(`   ${pref}: crawl ${pct(m.pct.crawl)} ${pref} ${pct(m.pct[pref])}`);
+    assert(mixWithinTolerance(m, fourNagesMix(null), { pool: 25, maxPctPoints: 0.12 }), `4N3 ${pref} mix défaut`);
+    console.log(`   ${pref} ignoré: crawl ${pct(m.pct.crawl)}`);
   }
 }
 
@@ -190,7 +190,7 @@ console.log("4N4 bassin 25 et 50");
         assert(s.distancePerRep === 50, "papillon 50m en bassin 50");
       }
     }
-    assert(mixWithinTolerance(m, fourNagesMix("dos"), { pool, maxPctPoints: 0.15 }), `4N4 p${pool} mix`);
+    assert(mixWithinTolerance(m, fourNagesMix(null), { pool, maxPctPoints: 0.15 }), `4N4 p${pool} mix`);
   }
 }
 

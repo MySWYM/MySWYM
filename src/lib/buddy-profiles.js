@@ -36,10 +36,10 @@ export function toggleOutingType(selected, id) {
 }
 
 export const BUDDY_LEVELS = [
+  { id: "régulier", label: "Débutant" },
+  { id: "sportif", label: "Intermédiaire" },
+  { id: "performance", label: "Avancé" },
   { id: "découverte", label: "Découverte" },
-  { id: "régulier", label: "Régulier" },
-  { id: "sportif", label: "Sportif" },
-  { id: "performance", label: "Performance" },
 ];
 
 /** Jours de la semaine (ordre calendaire FR, lundi → dimanche). */

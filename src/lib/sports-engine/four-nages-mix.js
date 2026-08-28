@@ -1,8 +1,10 @@
 /**
  * Répartition des 4 nages — volume total nagé, blocs explicites.
- * Distinct du focus UX : swimStyle=4_nages impose les 4 nages ;
- * preferredStroke ne fait que pondérer.
+ * Distinct du focus UX : swimStyle=4_nages impose les 4 nages.
+ * Plus de pondération par nage favorite.
  */
+import { isAvanceLevelId, isDebutantLevelId } from "../onboarding-level-gate.js";
+
 export const FOUR_STROKES = Object.freeze(["crawl", "dos", "brasse", "papillon"]);
 
 export const FOUR_NAGES_MIX = Object.freeze({
@@ -28,6 +30,8 @@ export function isFourNagesStyle(value) {
 }
 
 export function isFourNagesDeclared(profile = {}) {
+  if (isDebutantLevelId(profile.level) || isDebutantLevelId(profile.levelRaw)) return false;
+  if (isAvanceLevelId(profile.level) || isAvanceLevelId(profile.levelRaw)) return true;
   return [
     profile.strokeFocus,
     profile.swimStyle,
@@ -52,7 +56,7 @@ export function fourNagesMix(preferredStroke = null) {
 }
 
 export function fourNagesMixFromBrief(brief = {}) {
-  return fourNagesMix(normalizePreferredStroke(brief));
+  return fourNagesMix(null);
 }
 
 /**

@@ -93,6 +93,14 @@ import {
   assert.equal(keep.swimStyle, "4_nages");
   assert.equal(keep.preferredStroke, "brasse");
   assert.equal(keep.targetSessionDistance, 3000);
+
+  const avancé = applyFirstPlanDefaults({
+    level: "performance",
+    pool: 25,
+    sessionsPerWeek: 4,
+    swimStyle: "crawl",
+  });
+  assert.equal(avancé.swimStyle, "4_nages");
 }
 
 {

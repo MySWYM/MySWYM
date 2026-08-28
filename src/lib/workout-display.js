@@ -68,8 +68,160 @@ function estimateSetPartMeters(part) {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+/** Jeton opaque (sans le mot « souple ») pour survivre à humanizeArthurDisplayTerms. */
+const SOUPLE_TOKEN = "__MS_RECUP__";
+const PROGRESSIF_TOKEN = "__MS_PROG__";
+const DESCENDANT_TOKEN = "__MS_DESC__";
+
+const ALLURE_WORD_RE =
+  "lent|moyen|rapide|vite|souple|progressif|descendant|facile|soutenu|sprint|sprints|à\\s*bloc|a\\s*bloc";
+
+function normalizeAllureToken(raw, { mapViteToRapide = false } = {}) {
+  let allure = String(raw || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (allure === "a bloc") allure = "à bloc";
+  if (allure === "sprints") allure = "sprint";
+  if (mapViteToRapide && allure === "vite") allure = "rapide";
+  return allure;
+}
+
+/**
+ * Contraste d’allures dans une parenthèse Sheet :
+ * « (75 m souple + 25 m progressif) », « (50 m moyen + 25 m vite + 25 m souple) ».
+ * Ou enchaînement par reps : « (1 lent, 1 moyen, 1 rapide, 1 souple) ».
+ * Ou suite libre : « crawl lent progressif », « crawl souple moyen vite ».
+ * ≠ un simple « crawl souple » dans un mix de nages.
+ */
+export function hasContrastingPaces(text) {
+  if (parseAllureEnchainement(text)) return true;
+  const parens = String(text || "").match(/\(([^)]+)\)/g) || [];
+  for (const block of parens) {
+    const inner = block.slice(1, -1);
+    const meterCount = [...inner.matchAll(/\d+\s*m\b/gi)].length;
+    if (meterCount < 2) continue;
+    const efforts = new Set();
+    if (/\bsouple\b/i.test(inner)) efforts.add("souple");
+    if (/\bprogressif\b/i.test(inner)) efforts.add("progressif");
+    if (/\bdescendant\b/i.test(inner)) efforts.add("descendant");
+    if (/\bmoyen\b/i.test(inner)) efforts.add("moyen");
+    if (/\b(vite|rapide|à bloc|a bloc)\b/i.test(inner)) efforts.add("vite");
+    if (/\blent\b/i.test(inner)) efforts.add("lent");
+    if (/\bfacile\b/i.test(inner)) efforts.add("facile");
+    if (/\bsoutenu\b/i.test(inner)) efforts.add("soutenu");
+    if (/\bsprints?\b/i.test(inner)) efforts.add("sprint");
+    if (efforts.size >= 2) return true;
+  }
+  return false;
+}
+
+/**
+ * Série multi-allures type Sheet « (1 lent, 1 moyen, 1 rapide, 1 souple) ».
+ * Lent ≠ souple : lent = allure lente ; souple = récup.
+ * @returns {{ steps: { n: number, allure: string }[], cue: string, raw: string } | null}
+ */
+export function parseRepAllureEnchainement(text) {
+  const s = String(text || "");
+  const reParen = new RegExp(`\\(([^)]*(?:${ALLURE_WORD_RE})[^)]*)\\)`, "i");
+  const m = s.match(reParen);
+  const scope = m ? m[1] : s;
+  const stepRe = new RegExp(`(\\d+)\\s*(${ALLURE_WORD_RE})`, "gi");
+  const steps = [];
+  const seenAllures = new Set();
+  let match;
+  while ((match = stepRe.exec(scope)) !== null) {
+    const n = parseInt(match[1], 10);
+    const allure = normalizeAllureToken(match[2], { mapViteToRapide: true });
+    if (!Number.isFinite(n) || n <= 0 || !allure) continue;
+    steps.push({ n, allure });
+    seenAllures.add(allure);
+  }
+  if (steps.length < 2 || seenAllures.size < 2) return null;
+  const cue = steps.map((st) => `${st.n} ${st.allure}`).join(" · ");
+  return { steps, cue, raw: m ? m[0] : cue };
+}
+
+/**
+ * Suite d’allures sans compteur : « lent progressif », « souple moyen vite »,
+ * ou contraste mètres « (50 m moyen + 25 m vite + 25 m souple) ».
+ * @returns {{ steps: { n: number, allure: string }[], cue: string, raw: string } | null}
+ */
+export function parseSequentialAllureEnchainement(text) {
+  const s = String(text || "");
+  if (!s.trim()) return null;
+  const tokenRe = new RegExp(`\\b(${ALLURE_WORD_RE})\\b`, "gi");
+  const ordered = [];
+  const seen = new Set();
+  let match;
+  while ((match = tokenRe.exec(s)) !== null) {
+    const allure = normalizeAllureToken(match[1], { mapViteToRapide: false });
+    if (!allure || seen.has(allure)) continue;
+    seen.add(allure);
+    ordered.push(allure);
+  }
+  if (ordered.length < 2) return null;
+  const steps = ordered.map((allure) => ({ n: 1, allure }));
+  const cue = ordered.join(" · ");
+  return { steps, cue, raw: cue };
+}
+
+/**
+ * Enchaînement multi-allures : reps numérotées en priorité, sinon suite libre.
+ * @returns {{ steps: { n: number, allure: string }[], cue: string, raw: string } | null}
+ */
+export function parseAllureEnchainement(text) {
+  return parseRepAllureEnchainement(text) || parseSequentialAllureEnchainement(text);
+}
+
+/** Protège « souple » avant humanisation D9 (toCoach / prettify → facile). */
+function protectSoupleForPipeline(raw) {
+  const s = String(raw ?? "");
+  if (hasContrastingPaces(s)) {
+    // Garde les allures en place (pas de pastille unique) ; protège aussi progressif/descendant du cleanCueNoise.
+    return s
+      .replace(/\bsouple\b/gi, SOUPLE_TOKEN)
+      .replace(/\bprogressif\b/gi, PROGRESSIF_TOKEN)
+      .replace(/\bdescendant\b/gi, DESCENDANT_TOKEN);
+  }
+  if (!extractSoupleEffort(s)) return s;
+  return s
+    .replace(/(\w)\*+souple\b/gi, `$1 ${SOUPLE_TOKEN}`)
+    .replace(/\*+souple\b/gi, ` ${SOUPLE_TOKEN}`)
+    .replace(/\bsouple\b/gi, SOUPLE_TOKEN);
+}
+
+function restoreSoupleAfterPipeline(line) {
+  const s = String(line ?? "");
+  const hasTokens =
+    s.includes(SOUPLE_TOKEN) || s.includes(PROGRESSIF_TOKEN) || s.includes(DESCENDANT_TOKEN);
+  if (!hasTokens) return s;
+
+  const restoredPreview = s
+    .replace(new RegExp(SOUPLE_TOKEN, "g"), "souple")
+    .replace(new RegExp(PROGRESSIF_TOKEN, "g"), "progressif")
+    .replace(new RegExp(DESCENDANT_TOKEN, "g"), "descendant");
+
+  // Contraste d’allures : remettre les mots dans la parenthèse (pas « — souple » en fin)
+  if (
+    s.includes(PROGRESSIF_TOKEN) ||
+    s.includes(DESCENDANT_TOKEN) ||
+    hasContrastingPaces(restoredPreview)
+  ) {
+    return restoredPreview.replace(/\s{2,}/g, " ").trim();
+  }
+
+  const cleaned = s
+    .replace(new RegExp(`\\s*${SOUPLE_TOKEN}`, "g"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return `${cleaned} — souple`;
+}
+
 export function expandCompoundDetailLines(details = []) {
-  const source = toCoachDetailLines(details);
+  const source = toCoachDetailLines((details || []).map(protectSoupleForPipeline));
   const out = [];
   for (const raw of source) {
     const full = String(raw ?? "");
@@ -93,7 +245,7 @@ export function expandCompoundDetailLines(details = []) {
       out.push(text);
     }
   }
-  return out.map((line) => prettifySessionDetailLine(line));
+  return out.map((line) => restoreSoupleAfterPipeline(prettifySessionDetailLine(line)));
 }
 
 export function groupSessionDetails(details = []) {
@@ -216,16 +368,349 @@ export function formatDurationShort(mins) {
 export function formatRestLabel(rest) {
   if (!rest) return null;
   const s = String(rest);
-  if (/^D/i.test(s)) return s.replace(/^D/i, "Départ ");
-  if (/^R(\d+)/i.test(s)) return `Récup. ${s.replace(/^R/i, "")}`;
-  if (/repos/i.test(s)) return s.replace(/repos/i, "Récup.");
+  // D… / R… / repos → pastilles D2' / R30" (plus MetaPill « Récup. »)
+  if (/^D/i.test(s)) return null;
+  if (parseRestInterval(s)) return null;
   return s;
 }
 
-/** Extrait « 8 × 50 m » et « CRAWL » d’un main pour la hiérarchie visuelle. */
+/**
+ * Extrait une récupération fixe (R… / repos).
+ * @returns {{ seconds: number, raw: string } | null}
+ */
+export function parseRestInterval(text) {
+  const s = String(text || "");
+  let m = s.match(/\bR\s*(\d+)\s*['′]\s*(\d{1,2})?\s*["″]?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] != null && String(m[2]).length ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) {
+      return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+    }
+  }
+  m = s.match(/\bR\s*(\d+)\s*["″]?\b/i);
+  if (m) {
+    const sec = parseInt(m[1], 10);
+    if (Number.isFinite(sec) && sec > 0) return { seconds: sec, raw: m[0] };
+  }
+  m = s.match(/repos\s+(\d+)\s*min(?:utes?)?(?:\s+(\d+)\s*s(?:ec(?:ondes?)?)?)?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) {
+      return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+    }
+  }
+  m = s.match(/repos\s+(\d+)\s*s(?:ec(?:ondes?)?)?/i);
+  if (m) {
+    const sec = parseInt(m[1], 10);
+    if (Number.isFinite(sec) && sec > 0) return { seconds: sec, raw: m[0] };
+  }
+  return null;
+}
+
+/** Pastille récup : R30" / R1'30" */
+export function formatRestChip(seconds) {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  if (m === 0) return `R${s}"`;
+  if (s === 0) return `R${m}'`;
+  return `R${m}'${String(s).padStart(2, "0")}"`;
+}
+
+/** Phrase tip récup */
+export function formatRestHuman(seconds) {
+  return formatDepartHuman(seconds);
+}
+
+/**
+ * Extrait un intervalle de départ à la montre depuis une ligne Sheet / composeur.
+ * @returns {{ seconds: number, raw: string } | null}
+ */
+export function parseDepartInterval(text) {
+  const s = String(text || "");
+  let m = s.match(/\bD\s*(\d+)\s*['′]\s*(\d{1,2})?\s*["″]?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] != null && String(m[2]).length ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+  }
+  m = s.match(/d[ée]part\s+(?:toutes\s+les\s+)?(\d+)\s*min(?:utes?)?(?:\s+(\d+)\s*s(?:ec(?:ondes?)?)?)?/i);
+  if (m) {
+    const min = parseInt(m[1], 10);
+    const sec = m[2] ? parseInt(m[2], 10) : 0;
+    if (Number.isFinite(min) && min >= 0) return { seconds: min * 60 + (Number.isFinite(sec) ? sec : 0), raw: m[0] };
+  }
+  return null;
+}
+
+/** Pastille bassin : D2' / D1'30" */
+export function formatDepartChip(seconds) {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  if (s === 0) return `D${m}'`;
+  return `D${m}'${String(s).padStart(2, "0")}"`;
+}
+
+/** Phrase tip : « 2 minutes » / « 1 minute 30 » */
+export function formatDepartHuman(seconds) {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  if (m === 0) return `${s} s`;
+  if (s === 0) return m === 1 ? "1 minute" : `${m} minutes`;
+  return `${m} min ${s}`;
+}
+
+export function stripDepartMarkers(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/,?\s*d[ée]part\s+(?:toutes\s+les\s+)?\d+\s*min(?:utes?)?(?:\s+\d+\s*s(?:ec(?:ondes?)?)?)?/gi, "")
+      .replace(/\bD\s*\d+\s*['′]\s*\d{0,2}\s*["″]?/gi, "")
+      .replace(/\s*[,;·]+\s*$/g, "")
+      .replace(/^\s*[,;·]+\s*/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim() || null
+  );
+}
+
+export function stripSprintMarkers(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/\bsprints?\b/gi, " ")
+      .replace(/\s*[,;·]+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+      .trim() || null
+  );
+}
+
+/**
+ * Aligne le libellé UI sur le Sheet (plus de « crawl normal » / « dos normal »).
+ * Retire aussi les virgules décoratives en fin de consigne (souvent dans le Sheet).
+ * Normalise `crawl*souple` → `crawl souple` (astérisque Sheet).
+ * Sheet « (1, 1 inversé) » → « 1× normal · 1× inversé ».
+ */
+export function scrubLegacyNormalWording(text) {
+  if (!text) return text;
+  return String(text)
+    .replace(/(\w)\*+(\w)/g, "$1 $2")
+    .replace(/\*/g, " ")
+    .replace(/\b(crawl|dos|brasse|papillon|nage)\s+normal(e)?\b/gi, "$1")
+    // (1, 1 inversé) / 2, 2 inversé → 1× normal · 1× inversé
+    .replace(
+      /\(?\s*(\d+)\s*,\s*(\d+)\s+invers[ée]s?\s*\)?/gi,
+      (_, a, b) => `${a}× normal · ${b}× inversé`,
+    )
+    .replace(/\s{2,}/g, " ")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/,+\s*$/g, "")
+    .trim();
+}
+
+/** Détecte une allure « souple » (récup / relâchement) dans une ligne Sheet ou composeur.
+ * Pas de pastille si « souple » n’est qu’une des allures d’un contraste (75 m souple + 25 m progressif).
+ */
+export function extractSoupleEffort(...parts) {
+  const blob = parts.filter(Boolean).join(" ");
+  if (!blob) return null;
+  const t = scrubLegacyNormalWording(blob).toLowerCase();
+  if (!/\bsouple\b/.test(t)) return null;
+  if (hasContrastingPaces(t)) {
+    const outside = t.replace(/\([^)]*\)/g, " ");
+    return /\bsouple\b/.test(outside) ? "souple" : null;
+  }
+  return "souple";
+}
+
+/** Retire le mot souple du texte affiché (la pastille porte l’info).
+ * Ne touche pas aux contrastes d’allures dans une parenthèse.
+ */
+export function stripSoupleMarkers(text) {
+  if (!text) return text;
+  if (hasContrastingPaces(text)) return scrubLegacyNormalWording(text);
+  return scrubLegacyNormalWording(text)
+    .replace(/\bsouple\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+    .trim() || null;
+}
+
+/**
+ * Sous-texte d'intensité générique (pas d'info utile sous le volume).
+ * Ex. « Facile, sans forcer », « Allure tenable, focus économie ».
+ */
+export function isSoftFillCue(cue) {
+  const t = String(cue || "")
+    .trim()
+    .toLowerCase()
+    .replace(/,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return true;
+  if (
+    /^(facile|très facile|confortable|soutenu|relâché|relache|sans forcer|normal)(\s+(facile|sans forcer|relâché|relache|normal))*$/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  if (/^nage normale?$/.test(t)) return true;
+  if (/allure tenable/.test(t) && /economie|économie/.test(t)) return true;
+  if (/^focus (economie|économie|geste)$/.test(t)) return true;
+  if (/^(mise en route|retour au calme)$/.test(t)) return true;
+  if (/^(nage libre|crawl|dos|brasse|mix|au choix)\s+(facile|souple)$/i.test(t)) return true;
+  if (/^allure r[eé]guli[eè]re$/.test(t)) return true;
+  return false;
+}
+
+/**
+ * Cue qui ne fait que répéter une pastille d’allure (LENT, SOUPLE…).
+ * Ne pas appliquer quand le cue est l’ordre d’un enchaînement (« lent · progressif »).
+ */
+export function isRedundantAllureCue(cue) {
+  const t = String(cue || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return true;
+  return /^(lent|moyen|souple|progressif|vite|rapide|facile|soutenu|descendant|a bloc|sprint|sprints)$/i.test(
+    t,
+  );
+}
+
+/**
+ * Répartition MIXTE pour le sous-texte (style Sheet, entre parenthèses).
+ * Ex. « en alternant (75 m crawl et 25 m dos) » → « (75 m crawl et 25 m dos) »
+ * Ex. « crawl / dos » → « (crawl / dos) »
+ * Ex. « 25 m crawl + 25 m au choix » → « (25 m crawl + 25 m au choix) »
+ * @returns {string|null}
+ */
+export function formatMixteRepartitionCue(text) {
+  const t = String(text || "");
+  if (!t.trim()) return null;
+
+  const paren = t.match(/\(([^)]*(?:crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)[^)]*)\)/i);
+  if (paren) return `(${paren[1].replace(/\s+/g, " ").trim()})`;
+
+  const pairs = [...t.matchAll(/(\d+)\s*m\s+(crawl|dos|brasse|papillon|au\s+choix|nage\s+libre|nl)\b/gi)];
+  if (pairs.length >= 2) {
+    return `(${pairs
+      .map((m) => {
+        const stroke = String(m[2]).toLowerCase().replace(/^nl$/, "crawl");
+        return `${m[1]} m ${stroke}`;
+      })
+      .join(" + ")})`;
+  }
+
+  const slash = t.match(
+    /\b(crawl|dos|brasse|papillon)\s*[\/·|]\s*(crawl|dos|brasse|papillon|au\s+choix)\b/i,
+  );
+  if (slash) return `(${slash[1].toLowerCase()} / ${slash[2].toLowerCase()})`;
+
+  return null;
+}
+
+/**
+ * Choix binaire crawl ↔ 4 nages (≠ nage libre, ≠ 4 nages imposé).
+ * Accepte « crawl ou 4 nages » / « 4 nages ou crawl » (nl = crawl).
+ */
+export function isCrawlOrFourNagesChoice(text) {
+  const t = String(text || "").toLowerCase();
+  return (
+    /\b(?:crawl|nl)\s+ou\s+4\s*nages\b/.test(t) || /\b4\s*nages\s+ou\s+(?:crawl|nl)\b/.test(t)
+  );
+}
+
+const CRAWL_OR_4N_PREFIX_RE =
+  /^(?:crawl|nl)\s+ou\s+4\s*nages\b|^4\s*nages\s+ou\s+(?:crawl|nl)\b/i;
+
+/** Retire la locution du sous-texte (la pastille porte l’info). */
+export function stripCrawlOrFourNagesPhrase(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/\b(?:crawl|nl)\s+ou\s+4\s*nages\b/gi, " ")
+      .replace(/\b4\s*nages\s+ou\s+(?:crawl|nl)\b/gi, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+      .trim() || null
+  );
+}
+
+/**
+ * Déduit le libellé nage pour l’UI :
+ * - crawl ou 4 nages / 4 nages ou crawl → « CRAWL OU 4N »
+ * - 4 nages / médley / 4 strokes → « 4 NAGES »
+ * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE »
+ * - sinon nage unique / nage au choix
+ */
+export function inferStrokeLabel(blob) {
+  const text = String(blob || "").trim();
+  if (!text) return { label: null, consumePrefix: null };
+
+  const lower = text.toLowerCase();
+
+  // Avant le match « 4 nages » seul
+  if (isCrawlOrFourNagesChoice(text)) {
+    const m = text.match(CRAWL_OR_4N_PREFIX_RE);
+    return { label: "CRAWL OU 4N", consumePrefix: m ? m[0] : null };
+  }
+
+  if (/\b4\s*nages\b/.test(lower) || /\bm[eé]dley\b/.test(lower) || /(^|[^a-z])im([^a-z]|$)/i.test(lower)) {
+    const m = text.match(/^(4\s*nages|m[eé]dley|im)\b/i);
+    return { label: "4 NAGES", consumePrefix: m ? m[0] : null };
+  }
+
+  const strokes = new Set();
+  if (/\bcrawl\b/.test(lower) || /\bnl\b/.test(lower)) strokes.add("crawl");
+  if (/\bdos\b/.test(lower)) strokes.add("dos");
+  if (/\bbrasse\b/.test(lower)) strokes.add("brasse");
+  if (/\bpapillon\b/.test(lower)) strokes.add("papillon");
+  const free = /\b(nage\s+libre|nage\s+au\s+choix|au\s+choix)\b/.test(lower);
+  const mixWord = /\bmix(te)?\b/.test(lower);
+
+  if (strokes.size >= 4) {
+    return { label: "4 NAGES", consumePrefix: null };
+  }
+
+  const isMixte = strokes.size >= 2 || (strokes.size >= 1 && free) || mixWord;
+  if (isMixte) {
+    const m = text.match(/^(mix(te)?)\b/i);
+    const onlyMixPrefix = m && strokes.size === 0 && !free;
+    return { label: "MIXTE", consumePrefix: onlyMixPrefix ? m[0] : null };
+  }
+
+  const freeMatch = text.match(/^(nage\s+libre|nage\s+au\s+choix|au\s+choix)\b/i);
+  if (freeMatch) {
+    return { label: "NAGE AU CHOIX", consumePrefix: freeMatch[0] };
+  }
+  if (free) {
+    return { label: "NAGE AU CHOIX", consumePrefix: null };
+  }
+
+  const strokeMatch = text.match(/^(crawl|dos|brasse|papillon|nl)\b/i);
+  if (strokeMatch) {
+    const raw = strokeMatch[1].toLowerCase();
+    if (raw === "nl") return { label: "CRAWL", consumePrefix: strokeMatch[0] };
+    return { label: strokeMatch[1].toUpperCase(), consumePrefix: strokeMatch[0] };
+  }
+
+  return { label: null, consumePrefix: null };
+}
+
+/** Extrait « 8 × 50 m » et « CRAWL » / « MIXTE » d’un main pour la hiérarchie visuelle. */
 export function splitHeadline(main) {
-  if (!main) return { volume: null, stroke: null, rest: main };
-  let text = String(main).trim();
+  if (!main) return { volume: null, stroke: null, rest: main, effort: null };
+  let text = scrubLegacyNormalWording(main);
   let volume = null;
   const nx = text.match(/^(\d+\s*[x×]\s*\d+\s*m)\b/i);
   const sm = text.match(/^(\d+\s*m)\b/i);
@@ -237,14 +722,26 @@ export function splitHeadline(main) {
     text = text.slice(sm[0].length).trim();
   }
   text = text.replace(/^[-–—·:,]\s*/, "");
-  const strokeMatch = text.match(/^(crawl|dos|brasse|papillon|nl|mix|4\s*nages|médley|im)\b/i);
-  let stroke = null;
-  if (strokeMatch) {
-    stroke = strokeMatch[1].toUpperCase().replace(/\s+/g, " ");
-    if (stroke === "NL") stroke = "CRAWL";
-    text = text.slice(strokeMatch[0].length).trim().replace(/^[-–—·:,]\s*/, "");
+
+  const effort = extractSoupleEffort(text);
+  if (effort) text = stripSoupleMarkers(text) || "";
+
+  const inferred = inferStrokeLabel(text);
+  let stroke = inferred.label;
+  if (inferred.consumePrefix) {
+    text = text.slice(inferred.consumePrefix.length).trim().replace(/^[-–—·:,]\s*/, "");
   }
-  return { volume, stroke, rest: text || null };
+  let rest = stripSoupleMarkers(text);
+  // MIXTE : répartition en sous-texte style Sheet « (75 m crawl et 25 m dos) »
+  if (stroke === "MIXTE") {
+    const repartCue = formatMixteRepartitionCue(text);
+    if (repartCue) rest = repartCue;
+  }
+  if (stroke === "CRAWL OU 4N") {
+    // Pastille déjà claire → pas de sous-texte doublon
+    rest = stripCrawlOrFourNagesPhrase(rest);
+  }
+  return { volume, stroke, rest: rest || null, effort };
 }
 
 function sectionForKind(kind, cues, main) {
@@ -300,10 +797,108 @@ export function buildWorkoutView(session = {}) {
       pyramid?.volume ||
       parseMetersFromLine(parsed?.main || raw) ||
       childParsed.reduce((a, c) => a + parseMetersFromLine(c.main), 0);
-    const headline = splitHeadline(parsed?.main);
-    const cuePrimary = parsed?.cues?.[0] || headline.rest || null;
-    const educatif = matchEducatif([parsed?.main, cuePrimary, ...(parsed?.cues || []), ...childParsed.map((c) => c.main)].filter(Boolean).join(" — "));
+    const headline = splitHeadline(scrubLegacyNormalWording(parsed?.main));
+    const firstCue = parsed?.cues?.[0] ? scrubLegacyNormalWording(parsed.cues[0]) : null;
+    // Ne pas laisser un cue « souple » (pastille) écraser la répartition MIXTE (headline.rest)
+    let cuePrimary = scrubLegacyNormalWording(
+      (firstCue && !isSoftFillCue(firstCue) ? firstCue : null) || headline.rest || null,
+    );
+
+    // Enchaînement multi-allures (1 lent… ou lent progressif / souple moyen vite…)
+    const enchainBlob = [parsed?.main, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
+    const allureEnchainement = parseAllureEnchainement(enchainBlob);
+
+    const effortLabel = allureEnchainement
+      ? null
+      : headline.effort ||
+        extractSoupleEffort(parsed?.main, cuePrimary, ...(parsed?.cues || []), raw);
+    if (effortLabel) {
+      cuePrimary = stripSoupleMarkers(cuePrimary);
+    }
+    if (isSoftFillCue(cuePrimary)) cuePrimary = null;
+    let cues = (parsed?.cues || [])
+      .map((c) => scrubLegacyNormalWording(c))
+      .map((c) => (effortLabel ? stripSoupleMarkers(c) : c))
+      .filter((c) => c && !isSoftFillCue(c));
+    if (!cuePrimary && cues[0]) cuePrimary = cues[0];
+    if (!cuePrimary && headline.rest && !isSoftFillCue(headline.rest)) {
+      cuePrimary = headline.rest;
+    }
+    if (allureEnchainement) {
+      // Reps numérotées / suite libre → cue « lent · progressif »
+      // Contraste mètres « (75 m souple + 25 m progressif) » → garder les distances
+      const isRepStyle = Boolean(parseRepAllureEnchainement(enchainBlob));
+      const cueHasMeterSplit =
+        /\d+\s*m\b[\s\S]*\d+\s*m\b/i.test(String(cuePrimary || "")) ||
+        /\(\s*\d+\s*m\b[^)]*\d+\s*m\b/i.test(enchainBlob);
+      if (isRepStyle || !cueHasMeterSplit) {
+        cuePrimary = allureEnchainement.cue;
+      }
+    } else if (isRedundantAllureCue(cuePrimary)) {
+      // Pastille LENT / SOUPLE / … déjà dans le titre → pas de doublon gris
+      cuePrimary = null;
+    }
+    cues = cues.filter((c) => !isRedundantAllureCue(c));
+    if (!cuePrimary && cues[0] && !isRedundantAllureCue(cues[0])) cuePrimary = cues[0];
+    const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
+
+    // Départ à la montre → pastille D2' (pas dans le sous-texte)
+    const departBlob = [parsed?.rest, cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
+    const departParsed =
+      (parsed?.rest && /^D/i.test(String(parsed.rest)) ? parseDepartInterval(parsed.rest) : null) ||
+      parseDepartInterval(departBlob);
+    const departLabel = departParsed ? formatDepartChip(departParsed.seconds) : null;
+    const departSeconds = departParsed ? departParsed.seconds : null;
+    if (departLabel) {
+      cuePrimary = stripDepartMarkers(cuePrimary);
+      cues = cues.map((c) => stripDepartMarkers(c)).filter(Boolean);
+    }
+
+    const restFromField =
+      parsed?.rest && !/^D/i.test(String(parsed.rest)) ? parseRestInterval(parsed.rest) : null;
+    const restChip = restFromField ? formatRestChip(restFromField.seconds) : null;
+    const restSeconds = restFromField ? restFromField.seconds : null;
+
+    const sprintBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
+    // Sprint seul → pastille SPRINT ; déjà dans Enchaînement → ne pas doubler / stripper le cue
+    const hasSprint = !allureEnchainement && /\bsprints?\b/i.test(sprintBlob);
+    if (hasSprint) {
+      cuePrimary = stripSprintMarkers(cuePrimary);
+      cues = cues.map((c) => stripSprintMarkers(c)).filter(Boolean);
+    }
+
+    const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" — ");
+    let educatif = null;
+    let educatifs = [];
+    if (session.composedBy === "natation-sheet") {
+      // Source de vérité = onglet Éducatifs du Sheet (attaché à la séance)
+      const fiches = Array.isArray(session.sheetEducatifs) && session.sheetEducatifs.length
+        ? session.sheetEducatifs
+        : session.sheetEducatif?.name
+          ? [session.sheetEducatif]
+          : [];
+      for (const sheetFiche of fiches) {
+        if (!sheetFiche?.name) continue;
+        const re = new RegExp(sheetFiche.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+        if (re.test(blob) || re.test(String(mainClean || ""))) {
+          educatifs.push(sheetFiche);
+        }
+      }
+      educatif = educatifs[0] || null;
+    } else {
+      educatif = matchEducatif(blob);
+      if (educatif) educatifs = [educatif];
+    }
     index += 1;
+    // Cue « Crawl ou 4 nages » même si le main disait seulement « 4 nages »
+    const choiceBlob = [mainClean, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
+    let strokeLabel = headline.stroke;
+    if (isCrawlOrFourNagesChoice(choiceBlob)) {
+      strokeLabel = "CRAWL OU 4N";
+      if (isCrawlOrFourNagesChoice(cuePrimary)) {
+        cuePrimary = stripCrawlOrFourNagesPhrase(cuePrimary);
+      }
+    }
     exercises.push({
       id: `ex_${index}`,
       index,
@@ -311,25 +906,38 @@ export function buildWorkoutView(session = {}) {
       raw,
       kind: parsed?.kind || "work",
       label: parsed?.label || null,
-      main: parsed?.main || stripDetailPrefix(raw),
+      main: mainClean,
       volumeLabel: headline.volume || (pyramid ? `${pyramid.volume} m` : null),
-      strokeLabel: headline.stroke,
+      strokeLabel,
+      effortLabel: effortLabel || null,
+      allureEnchainement: allureEnchainement || null,
+      sprint: hasSprint,
       cue: cuePrimary,
-      cues: parsed?.cues || [],
+      cues,
       rest: parsed?.rest || null,
       restLabel: formatRestLabel(parsed?.rest),
+      restChip,
+      restSeconds,
+      departLabel,
+      departSeconds,
       steps: parsed?.steps || null,
       pyramid,
-      children: childParsed.map((c) => ({
-        main: c.main,
-        rest: c.rest,
-        restLabel: formatRestLabel(c.rest),
-        cues: c.cues || [],
-        headline: splitHeadline(c.main),
-      })),
+      children: childParsed.map((c) => {
+        const childRest = c.rest && !/^D/i.test(String(c.rest)) ? parseRestInterval(c.rest) : null;
+        return {
+          main: c.main,
+          rest: c.rest,
+          restLabel: formatRestLabel(c.rest),
+          restChip: childRest ? formatRestChip(childRest.seconds) : null,
+          restSeconds: childRest ? childRest.seconds : null,
+          cues: (c.cues || []).filter((x) => !isSoftFillCue(x)),
+          headline: splitHeadline(c.main),
+        };
+      }),
       meters,
       educatifId: educatif?.id || null,
       educatif,
+      educatifs: educatifs.length ? educatifs : null,
     });
   };
 

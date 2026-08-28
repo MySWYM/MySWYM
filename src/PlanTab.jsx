@@ -5,6 +5,7 @@ import { G } from "./theme/palette.js";
 import CoachCard from "./CoachCard.jsx";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { getTabUi } from "./tab-ui-registry.js";
+import { findGoalById } from "./lib/onboarding-catalog.jsx";
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 export default function PlanTab({
@@ -19,7 +20,6 @@ export default function PlanTab({
     ProgressionLoopView,
     PlanSelector,
     PremiumBanner,
-    WeekProjectionCard,
     ResetConfirmButton,
     UpdateProgramCard,
     WeekCard,
@@ -93,7 +93,11 @@ export default function PlanTab({
         plans={plans}
         activePlanId={activePlanId}
         isPremium={isPremium}
-        onComplete={(status) => onComplete(0, 0, status)}
+        onComplete={(a, b, c) => {
+          // WeekCard → (weekIndex, sessionIndex, status) ; legacy boucle → (status)
+          if (typeof a === "string" && b === undefined) onComplete(0, 0, a);
+          else onComplete(a ?? 0, b ?? 0, c);
+        }}
         onAdvanceLoop={onAdvanceLoop}
         onSwitchPlan={onSwitchPlan}
         onAddPlan={onAddPlan}
@@ -113,7 +117,7 @@ export default function PlanTab({
   const currentWeekIndex = plan.weeks.findIndex(w => !w.sessions.every(isSessionResolved));
   const currentWeek = currentWeekIndex >= 0 ? plan.weeks[currentWeekIndex] : null;
 
-  const planLabel = GOALS.find(g => g.id === profile.goal)?.label
+  const planLabel = findGoalById(profile.goal, GOALS)?.label
                  || CATEGORIES.find(c => c.id === profile.category)?.label
                  || "Mon plan";
   return (
@@ -172,8 +176,6 @@ export default function PlanTab({
             currentWeekIndex={currentWeekIndex >= 0 ? currentWeekIndex : 0}
           />
         )}
-
-        <WeekProjectionCard plan={plan} profile={profile} />
 
         {!isPremium && <ResetConfirmButton onReset={onReset} variant="card" />}
 

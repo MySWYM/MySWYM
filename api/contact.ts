@@ -1,9 +1,11 @@
 /**
  * POST /api/contact — formulaire contact + avis landing + support in-app / Telegram.
- * Hobby = 12 fonctions max : ne pas ajouter api/landing-review.ts ni api/support.ts.
+ * Hobby = 12 fonctions max : ne pas ajouter api/landing-review.ts, api/support.ts
+ * ni api/natation-sheet.ts — tout passe par ici (+ rewrites vercel.json).
  *
  * Support : GET|POST /api/contact?kind=app-support (JWT)
  * Telegram webhook : POST /api/telegram/webhook (rewrite) ou POST avec update_id
+ * Catalogue Sheet : GET /api/natation-sheet (rewrite → kind=natation-sheet)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
@@ -14,6 +16,10 @@ import {
   isSupportRequest,
   isTelegramWebhookRequest,
 } from "./_lib/support/http.js";
+import {
+  handleNatationSheet,
+  isNatationSheetRequest,
+} from "./_lib/natation-sheet.js";
 import { formatLandingContactNotify } from "./_lib/support/parse.js";
 import {
   isContactTelegramConfigured,
@@ -128,6 +134,11 @@ async function handleLandingReview(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = (req.body ?? {}) as Record<string, unknown>;
+
+  if (isNatationSheetRequest(req)) {
+    await handleNatationSheet(req, res);
+    return;
+  }
 
   if (isTelegramWebhookRequest(req, body)) {
     await handleTelegramWebhook(req, res, body);

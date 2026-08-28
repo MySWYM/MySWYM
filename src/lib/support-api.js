@@ -101,7 +101,7 @@ export async function fetchSupportThread(conversationId) {
   return mergeSnap({ ok: true, ...json }, dbSnap, conversationId);
 }
 
-export async function sendSupportLive(message, priorMessages) {
+export async function sendSupportLive(message, priorMessages, context) {
   const headers = await authHeaders();
   if (!headers) return { ok: false, error: "auth", conversation: null, messages: [] };
   const res = await fetch(PATH, {
@@ -112,6 +112,7 @@ export async function sendSupportLive(message, priorMessages) {
       action: "send",
       message,
       priorMessages: priorMessages || undefined,
+      context: context || undefined,
     }),
   });
   const json = await res.json().catch(() => ({}));
