@@ -210,7 +210,13 @@ def sheet_familles(wb):
         ("04 XS-Sprint deb crawl", "Débutant · XS/Sprint", "Non (débutant)"),
         ("05 XS-Sprint crawl", "Inter crawl · XS/Sprint", "Oui si Premium + T100"),
         ("06 XS-Sprint 4 nages", "Inter 4n / Avancé · XS/Sprint", "Oui si Premium + T100"),
-        ("07–13 …", "Oly / OW — pas encore soft", "Composeur pour l’instant"),
+        ("07 Oly-Half-Full crawl", "Inter crawl · Oly/Half/Full", "Oui si Premium + T100"),
+        ("08 Oly-Half-Full 4 nages", "Inter 4n / Avancé · Oly/Half/Full", "Oui si Premium + T100"),
+        ("09 OW courte deb crawl", "Débutant · OW courte", "Non (débutant)"),
+        ("10 OW courte crawl", "Inter crawl · OW courte", "Oui si Premium + T100"),
+        ("11 OW courte 4 nages", "Inter 4n / Avancé · OW courte", "Oui si Premium + T100"),
+        ("12 OW moy-long crawl", "Inter crawl · OW moy/long", "Oui si Premium + T100"),
+        ("13 OW moy-long 4 nages", "Inter 4n / Avancé · OW moy/long", "Oui si Premium + T100"),
     ]
     for i, row in enumerate(rows, 3):
         for c, v in enumerate(row, 1):

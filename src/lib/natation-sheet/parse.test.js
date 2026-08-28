@@ -234,12 +234,54 @@ ok(
   "vague2 sprint avancé → 06",
 );
 ok(
-  sheetFamilyIdFromProfile({ goal: "triathlon_olympic", level: "sportif", swimStyle: "crawl" }) === null,
-  "vague2 Oly pas encore branché",
+  sheetFamilyIdFromProfile({ goal: "triathlon_olympic", level: "sportif", swimStyle: "crawl" }) ===
+    "07 Oly-Half-Full crawl",
+  "vague3 Oly int crawl → 07",
 );
 ok(
-  sheetFamilyIdFromProfile({ goal: "open_water_5k", level: "sportif", swimStyle: "crawl" }) === null,
-  "vague2 OW pas encore branché",
+  sheetFamilyIdFromProfile({ goal: "triathlon_half", level: "régulier", swimStyle: "crawl" }) ===
+    "07 Oly-Half-Full crawl",
+  "vague3 Half deb → 07 (pas de feuille deb)",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "triathlon_ironman", level: "performance", swimStyle: "crawl" }) ===
+    "08 Oly-Half-Full 4 nages",
+  "vague3 Full avancé → 08",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "triathlon_olympic", level: "sportif", swimStyle: "4_nages" }) ===
+    "08 Oly-Half-Full 4 nages",
+  "vague3 Oly int 4n → 08",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "open_water_short", level: "régulier", swimStyle: "crawl" }) ===
+    "09 OW courte deb crawl",
+  "vague3 OW short deb → 09",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "open_water_1k", level: "sportif", swimStyle: "crawl" }) ===
+    "10 OW courte crawl",
+  "vague3 OW legacy 1k → 10",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "open_water_short", level: "sportif", swimStyle: "4_nages" }) ===
+    "11 OW courte 4 nages",
+  "vague3 OW short 4n → 11",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "open_water_5k", level: "sportif", swimStyle: "crawl" }) ===
+    "12 OW moy-long crawl",
+  "vague3 OW mid → 12",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "open_water_long", level: "performance", swimStyle: "crawl" }) ===
+    "13 OW moy-long 4 nages",
+  "vague3 OW long avancé → 13",
+);
+ok(
+  sheetFamilyIdFromProfile({ goal: "open_water_25k", level: "régulier", swimStyle: "crawl" }) ===
+    "12 OW moy-long crawl",
+  "vague3 OW legacy 25k deb → 12",
 );
 
 ok(lineHasFourNagesEducatifs("100 m 4 nages éducatifs"), "détecte 4 nages + éducatifs");
