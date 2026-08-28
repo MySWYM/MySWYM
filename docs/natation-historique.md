@@ -18,7 +18,8 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
-| 2026-08-28 | Sheet D/@ depuis T100 | Placeholders `{D:moyen\|vite\|course\|souple}` et `{@:…}` : app calcule départ / allure si **intermédiaire ou avancé + Premium + T100**. **Débutant = jamais** (→ `repos 30 s`, `@` retiré), tous objectifs. | ✅ active |
+| 2026-08-28 | Lexique Sheet zones D | Tokens canoniques `{D:facile\|endurance\|seuil\|VO2\|sprint}` (+ `{@:…}`). Alias anciens (moyen→endurance, etc.). Fichier coach : `docs/coach-ligne/lexique-sheet-myswym.xlsx`. Débutant = jamais de pace. | ✅ active |
+| 2026-08-28 | Sheet D/@ depuis T100 | Placeholders `{D:…}` / `{@:…}` calculés depuis T100 si **intermédiaire ou avancé + Premium + T100**. **Débutant = jamais**. | ✅ active |
 | 2026-08-28 | Catalogue Sheet vague 2 | Soft-branch étendu à **XS / Sprint 04–06** (`triathlon_xs` + `triathlon_sprint`). Même grille niveau / 4 nages que Nager. Oly/Half/Full, eau libre, diplômes = pas encore. | ✅ active |
 | 2026-08-27 | 4 nages + éducatifs | Sheet : dès qu’une ligne contient **« 4 nages » + « éducatif(s) »**, tirage **1 éducatif par nage** (pap → dos → brasse → crawl). Distances inchangées ; seuls les noms sont injectés. Anti-doublon par nage ; 4 fiches « Voir · … ». | ✅ active |
 | 2026-08-27 | Allures Sheet (tips) | Pastilles ⓘ sur séances : **Souple**, **Moyen** (ou « allure régulière »), **Progressif**, **Vite**, **À bloc**. Vocabulaire Sheet int/avancé ; débutant reste sur facile/souple. | ✅ active |

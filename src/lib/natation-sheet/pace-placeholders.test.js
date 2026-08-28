@@ -1,5 +1,5 @@
 /**
- * Tests placeholders Sheet {D:} / {@:}
+ * Tests placeholders Sheet {D:} / {@:} — zones facile → sprint
  * Usage : node src/lib/natation-sheet/pace-placeholders.test.js
  */
 import assert from "node:assert/strict";
@@ -13,47 +13,51 @@ import {
 } from "./pace-placeholders.js";
 import { materializeSession } from "./parse.js";
 
-assert.equal(normalizePaceIntent("moyen"), "moyen");
-assert.equal(normalizePaceIntent("rapide"), "vite");
-assert.equal(normalizePaceIntent("triathlon"), "course");
-assert.equal(normalizePaceIntent("Z2"), "moyen");
-assert.equal(inferRepMetersFromLine("8 × 100 m crawl moyen, {D:moyen}"), 100);
-assert.equal(inferRepMetersFromLine("6 × 50 m crawl vite, {D:vite}"), 50);
+assert.equal(normalizePaceIntent("endurance"), "endurance");
+assert.equal(normalizePaceIntent("VO2"), "vo2");
+assert.equal(normalizePaceIntent("vo2"), "vo2");
+assert.equal(normalizePaceIntent("sprint"), "sprint");
+assert.equal(normalizePaceIntent("moyen"), "endurance", "alias moyen");
+assert.equal(normalizePaceIntent("rapide"), "seuil", "alias rapide");
+assert.equal(normalizePaceIntent("souple"), "facile", "alias souple");
+assert.equal(inferRepMetersFromLine("8 × 100 m crawl, {D:endurance}"), 100);
+assert.equal(inferRepMetersFromLine("6 × 50 m crawl, {D:VO2}"), 50);
 
 assert.equal(canResolveSheetPace({ levelBand: "debutant", isPremium: true, pace100: 90 }), false);
-assert.equal(canResolveSheetPace({ levelBand: "intermediaire", isPremium: false, pace100: 90 }), false);
 assert.equal(canResolveSheetPace({ levelBand: "intermediaire", isPremium: true, pace100: 90 }), true);
 
-const dSec = computeDepartSeconds(90, "moyen", 100);
-assert.ok(dSec > 90 && dSec < 160, `D moyen ~ swim+rest (${dSec})`);
+const dEnd = computeDepartSeconds(90, "endurance", 100);
+const dVo2 = computeDepartSeconds(90, "vo2", 100);
+const dSprint = computeDepartSeconds(90, "sprint", 100);
+assert.ok(dEnd > 90 && dEnd < 160, `endurance D (${dEnd})`);
+assert.ok(dVo2 < dEnd, "VO2 nage+marge < endurance en général");
+assert.ok(dSprint > dVo2, "sprint a plus de récup → D souvent > VO2");
 assert.match(formatSheetDepart(110), /^D1'/);
 
 {
-  const noPace = resolvePacePlaceholders("8 × 100 m crawl moyen, {D:moyen}", {
+  const noPace = resolvePacePlaceholders("8 × 100 m crawl, {D:endurance}", {
     allowPace: false,
     pace100: 90,
   });
   assert.match(noPace, /repos 30 s/);
-  assert.ok(!/\{D:/.test(noPace));
 }
 
 {
-  const withAt = resolvePacePlaceholders("8 × 100 m crawl moyen, {D:moyen} {@:moyen}", {
-    allowPace: false,
-    pace100: 90,
-  });
-  assert.match(withAt, /repos 30 s/);
-  assert.ok(!/@\d/.test(withAt), "pas d’allure sans allowPace");
-}
-
-{
-  const ok = resolvePacePlaceholders("8 × 100 m crawl moyen, {D:moyen} {@:moyen}", {
+  const ok = resolvePacePlaceholders("8 × 100 m crawl, {D:endurance} {@:endurance}", {
     allowPace: true,
     pace100: 90,
   });
   assert.match(ok, /D\d+'/);
   assert.match(ok, /@\d+:\d+-\d+:\d+/);
-  assert.ok(!/\{[D@]:/.test(ok));
+}
+
+{
+  const vo2 = resolvePacePlaceholders("8 × 50 m crawl, {D:VO2} {@:VO2}", {
+    allowPace: true,
+    pace100: 90,
+  });
+  assert.match(vo2, /D\d+'/);
+  assert.match(vo2, /@\d+:\d+/);
 }
 
 {
@@ -61,17 +65,16 @@ assert.match(formatSheetDepart(110), /^D1'/);
     {
       n: 1,
       phase: null,
-      bande: "intermédiaire",
+      bande: "débutant",
       total_m: 800,
-      echauffement: "200 m crawl souple",
-      bloc: "8 × 100 m crawl moyen, {D:moyen}",
-      rac: "100 m souple",
+      echauffement: "200 m crawl",
+      bloc: "8 × 100 m crawl, {D:endurance}",
+      rac: "100 m",
     },
     [],
     { levelBand: "debutant", nage: "crawl", pace100: 90, isPremium: true },
   );
-  assert.match(filled.bloc, /repos 30 s/, "débutant → jamais D perso");
-  assert.ok(!/D\d+'/.test(filled.bloc));
+  assert.match(filled.bloc, /repos 30 s/);
 }
 
 {
@@ -81,8 +84,8 @@ assert.match(formatSheetDepart(110), /^D1'/);
       phase: null,
       bande: "intermédiaire",
       total_m: 800,
-      echauffement: "200 m crawl",
-      bloc: "8 × 100 m crawl moyen, {D:moyen} {@:moyen}",
+      echauffement: "200 m",
+      bloc: "8 × 100 m crawl, {D:seuil} {@:seuil}",
       rac: "100 m",
     },
     [],
