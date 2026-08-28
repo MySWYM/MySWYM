@@ -718,8 +718,8 @@ export function splitHeadline(main) {
     if (repartCue) rest = repartCue;
   }
   if (stroke === "CRAWL OU 4N") {
+    // Pastille déjà claire → pas de sous-texte doublon
     rest = stripCrawlOrFourNagesPhrase(rest);
-    if (!rest) rest = "Crawl ou 4 nages (médley)";
   }
   return { volume, stroke, rest: rest || null, effort };
 }
@@ -870,9 +870,7 @@ export function buildWorkoutView(session = {}) {
     if (isCrawlOrFourNagesChoice(choiceBlob)) {
       strokeLabel = "CRAWL OU 4N";
       if (isCrawlOrFourNagesChoice(cuePrimary)) {
-        cuePrimary = "Crawl ou 4 nages (médley)";
-      } else if (!cuePrimary) {
-        cuePrimary = "Crawl ou 4 nages (médley)";
+        cuePrimary = stripCrawlOrFourNagesPhrase(cuePrimary);
       }
     }
     exercises.push({

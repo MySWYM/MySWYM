@@ -200,7 +200,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   const ex = view.exercises[0];
   assert.equal(ex.strokeLabel, "CRAWL OU 4N");
   assert.equal(ex.effortLabel, "souple");
-  assert.match(ex.cue || "", /Crawl ou 4 nages/i);
+  assert.equal(ex.cue, null, "pas de sous-texte doublon");
 }
 
 {
@@ -212,6 +212,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   });
   const ex = view.exercises[0];
   assert.equal(ex.strokeLabel, "CRAWL OU 4N");
+  assert.equal(ex.cue, null, "cue choice retiré (pastille suffit)");
 }
 
 {
