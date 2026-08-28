@@ -106,6 +106,7 @@ import {
   writeDeletedPlanIds,
   persistAccountPlans,
   PLANS_AUTOSAVE_DEBOUNCE_MS,
+  PLAN_VISIBILITY_SYNC_MIN_MS,
   storedPlansUpdatedAtMs,
   loadRemotePlansIfNewer,
   parseUserPlansBlob,
@@ -7782,6 +7783,7 @@ export default function App() {
   /** Incrémente à chaque tentative de save — empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
   const plansRef = useRef(plans);
+  const lastPlanVisibilitySyncAtRef = useRef(0);
   const activePlanIdRef = useRef(activePlanId);
   const planHistoryRef = useRef(planHistory);
   plansRef.current = plans;
@@ -8683,12 +8685,16 @@ export default function App() {
     return () => clearTimeout(timeoutId);
   }, [plans, activePlanId, planHistory, user]);
 
-  // Re-sync au retour sur l'app : blob JSON seulement si remote plus récent
+  // Re-sync au retour sur l'app : blob JSON seulement si remote nettement plus récent (throttle)
   useEffect(() => {
     if (!user) return;
     const userId = user.id;
     const syncFromRemote = async () => {
       try {
+        const now = Date.now();
+        if (now - lastPlanVisibilitySyncAtRef.current < PLAN_VISIBILITY_SYNC_MIN_MS) return;
+        lastPlanVisibilitySyncAtRef.current = now;
+
         const currentPlans = plansRef.current;
         const currentActive = activePlanIdRef.current;
         const currentHistory = planHistoryRef.current;

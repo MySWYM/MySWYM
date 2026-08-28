@@ -10,16 +10,22 @@ import {
   loadRemotePlansIfNewer,
   parseUserPlansBlob,
   userPlansUpsertRow,
+  plansPersistFingerprint,
+  readLastPlansPersistFingerprint,
+  writeLastPlansPersistFingerprint,
 } from "./plan-account-egress.js";
 
 export {
   PLANS_AUTOSAVE_DEBOUNCE_MS,
+  PLAN_VISIBILITY_SYNC_MIN_MS,
+  REMOTE_NEWER_EPSILON_MS,
   USER_PLANS_META_SELECT,
   USER_PLANS_BLOB_SELECT,
   storedPlansUpdatedAtMs,
   shouldFetchRemotePlanBlob,
   parseUserPlansBlob,
   userPlansUpsertRow,
+  plansPersistFingerprint,
   fetchUserPlansMeta,
   fetchUserPlansBlob,
   fetchUserPlansLegacy,
@@ -167,6 +173,12 @@ export const persistAccountPlans = async (userId, localPlans, activePlanId, dele
   const active = enforced.activeId;
   const history = enforced.history;
 
+  const fp = plansPersistFingerprint(merged, active, history);
+  if (fp && fp === readLastPlansPersistFingerprint(userId)) {
+    // Rien n’a changé vs dernier upsert réussi — pas de re-écriture JSON (egress + bump updated_at).
+    return { plans: merged, active, history, error: null, skipped: true };
+  }
+
   try {
     localStorage.setItem(`myswym_plans_${userId}`, JSON.stringify(merged));
     if (active) localStorage.setItem(`myswym_active_${userId}`, active);
@@ -186,8 +198,11 @@ export const persistAccountPlans = async (userId, localPlans, activePlanId, dele
       }),
       { onConflict: "user_id" },
     );
-    if (!error) writeDeletedPlanIds(userId, new Set());
-    return { plans: [], active: null, history, error: error || null };
+    if (!error) {
+      writeDeletedPlanIds(userId, new Set());
+      writeLastPlansPersistFingerprint(userId, fp);
+    }
+    return { plans: [], active: null, history, error: error || null, skipped: false };
   }
 
   const { error } = await supabase.from("user_plans").upsert(
@@ -204,9 +219,10 @@ export const persistAccountPlans = async (userId, localPlans, activePlanId, dele
   if (error) {
     if (import.meta.env.DEV) console.warn("[plans] upsert failed", error.message);
     writeDeletedPlanIds(userId, tombstones);
-    return { plans: merged, active, history, error };
+    return { plans: merged, active, history, error, skipped: false };
   }
 
   writeDeletedPlanIds(userId, new Set());
-  return { plans: merged, active, history, error: null };
+  writeLastPlansPersistFingerprint(userId, fp);
+  return { plans: merged, active, history, error: null, skipped: false };
 };
