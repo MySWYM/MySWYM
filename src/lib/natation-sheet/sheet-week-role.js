@@ -270,7 +270,9 @@ export function sheetPhaseShortLabel(role) {
 
 /**
  * Timeline de semaines pour l’accueil (tri / event Sheet).
- * Avec date de course : de la semaine courante jusqu’à S0 (piste complète).
+ * Avec date de course : de la semaine calendaire (S-n aujourd’hui) jusqu’à S0.
+ * `weekIndex` (semaines de plan déjà enchaînées) déplace « cette semaine »
+ * le long de la piste : Semaine 1 → S-n, Semaine 2 → S-(n−1), etc.
  * `maxWeeks` optionnel = plafond d’affichage (tests / UI contrainte).
  * Sans date : un cycle FAR_CYCLE_LEN semaines à partir de `weekIndex`.
  *
@@ -306,13 +308,15 @@ export function buildEventWeekTimeline(opts = {}) {
   if (sNow != null && sNow >= 0) {
     const fullCount = sNow + 1;
     const count = maxWeeks == null ? fullCount : Math.min(fullCount, maxWeeks);
+    const currentIdx = Math.min(baseWeekIndex, Math.max(0, count - 1));
     for (let i = 0; i < count; i++) {
       const s = sNow - i;
       const fakeNow = new Date(now.getTime() + i * MS_WEEK);
+      // weekIndex = rang de plan sur la piste (0 = 1re semaine), pas le curseur courant + i
       const role = resolveSheetWeekRole({
         eventDate: opts.eventDate,
         planStart: opts.planStart,
-        weekIndex: baseWeekIndex + i,
+        weekIndex: i,
         now: fakeNow,
       });
       weeks.push({
@@ -322,7 +326,7 @@ export function buildEventWeekTimeline(opts = {}) {
         phase: role.phase,
         shortLabel: sheetPhaseShortLabel(role),
         label: role.label,
-        isCurrent: i === 0,
+        isCurrent: i === currentIdx,
         isRaceWeek: !!role.isRaceWeek,
       });
     }
@@ -332,7 +336,7 @@ export function buildEventWeekTimeline(opts = {}) {
       truncated: maxWeeks != null && fullCount > maxWeeks,
       weeksBeforeRace: sNow,
       eventDate: opts.eventDate || null,
-      current: weeks[0] || null,
+      current: weeks[currentIdx] || weeks[0] || null,
     };
   }
 

@@ -73,11 +73,16 @@ export default function EventWeekPlanCard({ plan, profile, onOpenProfile }) {
         ? "Après la course"
         : "Cycle d’entraînement";
 
+  // Sous-titre calé sur la pastille « cette semaine » (progression plan), pas seulement le calendrier
+  const currentS =
+    timeline.mode === "to_race" && timeline.current?.sIndex != null
+      ? timeline.current.sIndex
+      : timeline.weeksBeforeRace;
   const sub =
-    timeline.mode === "to_race" && timeline.weeksBeforeRace != null
-      ? timeline.weeksBeforeRace === 0
+    timeline.mode === "to_race" && currentS != null
+      ? currentS === 0
         ? "Semaine de course"
-        : `${timeline.weeksBeforeRace} semaine${timeline.weeksBeforeRace > 1 ? "s" : ""} avant J`
+        : `${currentS} semaine${currentS > 1 ? "s" : ""} avant J`
       : timeline.mode === "cycle" && !profile.eventDate
         ? "Ajoute ta date de course pour caler S0"
         : null;
