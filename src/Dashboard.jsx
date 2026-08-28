@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Award, Lock, Flame, Waves, Trophy, TrendingUp,
 } from "lucide-react";
@@ -12,6 +12,7 @@ import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
+import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
 import { track, sessionAnalyticsProps } from "./lib/analytics.js";
 import {
   getSessionRemindersEnabled,
@@ -24,6 +25,10 @@ import {
   isProfileNudgeDismissed,
   shouldShowProfileNudge,
 } from "./lib/profile-nudge.js";
+import {
+  hasSeenAllureUnlockTip,
+  shouldShowAllureUnlockTip,
+} from "./lib/allure-unlock-tip.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { getTabUi } from "./tab-ui-registry.js";
@@ -164,14 +169,32 @@ export default function Dashboard({
   const [poolOpen, setPoolOpen] = useState(false);
   const [homePrepOpen, setHomePrepOpen] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
+  const [allureTipDismissed, setAllureTipDismissed] = useState(() => hasSeenAllureUnlockTip(user?.id));
   const next = findNextSession(plan);
   const preview = next?.session ? sessionCardModel(next.session) : null;
   const hasSwum = stats.totalSessions > 0;
   const showProfileNudge = !!plan && shouldShowProfileNudge(profile, { dismissed: nudgeDismissed, hasSwum });
+  const showAllureTip = shouldShowAllureUnlockTip(profile, {
+    dismissed: allureTipDismissed,
+    hasSwum,
+    hasPlan: !!plan,
+  });
   const currentWeekIdx = (plan?.weeks || []).findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   const weekMetersRow = !isLoop && stats.weeklyData?.length
     ? stats.weeklyData[currentWeekIdx >= 0 ? currentWeekIdx : 0]
     : null;
+
+  useEffect(() => {
+    setAllureTipDismissed(hasSeenAllureUnlockTip(user?.id));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!showAllureTip) return;
+    track("allure_unlock_tip_viewed", {
+      isPremium: !!isPremium,
+      hasPace: !!profile?.pace100,
+    }, { onceKey: `allure_unlock_tip:${user?.id || "anon"}` });
+  }, [showAllureTip, isPremium, profile?.pace100, user?.id]);
 
   const firstName = user?.user_metadata?.firstname
     || (() => {
@@ -448,6 +471,17 @@ export default function Dashboard({
             onUpgrade={onUpgrade}
             onPaceUpdate={onPaceUpdate}
             onValidateSession={onValidateSession}
+          />
+        )}
+
+        {showAllureTip && (
+          <AllureUnlockSheet
+            userId={user?.id}
+            isPremium={isPremium}
+            initialPace100={profile?.pace100 || null}
+            onSave={onPaceUpdate}
+            onUpgrade={onUpgrade}
+            onDismiss={() => setAllureTipDismissed(true)}
           />
         )}
       </div>
