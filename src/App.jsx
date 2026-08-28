@@ -3528,7 +3528,7 @@ const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
 const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
-const PLAN_VERSION = 48; // v48 = pédagogie Arthur composeur live (échauffements, RAC, éducatifs, fun)
+const PLAN_VERSION = 49; // v49 = Soft Sheet 01–13 + semaine boucle N + tip allure
 // false : one-shot = version < PLAN_VERSION. Ne jamais s'en servir pour bypasser le merge.
 const FORCE_PLAN_REGEN = false;
 /** Incrémenter pour forcer un resync Stripe + scrub isPremium sur chaque appareil. */
@@ -8789,11 +8789,17 @@ export default function App() {
       if (generated.isSessionLoop && p.isSessionLoop) {
         const cursor = typeof p.sessionCursor === "number" ? p.sessionCursor : 0;
         const history = p.history || [];
-        const { week, sheetError } = await buildProgressionLoopSession(
-          { ...profileForGen, sessionsPerWeek: 1, volumeAdj: p.volumeAdj },
+        const spw = Math.max(1, Number(profileForGen.sessionsPerWeek) || 3);
+        const { week, sheetError } = await buildProgressionLoopWeek(
+          { ...profileForGen, volumeAdj: p.volumeAdj },
           cursor,
           premium,
-          { ordinalIndex: history.length, history },
+          {
+            ordinalIndex: history.length,
+            history,
+            planStart: originalStartDate || generated.startDate,
+            weekIndex: Math.floor(history.length / spw),
+          },
         );
         updated.history = history;
         updated.freeSessionsUsed = p.freeSessionsUsed ?? generated.freeSessionsUsed;
@@ -8801,7 +8807,7 @@ export default function App() {
         updated.weekGenCount = p.weekGenCount ?? generated.weekGenCount;
         updated.sessionCursor = cursor;
         updated.volumeAdj = p.volumeAdj ?? 1;
-        // Sheet KO : garder la séance actuelle plutôt qu'un composeur / semaine vide
+        // Sheet KO : garder la semaine actuelle plutôt qu'un composeur / semaine vide
         updated.weeks = sheetError || !week?.sessions?.length ? (p.weeks ?? [week]) : [week];
         updated.loopBlocked = p.loopBlocked ?? null;
       } else if (generated.isSessionLoop && !p.isSessionLoop) {
