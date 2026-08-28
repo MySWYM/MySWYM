@@ -74,7 +74,7 @@ const PROGRESSIF_TOKEN = "__MS_PROG__";
 const DESCENDANT_TOKEN = "__MS_DESC__";
 
 const ALLURE_WORD_RE =
-  "lent|moyen|rapide|vite|souple|progressif|descendant|facile|soutenu|à\\s*bloc|a\\s*bloc";
+  "lent|moyen|rapide|vite|souple|progressif|descendant|facile|soutenu|sprint|sprints|à\\s*bloc|a\\s*bloc";
 
 function normalizeAllureToken(raw, { mapViteToRapide = false } = {}) {
   let allure = String(raw || "")
@@ -84,6 +84,7 @@ function normalizeAllureToken(raw, { mapViteToRapide = false } = {}) {
     .replace(/\s+/g, " ")
     .trim();
   if (allure === "a bloc") allure = "à bloc";
+  if (allure === "sprints") allure = "sprint";
   if (mapViteToRapide && allure === "vite") allure = "rapide";
   return allure;
 }
@@ -111,6 +112,7 @@ export function hasContrastingPaces(text) {
     if (/\blent\b/i.test(inner)) efforts.add("lent");
     if (/\bfacile\b/i.test(inner)) efforts.add("facile");
     if (/\bsoutenu\b/i.test(inner)) efforts.add("soutenu");
+    if (/\bsprints?\b/i.test(inner)) efforts.add("sprint");
     if (efforts.size >= 2) return true;
   }
   return false;
@@ -858,7 +860,8 @@ export function buildWorkoutView(session = {}) {
     const restSeconds = restFromField ? restFromField.seconds : null;
 
     const sprintBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
-    const hasSprint = /\bsprints?\b/i.test(sprintBlob);
+    // Sprint seul → pastille SPRINT ; déjà dans Enchaînement → ne pas doubler / stripper le cue
+    const hasSprint = !allureEnchainement && /\bsprints?\b/i.test(sprintBlob);
     if (hasSprint) {
       cuePrimary = stripSprintMarkers(cuePrimary);
       cues = cues.map((c) => stripSprintMarkers(c)).filter(Boolean);

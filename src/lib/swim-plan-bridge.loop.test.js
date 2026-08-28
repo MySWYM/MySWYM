@@ -76,6 +76,27 @@ describe("buildProgressionLoopSession families", () => {
     assert.equal(b.session.title, "Séance n°2");
   });
 
+  it("buildProgressionLoopWeek fills sessionsPerWeek slots", async () => {
+    const { buildProgressionLoopWeek, effectiveLoopSessionsPerWeek } = await import("./swim-plan-bridge.js");
+    assert.equal(
+      effectiveLoopSessionsPerWeek({
+        goal: "triathlon_sprint",
+        sessionsPerWeek: 4,
+        eventDate: "2026-08-30",
+      }, { now: new Date("2026-08-26") }),
+      2,
+    );
+    const { week } = await buildProgressionLoopWeek(
+      { goal: "progression", category: "progression", level: "régulier", pool: 25, sessionsPerWeek: 3 },
+      0,
+      false,
+      { ordinalIndex: 0, history: [] },
+    );
+    assert.equal(week.sessions.length, 3);
+    assert.equal(week.sessions[0].title, "Séance 1");
+    assert.equal(week.sessions[2].title, "Séance 3");
+  });
+
   it("formatLoopSessionTitle mirrors ordinal index", async () => {
     const { formatLoopSessionTitle, loopSessionOrdinalIndex } = await import("./swim-plan-bridge.js");
     assert.equal(formatLoopSessionTitle(0), "Séance n°1");

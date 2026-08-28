@@ -43,13 +43,18 @@ import {
   isNatationSheetCatalogueEnabled,
   composeFromNatationSheet,
 } from "./natation-sheet/client.js";
-import { sheetFamilyIdFromProfile } from "./natation-sheet/parse.js";
+import { sheetFamilyIdFromProfile, isEventFamilyId } from "./natation-sheet/parse.js";
+import {
+  applySheetWeekSessionCap,
+  resolveSheetWeekRole,
+} from "./natation-sheet/sheet-week-role.js";
 import { biasRolesForTrainingWish, trainingWishToHints } from "./sports-engine/training-wish.js";
 import {
   normalizeTargetSessionDistance,
   sessionDistancePhaseScale,
 } from "./sports-engine/session-distance-pref.js";
 import { sessionTemplatesReady } from "./session-templates-store.js";
+import { isSessionResolved } from "./plan-progress-merge.js";
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
 
@@ -1246,6 +1251,11 @@ export function formatLoopSessionTitle(ordinalIndex = 0) {
   return `Séance n°${Math.max(0, Number(ordinalIndex) || 0) + 1}`;
 }
 
+/** Titre dans la semaine courante (Séance 1, 2, 3…) — pas le compteur global. */
+export function formatLoopWeekSessionTitle(indexInWeek = 0) {
+  return `Séance ${Math.max(0, Number(indexInWeek) || 0) + 1}`;
+}
+
 /** Nb de séances validées (base 0 pour la séance courante non encore archivée). */
 export function loopSessionOrdinalIndex(plan) {
   if (!plan?.isSessionLoop) return 0;
@@ -1260,12 +1270,221 @@ export function withLoopSessionTitle(session, ordinalIndex = 0) {
 }
 
 /**
- * Séance courante d’un plan boucle, titre = numéro nageur (pas le cursor de variété).
+ * Séance courante d’un plan boucle = première non résolue (ou la dernière si tout est fait).
  */
 export function loopDisplaySession(plan) {
-  const sess = plan?.weeks?.[0]?.sessions?.[0] || null;
-  if (!sess || !plan?.isSessionLoop) return sess;
-  return withLoopSessionTitle(sess, loopSessionOrdinalIndex(plan));
+  if (!plan?.isSessionLoop) return plan?.weeks?.[0]?.sessions?.[0] || null;
+  const sessions = plan?.weeks?.[0]?.sessions || [];
+  if (!sessions.length) return null;
+  const histLen = loopSessionOrdinalIndex(plan);
+  const openIdx = sessions.findIndex((s) => !isSessionResolved(s));
+  const si = openIdx >= 0 ? openIdx : sessions.length - 1;
+  const ordinalIndex = openIdx >= 0 ? histLen + openIdx : Math.max(0, histLen - 1);
+  return withLoopSessionTitle(sessions[si], ordinalIndex);
+}
+
+/**
+ * Nb de séances à générer pour la semaine courante de boucle.
+ * Cap Sheet S0 (course) = 2 via applySheetWeekSessionCap.
+ */
+export function effectiveLoopSessionsPerWeek(profile = {}, opts = {}) {
+  const spw = Math.max(1, Math.min(5, Number(profile.sessionsPerWeek) || 3));
+  const family = sheetFamilyIdFromProfile(profile);
+  if (!isEventFamilyId(family) && !String(profile.goal || "").startsWith("triathlon")) {
+    return spw;
+  }
+  const role = resolveSheetWeekRole({
+    eventDate: profile.eventDate || null,
+    planStart: opts.planStart || profile.planStartedAt || profile.createdAt || null,
+    weekIndex: opts.weekIndex,
+    now: opts.now,
+  });
+  return applySheetWeekSessionCap(role, spw);
+}
+
+/**
+ * Génère une semaine boucle de N séances (N = sessionsPerWeek, plafonné S0).
+ * @returns {Promise<{ week: object, sessions: object[], sheetError?: boolean, sheetErrorMessage?: string }>}
+ */
+export async function buildProgressionLoopWeek(profile, cursor = 0, isPremium = false, opts = {}) {
+  const baseOrdinal = Math.max(0, Number(opts.ordinalIndex != null ? opts.ordinalIndex : 0) || 0);
+  const weekIndex =
+    opts.weekIndex != null
+      ? opts.weekIndex
+      : Math.floor(baseOrdinal / Math.max(1, Number(profile.sessionsPerWeek) || 3));
+  const n = Math.max(
+    1,
+    Number(opts.sessionCount) ||
+      effectiveLoopSessionsPerWeek(profile, {
+        planStart: opts.planStart,
+        weekIndex,
+        now: opts.now,
+      }),
+  );
+
+  const sessions = [];
+  let sheetError = false;
+  let sheetErrorMessage = null;
+  let lastEducatif = opts.currentEducatif || null;
+  let lastSheetN = opts.currentSheetN;
+  const seedHistory = Array.isArray(opts.history) ? [...opts.history] : [];
+
+  for (let i = 0; i < n; i++) {
+    const { session, sheetError: err, sheetErrorMessage: msg } = await buildProgressionLoopSession(
+      profile,
+      Math.max(0, Number(cursor) || 0) + i,
+      isPremium,
+      {
+        ordinalIndex: baseOrdinal + i,
+        history: [...seedHistory, ...sessions],
+        currentSheetN: lastSheetN,
+        currentEducatif: lastEducatif,
+        planStart: opts.planStart,
+        weekIndex,
+      },
+    );
+    if (err || !session) {
+      sheetError = true;
+      sheetErrorMessage = msg || "Catalogue Google Sheet indisponible";
+      if (i === 0) {
+        return {
+          week: {
+            number: weekIndex + 1,
+            focus: `Semaine ${weekIndex + 1}`,
+            tip: null,
+            feedback: null,
+            isBilan: false,
+            isTest: false,
+            sessions: [],
+          },
+          sessions: [],
+          sheetError: true,
+          sheetErrorMessage,
+        };
+      }
+      break;
+    }
+    sessions.push(session);
+    lastSheetN = session?.sheetMeta?.n ?? lastSheetN;
+    lastEducatif =
+      session?.sheetMeta?.educatif || session?.sheetEducatif?.name || lastEducatif;
+  }
+
+  // Affichage semaine : Séance 1 / 2 / 3 (le n° global va dans l’historique à l’archivage)
+  for (let i = 0; i < sessions.length; i++) {
+    sessions[i] = { ...sessions[i], title: formatLoopWeekSessionTitle(i) };
+  }
+
+  const role = resolveSheetWeekRole({
+    eventDate: profile.eventDate || null,
+    planStart: opts.planStart || profile.planStartedAt || profile.createdAt || null,
+    weekIndex,
+    now: opts.now,
+  });
+  const focus =
+    role?.isRaceWeek
+      ? "Semaine de course"
+      : role?.phase === "test"
+        ? "Semaine test"
+        : role?.phase === "deload"
+          ? "Semaine allégée"
+          : `Semaine ${weekIndex + 1}`;
+
+  const week = {
+    number: weekIndex + 1,
+    focus,
+    tip: role?.banner || null,
+    feedback: null,
+    isBilan: false,
+    isTest: role?.phase === "test",
+    phase: role?.phase || null,
+    sheetWeekRole: role || null,
+    sessions,
+  };
+
+  return { week, sessions, sheetError: false, sheetErrorMessage: null };
+}
+
+/**
+ * Complète weeks[0].sessions jusqu’à N sans toucher aux séances déjà présentes.
+ * @returns {Promise<object|null>} plan mis à jour, ou null si rien à faire / erreur totale
+ */
+export async function expandLoopWeekSessions(plan, profile, isPremium = false, opts = {}) {
+  if (!plan?.isSessionLoop || !profile) return null;
+  const existing = Array.isArray(plan.weeks?.[0]?.sessions) ? [...plan.weeks[0].sessions] : [];
+  const history = Array.isArray(plan.history) ? plan.history : [];
+  const weekIndex = Math.floor(history.length / Math.max(1, Number(profile.sessionsPerWeek) || 3));
+  const n = effectiveLoopSessionsPerWeek(profile, {
+    planStart: opts.planStart || plan.startDate,
+    weekIndex,
+    now: opts.now,
+  });
+  if (existing.length >= n) return null;
+
+  const cursor0 = Math.max(plan.sessionCursor ?? 0, history.length);
+  const need = n - existing.length;
+  const add = [];
+  let lastEducatif =
+    existing[existing.length - 1]?.sheetMeta?.educatif ||
+    existing[existing.length - 1]?.sheetEducatif?.name ||
+    null;
+  let lastSheetN = existing[existing.length - 1]?.sheetMeta?.n;
+
+  for (let i = 0; i < need; i++) {
+    const ordinalIndex = history.length + existing.length + i;
+    const { session, sheetError } = await buildProgressionLoopSession(
+      { ...profile, taste: plan.taste || profile.taste, volumeAdj: plan.volumeAdj },
+      cursor0 + existing.length + i,
+      isPremium,
+      {
+        ordinalIndex,
+        history: [...history, ...existing, ...add],
+        currentSheetN: lastSheetN,
+        currentEducatif: lastEducatif,
+        planStart: plan.startDate,
+        weekIndex,
+      },
+    );
+    if (sheetError || !session) break;
+    add.push(session);
+    lastSheetN = session?.sheetMeta?.n ?? lastSheetN;
+    lastEducatif =
+      session?.sheetMeta?.educatif || session?.sheetEducatif?.name || lastEducatif;
+  }
+  if (!add.length) return null;
+
+  const role = resolveSheetWeekRole({
+    eventDate: profile.eventDate || null,
+    planStart: plan.startDate,
+    weekIndex,
+  });
+  const week0 = plan.weeks[0] || {};
+  const merged = [...existing, ...add].map((s, i) => ({
+    ...s,
+    title: formatLoopWeekSessionTitle(i),
+  }));
+  return {
+    ...plan,
+    sessionCursor: cursor0 + existing.length + add.length - 1,
+    weeks: [{
+      ...week0,
+      number: week0.number || weekIndex + 1,
+      focus:
+        week0.focus && existing.length > 0
+          ? week0.focus
+          : role?.isRaceWeek
+            ? "Semaine de course"
+            : role?.phase === "test"
+              ? "Semaine test"
+              : role?.phase === "deload"
+                ? "Semaine allégée"
+                : `Semaine ${weekIndex + 1}`,
+      tip: week0.tip || role?.banner || null,
+      sheetWeekRole: week0.sheetWeekRole || role || null,
+      phase: week0.phase || role?.phase || null,
+      sessions: merged,
+    }],
+  };
 }
 
 /**
@@ -1274,7 +1493,7 @@ export function loopDisplaySession(plan) {
  * @param {object} profile
  * @param {number} cursor — index de variété / seed (peut bouger sans validation)
  * @param {boolean} isPremium
- * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number, currentEducatif?: string|null }} [opts]
+ * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number, currentEducatif?: string|null, planStart?: *, weekIndex?: number }} [opts]
  * @returns {Promise<{ session: object|null, focus: string, week: object, sheetError?: boolean, sheetErrorMessage?: string }>}
  */
 export async function buildProgressionLoopSession(profile, cursor = 0, isPremium = false, opts = {}) {

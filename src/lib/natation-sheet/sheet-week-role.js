@@ -4,7 +4,8 @@
  * Avec eventDate :
  *   S0 + S-1     → deload (S0 = semaine course, max 2 séances)
  *   S-2 → S-6    → construction (interdit test)
- *   S-7 et avant → cycle 7 construction → 1 test → 1 deload
+ *   S-7 et avant → cycle ancré sur J : S-7 test, S-8 deload,
+ *                  puis 7 construction → test → deload (S-16, S-17…)
  *
  * Sans eventDate : cycle seul (ancre = planStart ou index de semaines).
  *
@@ -45,7 +46,7 @@ export function weeksBeforeRaceWeek(eventDate, now = new Date()) {
 }
 
 /**
- * Position dans le cycle 9 semaines (0..8).
+ * Position dans le cycle 9 semaines (0..8) — sans date de course.
  * 0–6 construction · 7 test · 8 deload
  * @param {number} weekIndex — semaines depuis ancre (≥0)
  */
@@ -64,6 +65,22 @@ export function farCyclePosition(weekIndex) {
   return Math.max(0, Math.floor(Number(weekIndex) || 0)) % 9;
 }
 
+/**
+ * Cycle loin de J, ancré sur l’index S (semaines avant course).
+ * S-7 → test, S-8 → deload, S-9…S-15 → construction, S-16 → test…
+ * @param {number} sIndex — weeksBeforeRaceWeek (≥ 7)
+ * @returns {{ phase: SheetPhase, cyclePosition: number }}
+ */
+export function farCycleFromRaceSIndex(sIndex) {
+  const s = Math.max(7, Math.floor(Number(sIndex) || 7));
+  const pos = (s - 7) % 9;
+  /** @type {SheetPhase} */
+  let phase = "construction";
+  if (pos === 0) phase = "test";
+  else if (pos === 1) phase = "deload";
+  return { phase, cyclePosition: pos };
+}
+
 const BANNERS = Object.freeze({
   construction: null,
   test: "Semaine test — chronomètre 50 m, 100 m et 400 m et renseigne tes temps dans le profil.",
@@ -80,7 +97,7 @@ const BANNERS = Object.freeze({
  *   weekIndex?: number|null,
  *   now?: Date,
  * }} opts
- * weekIndex = semaines depuis début de plan (si fourni, prioritaire pour le cycle loin de J / sans date).
+ * weekIndex = semaines depuis début de plan (cycle sans date uniquement).
  */
 export function resolveSheetWeekRole(opts = {}) {
   const now = opts.now instanceof Date ? opts.now : new Date();
@@ -93,6 +110,10 @@ export function resolveSheetWeekRole(opts = {}) {
   let label = "Construction";
   let maxSessions = null;
   let isRaceWeek = false;
+  /** @type {number|null} */
+  let cycleWeekIndex = null;
+  /** @type {number|null} */
+  let cyclePosition = null;
 
   if (sIndex != null && sIndex >= 0) {
     if (sIndex === 0) {
@@ -110,10 +131,12 @@ export function resolveSheetWeekRole(opts = {}) {
       phase = "construction";
       label = "Construction (approche course)";
     } else {
-      // S-7+ : cycle loin de J
+      // S-7+ : cycle ancré sur J (S-7 = test)
       band = "far";
-      const wi = resolveCycleWeekIndex(opts, now);
-      phase = farCyclePhase(wi);
+      const far = farCycleFromRaceSIndex(sIndex);
+      phase = far.phase;
+      cyclePosition = far.cyclePosition;
+      cycleWeekIndex = sIndex;
       label =
         phase === "test"
           ? "Semaine test"
@@ -131,6 +154,8 @@ export function resolveSheetWeekRole(opts = {}) {
     band = "no_date";
     const wi = resolveCycleWeekIndex(opts, now);
     phase = farCyclePhase(wi);
+    cycleWeekIndex = wi;
+    cyclePosition = farCyclePosition(wi);
     label =
       phase === "test" ? "Semaine test" : phase === "deload" ? "Semaine allégée" : "Construction";
   }
@@ -144,8 +169,8 @@ export function resolveSheetWeekRole(opts = {}) {
     weeksBeforeRace: sIndex,
     maxSessions,
     isRaceWeek,
-    cycleWeekIndex: band === "far" || band === "no_date" ? resolveCycleWeekIndex(opts, now) : null,
-    cyclePosition: band === "far" || band === "no_date" ? farCyclePosition(resolveCycleWeekIndex(opts, now)) : null,
+    cycleWeekIndex,
+    cyclePosition,
   };
 }
 
@@ -184,4 +209,110 @@ export function applySheetWeekSessionCap(role, sessionsPerWeek) {
  */
 export function phaseFromSheetWeekRole(role) {
   return role?.phase || "construction";
+}
+
+/** Libellé court pour la timeline accueil. */
+export function sheetPhaseShortLabel(role) {
+  if (role?.isRaceWeek) return "Course";
+  if (role?.phase === "test") return "Test";
+  if (role?.phase === "deload") return "Allégée";
+  return "Travail";
+}
+
+/**
+ * Timeline de semaines pour l’accueil (tri / event Sheet).
+ * Avec date de course : de la semaine courante jusqu’à S0 (piste complète).
+ * `maxWeeks` optionnel = plafond d’affichage (tests / UI contrainte).
+ * Sans date : un cycle 9 semaines à partir de `weekIndex`.
+ *
+ * @param {{
+ *   eventDate?: string|Date|null,
+ *   planStart?: string|Date|null,
+ *   weekIndex?: number|null,
+ *   now?: Date,
+ *   maxWeeks?: number|null,
+ * }} opts
+ */
+export function buildEventWeekTimeline(opts = {}) {
+  const now = opts.now instanceof Date ? opts.now : new Date();
+  const maxWeeks =
+    opts.maxWeeks == null || opts.maxWeeks === Infinity
+      ? null
+      : Math.max(1, Math.min(52, Math.floor(Number(opts.maxWeeks))));
+  const baseWeekIndex = Math.max(0, Math.floor(Number(opts.weekIndex) || 0));
+  const sNow = weeksBeforeRaceWeek(opts.eventDate, now);
+
+  /** @type {Array<{
+   *   key: string,
+   *   sIndex: number|null,
+   *   sLabel: string,
+   *   phase: SheetPhase,
+   *   shortLabel: string,
+   *   label: string,
+   *   isCurrent: boolean,
+   *   isRaceWeek: boolean,
+   * }>} */
+  const weeks = [];
+
+  if (sNow != null && sNow >= 0) {
+    const fullCount = sNow + 1;
+    const count = maxWeeks == null ? fullCount : Math.min(fullCount, maxWeeks);
+    for (let i = 0; i < count; i++) {
+      const s = sNow - i;
+      const fakeNow = new Date(now.getTime() + i * MS_WEEK);
+      const role = resolveSheetWeekRole({
+        eventDate: opts.eventDate,
+        planStart: opts.planStart,
+        weekIndex: baseWeekIndex + i,
+        now: fakeNow,
+      });
+      weeks.push({
+        key: `s-${s}`,
+        sIndex: s,
+        sLabel: s === 0 ? "S0" : `S-${s}`,
+        phase: role.phase,
+        shortLabel: sheetPhaseShortLabel(role),
+        label: role.label,
+        isCurrent: i === 0,
+        isRaceWeek: !!role.isRaceWeek,
+      });
+    }
+    return {
+      mode: "to_race",
+      weeks,
+      truncated: maxWeeks != null && fullCount > maxWeeks,
+      weeksBeforeRace: sNow,
+      eventDate: opts.eventDate || null,
+      current: weeks[0] || null,
+    };
+  }
+
+  // Pas de date (ou après course) : afficher un cycle 9 semaines
+  for (let i = 0; i < 9; i++) {
+    const wi = baseWeekIndex + i;
+    const role = resolveSheetWeekRole({
+      eventDate: null,
+      planStart: opts.planStart,
+      weekIndex: wi,
+      now,
+    });
+    weeks.push({
+      key: `c-${wi}`,
+      sIndex: null,
+      sLabel: `Sem. ${i + 1}`,
+      phase: role.phase,
+      shortLabel: sheetPhaseShortLabel(role),
+      label: role.label,
+      isCurrent: i === 0,
+      isRaceWeek: false,
+    });
+  }
+  return {
+    mode: sNow != null && sNow < 0 ? "after_race" : "cycle",
+    weeks,
+    truncated: false,
+    weeksBeforeRace: sNow,
+    eventDate: opts.eventDate || null,
+    current: weeks[0] || null,
+  };
 }

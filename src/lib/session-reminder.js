@@ -43,15 +43,16 @@ export function shouldShowSessionReminderBanner({
 }
 
 export function sessionReminderCopy({ sessionTitle, streak = 0 } = {}) {
-  const title = sessionTitle ? `« ${sessionTitle} »` : "Ta séance";
+  // Libellé fixe : pas de « Séance n°16 » (compteur global) sur l’accueil
+  void sessionTitle;
   if (streak >= 3) {
     return {
       title: "Rappel séance",
-      body: `${title} t’attend — garde ta série de ${streak}.`,
+      body: `Ta prochaine séance t’attend — garde ta série de ${streak}.`,
     };
   }
   return {
     title: "L’eau t’attend",
-    body: `${title} est prête. Une session et tu coches la case.`,
+    body: "Ta prochaine séance est prête. Une session et tu coches la case.",
   };
 }

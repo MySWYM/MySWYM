@@ -93,7 +93,11 @@ export default function PlanTab({
         plans={plans}
         activePlanId={activePlanId}
         isPremium={isPremium}
-        onComplete={(status) => onComplete(0, 0, status)}
+        onComplete={(a, b, c) => {
+          // WeekCard → (weekIndex, sessionIndex, status) ; legacy boucle → (status)
+          if (typeof a === "string" && b === undefined) onComplete(0, 0, a);
+          else onComplete(a ?? 0, b ?? 0, c);
+        }}
         onAdvanceLoop={onAdvanceLoop}
         onSwitchPlan={onSwitchPlan}
         onAddPlan={onAddPlan}

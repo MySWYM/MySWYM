@@ -7,6 +7,7 @@ import { G } from "./theme/palette.js";
 import CoachCard from "./CoachCard.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
+import EventWeekPlanCard from "./EventWeekPlanCard.jsx";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
 import Btn from "./ui/Btn.jsx";
@@ -109,28 +110,21 @@ export function HomeBadgesSection({ plan }) {
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-/** Après la 1re séance : une carte secondaire + le reste derrière « Voir plus ». */
+/** Après la 1re séance : coach, allure, Strava et badges — tout visible. */
 function HomeSecondaryStack({
   plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
 }) {
   const { MonAllureCard, StravaSection } = getTabUi();
-  const [moreOpen, setMoreOpen] = useState(false);
   const coachWeek = plan?.weeks?.length
     ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
     : 0;
 
-  const primary = isPremium && plan?.weeks?.length > 0
-    ? "coach"
-    : plan
-      ? "pace"
-      : "strava";
-
   return (
     <>
-      {primary === "coach" && (
+      {isPremium && plan?.weeks?.length > 0 && (
         <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} />
       )}
-      {primary === "pace" && (
+      {plan && (
         <MonAllureCard
           profile={profile}
           pace100={profile?.pace100}
@@ -139,69 +133,18 @@ function HomeSecondaryStack({
           onUpgrade={onUpgrade}
         />
       )}
-      {primary === "strava" && (
-        <StravaSection
-          user={user}
-          plan={plan}
-          profile={profile}
-          currentPace100={profile?.pace100}
-          onPaceUpdate={onPaceUpdate}
-          onValidateSession={onValidateSession}
-          showProgramActions={false}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-        />
-      )}
-
-      {!moreOpen ? (
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          style={{
-            width: "100%", marginBottom: 16, minHeight: 48, borderRadius: 14,
-            border: `1px solid ${G.greyLight}`, background: G.surface,
-            color: G.blue, fontWeight: 700, fontSize: 14, cursor: "pointer",
-          }}
-        >
-          Voir plus
-        </button>
-      ) : (
-        <>
-          {primary !== "pace" && plan && (
-            <MonAllureCard
-              profile={profile}
-              pace100={profile?.pace100}
-              isPremium={isPremium}
-              onSave={onPaceUpdate}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {primary !== "strava" && (
-            <StravaSection
-              user={user}
-              plan={plan}
-              profile={profile}
-              currentPace100={profile?.pace100}
-              onPaceUpdate={onPaceUpdate}
-              onValidateSession={onValidateSession}
-              showProgramActions={false}
-              isPremium={isPremium}
-              onUpgrade={onUpgrade}
-            />
-          )}
-          {plan && <HomeBadgesSection plan={plan} />}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(false)}
-            style={{
-              width: "100%", marginBottom: 8, minHeight: 44, border: "none", background: "none",
-              color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
-            }}
-          >
-            Réduire
-          </button>
-        </>
-      )}
+      <StravaSection
+        user={user}
+        plan={plan}
+        profile={profile}
+        currentPace100={profile?.pace100}
+        onPaceUpdate={onPaceUpdate}
+        onValidateSession={onValidateSession}
+        showProgramActions={false}
+        isPremium={isPremium}
+        onUpgrade={onUpgrade}
+      />
+      {plan && <HomeBadgesSection plan={plan} />}
     </>
   );
 }
@@ -368,7 +311,13 @@ export default function Dashboard({
 
         {preview && (
           <div style={{ marginBottom: 16 }}>
-            <SessionHeroCard preview={preview} kicker={next.resolved ? "Séance faite" : "Séance du jour"}>
+            <SessionHeroCard
+              preview={{
+                ...preview,
+                title: next.resolved ? "Séance faite" : "Séance à venir",
+              }}
+              hideKicker
+            >
               <button
                 type="button"
                 className="ms-plan-reveal-btn"
@@ -383,6 +332,14 @@ export default function Dashboard({
               </button>
             </SessionHeroCard>
           </div>
+        )}
+
+        {plan && (
+          <EventWeekPlanCard
+            plan={plan}
+            profile={profile}
+            onOpenProfile={() => onTabChange?.("profile")}
+          />
         )}
 
         {homePrepOpen && next?.session && !next.resolved && (

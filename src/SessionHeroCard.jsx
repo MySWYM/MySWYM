@@ -1,9 +1,11 @@
-export default function SessionHeroCard({ preview, kicker, children, className = "", tip = null, wrapCta = true }) {
+export default function SessionHeroCard({ preview, kicker, children, className = "", tip = null, wrapCta = true, hideKicker = false }) {
   if (!preview) return null;
   return (
     <article className={["ms-session-card", className].filter(Boolean).join(" ")}>
       <div className="ms-session-card-head">
-        <span className="ms-session-card-kicker">{kicker || preview.type}</span>
+        {!hideKicker && (
+          <span className="ms-session-card-kicker">{kicker || preview.type}</span>
+        )}
         <h2>{preview.title}</h2>
         <p>
           {[preview.distanceLabel, preview.durationLabel].filter(Boolean).join(" · ") || preview.meta}

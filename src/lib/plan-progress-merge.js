@@ -36,10 +36,12 @@ export function planProgressScore(entry) {
   return weekResolved;
 }
 
-/** Séance boucle affichée déjà validée — il faut enchaîner vers la suivante. */
+/** Semaine boucle entièrement validée — il faut générer la suivante. */
 export function loopSessionNeedsAdvance(plan) {
   if (!plan?.isSessionLoop) return false;
-  return isSessionResolved(plan.weeks?.[0]?.sessions?.[0]);
+  const sessions = plan.weeks?.[0]?.sessions || [];
+  if (!sessions.length) return false;
+  return sessions.every(isSessionResolved);
 }
 
 /** Garde une semaine dès qu'il y a du progrès, un feedback ou une satisfaction. */

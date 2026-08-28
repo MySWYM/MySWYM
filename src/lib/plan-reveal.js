@@ -143,10 +143,19 @@ export function findNextSession(plan) {
   const weeks = plan?.weeks;
   if (!Array.isArray(weeks) || weeks.length === 0) return null;
   if (plan.isSessionLoop) {
-    const raw = weeks[0]?.sessions?.[0];
-    if (!raw) return null;
-    const session = withLoopSessionTitle(raw, loopSessionOrdinalIndex(plan));
-    return { weekIndex: 0, sessionIndex: 0, session, resolved: isSessionResolved(raw) };
+    const sessions = weeks[0]?.sessions || [];
+    if (!sessions.length) return null;
+    let si = sessions.findIndex((s) => !isSessionResolved(s));
+    const resolvedAll = si < 0;
+    if (si < 0) si = sessions.length - 1;
+    const raw = sessions[si];
+    const session = withLoopSessionTitle(
+      raw,
+      resolvedAll
+        ? Math.max(0, loopSessionOrdinalIndex(plan) - 1)
+        : loopSessionOrdinalIndex(plan) + si,
+    );
+    return { weekIndex: 0, sessionIndex: si, session, resolved: resolvedAll || isSessionResolved(raw) };
   }
   const wi = weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   if (wi < 0) {
