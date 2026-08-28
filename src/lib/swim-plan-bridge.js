@@ -1270,7 +1270,7 @@ export function loopDisplaySession(plan) {
 
 /**
  * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
- * Familles Sheet soft (Nager 01–03, XS/Sprint 04–06) : await catalogue, **pas** de fallback composeur silencieux.
+ * Familles Sheet soft (Nager 01–03, triathlon 04–08, OW 09–13) : await catalogue, **pas** de fallback composeur silencieux.
  * @param {object} profile
  * @param {number} cursor — index de variété / seed (peut bouger sans validation)
  * @param {boolean} isPremium

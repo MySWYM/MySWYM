@@ -2,6 +2,7 @@ import {
   canResolveSheetPace,
   resolvePacePlaceholders,
 } from "./pace-placeholders.js";
+import { eventBandFromGoal } from "../sports-engine/race-event.js";
 
 /**
  * Parse CSV Google Sheet cahier natation (séances + Éducatifs).
@@ -30,15 +31,8 @@ export const SHEET_FAMILIES = Object.freeze([
 
 export const EDUCATIFS_SHEET = "Éducatifs";
 
-/** Familles branchées soft — vague 1 Nager + vague 2 XS/Sprint. Étendre ici à chaque vague. */
-export const SHEET_SOFT_FAMILIES = Object.freeze([
-  "01 Nager deb crawl",
-  "02 Nager crawl",
-  "03 Nager 4 nages",
-  "04 XS-Sprint deb crawl",
-  "05 XS-Sprint crawl",
-  "06 XS-Sprint 4 nages",
-]);
+/** Familles branchées soft — Nager + tout triathlon/OW du Sheet (01–13). Diplômes = hors Sheet. */
+export const SHEET_SOFT_FAMILIES = Object.freeze([...SHEET_FAMILIES]);
 
 /** Fenêtre anti-doublon : ne pas retraiter ces N dernières séances Sheet. */
 export const SHEET_RECENT_EXCLUDE = 10;
@@ -600,15 +594,27 @@ export function educatifRowToUiFiche(row) {
   };
 }
 
-/** Objectifs Triathlon XS / Sprint (même onglets Sheet 04–06). */
+/** Objectifs Triathlon XS / Sprint (onglets Sheet 04–06). */
 export function isXsSprintGoal(goal) {
   const g = String(goal || "").toLowerCase();
   return g === "triathlon_xs" || g === "triathlon_sprint";
 }
 
+/** Objectifs Triathlon Oly / Half / Full (onglets Sheet 07–08). */
+export function isOlyHalfFullGoal(goal) {
+  const g = String(goal || "").toLowerCase();
+  return g === "triathlon_olympic" || g === "triathlon_half" || g === "triathlon_ironman";
+}
+
+/** Objectifs eau libre (onglets Sheet 09–13). */
+export function isOpenWaterGoal(goal) {
+  const g = String(goal || "").toLowerCase();
+  return g.startsWith("open_water") || g.startsWith("eau_libre");
+}
+
 /** Mappe profil MySWYM → id feuille Sheet.
- * Soft : Nager 01–03 + XS/Sprint 04–06.
- * Oly/Half/Full, eau libre, diplômes = vagues suivantes (retour null → composeur).
+ * Soft : Nager 01–03 + triathlon 04–08 + eau libre 09–13.
+ * Diplômes / autres = null → composeur.
  */
 export function sheetFamilyIdFromProfile(profile = {}) {
   const goal = String(profile.goal || "").toLowerCase();
@@ -635,15 +641,34 @@ export function sheetFamilyIdFromProfile(profile = {}) {
     goal === "nager" ||
     goal.startsWith("prog_");
 
-  /** Même grille niveau / 4 nages pour Nager et XS-Sprint. */
+  /** Grille 3 onglets (deb / crawl / 4 nages). */
   const byLevel = (debId, crawlId, fourId) => {
     if (isDeb) return debId;
     if (four || isAv) return fourId;
     return crawlId;
   };
 
+  /** Grille 2 onglets (pas de feuille débutant) : débutant → crawl. */
+  const byLevelNoDeb = (crawlId, fourId) => {
+    if (four || isAv) return fourId;
+    return crawlId;
+  };
+
   if (isXsSprintGoal(goal)) {
     return byLevel("04 XS-Sprint deb crawl", "05 XS-Sprint crawl", "06 XS-Sprint 4 nages");
+  }
+
+  if (isOlyHalfFullGoal(goal)) {
+    return byLevelNoDeb("07 Oly-Half-Full crawl", "08 Oly-Half-Full 4 nages");
+  }
+
+  if (isOpenWaterGoal(goal)) {
+    const band = eventBandFromGoal(goal);
+    // Courte = short ; moyenne + longue = moy-long. Bande inconnue → courte (safe).
+    if (band === "mid" || band === "long") {
+      return byLevelNoDeb("12 OW moy-long crawl", "13 OW moy-long 4 nages");
+    }
+    return byLevel("09 OW courte deb crawl", "10 OW courte crawl", "11 OW courte 4 nages");
   }
 
   if (!isNager) return null;
