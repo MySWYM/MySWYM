@@ -169,10 +169,20 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
   }
   const hardExcludeNames = orderedEducatifs.slice(0, 1);
   const excludeEducatifs = orderedEducatifs.slice(1);
+  const pace100 = Number(profile.pace100) > 0 ? Number(profile.pace100) : null;
+  const isPremium = opts.isPremium === true || profile.isPremium === true;
   const filled = materializeSession(
     picked,
     cache.educatifs,
-    { levelBand, nage, equipment, excludeNames: excludeEducatifs, hardExcludeNames },
+    {
+      levelBand,
+      nage,
+      equipment,
+      excludeNames: excludeEducatifs,
+      hardExcludeNames,
+      pace100,
+      isPremium,
+    },
     opts.rng || Math.random,
   );
 

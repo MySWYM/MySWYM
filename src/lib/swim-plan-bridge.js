@@ -1354,6 +1354,7 @@ export async function buildProgressionLoopSession(profile, cursor = 0, isPremium
           history: opts.history || [],
           excludeNs,
           currentEducatif: opts.currentEducatif || null,
+          isPremium: !!isPremium,
         },
       );
       if (fromSheet) {

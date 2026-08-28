@@ -1,3 +1,8 @@
+import {
+  canResolveSheetPace,
+  resolvePacePlaceholders,
+} from "./pace-placeholders.js";
+
 /**
  * Parse CSV Google Sheet cahier natation (séances + Éducatifs).
  * Source live = Sheet ; ce module est pur (pas de fetch).
@@ -516,7 +521,7 @@ export function pickMaterielForLine(edu, equipment, line, rng = Math.random) {
 /**
  * @param {SessionRow} session
  * @param {EducatifRow[]} educatifs
- * @param {{ levelBand: string, nage?: string, equipment?: string[]|null, excludeNames?: string[], hardExcludeNames?: string[] }} opts
+ * @param {{ levelBand: string, nage?: string, equipment?: string[]|null, excludeNames?: string[], hardExcludeNames?: string[], pace100?: number|null, isPremium?: boolean }} opts
  * @param {() => number} [rng]
  */
 export function materializeSession(session, educatifs, opts, rng = Math.random) {
@@ -532,6 +537,7 @@ export function materializeSession(session, educatifs, opts, rng = Math.random) 
     four?.list?.[0] ||
     pickEducatif(educatifs, opts, rng);
   const educatifNom = edu?.nom || "éducatif";
+  const allowPace = canResolveSheetPace(opts);
   const fillBlock = (block) => {
     const lines = String(block || "").split("\n");
     return lines
@@ -543,11 +549,15 @@ export function materializeSession(session, educatifs, opts, rng = Math.random) 
         if (/\{matériel\}|\{materiel\}/i.test(line) && matosSource) {
           materielLabel = pickMaterielForLine(matosSource, opts.equipment, line, rng);
         }
-        return fillPlaceholders(line, {
+        const filled = fillPlaceholders(line, {
           educatifNom: isFourLine ? undefined : educatifNom,
           fourNagesLabel: isFourLine ? fourLabel : null,
           fourNagesByStroke: isFourLine || hasStrokePh ? four : null,
           materielLabel,
+        });
+        return resolvePacePlaceholders(filled, {
+          allowPace,
+          pace100: opts.pace100,
         });
       })
       .join("\n");

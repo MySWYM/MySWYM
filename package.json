@@ -35,7 +35,7 @@
     "test:arthur:production": "tsx api/_lib/arthur-ai/production/production.test.ts",
     "test:arthur:shadow": "tsx api/_lib/arthur-ai/shadow/shadow.test.ts",
     "test:support": "tsx api/_lib/support/support.test.ts",
-    "test:natation-sheet": "node src/lib/natation-sheet/parse.test.js",
+    "test:natation-sheet": "node src/lib/natation-sheet/parse.test.js && node src/lib/natation-sheet/pace-placeholders.test.js",
     "test:provenance": "node src/lib/session-provenance.test.js",
     "test:labels": "node src/lib/sports-engine/session-labels.test.js",
     "test:swim-banks": "node src/lib/swim-banks/swim-banks.test.js && node src/lib/swim-banks/canonical-drills.test.js",
