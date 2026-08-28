@@ -1,6 +1,6 @@
 /**
  * Carte exercice compacte (pas de tiroir / dépliable).
- * Allures Sheet : pastilles ⓘ Souple · Moyen · Progressif · Vite · À bloc · Sprint.
+ * Allures Sheet : pastilles ⓘ + Enchaînement (multi-allures) ; Lent ≠ Souple.
  * Départ à la montre : pastille D2' + tip horloge de bassin (4 aiguilles).
  */
 import { useState } from "react";
@@ -14,7 +14,14 @@ const ALLURE_TIPS = {
     label: "Souple",
     tone: "mint",
     body:
-      "Allure lente et relâchée, pour récupérer. Tu ne forces pas — tu te détends avant de reprendre l’effort.",
+      "Allure de récupération : lente et relâchée. Tu ne forces pas — tu te détends. À ne pas confondre avec « lent » (allure lente contrôlée, pas une récup).",
+  },
+  lent: {
+    title: "Lent",
+    label: "Lent",
+    tone: "neutral",
+    body:
+      "Allure lente et contrôlée : tu nages volontairment moins vite pour la technique ou la qualité. Ce n’est pas du souple (récup).",
   },
   moyen: {
     title: "Moyen",
@@ -51,12 +58,33 @@ const ALLURE_TIPS = {
     body:
       "Effort court et explosif. Tu donnes le maximum sur la distance, puis tu récupères bien avant la suivante.",
   },
+  enchainement: {
+    title: "Enchaînement",
+    label: "Enchaînement",
+    tone: "blue",
+    body:
+      "Plusieurs allures dans la même série, dans l’ordre indiqué. Lent = nage lente contrôlée ; souple = récupération — ce n’est pas la même chose.",
+  },
 };
 
 /** Ordre d’affichage des pastilles allure. */
-const ALLURE_CHIP_ORDER = ["souple", "moyen", "progressif", "vite", "abloc", "sprint"];
+const ALLURE_CHIP_ORDER = [
+  "enchainement",
+  "souple",
+  "lent",
+  "moyen",
+  "progressif",
+  "vite",
+  "abloc",
+  "sprint",
+];
 
 function detectAllureTips(exercise) {
+  // Multi-allures dans une série → une seule pastille
+  if (exercise?.allureEnchainement?.steps?.length >= 2) {
+    return ["enchainement"];
+  }
+
   const blob = `${exercise?.cue || ""} ${exercise?.main || ""} ${exercise?.raw || ""}`.toLowerCase();
   const found = new Set();
 
@@ -66,6 +94,8 @@ function detectAllureTips(exercise) {
     && (exercise?.effortLabel === "souple" || exercise?.kind === "cool");
   if (showSouplePill || /\bsouple\b/.test(blob)) found.add("souple");
 
+  // Lent ≠ souple
+  if (/\blent\b/.test(blob)) found.add("lent");
   if (/\bmoyen\b/.test(blob) || /allure\s+r[eé]guli[eè]re/.test(blob)) found.add("moyen");
   if (/\bprogressif\b/.test(blob)) found.add("progressif");
   if (/\b(vite|rapide)\b/.test(blob)) found.add("vite");
@@ -225,13 +255,17 @@ function TipSheetShell({ eyebrow, title, onClose, colors: G, children }) {
   );
 }
 
-function AllureTipSheet({ tipKey, onClose, colors: G }) {
+function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
   const tip = ALLURE_TIPS[tipKey];
   if (!tip) return null;
+  let body = tip.body;
+  if (tipKey === "enchainement" && enchainement?.cue) {
+    body = `Sur cette série, enchaîne dans l’ordre : ${enchainement.cue}. Lent = nage lente contrôlée ; souple = récupération — ce n’est pas la même chose.`;
+  }
   return (
     <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose} colors={G}>
       <p style={{ margin: 0, fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
-        {tip.body}
+        {body}
       </p>
     </TipSheetShell>
   );
@@ -426,7 +460,14 @@ export default function WorkoutExerciseCard({
         </div>
       </div>
 
-      {tipKey ? <AllureTipSheet tipKey={tipKey} onClose={() => setTipKey(null)} colors={G} /> : null}
+      {tipKey ? (
+        <AllureTipSheet
+          tipKey={tipKey}
+          onClose={() => setTipKey(null)}
+          colors={G}
+          enchainement={exercise.allureEnchainement}
+        />
+      ) : null}
       {departOpen ? (
         <DepartTipSheet
           label={departLabel}

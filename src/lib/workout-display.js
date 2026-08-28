@@ -76,9 +76,11 @@ const DESCENDANT_TOKEN = "__MS_DESC__";
 /**
  * Contraste d’allures dans une parenthèse Sheet :
  * « (75 m souple + 25 m progressif) », « (50 m moyen + 25 m vite + 25 m souple) ».
+ * Ou enchaînement par reps : « (1 lent, 1 moyen, 1 rapide, 1 souple) ».
  * ≠ un simple « crawl souple » dans un mix de nages.
  */
 export function hasContrastingPaces(text) {
+  if (parseRepAllureEnchainement(text)) return true;
   const parens = String(text || "").match(/\(([^)]+)\)/g) || [];
   for (const block of parens) {
     const inner = block.slice(1, -1);
@@ -96,6 +98,42 @@ export function hasContrastingPaces(text) {
     if (efforts.size >= 2) return true;
   }
   return false;
+}
+
+const ALLURE_WORD_RE =
+  "lent|moyen|rapide|vite|souple|progressif|descendant|facile|soutenu|à\\s*bloc|a\\s*bloc";
+
+/**
+ * Série multi-allures type Sheet « (1 lent, 1 moyen, 1 rapide, 1 souple) ».
+ * Lent ≠ souple : lent = allure lente ; souple = récup.
+ * @returns {{ steps: { n: number, allure: string }[], cue: string, raw: string } | null}
+ */
+export function parseRepAllureEnchainement(text) {
+  const s = String(text || "");
+  const reParen = new RegExp(`\\(([^)]*(?:${ALLURE_WORD_RE})[^)]*)\\)`, "i");
+  const m = s.match(reParen);
+  const scope = m ? m[1] : s;
+  const stepRe = new RegExp(`(\\d+)\\s*(${ALLURE_WORD_RE})`, "gi");
+  const steps = [];
+  const seenAllures = new Set();
+  let match;
+  while ((match = stepRe.exec(scope)) !== null) {
+    const n = parseInt(match[1], 10);
+    let allure = String(match[2] || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (allure === "a bloc") allure = "à bloc";
+    if (allure === "vite") allure = "rapide"; // wording Sheet « rapide » préféré dans le cue
+    if (!Number.isFinite(n) || n <= 0 || !allure) continue;
+    steps.push({ n, allure });
+    seenAllures.add(allure);
+  }
+  if (steps.length < 2 || seenAllures.size < 2) return null;
+  const cue = steps.map((st) => `${st.n} ${st.allure}`).join(" · ");
+  return { steps, cue, raw: m ? m[0] : cue };
 }
 
 /** Protège « souple » avant humanisation D9 (toCoach / prettify → facile). */
@@ -620,9 +658,15 @@ export function buildWorkoutView(session = {}) {
     let cuePrimary = scrubLegacyNormalWording(
       (firstCue && !isSoftFillCue(firstCue) ? firstCue : null) || headline.rest || null,
     );
-    const effortLabel =
-      headline.effort ||
-      extractSoupleEffort(parsed?.main, cuePrimary, ...(parsed?.cues || []), raw);
+
+    // Enchaînement multi-allures (1 lent, 1 moyen…) — avant strip souple (lent ≠ souple)
+    const enchainBlob = [parsed?.main, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
+    const allureEnchainement = parseRepAllureEnchainement(enchainBlob);
+
+    const effortLabel = allureEnchainement
+      ? null
+      : headline.effort ||
+        extractSoupleEffort(parsed?.main, cuePrimary, ...(parsed?.cues || []), raw);
     if (effortLabel) {
       cuePrimary = stripSoupleMarkers(cuePrimary);
     }
@@ -634,6 +678,9 @@ export function buildWorkoutView(session = {}) {
     if (!cuePrimary && cues[0]) cuePrimary = cues[0];
     if (!cuePrimary && headline.rest && !isSoftFillCue(headline.rest)) {
       cuePrimary = headline.rest;
+    }
+    if (allureEnchainement) {
+      cuePrimary = allureEnchainement.cue;
     }
     const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
 
@@ -690,6 +737,7 @@ export function buildWorkoutView(session = {}) {
       volumeLabel: headline.volume || (pyramid ? `${pyramid.volume} m` : null),
       strokeLabel: headline.stroke,
       effortLabel: effortLabel || null,
+      allureEnchainement: allureEnchainement || null,
       sprint: hasSprint,
       cue: cuePrimary,
       cues,

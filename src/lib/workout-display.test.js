@@ -10,6 +10,8 @@ import {
   formatDepartHuman,
   stripDepartMarkers,
   stripSprintMarkers,
+  parseRepAllureEnchainement,
+  hasContrastingPaces,
 } from "./workout-display.js";
 import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js";
 
@@ -21,6 +23,32 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(scrubLegacyNormalWording("(1, 1 inversé)"), "1× normal · 1× inversé");
   assert.equal(scrubLegacyNormalWording("(2, 2 inversé)"), "2× normal · 2× inversé");
   assert.equal(scrubLegacyNormalWording("1, 1 inversé"), "1× normal · 1× inversé");
+}
+
+{
+  const enc = parseRepAllureEnchainement(
+    "4 × 50 m papillon (1 lent, 1 moyen, 1 rapide, 1 souple), départ 1 min",
+  );
+  assert.ok(enc);
+  assert.equal(enc.cue, "1 lent · 1 moyen · 1 rapide · 1 souple");
+  assert.equal(enc.steps.length, 4);
+  assert.ok(hasContrastingPaces("(1 lent, 1 moyen, 1 rapide, 1 souple)"));
+  assert.equal(parseRepAllureEnchainement("200 m crawl souple"), null);
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-4 × 50 m papillon (1 lent, 1 moyen, 1 rapide, 1 souple), départ 1 min"],
+    sets: [{ block: "corps", label: "4 × 50 m papillon (1 lent, 1 moyen, 1 rapide, 1 souple), départ 1 min" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "PAPILLON");
+  assert.equal(ex.departLabel, "D1'");
+  assert.ok(ex.allureEnchainement);
+  assert.equal(ex.cue, "1 lent · 1 moyen · 1 rapide · 1 souple");
+  assert.equal(ex.effortLabel, null, "pas de pastille souple unique sur un enchaînement");
+  assert.ok(/\bsouple\b/.test(ex.cue), "souple conservé dans le cue (≠ strip)");
 }
 
 {
