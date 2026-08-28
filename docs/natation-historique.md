@@ -18,6 +18,8 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-28 | Calendrier Sheet tri (S0) | Hybride calé sur le jour J : S0+S-1 deload (S0 max 2 séances) ; S-2→S-6 construction sans test ; S-7+ cycle 7 construction → 1 test → 1 deload. Sans `eventDate` = cycle seul. Bandeau séance. | ✅ active |
+| 2026-08-28 | Calendrier Sheet tri (S0) | Hybride calé sur le jour J : S0+S-1 deload (S0 max 2 séances) ; S-2→S-6 construction sans test ; S-7+ cycle 7 construction → 1 test → 1 deload. Sans `eventDate` = cycle seul. Bandeau séance. | ✅ active |
 | 2026-08-28 | Lexique Sheet zones D | Tokens canoniques `{D:facile\|endurance\|seuil\|VO2\|sprint}` (+ `{@:…}`). Alias anciens (moyen→endurance, etc.). Fichier coach : `docs/coach-ligne/lexique-sheet-myswym.xlsx`. Débutant = jamais de pace. | ✅ active |
 | 2026-08-28 | Sheet D/@ depuis T100 | Placeholders `{D:…}` / `{@:…}` calculés depuis T100 si **intermédiaire ou avancé + Premium + T100**. **Débutant = jamais**. | ✅ active |
 | 2026-08-28 | Catalogue Sheet vague 2 | Soft-branch étendu à **XS / Sprint 04–06** (`triathlon_xs` + `triathlon_sprint`). Même grille niveau / 4 nages que Nager. Oly/Half/Full, eau libre, diplômes = pas encore. | ✅ active |

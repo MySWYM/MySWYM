@@ -129,6 +129,36 @@ export default function WorkoutPrepView({
               {metaBits.join(" · ")}
             </div>
           )}
+          {session?.sheetWeekRole?.banner ? (
+            <div
+              style={{
+                marginTop: 12,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: session.sheetWeekRole.isRaceWeek
+                  ? "rgba(248, 113, 113, 0.12)"
+                  : session.sheetWeekRole.phase === "test"
+                    ? "rgba(251, 191, 36, 0.14)"
+                    : "rgba(61, 143, 255, 0.10)",
+                border: `1px solid ${
+                  session.sheetWeekRole.isRaceWeek
+                    ? "rgba(248, 113, 113, 0.28)"
+                    : session.sheetWeekRole.phase === "test"
+                      ? "rgba(251, 191, 36, 0.35)"
+                      : "rgba(61, 143, 255, 0.22)"
+                }`,
+                fontSize: 13,
+                fontWeight: 600,
+                color: G.inkLight,
+                lineHeight: 1.45,
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: G.ink, marginBottom: 4 }}>
+                {session.sheetWeekRole.label}
+              </div>
+              {session.sheetWeekRole.banner}
+            </div>
+          ) : null}
           {(equipmentLabel || header.intensityCue) && (
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
               {equipmentLabel && (

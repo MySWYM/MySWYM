@@ -672,9 +672,9 @@ export function levelBandFromProfile(profile = {}) {
 
 export function phaseFromLoopCursor(cursor, isEventFamily) {
   if (!isEventFamily) return null;
+  // Legacy : préférer resolveSheetWeekRole (calendrier S0 / cycle).
+  // Conservé pour compat tests / appels anciens — curseur 0/1 ≠ produit Arthur.
   const c = Math.max(0, Number(cursor) || 0);
-  // Aligné catalogue : rares tests / deload — pour la boucle on reste en construction
-  // sauf curseurs explicites (extensible plus tard)
   if (c === 0) return "test";
   if (c === 1) return "deload";
   return "construction";

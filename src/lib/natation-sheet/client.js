@@ -13,7 +13,6 @@ import {
   materializeSession,
   parseEducatifsCsv,
   parseSessionsCsv,
-  phaseFromLoopCursor,
   pickSession,
   sheetFamilyIdFromProfile,
   excludeSheetNsFromHistory,
@@ -23,6 +22,7 @@ import {
   SHEET_RECENT_EXCLUDE,
   SHEET_RECENT_EDUCATIFS,
 } from "./parse.js";
+import { resolveSheetWeekRole } from "./sheet-week-role.js";
 
 const CACHE_TTL_MS = 30_000;
 
@@ -123,7 +123,18 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
   if (!sessions?.length) return null;
 
   const event = isEventFamilyId(familyId);
-  const phase = phaseFromLoopCursor(opts.cursor ?? 0, event);
+  const spw = Math.max(1, Math.min(5, Number(profile.sessionsPerWeek) || 3));
+  const ordinal = Math.max(0, Number(opts.ordinalIndex) || 0);
+  const weekIndexFromOrdinal = Math.floor(ordinal / spw);
+  const weekRole = event
+    ? resolveSheetWeekRole({
+        eventDate: profile.eventDate || null,
+        planStart: opts.planStart || profile.planStartedAt || profile.createdAt || null,
+        weekIndex: opts.weekIndex != null ? opts.weekIndex : weekIndexFromOrdinal,
+        now: opts.now,
+      })
+    : null;
+  const phase = event ? weekRole.phase : null;
   const excludeNs = [
     ...excludeSheetNsFromHistory(opts.history, SHEET_RECENT_EXCLUDE),
     ...(opts.excludeNs || []),
@@ -221,7 +232,14 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
   return {
     type: "ENDURANCE",
     title: `Séance · ${distance} m`,
-    intensity: filled.phase === "test" ? "Test" : filled.phase === "deload" ? "Charge légère" : "Endurance",
+    intensity:
+      weekRole?.isRaceWeek
+        ? "Semaine de course"
+        : filled.phase === "test" || weekRole?.phase === "test"
+          ? "Test"
+          : filled.phase === "deload" || weekRole?.phase === "deload"
+            ? "Charge légère"
+            : "Endurance",
     details,
     sets,
     distance: `${distance}m`,
@@ -234,10 +252,21 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
     /** Fiche(s) éducatif = onglet Sheet (pas arthur-educatif-fiches.js) */
     sheetEducatif,
     sheetEducatifs: sheetEducatifs.length ? sheetEducatifs : null,
+    sheetWeekRole: weekRole,
     sheetMeta: {
       familyId,
       n: filled.n,
-      phase: filled.phase,
+      phase: filled.phase || weekRole?.phase || null,
+      weekRole: weekRole
+        ? {
+            phase: weekRole.phase,
+            band: weekRole.band,
+            label: weekRole.label,
+            weeksBeforeRace: weekRole.weeksBeforeRace,
+            maxSessions: weekRole.maxSessions,
+            isRaceWeek: weekRole.isRaceWeek,
+          }
+        : null,
       bande: filled.bande,
       educatif: eduName,
       educatifs: eduNames.length ? eduNames : null,
@@ -252,8 +281,11 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
       excludeNs,
       excludeEducatifs,
       hardExcludeNames,
+      weekRolePhase: weekRole?.phase || null,
     },
-    engineWhy: `sheet=${familyId} · n°${filled.n} · ${filled.total_m}m`,
+    engineWhy: weekRole
+      ? `sheet=${familyId} · n°${filled.n} · ${filled.total_m}m · ${weekRole.phase}`
+      : `sheet=${familyId} · n°${filled.n} · ${filled.total_m}m`,
   };
 }
 
