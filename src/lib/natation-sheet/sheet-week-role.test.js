@@ -1,5 +1,5 @@
 /**
- * Tests calendrier Sheet — couple allégée→test vers J, 6 travail, garde début.
+ * Tests calendrier Sheet — couple allégée→test vers J (S-7→S-6), 6 travail, garde 2 sem.
  * Usage : node src/lib/natation-sheet/sheet-week-role.test.js
  */
 import assert from "node:assert/strict";
@@ -9,6 +9,7 @@ import {
   buildEventWeekTimeline,
   EARLY_PLAN_MIN_CONSTRUCTION,
   FAR_CYCLE_LEN,
+  FAR_CYCLE_MIN_S_INDEX,
   farCycleFromRaceSIndex,
   farCyclePhase,
   resolveSheetWeekRole,
@@ -18,7 +19,8 @@ import {
 } from "./sheet-week-role.js";
 
 assert.equal(FAR_CYCLE_LEN, 8);
-assert.equal(EARLY_PLAN_MIN_CONSTRUCTION, 4);
+assert.equal(EARLY_PLAN_MIN_CONSTRUCTION, 2);
+assert.equal(FAR_CYCLE_MIN_S_INDEX, 6);
 
 {
   const mon = startOfWeekMonday("2026-08-12");
@@ -30,7 +32,7 @@ assert.equal(EARLY_PLAN_MIN_CONSTRUCTION, 4);
   const race = "2026-08-30";
   assert.equal(weeksBeforeRaceWeek(race, new Date("2026-08-26T12:00:00")), 0, "S0");
   assert.equal(weeksBeforeRaceWeek(race, new Date("2026-08-19T12:00:00")), 1, "S-1");
-  assert.equal(weeksBeforeRaceWeek(race, new Date("2026-07-08T12:00:00")), 7, "S-7");
+  assert.equal(weeksBeforeRaceWeek(race, new Date("2026-07-15T12:00:00")), 6, "S-6");
 }
 
 assert.equal(farCyclePhase(0), "construction");
@@ -39,16 +41,16 @@ assert.equal(farCyclePhase(6), "deload");
 assert.equal(farCyclePhase(7), "test");
 assert.equal(farCyclePhase(8), "construction");
 
-assert.equal(farCycleFromRaceSIndex(7).phase, "test");
-assert.equal(farCycleFromRaceSIndex(8).phase, "deload", "S-8 allégée puis S-7 test");
-assert.equal(farCycleFromRaceSIndex(9).phase, "construction");
-assert.equal(farCycleFromRaceSIndex(14).phase, "construction");
-assert.equal(farCycleFromRaceSIndex(15).phase, "test");
-assert.equal(farCycleFromRaceSIndex(16).phase, "deload");
+assert.equal(farCycleFromRaceSIndex(6).phase, "test");
+assert.equal(farCycleFromRaceSIndex(7).phase, "deload", "S-7 allégée puis S-6 test");
+assert.equal(farCycleFromRaceSIndex(8).phase, "construction");
+assert.equal(farCycleFromRaceSIndex(13).phase, "construction");
+assert.equal(farCycleFromRaceSIndex(14).phase, "test");
+assert.equal(farCycleFromRaceSIndex(15).phase, "deload");
 
 assert.equal(applyEarlyPlanConstructionGuard("test", 0), "construction");
-assert.equal(applyEarlyPlanConstructionGuard("deload", 3), "construction");
-assert.equal(applyEarlyPlanConstructionGuard("test", 4), "test");
+assert.equal(applyEarlyPlanConstructionGuard("deload", 1), "construction");
+assert.equal(applyEarlyPlanConstructionGuard("test", 2), "test");
 
 {
   const race = "2026-08-30";
@@ -59,34 +61,42 @@ assert.equal(applyEarlyPlanConstructionGuard("test", 4), "test");
   const s1 = resolveSheetWeekRole({ eventDate: race, now: new Date("2026-08-19"), weekIndex: 0 });
   assert.equal(s1.phase, "deload");
 
+  const s5 = resolveSheetWeekRole({
+    eventDate: race,
+    now: new Date("2026-07-22T12:00:00"),
+    weekIndex: 10,
+  });
+  assert.equal(s5.phase, "construction", "pas de test/allégée cycle avant S-6");
+  assert.equal(s5.band, "S-2_S-5");
+
+  const s6 = resolveSheetWeekRole({
+    eventDate: race,
+    now: new Date("2026-07-15T12:00:00"),
+    weekIndex: 10,
+  });
+  assert.equal(s6.phase, "test");
+
+  const s6early = resolveSheetWeekRole({
+    eventDate: race,
+    now: new Date("2026-07-15T12:00:00"),
+    weekIndex: 1,
+  });
+  assert.equal(s6early.phase, "construction");
+  assert.equal(s6early.earlyGuardApplied, true);
+
   const s7 = resolveSheetWeekRole({
     eventDate: race,
     now: new Date("2026-07-08T12:00:00"),
     weekIndex: 10,
   });
-  assert.equal(s7.phase, "test");
+  assert.equal(s7.phase, "deload");
 
   const s7early = resolveSheetWeekRole({
     eventDate: race,
     now: new Date("2026-07-08T12:00:00"),
-    weekIndex: 2,
+    weekIndex: 0,
   });
-  assert.equal(s7early.phase, "construction");
-  assert.equal(s7early.earlyGuardApplied, true);
-
-  const s8 = resolveSheetWeekRole({
-    eventDate: race,
-    now: new Date("2026-07-01T12:00:00"),
-    weekIndex: 10,
-  });
-  assert.equal(s8.phase, "deload");
-
-  const s8early = resolveSheetWeekRole({
-    eventDate: race,
-    now: new Date("2026-07-01T12:00:00"),
-    weekIndex: 1,
-  });
-  assert.equal(s8early.phase, "construction", "garde début : pas d’allégée cycle trop tôt");
+  assert.equal(s7early.phase, "construction", "garde début : pas d’allégée cycle trop tôt");
 }
 
 {
@@ -107,9 +117,11 @@ assert.equal(sheetPhaseShortLabel({ phase: "deload", isRaceWeek: true }), "Cours
   assert.equal(weeksBeforeRaceWeek(race, nowS9), 9);
   const byLabel = Object.fromEntries(atS9.weeks.map((w) => [w.sLabel, w.shortLabel]));
   assert.equal(byLabel["S-9"], "Travail");
-  // Début de plan : garde → S-8 / S-7 restent travail (pas allégée/test cycle)
+  // Début de plan : garde 2 sem. → S-9 / S-8 travail ; S-7 allégée / S-6 test OK
   assert.equal(byLabel["S-8"], "Travail");
-  assert.equal(byLabel["S-7"], "Travail");
+  assert.equal(byLabel["S-7"], "Allégée");
+  assert.equal(byLabel["S-6"], "Test");
+  assert.equal(byLabel["S-5"], "Travail");
   assert.equal(byLabel["S-1"], "Allégée");
   assert.equal(byLabel["S0"], "Course");
 }
@@ -122,11 +134,11 @@ assert.equal(sheetPhaseShortLabel({ phase: "deload", isRaceWeek: true }), "Cours
     weekIndex: 20,
   });
   const byLabel = Object.fromEntries(far.weeks.map((w) => [w.sLabel, w.shortLabel]));
-  assert.equal(byLabel["S-7"], "Test");
-  assert.equal(byLabel["S-8"], "Allégée", "vers J : allégée puis test");
-  assert.equal(byLabel["S-6"], "Travail");
-  assert.equal(byLabel["S-15"], "Test");
-  assert.equal(byLabel["S-16"], "Allégée");
+  assert.equal(byLabel["S-6"], "Test");
+  assert.equal(byLabel["S-7"], "Allégée", "vers J : allégée puis test");
+  assert.equal(byLabel["S-5"], "Travail");
+  assert.equal(byLabel["S-14"], "Test");
+  assert.equal(byLabel["S-15"], "Allégée");
 }
 
 {
