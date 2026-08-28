@@ -2030,6 +2030,7 @@ const StravaSection = ({
   const [connected,     setConnected]     = useState(null); // null = chargement
   const [athlete,       setAthlete]       = useState(null);
   const [activities,    setActivities]    = useState([]);
+  const [activitiesOpen, setActivitiesOpen] = useState(false);
   const [syncing,       setSyncing]       = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [msg,           setMsg]           = useState(null);
@@ -2037,6 +2038,10 @@ const StravaSection = ({
   const [healthGateOpen, setHealthGateOpen] = useState(false);
   const [healthGateChecked, setHealthGateChecked] = useState(false);
   const [localHealthConsent, setLocalHealthConsent] = useState(null);
+  const STRAVA_ACTIVITIES_PREVIEW = 3;
+  const activitiesVisible = activitiesOpen
+    ? activities
+    : activities.slice(0, STRAVA_ACTIVITIES_PREVIEW);
 
   // client_id est public (pas un secret) — fallback hardcodé si l'env n'est pas chargé
   const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
@@ -2411,14 +2416,14 @@ const StravaSection = ({
             )
           )}
 
-          {/* Liste des activités */}
+          {/* Liste des activités — 3 visibles, le reste derrière « Voir plus » */}
           {showDetails && (activities.length === 0 ? (
             <div style={{ fontSize: 13, color: G.grey, textAlign: "center", padding: "16px 0" }}>
               Aucune activité — clique sur "Synchroniser".
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
-              {activities.map((a, i) => {
+              {activitiesVisible.map((a, i) => {
                 const meta = STRAVA_ACTIVITY_META[a.activity_type] ?? { label: a.activity_type ?? "Activité", color: G.grey, bg: G.greyXLight, Icon: Activity };
                 const { Icon: AIcon, color, bg, label } = meta;
                 return (
@@ -2426,7 +2431,7 @@ const StravaSection = ({
                     key={a.strava_activity_id}
                     type="button"
                     onClick={() => setSelectedActivity(a)}
-                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 0", border: "none", background: "none", borderBottom: i < activities.length - 1 ? `1px solid ${G.greyLight}` : "none", cursor: "pointer", textAlign: "left" }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 0", border: "none", background: "none", borderBottom: i < activitiesVisible.length - 1 ? `1px solid ${G.greyLight}` : "none", cursor: "pointer", textAlign: "left" }}
                   >
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <AIcon size={16} color={color} />
@@ -2450,6 +2455,33 @@ const StravaSection = ({
                   </button>
                 );
               })}
+              {activities.length > STRAVA_ACTIVITIES_PREVIEW && !activitiesOpen && (
+                <button
+                  type="button"
+                  onClick={() => setActivitiesOpen(true)}
+                  style={{
+                    width: "100%", marginTop: 10, minHeight: 44, borderRadius: 12,
+                    border: `1px solid ${G.greyLight}`, background: G.bg,
+                    color: G.blue, fontWeight: 700, fontSize: 13, cursor: "pointer",
+                    fontFamily: FONT,
+                  }}
+                >
+                  Voir plus ({activities.length - STRAVA_ACTIVITIES_PREVIEW})
+                </button>
+              )}
+              {activities.length > STRAVA_ACTIVITIES_PREVIEW && activitiesOpen && (
+                <button
+                  type="button"
+                  onClick={() => setActivitiesOpen(false)}
+                  style={{
+                    width: "100%", marginTop: 8, minHeight: 40, border: "none", background: "none",
+                    color: G.grey, fontWeight: 600, fontSize: 13, cursor: "pointer",
+                    fontFamily: FONT,
+                  }}
+                >
+                  Réduire
+                </button>
+              )}
             </div>
           ))}
 
