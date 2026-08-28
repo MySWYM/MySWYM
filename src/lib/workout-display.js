@@ -600,7 +600,35 @@ export function formatMixteRepartitionCue(text) {
 }
 
 /**
+ * Choix binaire crawl ↔ 4 nages (≠ nage libre, ≠ 4 nages imposé).
+ * Accepte « crawl ou 4 nages » / « 4 nages ou crawl » (nl = crawl).
+ */
+export function isCrawlOrFourNagesChoice(text) {
+  const t = String(text || "").toLowerCase();
+  return (
+    /\b(?:crawl|nl)\s+ou\s+4\s*nages\b/.test(t) || /\b4\s*nages\s+ou\s+(?:crawl|nl)\b/.test(t)
+  );
+}
+
+const CRAWL_OR_4N_PREFIX_RE =
+  /^(?:crawl|nl)\s+ou\s+4\s*nages\b|^4\s*nages\s+ou\s+(?:crawl|nl)\b/i;
+
+/** Retire la locution du sous-texte (la pastille porte l’info). */
+export function stripCrawlOrFourNagesPhrase(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/\b(?:crawl|nl)\s+ou\s+4\s*nages\b/gi, " ")
+      .replace(/\b4\s*nages\s+ou\s+(?:crawl|nl)\b/gi, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+      .trim() || null
+  );
+}
+
+/**
  * Déduit le libellé nage pour l’UI :
+ * - crawl ou 4 nages / 4 nages ou crawl → « CRAWL OU 4N »
  * - 4 nages / médley / 4 strokes → « 4 NAGES »
  * - ≥2 nages, ou 1 nage + au choix, ou « mix » → « MIXTE »
  * - sinon nage unique / nage au choix
@@ -610,6 +638,12 @@ export function inferStrokeLabel(blob) {
   if (!text) return { label: null, consumePrefix: null };
 
   const lower = text.toLowerCase();
+
+  // Avant le match « 4 nages » seul
+  if (isCrawlOrFourNagesChoice(text)) {
+    const m = text.match(CRAWL_OR_4N_PREFIX_RE);
+    return { label: "CRAWL OU 4N", consumePrefix: m ? m[0] : null };
+  }
 
   if (/\b4\s*nages\b/.test(lower) || /\bm[eé]dley\b/.test(lower) || /(^|[^a-z])im([^a-z]|$)/i.test(lower)) {
     const m = text.match(/^(4\s*nages|m[eé]dley|im)\b/i);
@@ -682,6 +716,10 @@ export function splitHeadline(main) {
   if (stroke === "MIXTE") {
     const repartCue = formatMixteRepartitionCue(text);
     if (repartCue) rest = repartCue;
+  }
+  if (stroke === "CRAWL OU 4N") {
+    rest = stripCrawlOrFourNagesPhrase(rest);
+    if (!rest) rest = "Crawl ou 4 nages (médley)";
   }
   return { volume, stroke, rest: rest || null, effort };
 }
@@ -826,6 +864,17 @@ export function buildWorkoutView(session = {}) {
       if (educatif) educatifs = [educatif];
     }
     index += 1;
+    // Cue « Crawl ou 4 nages » même si le main disait seulement « 4 nages »
+    const choiceBlob = [mainClean, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
+    let strokeLabel = headline.stroke;
+    if (isCrawlOrFourNagesChoice(choiceBlob)) {
+      strokeLabel = "CRAWL OU 4N";
+      if (isCrawlOrFourNagesChoice(cuePrimary)) {
+        cuePrimary = "Crawl ou 4 nages (médley)";
+      } else if (!cuePrimary) {
+        cuePrimary = "Crawl ou 4 nages (médley)";
+      }
+    }
     exercises.push({
       id: `ex_${index}`,
       index,
@@ -835,7 +884,7 @@ export function buildWorkoutView(session = {}) {
       label: parsed?.label || null,
       main: mainClean,
       volumeLabel: headline.volume || (pyramid ? `${pyramid.volume} m` : null),
-      strokeLabel: headline.stroke,
+      strokeLabel,
       effortLabel: effortLabel || null,
       allureEnchainement: allureEnchainement || null,
       sprint: hasSprint,

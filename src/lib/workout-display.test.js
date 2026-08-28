@@ -184,6 +184,34 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(splitHeadline("200 m en alternant (50 m dos et 50 m brasse)").rest, "(50 m dos et 50 m brasse)");
   assert.equal(splitHeadline("4 × 100 m 4 nages").stroke, "4 NAGES");
   assert.equal(splitHeadline("400 m médley").stroke, "4 NAGES");
+  assert.equal(splitHeadline("100 m crawl ou 4 nages souple").stroke, "CRAWL OU 4N");
+  assert.equal(splitHeadline("100 m crawl ou 4 nages souple").effort, "souple");
+  assert.equal(splitHeadline("100 m 4 nages ou crawl").stroke, "CRAWL OU 4N");
+  assert.equal(splitHeadline("200 m nl ou 4 nages").stroke, "CRAWL OU 4N");
+  assert.notEqual(splitHeadline("100 m nage libre").stroke, "CRAWL OU 4N");
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m crawl ou 4 nages souple"],
+    sets: [{ block: "depart", label: "100 m crawl ou 4 nages souple" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "CRAWL OU 4N");
+  assert.equal(ex.effortLabel, "souple");
+  assert.match(ex.cue || "", /Crawl ou 4 nages/i);
+}
+
+{
+  // Main « 4 nages » + cue « Crawl ou 4 nages » → pas la pastille 4 NAGES imposée
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-100 m 4 nages souple — Crawl ou 4 nages"],
+    sets: [{ block: "depart", label: "100 m 4 nages souple — Crawl ou 4 nages" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.strokeLabel, "CRAWL OU 4N");
 }
 
 {
