@@ -9,16 +9,17 @@ export type VerificationEmailProps = {
 export function VerificationEmail({ confirmUrl }: VerificationEmailProps) {
   return (
     <EmailLayout
-      preview="Confirme ton email pour activer ton compte MySWYM."
+      preview="1 clic pour activer ton compte MySWYM."
+      eyebrow="Sécurité"
       ctaLabel="Confirmer mon email"
       ctaUrl={confirmUrl}
     >
-      <Text style={emailText.h1}>Confirme ton adresse email</Text>
+      <Text style={emailText.h1}>Active ton compte</Text>
       <Text style={emailText.p}>
-        Un dernier clic pour activer ton compte MySWYM et accéder à ton plan.
+        Un dernier clic pour confirmer ton adresse et accéder à ton plan.
       </Text>
       <Text style={emailText.p}>
-        Si tu n’as pas créé de compte, tu peux ignorer ce message.
+        Si tu n’as pas créé de compte, ignore ce message — rien ne se passe.
       </Text>
       <Text style={emailText.muted}>
         Le lien expire après un délai de sécurité. Tu pourras en demander un

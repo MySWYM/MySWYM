@@ -9,14 +9,15 @@ export type ResetPasswordEmailProps = {
 export function ResetPasswordEmail({ resetUrl }: ResetPasswordEmailProps) {
   return (
     <EmailLayout
-      preview="Réinitialise ton mot de passe MySWYM."
+      preview="Choisis un nouveau mot de passe MySWYM."
+      eyebrow="Sécurité"
       ctaLabel="Choisir un nouveau mot de passe"
       ctaUrl={resetUrl}
     >
-      <Text style={emailText.h1}>Réinitialiser le mot de passe</Text>
+      <Text style={emailText.h1}>Nouveau mot de passe</Text>
       <Text style={emailText.p}>
-        Tu as demandé à changer ton mot de passe MySWYM. Clique sur le bouton
-        ci-dessous pour en choisir un nouveau.
+        Tu as demandé à changer ton mot de passe MySWYM. Clique ci-dessous pour
+        en choisir un nouveau.
       </Text>
       <Text style={emailText.p}>
         Si tu n’es pas à l’origine de cette demande, ignore cet email — ton

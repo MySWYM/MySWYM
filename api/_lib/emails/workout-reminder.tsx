@@ -1,6 +1,10 @@
 import * as React from "react";
 import { Text } from "@react-email/components";
-import { EmailLayout, emailText } from "./components/EmailLayout";
+import {
+  EmailHighlight,
+  EmailLayout,
+  emailText,
+} from "./components/EmailLayout";
 
 export type WorkoutReminderEmailProps = {
   sessionTitle: string;
@@ -15,27 +19,32 @@ export function WorkoutReminderEmail({
   ctaUrl,
   firstName,
 }: WorkoutReminderEmailProps) {
-  const who = firstName?.trim() ? `${firstName.trim()}, l` : "L";
+  const who = firstName?.trim();
   const metersLine =
     typeof meters === "number" && meters > 0
-      ? ` · ~${meters.toLocaleString("fr-FR")} m`
-      : "";
+      ? `~${meters.toLocaleString("fr-FR")} m`
+      : null;
 
   return (
     <EmailLayout
-      preview={`L’eau t’attend — ${sessionTitle}${metersLine}`}
-      ctaLabel="Voir ma séance"
+      preview={`L’eau t’attend — ${sessionTitle}${metersLine ? ` · ${metersLine}` : ""}`}
+      eyebrow="Séance du jour"
+      ctaLabel="Ouvrir la séance"
       ctaUrl={ctaUrl}
     >
-      <Text style={emailText.h1}>L’eau t’attend</Text>
-      <Text style={emailText.p}>
-        {who}a séance du jour :{" "}
-        <strong style={emailText.strong}>{sessionTitle}</strong>
-        {metersLine}. Quelques dizaines de minutes et tu coches la case.
+      <Text style={emailText.h1}>
+        {who ? `${who}, l’eau t’attend` : "L’eau t’attend"}
       </Text>
       <Text style={emailText.p}>
-        Pas de pression — juste le prochain coup de bras.
+        Quelques dizaines de minutes et tu coches la case. Pas de pression —
+        juste le prochain coup de bras.
       </Text>
+      <EmailHighlight dark>
+        <Text style={emailText.highlightTitleOnDark}>{sessionTitle}</Text>
+        {metersLine ? (
+          <Text style={emailText.highlightMetaOnDark}>{metersLine}</Text>
+        ) : null}
+      </EmailHighlight>
     </EmailLayout>
   );
 }

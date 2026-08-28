@@ -86,7 +86,7 @@ Voir `tokens.ts` + `conversion.css`.
 8. ✅ Cron J-1 (`marketing-cron` + `.github/workflows/marketing-cron.yml`)
 9. ⬜ Fatigue score + calendrier intelligent (P1)
 
-### Timeline emails essai
+## Timeline emails essai
 
 | Jour | Trigger | Contenu |
 |------|---------|---------|
@@ -95,5 +95,9 @@ Voir `tokens.ts` + `conversion.css`.
 | J+3 | Resend automation | Adaptation coach / ressenti |
 | J+6 | Resend automation | Soft convert (garde ton coach) |
 | J-1 | `marketing-cron` → `trial.ending_soon` | Urgence « demain fin d’essai » |
+
+DA emails : header dark `#000514` + CTA `#006bfd` (aligné `public.css`). Republish templates Resend : `npm run email:republish`.
+
+Prix dans les mails : `9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an` (`src/lib/pricing.js`).
 
 Si l’utilisateur annule pendant le délai → `subscription.canceled` stoppe le drip (timeout only).

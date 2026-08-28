@@ -27,6 +27,7 @@ export function NewsletterEmail({
   return (
     <EmailLayout
       preview={previewText}
+      eyebrow="MySWYM"
       ctaLabel={ctaLabel}
       ctaUrl={ctaUrl}
       showUnsubscribe
@@ -34,7 +35,10 @@ export function NewsletterEmail({
     >
       {sections.map((section, i) => (
         <React.Fragment key={`${section.title}-${i}`}>
-          <Heading as={i === 0 ? "h1" : "h2"} style={i === 0 ? emailText.h1 : styles.h2}>
+          <Heading
+            as={i === 0 ? "h1" : "h2"}
+            style={i === 0 ? emailText.h1 : styles.h2}
+          >
             {section.title}
           </Heading>
           <Text style={emailText.p}>{section.body}</Text>
@@ -49,8 +53,11 @@ const styles = {
     color: emailBrand.ink,
     fontSize: "17px",
     fontWeight: 700,
+    letterSpacing: "-0.02em",
     lineHeight: "24px",
-    margin: "20px 0 8px",
+    margin: "22px 0 8px",
+    borderLeft: `3px solid ${emailBrand.primary}`,
+    paddingLeft: "12px",
   },
 };
 
