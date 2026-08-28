@@ -3,17 +3,17 @@
  *
  * Avec eventDate :
  *   S0 + S-1     → deload (S0 = semaine course, max 2 séances)
- *   S-2 → S-6    → construction (interdit test)
- *   S-7 et avant → cycle ancré sur J (longueur 8) :
- *                  S-7 = test ; S-8 = allégée (couple allégée → test vers J) ;
+ *   S-2 → S-5    → construction (interdit test / allégée cycle)
+ *   S-6 et avant → cycle ancré sur J (longueur 8) :
+ *                  S-6 = test ; S-7 = allégée (couple allégée → test vers J) ;
  *                  6 travail entre les couples
- *                  (ex. S-16 allégée → S-15 test → S-14…S-9 travail → S-8 allégée → S-7 test)
+ *                  (ex. S-15 allégée → S-14 test → S-13…S-8 travail → S-7 allégée → S-6 test)
  *
- * Début de plan : les 4 premières semaines (weekIndex 0..3) forcent
+ * Début de plan : les 2 premières semaines (weekIndex 0..1) forcent
  * construction sur le cycle loin / sans date — pas de test ni allégée « cycle ».
  * S0 / S-1 course restent prioritaires (taper intact).
  *
- * Sans eventDate : même cycle 6 travail → allégée → test (+ garde 4 sem.).
+ * Sans eventDate : même cycle 6 travail → allégée → test (+ garde 2 sem.).
  *
  * Notation : S0 = semaine du jour J ; S-1 = semaine d’avant ; J-1 = veille (jours).
  */
@@ -25,10 +25,12 @@ export const FAR_WORK_WEEKS = 6;
 /** Cycle loin : 6 travail + 1 allégée + 1 test. */
 export const FAR_CYCLE_LEN = FAR_WORK_WEEKS + 2;
 /** Pas de test / allégée « cycle » avant N semaines de plan. */
-export const EARLY_PLAN_MIN_CONSTRUCTION = 4;
+export const EARLY_PLAN_MIN_CONSTRUCTION = 2;
+/** Plus près de J autorisé pour test / allégée cycle (S-6). */
+export const FAR_CYCLE_MIN_S_INDEX = 6;
 
 /** @typedef {'construction'|'test'|'deload'} SheetPhase */
-/** @typedef {'S0'|'S-1'|'S-2_S-6'|'far'|'no_date'} SheetWeekBand */
+/** @typedef {'S0'|'S-1'|'S-2_S-5'|'far'|'no_date'} SheetWeekBand */
 
 /**
  * Lundi 00:00 local de la semaine contenant `date`.
@@ -80,14 +82,14 @@ export function farCyclePosition(weekIndex) {
 
 /**
  * Cycle loin de J, ancré sur l’index S (semaines avant course).
- * S-7 → test ; S-8 → allégée ; vers J : allégée → test → 6 travail → …
- * (S-16 allégée, S-15 test, S-14…S-9 travail, S-8 allégée, S-7 test).
- * @param {number} sIndex — weeksBeforeRaceWeek (≥ 7)
+ * S-6 → test ; S-7 → allégée ; vers J : allégée → test → 6 travail → …
+ * (S-15 allégée, S-14 test, S-13…S-8 travail, S-7 allégée, S-6 test).
+ * @param {number} sIndex — weeksBeforeRaceWeek (≥ 6)
  * @returns {{ phase: SheetPhase, cyclePosition: number }}
  */
 export function farCycleFromRaceSIndex(sIndex) {
-  const s = Math.max(7, Math.floor(Number(sIndex) || 7));
-  const pos = (s - 7) % FAR_CYCLE_LEN;
+  const s = Math.max(FAR_CYCLE_MIN_S_INDEX, Math.floor(Number(sIndex) || FAR_CYCLE_MIN_S_INDEX));
+  const pos = (s - FAR_CYCLE_MIN_S_INDEX) % FAR_CYCLE_LEN;
   /** @type {SheetPhase} */
   let phase = "construction";
   if (pos === 0) phase = "test";
@@ -96,7 +98,7 @@ export function farCycleFromRaceSIndex(sIndex) {
 }
 
 /**
- * Garde début de plan : pas de test / allégée cycle avant 4 semaines.
+ * Garde début de plan : pas de test / allégée cycle avant 2 semaines.
  * Ne s’applique pas aux bandes course S0 / S-1.
  * @param {SheetPhase} phase
  * @param {number|null|undefined} planWeekIndex
@@ -128,7 +130,7 @@ const BANNERS = Object.freeze({
  *   weekIndex?: number|null,
  *   now?: Date,
  * }} opts
- * weekIndex = semaines depuis début de plan (garde 4 sem. + cycle sans date).
+ * weekIndex = semaines depuis début de plan (garde 2 sem. + cycle sans date).
  */
 export function resolveSheetWeekRole(opts = {}) {
   const now = opts.now instanceof Date ? opts.now : new Date();
@@ -159,12 +161,12 @@ export function resolveSheetWeekRole(opts = {}) {
       band = "S-1";
       phase = "deload";
       label = "Semaine allégée (S-1)";
-    } else if (sIndex >= 2 && sIndex <= 6) {
-      band = "S-2_S-6";
+    } else if (sIndex >= 2 && sIndex <= 5) {
+      band = "S-2_S-5";
       phase = "construction";
       label = "Construction (approche course)";
     } else {
-      // S-7+ : cycle ancré sur J (S-7 = test)
+      // S-6+ : cycle ancré sur J (S-6 = test)
       band = "far";
       const far = farCycleFromRaceSIndex(sIndex);
       const guarded = applyEarlyPlanConstructionGuard(far.phase, planWeekIndex);
