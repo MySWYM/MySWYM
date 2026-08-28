@@ -27,7 +27,47 @@ export function buildWeekProjection(plan, profile = {}) {
 
   if (plan.isSessionLoop) {
     const perWeek = Math.max(1, Math.min(7, Number(profile.sessionsPerWeek) || 3));
-    const current = plan.weeks[0]?.sessions?.[0] || null;
+    const weekSessions = plan.weeks[0]?.sessions || [];
+    if (weekSessions.length > 1) {
+      const slots = weekSessions.map((s, i) => {
+        const firstOpen = weekSessions.findIndex((x) => !isResolved(x));
+        let status = "todo";
+        if (s.skipped) status = "skipped";
+        else if (s.completed) status = "done";
+        return {
+          title: `Séance ${i + 1}`,
+          type: s.type || null,
+          distance: s.distance || "",
+          meters: parseMeters(s.distance),
+          status,
+          isCurrent: i === firstOpen,
+        };
+      });
+      const doneCount = slots.filter((s) => s.status === "done" || s.status === "skipped").length;
+      const totalMeters = slots.reduce((a, s) => a + (s.meters || 0), 0);
+      const doneMeters = slots.filter((s) => s.status === "done").reduce((a, s) => a + (s.meters || 0), 0);
+      const historyLen = Array.isArray(plan.history) ? plan.history.length : 0;
+      const weekNum =
+        plan.weeks[0]?.number
+        || Math.floor(historyLen / Math.max(1, perWeek)) + 1;
+      const phase = plan.weeks[0]?.phase || null;
+      const phaseLabel =
+        phase === "test" ? "test"
+          : phase === "deload" ? "allégée"
+            : phase === "construction" ? "travail"
+              : phase;
+      return {
+        label: `Semaine n°${weekNum}`,
+        focus: phaseLabel,
+        sessions: slots,
+        doneCount,
+        totalCount: slots.length,
+        totalMeters,
+        doneMeters,
+        mode: "loop",
+      };
+    }
+    const current = weekSessions[0] || null;
     const history = Array.isArray(plan.history) ? plan.history : [];
     // Séances terminées « cette semaine » : on prend les (perWeek - 1) dernières + la courante
     const recentDone = history.filter((s) => s?.completed).slice(-(perWeek - 1));

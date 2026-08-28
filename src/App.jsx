@@ -20,7 +20,7 @@ import { readSeenNotifications, writeSeenNotifications } from "./lib/in-app-noti
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { prefetchNatationCatalogue } from "./lib/natation-sheet/client.js";
 import { buildSessionProvenance } from "./lib/session-provenance.js";
-import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, formatLoopSessionTitle, loopDisplaySession, loopSessionOrdinalIndex, withLoopSessionTitle, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
+import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, buildProgressionLoopWeek, expandLoopWeekSessions, formatLoopSessionTitle, formatLoopWeekSessionTitle, loopDisplaySession, loopSessionOrdinalIndex, withLoopSessionTitle, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G, G_DARK, applyTheme } from "./theme/palette.js";
 import PlanRevealView from "./PlanRevealView.jsx";
@@ -606,8 +606,142 @@ const formatDuration = (mins) => {
   return `${Math.floor(mins / 60)}h${mins % 60 ? (mins % 60).toString().padStart(2, "0") : ""}`;
 };
 
-const SKIP_LABELS = { missed: "Oubliée", not_done: "Pas faite" };
+const SKIP_LABELS = { missed: "Sautée", not_done: "Pas nagée" };
 const INSTAGRAM_MYSWYM = "https://www.instagram.com/myswym.app/";
+
+/** Sheet de validation séance (faite / sautée / pas nagée). */
+function SessionMarkSheet({ sessionTitle, onPick, onClose }) {
+  const options = [
+    {
+      id: "done",
+      label: "Je l’ai faite",
+      sub: "Valider et avancer",
+      icon: Check,
+      primary: true,
+    },
+    {
+      id: "missed",
+      label: "Je l’ai sautée",
+      sub: "Pas le temps / oublié",
+      icon: RotateCcw,
+      color: G.gold,
+    },
+    {
+      id: "not_done",
+      label: "Je n’ai pas nagé",
+      sub: "Autre raison",
+      icon: X,
+      color: G.greyMid,
+    },
+  ];
+
+  return createPortal(
+    <div
+      className="sheet-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Marquer la séance"
+      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        className="sheet-panel scale-in"
+        style={{
+          background: G.surface,
+          borderRadius: "24px 24px 0 0",
+          padding: "20px 18px max(28px, env(safe-area-inset-bottom))",
+          maxHeight: "85dvh",
+          overflowY: "auto",
+        }}
+      >
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+              Séance
+            </div>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: G.ink, lineHeight: 1.2, fontFamily: FONT_DISPLAY }}>
+              Comment s’est passée la séance ?
+            </h3>
+            {sessionTitle ? (
+              <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: G.inkLight, lineHeight: 1.35 }}>
+                {sessionTitle}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            style={{
+              width: 44, height: 44, borderRadius: 14, flexShrink: 0, cursor: "pointer",
+              border: `1px solid ${G.greyLight}`, background: G.greyXLight,
+              color: G.ink, display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {options.map((opt) => {
+            if (opt.primary) {
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onPick?.(opt.id)}
+                  style={{
+                    width: "100%", minHeight: 52, borderRadius: 14, border: "none", cursor: "pointer",
+                    background: G.mint, color: G.white, padding: "14px 16px",
+                    display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+                  }}
+                >
+                  <span style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: "rgba(255,255,255,0.22)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <opt.icon size={18} color={G.white} />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: 16, fontWeight: 800, lineHeight: 1.2 }}>{opt.label}</span>
+                    <span style={{ display: "block", fontSize: 12, fontWeight: 600, opacity: 0.9, marginTop: 2 }}>{opt.sub}</span>
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onPick?.(opt.id)}
+                style={{
+                  width: "100%", minHeight: 52, borderRadius: 14, cursor: "pointer",
+                  border: `1px solid ${G.greyLight}`, background: G.greyXLight,
+                  color: G.ink, padding: "12px 14px",
+                  display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: `${opt.color}22`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <opt.icon size={16} color={opt.color} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{opt.label}</span>
+                  <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: G.grey, marginTop: 2 }}>{opt.sub}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 /** Enlève le préfixe coach `-` / `·` pour l'affichage. */
 const stripDetailPrefix = (raw) => String(raw || "").trim().replace(/^[-–—·]\s*/, "");
@@ -3910,11 +4044,13 @@ const SessionCard = ({
   session, weekIndex, sessionIndex, onComplete, onShare, onEditFeedback,
   defaultExpanded = false, isPremium = false, onUpgrade, hideCheckbox = false,
   analyticsCtx = null,
+  displayTitle = null,
 }) => {
   const done = session.completed;
   const skipped = session.skipped;
   const resolved = isSessionResolved(session);
   const tm = getTypeMeta(session.type);
+  const titleShown = displayTitle || session.title;
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -3969,13 +4105,6 @@ const SessionCard = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!showMenu) return;
-    const close = () => setShowMenu(false);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, [showMenu]);
-
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
     if (!isPremium) {
@@ -3987,8 +4116,13 @@ const SessionCard = ({
       setShowMenu(false);
     } else {
       emitSessionStarted();
-      setShowMenu(v => !v);
+      setShowMenu(true);
     }
+  };
+
+  const pickStatus = (id) => {
+    onComplete(weekIndex, sessionIndex, id);
+    setShowMenu(false);
   };
 
   const checkboxColor = done ? G.mint : skipped === "missed" ? G.gold : skipped === "not_done" ? G.greyMid : G.greyLight;
@@ -4055,7 +4189,7 @@ const SessionCard = ({
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{session.title}</div>
+              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{titleShown}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -4068,10 +4202,10 @@ const SessionCard = ({
               <button
                 type="button"
                 onClick={handleCheckboxClick}
-                aria-label={locked ? "Débloque Premium pour marquer la séance" : resolved ? "Réinitialiser la séance" : "Marquer la séance"}
+                aria-label={locked ? "Débloque Premium pour marquer la séance" : resolved ? "Annuler le statut" : "Marquer la séance"}
                 style={{
                   width: 44, height: 44, borderRadius: "50%",
-                  border: `2px solid ${locked ? G.greyLight : checkboxColor}`,
+                  border: `2px solid ${locked ? G.greyLight : (resolved ? checkboxColor : G.blue)}`,
                   background: locked ? G.greyXLight : (resolved ? checkboxColor : "transparent"),
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
@@ -4082,42 +4216,19 @@ const SessionCard = ({
                 {!locked && done && <Check size={16} color={G.white} />}
                 {!locked && skipped === "missed" && <RotateCcw size={15} color={G.white} />}
                 {!locked && skipped === "not_done" && <X size={15} color={G.white} />}
+                {!locked && !resolved && <Check size={16} color={G.blue} style={{ opacity: 0.35 }} />}
               </button>
-              )}
-              {!hideCheckbox && !locked && showMenu && (
-                <div
-                  onClick={e => e.stopPropagation()}
-                  style={{
-                    position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 60,
-                    background: G.surface, borderRadius: 14, padding: 6,
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.14)", border: `1px solid ${G.greyLight}`,
-                    minWidth: 172,
-                  }}
-                >
-                  {[
-                    { id: "done", label: "Séance faite", icon: Check, color: G.mint },
-                    { id: "missed", label: "Oubliée", icon: RotateCcw, color: G.gold },
-                    { id: "not_done", label: "Pas faite", icon: X, color: G.grey },
-                  ].map(opt => (
-                    <button
-                      key={opt.id}
-                      onClick={() => { onComplete(weekIndex, sessionIndex, opt.id); setShowMenu(false); }}
-                      style={{
-                        width: "100%", padding: "10px 10px", borderRadius: 10, border: "none",
-                        background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                        fontSize: 13, fontWeight: 600, color: G.ink, textAlign: "left",
-                      }}
-                    >
-                      <span style={{ width: 24, height: 24, borderRadius: 8, background: `${opt.color}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <opt.icon size={12} color={opt.color} />
-                      </span>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
               )}
             </div>
           </div>
+
+          {showMenu && !locked && (
+            <SessionMarkSheet
+              sessionTitle={titleShown}
+              onClose={() => setShowMenu(false)}
+              onPick={pickStatus}
+            />
+          )}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             <span style={{
@@ -4131,12 +4242,6 @@ const SessionCard = ({
               <Timer size={11} color={G.greyMid} />
               {formatDuration(session.duration)}
             </span>
-            {!locked && intensity.zone && (
-              <span style={{
-                fontSize: 11, fontWeight: 700, color: G.inkLight, background: G.surface,
-                border: `1px solid ${G.greyLight}`, padding: "4px 9px", borderRadius: 8,
-              }}>{intensity.zone}</span>
-            )}
             {!locked && Array.isArray(session.equipmentUsed) && session.equipmentUsed.length > 0 && (
               <span style={{
                 fontSize: 11, fontWeight: 600, color: G.inkLight, background: G.surface,
@@ -4247,13 +4352,9 @@ const SessionCard = ({
                 showStart={!resolved}
                 profile={analyticsCtx?.profile || null}
                 planId={analyticsCtx?.planId || null}
-                whyLine={sessionWhyLine(session)}
+                whyLine={null}
                 onUpgrade={() => onUpgrade?.("session_locked")}
-                onTooHard={
-                  !resolved && isPremium
-                    ? () => onEditFeedback?.(weekIndex, sessionIndex)
-                    : undefined
-                }
+                onTooHard={undefined}
                 onStart={() => {
                   if (!isPremium) {
                     onUpgrade?.("session_locked");
@@ -4313,7 +4414,7 @@ const SessionCard = ({
 };
 
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
-const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade, analyticsCtx = null }) => {
+const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade, analyticsCtx = null, weekLocalTitles = false }) => {
   const [open, setOpen] = useState(isCurrentWeek);
   const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
@@ -4365,10 +4466,12 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
                 </span>
               )}
             </div>
-            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {week.focus}
-            </p>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {week.focus && !/^Séance(\s+n°)?\s*\d+/i.test(String(week.focus)) && (
+              <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {week.focus}
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: week.focus && !/^Séance(\s+n°)?\s*\d+/i.test(String(week.focus)) ? 0 : 4 }}>
               {totalDist > 0 && (
                 <span style={{
                   fontSize: 11, fontWeight: 700,
@@ -4419,6 +4522,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
               session={s}
               weekIndex={weekIndex}
               sessionIndex={i}
+              displayTitle={weekLocalTitles ? formatLoopWeekSessionTitle(i) : null}
               onComplete={onComplete}
               onShare={onShare}
               onEditFeedback={onEditFeedback}
@@ -4627,7 +4731,13 @@ const ProgressionLoopView = ({
   onOpenMenu,
   onTabChange,
 }) => {
-  const session = loopDisplaySession(plan) || plan?.weeks?.[0]?.sessions?.[0];
+  const week0 = plan?.weeks?.[0];
+  const weekSessions = week0?.sessions || [];
+  const multiSessionWeek = weekSessions.length > 1;
+  const openSessionIndex = weekSessions.findIndex((s) => !isSessionResolved(s));
+  const session = multiSessionWeek
+    ? (openSessionIndex >= 0 ? weekSessions[openSessionIndex] : weekSessions[0])
+    : (loopDisplaySession(plan) || weekSessions[0]);
   const resolved = session ? isSessionResolved(session) : true;
   const stats = computeStats(plan);
   const [poolOpen, setPoolOpen] = useState(false);
@@ -4703,7 +4813,9 @@ const ProgressionLoopView = ({
                 fontSize: 12, fontWeight: 600, color: G.inkLight,
                 background: G.greyXLight, padding: "4px 9px", borderRadius: 8,
               }}>
-                Séance du jour
+                {multiSessionWeek
+                  ? `${weekSessions.filter(isSessionResolved).length}/${weekSessions.length} séances`
+                  : "Séance du jour"}
               </span>
               {daysToEvent != null && (
                 <span style={{
@@ -4736,6 +4848,21 @@ const ProgressionLoopView = ({
       )}
 
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
+        {multiSessionWeek ? (
+          <WeekCard
+            week={week0}
+            weekIndex={0}
+            onComplete={onComplete}
+            onShare={onShare}
+            onEditFeedback={onEditFeedback}
+            isCurrentWeek
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+            weekLocalTitles
+            analyticsCtx={{ planId: activePlanId, profile }}
+          />
+        ) : (
+          <>
         <div className="ms-session-card" style={{ marginBottom: 14, padding: "16px 18px 18px" }}>
           <WorkoutPrepView
             session={session}
@@ -4841,6 +4968,8 @@ const ProgressionLoopView = ({
             </button>
           </div>
         )}
+          </>
+        )}
 
         {!isPremium && (
           <div style={{
@@ -4878,7 +5007,7 @@ const ProgressionLoopView = ({
                   }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {s.title}
+                        {formatLoopSessionTitle(ordinal)}
                       </div>
                       <div style={{ fontSize: 11, color: G.greyMid, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span>{s.distance} · {s.completed ? "Terminée" : "Abandonnée"}</span>
@@ -7361,10 +7490,11 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
   if (sessionLoop) {
     const cursor = 0;
     const wkKey = isoWeekKey(new Date(referenceTime));
-    const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
-      { ...profile, sessionsPerWeek: 1 },
+    const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopWeek(
+      { ...profile, taste: profile.taste, volumeAdj: profile.volumeAdj },
       cursor,
       isPremium,
+      { ordinalIndex: 0, history: [], planStart: referenceTime },
     );
     if (sheetError || !week?.sessions?.length) {
       throw new Error(sheetErrorMessage || "Catalogue Google Sheet indisponible");
@@ -7376,7 +7506,7 @@ const generatePlan = async (profile, isPremium = false, referenceTime = Date.now
       isPremium,
       isProgression: progression,
       isSessionLoop: true,
-      sessionCursor: cursor,
+      sessionCursor: Math.max(0, week.sessions.length - 1),
       freeSessionsUsed: isPremium ? 0 : 1,
       weekGenKey: wkKey,
       weekGenCount: isPremium ? 0 : 1,
@@ -7485,8 +7615,8 @@ const buildAdvancedLoopPlan = async (entryPlan, entryProfile, archivedSession, i
     (entryPlan.sessionCursor ?? 0) + (alreadyInHist ? 0 : 1),
     history.length,
   );
-  const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
-    { ...entryProfile, sessionsPerWeek: 1, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
+  const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopWeek(
+    { ...entryProfile, taste: entryPlan.taste || tasteProfile, volumeAdj: entryPlan.volumeAdj },
     nextCursor,
     isPremium,
     {
@@ -7497,6 +7627,7 @@ const buildAdvancedLoopPlan = async (entryPlan, entryProfile, archivedSession, i
         archivedSession?.sheetMeta?.educatif ||
         archivedSession?.sheetEducatif?.name ||
         null,
+      planStart: entryPlan.startDate,
     },
   );
   if (sheetError || !week?.sessions?.length) {
@@ -8713,29 +8844,35 @@ export default function App() {
     return () => { cancelled = true; };
   }, [user?.id, screen, isPremium, plans.length]);
 
-  // Boucle : titres legacy → Séance n°X (ordinal = validations, pas sessionCursor)
+  // Boucle : titres semaine = Séance 1/2/3 ; mono-séance = Séance n° (global)
   useEffect(() => {
     setPlans((prev) => {
       let changed = false;
       const next = prev.map((e) => {
         if (!e.plan?.isSessionLoop) return e;
-        const ordinal = loopSessionOrdinalIndex(e.plan);
-        const title = formatLoopSessionTitle(ordinal);
         const week0 = e.plan.weeks?.[0];
-        const sess = week0?.sessions?.[0];
-        if (!sess) return e;
-        if (sess.title === title && week0.focus === title) return e;
+        const sessions = week0?.sessions || [];
+        if (!sessions.length) return e;
+        const histLen = loopSessionOrdinalIndex(e.plan);
+        const multi = sessions.length > 1;
+        const retitled = sessions.map((s, i) => {
+          const title = multi
+            ? formatLoopWeekSessionTitle(i)
+            : formatLoopSessionTitle(histLen);
+          return s.title === title ? s : { ...s, title };
+        });
+        const titlesChanged = retitled.some((s, i) => s !== sessions[i]);
+        const keepFocus = multi
+          || (week0.focus && !/^Séance n°\d+/i.test(String(week0.focus || "")));
+        const nextFocus = keepFocus ? week0.focus : formatLoopSessionTitle(histLen);
+        if (!titlesChanged && week0.focus === nextFocus) return e;
         changed = true;
         return {
           ...e,
           plan: {
             ...e.plan,
             weeks: [
-              {
-                ...week0,
-                focus: title,
-                sessions: [{ ...sess, title }, ...(week0.sessions || []).slice(1)],
-              },
+              { ...week0, focus: nextFocus, sessions: retitled },
               ...(e.plan.weeks || []).slice(1),
             ],
           },
@@ -8743,26 +8880,57 @@ export default function App() {
       });
       return changed ? next : prev;
     });
-  }, [plans.length, activePlanId, plan?.isSessionLoop, plan?.history?.length]);
+  }, [plans.length, activePlanId, plan?.isSessionLoop, plan?.history?.length, plan?.weeks?.[0]?.sessions?.length]);
 
-  // Boucle progression : déblocage auto + filet « séance validée sans enchaînement » (reload après feedback)
+  // Boucle : compléter la semaine courante jusqu’à N séances (choix profil)
+  useEffect(() => {
+    if (screen !== "app" || !plan?.isSessionLoop || !activePlanId || !isPremium) return;
+    const entry = plans.find((e) => e.id === activePlanId);
+    if (!entry) return;
+    let cancelled = false;
+    (async () => {
+      const expanded = await expandLoopWeekSessions(entry.plan, entry.profile, isPremium);
+      if (cancelled || !expanded) return;
+      setPlans((prev) => {
+        const next = prev.map((e) => (e.id === activePlanId ? { ...e, plan: expanded } : e));
+        stampPlansLocalCache(next, activePlanId);
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [screen, activePlanId, isPremium, plan?.isSessionLoop, plan?.weeks?.[0]?.sessions?.length, activeProfile?.sessionsPerWeek]);
+
+  // Boucle progression : déblocage auto + filet « semaine validée sans enchaînement »
   const loopCurrentResolved = loopSessionNeedsAdvance(plan);
   useEffect(() => {
     if (screen !== "app" || !plan?.isSessionLoop) return;
     if (sessionFeedbackTarget !== null) return;
-    const cur = plan.weeks?.[0]?.sessions?.[0];
-    if (!cur || !isSessionResolved(cur)) return;
+    const sessions = plan.weeks?.[0]?.sessions || [];
+    if (!sessions.length || !sessions.every(isSessionResolved)) return;
+    const cur = sessions[sessions.length - 1];
     const gate = loopCanGenerateNext(plan, isPremium);
     if (!gate.ok && !isPremium) return;
     const entry = plans.find((e) => e.id === activePlanId);
     if (!entry) return;
-    const key = `${activePlanId}:${plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
+    const key = `${activePlanId}:${plan.sessionCursor ?? 0}:${loopSessionKey(cur)}:week`;
     if (loopAdvanceKeyRef.current === key) return;
     loopAdvanceKeyRef.current = key;
     let cancelled = false;
     (async () => {
+      // Assure history complète avant génération
+      let hist = entry.plan.history || [];
+      for (const s of sessions) {
+        if (!hist.some((h) => loopSessionKey(h) === loopSessionKey(s))) {
+          hist = [...hist, {
+            ...s,
+            title: formatLoopSessionTitle(hist.length),
+            archivedAt: new Date().toISOString(),
+          }];
+        }
+      }
+      const marked = { ...entry.plan, history: hist, weeks: entry.plan.weeks };
       const { plan: next, blockedReason, sheetError, sheetErrorMessage } = await buildAdvancedLoopPlan(
-        entry.plan,
+        marked,
         entry.profile,
         cur,
         isPremium,
@@ -9165,17 +9333,52 @@ export default function App() {
     return next;
   };
 
-  const finishLoopSessionAndAdvance = async (archivedSession) => {
+  const finishLoopSessionAndAdvance = async (archivedSession, sessionIndex = 0) => {
     const entry = plans.find((e) => e.id === activePlanId);
     if (!entry?.plan?.isSessionLoop) return;
+    const week0 = entry.plan.weeks?.[0] || { sessions: [] };
+    const sessions = (week0.sessions || []).map((s, i) => (
+      i === sessionIndex ? { ...archivedSession } : s
+    ));
+    const prevHist = entry.plan.history || [];
+    const alreadyInHist = prevHist.some((s) => loopSessionKey(s) === loopSessionKey(archivedSession));
+    // Historique = compteur global (Séance n°16…), pas le titre local « Séance 1 »
+    const archivedForHist = {
+      ...archivedSession,
+      title: formatLoopSessionTitle(prevHist.length),
+      archivedAt: new Date().toISOString(),
+    };
+    const history = alreadyInHist
+      ? prevHist
+      : [...prevHist, archivedForHist];
+
+    const weekDone = sessions.length > 0 && sessions.every(isSessionResolved);
+    if (!weekDone) {
+      const nextPlan = {
+        ...entry.plan,
+        history,
+        weeks: [{
+          ...week0,
+          sessions: sessions.map((s, i) => ({ ...s, title: formatLoopWeekSessionTitle(i) })),
+        }],
+        loopBlocked: null,
+      };
+      setPlans((prev) => {
+        const next = prev.map((e) => (e.id === activePlanId ? { ...e, plan: nextPlan } : e));
+        stampPlansLocalCache(next, activePlanId);
+        return next;
+      });
+      loopAdvanceKeyRef.current = null;
+      return;
+    }
+
+    // Semaine terminée → nouvelle semaine N séances
     const markedPlan = {
       ...entry.plan,
-      weeks: [{
-        ...entry.plan.weeks[0],
-        sessions: [{ ...archivedSession }],
-      }],
+      history,
+      weeks: [{ ...week0, sessions }],
     };
-    const nextPlan = await advanceProgressionLoop(markedPlan, entry.profile, archivedSession);
+    const nextPlan = await advanceProgressionLoop(markedPlan, entry.profile, archivedForHist);
     if (!nextPlan) {
       loopAdvanceKeyRef.current = null;
       return;
@@ -9189,10 +9392,19 @@ export default function App() {
 
   const handleAdvanceLoopSession = () => {
     const entry = plans.find((e) => e.id === activePlanId);
-    const cur = entry?.plan?.weeks?.[0]?.sessions?.[0];
-    if (!entry?.plan?.isSessionLoop || !cur || !isSessionResolved(cur)) return;
+    const sessions = entry?.plan?.weeks?.[0]?.sessions || [];
+    const si = sessions.findIndex((s) => isSessionResolved(s) && !((entry.plan.history || []).some(
+      (h) => loopSessionKey(h) === loopSessionKey(s),
+    )));
+    // Prefer last resolved not yet advanced, else first resolved
+    let idx = si;
+    if (idx < 0) {
+      idx = sessions.findIndex((s) => isSessionResolved(s));
+    }
+    if (!entry?.plan?.isSessionLoop || idx < 0) return;
+    const cur = sessions[idx];
     loopAdvanceKeyRef.current = `${activePlanId}:${entry.plan.sessionCursor ?? 0}:${loopSessionKey(cur)}`;
-    void finishLoopSessionAndAdvance(cur);
+    void finishLoopSessionAndAdvance(cur, idx);
   };
 
   const handleRegenerateLoopSession = async () => {
@@ -9202,22 +9414,25 @@ export default function App() {
     }
     const entry = plans.find((e) => e.id === activePlanId);
     if (!entry?.plan?.isSessionLoop) return;
-    const cur = entry.plan.weeks?.[0]?.sessions?.[0];
-    if (!cur || isSessionResolved(cur)) return;
+    const sessions = entry.plan.weeks?.[0]?.sessions || [];
+    const si = sessions.findIndex((s) => !isSessionResolved(s));
+    const cur = si >= 0 ? sessions[si] : null;
+    if (!cur) return;
     const nextCursor = (entry.plan.sessionCursor ?? 0) + 1;
-    const ordinalIndex = loopSessionOrdinalIndex(entry.plan);
-    const { week, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
-      { ...entry.profile, sessionsPerWeek: 1, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
+    const ordinalIndex = loopSessionOrdinalIndex(entry.plan) + si;
+    const { session: nextSession, sheetError, sheetErrorMessage } = await buildProgressionLoopSession(
+      { ...entry.profile, taste: entry.plan.taste || tasteProfile, volumeAdj: entry.plan.volumeAdj },
       nextCursor,
       true,
       {
         ordinalIndex,
-        history: entry.plan.history || [],
+        history: [...(entry.plan.history || []), ...sessions.slice(0, si)],
         currentSheetN: cur?.sheetMeta?.n,
         currentEducatif: cur?.sheetMeta?.educatif || cur?.sheetEducatif?.name || null,
+        planStart: entry.plan.startDate,
       },
     );
-    if (sheetError || !week?.sessions?.length) {
+    if (sheetError || !nextSession) {
       setToast(sheetErrorMessage || "Catalogue séances indisponible — réessaie dans un instant.");
       setTimeout(() => setToast(null), 4000);
       return;
@@ -9225,19 +9440,23 @@ export default function App() {
     setPlans((prev) => {
       const next = prev.map((e) => {
         if (e.id !== activePlanId || !e.plan?.isSessionLoop) return e;
+        const week0 = e.plan.weeks[0];
         return {
           ...e,
           plan: {
             ...e.plan,
             sessionCursor: nextCursor,
-            weeks: [week],
+            weeks: [{
+              ...week0,
+              sessions: (week0.sessions || []).map((s, i) => (i === si ? nextSession : s)),
+            }],
           },
         };
       });
       stampPlansLocalCache(next, activePlanId);
       return next;
     });
-    setToast("Séance du jour remplacée — la précédente n’était pas validée.");
+    setToast("Séance remplacée — la précédente n’était pas validée.");
     setTimeout(() => setToast(null), 3200);
   };
 
@@ -9250,14 +9469,17 @@ export default function App() {
 
     const activeForAnalytics = plans.find((e) => e.id === activePlanId);
     const sessForAnalytics = activeForAnalytics?.plan?.isSessionLoop
-      ? activeForAnalytics?.plan?.weeks?.[0]?.sessions?.[0]
+      ? activeForAnalytics?.plan?.weeks?.[0]?.sessions?.[
+          Number.isFinite(sessionIndex) && sessionIndex >= 0
+            ? sessionIndex
+            : 0
+        ]
       : activeForAnalytics?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex];
-    const weekForAnalytics = activeForAnalytics?.plan?.isSessionLoop
-      ? activeForAnalytics?.plan?.weeks?.[0]
-      : activeForAnalytics?.plan?.weeks?.[weekIndex];
+    const weekForAnalytics = activeForAnalytics?.plan?.weeks?.[weekIndex]
+      || activeForAnalytics?.plan?.weeks?.[0];
     const analyticsBase = sessionAnalyticsProps(activeForAnalytics?.profile, sessForAnalytics, {
       planWeek: weekForAnalytics?.number ?? weekIndex + 1,
-      sessionIndex: activeForAnalytics?.plan?.isSessionLoop ? 0 : sessionIndex,
+      sessionIndex: sessionIndex ?? 0,
       phase: weekForAnalytics?.phase || sessForAnalytics?.phase,
     });
     const sessOnce = `${activePlanId || "plan"}:${weekIndex}:${sessionIndex}`;
@@ -9311,7 +9533,11 @@ export default function App() {
 
     // ── Boucle Nager & Progresser ──
     if (active?.plan?.isSessionLoop && resolvedStatus !== "reset") {
-      const cur = active.plan.weeks?.[0]?.sessions?.[0];
+      const sessions = active.plan.weeks?.[0]?.sessions || [];
+      const si = Number.isFinite(sessionIndex) && sessionIndex >= 0
+        ? sessionIndex
+        : sessions.findIndex((s) => !isSessionResolved(s));
+      const cur = sessions[si >= 0 ? si : 0];
       if (!cur || isSessionResolved(cur)) return;
 
       const archived = {
@@ -9334,17 +9560,18 @@ export default function App() {
         }
       }
 
-      // Marque résolue tout de suite (verrouille)
+      // Marque résolue tout de suite (verrouille) — garde les autres séances de la semaine
       setPlans((prev) => {
         const next = prev.map((entry) => {
           if (entry.id !== activePlanId) return entry;
+          const week0 = entry.plan.weeks[0];
           return {
             ...entry,
             plan: {
               ...entry.plan,
               weeks: [{
-                ...entry.plan.weeks[0],
-                sessions: [{ ...archived }],
+                ...week0,
+                sessions: (week0.sessions || []).map((s, i) => (i === si ? { ...archived } : s)),
               }],
             },
           };
@@ -9354,19 +9581,24 @@ export default function App() {
       });
 
       if (resolvedStatus === "done") {
-        // Statut completed en base dès la validation — indépendant de la fiche de retour
         if (user) {
           sportsPersistence.markSessionStatus(user.id, {
             planId: activePlanId,
             weekIndex: 0,
-            sessionIndex: 0,
+            sessionIndex: si,
             status: "completed",
           }).then(() => {});
         }
-        pendingFeedbackRef.current = { weekIndex: 0, sessionIndex: 0, promptWeekAfter: false, loopMode: true, archived };
+        pendingFeedbackRef.current = {
+          weekIndex: 0,
+          sessionIndex: si,
+          promptWeekAfter: false,
+          loopMode: true,
+          archived,
+        };
         queueSessionCelebrate(archived, active.plan);
       } else {
-        void finishLoopSessionAndAdvance(archived);
+        void finishLoopSessionAndAdvance(archived, si);
       }
       return;
     }
@@ -9471,7 +9703,7 @@ export default function App() {
     setSessionFeedbackTarget(null);
     scrollAppToTop();
     if (target?.loopMode && target.archived) {
-      void finishLoopSessionAndAdvance(target.archived);
+      void finishLoopSessionAndAdvance(target.archived, target.sessionIndex ?? 0);
       return;
     }
     if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
@@ -9527,7 +9759,7 @@ export default function App() {
       ...(hasPainTag ? { pain: true } : {}),
     }, { onceKey: `feedback_submitted:${activePlanId || "plan"}:${weekIndex}:${sessionIndex}:${feedback.at}` });
 
-    // Boucle progression : feedback sur la séance archivée, puis avance
+    // Boucle progression : feedback sur la séance, puis avance (semaine ou séance suivante)
     if (loopMode) {
       const archivedWithFb = { ...(archived || prevSession), feedback };
       let volumeAdj = plan?.volumeAdj ?? 1;
@@ -9540,48 +9772,30 @@ export default function App() {
         setSessionFeedbackTarget(null);
         return;
       }
-      const markedPlan = {
-        ...entry.plan,
-        taste: nextTaste,
-        volumeAdj,
-        weeks: [{
-          ...entry.plan.weeks[0],
-          sessions: [{ ...archivedWithFb }],
-        }],
-      };
-      void (async () => {
-        const nextPlan = await advanceProgressionLoop(
-          markedPlan,
-          { ...entry.profile, taste: nextTaste },
-          archivedWithFb,
-        );
-        if (nextPlan) {
-          setPlans((prev) => prev.map((e) => (e.id === activePlanId ? { ...e, plan: nextPlan } : e)));
-        } else {
-          // Sheet KO : au moins enregistrer feedback + taste sur la séance validée
-          setPlans((prev) => prev.map((e) => {
-            if (e.id !== activePlanId) return e;
-            return {
-              ...e,
-              plan: {
-                ...e.plan,
-                taste: nextTaste,
-                volumeAdj,
-                weeks: [{
-                  ...e.plan.weeks[0],
-                  sessions: [{ ...archivedWithFb }],
-                }],
-              },
-            };
-          }));
-        }
-      })();
+      const si = sessionIndex ?? 0;
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        const week0 = e.plan.weeks[0];
+        return {
+          ...e,
+          plan: {
+            ...e.plan,
+            taste: nextTaste,
+            volumeAdj,
+            weeks: [{
+              ...week0,
+              sessions: (week0.sessions || []).map((s, i) => (i === si ? { ...archivedWithFb } : s)),
+            }],
+          },
+        };
+      }));
       setSessionFeedbackTarget(null);
+      void finishLoopSessionAndAdvance(archivedWithFb, si);
       if (user) {
         sportsPersistence.insertSessionFeedback(user.id, {
           planId: activePlanId,
           weekIndex: 0,
-          sessionIndex: 0,
+          sessionIndex: si,
           sessionType: archivedWithFb?.type ?? null,
           sessionTitle: archivedWithFb?.title ?? null,
           difficulty: rating,

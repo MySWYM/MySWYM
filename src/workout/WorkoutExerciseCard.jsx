@@ -152,7 +152,73 @@ function MetaPill({ children, tone = "neutral", G }) {
   );
 }
 
-/** Horloge de bassin type 4 aiguilles (Colorado Timing). */
+/** Horloge de bassin type 4 aiguilles (Colorado Timing). 1 tour = 60 s.
+ * Reste ≤ 30 s → « N tours + Xs » ; reste > 30 s → « (N+1) tours moins Ys ».
+ */
+function paceClockTourParts(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds) || 0));
+  if (s <= 0) {
+    return { mode: "exact", laps: 1, remSec: 0, minusSec: 0, total: 60 };
+  }
+  const fullLaps = Math.floor(s / 60);
+  const remSec = s % 60;
+  if (remSec === 0) {
+    return { mode: "exact", laps: fullLaps, remSec: 0, minusSec: 0, total: s };
+  }
+  if (remSec <= 30) {
+    if (fullLaps === 0) {
+      return { mode: "seconds", laps: 0, remSec, minusSec: 0, total: s };
+    }
+    return { mode: "plus", laps: fullLaps, remSec, minusSec: 0, total: s };
+  }
+  // ex. 1'50" → 2 tours moins 10 s ; 50" → 1 tour moins 10 s
+  return {
+    mode: "minus",
+    laps: fullLaps + 1,
+    remSec,
+    minusSec: 60 - remSec,
+    total: s,
+  };
+}
+
+function lapWord(n) {
+  return n === 1 ? "Un tour" : `${n} tours`;
+}
+
+function paceClockCaption(seconds) {
+  const p = paceClockTourParts(seconds);
+  const eq = ` (= ${formatDepartHuman(p.total)})`;
+  if (p.mode === "seconds") {
+    return `${p.remSec} s sur l’horloge`;
+  }
+  if (p.mode === "exact") {
+    return p.laps === 1
+      ? "Un tour d’aiguille (= 1 minute)"
+      : `${p.laps} tours d’aiguille${eq}`;
+  }
+  if (p.mode === "plus") {
+    return `${lapWord(p.laps)} + ${p.remSec} s sur l’horloge${eq}`;
+  }
+  return `${lapWord(p.laps)} moins ${p.minusSec} s${eq}`;
+}
+
+function paceClockBodySuffix(seconds) {
+  const p = paceClockTourParts(seconds);
+  if (p.mode === "exact") {
+    if (p.total <= 60) return "";
+    return ` (après ${p.laps} tour${p.laps > 1 ? "s" : ""})`;
+  }
+  if (p.mode === "seconds") return "";
+  if (p.mode === "plus") {
+    return p.laps === 1
+      ? ` (après 1 tour et ${p.remSec} s)`
+      : ` (après ${p.laps} tours et ${p.remSec} s)`;
+  }
+  return p.laps === 1
+    ? ` (après 1 tour moins ${p.minusSec} s)`
+    : ` (après ${p.laps} tours moins ${p.minusSec} s)`;
+}
+
 function PaceClock({ seconds = 120, size = 160 }) {
   const cx = size / 2;
   const cy = size / 2;
@@ -169,8 +235,6 @@ function PaceClock({ seconds = 120, size = 160 }) {
       y2: cy + handR * Math.sin(rad),
     };
   });
-  const laps = Math.max(1, Math.round(seconds / 60));
-  const remSec = seconds % 60;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -230,11 +294,7 @@ function PaceClock({ seconds = 120, size = 160 }) {
         <circle cx={cx} cy={cy} r={5} fill="#f8fafc" />
       </svg>
       <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textAlign: "center", lineHeight: 1.35 }}>
-        {laps > 1
-          ? `${laps} tours d’aiguille (= ${formatDepartHuman(seconds)})`
-          : remSec
-            ? `Un tour + ${remSec} s sur l’horloge`
-            : "Un tour d’aiguille (= 1 minute)"}
+        {paceClockCaption(seconds)}
       </div>
     </div>
   );
@@ -366,7 +426,7 @@ function DepartTipSheet({ label, seconds, onClose, colors: G }) {
     <TipSheetShell eyebrow="Départ à la montre" title={label || "D…"} onClose={onClose} colors={G}>
       <p style={{ margin: "0 0 16px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
         Tu repars toutes les {human}. Regarde l’horloge de bassin : tu pars quand une aiguille est sur un repère, et tu repars quand elle revient au même endroit
-        {seconds > 60 ? ` (après ${Math.round(seconds / 60)} tours)` : ""}.
+        {paceClockBodySuffix(seconds)}.
       </p>
       <div style={{
         background: G.greyXLight,
@@ -522,7 +582,8 @@ export default function WorkoutExerciseCard({
           {allureChips.map((key) => (
             <AllureInfoChip key={key} tipKey={key} onClick={() => setTipKey(key)} G={G} />
           ))}
-          {restChip ? (
+          {/* Avec départ D…, le R est redondant (récup déjà dans le cycle de départ) */}
+          {restChip && !departLabel ? (
             <AllureInfoChip
               tipKey={null}
               label={restChip}
@@ -556,7 +617,7 @@ export default function WorkoutExerciseCard({
         )}
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-          {exercise.restLabel && !restChip && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
+          {exercise.restLabel && !restChip && !departLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
           {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
           {drills.length > 0 && (
             <button

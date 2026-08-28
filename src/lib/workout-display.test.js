@@ -243,6 +243,20 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
+  // souple + sprint → une pastille Enchaînement (pas SOUPLE + SPRINT)
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-6 × 50 m nage au choix souple sprint — R30\""],
+    sets: [{ block: "corps", label: "6 × 50 m nage au choix souple sprint — R30\"" }],
+  });
+  const ex = view.exercises[0];
+  assert.ok(ex.allureEnchainement, "enchaînement détecté");
+  assert.equal(ex.effortLabel, null);
+  assert.equal(ex.sprint, false);
+  assert.equal(ex.cue, "souple · sprint");
+}
+
+{
   // « souple » dans la parenthèse ne doit pas effacer la répartition MIXTE
   const view = buildWorkoutView({
     composedBy: "natation-sheet",
