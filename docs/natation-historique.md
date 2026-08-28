@@ -18,7 +18,8 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
-| 2026-08-28 | Pop Nouveautés | Sheet one-shot `WhatsNewSheet` (clé `myswym_whats_new_v2026_08_28`) : planning S-n, allégée/test, séances Sheet. Pas de reset plan ni re-quiz. | ✅ active |
+| 2026-08-28 | Pop Nouveautés + refresh semaine | Sheet one-shot `WhatsNewSheet` : Continuer régénère les séances **non validées** de la semaine boucle via Sheet (validées gardées). Clé `myswym_whats_new_v2026_08_28`. | ✅ active |
+| 2026-08-28 | Pop Nouveautés | Sheet one-shot `WhatsNewSheet` (clé `myswym_whats_new_v2026_08_28`) : planning S-n, allégée/test, séances Sheet. Pas de reset plan ni re-quiz. | ↩ remplacée |
 | 2026-08-28 | Relance essai + plans v49 | `RETRIAL_ON_LOGIN` : nouveau 7j au sync/login si plus d’accès (abo Stripe intacts). `PLAN_VERSION` 49 : regen one-shot merge (validées gardées) ; boucle → semaine N séances Sheet. | ✅ active |
 | 2026-08-28 | Boucle semaine N séances | Programme boucle : génère / affiche une **semaine** de `sessionsPerWeek` séances (cap S0 = 2). Expansion des plans 1 séance existants. Advance semaine quand toutes résolues. | ✅ active |
 | 2026-08-28 | Planning S-n = progression | Pastille « cette semaine » sur EventWeekPlanCard avance avec les semaines de plan validées (Semaine 2 → S-(n−1)), pas seulement le calendrier. | ✅ active |

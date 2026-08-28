@@ -35,21 +35,20 @@ const BULLETS = [
 ];
 
 /**
- * Pop one-shot « Nouveautés » — pas de reset plan / quiz.
+ * Pop one-shot « Nouveautés ».
+ * Continuer peut rafraîchir la semaine boucle (séances non validées → Sheet).
  */
-export default function WhatsNewSheet({ onDismiss }) {
-  const dismiss = () => {
-    markWhatsNewSeen();
-    onDismiss?.();
-  };
-
+export default function WhatsNewSheet({ onContinue, loading = false }) {
   return (
     <div
       className="sheet-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="whats-new-title"
-      onClick={(e) => e.target === e.currentTarget && dismiss()}
+      onClick={(e) => {
+        if (loading) return;
+        if (e.target === e.currentTarget) onContinue?.();
+      }}
     >
       <div className="sheet-panel ms-sheet-card scale-in">
         <div className="ms-sheet-handle" />
@@ -103,7 +102,8 @@ export default function WhatsNewSheet({ onDismiss }) {
             margin: "0 0 18px",
           }}
         >
-          Ton plan et ta progression restent inchangés. Voici ce qui change pour toi.
+          En continuant, on met à jour ta semaine en cours avec le nouveau catalogue.
+          Les séances déjà validées sont gardées.
         </p>
         <ul
           style={{
@@ -142,7 +142,8 @@ export default function WhatsNewSheet({ onDismiss }) {
         </ul>
         <button
           type="button"
-          onClick={dismiss}
+          onClick={() => onContinue?.()}
+          disabled={loading}
           style={{
             width: "100%",
             padding: "14px 16px",
@@ -152,12 +153,13 @@ export default function WhatsNewSheet({ onDismiss }) {
             color: "#fff",
             fontSize: 15,
             fontWeight: 700,
-            cursor: "pointer",
+            cursor: loading ? "wait" : "pointer",
             minHeight: 48,
             fontFamily: FONT,
+            opacity: loading ? 0.75 : 1,
           }}
         >
-          Continuer
+          {loading ? "Mise à jour…" : "Continuer"}
         </button>
       </div>
     </div>
