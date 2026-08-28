@@ -108,7 +108,8 @@ def build_rows():
         ("{matériel}", "—", "Matos optionnel (fiche ∩ inventaire)", "Si rien → token retiré. Pas pull+palmes même ligne", "4 × 50 m {éducatif} {matériel}"),
     ]
     for t in tokens:
-        yield ("data", ("Tokens",) + t)
+        # section, sujet, zone, sens+règle, exemple
+        yield ("data", ("Tokens", t[0], t[1], f"{t[2]} — {t[3]}", t[4]))
     yield (
         "data_warn",
         (
@@ -130,7 +131,7 @@ def build_rows():
         ("sprint", "Max", "Court, explosif, max", "Vitesse, départ, coup de rein", "Doses courtes · récup quasi complète"),
     ]
     for f in filieres:
-        yield ("data", ("Filières",) + f)
+        yield ("data", ("Filières", f[0], f[1], f"{f[2]} — {f[3]}", f[4]))
     yield (
         "data_warn",
         (
@@ -175,7 +176,7 @@ def build_rows():
         ("À éviter", "—", "Deux D sur la même ligne", "D2' fixe + {D:seuil} ; allure course pour débutants"),
     ]
     for r in rediger:
-        yield ("data", ("Rédiger",) + r)
+        yield ("data", ("Rédiger", r[0], r[1], r[2], r[3]))
 
     # --- Familles ---
     yield ("section", "5 · Familles onglets (soft-branch 01–13)")
