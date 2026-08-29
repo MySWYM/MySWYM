@@ -3,8 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
-const LEGACY_PRICE_IDS = new Set([
-  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+/** IDs retirés / test — ne pas les préférer aux defaults Live via secrets périmés. */
+const RETIRED_PRICE_IDS = new Set([
+  "price_1U67kYAS4mfgF2Twaw269yaU",
+  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
@@ -14,47 +17,53 @@ const LEGACY_PRICE_IDS = new Set([
 
 function envPrice(name: string, fallback: string) {
   const v = Deno.env.get(name);
-  if (v && !LEGACY_PRICE_IDS.has(v)) return v;
+  if (v && !RETIRED_PRICE_IDS.has(v)) return v;
   return fallback;
 }
 
-const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1U67kYAS4mfgF2Twaw269yaU");
+// Defaults = Live (acct_1TP5ueAS4mfgF2Tw). Override secrets uniquement avec d’autres IDs live.
+const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1U3N2tAS4mfgF2TwyaI2hf22");
 const PRICE_MONTHLY_COMMIT = envPrice(
   "STRIPE_PRICE_MONTHLY_COMMIT",
-  envPrice("STRIPE_PRICE_MONTHLY", "price_1U67kZAS4mfgF2Twi5Px8ZvG"),
+  envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
-const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U67kaAS4mfgF2TwvUsVQ3vE");
+const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U7E38AS4mfgF2TwpJGYoMpE");
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
 
 function planTierFromPrice(price: string): string | undefined {
   if (
     price === PRICE_MONTHLY_FLEX ||
+    price === "price_1U3N2tAS4mfgF2TwyaI2hf22" ||
     price === "price_1U67kYAS4mfgF2Twaw269yaU"
   ) return "monthly_flex";
   if (
     price === PRICE_MONTHLY_COMMIT ||
+    price === "price_1TPjyPAS4mfgF2Twx3Zh4zrJ" ||
     price === "price_1U67kZAS4mfgF2Twi5Px8ZvG"
   ) return "monthly_commit";
   if (
     price === PRICE_ANNUAL ||
+    price === "price_1U7E38AS4mfgF2TwpJGYoMpE" ||
     price === "price_1U67kaAS4mfgF2TwvUsVQ3vE"
   ) return "annual";
   if (price === PRICE_BIENNIAL) return "biennial";
   return undefined;
 }
 
-// Offres actives + anciens IDs (abonnés / cache / secrets non encore mis à jour)
+// Offres actives (live) + IDs test / legacy (cache, secrets, abonnés)
 const ALLOWED_PRICE_IDS = new Set([
   PRICE_MONTHLY_FLEX,
   PRICE_MONTHLY_COMMIT,
   PRICE_ANNUAL,
   PRICE_BIENNIAL,
   Deno.env.get("STRIPE_PRICE_ID") ?? "",
+  "price_1U3N2tAS4mfgF2TwyaI2hf22",
+  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+  "price_1U7E38AS4mfgF2TwpJGYoMpE",
   "price_1U67kYAS4mfgF2Twaw269yaU",
   "price_1U67kZAS4mfgF2Twi5Px8ZvG",
   "price_1U67kaAS4mfgF2TwvUsVQ3vE",
-  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
@@ -179,17 +188,19 @@ async function findBlockingSubscriptionForEmail(email: string) {
   return null;
 }
 
-async function findOpenCheckoutSession(customerId: string) {
+async function findOpenCheckoutSession(customerId: string, priceId: string) {
   const sessions = await stripe.checkout.sessions.list({
     customer: customerId,
     limit: 10,
+    expand: ["data.line_items.data.price"],
   });
-  return sessions.data.find((s) =>
-    s.status === "open"
-    && s.mode === "subscription"
-    && typeof s.url === "string"
-    && s.url.length > 0
-  ) ?? null;
+  return sessions.data.find((s) => {
+    if (s.status !== "open" || s.mode !== "subscription") return false;
+    if (typeof s.url !== "string" || !s.url.length) return false;
+    const linePrice = s.line_items?.data?.[0]?.price;
+    const linePriceId = typeof linePrice === "string" ? linePrice : linePrice?.id;
+    return linePriceId === priceId;
+  }) ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -271,9 +282,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Réutilise une session Checkout encore ouverte (anti multi-clics).
+    // Réutilise une session Checkout encore ouverte pour LE MÊME prix (anti multi-clics).
     if (validCustomerId) {
-      const openSession = await findOpenCheckoutSession(validCustomerId);
+      const openSession = await findOpenCheckoutSession(validCustomerId, price);
       if (openSession?.url) {
         await supabaseAdmin.from("conversion_events").insert({
           user_id: user.id,
