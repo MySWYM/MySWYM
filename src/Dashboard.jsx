@@ -13,6 +13,7 @@ import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
 import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
+import TrialCountdownBanner from "./ui/TrialCountdownBanner.jsx";
 import { track, sessionAnalyticsProps } from "./lib/analytics.js";
 import {
   getSessionRemindersEnabled,
@@ -157,6 +158,7 @@ export default function Dashboard({
   plan, profile, onTabChange, onSignOut, user,
   isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
   activePlanId = null,
+  accessState = null,
 }) {
   const {
     AppTopBar,
@@ -267,6 +269,8 @@ export default function Dashboard({
             </span>
           )}
         </div>
+
+        <TrialCountdownBanner accessState={accessState} onUpgrade={onUpgrade} />
 
         {plan && !next?.resolved && shouldShowSessionReminderBanner({
           enabled: getSessionRemindersEnabled(user?.id),

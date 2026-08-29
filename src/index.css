@@ -305,6 +305,84 @@ code {
 .ms-habit-banner.is-done {
   background: color-mix(in srgb, #2dd4a0 10%, var(--code-bg));
 }
+
+/* Essai 7j — décompte accueil + CTA */
+.ms-trial-banner {
+  margin: 0 0 14px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 12%, var(--code-bg));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 107, 253, 0.12);
+}
+.ms-trial-banner.is-hot {
+  box-shadow: 0 10px 28px rgba(0, 107, 253, 0.18);
+}
+.ms-trial-banner.is-urgent {
+  border-color: color-mix(in srgb, #FF6B78 45%, var(--border));
+  background: color-mix(in srgb, #FF6B78 14%, var(--code-bg));
+  box-shadow: 0 10px 28px rgba(255, 107, 120, 0.16);
+}
+.ms-trial-banner-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ms-trial-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.ms-trial-banner.is-urgent .ms-trial-banner-icon {
+  background: color-mix(in srgb, #FF6B78 20%, transparent);
+}
+.ms-trial-banner-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ms-trial-banner-copy strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.ms-trial-banner-copy span {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+}
+.ms-trial-banner-cta {
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 107, 253, 0.28);
+}
+.ms-trial-banner.is-urgent .ms-trial-banner-cta {
+  background: #FF6B78;
+  box-shadow: 0 8px 24px rgba(255, 107, 120, 0.32);
+}
+.ms-trial-banner-cta:hover {
+  filter: brightness(1.06);
+}
 .ms-plan-reveal-cta {
   margin-top: auto;
   padding-top: 2rem;
