@@ -65,23 +65,29 @@ export default function SettingsDrawer({
 
   return createPortal(
     <div
+      className="sheet-overlay"
       role="dialog"
       aria-modal="true"
       aria-label="Menu principal"
       onClick={(e) => e.target === e.currentTarget && onClose()}
-      style={{
-        position: "fixed", inset: 0, zIndex: 500,
-        background: "rgba(15, 23, 42, 0.38)",
-        display: "flex", justifyContent: "flex-end",
-      }}
+      style={{ zIndex: 500 }}
     >
-      <div style={{
-        width: "min(420px, 92vw)", height: "100%",
-        background: G.surface, borderLeft: `1px solid ${G.greyLight}`,
-        boxShadow: "-12px 0 40px rgba(0,0,0,0.18)",
-        overflowY: "auto",
-        padding: "calc(var(--safe-top) + 18px) 18px calc(var(--safe-bottom) + 28px)",
-      }}>
+      <div
+        className="sheet-panel scale-in"
+        style={{
+          width: "100%",
+          maxHeight: "min(92dvh, 860px)",
+          background: G.surface,
+          borderRadius: "24px 24px 0 0",
+          border: `1px solid ${G.greyLight}`,
+          borderBottom: "none",
+          boxShadow: "0 -12px 40px rgba(0,0,0,0.28)",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          padding: "12px 18px max(28px, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div className="ms-sheet-handle" style={{ marginBottom: 14 }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>Menu</div>

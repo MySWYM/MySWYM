@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Waves, Check, Flame, Trophy, Target, Pencil, Camera, Trash2, X, AlertTriangle,
+  Waves, Check, Flame, Trophy, Pencil, Camera, Trash2, X, AlertTriangle,
 } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { FONT_DISPLAY } from "./theme/brand.js";
@@ -20,9 +20,9 @@ import { HomeBadgesSection } from "./Dashboard.jsx";
 import AppTopBar from "./app-shell/AppTopBar.jsx";
 import { AppShell } from "./app-shell/index.js";
 import {
-  HEALTH_CONSENT_TITLE,
-  HEALTH_CONSENT_BODY,
   HEALTH_CONSENT_CHECKBOX,
+  INJURY_ZONES,
+  INJURY_SEVERITIES,
 } from "./lib/health-data.js";
 import {
   BIRTH_MONTH_OPTIONS,
@@ -225,13 +225,41 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
     || CATEGORIES.find(c => c.id === profile?.category)?.label
     || "Mon objectif";
 
+  const profileDirty = natationDirty || equipmentDirty;
+  const saveEquipment = () => {
+    if (!onEquipmentChange || !equipmentDirty) return;
+    onEquipmentChange([...draftEquipment]);
+  };
+  const resetDirtyDrafts = () => {
+    setDraftNatation(snapshotNatation(profile));
+    setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
+  };
+  const handleStickySave = () => {
+    if (natationDirty) {
+      setNatationConfirmOpen(true);
+      return;
+    }
+    if (equipmentDirty) {
+      saveEquipment();
+      setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées (déjà faites conservées)." });
+      setTimeout(() => setMsg(null), 3500);
+    }
+  };
+
   return (
-    <div style={{ minHeight: "100dvh", background: "transparent", paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
+    <div style={{
+      minHeight: "100dvh",
+      background: "transparent",
+      paddingBottom: profileDirty
+        ? "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 96px)"
+        : "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
+    }}>
       <AppTopBar
         user={user}
         onOpenMenu={onOpenMenu}
         onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
         plan={plan}
+        onTabChange={onTabChange}
       />
       <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
@@ -356,7 +384,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
               placeholder="Ton prénom"
               style={{ fontSize: 20, fontWeight: 700, color: G.ink, border: "none", borderBottom: `2px solid ${G.blue}`, outline: "none", background: "transparent", textAlign: "center", width: 160 }}
             />
-            <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
+            <button type="button" onClick={saveName} style={{ background: G.blue, border: "none", borderRadius: 8, padding: "8px 12px", color: G.white, fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>OK</button>
           </div>
         ) : (
           <button
@@ -374,15 +402,15 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
             </div>
           </button>
         )}
-        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
           {levelLabel}
         </div>
-        <div style={{ fontSize: 11, color: G.greyMid }}>{user?.email}</div>
+        <div style={{ fontSize: 13, color: G.greyMid }}>{user?.email}</div>
       </div>
 
       <div>
         {msg && (
-          <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 12 }}>
+          <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 13 }}>
             {msg.text}
           </div>
         )}
@@ -400,22 +428,21 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
               </div>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1 }}>{value}</div>
-                <div style={{ fontSize: 11, color: G.grey, marginTop: 2 }}>{label}</div>
+                <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{label}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", border: `1px solid ${G.greyLight}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 14, background: G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Target size={18} color={G.blue} />
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Mon objectif</div>
-              <div style={{ fontSize: 12, color: G.grey }}>Change via « Nouveau plan » dans Programme</div>
-            </div>
-          </div>
+        <ProfileSection
+          id="profile-goal"
+          title="Mon objectif"
+          summary={goalLabel}
+          defaultOpen={false}
+        >
+          <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
+            Change via « Nouveau plan » dans Programme.
+          </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {[
               { label: "Objectif", value: goalLabel },
@@ -425,12 +452,12 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                 : null,
             ].filter(Boolean).map((item) => (
               <div key={item.label} style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 12px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{item.label}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: G.ink, lineHeight: 1.35 }}>{item.value}</div>
               </div>
             ))}
           </div>
-        </div>
+        </ProfileSection>
 
         {onSwimmerProfileChange && (
           <>
@@ -469,7 +496,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                   <>
                     <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1.3fr 0.9fr", gap: 8, marginBottom: 12 }}>
                       <label style={{ display: "block" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
                           {to("physique.day")}
                         </div>
                         <select
@@ -487,7 +514,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                         </select>
                       </label>
                       <label style={{ display: "block" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
                           {to("physique.month")}
                         </div>
                         <select
@@ -505,7 +532,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                         </select>
                       </label>
                       <label style={{ display: "block" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
                           {to("physique.year")}
                         </div>
                         <input
@@ -529,7 +556,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                         { key: "heightCm", label: "Taille", placeholder: "cm" },
                       ].map(({ key, label, placeholder }) => (
                         <label key={key} style={{ display: "block" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
                           <input
                             type="number"
                             inputMode="numeric"
@@ -558,7 +585,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
               <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 12px" }}>
                 Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
               </p>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {levelsForPicker(profile?.level).map((l) => {
                   const active = draftNatation.level === l.id;
@@ -578,7 +605,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                         }));
                       }}
                       style={{
-                        padding: "8px 12px", borderRadius: 10, cursor: blocked && !active ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700,
+                        padding: "8px 12px", borderRadius: 10, cursor: blocked && !active ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 700,
                         border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                         background: active ? G.blueLight : G.surface,
                         color: blocked && !active ? G.grey : active ? G.blue : G.ink,
@@ -595,7 +622,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                   {to("level.beginnerBlocked")}
                 </p>
               ) : null}
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Bassin</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Bassin</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                 {POOLS.map((p) => {
                   const active = Number(draftNatation.pool) === p.id;
@@ -616,7 +643,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                   );
                 })}
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fréquence</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fréquence</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {FREQUENCIES.map((f) => {
                   const active = Number(draftNatation.sessionsPerWeek) === f.id;
@@ -626,7 +653,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                       type="button"
                       onClick={() => setDraftNatation((prev) => ({ ...prev, sessionsPerWeek: f.id }))}
                       style={{
-                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                        padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
                         border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                         background: active ? G.blueLight : G.surface,
                         color: active ? G.blue : G.ink,
@@ -639,10 +666,10 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
               </div>
               {!hidesFourNagesChoice({ ...profile, ...draftNatation }) && (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                     Sais-tu nager du 4 nages ?
                   </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: natationDirty ? 14 : 0 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
                     {SWIM_STYLES.map((s) => {
                       const active = (draftNatation.swimStyle || "crawl") === s.id;
                       return (
@@ -651,7 +678,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                           type="button"
                           onClick={() => setDraftNatation((prev) => ({ ...prev, swimStyle: s.id }))}
                           style={{
-                            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                            flex: 1, padding: "10px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
                             border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                             background: active ? G.blueLight : G.surface,
                             color: active ? G.blue : G.ink,
@@ -663,30 +690,6 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                     })}
                   </div>
                 </>
-              )}
-              {natationDirty && (
-                <div style={{ display: "flex", gap: 8, marginTop: hidesFourNagesChoice({ ...profile, ...draftNatation }) ? 14 : 0 }}>
-                  <button
-                    type="button"
-                    onClick={() => setDraftNatation(snapshotNatation(profile))}
-                    style={{
-                      flex: 1, padding: "12px", borderRadius: 12, border: `1px solid ${G.greyLight}`,
-                      background: G.surface, fontSize: 13, fontWeight: 600, color: G.grey, cursor: "pointer", minHeight: 48,
-                    }}
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNatationConfirmOpen(true)}
-                    style={{
-                      flex: 1, padding: "12px", borderRadius: 12, border: "none",
-                      background: G.blue, fontSize: 13, fontWeight: 700, color: G.white, cursor: "pointer", minHeight: 48,
-                    }}
-                  >
-                    Enregistrer
-                  </button>
-                </div>
               )}
             </ProfileSection>
             {natationConfirmOpen && createPortal(
@@ -700,10 +703,20 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                 onCancel={() => setNatationConfirmOpen(false)}
                 onConfirm={() => {
                   const patch = natationPatch(draftNatation, natationBaseline);
+                  const alsoEquip = equipmentDirty;
                   setNatationConfirmOpen(false);
-                  if (Object.keys(patch).length === 0) return;
-                  onSwimmerProfileChange(patch);
-                  setMsg({ type: "ok", text: "Profil enregistré — prochaines séances adaptées (déjà faites conservées)." });
+                  if (Object.keys(patch).length > 0) {
+                    onSwimmerProfileChange(patch);
+                  }
+                  if (alsoEquip) {
+                    saveEquipment();
+                  }
+                  setMsg({
+                    type: "ok",
+                    text: alsoEquip
+                      ? "Profil et matériel enregistrés — prochaines séances adaptées (déjà faites conservées)."
+                      : "Profil enregistré — prochaines séances adaptées (déjà faites conservées).",
+                  });
                   setTimeout(() => setMsg(null), 4000);
                 }}
               />,
@@ -812,7 +825,6 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
               width: "100%",
               padding: "11px 12px",
               borderRadius: 12,
-              marginBottom: equipmentDirty ? 12 : 0,
               border: `1px solid ${draftEquipment.length === 0 ? G.blue : G.greyLight}`,
               background: draftEquipment.length === 0 ? G.blueLight : "transparent",
               color: draftEquipment.length === 0 ? G.blue : G.grey,
@@ -825,34 +837,6 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
           >
             Aucun matériel
           </button>
-          {equipmentDirty && (
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : [])}
-                style={{
-                  flex: 1, padding: "12px", borderRadius: 12, border: `1px solid ${G.greyLight}`,
-                  background: G.surface, fontSize: 13, fontWeight: 600, color: G.grey, cursor: "pointer", minHeight: 48,
-                }}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onEquipmentChange([...draftEquipment]);
-                  setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées (déjà faites conservées)." });
-                  setTimeout(() => setMsg(null), 3500);
-                }}
-                style={{
-                  flex: 1, padding: "12px", borderRadius: 12, border: "none",
-                  background: G.blue, fontSize: 13, fontWeight: 700, color: G.white, cursor: "pointer", minHeight: 48,
-                }}
-              >
-                Enregistrer
-              </button>
-            </div>
-          )}
         </ProfileSection>
         )}
 
@@ -863,7 +847,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
             summary={profile?.injuryStatus === "oui" ? "Blessure déclarée" : (profile?.injuryStatus === "aucune" ? "Aucune blessure" : "À compléter")}
             defaultOpen={false}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               {[
                 { id: "aucune", label: "Aucune" },
@@ -900,7 +884,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
             </div>
             {profile?.injuryStatus === "oui" && (
               <>
-                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zone</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zone</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                   {INJURY_ZONES.map((z) => {
                     const active = profile?.injuryZone === z.id;
@@ -910,7 +894,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                         type="button"
                         onClick={() => onSwimmerProfileChange({ injuryZone: z.id })}
                         style={{
-                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
                           border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                           background: active ? G.blueLight : G.surface,
                           color: active ? G.blue : G.ink,
@@ -921,7 +905,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                     );
                   })}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sévérité</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sévérité</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                   {INJURY_SEVERITIES.map((s) => {
                     const active = profile?.injurySeverity === s.id;
@@ -931,7 +915,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                         type="button"
                         onClick={() => onSwimmerProfileChange({ injurySeverity: s.id })}
                         style={{
-                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
                           border: `1.5px solid ${active ? G.blue : G.greyLight}`,
                           background: active ? G.blueLight : G.surface,
                           color: active ? G.blue : G.ink,
@@ -964,11 +948,55 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
           </ProfileSection>
         )}
 
-        <div style={{ marginBottom: 24 }}>
+        <ProfileSection
+          id="profile-badges"
+          title="Badges"
+          summary={`${earned.length} débloqué${earned.length > 1 ? "s" : ""}`}
+          defaultOpen={false}
+        >
           <HomeBadgesSection plan={plan} />
-        </div>
+        </ProfileSection>
       </div>
       </AppShell>
+
+      {profileDirty && (
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift))",
+            zIndex: 90,
+            padding: "10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right))",
+            background: "rgba(6, 16, 31, 0.92)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderTop: `1px solid ${G.greyLight}`,
+            boxShadow: "0 -8px 28px rgba(0,0,0,0.28)",
+          }}
+        >
+          <div className="app-shell" style={{ display: "flex", gap: 8, maxWidth: "var(--app-max)", margin: "0 auto" }}>
+            <button
+              type="button"
+              onClick={resetDirtyDrafts}
+              style={{
+                flex: 1, padding: "14px 12px", borderRadius: 12, border: `1px solid ${G.greyLight}`,
+                background: G.surface, fontSize: 14, fontWeight: 600, color: G.grey, cursor: "pointer", minHeight: 48,
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={handleStickySave}
+              className="ms-app-btn"
+              style={{ flex: 1.4, margin: 0, boxShadow: "0 8px 24px rgba(0, 107, 253, 0.28)" }}
+            >
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

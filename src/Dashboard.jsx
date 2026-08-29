@@ -8,11 +8,11 @@ import CoachCard from "./CoachCard.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import EventWeekPlanCard from "./EventWeekPlanCard.jsx";
-import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
+import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
 import { track, sessionAnalyticsProps } from "./lib/analytics.js";
 import {
   getSessionRemindersEnabled,
@@ -87,7 +87,7 @@ export function HomeBadgesSection({ plan }) {
                 )}
               </div>
               <div style={{
-                fontSize: 10, fontWeight: unlocked ? 700 : 600,
+                fontSize: 12, fontWeight: unlocked ? 700 : 600,
                 color: unlocked ? G.ink : G.greyMid,
                 lineHeight: 1.25,
                 overflow: "hidden",
@@ -243,6 +243,8 @@ export default function Dashboard({
         onOpenMenu={onOpenMenu}
         onAvatarClick={() => onTabChange("profile")}
         plan={plan}
+        onTabChange={onTabChange}
+        onUpgrade={onUpgrade}
       />
 
       <div className="app-shell" style={{ paddingTop: 16 }}>
@@ -349,79 +351,101 @@ export default function Dashboard({
               >
                 {next.resolved
                   ? "Voir le programme"
-                  : (isPremium
-                    ? (homePrepOpen ? "Préparation ouverte ↓" : "Préparer la séance")
-                    : "S’abonner pour nager")}
+                  : (isPremium ? "Préparer la séance" : "S’abonner pour nager")}
               </button>
             </SessionHeroCard>
           </div>
         )}
 
-        {plan && (
-          <EventWeekPlanCard
-            plan={plan}
-            profile={profile}
-            onOpenProfile={() => onTabChange?.("profile")}
-          />
-        )}
-
-        {homePrepOpen && next?.session && !next.resolved && (
-          <div className="ms-session-card" style={{ marginBottom: 16, padding: "16px 18px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Préparation
-              </div>
-              <button
-                type="button"
-                onClick={() => setHomePrepOpen(false)}
-                style={{ border: "none", background: "none", color: G.grey, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >
-                Fermer
-              </button>
-            </div>
-            <WorkoutPrepView
-              session={next.session}
-              colors={G}
-              accent={{ bg: tm.bg, color: tm.color }}
-              isPremium={isPremium}
-              showStart
-              startLabel="C’est parti — je nage"
-              profile={profile}
-              planId={activePlanId}
-              whyLine={sessionWhyLine(next.session, profile)}
-              onUpgrade={onUpgrade}
-              onStart={() => setPoolOpen(true)}
-              onTooHard={isPremium ? () => onEditFeedback?.(next.weekIndex, next.sessionIndex) : () => onUpgrade?.("feedback_adjust")}
-            />
+        {!isLoop && planFinished && (
+          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
+            {plan.isProgression
+              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
+              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
+            }
           </div>
         )}
 
-        {plan && (
-          <WeekProjectionCard
-            plan={plan}
-            profile={profile}
-            onOpenPlan={() => onTabChange?.("plan")}
-          />
+        {!isPremium && plan?.weeks?.length > 0 && (
+          <PremiumTeaser onUpgrade={onUpgrade} />
         )}
 
-        {hasSwum && weekMetersRow && !plan && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 16,
-            background: G.surface, border: `1px solid ${G.greyLight}`,
-            borderRadius: 16, padding: "14px 16px", marginBottom: 16,
-          }}>
-            <WeekStatRing value={weekMetersRow.done} max={weekMetersRow.total} />
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey }}>
-                {weekMetersRow.label}
+        {/* Secondaire — sous le fold « nager aujourd’hui » */}
+        {(plan || hasSwum) && (
+          <div style={{ marginTop: 8, paddingTop: 4 }}>
+            {plan && (
+              <EventWeekPlanCard
+                plan={plan}
+                profile={profile}
+                onOpenProfile={() => onTabChange?.("profile")}
+              />
+            )}
+
+            {plan && (
+              <WeekProjectionCard
+                plan={plan}
+                profile={profile}
+                onOpenPlan={() => onTabChange?.("plan")}
+              />
+            )}
+
+            {hasSwum && weekMetersRow && !plan && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 16,
+                background: G.surface, border: `1px solid ${G.greyLight}`,
+                borderRadius: 16, padding: "14px 16px", marginBottom: 16,
+              }}>
+                <WeekStatRing value={weekMetersRow.done} max={weekMetersRow.total} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: G.grey }}>
+                    {weekMetersRow.label}
+                  </div>
+                  <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: G.ink, letterSpacing: "-0.03em", marginTop: 2 }}>
+                    {weekMetersRow.done}
+                    <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, fontFamily: FONT }}> / {weekMetersRow.total} m</span>
+                  </div>
+                </div>
               </div>
-              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: G.ink, letterSpacing: "-0.03em", marginTop: 2 }}>
-                {weekMetersRow.done}
-                <span style={{ fontSize: 13, fontWeight: 500, color: G.grey, fontFamily: FONT }}> / {weekMetersRow.total} m</span>
-              </div>
-            </div>
+            )}
+
+            {hasSwum && (
+              <HomeSecondaryStack
+                plan={plan}
+                profile={profile}
+                user={user}
+                isPremium={isPremium}
+                onUpgrade={onUpgrade}
+                onPaceUpdate={onPaceUpdate}
+                onValidateSession={onValidateSession}
+              />
+            )}
           </div>
         )}
+
+        <SessionPrepSheet
+          open={homePrepOpen && !!next?.session && !next.resolved}
+          session={next?.session}
+          colors={G}
+          accent={{ bg: tm.bg, color: tm.color }}
+          isPremium={isPremium}
+          profile={profile}
+          planId={activePlanId}
+          whyLine={next?.session ? sessionWhyLine(next.session, profile) : null}
+          onClose={() => setHomePrepOpen(false)}
+          onStart={() => setPoolOpen(true)}
+          onUpgrade={onUpgrade}
+          onTooHard={
+            isPremium
+              ? () => {
+                  setHomePrepOpen(false);
+                  onEditFeedback?.(next.weekIndex, next.sessionIndex);
+                }
+              : () => {
+                  setHomePrepOpen(false);
+                  onUpgrade?.("feedback_adjust");
+                }
+          }
+        />
 
         {poolOpen && next?.session && (
           <PoolMode
@@ -446,31 +470,6 @@ export default function Dashboard({
                     onUpgrade?.("feedback_adjust");
                   }
             }
-          />
-        )}
-
-        {!isLoop && planFinished && (
-          <div className="fade-up scale-in" style={{ background: G.surface, borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16, border: `1px solid rgba(142,179,255,0.15)`, boxShadow: "0 4px 20px rgba(142,179,255,0.10)" }}>
-            {plan.isProgression
-              ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé, mais ton dashboard reste vivant.</p></>
-            }
-          </div>
-        )}
-
-        {!isPremium && plan?.weeks?.length > 0 && (
-          <PremiumTeaser onUpgrade={onUpgrade} />
-        )}
-
-        {hasSwum && (
-          <HomeSecondaryStack
-            plan={plan}
-            profile={profile}
-            user={user}
-            isPremium={isPremium}
-            onUpgrade={onUpgrade}
-            onPaceUpdate={onPaceUpdate}
-            onValidateSession={onValidateSession}
           />
         )}
 

@@ -4450,6 +4450,9 @@ const SessionCard = ({
 // ── WEEK CARD ──────────────────────────────────────────────────────────────
 const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurrentWeek, isPremium = false, onUpgrade, analyticsCtx = null, weekLocalTitles = false }) => {
   const [open, setOpen] = useState(isCurrentWeek);
+  useEffect(() => {
+    if (isCurrentWeek) setOpen(true);
+  }, [isCurrentWeek]);
   const done = week.sessions.filter(isSessionResolved).length;
   const total = week.sessions.length;
   const allDone = done === total && total > 0;
@@ -4810,6 +4813,8 @@ const ProgressionLoopView = ({
             onOpenMenu={onOpenMenu}
             onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
             plan={plan}
+            onTabChange={onTabChange}
+            onUpgrade={onUpgrade}
           />
         )}
         <div className="app-shell" style={{ paddingTop: 24 }}>
@@ -4831,6 +4836,8 @@ const ProgressionLoopView = ({
           onOpenMenu={onOpenMenu}
           onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
           plan={plan}
+          onTabChange={onTabChange}
+          onUpgrade={onUpgrade}
         />
       )}
       {!embed && (
@@ -10863,7 +10870,6 @@ export default function App() {
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
         {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
 
-        <Footer aboveBottomNav />
         <SupportBubble aboveBottomNav user={user} />
         <BottomNav active={activeTab} onChange={goTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
         <SettingsDrawer
