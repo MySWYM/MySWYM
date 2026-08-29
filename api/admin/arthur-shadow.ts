@@ -1,8 +1,8 @@
 /**
- * GET|POST /api/admin/arthur-shadow — Shadow Mode H1
+ * GET|POST /api/admin/arthur-shadow, Shadow Mode H1
  *
- * GET  — liste propositions + stats
- * POST — approve | reject | edit_approve | cancel
+ * GET , liste propositions + stats
+ * POST, approve | reject | edit_approve | cancel
  *        (jamais send / enable live / followups)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -124,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       live_send: canLiveSendInstagram(),
       followups_send: isFollowupSendEnabled(),
       meta_signature_skip,
-      note: "Shadow H1 — propositions sans envoi automatique",
+      note: "Shadow H1, propositions sans envoi automatique",
       report,
       proposals,
       recent_events,

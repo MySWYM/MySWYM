@@ -22,7 +22,7 @@ export function markWhatsNewSeen() {
 const BULLETS = [
   {
     title: "Planning jusqu’à ta course",
-    body: "Sur l’accueil, tu vois les semaines S-n jusqu’au jour J — où tu en es, et ce qui vient.",
+    body: "Sur l’accueil, tu vois les semaines S-n jusqu’au jour J, où tu en es, et ce qui vient.",
   },
   {
     title: "Allégée & test calés sur J",

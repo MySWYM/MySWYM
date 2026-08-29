@@ -108,18 +108,18 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "buddies":
       return {
         headline: "Binômes réservés aux abonnés",
-        subtitle: "Trouve un nageur près de chez toi. L’essai Premium n’ouvre pas le matching — un abonnement actif oui.",
+        subtitle: "Trouve un nageur près de chez toi. L’essai Premium n’ouvre pas le matching - un abonnement actif oui.",
       };
     case "trial_required":
       return {
         headline: weeks > 4
           ? `Ton plan ${weeks} semaines t’attend`
-          : "Ton plan est prêt — active ton coach",
+          : "Ton plan est prêt - active ton coach",
         subtitle: "7 jours offerts sans carte à l’inscription. Ensuite les séances se mettent en pause jusqu’à l’abonnement.",
       };
     case "trial_expired":
       return {
-        headline: "Ton essai est fini — le coach est en pause",
+        headline: "Ton essai est fini - le coach est en pause",
         subtitle: "Reprends tes séances et l’adaptation : 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an.",
       };
     case "session_locked":
@@ -135,7 +135,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "analysis":
       return {
         headline: "Ta progression T100 est là",
-        subtitle: "Courbe d’allures et projection — débloque avec Premium.",
+        subtitle: "Courbe d’allures et projection - débloque avec Premium.",
       };
     default:
       return {

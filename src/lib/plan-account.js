@@ -60,7 +60,7 @@ export const dedupePlans = (plans) => {
 // Fusion local + remote : union des plans non tombstonés.
 // Suppression intentionnelle = présent dans deletedIds uniquement.
 // Pour un même id des deux côtés : garde la version avec le plus de progression.
-// À progression égale : garder le côté le plus récent (base) — sinon un changement
+// À progression égale : garder le côté le plus récent (base), sinon un changement
 // de fréquence 2×→3× (même nb de séances validées) est écrasé par l'ancien plan au refresh.
 // Si les timestamps sont égaux : préférer la fréquence / le volume planifié du côté base
 // déjà choisi ; ne prendre `other` que s'il a strictement plus de séances validées.
@@ -175,7 +175,7 @@ export const persistAccountPlans = async (userId, localPlans, activePlanId, dele
 
   const fp = plansPersistFingerprint(merged, active, history);
   if (fp && fp === readLastPlansPersistFingerprint(userId)) {
-    // Rien n’a changé vs dernier upsert réussi — pas de re-écriture JSON (egress + bump updated_at).
+    // Rien n’a changé vs dernier upsert réussi, pas de re-écriture JSON (egress + bump updated_at).
     return { plans: merged, active, history, error: null, skipped: true };
   }
 

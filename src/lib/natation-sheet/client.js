@@ -98,7 +98,7 @@ export async function loadNatationCatalogue(familyIds = [...SHEET_SOFT_FAMILIES]
 
 /**
  * Précharge en arrière-plan (appelé au boot app en local).
- * Soft = Nager 01–03 + triathlon 04–08 + eau libre 09–13.
+ * Soft = Nager 01-03 + triathlon 04-08 + eau libre 09-13.
  */
 export function prefetchNatationCatalogue() {
   if (!isNatationSheetCatalogueEnabled()) return Promise.resolve(null);

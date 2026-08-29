@@ -1,5 +1,5 @@
 /* Pages publiques autour de la landing (tarifs, blog, légal, contact).
-   Même DA que .lp-root — fichier séparé pour ne pas toucher landing.css. */
+   Même DA que .lp-root, fichier séparé pour ne pas toucher landing.css. */
 
 :root {
   --page-gutter: 2rem;

@@ -6,7 +6,7 @@ import { localeFromPathname, stripLocalePrefix, withLocalePrefix } from "../i18n
 export const SITE_ORIGIN = "https://www.myswym.app";
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-share.png`;
 
-/** JSON-LD BreadcrumbList — items : { label, href? } (dernier cran sans href). */
+/** JSON-LD BreadcrumbList, items : { label, href? } (dernier cran sans href). */
 export function breadcrumbJsonLd(items = []) {
   return {
     "@context": "https://schema.org",
@@ -154,7 +154,7 @@ export function softwareApplicationJsonLd(reviews = []) {
     operatingSystem: "Web",
     url: `${SITE_ORIGIN}/`,
     description:
-      "Plan d'entraînement natation personnalisé : nager, triathlon, eau libre, prépa diplôme — prêt en 2 minutes.",
+      "Plan d'entraînement natation personnalisé : nager, triathlon, eau libre, prépa diplôme, prêt en 2 minutes.",
     offers: {
       "@type": "Offer",
       price: "4.99",

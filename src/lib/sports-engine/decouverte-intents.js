@@ -1,5 +1,5 @@
 /**
- * Intentions Gold Découverte — références sportives (pas de séances hardcodées).
+ * Intentions Gold Découverte, références sportives (pas de séances hardcodées).
  * Le composeur génère des variantes cohérentes à partir de ces intentions.
  */
 
@@ -77,7 +77,7 @@ export const DECOUVERTE_INTENTS = Object.freeze({
     id: "reprise",
     headline: "Aujourd'hui : retrouver les sensations",
     learnCue: "mouvements simples, sans chercher la perf",
-    applyCue: "très facile, écoute ton corps — pauses autorisées",
+    applyCue: "très facile, écoute ton corps - pauses autorisées",
     techPrimary: "flèche",
     techAlt: "nage",
     volumeHint: [500, 750],
@@ -105,7 +105,7 @@ export const DECOUVERTE_INTENTS = Object.freeze({
     id: "triathlon_facile",
     headline: "Aujourd'hui : nager régulièrement sans te fatiguer",
     learnCue: "respiration confortable, rythme de course",
-    applyCue: "crawl régulier, économie d'énergie — allure tenable",
+    applyCue: "crawl régulier, économie d'énergie - allure tenable",
     techPrimary: "nage",
     techAlt: "flèche",
     volumeHint: [800, 1100],
@@ -181,8 +181,8 @@ export function resolveDecouverteIntent(brief = {}) {
 
 /**
  * Volume cohérent : on peut BAISSER vs cible moteur, jamais gonfler artificiellement.
- * Les plafonds durée / capacité scalent avec la durée et la cible (comme Régulier/Sportif) —
- * `volumeHint` guide la fourchette typique mais ne doit plus écrêter 1200–1400 m à ~700 m.
+ * Les plafonds durée / capacité scalent avec la durée et la cible (comme Régulier/Sportif) , 
+ * `volumeHint` guide la fourchette typique mais ne doit plus écrêter 1200-1400 m à ~700 m.
  */
 export function coherentVolumeForDecouverte(brief = {}) {
   const engine = Math.max(400, Number(brief.volumeTarget) || 750);
@@ -221,7 +221,7 @@ export function coherentVolumeForDecouverte(brief = {}) {
   return Math.min(engine, Math.max(minVol, Math.round(floored / 50) * 50));
 }
 
-/** Scénarios Gold — métadonnées de référence pour tests (pas de séances figées). */
+/** Scénarios Gold, métadonnées de référence pour tests (pas de séances figées). */
 export const GOLD_SCENARIOS = Object.freeze([
   { id: "GOLD1", intent: "aisance", strokeFocus: "crawl", duration: 45, equipment: [], volumeBand: [600, 800] },
   { id: "GOLD2", intent: "glisse", strokeFocus: "mixte", duration: 45, equipment: [], volumeBand: [600, 800] },

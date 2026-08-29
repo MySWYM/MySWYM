@@ -21,7 +21,7 @@ export function setSupportSessionRef(line) {
     if (memory) sessionStorage.setItem(KEY, memory);
     else sessionStorage.removeItem(KEY);
   } catch {
-    /* sessionStorage indisponible (Safari privé) — la mémoire suffit */
+    /* sessionStorage indisponible (Safari privé), la mémoire suffit */
   }
 }
 

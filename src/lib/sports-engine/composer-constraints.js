@@ -1,6 +1,6 @@
 /**
  * Hard constraints pour le composeur (Étape J2).
- * Dérivées de taperLoad / pain / niveau — PAS un second moteur de taper.
+ * Dérivées de taperLoad / pain / niveau, PAS un second moteur de taper.
  */
 
 import { fourNagesCorpsShare } from "./session-specificity.js";
@@ -57,7 +57,7 @@ export function taperConstraintsFromLoad(taperLoad, ctx = {}) {
   const raceDist = Number(ctx.raceDistance || ctx.raceTarget?.distance) || 200;
   const volumeTarget = Number(ctx.volumeTarget) || 0;
 
-  // Plafonds absolus sportifs par stage (safety) — facteurs taperLoad affinent
+  // Plafonds absolus sportifs par stage (safety), facteurs taperLoad affinent
   let absCap;
   if (stage === "race_week") {
     if (days != null && days <= 1) absCap = 500;
@@ -84,7 +84,7 @@ export function taperConstraintsFromLoad(taperLoad, ctx = {}) {
   let maxZ3Meters;
   let maxZ4Meters;
   if (stage === "race_week") {
-    // Touches courtes autorisées (ex. 4×50) — pas de gros seuil
+    // Touches courtes autorisées (ex. 4×50), pas de gros seuil
     maxZ3Meters = Math.min(150, Math.max(100, Math.round(hardBudget * 0.5)));
     maxZ4Meters = Math.min(50, Math.round(maxZ3Meters * 0.2));
   } else if (stage === "s1") {

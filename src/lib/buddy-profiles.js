@@ -191,7 +191,7 @@ export function buildWhatsAppLink(e164, { senderName, buddyName, city, outingLab
   const text = [
     `Salut ${buddyName || ""} !`.trim(),
     `Je t'ai trouvé sur MySWYM${type}${spot}.`,
-    `${senderName ? `${senderName} — ` : ""}Je cherche un binôme pour une sortie — ça te dit ?`,
+    `${senderName ? `${senderName}, ` : ""}Je cherche un binôme pour une sortie, ça te dit ?`,
   ].join(" ");
 
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
@@ -252,7 +252,7 @@ export async function fetchOwnBuddyProfile(userId) {
 }
 
 /**
- * Annuaire public (sans numéro affiché) — RPC security definer.
+ * Annuaire public (sans numéro affiché), RPC security definer.
  * Visibilité = publié + ville + numéro prêt (phone_share_ready + whatsapp).
  * Fallback : mêmes filtres si la RPC n'est pas encore déployée.
  */
@@ -281,7 +281,7 @@ export async function fetchDiscoverableBuddies({
     return { data: sortBuddiesForViewer(filtered, viewerProfile || {}), error: null };
   }
 
-  // Fallback legacy — colonnes publiques uniquement ; filtre numéro sans le sélectionner
+  // Fallback legacy, colonnes publiques uniquement ; filtre numéro sans le sélectionner
   let q = supabase
     .from("buddy_profiles")
     .select(BUDDY_PUBLIC_FIELDS.join(", "))

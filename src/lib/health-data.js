@@ -1,5 +1,5 @@
 /**
- * Données de santé (art. 9 RGPD) — listes fermées + microcopy consentement.
+ * Données de santé (art. 9 RGPD), listes fermées + microcopy consentement.
  * Ne jamais proposer de champ texte libre pour diagnostic / traitement.
  */
 

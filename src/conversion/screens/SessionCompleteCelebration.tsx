@@ -7,7 +7,7 @@ interface Props {
   meters: number
   streak: number
   onContinue: () => void
-  /** Soft invite — never forced */
+  /** Soft invite, never forced */
   onSeePremium?: () => void
 }
 

@@ -7,7 +7,7 @@ export const SESSION_DISTANCE_PRESETS = [
   1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3500, 4000, 4500, 5000, 5500, 6000,
 ];
 
-/** Bornes soft par niveau — évite des volumes absurdes (découverte ≠ 6 km). */
+/** Bornes soft par niveau, évite des volumes absurdes (découverte ≠ 6 km). */
 const LEVEL_BANDS = {
   decouverte: { min: 1000, max: 1500, def: 1000 },
   regulier: { min: 1000, max: 3500, def: 2000 },
@@ -17,7 +17,7 @@ const LEVEL_BANDS = {
 
 export function formatSessionDistanceLabel(meters) {
   const n = Math.round(Number(meters) || 0);
-  if (!n) return "—";
+  if (!n) return "-";
   return `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f")} m`;
 }
 

@@ -2,7 +2,7 @@
  * Carte exercice compacte (pas de tiroir / dépliable).
  * Allures Sheet : pastilles ⓘ + Enchaînement (multi-allures) ; Lent ≠ Souple.
  * Départ à la montre : pastille D2' + tip horloge de bassin (4 aiguilles).
- * Allure chiffrée : pastille @1:42–1:48 + tip plage cible.
+ * Allure chiffrée : pastille @1:42-1:48 + tip plage cible.
  */
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,7 +15,7 @@ const ALLURE_TIPS = {
     label: "Souple",
     tone: "mint",
     body:
-      "Allure de récupération : lente et relâchée. Tu ne forces pas — tu te détends. À ne pas confondre avec « lent » (allure lente contrôlée, pas une récup).",
+      "Allure de récupération : lente et relâchée. Tu ne forces pas, tu te détends. À ne pas confondre avec « lent » (allure lente contrôlée, pas une récup).",
   },
   lent: {
     title: "Lent",
@@ -29,7 +29,7 @@ const ALLURE_TIPS = {
     label: "Moyen",
     tone: "neutral",
     body:
-      "Allure régulière, tenable sur toute la série. Ni trop facile, ni à fond — tu gardes le même rythme.",
+      "Allure régulière, tenable sur toute la série. Ni trop facile, ni à fond, tu gardes le même rythme.",
   },
   progressif: {
     title: "Progressif",
@@ -393,7 +393,7 @@ function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
                 </span>
                 {blurb ? (
                   <span>
-                    {" — "}
+                    {", "}
                     {blurb}
                   </span>
                 ) : null}
@@ -404,7 +404,7 @@ function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
         {showLentSouple ? (
           <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
             <span style={{ color: G.inkLight, fontWeight: 800 }}>Lent ≠ souple</span>
-            {" — "}
+            {", "}
             lent = allure lente contrôlée ; souple = récupération relâchée. Ce n’est pas la même chose.
           </p>
         ) : null}
@@ -445,7 +445,7 @@ function DepartTipSheet({ label, seconds, onClose, colors: G }) {
 }
 
 function AllurePaceTipSheet({ label, low, high, onClose, colors: G }) {
-  const range = low && high ? `${low} – ${high}` : (label || "").replace(/^@/, "");
+  const range = low && high ? `${low}, ${high}` : (label || "").replace(/^@/, "");
   return (
     <TipSheetShell eyebrow="Allure cible" title={label || "@…"} onClose={onClose} colors={G}>
       <p style={{ margin: "0 0 12px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>

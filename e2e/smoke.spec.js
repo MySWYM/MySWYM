@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * 5 smokes anti-régression — pas besoin de compte.
+ * 5 smokes anti-régression, pas besoin de compte.
  * Contre staging : BASE_URL=https://staging.myswym.app npm run test:e2e
  */
 
@@ -24,7 +24,7 @@ test.describe("MySWYM smoke", () => {
   test("3. /app boot sans écran blanc", async ({ page }) => {
     await page.goto("/app");
     await expect(page.locator("body")).toBeVisible();
-    // Loading, onboarding ou shell app — pas une page vide 30s
+    // Loading, onboarding ou shell app, pas une page vide 30s
     await expect(
       page.getByText(/Chargement|MySWYM|Objectif|Commencer|séance|Programme|Connexion|Inscription/i).first(),
     ).toBeVisible({ timeout: 25_000 });

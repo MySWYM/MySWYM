@@ -87,7 +87,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
         },
       });
       if (error) throw error;
-      // Redirect en cours — on laisse busy actif
+      // Redirect en cours, on laisse busy actif
     } catch (e) {
       setBusy(null);
       const raw = e.message || "";
@@ -131,9 +131,9 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
   const locale = useActiveLocale();
   const { t } = useTranslation("onboarding");
   // mode :
-  //   "password" — login classique avec mot de passe
-  //   "register" — création de compte avec mot de passe
-  //   "reset"    — réinitialisation du mot de passe
+  //   "password", login classique avec mot de passe
+  //   "register", création de compte avec mot de passe
+  //   "reset"   , réinitialisation du mot de passe
   const [mode, setMode] = useState(initialMode);
   useEffect(() => { setMode(initialMode); }, [initialMode]);
   useEffect(() => { captureReferralFromUrl(); }, []);

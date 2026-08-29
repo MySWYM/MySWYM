@@ -1,5 +1,5 @@
 /**
- * Intentions Gold Sportif — « s'entraîner pour progresser ».
+ * Intentions Gold Sportif, « s'entraîner pour progresser ».
  * Références qualité (pas de séances hardcodées).
  */
 
@@ -9,7 +9,7 @@ import { scaleMaxContinuousForRaceBand } from "./race-event.js";
  * Capacité continue stroke-aware.
  * 500 m 4N continu ≠ 500 m crawl continu.
  * @param {object} brief
- * @param {{ stroke?: string }} [opts] — override nage ("crawl"|"4n"|"dos"|…)
+ * @param {{ stroke?: string }} [opts], override nage ("crawl"|"4n"|"dos"|…)
  */
 export function maxContinuousForSportif(brief = {}, opts = {}) {
   const known = Number(brief.maxContinuousDistance) || 0;
@@ -57,7 +57,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "aerobie",
     headline: "Aujourd'hui : endurance aérobie (Z2)",
     learnCue: "nage propre, rythme régulier",
-    applyCue: "aérobie — tu pourrais parler",
+    applyCue: "aérobie - tu pourrais parler",
     techPrimary: "respiration",
     quality: false,
     zone: "Z2",
@@ -77,7 +77,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "seuil",
     headline: "Aujourd'hui : travail au seuil (Z3)",
     learnCue: "qualité avant la vitesse",
-    applyCue: "soutenu contrôlé — allure seuil",
+    applyCue: "soutenu contrôlé - allure seuil",
     techPrimary: "rattrape",
     quality: true,
     zone: "Z3",
@@ -107,7 +107,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "vo2",
     headline: "Aujourd'hui : efforts courts intenses",
     learnCue: "qualité de chaque rep",
-    applyCue: "soutenu court — récupère bien",
+    applyCue: "soutenu court - récupère bien",
     techPrimary: "nage",
     quality: true,
     zone: "Z4",
@@ -137,7 +137,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "triathlon",
     headline: "Aujourd'hui : nager économique (triathlon)",
     learnCue: "respiration régulière",
-    applyCue: "économie d'énergie — allure tenable",
+    applyCue: "économie d'énergie - allure tenable",
     techPrimary: "respiration",
     quality: false,
     zone: "Z2",
@@ -168,7 +168,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "recuperation",
     headline: "Aujourd'hui : récupération active",
     learnCue: "mouvements souples",
-    applyCue: "très facile — Z1",
+    applyCue: "très facile - Z1",
     techPrimary: "nage",
     quality: false,
     zone: "Z1",
@@ -178,7 +178,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "reprise",
     headline: "Aujourd'hui : reprise progressive",
     learnCue: "retrouver les sensations",
-    applyCue: "volume contrôlé — écoute ton corps",
+    applyCue: "volume contrôlé - écoute ton corps",
     techPrimary: "nage",
     quality: false,
     zone: "Z2",
@@ -188,7 +188,7 @@ export const SPORTIF_INTENTS = Object.freeze({
     id: "test",
     headline: "Aujourd'hui : test de performance",
     learnCue: "échauffement complet",
-    applyCue: "chrono honnête — donne le max contrôlé",
+    applyCue: "chrono honnête - donne le max contrôlé",
     techPrimary: "nage",
     quality: true,
     zone: "Z3",
@@ -268,7 +268,7 @@ export function resolveSportifIntent(brief = {}) {
 }
 
 /**
- * Volume cohérent Sportif — peut baisser vs moteur, jamais gonfler.
+ * Volume cohérent Sportif, peut baisser vs moteur, jamais gonfler.
  */
 export function coherentVolumeForSportif(brief = {}) {
   const engine = Math.max(1200, Number(brief.volumeTarget) || 2200);
@@ -297,7 +297,7 @@ export function coherentVolumeForSportif(brief = {}) {
 }
 
 /**
- * Volume cohérent Performance — plus haut que Sportif, jamais gonflé vs moteur.
+ * Volume cohérent Performance, plus haut que Sportif, jamais gonflé vs moteur.
  * Longues distances : pas d'inflation Z4 via volume.
  */
 export function coherentVolumeForPerformance(brief = {}) {
@@ -317,7 +317,7 @@ export function coherentVolumeForPerformance(brief = {}) {
     durationCap = Math.min(durationCap, hi);
   }
   if (intent.id === "vitesse" || intent.id === "vo2") {
-    durationCap = Math.min(durationCap, 2800); // Z4 limité — pas « plus de Z4 »
+    durationCap = Math.min(durationCap, 2800); // Z4 limité, pas « plus de Z4 »
   }
 
   const raceDist = Number(brief.raceTarget?.distance || brief.raceDistance) || 0;
@@ -331,7 +331,7 @@ export function coherentVolumeForPerformance(brief = {}) {
   const minVol = duration <= 45 ? 1400 : 1800;
   floored = Math.min(engine, Math.max(minVol, Math.round(floored / 50) * 50));
 
-  // Étape I : taper/phase déjà dans effectiveWeekVolume — ne pas re-multiplier
+  // Étape I : taper/phase déjà dans effectiveWeekVolume, ne pas re-multiplier
   if (brief.taperAppliedUpstream || brief.volumeFinalized || brief.orchestration?.volumeFinalized) {
     if (brief.taperLoad?.taperStage === "race_day" || brief.isRaceDay || brief.isRestDay) return 0;
     const stage = brief.taperLoad?.taperStage;
@@ -364,7 +364,7 @@ export function coherentVolumeForPerformance(brief = {}) {
   return floored;
 }
 
-/** Gold Sportif — métadonnées de référence. */
+/** Gold Sportif, métadonnées de référence. */
 export const SPORTIF_GOLD_SCENARIOS = Object.freeze([
   { id: "SG1", intent: "aerobie", strokeFocus: "crawl", duration: 60, volumeBand: [2000, 3200] },
   { id: "SG2", intent: "seuil", strokeFocus: "crawl", duration: 55, volumeBand: [1800, 2800], qualitySession: true },

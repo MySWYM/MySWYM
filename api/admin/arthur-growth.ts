@@ -1,8 +1,8 @@
 /**
  * GET|POST /api/admin/arthur-growth
  *
- * GET  — funnel + attribution + leads scorés
- * POST — { action: "sync" | "rebuild" } (pas de relances)
+ * GET , funnel + attribution + leads scorés
+ * POST, { action: "sync" | "rebuild" } (pas de relances)
  *
  * Auth : x-myswym-arthur-admin ou JWT admin (voir admin-auth.ts)
  */
@@ -75,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       top_campaigns: report.top_campaigns,
       score_distribution: report.score_distribution,
       recent_leads: report.recent_leads,
-      note: "F1 measure-only — aucune relance automatique",
+      note: "F1 measure-only, aucune relance automatique",
     });
   } catch (err) {
     arthurLog("error", "admin_arthur_growth_failed", {

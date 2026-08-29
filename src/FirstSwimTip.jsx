@@ -85,8 +85,8 @@ export default function FirstSwimTip({ colors: G, sessionTitle, onContinue }) {
         </h1>
         <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 20px" }}>
           {sessionTitle
-            ? `« ${sessionTitle} » : suis l’échauffement, puis le corps de séance, sans forcer. Si c’est trop dur, note-le après — le coach s’adapte.`
-            : "Suis l’échauffement, puis le corps de séance, sans forcer. Si c’est trop dur, note-le après — le coach s’adapte."}
+            ? `« ${sessionTitle} » : suis l’échauffement, puis le corps de séance, sans forcer. Si c’est trop dur, note-le après, le coach s’adapte.`
+            : "Suis l’échauffement, puis le corps de séance, sans forcer. Si c’est trop dur, note-le après, le coach s’adapte."}
         </p>
         <ul
           style={{
@@ -103,7 +103,7 @@ export default function FirstSwimTip({ colors: G, sessionTitle, onContinue }) {
           }}
         >
           <li style={{ marginBottom: 10 }}>· Lis les 3 blocs avant d’entrer dans l’eau</li>
-          <li style={{ marginBottom: 10 }}>· Garde de la marge — mieux vaut finir propre</li>
+          <li style={{ marginBottom: 10 }}>· Garde de la marge, mieux vaut finir propre</li>
           <li>· Coche la séance une fois sortie du bassin</li>
         </ul>
         <button

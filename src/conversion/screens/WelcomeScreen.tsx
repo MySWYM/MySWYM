@@ -11,7 +11,7 @@ interface Props {
 export function WelcomeScreen({ onStart, onSignIn }: Props) {
   return (
     <div className="cv:relative cv:mx-auto cv:flex cv:min-h-dvh cv:w-full cv:max-w-lg cv:flex-col cv:overflow-hidden cv:px-5 cv:pb-[max(24px,env(safe-area-inset-bottom))] cv:pt-[max(24px,env(safe-area-inset-top))]">
-      {/* Atmosphere — water gradient plane, full-bleed */}
+      {/* Atmosphere, water gradient plane, full-bleed */}
       <div
         aria-hidden
         className="cv:pointer-events-none cv:absolute cv:inset-0"
@@ -43,7 +43,7 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
             Ton coach natation, chaque longueur.
           </motion.h1>
           <motion.p variants={fadeUp} className="cv:mt-4 cv:max-w-[32ch] cv:text-[16px] cv:leading-relaxed cv:text-cv-ink-secondary">
-            Un plan clair. Des séances qui progressent. La sensation d’avancer — dès la première semaine.
+            Un plan clair. Des séances qui progressent. La sensation d’avancer, dès la première semaine.
           </motion.p>
         </div>
 

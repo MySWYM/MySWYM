@@ -1,5 +1,5 @@
 /**
- * Construction des phases de plan — orchestration calendaire (pas le contenu des séances).
+ * Construction des phases de plan, orchestration calendaire (pas le contenu des séances).
  * Aligné sur App.jsx (buildPlanPhases / buildWellnessPhases / computePlanTotalWeeks).
  * Ne calcule PAS volume, composer, readiness, ni séances.
  */
@@ -14,25 +14,25 @@ export function isProgressionGoal(goalId) {
   return goalId === "progression" || String(goalId || "").startsWith("prog_");
 }
 
-/** Tips UI — identiques App.jsx TIPS (affichage semaine, pas logique moteur). */
+/** Tips UI, identiques App.jsx TIPS (affichage semaine, pas logique moteur). */
 export const PLAN_TIPS = {
   debut:
-    "Priorité à la régularité sur l'intensité. Concentre-toi sur la position du corps dans l'eau — plus tu es horizontal, moins tu freines.",
+    "Priorité à la régularité sur l'intensité. Concentre-toi sur la position du corps dans l'eau - plus tu es horizontal, moins tu freines.",
   aerobie:
     "Travaille la respiration bilatérale (3 temps). Un appui symétrique des deux côtés améliore la rotation et l'efficacité de nage.",
   endurance:
     "Si tu dois t'arrêter, c'est que tu vas trop vite. Ralentis jusqu'à trouver une allure où tu pourrais tenir une conversation courte.",
   seuil:
-    "Le seuil doit être inconfortable mais régulier. Utilise un chrono — la constance des temps de passage est le seul indicateur qui compte.",
+    "Le seuil doit être inconfortable mais régulier. Utilise un chrono - la constance des temps de passage est le seul indicateur qui compte.",
   vitesse:
     "Récupération complète entre chaque sprint. Sans ça, tu travailles l'endurance, pas la vitesse. Qualité absolue > quantité.",
   volume:
-    "Semaine de charge maximale. Mange +15 % de glucides, vise 8 h de sommeil — c'est pendant la récupération que le corps s'adapte.",
+    "Semaine de charge maximale. Mange +15 % de glucides, vise 8 h de sommeil - c'est pendant la récupération que le corps s'adapte.",
   affutage:
-    "Réduis le volume de 40 % mais maintiens 2–3 accélérations par séance pour garder la réactivité musculaire.",
+    "Réduis le volume de 40 % mais maintiens 2-3 accélérations par séance pour garder la réactivité musculaire.",
   competition:
-    "Dernière semaine avant l'événement : 1–2 séances courtes, volume bas, rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
-  test: "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Compare avec le test précédent — c'est la seule façon de voir si tu évolues vraiment.",
+    "Dernière semaine avant l'événement : 1-2 séances courtes, volume bas, rappels de vitesse (12,5 m max). Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
+  test: "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Compare avec le test précédent - c'est la seule façon de voir si tu évolues vraiment.",
 };
 
 export function buildWellnessPhases(totalWeeks) {
@@ -193,7 +193,7 @@ export function buildPlanPhases(totalWeeks) {
   if (taperWeeks === 2) {
     phases.push({
       phase: "taper",
-      focus: "Affûtage — volume ↓",
+      focus: "Affûtage - volume ↓",
       progression: 1.1,
       tipKey: "affutage",
       isTest: false,

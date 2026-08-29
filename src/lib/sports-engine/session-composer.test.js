@@ -1,5 +1,5 @@
 /**
- * Tests déterministes — session composer V1 (Étape A→B Découverte + Gold/stroke).
+ * Tests déterministes, session composer V1 (Étape A→B Découverte + Gold/stroke).
  * Usage : node src/lib/sports-engine/session-composer.test.js
  */
 import {
@@ -228,7 +228,7 @@ assert(canUsePapillon({ level: "decouverte", papillonMastered: true }), "papillo
   assertSportDecouverte(r.session, brief);
 }
 
-// === Cas 3 : Régulier — désormais actif (détails dans session-composer-regulier.test.js) ===
+// === Cas 3 : Régulier, désormais actif (détails dans session-composer-regulier.test.js) ===
 {
   const brief = briefFrom({
     level: "régulier",
@@ -243,7 +243,7 @@ assert(canUsePapillon({ level: "decouverte", papillonMastered: true }), "papillo
   assert(r.ok, `cas3 Régulier doit composer: ${r.reason}`);
 }
 
-// === Cas 4 : Sportif — composeur actif Étape D ===
+// === Cas 4 : Sportif, composeur actif Étape D ===
 {
   const brief = briefFrom({
     level: "sportif",
@@ -254,7 +254,7 @@ assert(canUsePapillon({ level: "decouverte", papillonMastered: true }), "papillo
     family: "seuil",
     seed: "case4-sportif",
   });
-  // briefFrom may force decouverte — override level
+  // briefFrom may force decouverte, override level
   brief.level = "sportif";
   brief.sessionIntent = "seuil";
   brief.qualitySession = true;
@@ -265,7 +265,7 @@ assert(canUsePapillon({ level: "decouverte", papillonMastered: true }), "papillo
 
 assert(isComposerEnabledForLevel("performance"), "cas5: Perf actif étape F");
 
-// === Cas 6–7 reject ===
+// === Cas 6-7 reject ===
 {
   const pullEx = getExerciseInventory().find((e) => /pull/i.test(e.instructions.join(" ")));
   const brief = briefFrom({ level: "découverte", objectif: "nager_progresser", duration: 30, equipment: [], volumeTarget: 1000, seed: "c6" });

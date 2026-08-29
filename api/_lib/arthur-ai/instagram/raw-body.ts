@@ -1,5 +1,5 @@
 /**
- * Lecture du corps brut (HMAC Meta) — stream non parsé.
+ * Lecture du corps brut (HMAC Meta), stream non parsé.
  */
 import type { Readable } from "node:stream";
 

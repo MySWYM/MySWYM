@@ -1,5 +1,5 @@
 /**
- * RaceGap — écart entre performance actuelle et RaceTarget.
+ * RaceGap, écart entre performance actuelle et RaceTarget.
  * Peut être insufficient_data : ne jamais inventer un chrono courant.
  */
 
@@ -13,8 +13,8 @@ import { formatRaceTime, raceTargetPacePer100 } from "./race-target.js";
  * @property {'ok'} status
  * @property {number} targetTimeSec
  * @property {number} currentTimeSec
- * @property {number} gapSec — current − target (positif = derrière)
- * @property {number} gapPct — gapSec / targetTimeSec
+ * @property {number} gapSec, current − target (positif = derrière)
+ * @property {number} gapPct, gapSec / targetTimeSec
  * @property {GapDirection} direction
  * @property {GapConfidence} confidence
  * @property {object} [evidence]
@@ -33,7 +33,7 @@ import { formatRaceTime, raceTargetPacePer100 } from "./race-target.js";
  * 1. evidence.currentTimeSec
  * 2. evidence.recentBest[distance]
  * 3. evidence.splits[distance]
- * 4. projection T100 seulement si opts.allowT100Projection (défaut false — prudent)
+ * 4. projection T100 seulement si opts.allowT100Projection (défaut false, prudent)
  *
  * @param {import('./race-target.js').RaceTarget} target
  * @param {object} evidence

@@ -5,7 +5,7 @@
  * Délègue le contenu des séances à buildCoachPlanWeeks (swim-plan-bridge).
  *
  * Hors scope : boucle séance unique (progression / triathlon / eau libre / diplôme)
- * et objectifs bien-être multi-semaines legacy — refuser clairement.
+ * et objectifs bien-être multi-semaines legacy, refuser clairement.
  */
 import {
   buildCoachPlanWeeks,
@@ -21,7 +21,7 @@ import {
   countPreservedWeeks,
 } from "./preserve-progress.js";
 
-/** Aligné App.jsx PLAN_VERSION — métadonnées uniquement. */
+/** Aligné App.jsx PLAN_VERSION, métadonnées uniquement. */
 export const ARTHUR_PLAN_VERSION = 49;
 
 const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
@@ -41,14 +41,14 @@ const ALLOWED_LEVELS = new Set([
 /**
  * @param {object} input
  * @param {string} [input.userId]
- * @param {object} [input.profile] — profil MySWYM (sessionsPerWeek, goal, level, …)
+ * @param {object} [input.profile], profil MySWYM (sessionsPerWeek, goal, level, …)
  * @param {string} [input.goal]
- * @param {string} [input.targetDate] — ISO date → profile.eventDate
+ * @param {string} [input.targetDate], ISO date → profile.eventDate
  * @param {number} [input.weeks]
  * @param {number} [input.frequency]
  * @param {boolean} [input.isPremium=true]
- * @param {object|null} [input.existingPlan] — plan à merger (préservation)
- * @param {import('@supabase/supabase-js').SupabaseClient} [input.supabase] — charge session_templates
+ * @param {object|null} [input.existingPlan], plan à merger (préservation)
+ * @param {import('@supabase/supabase-js').SupabaseClient} [input.supabase], charge session_templates
  * @param {number} [input.referenceTime]
  */
 export async function generateArthurPlan(input = {}) {

@@ -1,5 +1,5 @@
 /**
- * Étape J2 — Composer Quality Gate (Q1–Q15)
+ * Étape J2, Composer Quality Gate (Q1–Q15)
  * Usage : node src/lib/sports-engine/composer-quality-gate.test.js
  */
 import {
@@ -112,7 +112,7 @@ function z4Meters(session) {
 // ── Q1 : Découverte faible + 150m continuous → FAIL → recomposition ──
 {
   const fake = {
-    details: ["-150m crawl souple — nage tranquillement (facile)"],
+    details: ["-150m crawl souple - nage tranquillement (facile)"],
     sets: [{ reps: 1, distancePerRep: 150, restSec: 0, continuous: true, block: "depart", label: "crawl" }],
     distance: "150m",
     volumeFromSets: 150,
@@ -155,7 +155,7 @@ function z4Meters(session) {
     sets: [
       { reps: 3, distancePerRep: 100, restSec: 20, zone: "Z3", block: "corps", continuous: false },
     ],
-    details: ["-3 × 100m crawl — (Z3) — repos 20s"],
+    details: ["-3 × 100m crawl - (Z3) - repos 20s"],
     distance: "300m",
     volumeFromSets: 300,
   };
@@ -170,7 +170,7 @@ function z4Meters(session) {
 {
   const fake = {
     sets: [{ reps: 4, distancePerRep: 50, restSec: 20, zone: "Z3", block: "corps", blockRole: "specific", continuous: false }],
-    details: ["Touches allure course :", "-4 × 50m crawl — (Z3) — repos 20s"],
+    details: ["Touches allure course :", "-4 × 50m crawl - (Z3) - repos 20s"],
     distance: "200m",
     volumeFromSets: 200,
   };
@@ -250,7 +250,7 @@ function z4Meters(session) {
     taperLoad,
     sessionIntent: "allure_specifique",
   });
-  // If volume still over maxVolume, trim expectation — build a compliant session
+  // If volume still over maxVolume, trim expectation, build a compliant session
   const c = resolveHardConstraints(brief);
   if (vol > c.maxVolume) {
     // Use composed session instead
@@ -277,7 +277,7 @@ function z4Meters(session) {
 {
   const fake = {
     sets: [{ reps: 33, distancePerRep: 50, restSec: 20, zone: "Z2", block: "corps", continuous: false }],
-    details: ["-33 × 50m crawl — facile, relâché — repos 20s"],
+    details: ["-33 × 50m crawl - facile, relâché - repos 20s"],
     distance: "1650m",
     volumeFromSets: 1650,
   };
@@ -295,7 +295,7 @@ function z4Meters(session) {
 {
   const fake = {
     sets: [{ reps: 9, distancePerRep: 100, restSec: 0, zone: "Z2", block: "corps", continuous: false }],
-    details: ["-9 × 100m crawl — facile — repos 0s"],
+    details: ["-9 × 100m crawl - facile - repos 0s"],
     distance: "900m",
     volumeFromSets: 900,
   };
@@ -311,7 +311,7 @@ function z4Meters(session) {
     sets: [
       { reps: 10, distancePerRep: 100, restSec: 20, zone: "Z2", block: "corps", label: "crawl", continuous: false },
     ],
-    details: ["-10 × 100m crawl — repos 20s"],
+    details: ["-10 × 100m crawl - repos 20s"],
     distance: "1000m",
     volumeFromSets: 1000,
   };
@@ -372,7 +372,7 @@ function z4Meters(session) {
   const heavy = {
     details: [
       "-400m crawl (Z2)",
-      "-10 × 200m crawl (Z3) — repos 30s",
+      "-10 × 200m crawl (Z3) - repos 30s",
       "-200m souple",
     ],
     distance: "2600m",
@@ -413,7 +413,7 @@ function z4Meters(session) {
       { reps: 4, distancePerRep: 50, restSec: 30, zone: "Z3", block: "corps", blockRole: "specific", continuous: false },
       { reps: 1, distancePerRep: 100, restSec: 0, continuous: true, zone: "Z1", block: "fin" },
     ],
-    details: ["-600m crawl — sighting + allure régulière", "arthur light"],
+    details: ["-600m crawl - sighting + allure régulière", "arthur light"],
     distance: "1100m",
   };
   light.volumeFromSets = volumeFromSets(light.sets);
@@ -495,7 +495,7 @@ function z4Meters(session) {
 // ── Q16 : Pyramide 1750 m opaque / trop longue → REJECT ──
 {
   const fake = {
-    details: ["-1750m pyramide crawl — montée / descente (sommet 400) — repos variable"],
+    details: ["-1750m pyramide crawl - montée / descente (sommet 400) - repos variable"],
     sets: [
       { reps: 1, distancePerRep: 100, restSec: 20, meta: { setFormat: "pyramid", pyramidStep: 0 }, block: "corps", zone: "Z2" },
       { reps: 1, distancePerRep: 200, restSec: 20, meta: { setFormat: "pyramid", pyramidStep: 1 }, block: "corps", zone: "Z2" },
@@ -586,14 +586,14 @@ function z4Meters(session) {
 
 
 // ═══════════════════════════════════════════════════════════
-// Étape J3 — Q17–Q28 (audit causes racines)
+// Étape J3, Q17–Q28 (audit causes racines)
 // ═══════════════════════════════════════════════════════════
 
 function textOf(session) {
   return (session.details || []).join("\n");
 }
 
-// Q17 — threshold annoncé → Z3 réel
+// Q17, threshold annoncé → Z3 réel
 {
   const brief = briefBase({
     level: "sportif",
@@ -611,7 +611,7 @@ function textOf(session) {
   console.log("Q17 PASS (threshold→Z3)");
 }
 
-// Q18 — eau libre → sighting réel
+// Q18, eau libre → sighting réel
 {
   const brief = briefBase({
     level: "sportif",
@@ -631,7 +631,7 @@ function textOf(session) {
   console.log("Q18 PASS (OW sighting)");
 }
 
-// Q19 — triathlon → cue triathlon
+// Q19, triathlon → cue triathlon
 {
   const brief = briefBase({
     level: "sportif",
@@ -651,7 +651,7 @@ function textOf(session) {
   console.log("Q19 PASS (triathlon cue)");
 }
 
-// Q20 — course piscine → race pace / spécifique
+// Q20, course piscine → race pace / spécifique
 {
   const brief = briefBase({
     level: "sportif",
@@ -668,7 +668,7 @@ function textOf(session) {
   console.log("Q20 PASS (course spécifique)");
 }
 
-// Q21 — 4N → corps multi-nages
+// Q21, 4N → corps multi-nages
 {
   const brief = briefBase({
     level: "sportif",
@@ -688,7 +688,7 @@ function textOf(session) {
   console.log("Q21 PASS (4N corps)");
 }
 
-// Q22 — taper → pas de gros bloc
+// Q22, taper → pas de gros bloc
 {
   const brief = briefBase({
     level: "performance",
@@ -708,7 +708,7 @@ function textOf(session) {
   console.log("Q22 PASS (taper light)");
 }
 
-// Q23 — J-3 / race_week légère
+// Q23, J-3 / race_week légère
 {
   const brief = briefBase({
     level: "performance",
@@ -726,7 +726,7 @@ function textOf(session) {
   console.log("Q23 PASS (race_week light)");
 }
 
-// Q24 — pain → zéro Z3/Z4 + shape
+// Q24, pain → zéro Z3/Z4 + shape
 {
   const brief = briefBase({
     level: "performance",
@@ -748,7 +748,7 @@ function textOf(session) {
   console.log("Q24 PASS (pain shape)");
 }
 
-// Q25 — anti-suite
+// Q25, anti-suite
 {
   const built = buildCorpsByFormat("repeated", 1400, {
     label: "crawl",
@@ -763,7 +763,7 @@ function textOf(session) {
   console.log("Q25 PASS (anti-suite)");
 }
 
-// Q26 — anti-pyramide filler (complète Q16)
+// Q26, anti-pyramide filler (complète Q16)
 {
   const built = buildCorpsByFormat("pyramid", 1250, {
     label: "crawl",
@@ -780,7 +780,7 @@ function textOf(session) {
   console.log("Q26 PASS (anti-pyramid filler)");
 }
 
-// Q27 — post-race limité
+// Q27, post-race limité
 {
   assert(taperStageFromDays(-3) === "post_race", "Q27 d-3");
   assert(taperStageFromDays(-10) === "post_race", "Q27 d-10");
@@ -794,7 +794,7 @@ function textOf(session) {
   console.log("Q27 PASS (post-race limité)");
 }
 
-// Q28 — pas de rest=0 sur répétitions
+// Q28, pas de rest=0 sur répétitions
 {
   const brief = briefBase({
     level: "sportif",
@@ -812,7 +812,7 @@ function textOf(session) {
   console.log("Q28 PASS (rest>0)");
 }
 
-// Q29 — 12×100 évité quand meilleure composition
+// Q29, 12×100 évité quand meilleure composition
 {
   const built = buildCorpsByFormat("repeated", 1200, {
     label: "crawl",

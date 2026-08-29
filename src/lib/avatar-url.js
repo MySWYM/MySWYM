@@ -1,5 +1,5 @@
 /**
- * Helpers URL avatar (sans dépendance Supabase — testables en Node).
+ * Helpers URL avatar (sans dépendance Supabase, testables en Node).
  */
 
 export function avatarCacheKey(userId) {

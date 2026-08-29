@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       try {
         await admin.from(table).delete().eq("user_id", uid);
       } catch {
-        // table may not exist / RLS — ignore
+        // table may not exist / RLS, ignore
       }
     }
 

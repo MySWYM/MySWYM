@@ -215,7 +215,7 @@ export default function SettingsDrawer({
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>Gestion de l&apos;abonnement</div>
-              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé — abonne-toi pour continuer"}</div>
+              <div style={{ fontSize: 12, color: G.grey }}>{isPremium ? "Premium actif" : "Essai terminé, abonne-toi pour continuer"}</div>
             </div>
           </div>
           {isPremium ? (
@@ -224,7 +224,7 @@ export default function SettingsDrawer({
             </button>
           ) : (
             <button onClick={onUpgrade} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48 }}>
-              S’abonner — dès {PRICING.monthlyCommit.label}/mois
+              S’abonner : dès {PRICING.monthlyCommit.label}/mois
             </button>
           )}
           {isPremium ? (

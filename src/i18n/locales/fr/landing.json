@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "MySWYM — Plan d'entraînement natation personnalisé",
-    "description": "Nager, triathlon, eau libre, prépa diplôme. Plan d'entraînement natation personnalisé — prêt en 2 minutes. Essai Premium 7 jours.",
+    "title": "MySWYM : Plan d'entraînement natation personnalisé",
+    "description": "Nager, triathlon, eau libre, prépa diplôme. Plan d'entraînement natation personnalisé, prêt en 2 minutes. Essai Premium 7 jours.",
     "howTitle": "Comment ça marche | MySWYM",
     "howDescription": "3 questions, un plan structuré tout de suite. Voilà comment MySWYM t’entraîne."
   },
@@ -30,7 +30,7 @@
     "tabsAria": "Catégories d'objectifs",
     "scrollPrev": "Voir les objectifs précédents",
     "scrollNext": "Voir les objectifs suivants",
-    "hint": "{{category}} · {{qty}} {{kind}} — glisse pour voir",
+    "hint": "{{category}} · {{qty}} {{kind}}, glisse pour voir",
     "counter": "{{current}} / {{total}}",
     "dotsAria": "Propositions de cette catégorie",
     "dotAria": "Proposition {{current}} sur {{total}}",
@@ -114,7 +114,7 @@
   "includes": {
     "label": "CE QUI EST INCLUS",
     "title": "Tout pour progresser",
-    "subtitle": "Plan, séances structurées, allures et adaptation — tout pour garder le coach.",
+    "subtitle": "Plan, séances structurées, allures et adaptation, tout pour garder le coach.",
     "i1Title": "Plan personnalisé",
     "i1Desc": "Calé sur ton objectif, ton niveau et ta date d'événement.",
     "i2Title": "Séances structurées",
@@ -306,7 +306,7 @@
     "s4Meta": "Feedback",
     "sessionLabel": "À quoi ça ressemble",
     "sessionTitle": "Tu lis avant de plonger.",
-    "sessionLead": "Chaque séance a une structure coach. Voici un exemple d’endurance — le tien s’adapte à ton niveau et à ton objectif.",
+    "sessionLead": "Chaque séance a une structure coach. Voici un exemple d’endurance, le tien s’adapte à ton niveau et à ton objectif.",
     "sessionAlt": "Nageuse en crawl, bassin intérieur",
     "trialLabel": "L’essai",
     "trialTitle": "7 jours pour nager le plan. Après, tu décides.",
@@ -390,7 +390,7 @@
     "gatesError": "Coche les cases CGV et rétractation avant de continuer.",
     "checkoutBusy": "Redirection…",
     "compareTitle": "Essai, puis Premium",
-    "compareLead": "Pendant l’essai, tu as tout Premium. Sans abonnement, tes séances se mettent en pause — les trois offres débloquent les mêmes fonctions.",
+    "compareLead": "Pendant l’essai, tu as tout Premium. Sans abonnement, tes séances se mettent en pause, les trois offres débloquent les mêmes fonctions.",
     "colFeature": "Fonctionnalité",
     "colTrial": "Essai",
     "colPremium": "Premium",

@@ -21,7 +21,7 @@ export function SubscriptionConfirmationEmail({
   const name = firstName?.trim();
   return (
     <EmailLayout
-      preview={`Premium actif (${planLabel}) — ton coach est prêt.`}
+      preview={`Premium actif (${planLabel}), ton coach est prêt.`}
       eyebrow={`Premium · ${planLabel}`}
       ctaLabel="Voir mon plan"
       ctaUrl={`${emailBrand.site}/app`}
@@ -29,7 +29,7 @@ export function SubscriptionConfirmationEmail({
       secondaryUrl={manageUrl}
     >
       <Text style={emailText.h1}>
-        {name ? `Merci, ${name} — coach on.` : "Merci — coach on."}
+        {name ? `Merci, ${name}, coach on.` : "Merci, coach on."}
       </Text>
       <Text style={emailText.p}>
         Ton accès Premium est actif. Tu as maintenant tout ce qu’il faut pour

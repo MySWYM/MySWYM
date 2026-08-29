@@ -1,8 +1,8 @@
 /**
- * Étape H — Boucle adaptative :
+ * Étape H, Boucle adaptative :
  * Feedback → FeedbackSignal → CapacityUpdate → Trend → Adaptation → semaine suivante.
  *
- * Réutilise adapt.js / capacity.js / gates.js — pas un 2e moteur.
+ * Réutilise adapt.js / capacity.js / gates.js, pas un 2e moteur.
  * Pas de réaction brutale à un seul feedback (sauf pain = sécurité).
  */
 
@@ -14,7 +14,7 @@ import {
 import { evaluateGates } from "./gates.js";
 import { buildRaceResultStub } from "./taper-load.js";
 
-/** Local — évite import circulaire avec adapt.js */
+/** Local, évite import circulaire avec adapt.js */
 function missedSessionPolicyLocal({ isKeySession = false, missedInWeek = 1, totalMissed = 1 }) {
   if (totalMissed >= 3) return "recompute";
   if (isKeySession && missedInWeek <= 1) return "reschedule";
@@ -137,13 +137,13 @@ export function interpretFeedback(feedbackInput = {}, context = {}) {
   const intent = fb.sessionIntent || context.sessionIntent || null;
   const quality = fb.qualitySession || context.qualitySession;
   if (fb.difficulty === "too_easy" && quality) {
-    evidence.push("quality_session_too_easy — ne pas durcir brutalement");
+    evidence.push("quality_session_too_easy - ne pas durcir brutalement");
   }
   if (fb.difficulty === "too_easy" && TECH_INTENTS.has(intent)) {
-    evidence.push("tech_too_easy — volume léger possible, conserver technique");
+    evidence.push("tech_too_easy - volume léger possible, conserver technique");
   }
   if (fb.difficulty === "too_hard" && quality) {
-    evidence.push("quality_too_hard — réduire stimulus qualité, garder aérobie");
+    evidence.push("quality_too_hard - réduire stimulus qualité, garder aérobie");
   }
 
   // Taper : bloquer progressions
@@ -168,7 +168,7 @@ export function interpretFeedback(feedbackInput = {}, context = {}) {
 
 /**
  * Tendance multi-séances.
- * @param {Array} feedbacks — raw ou normalisés
+ * @param {Array} feedbacks, raw ou normalisés
  */
 export function computeFeedbackTrend(feedbacks = []) {
   const signals = feedbacks.map((f) => interpretFeedback(f));
@@ -337,13 +337,13 @@ export function decideWeeklyAdaptation(weekFeedbacks = [], context = {}) {
       safety = "pain";
       observeOnly = true;
       confidence = "medium";
-      rationaleParts.push("pain_protection_active — hold until sustained recovery signals");
+      rationaleParts.push("pain_protection_active - hold until sustained recovery signals");
     }
   } else if (postRace) {
     action = "RECOVER";
     observeOnly = false;
     confidence = "medium";
-    rationaleParts.push("post_race_recovery — no normal load yet");
+    rationaleParts.push("post_race_recovery - no normal load yet");
   } else if (taperBlock && easyCount > 0 && tooHardCount === 0 && !pain) {
     action = "HOLD";
     observeOnly = true;
@@ -400,7 +400,7 @@ export function decideWeeklyAdaptation(weekFeedbacks = [], context = {}) {
   if (context.level === "performance" || context.performanceStrategy) {
     if (qualityTooHard.length) {
       rationaleParts.push(
-        "Performance: QualityToDevelop kept — load too high for current stimulus, not wrong diagnosis",
+        "Performance: QualityToDevelop kept - load too high for current stimulus, not wrong diagnosis",
       );
     }
   }
@@ -413,7 +413,7 @@ export function decideWeeklyAdaptation(weekFeedbacks = [], context = {}) {
   const singleSoft = normalized.length <= 1 || (easyCount + hardCount + tooHardCount <= 1 && !pain);
   const magnitude = magnitudeFromTrend(trendInfo.trend, action, singleSoft && action !== "REDUCE");
 
-  // Never progress volume+intensity+density together — one lever
+  // Never progress volume+intensity+density together, one lever
   const volumeMul = volumeMulFor(action, magnitude, { taperBlock, observeOnly });
 
   // Map legacy action names for App.jsx
@@ -465,7 +465,7 @@ export function formatAdaptDevExplain(adaptation, weekFeedbacks = []) {
       const n = normalizeSessionFeedback(f);
       const label = n.pain ? "pain" : n.missed ? "missed" : n.difficulty || "?";
       lines.push(
-        `  - ${n.sessionId || "session"} [${n.sessionIntent || "—"}] → ${label}${n.qualitySession ? " (quality)" : ""}`,
+        `  - ${n.sessionId || "session"} [${n.sessionIntent || " - "}] → ${label}${n.qualitySession ? " (quality)" : ""}`,
       );
     }
   }
@@ -535,7 +535,7 @@ export function applyRaceResultToPerformance(raceResultInput = {}, evidence = {}
       currentSource: "race_result",
     },
     postRaceRecovery: true,
-    note: "RaceGap may be recomputed from evidence — cause not auto-diagnosed",
+    note: "RaceGap may be recomputed from evidence - cause not auto-diagnosed",
   };
 }
 

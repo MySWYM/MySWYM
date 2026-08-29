@@ -1,5 +1,5 @@
 /**
- * Affichage d'effort Sportif — zones + allures uniquement si T100 fiable.
+ * Affichage d'effort Sportif, zones + allures uniquement si T100 fiable.
  */
 import { paceTagFromT100, formatPaceRange } from "../swim-pace.js";
 
@@ -38,7 +38,7 @@ export function effortCue({ zone = "Z2", distancePerRep = 100, brief = {}, rpeFa
   }
 }
 
-/** Allure cible unique (milieu de bande) pour une distance — ou null. */
+/** Allure cible unique (milieu de bande) pour une distance, ou null. */
 export function targetPaceLabel(pace100Sec, zone, distanceM) {
   if (!pace100Sec || !zone) return null;
   const tag = paceTagFromT100(pace100Sec, zone, distanceM);

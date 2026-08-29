@@ -1,11 +1,11 @@
 /**
- * Allures MySWYM — référence unique : T100 (temps 100 m crawl).
+ * Allures MySWYM : référence unique : T100 (temps 100 m crawl).
  * Pas de T400 : ni demandé, ni utilisé dans les formules.
  */
 
 /** Ancres T100 (secondes) : elite ↔ découverte. */
-const T100_FAST = 50;  // ~0:50 — nageur très rapide
-const T100_SLOW = 130; // ~2:10 — nageur débutant / lent
+const T100_FAST = 50;  // ~0:50, nageur très rapide
+const T100_SLOW = 130; // ~2:10, nageur débutant / lent
 
 /**
  * 0 = lent, 1 = rapide. Borné.
@@ -64,14 +64,14 @@ export function zoneBandsForT100(t100) {
 
 /**
  * Multiplicateurs simples (App : départs D… / preview onboarding).
- * easy / threshold / sprint — plus tolérants si T100 rapide.
+ * easy / threshold / sprint, plus tolérants si T100 rapide.
  */
 export function appZoneMultForT100(t100) {
   const f = speedFactorFromT100(t100);
   return {
-    easy: 1.35 + f * 0.05,      // 1.35 → ~1.40
+    easy: 1.35 + f * 0.05, // 1.35 → ~1.40
     threshold: 1.08 + f * 0.04, // 1.08 → ~1.12
-    sprint: 0.95 + f * 0.02,    // 0.95 → ~0.97
+    sprint: 0.95 + f * 0.02, // 0.95 → ~0.97
   };
 }
 
@@ -89,7 +89,7 @@ export function maxPaceGainFromT100(t100) {
 
 /**
  * Plafond de gain « carrière » (multi-années), conservateur.
- * ~3 % (très rapide) … ~12 % (lent) — plus bas qu’un fantasme marketing.
+ * ~3 % (très rapide) … ~12 % (lent), plus bas qu’un fantasme marketing.
  */
 export function maxCareerPaceGainFromT100(t100) {
   if (!t100 || t100 <= 0) return 0.07;
@@ -113,7 +113,7 @@ export function projectedPaceAtWeek(pace0, week, totalWeeks, maxGain = null) {
 
 /**
  * Projection indicative années → temps 100 m (entraînement régulier).
- * k ≈ 0.5 : ~63 % du plafond à 2 ans, ~92 % à 5 ans — réaliste, pas trop clément.
+ * k ≈ 0.5 : ~63 % du plafond à 2 ans, ~92 % à 5 ans, réaliste, pas trop clément.
  */
 export function projectedPaceAtYears(pace0, years, maxCareerGain = null) {
   if (!pace0 || pace0 <= 0) return pace0;
@@ -124,7 +124,7 @@ export function projectedPaceAtYears(pace0, years, maxCareerGain = null) {
 }
 
 /**
- * Projection distance : T(d) = a · d^e — e fixe (plus de T400 pour caler l'exposant).
+ * Projection distance : T(d) = a · d^e, e fixe (plus de T400 pour caler l'exposant).
  */
 export function calcDistanceProjection(pace100) {
   if (!pace100) return null;

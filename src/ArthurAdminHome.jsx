@@ -5,13 +5,13 @@ import { DonutChart, FunnelChart } from "./admin/AdminCharts.jsx";
 import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 function dash(v) {
-  if (v == null || v === "") return "—";
-  if (typeof v === "number" && Number.isNaN(v)) return "—";
+  if (v == null || v === "") return "-";
+  if (typeof v === "number" && Number.isNaN(v)) return "-";
   return v;
 }
 
 function pct(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
+  if (n == null || Number.isNaN(Number(n))) return "-";
   const x = Number(n);
   const ratio = x > 1 ? x / 100 : x;
   return `${Math.round(ratio * 100)} %`;
@@ -380,7 +380,7 @@ export default function ArthurAdminHome() {
         <Card
           to="/admin/coulisses"
           label="Contrôles OK"
-          value={checks.length ? `${okChecks}/${checks.length}` : "—"}
+          value={checks.length ? `${okChecks}/${checks.length}` : "-"}
         />
         <Card
           to="/admin/coulisses"

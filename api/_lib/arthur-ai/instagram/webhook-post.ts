@@ -42,7 +42,7 @@ function headerValue(
 }
 
 /**
- * Chemin Web Request (préféré) — rawBody/rawBuf = bytes Meta.
+ * Chemin Web Request (préféré), rawBody/rawBuf = bytes Meta.
  */
 export async function handleInstagramWebhookPostWeb(
   request: Request,

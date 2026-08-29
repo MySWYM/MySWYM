@@ -1,5 +1,5 @@
 /**
- * Tests Sportif — Étape D session composer.
+ * Tests Sportif, Étape D session composer.
  * Usage : node src/lib/sports-engine/session-composer-sportif.test.js
  */
 import {
@@ -157,7 +157,7 @@ assert(SESSION_COMPOSER_ENABLED_LEVELS.includes("sportif"), "flag sportif");
 assert(isComposerEnabledForLevel("sportif"), "enabled");
 assert(isComposerEnabledForLevel("performance"), "perf on étape F");
 
-// 1 — Sportif + nager_progresser + 3 séances
+// 1, Sportif + nager_progresser + 3 séances
 {
   const roles = sportifWeekRoles(3, { objectifV1: "nager_progresser", strokeFocus: "crawl", weekIndex: 0 });
   assert(roles.filter((r) => r.qualitySession).length === 1, "une qualité");
@@ -179,7 +179,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(zones.some((z) => z === "Z2" || z === "Z1"), "aérobie présente");
 }
 
-// 2 — eau_libre
+// 2, eau_libre
 {
   const r = composeSession(
     briefFrom({
@@ -193,7 +193,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/orientation|sighting|visée|endurance/i.test(r.session.details.join(" ") + r.session.title), "OW");
 }
 
-// 3 — triathlon
+// 3, triathlon
 {
   const r = composeSession(
     briefFrom({ objectif: "triathlon", sessionIntent: "triathlon", seed: "s3", duration: 60 }),
@@ -202,7 +202,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/économie|triathlon|aérobie|crawl/i.test(r.session.details.join(" ") + r.session.title), "tri");
 }
 
-// 4 — course_piscine
+// 4, course_piscine
 {
   const r = composeSession(
     briefFrom({
@@ -216,7 +216,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/course|allure|spécif/i.test(r.session.title + r.session.details.join(" ")), "course");
 }
 
-// 5 — 4N + papillon non maîtrisé
+// 5, 4N + papillon non maîtrisé
 {
   const r = composeSession(
     briefFrom({
@@ -234,7 +234,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/dos|brasse|papillon/i.test(r.session.details.join(" ")), "multi nages");
 }
 
-// 6 — CSS/T100 disponible (Premium)
+// 6, CSS/T100 disponible (Premium)
 {
   const brief = briefFrom({
     sessionIntent: "seuil",
@@ -250,7 +250,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/@\d+:\d+/.test(r.session.details.join("\n")), "allure affichée");
 }
 
-// 7 — sans chrono
+// 7, sans chrono
 {
   const brief = briefFrom({ sessionIntent: "aerobie", seed: "s7", isPremium: false });
   assert(!resolvePaceContext(brief).allowPaces, "no paces");
@@ -260,7 +260,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/aérobie|facile|Z2/i.test(r.session.details.join(" ")), "label humain");
 }
 
-// 8 — test
+// 8, test
 {
   const brief = briefFrom({ sessionIntent: "test", qualitySession: true, seed: "s8", volumeTarget: 1800 });
   const r = composeSession(brief);
@@ -269,14 +269,14 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/test|chrono/i.test(r.session.details.join(" ")), "consigne test");
 }
 
-// 9 — scaling Arthur lignes
+// 9, scaling Arthur lignes
 {
   const scaled = scaleDetailLine("8x200m crawl R30", 0.75, "reps");
   assert(/6×200m/i.test(scaled), `scale reps: ${scaled}`);
   const scaledD = scaleDetailLine("8x200m", 0.75, "distance");
   assert(/8×150m/i.test(scaledD), `scale dist: ${scaledD}`);
   const sess = scaleSessionLinesToVolume(
-    { details: ["-8x200m crawl — Z2", "-200m récup"], distance: "1800m" },
+    { details: ["-8x200m crawl - Z2", "-200m récup"], distance: "1800m" },
     1800,
     1350,
   );
@@ -284,7 +284,7 @@ assert(isComposerEnabledForLevel("performance"), "perf on étape F");
   assert(/[56]×200m/i.test(sess.details.join(" ")), `reps réduites: ${sess.details.join(" | ")}`);
 }
 
-// 10 — engagement matériel
+// 10, engagement matériel
 {
   let engaged = 0;
   for (let i = 0; i < 12; i++) {
@@ -359,7 +359,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
 
 // === Corrections pré-Performance ===
 
-// 11 — course piscine 3 séances : C pas auto-Z3
+// 11, course piscine 3 séances : C pas auto-Z3
 {
   const roles = sportifWeekRoles(3, {
     objectifV1: "course_piscine",
@@ -405,7 +405,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(weekZ3 < 0.35, `semaine Z3 trop dense: ${(weekZ3 * 100).toFixed(0)}%`);
 }
 
-// 12 — vitesse : blockRoles explicites
+// 12, vitesse : blockRoles explicites
 {
   const r = composeSession(
     briefFrom({ sessionIntent: "vitesse", qualitySession: true, seed: "vr", volumeTarget: 2000 }),
@@ -418,7 +418,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(/Préparation aérobie|Bloc vitesse|Consolidation/i.test(r.session.details.join("\n")), "headers");
 }
 
-// 13 — 4N faible capacité : pas de long continu
+// 13, 4N faible capacité : pas de long continu
 {
   const brief = briefFrom({
     strokeFocus: "4n",
@@ -460,7 +460,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
     );
   }}
 
-// 14 — 4N capacité élevée
+// 14, 4N capacité élevée
 {
   const brief = briefFrom({
     strokeFocus: "4n",
@@ -480,7 +480,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assertSportif(r.session, brief);
 }
 
-// 15 — continu crawl vs 4N
+// 15, continu crawl vs 4N
 {
   const base = {
     maxContinuousDistance: 500,
@@ -492,7 +492,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(fourMax <= 200, `4n plafonné ${fourMax}`);
 }
 
-// 16 — progressive / descending → affichage coach classique (pas de jargon progressif)
+// 16, progressive / descending → affichage coach classique (pas de jargon progressif)
 {
   const built = buildCorpsByFormat("progressive", 600, {
     label: "crawl",
@@ -525,7 +525,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   assert(!/descendant|long vers le court/i.test(dDisp.join("\n")), "pas de jargon descendant");
 }
 
-// 17 — Arthur Gold réellement chargé + scaling réel
+// 17, Arthur Gold réellement chargé + scaling réel
 {
   resetSessionTemplatesCache();
   assert(!sessionTemplatesReady(), "cache vide avant");
@@ -567,7 +567,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   // Levier distance explicite
   const distScaled = scaleSessionLinesToVolume(
     {
-      details: ["-8 × 200m crawl — Z2 — repos 25s", "-200m récup"],
+      details: ["-8 × 200m crawl - Z2 - repos 25s", "-200m récup"],
       distance: "1800m",
       type: "ENDURANCE",
     },
@@ -582,7 +582,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   // Levier reps
   const repsScaled = scaleSessionLinesToVolume(
     {
-      details: ["-8 × 200m crawl — Z2 — repos 25s", "-200m récup"],
+      details: ["-8 × 200m crawl - Z2 - repos 25s", "-200m récup"],
       distance: "1800m",
       type: "ENDURANCE",
     },
@@ -599,7 +599,7 @@ for (const g of SPORTIF_GOLD_SCENARIOS) {
   resetSessionTemplatesCache();
 }
 
-// 18 — Pyramide plafonnée + paliers visibles (pas 1750 m opaque Ironman)
+// 18, Pyramide plafonnée + paliers visibles (pas 1750 m opaque Ironman)
 {
   assert(MAX_PYRAMID_VOLUME <= 1000, `cap ${MAX_PYRAMID_VOLUME}`);
 

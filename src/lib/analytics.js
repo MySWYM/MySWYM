@@ -1,6 +1,6 @@
 /**
  * MySWYM Product Analytics V1 (PostHog).
- * Abstraction unique — ne jamais appeler posthog-js hors de ce module.
+ * Abstraction unique, ne jamais appeler posthog-js hors de ce module.
  *
  * Conserve aussi `trackEvent` → table Supabase `conversion_events` (legacy funnel).
  */
@@ -59,7 +59,7 @@ const ALLOWED_PROPS = new Set([
   "pathname",
 ]);
 
-/** Props jamais envoyées (défense en profondeur) — inclut données de santé art. 9. */
+/** Props jamais envoyées (défense en profondeur), inclut données de santé art. 9. */
 const BLOCKED_PROPS = new Set([
   "email",
   "name",
@@ -172,7 +172,7 @@ function onConsentChanged() {
 export function setAnalyticsConsent(accepted) {
   onConsentChanged();
   if (accepted) {
-    // no-op beyond opt-in — events will flow after consent
+    // no-op beyond opt-in, events will flow after consent
   }
 }
 
@@ -269,7 +269,7 @@ export function claimOnce(onceKey) {
   }
 }
 
-/** Test helper — clear a once key. */
+/** Test helper, clear a once key. */
 export function clearOnce(onceKey) {
   const key = `${ONCE_PREFIX}${onceKey}`;
   try { sessionStorage.removeItem(key); } catch { /* ignore */ }
@@ -349,7 +349,7 @@ export function trackUiError(opts = {}) {
   });
 }
 
-/** Filet global window / promesses — 1× par page. */
+/** Filet global window / promesses, 1× par page. */
 export function installGlobalErrorHandlers() {
   if (typeof window === "undefined") return;
   if (window.__myswymErrorHandlersInstalled) return;

@@ -1,6 +1,6 @@
 /**
  * Scoring leads Arthur AI (Growth Engine F1).
- * Pure function + persist — pas de relances.
+ * Pure function + persist, pas de relances.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";
@@ -34,7 +34,7 @@ export interface LeadScoreResult {
 const HOT_INTENTS = new Set(["plan_request", "subscription", "goal"]);
 const WARM_INTENTS = new Set(["myswym_question", "training", "technique"]);
 
-/** Score 0–100 déterministe (mesurable, pas d’IA). */
+/** Score 0-100 déterministe (mesurable, pas d’IA). */
 export function scoreLead(input: LeadScoreInput): LeadScoreResult {
   let score = 10;
   const reasons: string[] = ["base"];

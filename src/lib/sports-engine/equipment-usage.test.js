@@ -1,5 +1,5 @@
 /**
- * Engagement matériel — resolveEquipmentUsage.
+ * Engagement matériel, resolveEquipmentUsage.
  * Usage : node src/lib/sports-engine/equipment-usage.test.js
  */
 import {

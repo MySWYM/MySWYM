@@ -1,5 +1,5 @@
 /**
- * Coulisses — Instagram, plus tard Ollama / Telegram, contrôles de prod.
+ * Coulisses, Instagram, plus tard Ollama / Telegram, contrôles de prod.
  */
 import { useCallback, useEffect, useState } from "react";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
@@ -165,7 +165,7 @@ export default function ArthurReadinessAdmin() {
           <div style={card}>
             <div style={{ fontWeight: 800, marginBottom: 6 }}>Ollama</div>
             <p style={{ margin: 0, fontSize: 14, color: C.muted, lineHeight: 1.45 }}>
-              Brouillons en local — pas encore branché. Tu verras ici s’il est allumé.
+              Brouillons en local, pas encore branché. Tu verras ici s’il est allumé.
             </p>
           </div>
           <div style={card}>
@@ -211,7 +211,7 @@ export default function ArthurReadinessAdmin() {
                       marginBottom: 4,
                     }}
                   >
-                    {c.ok ? "✓" : "✗"} {c.id} — {c.detail}
+                    {c.ok ? "✓" : "✗"} {c.id}, {c.detail}
                   </li>
                 ))}
               </ul>
@@ -249,7 +249,7 @@ export default function ArthurReadinessAdmin() {
                 soft {data.cost_budget?.softRatio}
               </p>
               <p style={{ fontWeight: 700 }}>
-                État : {cost?.level} — jour ${cost?.dayCost} / mois ${cost?.monthCost}
+                État : {cost?.level}, jour ${cost?.dayCost} / mois ${cost?.monthCost}
               </p>
               <div style={{ overflowX: "auto", marginTop: 8 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -325,7 +325,7 @@ export default function ArthurReadinessAdmin() {
                         <td style={td}>
                           {t.created_at
                             ? new Date(t.created_at).toLocaleString("fr-FR")
-                            : "—"}
+                            : "-"}
                         </td>
                         <td style={td}>
                           <button

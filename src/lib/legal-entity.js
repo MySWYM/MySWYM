@@ -16,7 +16,7 @@ export const LEGAL_ENTITY = {
   apeCode: "4791A",
   vatNumber: "TVA non applicable, article 293 B du CGI (franchise en base)",
   capital: "",
-  // Médiation — à remplacer une fois le médiateur choisi :
+  // Médiation, à remplacer une fois le médiateur choisi :
   mediatorName: "[MÉDIATEUR À CONFIRMER]",
   mediatorWebsite: "",
   mediatorAddress: "",

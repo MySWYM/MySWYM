@@ -15,7 +15,7 @@ interface Props {
   stats: ProgressSnapshot
 }
 
-/** Profile / home stats — progression sensation without overwhelm */
+/** Profile / home stats, progression sensation without overwhelm */
 export function ProgressStats({ stats }: Props) {
   const km = (stats.totalMeters / 1000).toFixed(1)
 
@@ -55,7 +55,7 @@ export function ProgressStats({ stats }: Props) {
         </p>
         <p className="cv-display cv:mt-1 cv:text-[24px] cv:text-cv-ink">{stats.bestWeekMeters} m</p>
         <p className="cv:mt-1 cv:text-[12px] cv:text-cv-ink-secondary">
-          Volume record — un signal clair de progression.
+          Volume record, un signal clair de progression.
         </p>
       </motion.div>
     </motion.div>

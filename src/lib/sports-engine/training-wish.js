@@ -1,5 +1,5 @@
 /**
- * Demande libre onboarding — parsing déterministe (pas de LLM).
+ * Demande libre onboarding, parsing déterministe (pas de LLM).
  * Soft preference pour le composeur / rôles ; stockage exploitable plus tard.
  */
 
@@ -94,7 +94,7 @@ export function parseTrainingWish(raw, { createdAt = null } = {}) {
 }
 
 /**
- * Hints soft pour composeur / rôles — jamais hard override.
+ * Hints soft pour composeur / rôles, jamais hard override.
  */
 export function trainingWishToHints(metaOrRaw, { equipmentOwned = null } = {}) {
   const meta =
@@ -186,7 +186,7 @@ export function applyWishStrokeToBrief(brief, hints) {
     return { ...brief, strokeFocus: "crawl" };
   }
   if (hints.preferStroke === "dos" || hints.preferStroke === "brasse") {
-    // Mixte avec dominante demandée — le composeur lit strokeFocus crawl/mixte/4n
+    // Mixte avec dominante demandée, le composeur lit strokeFocus crawl/mixte/4n
     return { ...brief, strokeFocus: "mixte", preferredStroke: hints.preferStroke };
   }
   return brief;

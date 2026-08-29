@@ -1,9 +1,9 @@
 /**
- * PerformanceStrategy — ce que le plan développe maintenant
+ * PerformanceStrategy, ce que le plan développe maintenant
  * (phase + capacité + échéance + diagnostic Race).
  *
  * Distinct de QualityToDevelop (= ce qui limite probablement).
- * Réutilise analyzeRaceWeek / RaceTarget / RaceGap — pas de 2e diagnostic.
+ * Réutilise analyzeRaceWeek / RaceTarget / RaceGap, pas de 2e diagnostic.
  */
 
 import { analyzeRaceWeek } from "./race-quality.js";
@@ -216,23 +216,23 @@ export function resolvePerformanceStrategy(ctx = {}) {
       }
     }
   } else {
-    // insufficient_data ou pas de cible — stratégie prudente selon phase / objectif / horizon
+    // insufficient_data ou pas de cible, stratégie prudente selon phase / objectif / horizon
     confidence = "low";
     if (objectif === "eau_libre") {
       primary = horizon === "specific_dominant" || horizon === "pre_race" ? "open_water_specificity" : "aerobic_capacity";
-      rationale = "no race chrono — prudent OW strategy from phase/horizon";
+      rationale = "no race chrono - prudent OW strategy from phase/horizon";
     } else if (objectif === "triathlon") {
       primary = horizon === "far" || phase === "base" ? "aerobic_capacity" : "economy";
-      rationale = "no race chrono — prudent triathlon swim economy/aerobic";
+      rationale = "no race chrono - prudent triathlon swim economy/aerobic";
     } else if (distance && distance >= 400) {
       primary = "aerobic_capacity";
-      rationale = "no current time — long-distance prudent aerobic_capacity";
+      rationale = "no current time - long-distance prudent aerobic_capacity";
     } else if (distance && distance <= 100) {
       primary = phase === "peak" || horizon === "specific_dominant" ? "race_pace" : "technical_efficiency";
-      rationale = "no current time — short-distance prudent (no invented paces)";
+      rationale = "no current time - short-distance prudent (no invented paces)";
     } else {
       primary = "aerobic_capacity";
-      rationale = "insufficient_data — prudent aerobic_capacity";
+      rationale = "insufficient_data - prudent aerobic_capacity";
     }
   }
 
@@ -247,14 +247,14 @@ export function resolvePerformanceStrategy(ctx = {}) {
       allowed,
     );
     if (bump !== primary) {
-      rationale += `; horizon 4–8w adds specificity ${primary}→${bump}`;
+      rationale += `; horizon 4-8w adds specificity ${primary}→${bump}`;
       primary = bump;
     }
   }
   if (horizon === "specific_dominant" && !taperLoad.taperStage) {
     if (primary === "aerobic_capacity") {
       primary = clampQualityToAllowed("race_pace", allowed);
-      rationale += `; horizon 2–4w → race_pace dominant`;
+      rationale += `; horizon 2-4w → race_pace dominant`;
     }
   }
 
@@ -268,16 +268,16 @@ export function resolvePerformanceStrategy(ctx = {}) {
       if (["speed", "specific_speed", "weak_stroke"].includes(primary)) {
         primary = clampQualityToAllowed("race_pace", allowed);
       }
-      rationale += `; taper S-3 — spécifique sans surcharge (${taperLoad.rationale})`;
+      rationale += `; taper S-3 - spécifique sans surcharge (${taperLoad.rationale})`;
     } else if (taperLoad.taperStage === "s2") {
       primary = clampQualityToAllowed("race_pace", allowed);
-      rationale += `; taper S-2 — volume↓ touches race pace (${taperLoad.rationale})`;
+      rationale += `; taper S-2 - volume↓ touches race pace (${taperLoad.rationale})`;
     } else if (taperLoad.taperStage === "s1" || taperLoad.taperStage === "race_week") {
       primary = clampQualityToAllowed("race_pace", allowed);
-      rationale += `; taper ${taperLoad.taperStage} — volume↓↓ intensité courte (${taperLoad.rationale})`;
+      rationale += `; taper ${taperLoad.taperStage} - volume↓↓ intensité courte (${taperLoad.rationale})`;
     } else if (taperLoad.taperStage === "race_day") {
       primary = "race_pace";
-      rationale += `; RACE DAY — pas d'entraînement volume`;
+      rationale += `; RACE DAY - pas d'entraînement volume`;
     }
     // Ne pas « corriger » une nage faible en dernière semaine
     if (limitingStroke && ["s1", "race_week", "race_day"].includes(taperLoad.taperStage)) {
@@ -295,7 +295,7 @@ export function resolvePerformanceStrategy(ctx = {}) {
   }
   if (phase === "test") {
     primary = "race_pace";
-    rationale = `phase=test — measure, not overload (${rationale})`;
+    rationale = `phase=test - measure, not overload (${rationale})`;
   }
 
   // Capacité bloque speed (hors taper court où on force déjà race_pace)
@@ -361,16 +361,16 @@ export function formatPerformanceStrategyExplain(strategy, target, raceAnalysis)
       );
     }
   } else {
-    lines.push(`RaceGap: ${raceAnalysis?.gap?.status || "n/a"} — no invented diagnosis`);
+    lines.push(`RaceGap: ${raceAnalysis?.gap?.status || "n/a"} - no invented diagnosis`);
   }
   lines.push(`Primary: ${strategy.primaryQuality}`);
-  lines.push(`Secondary: ${strategy.secondaryQuality || "—"}`);
+  lines.push(`Secondary: ${strategy.secondaryQuality || " - "}`);
   lines.push(`Confidence: ${strategy.confidence} · Priority: ${strategy.priority}`);
   if (strategy.horizonBand) {
     lines.push(`Horizon: ${strategy.horizonBand} (${strategy.weeksToComp ?? "?"}w)`);
   }
   if (strategy.taperStage) {
-    lines.push(`Taper: ${strategy.taperStage} · daysToComp=${strategy.daysToComp ?? "—"}`);
+    lines.push(`Taper: ${strategy.taperStage} · daysToComp=${strategy.daysToComp ?? " - "}`);
     if (strategy.taperLoad) {
       lines.push(
         `Load: vol×${strategy.taperLoad.volumeFactor} dens×${strategy.taperLoad.densityFactor} int×${strategy.taperLoad.intensityRetention} recup×${strategy.taperLoad.recoveryFactor}`,

@@ -1,6 +1,6 @@
 /**
  * Modèle de l’écran trophée post-génération (DA landing).
- * Lecture seule — ne touche pas au moteur.
+ * Lecture seule, ne touche pas au moteur.
  */
 import { buildWorkoutView } from "./workout-display.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
@@ -96,7 +96,7 @@ export function sessionCardModel(session) {
   const view = buildWorkoutView(session);
   const blocks = (view.sections || []).slice(0, 3).map((s) => ({
     label: s.label,
-    // Total du bloc (échauff / corps / RAC) — pas la 1ʳᵉ ligne d’exo
+    // Total du bloc (échauff / corps / RAC), pas la 1ʳᵉ ligne d’exo
     detail: s.metersLabel || (s.meters > 0 ? `${s.meters} m` : sectionDetail(s)),
   })).filter((b) => b.detail);
   return {

@@ -22,7 +22,7 @@ export function FrequencyScreen({ value, onChange, onNext, onBack, step, total }
       total={total}
       onBack={onBack}
       title="Combien de fois par semaine ?"
-      subtitle={`Gratuit jusqu’à ${freeMax}×. Au-delà, Premium débloque la charge complète — sans te bloquer maintenant.`}
+      subtitle={`Gratuit jusqu’à ${freeMax}×. Au-delà, Premium débloque la charge complète, sans te bloquer maintenant.`}
       footer={
         <Button fullWidth onClick={onNext}>
           Continuer
@@ -57,7 +57,7 @@ export function FrequencyScreen({ value, onChange, onNext, onBack, step, total }
       </div>
       <p className="cv:mt-4 cv:text-[13px] cv:leading-relaxed cv:text-cv-ink-secondary">
         {value > freeMax
-          ? `Tu vises ${value}× : on génère ton plan complet. Les semaines 1–4 restent accessibles ; la suite se débloque avec Premium.`
+          ? `Tu vises ${value}× : on génère ton plan complet. Les semaines 1-4 restent accessibles ; la suite se débloque avec Premium.`
           : `Parfait pour construire l’habitude. Tu pourras augmenter plus tard.`}
       </p>
     </ScreenShell>

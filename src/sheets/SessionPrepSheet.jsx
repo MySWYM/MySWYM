@@ -5,7 +5,7 @@ import { G } from "../theme/palette.js";
 import WorkoutPrepView from "../workout/WorkoutPrepView.jsx";
 
 /**
- * Préparation séance — sheet quasi plein écran (plus d’inline sur l’accueil).
+ * Préparation séance, sheet quasi plein écran (plus d’inline sur l’accueil).
  */
 export default function SessionPrepSheet({
   open,
@@ -132,7 +132,7 @@ export default function SessionPrepSheet({
             accent={accent}
             isPremium={isPremium}
             showStart
-            startLabel="C’est parti — je nage"
+            startLabel="C’est parti, je nage"
             profile={profile}
             planId={planId}
             whyLine={whyLine}

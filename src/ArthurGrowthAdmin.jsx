@@ -32,7 +32,7 @@ function ensureFonts() {
 }
 
 function pct(n) {
-  if (n == null || Number.isNaN(n)) return "—";
+  if (n == null || Number.isNaN(n)) return "-";
   return `${(n * 100).toFixed(1)}%`;
 }
 
@@ -150,7 +150,7 @@ export default function ArthurGrowthAdmin() {
           Chiffres
         </h1>
         <p style={{ margin: "8px 0 0", color: C.muted, maxWidth: 520 }}>
-          Combien de messages, d’inscriptions et d’abonnés payants — et d’où ça vient
+          Combien de messages, d’inscriptions et d’abonnés payants, et d’où ça vient
           (vidéos Instagram).
         </p>
       </header>
@@ -317,7 +317,7 @@ export default function ArthurGrowthAdmin() {
                         <td style={td}>{row.signup}</td>
                         <td style={td}>{row.premium}</td>
                         <td style={td}>{pct(row.conversion_dm_to_premium)}</td>
-                        <td style={td}>{row.avg_score ?? "—"}</td>
+                        <td style={td}>{row.avg_score ?? "-"}</td>
                       </tr>
                     ))}
                     {(data.by_reel || []).length === 0 ? (
@@ -359,18 +359,18 @@ export default function ArthurGrowthAdmin() {
                         <td style={td}>{l.status}</td>
                         <td style={td}>
                           <span style={{ color: bandColor(l.score_band), fontWeight: 700 }}>
-                            {l.score ?? "—"}
+                            {l.score ?? "-"}
                           </span>
                           {l.score_band ? ` ${l.score_band}` : ""}
                         </td>
-                        <td style={td}>{l.intent || "—"}</td>
-                        <td style={td}>{l.goal || "—"}</td>
-                        <td style={td}>{l.reel_id || "—"}</td>
-                        <td style={td}>{l.keyword || "—"}</td>
+                        <td style={td}>{l.intent || "-"}</td>
+                        <td style={td}>{l.goal || "-"}</td>
+                        <td style={td}>{l.reel_id || "-"}</td>
+                        <td style={td}>{l.keyword || "-"}</td>
                         <td style={td}>
                           {l.created_at
                             ? new Date(l.created_at).toLocaleDateString("fr-FR")
-                            : "—"}
+                            : "-"}
                         </td>
                       </tr>
                     ))}

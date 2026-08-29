@@ -1,5 +1,5 @@
 /**
- * Tests Optimization Loop F3 — qualité, analyse, CTA (pas d’envoi auto).
+ * Tests Optimization Loop F3, qualité, analyse, CTA (pas d’envoi auto).
  * Run: npm run test:arthur:optimize
  */
 import assert from "node:assert/strict";
@@ -8,7 +8,7 @@ import { analyzeConversation } from "./analyze.js";
 import { buildTrackedCtaUrl } from "./cta.js";
 import { isFollowupSendEnabled } from "../conversion/send.js";
 
-test("qualité strong — conseil + question", () => {
+test("qualité strong, conseil + question", () => {
   const r = scoreResponseQuality({
     message:
       "En crawl, garde la tête dans l’eau et respire toutes les 3 coulées. Tu nages combien de séances par semaine ?",
@@ -45,7 +45,7 @@ test("detect CTA types", () => {
   );
 });
 
-test("analyse — engaged sans CTA = finding", () => {
+test("analyse, engaged sans CTA = finding", () => {
   const a = analyzeConversation([
     { role: "user", content: "Salut" },
     { role: "assistant", content: "Hello, quel objectif ?" },
@@ -58,7 +58,7 @@ test("analyse — engaged sans CTA = finding", () => {
   assert.ok(a.recommendations.includes("add_soft_myswym_cta_when_goal_clear"));
 });
 
-test("analyse — CTA heavy", () => {
+test("analyse, CTA heavy", () => {
   const link = "https://myswym.app/inscription";
   const a = analyzeConversation([
     { role: "user", content: "hi" },

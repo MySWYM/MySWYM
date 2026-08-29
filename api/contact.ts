@@ -1,7 +1,7 @@
 /**
- * POST /api/contact — formulaire contact + avis landing + support in-app / Telegram.
+ * POST /api/contact, formulaire contact + avis landing + support in-app / Telegram.
  * Hobby = 12 fonctions max : ne pas ajouter api/landing-review.ts, api/support.ts
- * ni api/natation-sheet.ts — tout passe par ici (+ rewrites vercel.json).
+ * ni api/natation-sheet.ts, tout passe par ici (+ rewrites vercel.json).
  *
  * Support : GET|POST /api/contact?kind=app-support (JWT)
  * Telegram webhook : POST /api/telegram/webhook (rewrite) ou POST avec update_id
@@ -106,7 +106,7 @@ async function handleLandingReview(
       return res.status(500).json({ ok: false, error: "Enregistrement impossible pour le moment." });
     }
   } else {
-    console.warn("[api/contact] Supabase admin missing — e-mail only for review");
+    console.warn("[api/contact] Supabase admin missing, e-mail only for review");
   }
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -117,9 +117,9 @@ async function handleLandingReview(
         from: fromAddress(),
         to: [contactInbox()],
         replyTo: email || undefined,
-        subject: `[Avis] ${name} — ${rating}/5`,
+        subject: `[Avis] ${name}, ${rating}/5`,
         html: `<p>Nouvel avis en relecture (ne pas publier tel quel).</p>
-          <p><strong>${escapeHtml(name)}</strong> — ${rating}/5</p>
+          <p><strong>${escapeHtml(name)}</strong>, ${rating}/5</p>
           <p style="white-space:pre-wrap">${escapeHtml(text)}</p>
           <p>Publier : table <code>landing_reviews</code> → status = published.</p>`,
         tags: [{ name: "category", value: "landing-review" }],

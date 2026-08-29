@@ -1,5 +1,5 @@
 /**
- * update_user_profile — whitelist stricte, userId serveur uniquement.
+ * update_user_profile, whitelist stricte, userId serveur uniquement.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {

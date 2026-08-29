@@ -29,7 +29,7 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
           Ton essai est terminé
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          Tes séances sont en pause. Abonne-toi pour tout revoir — 9,99 €/mois sans engagement, 4,99 €/mois sur 12 mois, ou 52,99 €/an
+          Tes séances sont en pause. Abonne-toi pour tout revoir, 9,99 €/mois sans engagement, 4,99 €/mois sur 12 mois, ou 52,99 €/an
           {remaining > 0 ? ` · encore ${remaining} semaine${remaining > 1 ? 's' : ''} de plan` : ''}.
         </motion.p>
 
@@ -62,10 +62,10 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
             . L’accès immédiat peut faire perdre le droit de rétractation (voir CGV).
           </p>
           <Button fullWidth variant="premium" onClick={() => onSubscribe('monthly')}>
-            Continuer — {monthly.label}/mois
+            Continuer, {monthly.label}/mois
           </Button>
           <Button fullWidth variant="secondary" onClick={() => onSubscribe('annual')}>
-            Annuel — {annual.label} · pas de remboursement*
+            Annuel, {annual.label} · pas de remboursement*
           </Button>
           {onRestore ? (
             <button

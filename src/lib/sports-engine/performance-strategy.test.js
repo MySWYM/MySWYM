@@ -1,5 +1,5 @@
 /**
- * Tests Étape F — PerformanceStrategy → WeekRoles → Session
+ * Tests Étape F, PerformanceStrategy → WeekRoles → Session
  * Usage : node src/lib/sports-engine/performance-strategy.test.js
  */
 import {
@@ -155,7 +155,7 @@ assert(qualitiesForRaceDistance(100).includes("specific_speed"), "100 qualities"
 assert(qualitiesForRaceDistance(800).includes("aerobic_capacity"), "800 qualities");
 assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed");
 
-// 1 — Performance 100 déficit vitesse
+// 1, Performance 100 déficit vitesse
 {
   const roles = performanceWeekRoles(3, {
     objectifV1: "course_piscine",
@@ -182,7 +182,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assertPerfSession(r.session, briefPerf({ sessionIntent: "vitesse", qualitySession: true }));
 }
 
-// 2 — Performance 200 déficit endurance
+// 2, Performance 200 déficit endurance
 {
   const roles = performanceWeekRoles(3, {
     objectifV1: "course_piscine",
@@ -199,7 +199,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(["seuil", "allure_specifique"].includes(roles[1].sessionIntent), `t2 B ${roles[1].sessionIntent}`);
 }
 
-// 3 — Performance 400
+// 3, Performance 400
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -211,7 +211,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(!["speed", "specific_speed"].includes(s.primaryQuality), "t3 no speed");
 }
 
-// 4 — Performance 800
+// 4, Performance 800
 {
   const roles = performanceWeekRoles(3, {
     objectifV1: "course_piscine",
@@ -223,7 +223,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(["aerobic_capacity", "threshold", "specific_endurance", "race_pace"].includes(roles.performanceStrategy.primaryQuality), `t4 ${roles.performanceStrategy.primaryQuality}`);
 }
 
-// 5 — Performance 1500
+// 5, Performance 1500
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -234,7 +234,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(s.devExplain.includes("insufficient") || s.devExplain.includes("prudent") || s.devExplain.includes("RaceGap"), "t5 explain");
 }
 
-// 6 — Performance 200 4N nage limitante
+// 6, Performance 200 4N nage limitante
 {
   const roles = performanceWeekRoles(3, {
     objectifV1: "course_piscine",
@@ -249,7 +249,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(/quatre_nages|technique/.test(roles[0].sessionIntent + roles[1].sessionIntent), `t6 roles ${roleIntents(roles)}`);
 }
 
-// 7 — Performance eau libre
+// 7, Performance eau libre
 {
   const roles = performanceWeekRoles(3, {
     objectifV1: "eau_libre",
@@ -265,7 +265,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(roles.some((r) => r.sessionIntent === "eau_libre" || r.family === "eau_libre"), `t7 ${roleIntents(roles)}`);
 }
 
-// 8 — Performance triathlon
+// 8, Performance triathlon
 {
   const roles = performanceWeekRoles(3, {
     objectifV1: "triathlon",
@@ -275,7 +275,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(roles.some((r) => r.sessionIntent === "triathlon"), `t8 ${roleIntents(roles)}`);
 }
 
-// 9 — avec chrono
+// 9, avec chrono
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -288,7 +288,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(s.devExplain.includes("Gap:"), "t9 explain gap");
 }
 
-// 10 — sans chrono
+// 10, sans chrono
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -306,7 +306,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(roles.filter((r) => r.qualitySession).length <= 1, "t10 one quality");
 }
 
-// 11 — multi-splits
+// 11, multi-splits
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -319,7 +319,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(["high", "medium"].includes(s.confidence), `t11 conf ${s.confidence}`);
 }
 
-// 12 — gap important + bonne capacité → spécifique
+// 12, gap important + bonne capacité → spécifique
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -331,7 +331,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(["specific_endurance", "threshold", "race_pace"].includes(s.primaryQuality), `t12 ${s.primaryQuality}`);
 }
 
-// 13 — gap faible
+// 13, gap faible
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -343,7 +343,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(s.primaryQuality, "t13 primary");
 }
 
-// 14 — échéance >8 semaines
+// 14, échéance >8 semaines
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -364,7 +364,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(s.primaryQuality !== "specific_speed" && s.primaryQuality !== "speed", `t14 ${s.primaryQuality}`);
 }
 
-// 15 — échéance 4–8 semaines
+// 15, échéance 4-8 semaines
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",
@@ -375,7 +375,7 @@ assert(!qualitiesForRaceDistance(800).includes("specific_speed"), "800 no speed"
   assert(s.horizonBand === "build_specific", `t15 ${s.horizonBand}`);
 }
 
-// 16 — échéance 2–4 semaines
+// 16, échéance 2-4 semaines
 {
   const s = resolvePerformanceStrategy({
     objectifV1: "course_piscine",

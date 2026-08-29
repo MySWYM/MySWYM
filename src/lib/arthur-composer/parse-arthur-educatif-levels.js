@@ -2,7 +2,7 @@
  * Niveaux produit depuis le libellé Excel « niveau Arthur ».
  * Source de vérité pour la sélection d’éducatifs dans le composeur.
  *
- * Important : « régulier — adaptable à tous niveaux » ≠ « Tous niveaux ».
+ * Important : « régulier, adaptable à tous niveaux » ≠ « Tous niveaux ».
  * La découverte n’est ajoutée que si elle (ou « débutant ») est nommée,
  * ou via une note Excel explicite « pour les découvertes » (ex. grand chien).
  */
@@ -29,7 +29,7 @@ export function parseArthurEducatifLevels(levelLabel, opts = {}) {
 
   if (!t) return [];
 
-  // « Tous » / « Tous niveaux » en tête de disponibilité — pas « adaptable à tous niveaux »
+  // « Tous » / « Tous niveaux » en tête de disponibilité, pas « adaptable à tous niveaux »
   const adaptableTous = /adaptable\s+a\s+tous/.test(t);
   const isUniversal =
     !adaptableTous &&
@@ -52,7 +52,7 @@ export function parseArthurEducatifLevels(levelLabel, opts = {}) {
     out.add("performance");
   }
 
-  // « régulier — adaptable à tous » : prescrit aussi sportif/perf, pas découverte
+  // « régulier, adaptable à tous » : prescrit aussi sportif/perf, pas découverte
   if (adaptableTous) {
     out.add("regulier");
     out.add("sportif");
@@ -63,7 +63,7 @@ export function parseArthurEducatifLevels(levelLabel, opts = {}) {
     return ["regulier", "sportif", "performance"];
   }
 
-  // Notes Excel : tuba / cadre pour les découvertes (grand chien uniquement —
+  // Notes Excel : tuba / cadre pour les découvertes (grand chien uniquement , 
   // le petit chien reste hors Découverte, règle active 8).
   if (
     (id === "educatif_grand_chien" || /grand\s+chien/.test(normalize(id))) &&

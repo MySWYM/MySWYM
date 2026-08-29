@@ -215,7 +215,7 @@ export async function executeArthurTool(
         if (ctx.auth.channel === "instagram") {
           return toolFail("instagram_writes_disabled", {
             message:
-              "La création de plan se fait dans l’app MySWYM après inscription — pas depuis Instagram.",
+              "La création de plan se fait dans l’app MySWYM après inscription, pas depuis Instagram.",
           }) as Record<string, unknown>;
         }
         return (await createTrainingPlan(

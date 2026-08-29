@@ -1,5 +1,5 @@
 /**
- * Notification copy bank — retention without dark patterns.
+ * Notification copy bank, retention without dark patterns.
  * Wire to push / email / in-app later via Supabase + Edge Functions.
  */
 export type NotificationKind =
@@ -34,7 +34,7 @@ export const RETENTION_NOTIFICATIONS: NotificationTemplate[] = [
     title: 'Ta série de {streak} jours',
     body: 'Encore une séance aujourd’hui pour la garder. Tu es si près.',
     when: 'Si streak ≥ 3 et pas de séance à 20h',
-    why: 'Perte aversion douce — pas de culpabilisation',
+    why: 'Perte aversion douce, pas de culpabilisation',
   },
   {
     id: 'week_complete',
@@ -46,7 +46,7 @@ export const RETENTION_NOTIFICATIONS: NotificationTemplate[] = [
   {
     id: 'comeback',
     title: 'On reprend ensemble ?',
-    body: '3 jours sans nage — ta semaine {n} t’attend, sans jugement.',
+    body: '3 jours sans nage, ta semaine {n} t’attend, sans jugement.',
     when: 'J+3 inactivité',
     why: 'Réactivation bienveillante',
   },

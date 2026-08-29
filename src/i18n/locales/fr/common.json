@@ -77,7 +77,7 @@
     "notFoundMetaTitle": "Page introuvable | MySWYM",
     "notFoundMetaDesc": "Cette page n’existe pas. Retrouve l’accueil MySWYM ou crée ton plan.",
     "notFoundTitle": "Ce couloir est vide.",
-    "notFoundBody": "La page a dérivé — ou le lien n’existe plus. Reviens à l’accueil, ou crée ton plan.",
+    "notFoundBody": "La page a dérivé, ou le lien n’existe plus. Reviens à l’accueil, ou crée ton plan.",
     "notFoundHome": "Retour à l’accueil",
     "notFoundCta": "Créer mon plan",
     "notFoundAlt": "Loutre MySWYM perplexe, un point d’interrogation au-dessus de la tête",
@@ -85,7 +85,7 @@
     "thanksMetaDesc": "Nous avons bien reçu ton message. Réponse sous 24-48 h ouvrées.",
     "thanksKicker": "Contact",
     "thanksTitle": "C’est envoyé.",
-    "thanksBody": "Ton message est bien parti. On te répond sous 24–48 h ouvrées.",
+    "thanksBody": "Ton message est bien parti. On te répond sous 24-48 h ouvrées.",
     "thanksHome": "Retour à l’accueil",
     "thanksCta": "Créer mon plan",
     "thanksAlt": "Loutre MySWYM joyeuse qui éclabousse l’eau",
@@ -157,7 +157,7 @@
     "pageStatusNone": "aucun paramétrage enregistré pour le moment. Utilisez les boutons ci-dessous ou les interrupteurs.",
     "pageStatusAll": "mesure d’audience et performance acceptées.",
     "pageStatusNoneOptional": "traceurs non essentiels refusés.",
-    "pageStatusMixed": "choix personnalisé — mesure d’audience {{analytics}}, performance {{performance}}.",
+    "pageStatusMixed": "choix personnalisé, mesure d’audience {{analytics}}, performance {{performance}}.",
     "pageSaved": "Votre choix a été enregistré. Il s’applique immédiatement sur cet appareil.",
     "pageNote": "Vous pouvez modifier ce choix à tout moment, ici ou via « Gérer les cookies » en pied de page. Le retrait du consentement n’a pas d’effet rétroactif (RGPD, art. 7.3)."
   }

@@ -1,6 +1,6 @@
 @import "../theme/session-card.css";
 
-/* DA landing — bassin nuit #000514 + bleu logo #006bfd. Scopé à .lp-root. */
+/* DA landing, bassin nuit #000514 + bleu logo #006bfd. Scopé à .lp-root. */
 
 .lp-root {
   --lp-bg: #000514;
@@ -1560,7 +1560,7 @@ body:has(.lp-root) {
   text-decoration: underline;
 }
 
-/* Coach — mobile first (20–24px, photo contrainte, CTA pleine largeur) */
+/* Coach, mobile first (20-24px, photo contrainte, CTA pleine largeur) */
 .lp-coach-section.lp-section {
   padding-top: 3.5rem;
   padding-bottom: 3.5rem;
@@ -1632,7 +1632,7 @@ body:has(.lp-root) {
   line-height: 1.55;
 }
 
-/* Coach — web : 2 colonnes, air type Stripe/Linear, photo à droite */
+/* Coach, web : 2 colonnes, air type Stripe/Linear, photo à droite */
 @media (min-width: 1024px) {
   .lp-coach-section.lp-section {
     padding-top: 6.5rem;

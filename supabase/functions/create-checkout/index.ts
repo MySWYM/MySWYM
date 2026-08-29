@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
-/** IDs retirés / test — ne pas les préférer aux defaults Live via secrets périmés. */
+/** IDs retirés / test, ne pas les préférer aux defaults Live via secrets périmés. */
 const RETIRED_PRICE_IDS = new Set([
   "price_1U67kYAS4mfgF2Twaw269yaU",
   "price_1U67kZAS4mfgF2Twi5Px8ZvG",
@@ -102,7 +102,7 @@ function corsHeaders(reqOrigin: string | null) {
 function stripeErrorMessage(err: unknown): string {
   const e = err as { type?: string; code?: string; message?: string };
   if (e?.code === "resource_missing" || /No such price/i.test(e?.message ?? "")) {
-    return "Offre Stripe introuvable — les IDs de prix ne correspondent pas au compte Stripe.";
+    return "Offre Stripe introuvable, les IDs de prix ne correspondent pas au compte Stripe.";
   }
   if (e?.message) return e.message;
   if (err instanceof Error) return err.message;
@@ -159,7 +159,7 @@ async function resolveCustomerId(user: AuthUser): Promise<string | undefined> {
       const c = await stripe.customers.retrieve(stored);
       if (!(c as { deleted?: boolean }).deleted) return stored;
     } catch {
-      // ID périmé — recherche par email
+      // ID périmé, recherche par email
     }
   }
   if (!user.email) return undefined;

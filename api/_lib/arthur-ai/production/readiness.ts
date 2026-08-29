@@ -83,7 +83,7 @@ export async function buildReadinessReport(
 
   return {
     phase: "G",
-    note: "Production readiness — envois auto non activés sans validation",
+    note: "Production readiness, envois auto non activés sans validation",
     flags,
     rate_limits: rate,
     cost_budget: getCostBudgetConfig(),
@@ -101,9 +101,9 @@ export async function buildReadinessReport(
       "Tester offline (ARTHUR_FLAG_OFFLINE=1) avant incident",
       "Process human takeover documenté (admin release)",
       "Ne pas activer ARTHUR_FOLLOWUPS_SEND avant validation F2 métriques",
-      "Ne pas activer ARTHUR_INSTAGRAM_LIVE_SEND — garder Shadow Mode H1",
+      "Ne pas activer ARTHUR_INSTAGRAM_LIVE_SEND, garder Shadow Mode H1",
       "Valider propositions shadow sur /admin/arthur-shadow",
-      "Vercel maxDuration api/ai/* déjà 60s — surveiller timeouts",
+      "Vercel maxDuration api/ai/* déjà 60s, surveiller timeouts",
       "Séparer mock Instagram en staging",
     ],
   };

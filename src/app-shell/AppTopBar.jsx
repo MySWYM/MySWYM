@@ -10,7 +10,7 @@ import {
 } from "../lib/in-app-notifications.js";
 import NotificationsSheet from "../sheets/NotificationsSheet.jsx";
 
-/** Barre haute commune (logo + paramètres) — Accueil / Programme / Profil */
+/** Barre haute commune (logo + paramètres), Accueil / Programme / Profil */
 export default function AppTopBar({
   user,
   onOpenMenu,

@@ -127,7 +127,7 @@ async function processOneInstagramMessage(
     return "shadow";
   }
 
-  // Live path — double gate déjà passée (SHADOW=0 + LIVE_SEND=1)
+  // Live path, double gate déjà passée (SHADOW=0 + LIVE_SEND=1)
   const send = await sendInstagramTextMessage({
     recipientId: msg.senderId,
     text: result.message,

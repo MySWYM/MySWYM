@@ -78,7 +78,7 @@ export default function PlanRevealView({
                   ))}
                 </div>
                 <div className="ms-plan-reveal-bars-cap">
-                  <span>S1 — base</span>
+                  <span>S1, base</span>
                   <span>Essai 7j</span>
                   <span>Suite · Premium</span>
                 </div>

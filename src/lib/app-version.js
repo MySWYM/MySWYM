@@ -1,5 +1,5 @@
 /**
- * Version Gate — comparaison semver (MAJOR.MINOR.PATCH).
+ * Version Gate, comparaison semver (MAJOR.MINOR.PATCH).
  * CURRENT_APP_VERSION est injectée au build (Vite). La version minimale
  * requise vient du serveur (`/api/app-version`), pas du localStorage.
  */
@@ -9,7 +9,7 @@ export const CURRENT_APP_VERSION =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_VERSION) ||
   "1.0.0";
 
-/** Fallback local si l’API est injoignable — ne force jamais au-dessus du client. */
+/** Fallback local si l’API est injoignable, ne force jamais au-dessus du client. */
 export const BUILTIN_MIN_SUPPORTED_APP_VERSION = "1.0.0";
 
 /**

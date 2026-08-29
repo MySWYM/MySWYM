@@ -31,13 +31,13 @@ export const SHEET_FAMILIES = Object.freeze([
 
 export const EDUCATIFS_SHEET = "Éducatifs";
 
-/** Familles branchées soft — Nager + tout triathlon/OW du Sheet (01–13). Diplômes = hors Sheet. */
+/** Familles branchées soft, Nager + tout triathlon/OW du Sheet (01-13). Diplômes = hors Sheet. */
 export const SHEET_SOFT_FAMILIES = Object.freeze([...SHEET_FAMILIES]);
 
 /** Fenêtre anti-doublon : ne pas retraiter ces N dernières séances Sheet. */
 export const SHEET_RECENT_EXCLUDE = 10;
 
-/** Fenêtre anti-doublon éducatifs (onglet Éducatifs) — plus courte : pool souvent petit. */
+/** Fenêtre anti-doublon éducatifs (onglet Éducatifs), plus courte : pool souvent petit. */
 export const SHEET_RECENT_EDUCATIFS = 5;
 
 /** Ordre IM pour les séances « 4 nages + éducatifs ». */
@@ -199,7 +199,7 @@ export function parseSessionsCsv(csvText, opts = {}) {
   const rows = parseCsv(csvText);
   if (rows.length < 2) return [];
   const header = rows[0].map((h) => String(h || "").trim().toLowerCase());
-  // Header row0 may glue title into first cell — detect columns by known names
+  // Header row0 may glue title into first cell, detect columns by known names
   const findCol = (names) => {
     for (const n of names) {
       const exact = header.findIndex((h) => h === n);
@@ -327,7 +327,7 @@ export function sessionHasFourNagesEducatifs(session) {
     .some((line) => lineHasFourNagesEducatifs(line));
 }
 
-/** Noms d’éducatifs déjà vus (historique + optionnel courant) — plus récents d’abord. */
+/** Noms d’éducatifs déjà vus (historique + optionnel courant), plus récents d’abord. */
 export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_EDUCATIFS) {
   const list = Array.isArray(history) ? history : [];
   const names = [];
@@ -425,7 +425,7 @@ export function pickFourNagesEducatifs(educatifs, opts, rng = Math.random) {
   return { ...byStroke, list };
 }
 
-/** Libellé des 4 noms (distances inchangées — on ne touche qu’aux noms). */
+/** Libellé des 4 noms (distances inchangées, on ne touche qu’aux noms). */
 export function formatFourNagesEducatifsLabel(byStroke) {
   return FOUR_NAGES_STROKES.map((stroke) => {
     const nom = byStroke?.[stroke]?.nom || "éducatif";
@@ -594,26 +594,26 @@ export function educatifRowToUiFiche(row) {
   };
 }
 
-/** Objectifs Triathlon XS / Sprint (onglets Sheet 04–06). */
+/** Objectifs Triathlon XS / Sprint (onglets Sheet 04-06). */
 export function isXsSprintGoal(goal) {
   const g = String(goal || "").toLowerCase();
   return g === "triathlon_xs" || g === "triathlon_sprint";
 }
 
-/** Objectifs Triathlon Oly / Half / Full (onglets Sheet 07–08). */
+/** Objectifs Triathlon Oly / Half / Full (onglets Sheet 07-08). */
 export function isOlyHalfFullGoal(goal) {
   const g = String(goal || "").toLowerCase();
   return g === "triathlon_olympic" || g === "triathlon_half" || g === "triathlon_ironman";
 }
 
-/** Objectifs eau libre (onglets Sheet 09–13). */
+/** Objectifs eau libre (onglets Sheet 09-13). */
 export function isOpenWaterGoal(goal) {
   const g = String(goal || "").toLowerCase();
   return g.startsWith("open_water") || g.startsWith("eau_libre");
 }
 
 /** Mappe profil MySWYM → id feuille Sheet.
- * Soft : Nager 01–03 + triathlon 04–08 + eau libre 09–13.
+ * Soft : Nager 01-03 + triathlon 04-08 + eau libre 09-13.
  * Diplômes / autres = null → composeur.
  */
 export function sheetFamilyIdFromProfile(profile = {}) {
@@ -698,7 +698,7 @@ export function levelBandFromProfile(profile = {}) {
 export function phaseFromLoopCursor(cursor, isEventFamily) {
   if (!isEventFamily) return null;
   // Legacy : préférer resolveSheetWeekRole (calendrier S0 / cycle).
-  // Conservé pour compat tests / appels anciens — curseur 0/1 ≠ produit Arthur.
+  // Conservé pour compat tests / appels anciens, curseur 0/1 ≠ produit Arthur.
   const c = Math.max(0, Number(cursor) || 0);
   if (c === 0) return "test";
   if (c === 1) return "deload";

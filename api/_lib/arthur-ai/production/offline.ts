@@ -1,5 +1,5 @@
 /**
- * Fallback offline Arthur — conseiller conversationnel (Phase G / Shadow H1).
+ * Fallback offline Arthur, conseiller conversationnel (Phase G / Shadow H1).
  */
 import { inferIntentHeuristic, fallbackStructured } from "../intent.js";
 import type { ArthurStructuredOutput } from "../types.js";
@@ -38,7 +38,7 @@ export function buildOfflineResponse(
 
   if (opts.reason === "rate_limited") {
     structured = fallbackStructured(
-      "Tu m’envoies beaucoup de messages — je prends un court break pour rester utile. Reviens dans un moment.",
+      "Tu m’envoies beaucoup de messages, je prends un court break pour rester utile. Reviens dans un moment.",
     );
     structured.suggested_action = "continue";
   } else if (opts.reason === "cost_budget_hard") {
@@ -49,7 +49,7 @@ export function buildOfflineResponse(
     structured.suggested_action = "continue";
   } else if (opts.reason === "channel_disabled") {
     structured = fallbackStructured(
-      `Arthur est momentanément indisponible sur ce canal. En attendant : ${APP()} — ou ${"contact@myswym.app"}.`,
+      `Arthur est momentanément indisponible sur ce canal. En attendant : ${APP()}, ou ${"contact@myswym.app"}.`,
     );
     structured.suggested_action = "continue";
   } else if (isLegitimateHandoffDm(userMessage)) {
@@ -76,7 +76,7 @@ export function buildOfflineResponse(
     } else {
       structured = fallbackStructured(
         tip ||
-          "Dis-moi ton objectif natation ou ce que tu veux comprendre sur MySWYM — je t’oriente.",
+          "Dis-moi ton objectif natation ou ce que tu veux comprendre sur MySWYM : je t’oriente.",
       );
       structured.intent = intent;
       structured.suggested_action = "continue";

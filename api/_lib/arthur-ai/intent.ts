@@ -1,5 +1,5 @@
 /**
- * Structured output Arthur AI — schéma + parsing.
+ * Structured output Arthur AI, schéma + parsing.
  */
 import type {
   ArthurIntent,
@@ -164,7 +164,7 @@ export function parseArthurStructuredOutput(raw: string): ArthurStructuredOutput
   const message =
     typeof obj.message === "string" && obj.message.trim()
       ? obj.message.trim()
-      : "OK — dis-moi ton objectif et ton niveau, je te guide.";
+      : "OK, dis-moi ton objectif et ton niveau, je te guide.";
 
   return {
     message,
@@ -188,7 +188,7 @@ export function fallbackStructured(message: string): ArthurStructuredOutput {
   };
 }
 
-/** Heuristique locale (tests / mock) — n’appelle pas OpenAI. */
+/** Heuristique locale (tests / mock), n’appelle pas OpenAI. */
 export function inferIntentHeuristic(message: string): ArthurIntent {
   const lower = message.toLowerCase();
   if (/crawl|technique|respiration|virage|coulée|godille|coude|catch|progresser/.test(lower)) {

@@ -1,5 +1,5 @@
 /**
- * Tests Shadow H1 — conseiller conversationnel + ignore/handoff + multi-tours.
+ * Tests Shadow H1, conseiller conversationnel + ignore/handoff + multi-tours.
  * Run: npm run test:arthur:shadow
  */
 import assert from "node:assert/strict";
@@ -102,7 +102,7 @@ test("kebab → ignore, brouillon vide, pas handoff", () => {
   }
 });
 
-test("handoff légitime — texte exact", () => {
+test("handoff légitime, texte exact", () => {
   assert.equal(isLegitimateHandoffDm("Je veux un remboursement"), true);
   assert.equal(isLegitimateHandoffDm("Je veux parler à un humain"), true);
   assert.equal(isLegitimateHandoffDm("Problème de paiement sur mon compte"), true);

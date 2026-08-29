@@ -16,7 +16,7 @@ export function ContactNotificationEmail({
   message,
 }: ContactNotificationEmailProps) {
   return (
-    <EmailLayout preview={`Contact MySWYM — ${subject}`} eyebrow="Support">
+    <EmailLayout preview={`Contact MySWYM : ${subject}`} eyebrow="Support">
       <Text style={emailText.h1}>Nouveau message contact</Text>
       <Text style={emailText.p}>
         <strong style={emailText.strong}>De :</strong> {name} ({email})

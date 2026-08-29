@@ -1,5 +1,5 @@
 /**
- * Tests banque canonique éducatifs (étape 2) — non branchée au générateur.
+ * Tests banque canonique éducatifs (étape 2), non branchée au générateur.
  * Usage : node src/lib/swim-banks/canonical-drills.test.js
  */
 import {

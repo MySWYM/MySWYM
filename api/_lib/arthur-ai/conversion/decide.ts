@@ -1,5 +1,5 @@
 /**
- * Moteur de décision relances — pure function (testable).
+ * Moteur de décision relances, pure function (testable).
  * Ne spamme jamais : suppress avant plan.
  */
 import {
@@ -62,7 +62,7 @@ function hoursFromNow(hours: number, now: Date): string {
   return bumpOutOfQuietHours(d).toISOString();
 }
 
-/** Décale hors quiet hours (Europe approximative UTC+1/+2 non gérée — simple local offset via UTC hours). */
+/** Décale hors quiet hours (Europe approximative UTC+1/+2 non gérée, simple local offset via UTC hours). */
 export function bumpOutOfQuietHours(date: Date): Date {
   const d = new Date(date.getTime());
   // Utilise l’heure UTC+2 approximative (CEST) pour F2 ; suffisant pour éviter 22h–8h locales FR été.

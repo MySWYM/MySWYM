@@ -1,6 +1,6 @@
 /**
  * Tracking CTA Instagram / MySWYM (F3).
- * Pas d’envoi automatique — observation + attribution.
+ * Pas d’envoi automatique, observation + attribution.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";

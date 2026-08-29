@@ -12,7 +12,7 @@ function formatTrialEndDate(iso) {
 }
 
 /**
- * Accueil — décompte essai 7 jours + CTA conversion.
+ * Accueil, décompte essai 7 jours + CTA conversion.
  * Copy bénéfice → urgence douce → prix ancré.
  */
 export default function TrialCountdownBanner({
@@ -33,13 +33,13 @@ export default function TrialCountdownBanner({
   let cta;
   if (days === 1) {
     title = "Dernier jour pour tout garder";
-    body = "Demain, tes séances passent en pause. Garde ton plan, tes allures et ton coach — dès aujourd’hui.";
+    body = "Demain, tes séances passent en pause. Garde ton plan, tes allures et ton coach, dès aujourd’hui.";
     cta = "Garder mon programme";
   } else if (days === 2) {
     title = "Plus que 2 jours d’entraînement guidé";
     body = endLabel
-      ? `Le ${endLabel}, l’essai s’arrête. Continue sans perdre ta progression — dès ${priceFrom}/mois.`
-      : `L’essai s’arrête bientôt. Continue sans perdre ta progression — dès ${priceFrom}/mois.`;
+      ? `Le ${endLabel}, l’essai s’arrête. Continue sans perdre ta progression, dès ${priceFrom}/mois.`
+      : `L’essai s’arrête bientôt. Continue sans perdre ta progression, dès ${priceFrom}/mois.`;
     cta = "Continuer Premium";
   } else if (days === 3) {
     title = "3 jours pour verrouiller ton rythme";

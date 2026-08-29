@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
       });
       if (metaErr) {
         console.error("[reactivate-nonpayers] metadata update failed:", user.id.slice(0, 8), metaErr.message);
-        // mail already sent — still count as sent to avoid re-send storms
+        // mail already sent, still count as sent to avoid re-send storms
       }
 
       sent.push({ id: user.id, email: maskEmail(email), resendId: result.id });

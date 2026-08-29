@@ -55,7 +55,7 @@
   },
   "level": {
     "title": "What's your current swimming level?",
-    "lead": "Pick the one that describes you today — not the one you’re aiming for.",
+    "lead": "Pick the one that describes you today, not the one you’re aiming for.",
     "découverte": { "label": "Getting started", "desc": "I stop after a few lengths" },
     "régulier": { "label": "Beginner", "desc": "I can swim lengths, but I’m still learning" },
     "sportif": { "label": "Intermediate", "desc": "I’m comfortable in the pool, but I want to improve" },
@@ -71,12 +71,12 @@
   },
   "frequency": {
     "title": "Sessions per week",
-    "lead": "Your Premium trial unlocks the full training load from day one. We assume a 25 m pool — you can change pool, gear and strokes later in Profile.",
+    "lead": "Your Premium trial unlocks the full training load from day one. We assume a 25 m pool, you can change pool, gear and strokes later in Profile.",
     "n": "{{count}}× / week"
   },
   "physique": {
     "title": "Your profile",
-    "lead": "Date of birth, weight and height — to better adapt your plan.",
+    "lead": "Date of birth, weight and height, to better adapt your plan.",
     "birth": "Birth",
     "day": "Day",
     "month": "Month",
@@ -125,7 +125,7 @@
   },
   "equipment": {
     "title": "What equipment do you have?",
-    "lead": "You can tick several, or none. We only use gear you have — never kit you don’t.",
+    "lead": "You can tick several, or none. We only use gear you have, never kit you don’t.",
     "none": "No equipment",
     "noneHint": "I swim without fins, kickboard, etc.",
     "available": "Available equipment",
@@ -140,14 +140,14 @@
   },
   "distance": {
     "title": "What distance do you want to swim on average per session?",
-    "lead": "No need to be exact — just the distance you usually like to swim.",
+    "lead": "No need to be exact, just the distance you usually like to swim.",
     "label": "Average distance per session",
     "aria": "Average distance per session"
   },
   "prefs": {
     "title": "Your strokes",
-    "lead": "Tell us what you prefer — we’ll shape your sessions around it.",
-    "leadOpen": "Tell us your favourite stroke — in triathlon and open water we mostly work freestyle.",
+    "lead": "Tell us what you prefer, we’ll shape your sessions around it.",
+    "leadOpen": "Tell us your favourite stroke, in triathlon and open water we mostly work freestyle.",
     "style": "Preferred style",
     "stroke": "Favourite stroke",
     "crawl": { "label": "Freestyle", "desc": "I mostly like to swim freestyle" },
@@ -180,7 +180,7 @@
     "resetTitle": "Forgot password",
     "loginLead": "Log in with Google or your email.",
     "registerLead": "7-day trial, no card. Then your sessions pause.",
-    "registerReferral": "Referral code {{code}} — 20% off your first Premium invoice.",
+    "registerReferral": "Referral code {{code}} : 20% off your first Premium invoice.",
     "resetLead": "Enter your email and we’ll send a reset link.",
     "loginCta": "Log in",
     "registerCta": "Create my account",
@@ -202,7 +202,7 @@
     "needChecks": "Confirm you are 18+ and accept the terms / privacy policy to create an account.",
     "exists": "An account already exists with this email.",
     "created": "Account created! Check your email to confirm, then log in.",
-    "createdReferral": "Account created! Referral saved — check your email, then log in.",
+    "createdReferral": "Account created! Referral saved, check your email, then log in.",
     "resetSent": "Email sent! Check your inbox to reset your password.",
     "genericError": "Something went wrong.",
     "socialOff": "This sign-in method isn’t enabled yet. Try email, or come back in a moment.",

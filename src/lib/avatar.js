@@ -1,5 +1,5 @@
 /**
- * Photo de profil — Storage bucket `avatars` + user_metadata.avatar_url.
+ * Photo de profil, Storage bucket `avatars` + user_metadata.avatar_url.
  * Source de vérité cross-device : URL publique Supabase (pas localStorage seul).
  */
 import { supabase } from "../supabase.js";
@@ -102,7 +102,7 @@ async function syncBuddyAvatar(userId, avatarUrl) {
       .from("buddy_profiles")
       .update({ avatar_url: avatarUrl || null })
       .eq("user_id", userId);
-  } catch { /* table / RLS — ne bloque pas le profil app */ }
+  } catch { /* table / RLS, ne bloque pas le profil app */ }
 }
 
 /**

@@ -1,4 +1,4 @@
-/** Shared brand tokens for MySWYM emails — aligned with public.css DA. */
+/** Shared brand tokens for MySWYM emails, aligned with public.css DA. */
 export const emailBrand = {
   /** Page background (light for inbox readability) */
   bg: "#f4f8fa",
@@ -24,7 +24,7 @@ export const emailBrand = {
   logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
   logoOnLight: "https://www.myswym.app/logo-myswym-on-light.png",
   tagline: "ton coach natation",
-  /** Pricing — source: src/lib/pricing.js */
+  /** Pricing, source: src/lib/pricing.js */
   pricingLine:
     "9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an",
   pricingShort: "dès 4,99 €/mois",

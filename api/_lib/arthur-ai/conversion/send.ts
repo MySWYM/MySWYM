@@ -1,5 +1,5 @@
 /**
- * Envoi followup Instagram — **gated**.
+ * Envoi followup Instagram, **gated**.
  *
  * ARTHUR_FOLLOWUPS_SEND=1 requis pour tout envoi (mock ou live).
  * Sans ce flag : refuse (mesure / plan only).
@@ -74,7 +74,7 @@ export async function sendApprovedFollowup(
     return {
       ok: false,
       error:
-        "sends_disabled — définir ARTHUR_FOLLOWUPS_SEND=1 après validation explicite",
+        "sends_disabled, définir ARTHUR_FOLLOWUPS_SEND=1 après validation explicite",
     };
   }
 
@@ -118,7 +118,7 @@ export async function sendApprovedFollowup(
       sendResult = { ok: true, mock: true, messageId: `followup_mock_${Date.now()}` };
     }
   } else {
-    // LIVE — uniquement si credentials Meta présents
+    // LIVE, uniquement si credentials Meta présents
     sendResult = await sendInstagramTextMessage({
       recipientId: row.external_user_id,
       text: row.message_preview,

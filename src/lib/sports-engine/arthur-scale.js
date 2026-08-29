@@ -1,5 +1,5 @@
 /**
- * Scaling Arthur réel — adapte les séries (reps ou distance), pas seulement le total annoncé.
+ * Scaling Arthur réel, adapte les séries (reps ou distance), pas seulement le total annoncé.
  */
 import { calcDetailsDistance } from "../swim-session-generator.js";
 

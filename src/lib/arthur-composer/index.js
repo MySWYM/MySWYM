@@ -1,5 +1,5 @@
 /**
- * Helpers pédagogiques Arthur — données / brouillon.
+ * Helpers pédagogiques Arthur, données / brouillon.
  * Le produit utilise un seul générateur : `composeSession` (session-composer)
  * + flags `pedagogy-flags.js`. Ne pas brancher un 2e parcours UI.
  */

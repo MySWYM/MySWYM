@@ -77,7 +77,7 @@
     "notFoundMetaTitle": "Page not found | MySWYM",
     "notFoundMetaDesc": "This page doesn’t exist. Go back to MySWYM home or create your plan.",
     "notFoundTitle": "This lane is empty.",
-    "notFoundBody": "The page drifted off — or the link is gone. Head home, or create your plan.",
+    "notFoundBody": "The page drifted off, or the link is gone. Head home, or create your plan.",
     "notFoundHome": "Back to home",
     "notFoundCta": "Create my plan",
     "notFoundAlt": "Puzzled MySWYM otter with a question mark above its head",
@@ -85,7 +85,7 @@
     "thanksMetaDesc": "We’ve received your message. We’ll reply within 24-48 business hours.",
     "thanksKicker": "Contact",
     "thanksTitle": "It’s sent.",
-    "thanksBody": "Your message is on its way. We’ll reply within 24–48 business hours.",
+    "thanksBody": "Your message is on its way. We’ll reply within 24-48 business hours.",
     "thanksHome": "Back to home",
     "thanksCta": "Create my plan",
     "thanksAlt": "Happy MySWYM otter splashing in the water",
@@ -157,7 +157,7 @@
     "pageStatusNone": "no setting saved yet. Use the buttons below or the switches.",
     "pageStatusAll": "analytics and performance accepted.",
     "pageStatusNoneOptional": "non-essential trackers refused.",
-    "pageStatusMixed": "custom choice — analytics {{analytics}}, performance {{performance}}.",
+    "pageStatusMixed": "custom choice, analytics {{analytics}}, performance {{performance}}.",
     "pageSaved": "Your choice has been saved. It applies immediately on this device.",
     "pageNote": "You can change this at any time, here or via “Manage cookies” in the footer. Withdrawing consent is not retroactive (GDPR, art. 7.3)."
   }

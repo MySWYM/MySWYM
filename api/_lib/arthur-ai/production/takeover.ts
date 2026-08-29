@@ -1,5 +1,5 @@
 /**
- * Human takeover — pause Arthur, main humaine (Phase G).
+ * Human takeover, pause Arthur, main humaine (Phase G).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";
@@ -11,7 +11,7 @@ import {
   isLegitimateHandoffDm,
 } from "../shadow/reply-policy.js";
 
-/** @deprecated préférer isLegitimateHandoffDm — conservé pour imports existants. */
+/** @deprecated préférer isLegitimateHandoffDm, conservé pour imports existants. */
 export function detectsHumanTakeoverRequest(message: string): boolean {
   return isLegitimateHandoffDm(message);
 }

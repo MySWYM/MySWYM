@@ -1,5 +1,5 @@
 /**
- * Composeur brouillon Arthur — sessions complètes hors générateur runtime.
+ * Composeur brouillon Arthur, sessions complètes hors générateur runtime.
  *
  * Principe non négociable (Arthur 2026-08-15) :
  * **Du fun dans tout l’entraînement et dans tous les entraînements.**
@@ -107,7 +107,7 @@ function restCue(level, hard = false) {
 function effortCue(objective, part) {
   if (part === "warm") return "mise en route, facile";
   if (part === "cool") return "retour au calme, sans forcer";
-  if (part === "tech") return "facile, sans forcer — focus geste";
+  if (part === "tech") return "facile, sans forcer - focus geste";
   if (objective === "sprint") return "rapide, récupération complète";
   if (objective === "vitesse") return "soutenu, technique propre";
   if (objective === "seuil") return "allure tenue, régulière";
@@ -117,16 +117,16 @@ function effortCue(objective, part) {
 }
 
 function longRestCue(level) {
-  return level === "decouverte" ? "repos 40s entre les blocs" : "repos 45–60s entre les blocs";
+  return level === "decouverte" ? "repos 40s entre les blocs" : "repos 45-60s entre les blocs";
 }
 
-/** Bloc contraste réutilisable — injecte du fun (jambes / éducatif / facile). */
+/** Bloc contraste réutilisable, injecte du fun (jambes / éducatif / facile). */
 function funContrastLine(p, cycles, rest) {
-  return `${cycles} × (${p * 2} m jambes crawl · ${p} m éducatif au choix · ${p} m crawl facile) — ${rest}`;
+  return `${cycles} × (${p * 2} m jambes crawl · ${p} m éducatif au choix · ${p} m crawl facile) - ${rest}`;
 }
 
 /**
- * Formats d’éducatif (brouillon) — prescriptions tableur souvent incomplètes.
+ * Formats d’éducatif (brouillon), prescriptions tableur souvent incomplètes.
  * Multiples du bassin uniquement. On alterne formats pour éviter la monotonie.
  */
 function formatDrillSet(rng, { pool, level, budget }) {
@@ -236,7 +236,7 @@ function buildWarmup(rng, { level, objective, pool, budget }) {
     const total = recipe.total;
     return {
       distance: total,
-      lines: [line(`${total} m — ${recipe.line} — ${cue}`)],
+      lines: [line(`${total} m - ${recipe.line} - ${cue}`)],
       recipeId: recipe.id,
     };
   }
@@ -246,7 +246,7 @@ function buildWarmup(rng, { level, objective, pool, budget }) {
     const total = pick(rng, choices.length ? choices : [200]) || 200;
     return {
       distance: total,
-      lines: [line(`${total} m ${recipe.label} — ${cue}`)],
+      lines: [line(`${total} m ${recipe.label} - ${cue}`)],
       recipeId: recipe.id,
     };
   }
@@ -263,15 +263,15 @@ function buildWarmup(rng, { level, objective, pool, budget }) {
   const n = Math.max(1, Math.round(total / recipe.cycleM));
   const actual = n * recipe.cycleM;
   const parts = (recipe.parts || []).join(" + ");
-  const warmLines = [line(`${actual} m — ${n} × (${parts}) — ${cue}`)];
+  const warmLines = [line(`${actual} m - ${n} × (${parts}) - ${cue}`)];
   // Toujours un zeste de fun dès l’échauffement si le budget le permet
   if (actual + 50 <= budget + 50 && level !== "performance") {
-    // petit jeu optionnel inclus dans le même volume si possible — sinon skip
+    // petit jeu optionnel inclus dans le même volume si possible, sinon skip
   }
   if (rng() > 0.35 && actual >= 200) {
     // reformule la dernière longueur en jeu plutôt qu’ajouter du volume
     warmLines[0] = line(
-      `${actual} m — ${n} × (${parts}) — ${cue} — dernière longueur : glisse la plus longue possible`,
+      `${actual} m - ${n} × (${parts}) - ${cue} - dernière longueur : glisse la plus longue possible`,
     );
   }
   return {
@@ -302,11 +302,11 @@ function buildTechnique(rng, { level, objective, pool, equipment, budget }) {
     const mat = needLabel.length ? ` avec ${needLabel.join(" + ")}` : "";
     const spice =
       idx === 0 && level !== "decouverte" && rng() > 0.5
-        ? " — joue : compte tes coups de bras"
+        ? " - joue : compte tes coups de bras"
         : "";
     lines.push(
       line(
-        `${fmt.reps} × ${fmt.dist} m ${d.name}${mat} — ${effortCue(objective, "tech")}${spice} — ${restCue(level)}`,
+        `${fmt.reps} × ${fmt.dist} m ${d.name}${mat} - ${effortCue(objective, "tech")}${spice} - ${restCue(level)}`,
       ),
     );
     used.push({
@@ -318,7 +318,7 @@ function buildTechnique(rng, { level, objective, pool, equipment, budget }) {
     });
     if (interleave && idx === 0) {
       lines.push(
-        line(`${p * 2} m crawl jeu — accélère les 10 derniers mètres — repos 15s`),
+        line(`${p * 2} m crawl jeu - accélère les 10 derniers mètres - repos 15s`),
       );
       remaining -= p * 2;
     }
@@ -344,7 +344,7 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
     lines.push(line(text));
   };
 
-  const longRest = level === "decouverte" ? "repos 40s entre les blocs" : "repos 45–60s entre les blocs";
+  const longRest = level === "decouverte" ? "repos 40s entre les blocs" : "repos 45-60s entre les blocs";
 
   /** Bloc progressif lent → moyen → vite (évite 2 séries « confortable » collées). */
   const progressive505 = () => {
@@ -354,20 +354,20 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
     const total = cycles * unit * 3;
     add(
       total,
-      `${cycles * 3} × ${unit} m crawl — ${cycles} × (lent · moyen · vite par ${unit} m) — ${longRest}`,
+      `${cycles * 3} × ${unit} m crawl - ${cycles} × (lent · moyen · vite par ${unit} m) - ${longRest}`,
     );
   };
 
   /** Endurance découverte : formats courts variés, pas un monolithe Nx25. */
   if (objective === "endurance" && level === "decouverte") {
     const a = 4 * (p * 2);
-    add(a, `4 × ${p * 2} m crawl facile — change de focus à chaque rep (glisse / respiration / battements) — repos 20s`);
+    add(a, `4 × ${p * 2} m crawl facile - change de focus à chaque rep (glisse / respiration / battements) - repos 20s`);
     const left = budget - distance;
     if (left >= p * 4) {
       const reps = Math.min(6, Math.floor(left / (p * 2)));
       add(
         reps * p * 2,
-        `${reps} × ${p * 2} m : ${p} m grand chien ou flèche · ${p} m crawl facile — repos 20s`,
+        `${reps} × ${p * 2} m : ${p} m grand chien ou flèche · ${p} m crawl facile - repos 20s`,
       );
     }
     return { distance, lines };
@@ -381,7 +381,7 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
       const left = budget - distance;
       if (left >= p * 6) {
         const reps = Math.min(6, Math.floor(left / p));
-        add(reps * p, `${reps} × ${p} m crawl rapide — récupération marche au mur — repos 40s`);
+        add(reps * p, `${reps} × ${p} m crawl rapide - récupération marche au mur - repos 40s`);
       }
       return { distance, lines };
     }
@@ -392,7 +392,7 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
       const reps = Math.max(4, Math.min(10, Math.floor(budget / dist)));
       add(
         reps * dist,
-        `${reps} × ${dist} m crawl — allure tenable, focus économie — ${restCue(level)}`,
+        `${reps} × ${dist} m crawl - allure tenable, focus économie - ${restCue(level)}`,
       );
       const left = budget - distance;
       if (left >= p * 4) {
@@ -400,7 +400,7 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
         const cycles = Math.max(2, Math.min(4, Math.floor(left / (p * 4))));
         add(
           cycles * p * 4,
-          `${cycles} × (${p * 2} m jambes crawl · ${p * 2} m crawl facile) — ${restCue(level)}`,
+          `${cycles} × (${p * 2} m jambes crawl · ${p * 2} m crawl facile) - ${restCue(level)}`,
         );
       }
       return { distance, lines };
@@ -413,7 +413,7 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
         const cycles = Math.max(2, Math.min(4, Math.floor(left / (p * 3))));
         add(
           cycles * p * 3,
-          `${cycles} × (${p} m crawl · ${p} m jambes · ${p} m crawl facile) — ${restCue(level)}`,
+          `${cycles} × (${p} m crawl · ${p} m jambes · ${p} m crawl facile) - ${restCue(level)}`,
         );
       }
       return { distance, lines };
@@ -430,13 +430,13 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
   }
 
   if (objective === "seuil") {
-    // Blocs seuil + contraste — pas un mur de Nx100 identiques
+    // Blocs seuil + contraste, pas un mur de Nx100 identiques
     const work = p * 4; // 100@25 / 200@50
     const blockM = 2 * work + 100 + 50; // 2×travail + 100 jambes + 50 facile
     const cycles = Math.max(3, Math.min(5, Math.floor(budget / blockM)));
     add(
       cycles * blockM,
-      `${cycles} × [2 × ${work} m crawl (allure seuil) · 100 m jambes soutenues · 50 m crawl facile] — ${longRest}`,
+      `${cycles} × [2 × ${work} m crawl (allure seuil) · 100 m jambes soutenues · 50 m crawl facile] - ${longRest}`,
     );
     return { distance, lines };
   }
@@ -447,13 +447,13 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
     const cycles = Math.max(3, Math.min(5, Math.floor(budget / blockM)));
     add(
       cycles * blockM,
-      `${cycles} × [${im} m 4 nages · ${p * 2} m crawl jeu (accélérer sur la 2ᵉ moitié) · ${p * 2} m dos facile] — ${longRest}`,
+      `${cycles} × [${im} m 4 nages · ${p * 2} m crawl jeu (accélérer sur la 2ᵉ moitié) · ${p * 2} m dos facile] - ${longRest}`,
     );
     return { distance, lines };
   }
 
   if (objective === "sprint") {
-    // Ex. Arthur : 2×50 travail + 100 jambes à bloc + 50 facile — répété en blocs
+    // Ex. Arthur : 2×50 travail + 100 jambes à bloc + 50 facile, répété en blocs
     const work = 50;
     const kick = 100;
     const easy = 50;
@@ -461,13 +461,13 @@ function buildMain(rng, { level, objective, pool, equipment, budget }) {
     const cycles = Math.max(3, Math.min(6, Math.floor(budget / blockM)));
     add(
       cycles * blockM,
-      `${cycles} × [2 × ${work} m crawl (allure sprint) · ${kick} m jambes à bloc · ${easy} m crawl facile] — ${longRest}`,
+      `${cycles} × [2 × ${work} m crawl (allure sprint) · ${kick} m jambes à bloc · ${easy} m crawl facile] - ${longRest}`,
     );
     const left = budget - distance;
     if (left >= 200) {
-      // Une seule série courte de sprints nets — pas un 2e monolithe Nx25/Nx50
+      // Une seule série courte de sprints nets, pas un 2e monolithe Nx25/Nx50
       const reps = Math.min(8, Math.max(4, Math.floor(left / p)));
-      add(reps * p, `${reps} × ${p} m crawl sprint — récupération complète au mur — repos 40s`);
+      add(reps * p, `${reps} × ${p} m crawl sprint - récupération complète au mur - repos 40s`);
     }
     return { distance, lines };
   }
@@ -498,7 +498,7 @@ function buildCooldown(rng, { level, objective, pool, budget, equipment = [] }) 
   ) {
     return {
       distance: dist,
-      lines: [line(`${dist} m papillon un bras avec palmes — facile, sans forcer`)],
+      lines: [line(`${dist} m papillon un bras avec palmes - facile, sans forcer`)],
       drillId: "arthur_papillon_un_bras",
     };
   }
@@ -506,15 +506,15 @@ function buildCooldown(rng, { level, objective, pool, budget, equipment = [] }) 
   if (useDos) {
     return {
       distance: dist,
-      lines: [line(`${dist} m dos à deux bras — facile, sans forcer`)],
+      lines: [line(`${dist} m dos à deux bras - facile, sans forcer`)],
       drillId: "nouveau_dos_deux_bras",
     };
   }
 
   const variants = [
-    `${dist} m au choix — retour au calme, sans forcer`,
-    `${dist} m crawl facile — retour au calme`,
-    `${dist} m le plus lent possible — sans forcer`,
+    `${dist} m au choix - retour au calme, sans forcer`,
+    `${dist} m crawl facile - retour au calme`,
+    `${dist} m le plus lent possible - sans forcer`,
   ];
 
   return {
@@ -585,7 +585,7 @@ export function composeArthurDraftSession(brief = {}) {
   const details = [...warm.lines, ...tech.lines, ...main.lines, ...cool.lines].filter(Boolean);
   let total = warm.distance + tech.distance + main.distance + cool.distance;
 
-  // Compléter le volume si écart > 10 % — contraste fun, jamais une 2e série « même allure »
+  // Compléter le volume si écart > 10 %, contraste fun, jamais une 2e série « même allure »
   if (total < volume * 0.9) {
     const p = pool === 50 ? 50 : 25;
     const need = roundToPool(volume - total, pool);
@@ -597,7 +597,7 @@ export function composeArthurDraftSession(brief = {}) {
         details.length - cool.lines.length,
         0,
         line(
-          `${cycles} × (${p * 2} m jambes crawl · ${p} m éducatif au choix · ${p} m crawl facile) — repos 30s`,
+          `${cycles} × (${p * 2} m jambes crawl · ${p} m éducatif au choix · ${p} m crawl facile) - repos 30s`,
         ),
       );
       total += fill;
@@ -608,7 +608,7 @@ export function composeArthurDraftSession(brief = {}) {
       details.splice(
         details.length - cool.lines.length,
         0,
-        line(`${reps} × ${p * 2} m dos ou crawl au choix — facile, sans forcer — repos 20s`),
+        line(`${reps} × ${p * 2} m dos ou crawl au choix - facile, sans forcer - repos 20s`),
       );
       total += fill;
     }

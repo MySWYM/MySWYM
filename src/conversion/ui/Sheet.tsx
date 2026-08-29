@@ -6,7 +6,7 @@ interface Props {
   open: boolean
   onClose?: () => void
   children: ReactNode
-  /** Allow dismiss by tapping overlay — soft paywalls should be dismissible */
+  /** Allow dismiss by tapping overlay, soft paywalls should be dismissible */
   dismissible?: boolean
 }
 

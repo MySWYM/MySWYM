@@ -1,5 +1,5 @@
 /**
- * Patterns de reprise Régulier — reconstruire sensations → technique → volume → enchaînement → intensité légère.
+ * Patterns de reprise Régulier, reconstruire sensations → technique → volume → enchaînement → intensité légère.
  * Pas « la même séance avec moins de mètres ».
  */
 
@@ -13,7 +13,7 @@ export const REPRISE_PATTERNS = Object.freeze([
     applyCue: "écoute ton corps, nage confortable",
     techPrimary: "nage",
     setFormat: "mixed",
-    corpsCue: "sensations — facile",
+    corpsCue: "sensations - facile",
   },
   {
     id: "technique",
@@ -22,7 +22,7 @@ export const REPRISE_PATTERNS = Object.freeze([
     applyCue: "applique l'éducatif sans forcer",
     techPrimary: "rattrape",
     setFormat: "alternating",
-    corpsCue: "technique appliquée — facile",
+    corpsCue: "technique appliquée - facile",
   },
   {
     id: "volume",
@@ -32,7 +32,7 @@ export const REPRISE_PATTERNS = Object.freeze([
     techPrimary: "respiration",
     setFormat: "repeated",
     preferredUnit: 100,
-    corpsCue: "volume progressif — facile",
+    corpsCue: "volume progressif - facile",
   },
   {
     id: "enchainement",
@@ -41,7 +41,7 @@ export const REPRISE_PATTERNS = Object.freeze([
     applyCue: "enchaîne les blocs, récupère bien entre",
     techPrimary: "nage",
     setFormat: "broken",
-    corpsCue: "enchaînement — facile",
+    corpsCue: "enchaînement - facile",
   },
   {
     id: "intensite_legere",

@@ -55,7 +55,7 @@
   },
   "level": {
     "title": "Quel est ton niveau de natation actuel ?",
-    "lead": "Choisis celui qui te décrit aujourd’hui — pas celui que tu vises.",
+    "lead": "Choisis celui qui te décrit aujourd’hui, pas celui que tu vises.",
     "découverte": { "label": "Découverte", "desc": "Je m'arrête après quelques longueurs" },
     "régulier": { "label": "Débutant", "desc": "Je sais nager des longueurs, mais je suis encore en train d'apprendre" },
     "sportif": { "label": "Intermédiaire", "desc": "Je suis à l'aise dans la piscine, mais je veux m'améliorer" },
@@ -71,12 +71,12 @@
   },
   "frequency": {
     "title": "Séances par semaine",
-    "lead": "Ton essai Premium débloque toute la charge dès le départ. Bassin 25 m par défaut — tu pourras changer bassin, matériel et nages dans Profil.",
+    "lead": "Ton essai Premium débloque toute la charge dès le départ. Bassin 25 m par défaut, tu pourras changer bassin, matériel et nages dans Profil.",
     "n": "{{count}}×/semaine"
   },
   "physique": {
     "title": "Ton profil",
-    "lead": "Date de naissance, poids et taille — pour mieux adapter ton plan.",
+    "lead": "Date de naissance, poids et taille, pour mieux adapter ton plan.",
     "birth": "Naissance",
     "day": "Jour",
     "month": "Mois",
@@ -125,7 +125,7 @@
   },
   "equipment": {
     "title": "Quel matériel as-tu à disposition ?",
-    "lead": "Tu peux en cocher plusieurs, ou aucun. On l’intègre quand c’est utile — jamais de matos que tu n’as pas.",
+    "lead": "Tu peux en cocher plusieurs, ou aucun. On l’intègre quand c’est utile, jamais de matos que tu n’as pas.",
     "none": "Aucun matériel",
     "noneHint": "Je nage sans palmes, planche, etc.",
     "available": "Matériel disponible",
@@ -146,8 +146,8 @@
   },
   "prefs": {
     "title": "Tes nages",
-    "lead": "Dis-nous ce que tu préfères — on orientera tes séances.",
-    "leadOpen": "Dis-nous ta nage préférée — en triathlon et en eau libre, on travaille surtout le crawl.",
+    "lead": "Dis-nous ce que tu préfères, on orientera tes séances.",
+    "leadOpen": "Dis-nous ta nage préférée, en triathlon et en eau libre, on travaille surtout le crawl.",
     "style": "Style préféré",
     "stroke": "Nage préférée",
     "crawl": { "label": "Crawl", "desc": "Je préfère nager surtout en crawl" },
@@ -180,7 +180,7 @@
     "resetTitle": "Mot de passe oublié",
     "loginLead": "Connecte-toi avec Google ou ton email.",
     "registerLead": "7 jours d’essai offerts, sans carte. Ensuite tes séances se mettent en pause.",
-    "registerReferral": "Code parrain {{code}} — −20% sur ta 1ère facture Premium.",
+    "registerReferral": "Code parrain {{code}} : −20% sur ta 1ère facture Premium.",
     "resetLead": "Entre ton email, on t'envoie un lien de réinitialisation.",
     "loginCta": "Se connecter",
     "registerCta": "Créer mon compte",
@@ -202,7 +202,7 @@
     "needChecks": "Confirme ton âge (18+) et accepte les CGU / confidentialité pour créer un compte.",
     "exists": "Un compte existe déjà avec cet email.",
     "created": "Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.",
-    "createdReferral": "Compte créé ! Parrainage enregistré — vérifie ton email, puis connecte-toi.",
+    "createdReferral": "Compte créé ! Parrainage enregistré, vérifie ton email, puis connecte-toi.",
     "resetSent": "Email envoyé ! Vérifie ta boîte mail pour réinitialiser ton mot de passe.",
     "genericError": "Une erreur est survenue.",
     "socialOff": "Cette connexion n’est pas encore activée. Réessaie avec email, ou reviens dans un instant.",

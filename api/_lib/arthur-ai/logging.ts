@@ -1,5 +1,5 @@
 /**
- * Logging Arthur AI — utile, sans secrets ni transcripts complets.
+ * Logging Arthur AI, utile, sans secrets ni transcripts complets.
  */
 
 export function arthurLog(

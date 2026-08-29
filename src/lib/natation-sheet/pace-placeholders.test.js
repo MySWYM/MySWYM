@@ -1,5 +1,5 @@
 /**
- * Tests placeholders Sheet {D:} / {@:} — zones facile → sprint
+ * Tests placeholders Sheet {D:} / {@:}, zones facile → sprint
  * Usage : node src/lib/natation-sheet/pace-placeholders.test.js
  */
 import assert from "node:assert/strict";

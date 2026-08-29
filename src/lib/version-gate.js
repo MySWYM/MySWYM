@@ -1,5 +1,5 @@
 /**
- * Version Gate runtime — fetch serveur + hard reload sans toucher aux données.
+ * Version Gate runtime, fetch serveur + hard reload sans toucher aux données.
  */
 import {
   CURRENT_APP_VERSION,
@@ -97,7 +97,7 @@ export async function forceAppUpdateReload(opts = {}) {
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => caches.delete(k)));
     } catch {
-      /* pas de SW / caches — OK */
+      /* pas de SW / caches, OK */
     }
   }
 

@@ -1,5 +1,5 @@
 /**
- * Rôle de semaine Sheet (tri / OW) — hybride calé sur le jour J.
+ * Rôle de semaine Sheet (tri / OW), hybride calé sur le jour J.
  *
  * Avec eventDate :
  *   S0 + S-1     → deload (S0 = semaine course, max 2 séances)
@@ -10,7 +10,7 @@
  *                  (ex. S-15 test → S-14 allégée → S-13…S-8 travail → S-7 test → S-6 allégée)
  *
  * Début de plan : les 2 premières semaines (weekIndex 0..1) forcent
- * construction sur le cycle loin / sans date — pas de test ni allégée « cycle ».
+ * construction sur le cycle loin / sans date, pas de test ni allégée « cycle ».
  * S0 / S-1 course restent prioritaires (taper intact).
  *
  * Sans eventDate : même cycle 6 travail → allégée → test (+ garde 2 sem.).
@@ -61,9 +61,9 @@ export function weeksBeforeRaceWeek(eventDate, now = new Date()) {
 }
 
 /**
- * Position dans le cycle 8 semaines — sans date de course.
- * 0–5 construction · 6 deload · 7 test (allégée puis test)
- * @param {number} weekIndex — semaines depuis ancre (≥0)
+ * Position dans le cycle 8 semaines, sans date de course.
+ * 0-5 construction · 6 deload · 7 test (allégée puis test)
+ * @param {number} weekIndex, semaines depuis ancre (≥0)
  */
 export function farCyclePhase(weekIndex) {
   const w = Math.max(0, Math.floor(Number(weekIndex) || 0));
@@ -84,7 +84,7 @@ export function farCyclePosition(weekIndex) {
  * Cycle loin de J, ancré sur l’index S (semaines avant course).
  * S-6 → allégée ; S-7 → test ; depuis J : allégée puis test → 6 travail → …
  * (S-14 allégée, S-15 test, S-13…S-8 travail, S-6 allégée, S-7 test).
- * @param {number} sIndex — weeksBeforeRaceWeek (≥ 6)
+ * @param {number} sIndex, weeksBeforeRaceWeek (≥ 6)
  * @returns {{ phase: SheetPhase, cyclePosition: number }}
  */
 export function farCycleFromRaceSIndex(sIndex) {
@@ -116,9 +116,9 @@ export function applyEarlyPlanConstructionGuard(phase, planWeekIndex, opts = {})
 
 const BANNERS = Object.freeze({
   construction: null,
-  test: "Semaine test — chronomètre 50 m, 100 m et 400 m et renseigne tes temps dans le profil.",
-  deload: "Semaine allégée — volume bas, récupération.",
-  race_week: "Semaine de course — 2 séances max, charge légère.",
+  test: "Semaine test - chronomètre 50 m, 100 m et 400 m et renseigne tes temps dans le profil.",
+  deload: "Semaine allégée - volume bas, récupération.",
+  race_week: "Semaine de course - 2 séances max, charge légère.",
 });
 
 /**

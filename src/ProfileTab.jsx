@@ -102,7 +102,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
     && equipKey(draftEquipment) !== equipKey(profile?.equipment)
   );
 
-  // Avatar + firstName — user_metadata (cross-device) en priorité, cache local en fallback
+  // Avatar + firstName, user_metadata (cross-device) en priorité, cache local en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => resolveAvatarUrl(user));
   const [firstName, setFirstName] = useState(() => {
     try {
@@ -113,7 +113,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
     } catch { return ""; }
   });
   const [editingName, setEditingName] = useState(false);
-  const [nameInput,   setNameInput]   = useState(firstName);
+  const [nameInput, setNameInput]   = useState(firstName);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
@@ -175,7 +175,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
     const previousUrl = avatarUrl;
     setAvatarBusy(true);
 
-    // Aperçu immédiat (data URL) — ne remplace pas la persistance serveur
+    // Aperçu immédiat (data URL), ne remplace pas la persistance serveur
     try {
       const preview = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -190,7 +190,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
       const { publicUrl, user: updatedUser } = await uploadAndPersistAvatar(user.id, file);
       setAvatarUrl(publicUrl);
       if (updatedUser && onUserUpdate) onUserUpdate(updatedUser);
-      setMsg({ type: "ok", text: "Photo enregistrée — visible sur tous tes appareils." });
+      setMsg({ type: "ok", text: "Photo enregistrée, visible sur tous tes appareils." });
       setTimeout(() => setMsg(null), 3500);
     } catch (err) {
       setAvatarUrl(previousUrl || null);
@@ -241,7 +241,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
     }
     if (equipmentDirty) {
       saveEquipment();
-      setMsg({ type: "ok", text: "Matériel enregistré — prochaines séances adaptées (déjà faites conservées)." });
+      setMsg({ type: "ok", text: "Matériel enregistré, prochaines séances adaptées (déjà faites conservées)." });
       setTimeout(() => setMsg(null), 3500);
     }
   };
@@ -264,7 +264,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
       <AppShell>
       {/* ── Profile Header ─────────────────────────────────────── */}
       <div style={{ padding: "28px 0 24px", textAlign: "center" }}>
-        {/* Avatar — menu Ajouter / Modifier / Supprimer */}
+        {/* Avatar, menu Ajouter / Modifier / Supprimer */}
         <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
           <button
             type="button"
@@ -373,7 +373,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
           document.body
         )}
 
-        {/* Name — tappable pour éditer */}
+        {/* Name, tappable pour éditer */}
         {editingName ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 8 }}>
             <input
@@ -714,8 +714,8 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                   setMsg({
                     type: "ok",
                     text: alsoEquip
-                      ? "Profil et matériel enregistrés — prochaines séances adaptées (déjà faites conservées)."
-                      : "Profil enregistré — prochaines séances adaptées (déjà faites conservées).",
+                      ? "Profil et matériel enregistrés, prochaines séances adaptées (déjà faites conservées)."
+                      : "Profil enregistré, prochaines séances adaptées (déjà faites conservées).",
                   });
                   setTimeout(() => setMsg(null), 4000);
                 }}
@@ -735,7 +735,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
           defaultOpen={false}
         >
           <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 14px" }}>
-            Coche ce que tu as au bord du bassin. On l’utilise seulement quand c’est utile — jamais de matos que tu n’as pas.
+            Coche ce que tu as au bord du bassin. On l’utilise seulement quand c’est utile, jamais de matos que tu n’as pas.
           </p>
           <div
             style={{

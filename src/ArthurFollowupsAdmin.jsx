@@ -1,5 +1,5 @@
 /**
- * Admin Conversion Engine F2 — planifier / mesurer relances.
+ * Admin Conversion Engine F2, planifier / mesurer relances.
  * Envois Instagram gated (ARTHUR_FOLLOWUPS_SEND).
  */
 import { useCallback, useEffect, useState } from "react";
@@ -30,7 +30,7 @@ function ensureFonts() {
 }
 
 function pct(n) {
-  if (n == null || Number.isNaN(n)) return "—";
+  if (n == null || Number.isNaN(n)) return "-";
   return `${(n * 100).toFixed(1)}%`;
 }
 
@@ -91,7 +91,7 @@ export default function ArthurFollowupsAdmin() {
     }
   };
 
-  const gate = data?.send_gate || "—";
+  const gate = data?.send_gate || "-";
   const gateColor = gate === "blocked" ? C.warn : gate === "live" ? C.warn : C.ok;
 
   return (
@@ -280,11 +280,11 @@ export default function ArthurFollowupsAdmin() {
                         }}
                       >
                         <td style={td}>{r.status}</td>
-                        <td style={td}>{r.outcome || "—"}</td>
+                        <td style={td}>{r.outcome || "-"}</td>
                         <td style={td}>{r.template_key}</td>
-                        <td style={td}>{r.decision_reason || r.suppress_reason || "—"}</td>
-                        <td style={td}>{r.send_mode || "—"}</td>
-                        <td style={td}>{r.score ?? "—"}</td>
+                        <td style={td}>{r.decision_reason || r.suppress_reason || "-"}</td>
+                        <td style={td}>{r.send_mode || "-"}</td>
+                        <td style={td}>{r.score ?? "-"}</td>
                         <td style={td}>
                           {r.status === "planned" ? (
                             <button

@@ -36,7 +36,7 @@ export function planProgressScore(entry) {
   return weekResolved;
 }
 
-/** Semaine boucle entièrement validée — il faut générer la suivante. */
+/** Semaine boucle entièrement validée, il faut générer la suivante. */
 export function loopSessionNeedsAdvance(plan) {
   if (!plan?.isSessionLoop) return false;
   const sessions = plan.weeks?.[0]?.sessions || [];
@@ -62,7 +62,7 @@ export function mergePreservingProgress(oldWeeks, newWeeks) {
     const newSessions = week.sessions ?? [];
     if (oldSessions.length !== newSessions.length) {
       console.warn(
-        `[MySWYM] mergePreservingProgress: semaine ${i} structure incompatible (${oldSessions.length} vs ${newSessions.length} séances) — fallback semaine entière`,
+        `[MySWYM] mergePreservingProgress: semaine ${i} structure incompatible (${oldSessions.length} vs ${newSessions.length} séances), fallback semaine entière`,
       );
       return shouldPreserveWeek(oldWeek) ? oldWeek : week;
     }

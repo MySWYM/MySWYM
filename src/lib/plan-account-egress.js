@@ -3,7 +3,7 @@
  * Pas d'import Supabase ici (tests Node).
  */
 
-/** Debounce autosave — évite un upsert JSON à chaque micro-changement / HMR. */
+/** Debounce autosave, évite un upsert JSON à chaque micro-changement / HMR. */
 export const PLANS_AUTOSAVE_DEBOUNCE_MS = 3000;
 
 /** Ignore un remote « plus récent » de quelques ms (horloge client vs serveur après upsert). */

@@ -1,5 +1,5 @@
 /**
- * Readiness V1 — disponibilité actuelle pour progresser (pas un profil médical).
+ * Readiness V1, disponibilité actuelle pour progresser (pas un profil médical).
  * Signal d'entrée pour estimateCapacity uniquement.
  * Priorité : feedback réel > historique > readiness questionnaire.
  */
@@ -67,7 +67,7 @@ export function estimateReadinessModifier(readiness) {
   let technicalBias = false;
   const reasons = [];
 
-  // Recency — reprise longue = prudent
+  // Recency, reprise longue = prudent
   if (r.swimmingRecency === "long_break") {
     scoreDelta -= 0.08;
     volumeFactor *= 0.88;
@@ -90,7 +90,7 @@ export function estimateReadinessModifier(readiness) {
     reasons.push("current_swim");
   }
 
-  // Activity outside swimming — context only, mild
+  // Activity outside swimming, context only, mild
   if (r.activityLevel === "low") {
     scoreDelta -= 0.03;
     volumeFactor *= 0.97;
@@ -104,7 +104,7 @@ export function estimateReadinessModifier(readiness) {
     reasons.push("activity_active");
   }
 
-  // Felt fitness — good = confiance, pas de surcharge
+  // Felt fitness, good = confiance, pas de surcharge
   if (r.currentFitness === "low") {
     scoreDelta -= 0.05;
     volumeFactor *= 0.94;
@@ -116,7 +116,7 @@ export function estimateReadinessModifier(readiness) {
     reasons.push("fitness_good");
   }
 
-  // Recovery — poor → favoriser charge douce (cap intensité soft via dims)
+  // Recovery, poor → favoriser charge douce (cap intensité soft via dims)
   if (r.recoveryQuality === "poor") {
     scoreDelta -= 0.06;
     volumeFactor *= 0.92;

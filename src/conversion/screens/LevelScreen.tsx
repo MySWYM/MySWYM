@@ -21,7 +21,7 @@ export function LevelScreen({ level, pool, onLevel, onPool, onNext, onBack, step
       total={total}
       onBack={onBack}
       title="Où en es-tu ?"
-      subtitle="Niveau et bassin — pour calibrer distances et intensité."
+      subtitle="Niveau et bassin, pour calibrer distances et intensité."
       footer={
         <Button fullWidth disabled={!level} onClick={onNext}>
           Continuer

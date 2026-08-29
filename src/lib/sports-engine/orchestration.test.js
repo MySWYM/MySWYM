@@ -1,5 +1,5 @@
 /**
- * Tests Étape I — Orchestration / Single Source of Truth
+ * Tests Étape I, Orchestration / Single Source of Truth
  * Usage : node src/lib/sports-engine/orchestration.test.js
  */
 import { buildCoachPlanWeeks } from "../swim-plan-bridge.js";
@@ -52,7 +52,7 @@ function trainingVol(week) {
   assert(normalizeUiLevel("debutant") === "decouverte", "debutant ascii");
 }
 
-// O1 — course dans 6 semaines
+// O1, course dans 6 semaines
 {
   const planStart = new Date();
   planStart.setHours(12, 0, 0, 0);
@@ -82,7 +82,7 @@ function trainingVol(week) {
   assert(vols[0] > vols[4] || vols[0] > vols[5], `O1 volume down toward race ${vols}`);
 }
 
-// O2 — course dans 3 semaines
+// O2, course dans 3 semaines
 {
   const planStart = new Date();
   planStart.setHours(12, 0, 0, 0);
@@ -103,7 +103,7 @@ function trainingVol(week) {
   assert(new Set(stages.filter(Boolean).concat(weeks.map((w) => w.effectivePhase))).size >= 2, "O2 variety");
 }
 
-// O3 — course demain
+// O3, course demain
 {
   const planStart = new Date();
   planStart.setHours(12, 0, 0, 0);
@@ -128,7 +128,7 @@ function trainingVol(week) {
   assert(weeks[0].effectivePhase === "taper" || weeks[0].effectiveTaperStage === "race_week", "O3 race week");
 }
 
-// O4 — course passée / post-race
+// O4, course passée / post-race
 {
   const planStart = new Date();
   const race = dateInDays(-3, planStart);
@@ -151,7 +151,7 @@ function trainingVol(week) {
   assert(/bilan|post|adapt|capacity/i.test(weeks[0].engineWhy || ""), "O4 why");
 }
 
-// O5 — feedback too_hard → volumeAdj réduit
+// O5, feedback too_hard → volumeAdj réduit
 {
   const base = {
     level: "sportif",
@@ -178,7 +178,7 @@ function trainingVol(week) {
   assert(trainingVol(w2[0]) < trainingVol(w1[0]), `O5 ${trainingVol(w2[0])} < ${trainingVol(w1[0])}`);
 }
 
-// O6 — too_easy progression faible
+// O6, too_easy progression faible
 {
   const easy = {
     level: "sportif",
@@ -201,7 +201,7 @@ function trainingVol(week) {
   assert(ve >= vb && ve <= vb * 1.12, `O6 mild ${vb}→${ve}`);
 }
 
-// O7 — pain intent
+// O7, pain intent
 {
   const roles = applyPainSafetyToRoles([
     { sessionIntent: "seuil", zone: "Z3", qualitySession: true, family: "seuil" },
@@ -211,7 +211,7 @@ function trainingVol(week) {
   assert(!roles[0].qualitySession, "O7 no quality");
 }
 
-// O8 — race trainingDistance
+// O8, race trainingDistance
 {
   const planStart = new Date();
   const race = dateInDays(0, planStart);
@@ -234,7 +234,7 @@ function trainingVol(week) {
   assert(sumTrainingDistance(weeks[0].sessions) === 0, "O8 week 0");
 }
 
-// O9 — taste doesn't remove quality
+// O9, taste doesn't remove quality
 {
   const weeks = buildCoachPlanWeeks(
     {
@@ -267,7 +267,7 @@ function trainingVol(week) {
   assert(hasQuality, "O9 quality preserved");
 }
 
-// O10 — engineWhy effective
+// O10, engineWhy effective
 {
   const planStart = new Date();
   const race = dateInDays(7, planStart);
@@ -291,7 +291,7 @@ function trainingVol(week) {
   assert(weeks[0].effectivePhase === "taper", `O10 phase ${weeks[0].effectivePhase}`);
 }
 
-// O11 — volume trail present
+// O11, volume trail present
 {
   const ctx = prepareWeekContext(
     { level: "sportif", sessionsPerWeek: 3, goal: "progression", volumeAdj: 1 },
@@ -304,7 +304,7 @@ function trainingVol(week) {
   assert(ctx.volumePlan.trail?.effective === ctx.volumePlan.weekTarget, "O11 trail");
 }
 
-// O12 — débutant mapping
+// O12, débutant mapping
 {
   const weeks = buildCoachPlanWeeks(
     { level: "débutant", goal: "progression", sessionsPerWeek: 2, pool: 25, injuryStatus: "oui" },
@@ -315,7 +315,7 @@ function trainingVol(week) {
   );
   const intents = (weeks[0].sessions || []).map((s) => s.composerWhy?.intent || "").join(",");
   assert(!/seuil/.test(intents) || true, "O12");
-  // Level should be découverte path — short sessions
+  // Level should be découverte path, short sessions
   assert(trainingVol(weeks[0]) < 2500, `O12 vol ${trainingVol(weeks[0])}`);
 }
 

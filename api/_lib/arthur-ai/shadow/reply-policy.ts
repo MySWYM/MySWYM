@@ -1,5 +1,5 @@
 /**
- * Politique Shadow H1 — conseiller conversationnel.
+ * Politique Shadow H1, conseiller conversationnel.
  * Ignore seulement spam/hors-sujet évident.
  * Handoff seulement cas bloquants.
  */
@@ -148,7 +148,7 @@ export function buildPricingReplyMessage(): string {
     `Premium MySWYM : essai ${MYSWYM_PRICING.trialDays} jours sans carte à l’inscription, ` +
     `puis ${MYSWYM_PRICING.monthlyLabel}/mois sans engagement, ` +
     `ou ${MYSWYM_PRICING.annualLabel}/an. ` +
-    `Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs} — tu vises plutôt le mensuel flexible ou l’annuel ?`
+    `Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}, tu vises plutôt le mensuel flexible ou l’annuel ?`
   );
 }
 
@@ -193,7 +193,7 @@ export function buildConversationalReply(
       message:
         `MySWYM crée un plan de natation personnalisé selon ton objectif, ton niveau et ta fréquence : séances structurées (technique + volume) pour progresser sans improviser. ` +
         (tip ? `${tip} ` : "") +
-        `Tu peux démarrer ici : ${linkInscription} — c’est quoi ton objectif principal (technique, triathlon, régularité…) ?`,
+        `Tu peux démarrer ici : ${linkInscription}, c’est quoi ton objectif principal (technique, triathlon, régularité…) ?`,
       intent: "myswym_question",
       lead_temperature: "warm",
       extracted_data: { shadow_policy: "product_explain" },
@@ -231,7 +231,7 @@ export function buildConversationalReply(
   if (intent === "plan_request") {
     return {
       message:
-        `Oui — MySWYM est fait pour ça : un plan suivi selon ton objectif et ta dispo. ` +
+        `Oui, MySWYM est fait pour ça : un plan suivi selon ton objectif et ta dispo. ` +
         `Dis-moi fréquence (séances/semaine) et échéance si tu en as une, ou commence ici : ${linkInscription}`,
       intent: "plan_request",
       lead_temperature: "hot",
@@ -334,7 +334,7 @@ export function applyShadowReplyPolicy(
     out.suggested_action = "continue";
     if (!out.message || INTERNAL_BOT_SPEAK_RE.test(out.message)) {
       out.message =
-        "Je t’écoute — tu veux un conseil natation, comprendre MySWYM, ou préparer un objectif ?";
+        "Je t’écoute, tu veux un conseil natation, comprendre MySWYM, ou préparer un objectif ?";
     }
   }
 

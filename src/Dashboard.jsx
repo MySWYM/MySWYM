@@ -61,7 +61,7 @@ export function HomeBadgesSection({ plan }) {
           return (
             <div
               key={b.id}
-              title={unlocked ? b.desc : `À débloquer — ${b.desc}`}
+              title={unlocked ? b.desc : `À débloquer, ${b.desc}`}
               style={{ textAlign: "center", minWidth: 0 }}
             >
               <div style={{
@@ -116,7 +116,7 @@ export function HomeBadgesSection({ plan }) {
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-/** Après la 1re séance : coach, allure, Strava et badges — tout visible. */
+/** Après la 1re séance : coach, allure, Strava et badges, tout visible. */
 function HomeSecondaryStack({
   plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
 }) {
@@ -279,7 +279,7 @@ export default function Dashboard({
         }) && (
           <div className="ms-habit-banner" role="status">
             <strong>{sessionReminderCopy({ sessionTitle: next?.session?.title, streak: stats.streak }).title}</strong>
-            {" — "}
+            {", "}
             {sessionReminderCopy({ sessionTitle: next?.session?.title, streak: stats.streak }).body}
           </div>
         )}
@@ -290,15 +290,15 @@ export default function Dashboard({
         }) && (
           <div className="ms-habit-banner" role="status">
             {stats.streak > 0
-              ? <>Série de <strong>{stats.streak}</strong> — nage aujourd’hui pour la garder.</>
+              ? <>Série de <strong>{stats.streak}</strong>, nage aujourd’hui pour la garder.</>
               : hasSwum
-                ? <>Reviens nager — une séance suffit pour relancer ta série.</>
-                : <>Ta première séance t’attend — coche-la après le bassin.</>}
+                ? <>Reviens nager, une séance suffit pour relancer ta série.</>
+                : <>Ta première séance t’attend, coche-la après le bassin.</>}
           </div>
         )}
         {plan && next?.resolved && stats.streak > 0 && (
           <div className="ms-habit-banner is-done" role="status">
-            Séance du jour validée · série de <strong>{stats.streak}</strong> — reviens demain.
+            Séance du jour validée · série de <strong>{stats.streak}</strong>, reviens demain.
           </div>
         )}
 
@@ -374,7 +374,7 @@ export default function Dashboard({
           <PremiumTeaser onUpgrade={onUpgrade} />
         )}
 
-        {/* Secondaire — sous le fold « nager aujourd’hui » */}
+        {/* Secondaire, sous le fold « nager aujourd’hui » */}
         {(plan || hasSwum) && (
           <div style={{ marginTop: 8, paddingTop: 4 }}>
             {plan && (

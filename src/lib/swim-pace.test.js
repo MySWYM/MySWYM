@@ -34,8 +34,8 @@ assert(fastApp.threshold > slowApp.threshold, "seuil plus tolérant si T100 rapi
 const gainSlow = maxPaceGainFromT100(120);
 const gainFast = maxPaceGainFromT100(55);
 assert(gainSlow > gainFast, `gain lent (${gainSlow}) > gain rapide (${gainFast})`);
-assert(gainFast >= 0.02 && gainFast <= 0.04, "gain expert borné ~2–4 %");
-assert(gainSlow >= 0.08 && gainSlow <= 0.11, "gain débutant borné ~8–10 %");
+assert(gainFast >= 0.02 && gainFast <= 0.04, "gain expert borné ~2-4 %");
+assert(gainSlow >= 0.08 && gainSlow <= 0.11, "gain débutant borné ~8-10 %");
 
 // 4) Projection asymptotique + rendements décroissants
 const endSlow = projectedPaceAtWeek(120, 12, 12);
@@ -53,8 +53,8 @@ assert(!tag.includes("undefined"), "pas d'undefined dans le tag");
 const careerSlow = maxCareerPaceGainFromT100(120);
 const careerFast = maxCareerPaceGainFromT100(55);
 assert(careerSlow > careerFast, "plafond carrière lent > rapide");
-assert(careerSlow >= 0.10 && careerSlow <= 0.13, "carrière lent ~10–12 %");
-assert(careerFast >= 0.03 && careerFast <= 0.05, "carrière rapide ~3–5 %");
+assert(careerSlow >= 0.10 && careerSlow <= 0.13, "carrière lent ~10-12 %");
+assert(careerFast >= 0.03 && careerFast <= 0.05, "carrière rapide ~3-5 %");
 
 const y0 = projectedPaceAtYears(105, 0);
 assert(Math.abs(y0 - 105) < 0.01, "année 0 = départ");
@@ -63,8 +63,8 @@ const y5 = projectedPaceAtYears(105, 5);
 assert(y2 < 105 && y5 < y2, "temps ↓ avec les années");
 const pct2 = (105 - y2) / 105;
 const pct5 = (105 - y5) / 105;
-assert(pct2 >= 0.05 && pct2 <= 0.08, `2 ans 1:45 ~5–8 % (reçu ${(pct2 * 100).toFixed(1)} %)`);
-assert(pct5 >= 0.08 && pct5 <= 0.12, `5 ans 1:45 ~8–12 % (reçu ${(pct5 * 100).toFixed(1)} %)`);
+assert(pct2 >= 0.05 && pct2 <= 0.08, `2 ans 1:45 ~5-8 % (reçu ${(pct2 * 100).toFixed(1)} %)`);
+assert(pct5 >= 0.08 && pct5 <= 0.12, `5 ans 1:45 ~8-12 % (reçu ${(pct5 * 100).toFixed(1)} %)`);
 assert(pct5 < careerSlow + 0.01, "5 ans n’atteint pas un plafond fantasque");
 
 console.log("swim-pace.test.js OK");

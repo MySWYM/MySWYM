@@ -85,7 +85,7 @@ export default function WorkoutPrepView({
       setRefCopied(true);
       setTimeout(() => setRefCopied(false), 2000);
     } catch {
-      /* clipboard indisponible (http, permissions) — la réf reste lisible à l'écran */
+      /* clipboard indisponible (http, permissions), la réf reste lisible à l'écran */
     }
   };
 
@@ -360,7 +360,7 @@ export default function WorkoutPrepView({
             cursor: "pointer",
           }}
         >
-          Trop dure pour moi — alléger la suite
+          Trop dure pour moi, alléger la suite
         </button>
       )}
 

@@ -108,7 +108,7 @@ export function splitSessionBlocks(totalM) {
 
 /**
  * Découverte : un peu plus de technique, corps un peu moins dense
- * (ex. 750 → 150 / 200 / 300 / 100 — apprendre → appliquer → nager → récupérer).
+ * (ex. 750 → 150 / 200 / 300 / 100, apprendre → appliquer → nager → récupérer).
  */
 export function splitSessionBlocksDecouverte(totalM) {
   const t = Math.max(400, totalM);
@@ -121,7 +121,7 @@ export function splitSessionBlocksDecouverte(totalM) {
 }
 
 /**
- * Régulier : corps dominant ~55–65 % (apprendre à s'entraîner).
+ * Régulier : corps dominant ~55-65 % (apprendre à s'entraîner).
  * Ex. 1800 → 250 / 350 / 1000 / 200.
  */
 export function splitSessionBlocksRegulier(totalM) {
@@ -150,7 +150,7 @@ export function splitSessionBlocksSportif(totalM) {
 
 /**
  * Performance : corps dense ~62 %, volume typiquement plus élevé.
- * Plancher bas autorisé en taper (Étape G) — pas « plus de Z4 ».
+ * Plancher bas autorisé en taper (Étape G), pas « plus de Z4 ».
  */
 export function splitSessionBlocksPerformance(totalM) {
   const t = Math.max(600, totalM);

@@ -1,5 +1,5 @@
 /**
- * Bottom sheet éducatif — contenu MySWYM uniquement.
+ * Bottom sheet éducatif, contenu MySWYM uniquement.
  * 1 fiche, ou liste (4 nages = 1 / nage) sans encombrer la carte.
  */
 import { createPortal } from "react-dom";

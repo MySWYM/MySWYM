@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Buddy — parcours auth optionnel.
+ * Buddy, parcours auth optionnel.
  * Sans E2E_EMAIL / E2E_PASSWORD : skip (pas de compte en CI publique).
  *
  * Exemple :
@@ -34,7 +34,7 @@ test.describe("Buddy (auth)", () => {
       return;
     }
 
-    // Compte sans séance validée : l’onglet peut être masqué — au moins l’app a booté
+    // Compte sans séance validée : l’onglet peut être masqué, au moins l’app a booté
     await expect(
       page.getByText(/Accueil|Programme|Profil|Home|Plan|séance/i).first(),
     ).toBeVisible({ timeout: 15_000 });

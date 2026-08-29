@@ -556,7 +556,7 @@ export const ARTHUR_DRAFT_DRILLS = [
     "stroke": "Crawl",
     "instructions": "Allongé sur le ventre, commencer un bras loin devant et pousser l’eau jusqu’à la cuisse. Ramener ensuite le bras sous l’eau, près du corps, puis alterner avec l’autre bras sans retour aérien.",
     "utility": "Améliorer la qualité des appuis, l’amplitude de la traction jusqu’à la poussée et la stabilité du corps.",
-    "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
+    "levelLabel": "régulier - adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "La tête peut rester hors de l’eau ou la respiration s’effectuer de face ou sur le côté. Le retour sous-marin doit rester discret et serré. Tubas conseillé pour les découvertes et possible pour les autres niveaux",
     "levels": [
       "decouverte",
@@ -627,7 +627,7 @@ export const ARTHUR_DRAFT_DRILLS = [
     "stroke": "Crawl",
     "instructions": "En crawl, garde les deux bras sous l’eau et alterne des appuis courts. Dès le début du mouvement, place la main et l’avant-bras face vers l’arrière, doigts orientés vers le fond. Fléchis le coude tout en gardant le haut du bras proche de la surface. Ramène ensuite le bras vers l’avant sous l’eau, sans dépasser la verticale sous l’épaule.",
     "utility": "Isoler et améliorer la prise d’appui du crawl. L’objectif est de sentir la résistance de l’eau dès le début de traction et d’apprendre à orienter main et avant-bras vers l’arrière pour créer de la propulsion.",
-    "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
+    "levelLabel": "régulier - adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "Sans matériel. Peut être réalisé avec le regard légèrement vers l’avant pour observer les mains, mais cette variante relève le buste : l’utiliser seulement pour comprendre le placement. Critère de réussite : sentir un appui solide et une légère propulsion malgré le mouvement court. Tubas conseillé pour les découvertes et possible pour les autres niveaux",
     "levels": [
       "regulier",
@@ -696,7 +696,7 @@ export const ARTHUR_DRAFT_DRILLS = [
     "stroke": "Crawl",
     "instructions": "Se maintenir allongé et stable sur un côté. Réaliser six battements rapides et réguliers, puis effectuer un mouvement de bras pour faire basculer ensemble les épaules et les hanches de l’autre côté. Se stabiliser et recommencer.",
     "utility": "Synchroniser les battements, le gainage et la rotation du corps afin d’améliorer le roulis en crawl.",
-    "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
+    "levelLabel": "régulier - adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "Garder le corps allongé, sans cambrer ni serpenter. La position exacte des bras reste à préciser. Avec des palmes surtout ça rend l'exo fun",
     "levels": [
       "regulier",
@@ -720,7 +720,7 @@ export const ARTHUR_DRAFT_DRILLS = [
     "stroke": "Crawl",
     "instructions": "Nager en crawl normalement. À chaque passage de bras, terminer la poussée sous l’eau jusqu’à la cuisse et la toucher avec le pouce avant de commencer le retour aérien.",
     "utility": "Augmenter l’amplitude du mouvement et éviter d’interrompre la poussée trop tôt.",
-    "levelLabel": "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
+    "levelLabel": "régulier - adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     "notes": "Chercher à toucher la cuisse le plus loin possible vers l’arrière, sans dégrader la position du corps. Pull-buoy et/ou tuba.",
     "levels": [
       "regulier",
@@ -792,7 +792,7 @@ export const ARTHUR_DRAFT_DRILLS = [
     "instructions": "Pause de 2 secondes au-dessus de la tête. Terminer le mouvement jusqu’aux cuisses en les claquant. Prise d’appui et travail de traction.",
     "utility": "Prise d’appui et travail de traction des bras en dos (mouvement symétrique).",
     "levelLabel": "Découverte (éducatif disponible) ; débutant et régulier.",
-    "notes": "Éducatif disponible au niveau découverte. En récupération active, le générateur pourra proposer uniquement 100 m ou 200 m dos à deux bras. Affichage nageur : « facile, sans forcer » — ne jamais afficher « souple » ni « Z1 ». Pas d’autres distances, matériel, récupérations ou variantes pour l’instant.",
+    "notes": "Éducatif disponible au niveau découverte. En récupération active, le générateur pourra proposer uniquement 100 m ou 200 m dos à deux bras. Affichage nageur : « facile, sans forcer » - ne jamais afficher « souple » ni « Z1 ». Pas d’autres distances, matériel, récupérations ou variantes pour l’instant.",
     "levels": [
       "decouverte",
       "regulier"

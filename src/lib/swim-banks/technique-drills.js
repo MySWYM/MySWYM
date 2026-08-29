@@ -13,7 +13,7 @@ const TECHNIQUE_RAW = {
     block(450, ["· 6x50m bilatéral 3T, focus rythme régulier R20''", "· 6x25m sans respirer 15m + reprise 3T R15''"]),
     block(700, ["· 4x150 : 3T/5T/7T/5T/3T par 25m", "· 4x25m respiration tardive, tête qui reste basse R15''"]),
     block(600, ["· 6x100m : (3T/5T/7T/9T par 50m)"]),
-    block(600, ["· 12x50 D1' (Z2) — (3T/5T/7T/9T par 50m)"]),
+    block(600, ["· 12x50 D1' (Z2) - (3T/5T/7T/9T par 50m)"]),
     block(500, ["· 10x25m respiration 3T R15''", "· 4x50m 5T sans accélérer"]),
     block(650, ["· 4x100m bilatéral 3T R20''", "· 4x50m 5T, focus régularité R15''"]),
     block(500, ["· 8x25m apnée 1 longueur puis reprise 3T R20''", "· 4x50m 3T normal"]),
@@ -27,8 +27,8 @@ const TECHNIQUE_RAW = {
     block(400, ["· 6x50m roulis + glisse prolongée R20''", "· 4x25m pull-buoy rotation complète épaules-hanches"]),
     block(400, ["· 8x25m « 6 battements par roulis » R15''", "· 4x50m roulis contrôlé, regard fixe vers le fond R20''"]),
     block(400, ["· 6x50m roulis avec pull-buoy, focus appui R20''", "· 4x25m nage complète, garder l'amplitude de roulis"]),
-    block(200, ["· 4x50 palmes : 25m bras droit devant / gauche cuisse ; 25m inversé — respiration latérale"]),
-    block(400, ["· 8x50m le moins de mouvements possible/25m — focus position, efficacité de traction R20''"]),
+    block(200, ["· 4x50 palmes : 25m bras droit devant / gauche cuisse ; 25m inversé - respiration latérale"]),
+    block(400, ["· 8x50m le moins de mouvements possible/25m - focus position, efficacité de traction R20''"]),
     block(200, ["· 8x25m palmes : 1x crawl sous l'eau · 1x godille pieds en avant sur le dos R15''"]),
     block(400, ["· 6x50m un bras, focus rotation des hanches R20''", "· 4x25m nage complète, garder l'amplitude"]),
     block(450, ["· 8x25m roulis marqué, épaule qui sort franchement R15''", "· 4x50m nage complète"]),
@@ -80,7 +80,7 @@ const TECHNIQUE_RAW = {
     block(400, ["· 4x50 : 25m grand chien · 25m petit chien", "· 4x50m nage normale"]),
     block(300, ["· 8x25m grand chien R10''", "· 4x25m nage complète"]),
   ]},
-  /** Découverte uniquement — flèche = glisse après poussée mur. */
+  /** Découverte uniquement, flèche = glisse après poussée mur. */
   technique_fleche: { label:"La flèche", drills:[
     block(300, ["· 8x25m flèche : poussée mur + glisse bras tendus, tête entre les bras R15''", "· 4x50m crawl facile"]),
     block(350, ["· 6x50m : 25m flèche · 25m crawl facile R20''"]),
@@ -89,7 +89,7 @@ const TECHNIQUE_RAW = {
     block(300, ["· 6x50m : 25m flèche · 25m dos facile R20''"]),
     block(320, ["· 8x25m flèche, souffle doucement pendant la glisse R15''", "· 4x50m crawl facile"]),
   ]},
-  /** Découverte uniquement — grand chien seul (pas de petit chien). */
+  /** Découverte uniquement, grand chien seul (pas de petit chien). */
   technique_grand_chien: { label:"Grand chien", drills:[
     block(300, ["· 8x25m grand chien : bras qui restent sous l'eau, traction large R15''", "· 4x50m crawl facile"]),
     block(350, ["· 6x50m : 25m grand chien · 25m crawl facile R20''"]),

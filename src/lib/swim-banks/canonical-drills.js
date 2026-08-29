@@ -3,9 +3,9 @@
  *
  * Une fiche = UN éducatif réutilisable (jamais une série TECHNIQUE complète).
  * Textes / utilités : uniquement sources existantes (educatifs-canoniques, catalogues).
- * Non branchée au composeur / générateur — préparation seulement.
+ * Non branchée au composeur / générateur, préparation seulement.
  *
- * Généré mécaniquement le 2026-08-15 — ne pas inventer de pédagogie ici.
+ * Généré mécaniquement le 2026-08-15, ne pas inventer de pédagogie ici.
  */
 
 /** @typedef {'canonical'|'legacy'|'to_review'|'excluded'} CanonicalDrillStatus */
@@ -95,7 +95,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Ne pas forcer l’apnée : reprendre la nage dès que la glisse s’arrête.",
     painCompatibility: {"status":"forbidden","notes":"Ne pas forcer l’apnée : reprendre la nage dès que la glisse s’arrête."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Après la poussée au mur, le nageur glisse bras tendus, tête entre les bras, avant de nager. Il cherche à rester long et stable le plus longtemps possible.",
     utility: "Fixer l’alignement de la coulée et la sensation de glisse après la poussée.",
     suggestedFormat: "6 à 10 × 25 m",
@@ -210,7 +210,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Pas en découverte. Pas d’apnée forcée, pas d’hyperventilation avant. Sortir dès le premier inconfort.",
     painCompatibility: {"status":"forbidden","notes":"Pas en découverte. Pas d’apnée forcée, pas d’hyperventilation avant. Sortir dès le premier inconfort."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Le nageur avance quelques mouvements ou une courte distance sans inspirer, puis reprend une respiration calme. Il s’arrête dès que le geste se déforme.",
     utility: "Allonger le confort sans air sans passer en survie, ni casser l’alignement.",
     suggestedFormat: "4 à 6 × 25 m",
@@ -302,7 +302,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: ["palmes"],
     safetyNotes: "Distance courte. Pas d’hyperventilation. Revenir à l’air dès que le besoin se fait sentir.",
     painCompatibility: {"status":"forbidden","notes":"Distance courte. Pas d’hyperventilation. Revenir à l’air dès que le besoin se fait sentir."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Le nageur avance en crawl sous l’eau, souvent avec palmes. Les mouvements restent amples, sans chercher l’air au milieu de la longueur.",
     utility: "Tenir l’alignement et la traction sans la respiration aérienne pour se rattraper.",
     suggestedFormat: "4 à 8 × 25 m",
@@ -371,7 +371,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Si le nageur se met à glisser en apnée raide, raccourcir la distance.",
     painCompatibility: {"status":"forbidden","notes":"Si le nageur se met à glisser en apnée raide, raccourcir la distance."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Le nageur cherche le moins de mouvements possible sur la distance. Chaque traction est complète, la glisse n’est pas coupée, sans accélérer pour compenser.",
     utility: "Allonger la distance par cycle et sentir l’efficacité d’appui, pas la cadence.",
     suggestedFormat: "4 à 8 × 50 m",
@@ -486,7 +486,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Pas en découverte ni en régulier d’aisance. Distances courtes. Sortir si vertige ou eau dans le nez trop gênante.",
     painCompatibility: {"status":"forbidden","notes":"Pas en découverte ni en régulier d’aisance. Distances courtes. Sortir si vertige ou eau dans le nez trop gênante."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Le nageur groupe la culbute d’abord sans mur, puis l’enchaîne à l’approche du mur. Les mains restent basses, vers les hanches, et la sortie se fait en coulée, souvent quelques battements avant de nager.",
     utility: "Enchaîner rotation, pose des pieds et coulée de sortie, sans remonter les mains vers le visage.",
     suggestedFormat: "6 à 10 × 25 m",
@@ -601,7 +601,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Sortir dès l’essoufflement. Pas d’apnée. Fond sous les pieds ou bord à portée.",
     painCompatibility: {"status":"forbidden","notes":"Sortir dès l’essoufflement. Pas d’apnée. Fond sous les pieds ou bord à portée."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "À la verticale, tête hors de l’eau, le nageur se maintient avec le ciseau de brasse, sans avancer. Les genoux restent plus serrés que les talons ; les bras peuvent aider un instant puis se reposer.",
     utility: "Isoler le ciseau et le gainage, sans compenser en pédalant ou en s’asseyant.",
     suggestedFormat: "4 à 6 × 20 s",
@@ -624,7 +624,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Coulée courte. Pas en découverte. Pas d’hyperventilation.",
     painCompatibility: {"status":"compatible","notes":"Coulée courte. Pas en découverte. Pas d’hyperventilation."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Après la poussée du mur, le nageur enchaîne une coulée de brasse sous l’eau avant de passer en nage ventrale. Le corps reste aligné ; on ne casse pas la coulée pour inspirer trop tôt.",
     utility: "Garder la vitesse du mur et allonger la phase sous-marine de la brasse.",
     suggestedFormat: "6 à 8 × 25 m",
@@ -785,7 +785,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: [],
     safetyNotes: "Fond ou bord à portée. Sortir avant de compenser en pédalant. Pas d’apnée.",
     painCompatibility: {"status":"forbidden","notes":"Fond ou bord à portée. Sortir avant de compenser en pédalant. Pas d’apnée."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "À la verticale, le nageur ondule pour se maintenir : la poitrine donne le départ de la vague, les jambes restent souples. Les bras peuvent rester le long du corps.",
     utility: "Isoler l’ondulation du papillon, sans se servir des bras pour se rattraper.",
     suggestedFormat: "4 à 6 × 20 s",
@@ -877,7 +877,7 @@ export const CANONICAL_DRILLS = [
     equipmentOptional: ["palmes"],
     safetyNotes: "Épaules souples. S’arrêter si l’amorce devient un plat de bras en force.",
     painCompatibility: {"status":"compatible","notes":"Épaules souples. S’arrêter si l’amorce devient un plat de bras en force."},
-    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité — éviter taper chaud (règles existantes)."},
+    taperCompatibility: {"status":"avoid","notes":"Complexité / intensité - éviter taper chaud (règles existantes)."},
     description: "Après une ou deux ondulations, les mains entament seulement le début de l’appui papillon, puis reviennent. On ne tire pas jusqu’aux cuisses : on cherche le premier appui, pas le cycle entier.",
     utility: "Poser le début de traction du papillon sans se fatiguer sur le cycle complet.",
     suggestedFormat: "4 à 8 × 25 m",
@@ -899,8 +899,8 @@ export const CANONICAL_DRILLS = [
     equipmentRequired: [],
     equipmentOptional: [],
     safetyNotes: "",
-    painCompatibility: {"status":"unknown","notes":"Non renseigné — validation humaine requise."},
-    taperCompatibility: {"status":"unknown","notes":"Non renseigné — validation humaine requise."},
+    painCompatibility: {"status":"unknown","notes":"Non renseigné - validation humaine requise."},
+    taperCompatibility: {"status":"unknown","notes":"Non renseigné - validation humaine requise."},
     description: "",
     utility: "",
     suggestedFormat: "",
@@ -1213,7 +1213,7 @@ export const CANONICAL_DRILLS = [
 ];
 
 /**
- * Séries TECHNIQUE runtime (97 blocs) — packaging legacy, pas des éducatifs unitaires.
+ * Séries TECHNIQUE runtime (97 blocs), packaging legacy, pas des éducatifs unitaires.
  * Conservées pour traçabilité ; le générateur continue de les utiliser via technique-drills.js.
  */
 export const LEGACY_TECHNIQUE_SERIES = [
@@ -1334,7 +1334,7 @@ export const LEGACY_TECHNIQUE_SERIES = [
     "label": "Respiration",
     "distance": 600,
     "lines": [
-      "· 12x50 D1' (Z2) — (3T/5T/7T/9T par 50m)"
+      "· 12x50 D1' (Z2) - (3T/5T/7T/9T par 50m)"
     ],
     "canonicalIds": [
       "educatif_respiration_par_temps"
@@ -1522,7 +1522,7 @@ export const LEGACY_TECHNIQUE_SERIES = [
     "label": "Roulis / rotation du corps",
     "distance": 200,
     "lines": [
-      "· 4x50 palmes : 25m bras droit devant / gauche cuisse ; 25m inversé — respiration latérale"
+      "· 4x50 palmes : 25m bras droit devant / gauche cuisse ; 25m inversé - respiration latérale"
     ],
     "canonicalIds": [
       "educatif_toucher_cuisse"
@@ -1536,7 +1536,7 @@ export const LEGACY_TECHNIQUE_SERIES = [
     "label": "Roulis / rotation du corps",
     "distance": 400,
     "lines": [
-      "· 8x50m le moins de mouvements possible/25m — focus position, efficacité de traction R20''"
+      "· 8x50m le moins de mouvements possible/25m - focus position, efficacité de traction R20''"
     ],
     "canonicalIds": [
       "educatif_nage_economique"
@@ -2700,7 +2700,7 @@ export const LEGACY_TECHNIQUE_SERIES = [
 
 export const CANONICAL_DRILL_META = {
   "generatedAt": "2026-08-15",
-  "note": "Banque canonique éducatifs — étape 2. Non branchée au générateur. Textes pédagogiques uniquement issus des sources existantes.",
+  "note": "Banque canonique éducatifs - étape 2. Non branchée au générateur. Textes pédagogiques uniquement issus des sources existantes.",
   "statusCount": {
     "canonical": 18,
     "legacy": 13,

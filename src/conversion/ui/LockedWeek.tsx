@@ -10,8 +10,8 @@ interface Props {
   onUnlock: () => void
 }
 
-/** Soft-locked week — visible outline, no dark pattern blur spam */
-export function LockedWeek({ weekNumber, sessionCount = 3, metersHint = '~6–8 km', onUnlock }: Props) {
+/** Soft-locked week, visible outline, no dark pattern blur spam */
+export function LockedWeek({ weekNumber, sessionCount = 3, metersHint = '~6-8 km', onUnlock }: Props) {
   return (
     <motion.div
       variants={fadeUp}

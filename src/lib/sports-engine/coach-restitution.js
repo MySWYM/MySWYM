@@ -1,5 +1,5 @@
 /**
- * Restitution coach — transforme les détails générés en fiche séance nageable.
+ * Restitution coach, transforme les détails générés en fiche séance nageable.
  * Ne touche PAS au volume/charge/taper : uniquement wording + décomposition affichage.
  */
 
@@ -54,7 +54,7 @@ export function expandPyramidDetailLine(line) {
   const label = labelFromPyramidLine(text);
 
   if (steps?.length) {
-    return steps.map((d) => `-${d}m ${label} — repos ${rest}s`);
+    return steps.map((d) => `-${d}m ${label} - repos ${rest}s`);
   }
 
   // Legacy opaque sans paliers : convertir en séries classiques nageables
@@ -66,10 +66,10 @@ export function expandPyramidDetailLine(line) {
       const unit = vol >= 1600 ? 200 : vol >= 800 ? 100 : 50;
       const reps = Math.max(2, Math.min(12, Math.floor(vol / unit)));
       const used = reps * unit;
-      const lines = [`-${reps} × ${unit}m ${label} — repos ${rest}s`];
+      const lines = [`-${reps} × ${unit}m ${label} - repos ${rest}s`];
       const rem = vol - used;
       if (rem >= 50) {
-        lines.push(`-${rem}m ${label} facile — repos ${rest}s`);
+        lines.push(`-${rem}m ${label} facile - repos ${rest}s`);
       }
       return lines;
     }
@@ -90,18 +90,18 @@ function cleanCueNoise(line) {
   out = out.replace(/\s+descendant\b/gi, "");
   out = out.replace(REPOS_VARIABLE_RE, "repos 20s");
   out = out.replace(/\s*—\s*montée\s*\/\s*descente[^—]*/gi, "");
-  out = out.replace(/\s{2,}/g, " ").replace(/\s+—\s+—/g, " — ").trim();
+  out = out.replace(/\s{2,}/g, " ").replace(/\s+—\s+—/g, " - ").trim();
   return out;
 }
 
 function rewriteFinLine(line) {
   let out = String(line || "");
   if (MARKETING_FIN_RE.test(out)) {
-    out = out.replace(/,?\s*on savoure la fin de séance/gi, " — retour au calme");
-    out = out.replace(/,?\s*on souffle un bon coup à l'arrivée/gi, " — sans forcer");
-    out = out.replace(/,?\s*recherche de sensation/gi, " — à ton rythme");
+    out = out.replace(/,?\s*on savoure la fin de séance/gi, " - retour au calme");
+    out = out.replace(/,?\s*on souffle un bon coup à l'arrivée/gi, " - sans forcer");
+    out = out.replace(/,?\s*recherche de sensation/gi, " - à ton rythme");
   }
-  out = out.replace(/\(RAC\)/gi, "— retour au calme");
+  out = out.replace(/\(RAC\)/gi, " -  retour au calme");
   out = out.replace(/\bRAC\b/gi, "retour au calme");
   return out;
 }

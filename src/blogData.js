@@ -59,16 +59,16 @@ const CATEGORY_FALLBACK = {
   Débutants: "Technique & éducatifs",
 };
 
-/** Articles Lorem de démo — utilisés si Supabase est indisponible ou vide */
+/** Articles Lorem de démo, utilisés si Supabase est indisponible ou vide */
 export const DEMO_ARTICLES = [
   {
     id: "demo-1",
-    titre: "[Démo] Lorem ipsum — conseils d'entraînement",
+    titre: "[Démo] Lorem ipsum, conseils d'entraînement",
     slug: "demo-conseils-entrainement",
     extrait:
-      "PLACEHOLDER — Lorem ipsum dolor sit amet, consectetur adipiscing elit. Article de démo pour tester l'affichage du blog.",
+      "PLACEHOLDER, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Article de démo pour tester l'affichage du blog.",
     contenu:
-      "## Placeholder — contenu de démo\n\n**Ceci est un article de démonstration.** Le texte ci-dessous est du Lorem ipsum et doit être remplacé manuellement.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n## Deuxième section (placeholder)\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\n**Fin du placeholder.** Remplace ce contenu par un vrai article.",
+      "## Placeholder, contenu de démo\n\n**Ceci est un article de démonstration.** Le texte ci-dessous est du Lorem ipsum et doit être remplacé manuellement.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n## Deuxième section (placeholder)\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\n**Fin du placeholder.** Remplace ce contenu par un vrai article.",
     categorie: "Conseils entraînement",
     image_url: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1200&q=80",
     date_publication: "2026-07-01T10:00:00Z",
@@ -76,12 +76,12 @@ export const DEMO_ARTICLES = [
   },
   {
     id: "demo-2",
-    titre: "[Démo] Lorem ipsum — technique & éducatifs",
+    titre: "[Démo] Lorem ipsum, technique & éducatifs",
     slug: "demo-technique-educatifs",
     extrait:
-      "PLACEHOLDER — Sed ut perspiciatis unde omnis iste natus error sit voluptatem. Article de démo pour tester le filtre et la carte.",
+      "PLACEHOLDER, Sed ut perspiciatis unde omnis iste natus error sit voluptatem. Article de démo pour tester le filtre et la carte.",
     contenu:
-      "## Placeholder — technique\n\n**Article de démonstration (Lorem ipsum).** À remplacer manuellement.\n\nSed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis.\n\n## Suite du placeholder\n\nNemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
+      "## Placeholder, technique\n\n**Article de démonstration (Lorem ipsum).** À remplacer manuellement.\n\nSed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis.\n\n## Suite du placeholder\n\nNemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
     categorie: "Technique & éducatifs",
     image_url: "https://images.unsplash.com/photo-1519315901367-f34ff911840e?w=1200&q=80",
     date_publication: "2026-07-08T10:00:00Z",
@@ -89,12 +89,12 @@ export const DEMO_ARTICLES = [
   },
   {
     id: "demo-3",
-    titre: "[Démo] Lorem ipsum — mental & préparation",
+    titre: "[Démo] Lorem ipsum, mental & préparation",
     slug: "demo-mental-preparation",
     extrait:
-      "PLACEHOLDER — At vero eos et accusamus et iusto odio dignissimos. Article de démo pour tester la page article complète.",
+      "PLACEHOLDER, At vero eos et accusamus et iusto odio dignissimos. Article de démo pour tester la page article complète.",
     contenu:
-      "## Placeholder — mental\n\n**Ceci est un placeholder Lorem ipsum.** Aucun contenu éditorial réel.\n\nAt vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi.\n\n## Dernière section (à remplacer)\n\nTemporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.",
+      "## Placeholder, mental\n\n**Ceci est un placeholder Lorem ipsum.** Aucun contenu éditorial réel.\n\nAt vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi.\n\n## Dernière section (à remplacer)\n\nTemporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.",
     categorie: "Mental & préparation",
     image_url: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=1200&q=80",
     date_publication: "2026-07-15T10:00:00Z",

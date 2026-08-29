@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { stripLocalePrefix } from "../i18n/locale-path.js";
 import { useAuthSession, usePublicCta } from "../lib/use-auth-session.js";
 
-/** CTA mobile flottant — plan web (pas de store). */
+/** CTA mobile flottant, plan web (pas de store). */
 export default function StickyCta({ href, revealOnScroll = false }) {
   const { t } = useTranslation("common");
   const { pathname } = useLocation();

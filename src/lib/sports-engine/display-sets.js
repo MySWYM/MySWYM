@@ -1,6 +1,6 @@
 /**
  * Affichage utilisateur vs sets internes.
- * Pyramide / progressive / descending : pas de monolithe opaque —
+ * Pyramide / progressive / descending : pas de monolithe opaque , 
  * on laisse les lignes individuelles (nageables) quand le format est complexe.
  */
 
@@ -10,7 +10,7 @@
  * @returns {string[]|null}
  */
 export function collapseSetsToDisplayLinesExact(sets = [], format) {
-  // Pyramide : jamais collapsée — le nageur doit voir chaque palier.
+  // Pyramide : jamais collapsée, le nageur doit voir chaque palier.
   if (format === "pyramid") return null;
 
   if (!sets.length || !["progressive", "descending"].includes(format)) {
@@ -32,12 +32,12 @@ export function collapseSetsToDisplayLinesExact(sets = [], format) {
       .replace(/\s*[—\-]\s*$/g, "")
       .replace(/\s{2,}/g, " ")
       .trim();
-    const cuePart = cue ? ` ${cue} —` : "";
+    const cuePart = cue ? ` ${cue}  - ` : "";
     if (vol % unit === 0) {
       const reps = vol / unit;
-      return [`-${reps} × ${unit}m ${label} —${cuePart} repos ${restSec}s`];
+      return [`-${reps} × ${unit}m ${label}  - ${cuePart} repos ${restSec}s`];
     }
-    return [`-${vol}m ${label} —${cuePart} repos ${restSec}s`];
+    return [`-${vol}m ${label}  - ${cuePart} repos ${restSec}s`];
   }
 
   return null;

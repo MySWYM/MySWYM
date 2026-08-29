@@ -1,5 +1,5 @@
 /**
- * Feature flags Arthur AI (Phase G) — env only, defaults sûrs.
+ * Feature flags Arthur AI (Phase G), env only, defaults sûrs.
  * Les envois auto restent OFF sauf validation explicite (ARTHUR_FOLLOWUPS_SEND).
  */
 
@@ -19,11 +19,11 @@ export interface ArthurFeatureFlags {
   optimization: boolean;
   offline_force: boolean;
   human_takeover_all: boolean;
-  /** Shadow Instagram (défaut on) — pas d’envoi auto DM. */
+  /** Shadow Instagram (défaut on), pas d’envoi auto DM. */
   shadow_instagram: boolean;
   /** Toujours false sauf ARTHUR_FOLLOWUPS_SEND=1 (validation explicite). */
   followups_send: boolean;
-  /** Live IG send — défaut off ; exige aussi shadow=off. */
+  /** Live IG send, défaut off ; exige aussi shadow=off. */
   instagram_live_send: boolean;
 }
 

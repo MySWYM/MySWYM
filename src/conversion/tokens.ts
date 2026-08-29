@@ -1,4 +1,4 @@
-/** Design tokens — mySWYM Conversion UX (Apple HIG inspired) */
+/** Design tokens, mySWYM Conversion UX (Apple HIG inspired) */
 export const tokens = {
   color: {
     bg: '#000514',
@@ -29,12 +29,12 @@ export const tokens = {
     '3xl': 64,
   },
   type: {
-    /** Display — Space Grotesk */
+    /** Display, Space Grotesk */
     hero: { size: 40, line: 1.05, weight: 600 },
     title1: { size: 32, line: 1.1, weight: 600 },
     title2: { size: 24, line: 1.15, weight: 600 },
     title3: { size: 20, line: 1.2, weight: 600 },
-    /** Body — Geist */
+    /** Body, Geist */
     body: { size: 16, line: 1.5, weight: 400 },
     callout: { size: 15, line: 1.45, weight: 500 },
     footnote: { size: 13, line: 1.4, weight: 400 },
@@ -80,7 +80,7 @@ export const GOALS: { id: GoalId; title: string; subtitle: string }[] = [
 
 export const LEVELS: { id: LevelId; title: string; subtitle: string }[] = [
   { id: 'decouverte', title: 'Découverte', subtitle: 'Je débute ou reprends' },
-  { id: 'regulier', title: 'Régulier', subtitle: '1–2× / semaine déjà' },
+  { id: 'regulier', title: 'Régulier', subtitle: '1-2× / semaine déjà' },
   { id: 'sportif', title: 'Sportif', subtitle: 'Je m’entraîne sérieusement' },
   { id: 'performance', title: 'Performance', subtitle: 'Je vise un chrono / un chrono' },
 ]

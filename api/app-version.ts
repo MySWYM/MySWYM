@@ -2,7 +2,7 @@
  * GET /api/app-version
  * Source de vérité serveur pour la version minimale supportée.
  * Changer MIN_SUPPORTED_APP_VERSION (env Vercel) puis redéployer / republier
- * la fonction suffit pour forcer une mise à jour — sans republier le code client
+ * la fonction suffit pour forcer une mise à jour, sans republier le code client
  * si le nouveau bundle est déjà en ligne.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";

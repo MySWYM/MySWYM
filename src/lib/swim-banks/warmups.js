@@ -1,5 +1,5 @@
 /**
- * Échauffements / départs — banque runtime = DEPARTS_* ; ECHAUFFEMENTS = legacy mort.
+ * Échauffements / départs, banque runtime = DEPARTS_* ; ECHAUFFEMENTS = legacy mort.
  * Extrait mécaniquement de src/lib/swim-session-generator.js.
  */
 import { block, bankMeta } from "./_helpers.js";
@@ -33,7 +33,7 @@ const DEPARTS_SEMAINE_RAW = [
   () => ({ distance: 400, text: `-400m au choix (dernier 25m chq 50m en godille) (Z1)` }),
 ];
 
-/** Départs avec jambes — uniquement si le focus technique n'est PAS déjà jambes. */
+/** Départs avec jambes, uniquement si le focus technique n'est PAS déjà jambes. */
 const DEPARTS_AVEC_JAMBES_RAW = [
   () => ({ distance: 400, text: `-400m au choix (3ème 25m chq 100 en jambes) (Z1)` }),
   () => ({ distance: 400, text: `-400m jambes crawl planche (Z1)` }),

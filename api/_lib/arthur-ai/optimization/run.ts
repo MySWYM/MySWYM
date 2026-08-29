@@ -1,5 +1,5 @@
 /**
- * Orchestration F3 — scorer / CTA / insights (pas d’envoi auto).
+ * Orchestration F3, scorer / CTA / insights (pas d’envoi auto).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";

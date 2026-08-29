@@ -65,7 +65,7 @@ export function openCookieManager() {
   window.dispatchEvent(new Event("myswym:cookie-manager-open"));
 }
 
-/** @deprecated préférer openCookieManager — conservé si un ancien lien vide le stockage. */
+/** @deprecated préférer openCookieManager, conservé si un ancien lien vide le stockage. */
 export function resetCookieConsent() {
   openCookieManager();
 }

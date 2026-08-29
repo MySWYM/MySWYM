@@ -32,7 +32,7 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "sessionDuration",
 ]);
 
-/** Mois de naissance (1–12) — libellés FR pour selects. */
+/** Mois de naissance (1-12), libellés FR pour selects. */
 export const BIRTH_MONTH_OPTIONS = Object.freeze([
   { value: 1, label: "Janvier" },
   { value: 2, label: "Février" },

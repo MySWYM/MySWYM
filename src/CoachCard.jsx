@@ -8,47 +8,47 @@ const COACH = {
 };
 
 const COACH_MESSAGES = {
-  // ── Découverte — messages simples, encourageants, zéro jargon ──
+  // ── Découverte : messages simples, encourageants, zéro jargon ──
   découverte_base: [
-    "L'important c'est d'y aller. Pas besoin de nager vite — nage régulièrement. Ton corps s'adapte plus vite que tu ne le crois.",
+    "L'important c'est d'y aller. Pas besoin de nager vite, nage régulièrement. Ton corps s'adapte plus vite que tu ne le crois.",
     "Chaque longueur compte. Si tu as nagé aujourd'hui, tu as déjà réussi ta séance. Le reste viendra tout seul.",
-    "Commencer c'est la partie la plus difficile — tu l'as déjà faite. Continue à ton rythme, sans te comparer à personne.",
+    "Commencer c'est la partie la plus difficile, tu l'as déjà faite. Continue à ton rythme, sans te comparer à personne.",
   ],
   découverte_development: [
-    "Tu progresses ! Tu tiens plus longtemps dans l'eau qu'au début — même si tu ne t'en rends pas compte. C'est ça, la progression.",
+    "Tu progresses ! Tu tiens plus longtemps dans l'eau qu'au début, même si tu ne t'en rends pas compte. C'est ça, la progression.",
     "Tes séances sont un peu plus longues maintenant. Pas de panique si tu dois t'arrêter : reprends, souffle, et continue.",
   ],
   découverte_peak: [
-    "Tu nages bien. Cette semaine on ajoute un peu d'intensité — juste pour voir jusqu'où tu peux aller. Pas d'obligation.",
+    "Tu nages bien. Cette semaine on ajoute un peu d'intensité, juste pour voir jusqu'où tu peux aller. Pas d'obligation.",
     "Tu es plus à l'aise dans l'eau qu'il y a quelques semaines. Profite de chaque séance, c'est là que tout se passe.",
   ],
   // ── Niveaux confirmés ──
   base: [
     "Ce mois est fondamental : on construit ta base aérobie. Travaille à basse intensité, respire, prends tes marques. La vitesse viendra plus tard.",
     "La base, c'est le moteur. Chaque séance d'endurance que tu fais aujourd'hui, tu l'encaisseras comme un avantage dans 2 mois. Sois patient.",
-    "La simplicité est la sophistication suprême. — Léonard de Vinci",
+    "La simplicité est la sophistication suprême., Léonard de Vinci",
   ],
   development: [
-    "On monte en charge. Les séances au seuil vont piquer — c'est normal. Reste dans les zones, ne cherche pas à tout donner d'un coup.",
+    "On monte en charge. Les séances au seuil vont piquer, c'est normal. Reste dans les zones, ne cherche pas à tout donner d'un coup.",
     "Ce mois développe ton endurance spécifique. Les efforts sont plus longs, l'intensité monte. Tu dois sortir fatigué mais pas détruit.",
   ],
   peak: [
-    "On est en phase de pointe. Les séances de vitesse sont courtes mais intenses. Récupère bien entre les efforts — c'est là que la progression s'installe.",
+    "On est en phase de pointe. Les séances de vitesse sont courtes mais intenses. Récupère bien entre les efforts, c'est là que la progression s'installe.",
     "Ce mois tu touches à ta meilleure forme. Chaque séance compte. Dors bien, mange bien, et fais confiance au travail déjà accompli.",
   ],
   taper: [
-    "On allège. C'est le moment où beaucoup veulent en faire plus — fais l'inverse. La fraîcheur au départ vaut plus que 3 séances de plus.",
+    "On allège. C'est le moment où beaucoup veulent en faire plus, fais l'inverse. La fraîcheur au départ vaut plus que 3 séances de plus.",
   ],
   competition: [
-    "Semaine de compétition — reste frais, séances courtes. Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
+    "Semaine de compétition, reste frais, séances courtes. Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.",
   ],
   test: [
-    "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Pas de forçage — un chrono propre pour mesurer si tu progresses vraiment.",
-    "Compare avec le test précédent. Même 2–3 secondes de mieux, c'est une vraie évolution. Note-les quelque part.",
+    "Semaine chrono : note ton T100 (100 m, départ dans l'eau). Pas de forçage, un chrono propre pour mesurer si tu progresses vraiment.",
+    "Compare avec le test précédent. Même 2-3 secondes de mieux, c'est une vraie évolution. Note-les quelque part.",
   ],
   wellness: [
     "On reprend doucement. L'objectif ce mois : créer l'habitude. Deux séances régulières valent mieux qu'une séance intense suivie d'une semaine sans.",
-    "Le corps s'adapte progressivement. Tu vas peut-être te sentir limité — c'est une bonne chose. On construit sur du solide.",
+    "Le corps s'adapte progressivement. Tu vas peut-être te sentir limité, c'est une bonne chose. On construit sur du solide.",
   ],
   default: [
     "Entraîne-toi intelligemment. La régularité bat toujours l'intensité ponctuelle. Une séance de plus par semaine sur 3 mois, ça change tout.",

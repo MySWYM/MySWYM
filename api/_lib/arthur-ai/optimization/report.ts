@@ -97,7 +97,7 @@ export async function buildOptimizationReport(
 
   return {
     auto_sends_enabled: isFollowupSendEnabled(),
-    note: "F3 Optimization Loop — envois auto non activés",
+    note: "F3 Optimization Loop, envois auto non activés",
     quality: {
       responses_scored: scoreRows.length,
       avg_score:

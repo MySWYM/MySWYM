@@ -3,18 +3,18 @@ import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 function dash(v) {
-  if (v == null || v === "") return "—";
-  if (typeof v === "number" && Number.isNaN(v)) return "—";
+  if (v == null || v === "") return "-";
+  if (typeof v === "number" && Number.isNaN(v)) return "-";
   return v;
 }
 
 function pct(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
+  if (n == null || Number.isNaN(Number(n))) return "-";
   return `${Math.round(Number(n) * 100)} %`;
 }
 
 function hoursLabel(h) {
-  if (h == null || Number.isNaN(Number(h))) return "—";
+  if (h == null || Number.isNaN(Number(h))) return "-";
   const x = Number(h);
   if (x < 1) return `${Math.round(x * 60)} min`;
   if (x < 48) return `${Math.round(x)} h`;
@@ -79,7 +79,7 @@ function Breakdown({ title, rows, empty, hint }) {
           <Card key={row.type} label={row.type} value={row.count} hint={hint} />
         ))
       ) : (
-        <Card label={empty} value="—" />
+        <Card label={empty} value="-" />
       )}
     </Section>
   );
@@ -321,17 +321,17 @@ export default function ArthurNageursAdmin() {
         empty="Aucun « trop dur » sur la période."
       />
       <Breakdown
-        title="Trop dur — par niveau"
+        title="Trop dur, par niveau"
         rows={hardLevels}
         empty="Pas encore de retours trop durs par niveau."
       />
       <Breakdown
-        title="Trop dur — par objectif"
+        title="Trop dur, par objectif"
         rows={hardGoals}
         empty="Pas encore de retours trop durs par objectif."
       />
       <Breakdown
-        title="Trop dur — par semaine du plan"
+        title="Trop dur, par semaine du plan"
         rows={hardWeeks}
         empty="Pas encore de retours trop durs par semaine."
       />

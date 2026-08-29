@@ -1,6 +1,6 @@
 /**
  * Copy toast quand un re-sync visibility applique réellement un merge remote.
- * Pas de PII — uniquement des signaux structurels (progression, nb plans, freq).
+ * Pas de PII, uniquement des signaux structurels (progression, nb plans, freq).
  */
 import { planProgressScore } from "./plan-progress-merge.js";
 
@@ -37,7 +37,7 @@ export function describePlanSyncChange({
     };
   }
   if (before.progress > after.progress) {
-    // Garde devrait bloquer — message de repli si ça passe quand même
+    // Garde devrait bloquer, message de repli si ça passe quand même
     return {
       reason: "progress_down",
       message: "Programme synchronisé.",

@@ -1,5 +1,5 @@
 /**
- * sessionSpecificity — distinct de strokeFocus.
+ * sessionSpecificity, distinct de strokeFocus.
  * strokeFocus = quelles nages travailler / préférer
  * sessionSpecificity = à quel point la séance doit coller à ce focus / objectif / course
  */

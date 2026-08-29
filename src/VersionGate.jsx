@@ -1,5 +1,5 @@
 /**
- * Écran bloquant Version Gate — force update.
+ * Écran bloquant Version Gate, force update.
  * Style minimal aligné thème MySWYM ; n’altère pas le design existant de l’app.
  */
 import { useCallback, useEffect, useState } from "react";

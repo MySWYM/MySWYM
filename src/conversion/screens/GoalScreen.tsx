@@ -19,7 +19,7 @@ export function GoalScreen({ value, onChange, onNext, onBack, step, total }: Pro
       total={total}
       onBack={onBack}
       title="Quel est ton objectif ?"
-      subtitle="On construit ton plan autour de ça — pas autour d’une moyenne."
+      subtitle="On construit ton plan autour de ça, pas autour d’une moyenne."
       footer={
         <Button fullWidth disabled={!value} onClick={onNext}>
           Continuer

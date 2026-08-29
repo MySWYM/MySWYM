@@ -37,7 +37,7 @@ export function isEquipmentEngagementExempt(brief = {}) {
   return false;
 }
 
-/** Outils utiles pour un focus — premier possédé = celui qu'on prend. */
+/** Outils utiles pour un focus, premier possédé = celui qu'on prend. */
 export function pedagogicalTechEquipment(techFocus, level = "regulier") {
   switch (techFocus) {
     case "technique_jambes":
@@ -83,7 +83,7 @@ function pickOne(list, rng) {
 
 /**
  * Décide si / comment utiliser le matos disponible.
- * Lié à l'éducatif du jour — pas un roll indépendant.
+ * Lié à l'éducatif du jour, pas un roll indépendant.
  * Inventaire non vide + hors exempt → engagement visible.
  */
 export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
@@ -106,7 +106,7 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   const roll = typeof rng === "function" ? rng() : Math.random();
 
   if (exempt) {
-    // Soft optionnel en récup/taper — rarement
+    // Soft optionnel en récup/taper, rarement
     if (roll >= 0.18) return empty;
   }
 
@@ -171,7 +171,7 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     corpsNote.push("pull-buoy");
   }
 
-  // Plus de purge session-wide pull+palmes — règle = même exercice seulement.
+  // Plus de purge session-wide pull+palmes, règle = même exercice seulement.
 
   const usage =
     applied.length === 0

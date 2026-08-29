@@ -1,5 +1,5 @@
 /**
- * get_subscription_status — lecture user_access_state (+ fallback metadata si besoin).
+ * get_subscription_status, lecture user_access_state (+ fallback metadata si besoin).
  * Ne touche pas Stripe.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";

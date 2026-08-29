@@ -3,7 +3,7 @@ import { LocalizedLink } from "../i18n/locale-routing.jsx";
 import { BRAND, FONT } from "../theme/brand.js";
 
 /**
- * Fil d’Ariane — pages à plus d’un niveau (pas sur la landing).
+ * Fil d’Ariane, pages à plus d’un niveau (pas sur la landing).
  */
 export default function Breadcrumb({ items, onDark = false }) {
   const { t } = useTranslation("common");

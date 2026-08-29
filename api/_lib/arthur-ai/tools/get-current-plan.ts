@@ -1,5 +1,5 @@
 /**
- * get_current_plan — lecture seule user_plans (aperçu, pas le blob complet).
+ * get_current_plan, lecture seule user_plans (aperçu, pas le blob complet).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUuid } from "../security.js";

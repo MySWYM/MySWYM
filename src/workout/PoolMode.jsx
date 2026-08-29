@@ -1,5 +1,5 @@
 /**
- * Mode bassin — un exercice à la fois, grosses zones tactiles.
+ * Mode bassin, un exercice à la fois, grosses zones tactiles.
  * Persistance locale de l’index en cours.
  */
 import { useEffect, useMemo, useState } from "react";
@@ -220,7 +220,7 @@ export default function PoolMode({
               }}>
                 {c.headline?.volume || c.main}
                 {c.headline?.stroke ? ` · ${c.headline.stroke}` : ""}
-                {c.headline?.rest ? ` — ${c.headline.rest}` : ""}
+                {c.headline?.rest ? `, ${c.headline.rest}` : ""}
               </div>
             ))}
           </div>
@@ -309,7 +309,7 @@ export default function PoolMode({
               cursor: "pointer",
             }}
           >
-            Trop dure — alléger la suite
+            Trop dure, alléger la suite
           </button>
         </div>
       )}

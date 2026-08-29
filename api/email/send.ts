@@ -1,6 +1,6 @@
 /**
  * POST /api/email/send
- * Self-contained handler (no local relative imports — Vercel ESM-safe).
+ * Self-contained handler (no local relative imports, Vercel ESM-safe).
  * Body: { kind, payload }
  * Header: x-myswym-email-secret = INTERNAL_EMAIL_SECRET
  *
@@ -157,19 +157,19 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         subject:
           firstName !== "nageur"
             ? `${firstName}, ton bassin t’attend`
-            : "Ton bassin t’attend — MySWYM",
+            : "Ton bassin t’attend, MySWYM",
         category: "welcome",
         html: layout({
-          preview: "Ouvre ton plan — la 1ʳᵉ séance est déjà là.",
+          preview: "Ouvre ton plan, la 1ʳᵉ séance est déjà là.",
           eyebrow: "Compte créé",
           title: titled,
           bodyHtml:
             p(
-              "Ton compte MySWYM est prêt. Ton plan est déjà structuré — clair, progressif, adapté à ton niveau.",
+              "Ton compte MySWYM est prêt. Ton plan est déjà structuré, clair, progressif, adapté à ton niveau.",
             ) +
             bullets([
               "Ouvre l’app et lance ta 1ʳᵉ séance",
-              "Coche-la après — le coach s’ajuste à ton ressenti",
+              "Coche-la après, le coach s’ajuste à ton ressenti",
               "Essai 7 jours sans carte : tu testes, tu décides",
             ]),
           cta: { label: "Ouvrir ma 1ʳᵉ séance", url: `${B.site}/app` },
@@ -190,7 +190,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
           title: "Active ton compte",
           bodyHtml:
             p("Un dernier clic pour confirmer ton adresse et accéder à ton plan.") +
-            p("Si tu n’as pas créé de compte, ignore ce message — rien ne se passe."),
+            p("Si tu n’as pas créé de compte, ignore ce message, rien ne se passe."),
           cta: { label: "Confirmer mon email", url: confirmUrl },
         }),
       };
@@ -212,7 +212,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
               "Tu as demandé à changer ton mot de passe MySWYM. Clique ci-dessous pour en choisir un nouveau.",
             ) +
             p(
-              "Si tu n’es pas à l’origine de cette demande, ignore cet email — ton compte reste inchangé.",
+              "Si tu n’es pas à l’origine de cette demande, ignore cet email, ton compte reste inchangé.",
             ),
           cta: { label: "Choisir un nouveau mot de passe", url: resetUrl },
         }),
@@ -225,14 +225,14 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       const firstName = str("firstName");
       if (!to.includes("@")) return { error: "payload.to must be an email" };
       const title = firstName
-        ? `Merci, ${firstName} — coach on.`
-        : "Merci — coach on.";
+        ? `Merci, ${firstName}, coach on.`
+        : "Merci, coach on.";
       return {
         to,
-        subject: `C’est parti — Premium actif (${planLabel})`,
+        subject: `C’est parti, Premium actif (${planLabel})`,
         category: "subscription_confirmation",
         html: layout({
-          preview: `Premium actif (${planLabel}) — ton coach est prêt.`,
+          preview: `Premium actif (${planLabel}), ton coach est prêt.`,
           eyebrow: `Premium · ${planLabel}`,
           title,
           bodyHtml:
@@ -267,15 +267,15 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       </div>`;
       return {
         to,
-        subject: `L’eau t’attend — ${sessionTitle}`,
+        subject: `L’eau t’attend : ${sessionTitle}`,
         category: "workout_reminder",
         html: layout({
-          preview: `L’eau t’attend — ${sessionTitle}${metersLine ? ` · ${metersLine}` : ""}`,
+          preview: `L’eau t’attend : ${sessionTitle}${metersLine ? ` · ${metersLine}` : ""}`,
           eyebrow: "Séance du jour",
           title,
           bodyHtml:
             p(
-              "Quelques dizaines de minutes et tu coches la case. Pas de pression — juste le prochain coup de bras.",
+              "Quelques dizaines de minutes et tu coches la case. Pas de pression, juste le prochain coup de bras.",
             ) + highlight,
           cta: { label: "Ouvrir la séance", url: ctaUrl },
         }),
@@ -331,7 +331,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         category: "contact",
         replyTo: email,
         html: layout({
-          preview: `Contact MySWYM — ${subject}`,
+          preview: `Contact MySWYM : ${subject}`,
           eyebrow: "Support",
           title: "Nouveau message contact",
           bodyHtml:
@@ -363,7 +363,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
           title,
           bodyHtml:
             p(
-              "Ton plan MySWYM est toujours là — séances structurées, progression claire, sans tout recommencer.",
+              "Ton plan MySWYM est toujours là, séances structurées, progression claire, sans tout recommencer.",
             ) +
             p(`Premium : ${B.pricingLine}. Essai 7 jours sans carte.`) +
             p("Un clic et tu reprends exactement où tu en étais."),

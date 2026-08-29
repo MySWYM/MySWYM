@@ -26,7 +26,7 @@ export default function CancelSurveySheet({ onChoose, onSkip }) {
           Avant de partir
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.55 }}>
-          Une raison rapide (optionnel) — ça nous aide à améliorer MySWYM.
+          Une raison rapide (optionnel), ça nous aide à améliorer MySWYM.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
           {reasons.map((r) => (

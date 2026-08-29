@@ -1,5 +1,5 @@
 /**
- * Affichage séance — parse rétrocompatible des `details` string[] existants.
+ * Affichage séance, parse rétrocompatible des `details` string[] existants.
  * Ne modifie pas le moteur : lecture seule pour l’UI.
  */
 import { toCoachDetailLines } from "./sports-engine/coach-restitution.js";
@@ -204,7 +204,7 @@ function restoreSoupleAfterPipeline(line) {
     .replace(new RegExp(PROGRESSIF_TOKEN, "g"), "progressif")
     .replace(new RegExp(DESCENDANT_TOKEN, "g"), "descendant");
 
-  // Contraste d’allures : remettre les mots dans la parenthèse (pas « — souple » en fin)
+  // Contraste d’allures : remettre les mots dans la parenthèse (pas «, souple » en fin)
   if (
     s.includes(PROGRESSIF_TOKEN) ||
     s.includes(DESCENDANT_TOKEN) ||
@@ -217,7 +217,7 @@ function restoreSoupleAfterPipeline(line) {
     .replace(new RegExp(`\\s*${SOUPLE_TOKEN}`, "g"), "")
     .replace(/\s{2,}/g, " ")
     .trim();
-  return `${cleaned} — souple`;
+  return `${cleaned}, souple`;
 }
 
 export function expandCompoundDetailLines(details = []) {
@@ -231,15 +231,15 @@ export function expandCompoundDetailLines(details = []) {
       out.push(full.startsWith("  ") ? full : `  ${text}`);
       continue;
     }
-    const emParts = text.replace(/^[-–—]\s*/, "").split(/\s*[—–]\s*/).map((s) => s.trim()).filter(Boolean);
+    const emParts = text.replace(/^[-–—]\s*/, "").split(/\s*[—–]\s*|\s+-\s+/).map((s) => s.trim()).filter(Boolean);
     const swimMain = emParts[0] || text.replace(/^[-–—]\s*/, "");
     const cues = emParts.slice(1);
     const parts = swimMain.split(/\s*·\s*/).map((s) => s.trim()).filter(Boolean);
     const allSets = parts.length >= 2 && parts.every((p) => SWIM_SET_PART_RE.test(p));
     if (allSets) {
       const total = parts.reduce((a, p) => a + estimateSetPartMeters(p), 0);
-      const cueStr = cues.join(" — ");
-      out.push(total > 0 ? `-${total}m${cueStr ? ` — ${cueStr}` : ""} :` : `-Série${cueStr ? ` — ${cueStr}` : ""} :`);
+      const cueStr = cues.join(" - ");
+      out.push(total > 0 ? `-${total}m${cueStr ? ` - ${cueStr}` : ""} :` : `-Série${cueStr ? ` - ${cueStr}` : ""} :`);
       parts.forEach((p) => out.push(`  · ${p}`));
     } else {
       out.push(text);
@@ -283,7 +283,7 @@ export function groupSessionDetails(details = []) {
 
 export function parseIntensity(raw) {
   if (!raw) return { zone: null, cue: null };
-  const parts = String(raw).split(/\s*[—–]\s*/).map((s) => s.trim()).filter(Boolean);
+  const parts = String(raw).split(/\s*[—–]\s*|\s+-\s+/).map((s) => s.trim()).filter(Boolean);
   if (parts.length === 0) return { zone: null, cue: null };
   return { zone: parts[0], cue: parts.slice(1).join(". ") || null };
 }
@@ -307,7 +307,7 @@ export function parseSessionDetail(raw) {
   }
 
   body = body.replace(/\s*:\s*$/, "");
-  const chunks = body.split(/\s*[—–]\s*/).map((s) => s.trim()).filter(Boolean);
+  const chunks = body.split(/\s*[—–]\s*|\s+-\s+/).map((s) => s.trim()).filter(Boolean);
   let main = chunks[0] || body;
   const restParts = [];
   const cues = [];
@@ -477,7 +477,7 @@ export function stripDepartMarkers(text) {
   );
 }
 
-/** `@1:42-1:48` / `(Z2 @1:05-1:12)` — plage d’allure personnalisée (Sheet / Premium). */
+/** `@1:42-1:48` / `(Z2 @1:05-1:12)`, plage d’allure personnalisée (Sheet / Premium). */
 const ALLURE_PACE_RANGE_RE = /@\s*(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/;
 
 function paceClockToSeconds(mmss) {
@@ -508,12 +508,12 @@ export function parseAllurePaceRange(text) {
   };
 }
 
-/** Pastille : @1:42–1:48 */
+/** Pastille : @1:42-1:48 */
 export function formatAllurePaceChip(low, high) {
   const a = String(low || "").trim();
   const b = String(high || "").trim();
   if (!a || !b) return null;
-  return `@${a}–${b}`;
+  return `@${a}-${b}`;
 }
 
 export function stripAllurePaceMarkers(text) {
@@ -909,7 +909,7 @@ export function buildWorkoutView(session = {}) {
       cues = cues.map((c) => stripDepartMarkers(c)).filter(Boolean);
     }
 
-    // Allure @mm:ss–mm:ss → pastille (pas dans le sous-texte)
+    // Allure @mm:ss-mm:ss → pastille (pas dans le sous-texte)
     const paceBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
     const paceParsed = parseAllurePaceRange(paceBlob);
     const allurePaceLabel = paceParsed
@@ -935,7 +935,7 @@ export function buildWorkoutView(session = {}) {
       cues = cues.map((c) => stripSprintMarkers(c)).filter(Boolean);
     }
 
-    const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" — ");
+    const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" - ");
     let educatif = null;
     let educatifs = [];
     if (session.composedBy === "natation-sheet") {

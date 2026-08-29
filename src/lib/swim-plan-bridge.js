@@ -1,6 +1,6 @@
 /**
  * Pont MySWYM ↔ générateur Arthur + programmation COSD (Yann) + moteur sportif V1.
- * UI app inchangée — on ne fait que le contenu des séances / semaines.
+ * UI app inchangée, on ne fait que le contenu des séances / semaines.
  *
  * Voir docs/plan-methodology.md et docs/sports-engine-v1.md
  */
@@ -60,7 +60,7 @@ const DIPLOMA_GOALS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns
 
 /**
  * Boucle « une séance à la fois » (pas d'accès à la semaine complète).
- * Couvre Nager & Progresser, triathlon, eau libre et prépa diplôme —
+ * Couvre Nager & Progresser, triathlon, eau libre et prépa diplôme , 
  * pour éviter l'impression de séances qui se répètent quand on voit toute la semaine.
  * Bien-être / reprise / compétition maître restent en plan multi-semaines.
  */
@@ -113,7 +113,7 @@ const PHASE_MAP = {
  * Répartition polarisée COSD → rôles de séance dans la semaine.
  * Départ + technique + RAC restent aéro → haute intensité ≤ ~13 % du volume total.
  *
- * role: { objectif, zone } — objectif = pool CORPS_PHYSIO ou technique_*
+ * role: { objectif, zone }, objectif = pool CORPS_PHYSIO ou technique_*
  */
 function cosdRolesForWeek(phaseName, weekIndexInPhase, nbSeances, profileObjectif) {
   const n = Math.max(1, nbSeances);
@@ -138,7 +138,7 @@ function cosdRolesForWeek(phaseName, weekIndexInPhase, nbSeances, profileObjecti
     return [aero, test, ...(n > 3 ? [aeroZ2] : []), aero].slice(0, n);
   }
 
-  // Reprise (100 % aéro) — premières semaines base
+  // Reprise (100 % aéro), premières semaines base
   if (phaseName === "base" && weekIndexInPhase < 2) {
     return Array.from({ length: n }, (_, i) => (i === n - 1 ? aeroZ2 : aero));
   }
@@ -272,20 +272,20 @@ const COMPETITION_TIP =
 
 /**
  * Séances ultra-légères J-7 → event : fraîcheur + touches vitesse ≤12,5 m.
- * Pas de volume, pas de seuil — activation neuromusculaire seulement.
+ * Pas de volume, pas de seuil, activation neuromusculaire seulement.
  */
 export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel, beginnerFriendly = false) {
   const n = Math.max(1, Math.min(2, nbSeances));
   const easy = beginnerFriendly ? "(facile)" : "(Z1)";
-  const fast = beginnerFriendly ? "(rapide, frais)" : "(Z4 — touché court)";
+  const fast = beginnerFriendly ? "(rapide, frais)" : "(Z4 - touché court)";
   const repos = beginnerFriendly ? "repos 30s" : "R30''";
 
   const variants = [
     {
       details: [
         `-200m crawl souple ${easy}`,
-        `-8×12,5m accélération ${fast} — ${repos} entre chaque`,
-        `  · Départ poussée mur, 2–3 coups forts, laisse glisser — qualité absolue`,
+        `-8×12,5m accélération ${fast} - ${repos} entre chaque`,
+        `  · Départ poussée mur, 2-3 coups forts, laisse glisser - qualité absolue`,
         `-100m crawl très souple ${easy}`,
         `→ Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.`,
       ],
@@ -295,8 +295,8 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
     {
       details: [
         `-200m crawl / dos souple ${easy}`,
-        `-8×12,5m accélération ${fast} — ${repos}`,
-        `  · Juste le feeling de vitesse — tu t'arrêtes avant de fatiguer`,
+        `-8×12,5m accélération ${fast} - ${repos}`,
+        `  · Juste le feeling de vitesse - tu t'arrêtes avant de fatiguer`,
         `-100m nage libre détendue ${easy}`,
         `→ Ne t'inquiète pas : si tu as suivi le plan, le travail est fait.`,
       ],
@@ -742,7 +742,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
                 seed: `arthur|${fromDb.templateSlug || "t"}|w${wi}|s${si}`,
               },
             };
-            // Étape J2 — Arthur passe le même quality gate que le composeur
+            // Étape J2, Arthur passe le même quality gate que le composeur
             const arthurBrief = {
               level: sport.level,
               objectif: sport.objectifV1,
@@ -900,7 +900,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
 
 /**
  * Rotation des rôles pour le mode boucle séance unique.
- * Premières séances (cursor < 3) forcées faciles — sensation « envie de revenir demain ».
+ * Premières séances (cursor < 3) forcées faciles, sensation « envie de revenir demain ».
  * Variantes par famille d'objectif pour que triathlon / eau libre / diplôme restent spécifiques.
  */
 const LOOP_VARIANTS_BY_FAMILY = {
@@ -927,7 +927,7 @@ const LOOP_VARIANTS_BY_FAMILY = {
     { id: "tri_mix", focus: "Séance mixte course", role: { objectif: "mixte", zone: "Z2" }, objectives: ["Variété d'allures", "Gestion d'effort"] },
   ],
   eau_libre: [
-    { id: "ow_sight", focus: "Sighting & orientation", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Repères toutes les 6–8 tractions", "Trajectoire"] },
+    { id: "ow_sight", focus: "Sighting & orientation", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Repères toutes les 6-8 tractions", "Trajectoire"] },
     { id: "ow_aero", focus: "Endurance eau libre", role: { objectif: "eau_libre", zone: "Z2" }, objectives: ["Volume confortable", "Respiration calme"] },
     { id: "ow_tech", focus: "Crawl efficace", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Glisse", "Respiration bilatérale"] },
     { id: "ow_seuil", focus: "Allure course", role: { objectif: "eau_libre", zone: "Z3" }, objectives: ["Régularité", "Tenir sans s'écrouler"] },
@@ -962,23 +962,23 @@ function loopVariantsForEvent(family, goal) {
 
 const LOOP_EASY_BY_FAMILY = {
   progression: [
-    { id: "easy_tech", focus: "Première séance — douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+    { id: "easy_tech", focus: "Première séance - douce", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
     { id: "easy_sens", focus: "Sensations faciles", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Respiration calme", "Plaisir dans l'eau"] },
     { id: "easy_tech2", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
   ],
   triathlon: [
-    { id: "tri_easy1", focus: "Première séance triathlon — douce", role: { objectif: "mixte", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+    { id: "tri_easy1", focus: "Première séance triathlon - douce", role: { objectif: "mixte", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
     { id: "tri_easy2", focus: "Sensations course", role: { objectif: "endurance", zone: "Z1" }, objectives: ["Respiration calme", "Glisse"] },
     { id: "tri_easy3", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
   ],
   eau_libre: [
-    { id: "ow_easy1", focus: "Première séance eau libre — douce", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
+    { id: "ow_easy1", focus: "Première séance eau libre - douce", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Prendre ses marques", "Nager sans forcer"] },
     { id: "ow_easy2", focus: "Sighting facile", role: { objectif: "eau_libre", zone: "Z1" }, objectives: ["Repères calmes", "Plaisir"] },
     { id: "ow_easy3", focus: "Technique légère", role: { objectif: "technique_respiration", zone: "Z1" }, objectives: ["Éducatif simple", "Confiance"] },
   ],
 };
 
-/** Séances diplôme (BNSSA / BPJEPS / pompiers / CAEPMNS) — une variante à la fois. */
+/** Séances diplôme (BNSSA / BPJEPS / pompiers / CAEPMNS), une variante à la fois. */
 function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
   const pool = profile.pool === 25 ? 25 : 50;
   const goal = profile.goal || "bnssa";
@@ -991,13 +991,13 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       id: "simu_100",
       focus: "Simulation parcours 100 m",
       type: "BNSSA",
-      intensity: "Apnée & remorquage — qualité de parcours",
+      intensity: "Apnée & remorquage - qualité de parcours",
       objectives: ["Tracé fond propre", "Remorquage stable"],
       details: (n) => [
         `Échauffement : ${Math.round(200 * n / 50) * 50}m NL progressif + ${P * 2}m battements`,
-        `Apnée dynamique : ${Math.max(3, Math.round(6 * n))}×15m immersion complète — R2' — sans appui`,
-        `Simulation 100m : 25m NL → 15m apnée → virage → 15m apnée → 25m remorquage — R3'`,
-        `Remorquage : ${Math.max(2, Math.round(4 * n))}×${P}m — R1'30" — position dorsale, visage hors de l'eau`,
+        `Apnée dynamique : ${Math.max(3, Math.round(6 * n))}×15m immersion complète - R2' - sans appui`,
+        `Simulation 100m : 25m NL → 15m apnée → virage → 15m apnée → 25m remorquage - R3'`,
+        `Remorquage : ${Math.max(2, Math.round(4 * n))}×${P}m - R1'30" - position dorsale, visage hors de l'eau`,
         `Retour au calme : ${P * 4}m dos lent`,
       ],
     },
@@ -1009,9 +1009,9 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Virages équipés", "Plongée canard"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
-        `${Math.max(3, Math.round(6 * n))}×${2 * P}m palmes + masque + tuba — R20" — touche le mur à chaque virage`,
-        `Plongée canard : 6× plongée → fond → saisie mannequin → remontée — R2'`,
-        `Remorquage : ${Math.max(2, Math.round(4 * n))}×${P}m position dorsale — R1'30"`,
+        `${Math.max(3, Math.round(6 * n))}×${2 * P}m palmes + masque + tuba - R20" - touche le mur à chaque virage`,
+        `Plongée canard : 6× plongée → fond → saisie mannequin → remontée - R2'`,
+        `Remorquage : ${Math.max(2, Math.round(4 * n))}×${P}m position dorsale - R1'30"`,
         `Retour au calme : ${P * 4}m dos lent`,
       ],
     },
@@ -1023,23 +1023,23 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Apnée après fatigue", "Remorquage propre"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL progressif + ${P * 2}m battements`,
-        `${Math.max(3, Math.round(5 * n))}×${2 * P}m NL — R20" — endurance de base`,
-        `Apnée dynamique : ${Math.max(3, Math.round(6 * n))}×15m — R2' — immersion complète`,
-        `${Math.max(2, Math.round(4 * n))}×${P}m remorquage — R1'30" — position dorsale`,
+        `${Math.max(3, Math.round(5 * n))}×${2 * P}m NL - R20" - endurance de base`,
+        `Apnée dynamique : ${Math.max(3, Math.round(6 * n))}×15m - R2' - immersion complète`,
+        `${Math.max(2, Math.round(4 * n))}×${P}m remorquage - R1'30" - position dorsale`,
         `Retour au calme : ${P * 4}m dos lent`,
       ],
     },
     {
       id: "volume_equipe",
-      focus: "Palmes + tuba — volume équipé",
+      focus: "Palmes + tuba - volume équipé",
       type: "BNSSA",
       intensity: "Endurance masque/tuba + apnées courtes",
       objectives: ["Respiration tuba", "Virages propres"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL + ${P * 2}m palmes souples`,
-        `${Math.max(3, Math.round(6 * n))}×${2 * P}m palmes + masque + tuba — R15"`,
-        `Apnée : ${Math.max(3, Math.round(5 * n))}×15m — R1'30" — après fatigue équipée`,
-        `${Math.max(2, Math.round(3 * n))}×${P}m remorquage dorsale — R1'`,
+        `${Math.max(3, Math.round(6 * n))}×${2 * P}m palmes + masque + tuba - R15"`,
+        `Apnée : ${Math.max(3, Math.round(5 * n))}×15m - R1'30" - après fatigue équipée`,
+        `${Math.max(2, Math.round(3 * n))}×${P}m remorquage dorsale - R1'`,
         `Retour au calme : ${P * 4}m dos sans matériel`,
       ],
     },
@@ -1051,9 +1051,9 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Enchaînement fluide", "Gestion de l'effort"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
-        `${Math.max(2, Math.round(4 * n))}×${2 * P}m palmes + tuba — R20"`,
-        `Bloc exam : 50m palmes → 15m apnée → ${P}m remorquage — ×${Math.max(2, Math.round(4 * n))} — R2'30"`,
-        `Apnée isolée : ${Math.max(3, Math.round(4 * n))}×15m — R2'`,
+        `${Math.max(2, Math.round(4 * n))}×${2 * P}m palmes + tuba - R20"`,
+        `Bloc exam : 50m palmes → 15m apnée → ${P}m remorquage - ×${Math.max(2, Math.round(4 * n))} - R2'30"`,
+        `Apnée isolée : ${Math.max(3, Math.round(4 * n))}×15m - R2'`,
         `Retour au calme : ${P * 4}m dos lent`,
       ],
     },
@@ -1064,13 +1064,13 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       id: "bp_400",
       focus: "Spécifique 400 m NL",
       type: "SEUIL",
-      intensity: "Régularité des 100 — objectif < 7'40\"",
+      intensity: "Régularité des 100 - objectif < 7'40\"",
       objectives: ["Splits réguliers", "Allure examen"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL progressif + ${P * 2}m éducatif respiration`,
-        `${Math.max(3, Math.round(4 * n))}×100m NL — R30" — même temps à chaque 100`,
-        `2×200m NL — R45" — allure 400 m examen`,
-        `${Math.max(2, Math.round(3 * n))}×50m NL — R20" — un peu plus vite, récup complète`,
+        `${Math.max(3, Math.round(4 * n))}×100m NL - R30" - même temps à chaque 100`,
+        `2×200m NL - R45" - allure 400 m examen`,
+        `${Math.max(2, Math.round(3 * n))}×50m NL - R20" - un peu plus vite, récup complète`,
         `Retour au calme : ${P * 4}m dos / brasse souple`,
       ],
     },
@@ -1082,9 +1082,9 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Transitions propres", "Objectif < 1'50\""],
       details: (n) => [
         `Échauffement : ${P * 4}m 4 nages souple`,
-        `${Math.max(4, Math.round(6 * n))}×25m nage complète (alterne les 4) — R20"`,
-        `${Math.max(2, Math.round(3 * n))}×100m 4 nages — R1' — ordre olympique`,
-        `${Math.max(2, Math.round(3 * n))}×50m (25 brasse + 25 crawl) — R30"`,
+        `${Math.max(4, Math.round(6 * n))}×25m nage complète (alterne les 4) - R20"`,
+        `${Math.max(2, Math.round(3 * n))}×100m 4 nages - R1' - ordre olympique`,
+        `${Math.max(2, Math.round(3 * n))}×50m (25 brasse + 25 crawl) - R30"`,
         `Retour au calme : ${P * 4}m choix libre`,
       ],
     },
@@ -1096,8 +1096,8 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Continuité", "Respiration stable"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
-        `${Math.max(4, Math.round(8 * n))}×${2 * P}m NL — R20" — allure confortable`,
-        `${Math.max(2, Math.round(3 * n))}×100m NL — R25" — un cran au-dessus`,
+        `${Math.max(4, Math.round(8 * n))}×${2 * P}m NL - R20" - allure confortable`,
+        `${Math.max(2, Math.round(3 * n))}×100m NL - R25" - un cran au-dessus`,
         `Retour au calme : ${P * 4}m dos lent`,
       ],
     },
@@ -1109,9 +1109,9 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Constante des temps", "Récup courte maîtrisée"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL progressif`,
-        `8×50m NL — R15" — allure 400 m`,
-        `${Math.max(2, Math.round(3 * n))}×150m NL — R40" — tenir l'allure`,
-        `4×25m NL rapide — R30" — récup complète`,
+        `8×50m NL - R15" - allure 400 m`,
+        `${Math.max(2, Math.round(3 * n))}×150m NL - R40" - tenir l'allure`,
+        `4×25m NL rapide - R30" - récup complète`,
         `Retour au calme : ${P * 4}m souple`,
       ],
     },
@@ -1122,13 +1122,13 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       id: "pomp_400",
       focus: "400 m NL tests",
       type: "SEUIL",
-      intensity: "Endurance vitesse — tests pompiers",
+      intensity: "Endurance vitesse - tests pompiers",
       objectives: ["Tenir 400 m", "Allure régulière"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL + ${P * 2}m battements`,
-        `${Math.max(3, Math.round(4 * n))}×100m NL — R30" — splits réguliers`,
-        `1×400m NL continu — chronomètre, allure cible`,
-        `${Math.max(2, Math.round(3 * n))}×50m NL — R25"`,
+        `${Math.max(3, Math.round(4 * n))}×100m NL - R30" - splits réguliers`,
+        `1×400m NL continu - chronomètre, allure cible`,
+        `${Math.max(2, Math.round(3 * n))}×50m NL - R25"`,
         `Retour au calme : ${P * 4}m dos`,
       ],
     },
@@ -1140,9 +1140,9 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Départ explosif", "Remorquage contrôlé"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL progressif`,
-        `${Math.max(4, Math.round(6 * n))}×${P}m NL rapide — R40" — récup quasi complète`,
-        `${Math.max(3, Math.round(5 * n))}×${P}m remorquage — R1' — position dorsale`,
-        `Simu 50m : nage → saisie → remorquage — ×${Math.max(2, Math.round(3 * n))} — R2'`,
+        `${Math.max(4, Math.round(6 * n))}×${P}m NL rapide - R40" - récup quasi complète`,
+        `${Math.max(3, Math.round(5 * n))}×${P}m remorquage - R1' - position dorsale`,
+        `Simu 50m : nage → saisie → remorquage - ×${Math.max(2, Math.round(3 * n))} - R2'`,
         `Retour au calme : ${P * 4}m souple`,
       ],
     },
@@ -1154,9 +1154,9 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Gérer la fatigue", "Qualité du remorquage"],
       details: (n) => [
         `Échauffement : ${P * 4}m NL`,
-        `${Math.max(3, Math.round(5 * n))}×${2 * P}m NL — R20"`,
-        `Apnée : ${Math.max(3, Math.round(4 * n))}×15m — R1'30"`,
-        `${Math.max(2, Math.round(4 * n))}×${P}m remorquage — R1'`,
+        `${Math.max(3, Math.round(5 * n))}×${2 * P}m NL - R20"`,
+        `Apnée : ${Math.max(3, Math.round(4 * n))}×15m - R1'30"`,
+        `${Math.max(2, Math.round(4 * n))}×${P}m remorquage - R1'`,
         `Retour au calme : ${P * 4}m dos`,
       ],
     },
@@ -1170,14 +1170,14 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
   const easyDiploma = [
     {
       id: "dip_easy1",
-      focus: "Première séance prépa — douce",
+      focus: "Première séance prépa - douce",
       type: "ENDURANCE",
       intensity: "Prise de marques",
       objectives: ["Nager sans forcer", "Confiance"],
       details: () => [
         `Échauffement : ${P * 4}m NL très souple`,
-        `${Math.max(4, Math.round(6 * volScale))}×${P}m NL — R20" — confortable`,
-        `${P * 2}m battements avec planche — respirations calmes`,
+        `${Math.max(4, Math.round(6 * volScale))}×${P}m NL - R20" - confortable`,
+        `${P * 2}m battements avec planche - respirations calmes`,
         `Retour au calme : ${P * 2}m dos lent`,
       ],
     },
@@ -1189,7 +1189,7 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Matériel à l'aise", "Respiration"],
       details: () => [
         `Échauffement : ${P * 4}m NL`,
-        `${Math.max(3, Math.round(4 * volScale))}×${2 * P}m NL — R25"`,
+        `${Math.max(3, Math.round(4 * volScale))}×${2 * P}m NL - R25"`,
         `${P * 2}m palmes souples (si tu en as) ou battements`,
         `Retour au calme : ${P * 2}m choix libre`,
       ],
@@ -1202,7 +1202,7 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
       objectives: ["Continuité", "Plaisir"],
       details: () => [
         `Échauffement : ${P * 2}m NL + ${P * 2}m dos`,
-        `${Math.max(4, Math.round(8 * volScale))}×${P}m NL — R15" — tu peux parler`,
+        `${Math.max(4, Math.round(8 * volScale))}×${P}m NL - R15" - tu peux parler`,
         `Retour au calme : ${P * 4}m souple`,
       ],
     },
@@ -1251,7 +1251,7 @@ export function formatLoopSessionTitle(ordinalIndex = 0) {
   return `Séance n°${Math.max(0, Number(ordinalIndex) || 0) + 1}`;
 }
 
-/** Titre dans la semaine courante (Séance 1, 2, 3…) — pas le compteur global. */
+/** Titre dans la semaine courante (Séance 1, 2, 3…), pas le compteur global. */
 export function formatLoopWeekSessionTitle(indexInWeek = 0) {
   return `Séance ${Math.max(0, Number(indexInWeek) || 0) + 1}`;
 }
@@ -1489,9 +1489,9 @@ export async function expandLoopWeekSessions(plan, profile, isPremium = false, o
 
 /**
  * Génère une seule séance pour le mode boucle (Nager & Progresser, triathlon, eau libre, diplôme).
- * Familles Sheet soft (Nager 01–03, triathlon 04–08, OW 09–13) : await catalogue, **pas** de fallback composeur silencieux.
+ * Familles Sheet soft (Nager 01-03, triathlon 04-08, OW 09-13) : await catalogue, **pas** de fallback composeur silencieux.
  * @param {object} profile
- * @param {number} cursor — index de variété / seed (peut bouger sans validation)
+ * @param {number} cursor, index de variété / seed (peut bouger sans validation)
  * @param {boolean} isPremium
  * @param {{ ordinalIndex?: number, history?: object[], currentSheetN?: number, currentEducatif?: string|null, planStart?: *, weekIndex?: number }} [opts]
  * @returns {Promise<{ session: object|null, focus: string, week: object, sheetError?: boolean, sheetErrorMessage?: string }>}
@@ -1557,7 +1557,7 @@ export async function buildProgressionLoopSession(profile, cursor = 0, isPremium
   let sheetError = false;
   let sheetErrorMessage = null;
 
-  // Catalogue Google Sheet — familles soft : source obligatoire (pas de composeur de secours)
+  // Catalogue Google Sheet, familles soft : source obligatoire (pas de composeur de secours)
   const sheetFamily = sheetFamilyIdFromProfile(profile);
   const sheetLocked = Boolean(sheetFamily) && isNatationSheetCatalogueEnabled();
 
@@ -1607,7 +1607,7 @@ export async function buildProgressionLoopSession(profile, cursor = 0, isPremium
     }
   }
 
-  // Composeur pédagogique — uniquement hors familles Sheet soft (Oly+ / OW / etc.)
+  // Composeur pédagogique, uniquement hors familles Sheet soft (Oly+ / OW / etc.)
   if (!session && !sheetLocked && isComposerEnabledForLevel(sport.level)) {
     const preferred = normalizeTargetSessionDistance(profile.targetSessionDistance, sport.level);
     const baseVol =
@@ -1730,7 +1730,7 @@ export async function buildProgressionLoopSession(profile, cursor = 0, isPremium
   }
   }
 
-  // Ancre distance moyenne — pas sur les séances Sheet (on garde le cahier tel quel)
+  // Ancre distance moyenne, pas sur les séances Sheet (on garde le cahier tel quel)
   const sportLevel =
     profile.level === "découverte" || profile.level === "beginner"
       ? "decouverte"

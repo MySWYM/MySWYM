@@ -1,9 +1,9 @@
 /**
- * Shadow Mode H1 — pas d’envoi Instagram automatique.
+ * Shadow Mode H1, pas d’envoi Instagram automatique.
  *
  * Shadow ON (défaut) : Arthur analyse + propose, zéro send.
  * Live send : uniquement si SHADOW=0 ET ARTHUR_INSTAGRAM_LIVE_SEND=1
- *   (double gate — jamais activé par cette phase).
+ *   (double gate, jamais activé par cette phase).
  * ARTHUR_FOLLOWUPS_SEND : jamais touché ici.
  */
 
@@ -21,13 +21,13 @@ export function isInstagramShadowMode(): boolean {
 }
 
 /**
- * Live DM Instagram — double gate volontairement stricte.
+ * Live DM Instagram, double gate volontairement stricte.
  * H1 ne doit jamais retourner true en config normale.
  */
 export function canLiveSendInstagram(): boolean {
   if (isInstagramShadowMode()) return false;
   if (process.env.ARTHUR_FOLLOWUPS_SEND === "1") {
-    // Ne pas confondre followups et reply live — toujours refuser si on veut
+    // Ne pas confondre followups et reply live, toujours refuser si on veut
     // être ultra-safe? Non: followups send ≠ live reply. Mais user dit
     // ne jamais activer followups. On n'active pas live via followups flag.
   }

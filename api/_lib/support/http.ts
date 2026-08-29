@@ -1,5 +1,5 @@
 /**
- * HTTP support (monté dans api/contact.ts — pas de 13e fonction Hobby).
+ * HTTP support (monté dans api/contact.ts, pas de 13e fonction Hobby).
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createArthurUserClient } from "../arthur-ai/supabase.js";
@@ -97,7 +97,7 @@ export async function handleTelegramWebhook(
   }
   try {
     const result = await handleOperatorInbound({ inbound });
-    // result porte déjà `ok` — pas de doublon (TS2783 bloque le build Vercel)
+    // result porte déjà `ok`, pas de doublon (TS2783 bloque le build Vercel)
     json(res, 200, result);
   } catch (err) {
     console.error("[support] telegram inbound", err instanceof Error ? err.message : err);

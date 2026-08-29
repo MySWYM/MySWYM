@@ -44,7 +44,7 @@ async function resolveStoredCustomerId(user: AuthUser) {
     const c = await stripe.customers.retrieve(stored);
     if (!(c as { deleted?: boolean }).deleted) return stored;
   } catch {
-    // ID périmé — le checkout recréera un customer. Ne pas rattacher un autre compte par e-mail.
+    // ID périmé, le checkout recréera un customer. Ne pas rattacher un autre compte par e-mail.
   }
   return null;
 }

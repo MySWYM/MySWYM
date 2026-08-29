@@ -1,5 +1,5 @@
 /**
- * get_user_profile — lecture seule sport_profiles (filtrée userId).
+ * get_user_profile, lecture seule sport_profiles (filtrée userId).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUuid } from "../security.js";

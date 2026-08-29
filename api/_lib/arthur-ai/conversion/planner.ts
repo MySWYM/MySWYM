@@ -1,5 +1,5 @@
 /**
- * Planifie des followups (insert ai_followups) — jamais d’envoi ici.
+ * Planifie des followups (insert ai_followups), jamais d’envoi ici.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";
@@ -128,7 +128,7 @@ export async function planFollowupsForLeads(
       });
 
       if (!dryRun) {
-        // Pas de ligne ai_followups pour chaque suppress (évite le bruit) —
+        // Pas de ligne ai_followups pour chaque suppress (évite le bruit),
         // tracking via ai_events uniquement.
         await trackAiEvent(admin, {
           conversationId: lead.conversation_id,

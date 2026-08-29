@@ -1,5 +1,5 @@
 /**
- * Rapport produit « Nageurs » — activation, habitude, moteur, argent.
+ * Rapport produit « Nageurs », activation, habitude, moteur, argent.
  * Servi par GET /api/admin/arthur-readiness?nageurs=1 (pas de 13e fonction Hobby).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";

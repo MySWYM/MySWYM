@@ -15,7 +15,7 @@ export type AdminAuthResult =
   | { ok: true; via: "secret" | "email" | "metadata"; userId?: string }
   | { ok: false; status: number; error: string };
 
-/** Compte opérateur MySWYM — toujours admin, même si ARTHUR_ADMIN_EMAILS est vide. */
+/** Compte opérateur MySWYM : toujours admin, même si ARTHUR_ADMIN_EMAILS est vide. */
 export const BUILTIN_ARTHUR_ADMIN_EMAILS = ["admin@myswym.app"];
 
 function adminEmails(): Set<string> {

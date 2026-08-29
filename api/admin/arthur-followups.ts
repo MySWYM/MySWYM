@@ -1,7 +1,7 @@
 /**
- * GET|POST /api/admin/arthur-followups — Conversion Engine F2
+ * GET|POST /api/admin/arthur-followups, Conversion Engine F2
  *
- * GET  — impact report + liste
+ * GET , impact report + liste
  * POST actions :
  *   plan | plan_dry_run | approve | send | cancel
  *
@@ -127,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       days,
       auth_via: auth.via,
-      note: "F2 — mesure d’impact ; envois Instagram gated (ARTHUR_FOLLOWUPS_SEND)",
+      note: "F2, mesure d’impact ; envois Instagram gated (ARTHUR_FOLLOWUPS_SEND)",
       ...report,
     });
   } catch (err) {

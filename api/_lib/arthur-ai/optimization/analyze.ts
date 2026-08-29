@@ -1,5 +1,5 @@
 /**
- * Analyse conversationnelle (F3) — drop-risk + recommandations.
+ * Analyse conversationnelle (F3), drop-risk + recommandations.
  */
 import { detectCtaInMessage } from "./quality.js";
 

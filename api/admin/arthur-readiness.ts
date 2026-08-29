@@ -1,8 +1,8 @@
 /**
- * GET|POST /api/admin/arthur-readiness — Production Readiness Phase G
+ * GET|POST /api/admin/arthur-readiness, Production Readiness Phase G
  *
- * GET  — flags, coûts, rate limits, takeovers, checklist scaling
- * POST — release_takeover | (refuse enable_auto_sends)
+ * GET , flags, coûts, rate limits, takeovers, checklist scaling
+ * POST, release_takeover | (refuse enable_auto_sends)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createArthurAdminClient } from "../_lib/arthur-ai/supabase.js";
@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(auth.status).json({ ok: false, error: auth.error });
   }
 
-  // Ping léger (login /admin) — pas de 13e fonction Hobby.
+  // Ping léger (login /admin), pas de 13e fonction Hobby.
   if (req.method === "GET" && String(req.query.ping || "") === "1") {
     return res.status(200).json({
       ok: true,

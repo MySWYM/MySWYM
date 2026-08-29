@@ -1,5 +1,5 @@
 /**
- * Tests Étape H — Boucle adaptative Feedback → Capacity → Adaptation
+ * Tests Étape H, Boucle adaptative Feedback → Capacity → Adaptation
  * Usage : node src/lib/sports-engine/feedback-loop.test.js
  */
 import {
@@ -188,7 +188,7 @@ function volAfter(feedbacks, ctx = {}) {
   assert(a.volumeMul === 1, "t15 mul");
 }
 
-// T16 capacity progressive — un too_easy ne flippe pas la capacité
+// T16 capacity progressive, un too_easy ne flippe pas la capacité
 {
   const base = estimateCapacity({ level: "sportif" }, { completedSessions: 4 });
   const a = decideWeeklyAdaptation(weekOf(["too_easy"]));
@@ -219,14 +219,14 @@ function volAfter(feedbacks, ctx = {}) {
   assert(loop.nextVolumeAdj < 1, "seqC down");
 }
 
-// D good / hard / good — ne pas sur-réagir
+// D good / hard / good, ne pas sur-réagir
 {
   const a = decideWeeklyAdaptation(weekOf(["good", "hard", "good"]));
   assert(a.action === "HOLD" || (a.action === "ADJUST" && a.observeOnly), `seqD ${a.action}`);
   assert(a.volumeMul >= 0.94, `seqD mul ${a.volumeMul}`);
 }
 
-// E pain puis good×2 — protection ne disparaît pas trop vite
+// E pain puis good×2, protection ne disparaît pas trop vite
 {
   const loop1 = runAdaptiveLoop({
     weekFeedbacks: [{ pain: true, completed: true }],

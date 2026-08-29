@@ -1,6 +1,6 @@
 /**
  * Corps physio réel (banque Arthur) dans le composeur V1.
- * Aérobie seulement — qualité / Z3 / Z4 restent sur les formats composeur.
+ * Aérobie seulement, qualité / Z3 / Z4 restent sur les formats composeur.
  * Pas de filler « 2ᵉ série, même allure ».
  */
 import {
@@ -170,11 +170,11 @@ function complementUnit(mainDist, remain, quantum) {
 
 function formatLine(s) {
   const cue = displaySafeCue(s.cue);
-  const cueTxt = cue ? ` — ${cue}` : "";
+  const cueTxt = cue ? ` - ${cue}` : "";
   if (s.continuous || (s.reps === 1 && !s.restSec)) {
     return `-${s.distancePerRep}m ${s.label}${cueTxt}`;
   }
-  return `-${s.reps} × ${s.distancePerRep}m ${s.label}${cueTxt} — repos ${s.restSec}s`;
+  return `-${s.reps} × ${s.distancePerRep}m ${s.label}${cueTxt} - repos ${s.restSec}s`;
 }
 
 function fitReps(target, dist, maxReps) {
@@ -273,7 +273,7 @@ export function buildCorpsFromBank({
       distancePerRep: dist,
       restSec,
       label: swimLabel,
-      cue: extra && !/bloc/i.test(extra) ? `${blocCue} — ${extra}` : blocCue,
+      cue: extra && !/bloc/i.test(extra) ? `${blocCue} - ${extra}` : blocCue,
       block: "corps",
       exerciseId: corpsEx.id,
       continuous: false,

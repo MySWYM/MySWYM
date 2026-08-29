@@ -1,5 +1,5 @@
 /**
- * Fixtures Arthur Gold — pour tests runtime (sans Supabase).
+ * Fixtures Arthur Gold, pour tests runtime (sans Supabase).
  * Ne modifie pas la logique de sélection ; injecte un cache réaliste.
  */
 
@@ -11,10 +11,10 @@ export const ARTHUR_GOLD_TEST_FIXTURES = [
     type: "ENDURANCE",
     intensity: "Z2",
     details: [
-      "-400m crawl facile — Z1",
-      "-8 × 100m crawl — orientation / sighting — repos 20s",
-      "-6 × 200m crawl — aérobie régulier — repos 25s",
-      "-200m au choix — récup",
+      "-400m crawl facile - Z1",
+      "-8 × 100m crawl - orientation / sighting - repos 20s",
+      "-6 × 200m crawl - aérobie régulier - repos 25s",
+      "-200m au choix - récup",
     ],
     base_distance_m: 2400,
     niveaux: ["sportif", "performance"],
@@ -35,10 +35,10 @@ export const ARTHUR_GOLD_TEST_FIXTURES = [
     type: "SEUIL",
     intensity: "Z3",
     details: [
-      "-300m crawl — échauffement Z1",
-      "-4 × 50m éducatif — technique",
-      "-5 × 200m crawl — seuil contrôlé — repos 30s",
-      "-4 × 100m crawl — aérobie — repos 20s",
+      "-300m crawl - échauffement Z1",
+      "-4 × 50m éducatif - technique",
+      "-5 × 200m crawl - seuil contrôlé - repos 30s",
+      "-4 × 100m crawl - aérobie - repos 20s",
       "-200m récup",
     ],
     base_distance_m: 2200,
@@ -60,9 +60,9 @@ export const ARTHUR_GOLD_TEST_FIXTURES = [
     type: "ENDURANCE",
     intensity: "Z2",
     details: [
-      "-400m crawl — Z1",
-      "-8 × 100m crawl — économie — repos 15s",
-      "-4 × 250m crawl — aérobie tenable — repos 25s",
+      "-400m crawl - Z1",
+      "-8 × 100m crawl - économie - repos 15s",
+      "-4 × 250m crawl - aérobie tenable - repos 25s",
       "-200m récup",
     ],
     base_distance_m: 2400,
@@ -84,9 +84,9 @@ export const ARTHUR_GOLD_TEST_FIXTURES = [
     type: "VITESSE",
     intensity: "Z4",
     details: [
-      "-300m crawl — Z1",
-      "-8 × 50m crawl — rapide / récup complète — repos 40s",
-      "-6 × 100m crawl — consolidation aérobie — repos 20s",
+      "-300m crawl - Z1",
+      "-8 × 50m crawl - rapide / récup complète - repos 40s",
+      "-6 × 100m crawl - consolidation aérobie - repos 20s",
       "-200m récup",
     ],
     base_distance_m: 1500,

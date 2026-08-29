@@ -171,7 +171,7 @@ export default function AllureUnlockSheet({
             <p style={{ margin: "8px 0 0", fontSize: 12, color: G.coral, textAlign: "center" }}>{err}</p>
           ) : (
             <p style={{ margin: "8px 0 0", fontSize: 12, color: G.grey, textAlign: "center" }}>
-              100&nbsp;m crawl, départ dans l’eau — ton meilleur temps.
+              100&nbsp;m crawl, départ dans l’eau, ton meilleur temps.
             </p>
           )}
         </div>

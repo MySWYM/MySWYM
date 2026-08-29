@@ -1,5 +1,5 @@
 /**
- * Mode mock Instagram — tests locaux sans credentials Meta.
+ * Mode mock Instagram, tests locaux sans credentials Meta.
  */
 export type MockOutbound = {
   recipientId: string;
