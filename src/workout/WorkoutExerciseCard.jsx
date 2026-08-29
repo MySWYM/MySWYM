@@ -2,6 +2,7 @@
  * Carte exercice compacte (pas de tiroir / dépliable).
  * Allures Sheet : pastilles ⓘ + Enchaînement (multi-allures) ; Lent ≠ Souple.
  * Départ à la montre : pastille D2' + tip horloge de bassin (4 aiguilles).
+ * Allure chiffrée : pastille @1:42–1:48 + tip plage cible.
  */
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -443,6 +444,23 @@ function DepartTipSheet({ label, seconds, onClose, colors: G }) {
   );
 }
 
+function AllurePaceTipSheet({ label, low, high, onClose, colors: G }) {
+  const range = low && high ? `${low} – ${high}` : (label || "").replace(/^@/, "");
+  return (
+    <TipSheetShell eyebrow="Allure cible" title={label || "@…"} onClose={onClose} colors={G}>
+      <p style={{ margin: "0 0 12px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+        Tu vises la fourchette {range} sur la distance indiquée (temps au chrono pour la rep, ou ramené au 100 m).
+      </p>
+      <p style={{ margin: "0 0 12px", fontSize: 15, color: G.inkLight, lineHeight: 1.5, fontWeight: 600 }}>
+        Reste entre le bas et le haut de la plage : trop lent, l’effort manque ; trop vite, tu sors de la zone prévue pour la série.
+      </p>
+      <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45, fontWeight: 600 }}>
+        Cette allure est calculée à partir de ton temps de référence (T100). Ce n’est pas un départ à la montre (D…) : ici tu contrôles le rythme de nage, pas l’intervalle au mur.
+      </p>
+    </TipSheetShell>
+  );
+}
+
 function RestTipSheet({ label, seconds, onClose, colors: G }) {
   const human = formatRestHuman(seconds);
   return (
@@ -517,6 +535,7 @@ export default function WorkoutExerciseCard({
 }) {
   const [tipKey, setTipKey] = useState(null);
   const [departOpen, setDepartOpen] = useState(false);
+  const [allurePaceOpen, setAllurePaceOpen] = useState(false);
   const [restOpen, setRestOpen] = useState(false);
   if (!exercise) return null;
 
@@ -533,6 +552,9 @@ export default function WorkoutExerciseCard({
   const allureChips = detectAllureTips(exercise);
   const departLabel = exercise.departLabel || null;
   const departSeconds = exercise.departSeconds || 60;
+  const allurePaceLabel = exercise.allurePaceLabel || null;
+  const allurePaceLow = exercise.allurePaceLow || null;
+  const allurePaceHigh = exercise.allurePaceHigh || null;
   const restChip = exercise.restChip || null;
   const restSeconds = exercise.restSeconds || 30;
 
@@ -603,6 +625,16 @@ export default function WorkoutExerciseCard({
               G={G}
             />
           ) : null}
+          {allurePaceLabel ? (
+            <AllureInfoChip
+              tipKey={null}
+              label={allurePaceLabel}
+              tone="mint"
+              ariaName={`allure ${allurePaceLabel}`}
+              onClick={() => setAllurePaceOpen(true)}
+              G={G}
+            />
+          ) : null}
         </div>
 
         {primaryCue && volume && (
@@ -658,6 +690,15 @@ export default function WorkoutExerciseCard({
           label={departLabel}
           seconds={departSeconds}
           onClose={() => setDepartOpen(false)}
+          colors={G}
+        />
+      ) : null}
+      {allurePaceOpen && allurePaceLabel ? (
+        <AllurePaceTipSheet
+          label={allurePaceLabel}
+          low={allurePaceLow}
+          high={allurePaceHigh}
+          onClose={() => setAllurePaceOpen(false)}
           colors={G}
         />
       ) : null}

@@ -477,6 +477,61 @@ export function stripDepartMarkers(text) {
   );
 }
 
+/** `@1:42-1:48` / `(Z2 @1:05-1:12)` — plage d’allure personnalisée (Sheet / Premium). */
+const ALLURE_PACE_RANGE_RE = /@\s*(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/;
+
+function paceClockToSeconds(mmss) {
+  const m = String(mmss || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const min = parseInt(m[1], 10);
+  const sec = parseInt(m[2], 10);
+  if (!Number.isFinite(min) || !Number.isFinite(sec) || sec > 59) return null;
+  return min * 60 + sec;
+}
+
+/**
+ * Extrait une plage d’allure `@mm:ss-mm:ss` depuis une ligne Sheet / composeur.
+ * @returns {{ low: string, high: string, lowSeconds: number, highSeconds: number, raw: string } | null}
+ */
+export function parseAllurePaceRange(text) {
+  const m = String(text || "").match(ALLURE_PACE_RANGE_RE);
+  if (!m) return null;
+  const lowSeconds = paceClockToSeconds(m[1]);
+  const highSeconds = paceClockToSeconds(m[2]);
+  if (lowSeconds == null || highSeconds == null) return null;
+  return {
+    low: m[1],
+    high: m[2],
+    lowSeconds,
+    highSeconds,
+    raw: m[0],
+  };
+}
+
+/** Pastille : @1:42–1:48 */
+export function formatAllurePaceChip(low, high) {
+  const a = String(low || "").trim();
+  const b = String(high || "").trim();
+  if (!a || !b) return null;
+  return `@${a}–${b}`;
+}
+
+export function stripAllurePaceMarkers(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      // (Z2 @1:05-1:12) ou (facile @…) → retiré en bloc (pastille @)
+      .replace(/\(\s*(?:Z[1-4]|facile|très facile|confortable|soutenu|rapide)?\s*@\s*\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}\s*\)/gi, "")
+      .replace(/@\s*\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/g, "")
+      .replace(/\(\s*Z[1-4]\s*\)/gi, "")
+      .replace(/\(\s*\)/g, "")
+      .replace(/\s*[,;·]+\s*$/g, "")
+      .replace(/^\s*[,;·]+\s*/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim() || null
+  );
+}
+
 export function stripSprintMarkers(text) {
   if (!text) return text;
   return (
@@ -854,6 +909,19 @@ export function buildWorkoutView(session = {}) {
       cues = cues.map((c) => stripDepartMarkers(c)).filter(Boolean);
     }
 
+    // Allure @mm:ss–mm:ss → pastille (pas dans le sous-texte)
+    const paceBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
+    const paceParsed = parseAllurePaceRange(paceBlob);
+    const allurePaceLabel = paceParsed
+      ? formatAllurePaceChip(paceParsed.low, paceParsed.high)
+      : null;
+    const allurePaceLow = paceParsed?.low || null;
+    const allurePaceHigh = paceParsed?.high || null;
+    if (allurePaceLabel) {
+      cuePrimary = stripAllurePaceMarkers(cuePrimary);
+      cues = cues.map((c) => stripAllurePaceMarkers(c)).filter(Boolean);
+    }
+
     const restFromField =
       parsed?.rest && !/^D/i.test(String(parsed.rest)) ? parseRestInterval(parsed.rest) : null;
     const restChip = restFromField ? formatRestChip(restFromField.seconds) : null;
@@ -920,6 +988,9 @@ export function buildWorkoutView(session = {}) {
       restSeconds,
       departLabel,
       departSeconds,
+      allurePaceLabel,
+      allurePaceLow,
+      allurePaceHigh,
       steps: parsed?.steps || null,
       pyramid,
       children: childParsed.map((c) => {

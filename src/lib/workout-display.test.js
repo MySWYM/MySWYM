@@ -8,6 +8,9 @@ import {
   parseDepartInterval,
   formatDepartChip,
   formatDepartHuman,
+  parseAllurePaceRange,
+  formatAllurePaceChip,
+  stripAllurePaceMarkers,
   stripDepartMarkers,
   stripSprintMarkers,
   parseRepAllureEnchainement,
@@ -109,6 +112,25 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(parseRestInterval("R1'30\"")?.seconds, 90);
   assert.equal(formatRestChip(30), 'R30"');
   assert.equal(formatRestChip(90), "R1'30\"");
+  assert.equal(parseAllurePaceRange("crawl @1:39-1:46")?.low, "1:39");
+  assert.equal(parseAllurePaceRange("(Z2 @1:05-1:12)")?.high, "1:12");
+  assert.equal(formatAllurePaceChip("1:39", "1:46"), "@1:39–1:46");
+  assert.equal(stripAllurePaceMarkers("moyen @1:39-1:46"), "moyen");
+  assert.equal(stripAllurePaceMarkers("(Z3 @1:20-1:26)"), null);
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ['-8 × 100 m crawl, D2\'05" @1:39-1:46'],
+    sets: [{ block: "corps", label: '8 × 100 m crawl, D2\'05" @1:39-1:46' }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.departLabel, "D2'05\"");
+  assert.equal(ex.allurePaceLabel, "@1:39–1:46");
+  assert.equal(ex.allurePaceLow, "1:39");
+  assert.equal(ex.allurePaceHigh, "1:46");
+  assert.ok(!/@/.test(ex.cue || ""), "allure @ sortie du sous-texte");
 }
 
 {
