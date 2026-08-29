@@ -27,4 +27,4 @@ Disallow: /thanks
 Disallow: /fr/merci
 Disallow: /merci
 
-Sitemap: https://myswym.app/sitemap.xml
+Sitemap: https://www.myswym.app/sitemap.xml

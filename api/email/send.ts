@@ -36,8 +36,8 @@ const B = {
   mutedOnDark: "#9bb0c8",
   border: "rgba(0, 107, 253, 0.18)",
   borderSoft: "rgba(10, 22, 44, 0.08)",
-  site: "https://myswym.app",
-  logoOnDark: "https://myswym.app/logo-myswym-banner-blanc.png",
+  site: "https://www.myswym.app",
+  logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
   pricingLine:
     "9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an",
 } as const;

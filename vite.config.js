@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { POSTS } from './src/posts.js'
 import { withLocalePrefix } from './src/i18n/locale-path.js'
 
-const SITE = 'https://myswym.app'
+const SITE = 'https://www.myswym.app'
 
 const STATIC_PATHS = [
   ['/', 'weekly', '1.0'],

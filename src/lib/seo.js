@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { LEGAL_ENTITY } from "./legal-entity.js";
 import { localeFromPathname, stripLocalePrefix, withLocalePrefix } from "../i18n/locale-path.js";
 
-export const SITE_ORIGIN = "https://myswym.app";
+export const SITE_ORIGIN = "https://www.myswym.app";
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-share.png`;
 
 /** JSON-LD BreadcrumbList — items : { label, href? } (dernier cran sans href). */
@@ -154,7 +154,7 @@ export function softwareApplicationJsonLd(reviews = []) {
     operatingSystem: "Web",
     url: `${SITE_ORIGIN}/`,
     description:
-      "Générateur de plans d'entraînement natation personnalisés : niveau, objectif, bassin 25 m ou 50 m.",
+      "Plan d'entraînement natation personnalisé : nager, triathlon, eau libre, prépa diplôme — prêt en 2 minutes.",
     offers: {
       "@type": "Offer",
       price: "4.99",
