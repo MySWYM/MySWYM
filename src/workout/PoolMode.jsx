@@ -120,7 +120,10 @@ export default function PoolMode({
     >
       {/* Top bar */}
       <div style={{
-        padding: "12px 16px max(12px, env(safe-area-inset-top))",
+        paddingTop: "max(12px, env(safe-area-inset-top))",
+        paddingLeft: 16,
+        paddingRight: 16,
+        paddingBottom: 12,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

@@ -49,8 +49,8 @@ export default function ProfileSection({
           <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink }}>
             {title}
           </div>
-          {!open && summary && (
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 4, lineHeight: 1.35 }}>
+            {!open && summary && (
+            <div style={{ fontSize: 13, color: G.grey, marginTop: 4, lineHeight: 1.35 }}>
               {summary}
             </div>
           )}

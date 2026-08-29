@@ -1,18 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bell, Settings } from "lucide-react";
 import BrandLogo from "../BrandLogo.jsx";
 import { G } from "../theme/palette.js";
 import { resolveAvatarUrl } from "../lib/avatar.js";
 import {
-  NOTIFICATION_KIND_META,
   buildInAppNotifications,
   readSeenNotifications,
   writeSeenNotifications,
-  formatNotificationDate,
 } from "../lib/in-app-notifications.js";
+import NotificationsSheet from "../sheets/NotificationsSheet.jsx";
 
 /** Barre haute commune (logo + paramètres) — Accueil / Programme / Profil */
-export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null }) {
+export default function AppTopBar({
+  user,
+  onOpenMenu,
+  onAvatarClick,
+  plan = null,
+  onTabChange = null,
+  onUpgrade = null,
+}) {
   const avatarUrl = resolveAvatarUrl(user);
   const firstName = user?.user_metadata?.firstname
     || (() => {
@@ -28,7 +34,6 @@ export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null
     || "Nageur";
   const initials = firstName.slice(0, 2).toUpperCase();
   const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef(null);
   const notificationItems = useMemo(
     () => buildInAppNotifications({ user, plan }),
     [user, plan],
@@ -51,7 +56,6 @@ export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null
       writeSeenNotifications(user, bootstrapSeen);
       setSeenMap(bootstrapSeen);
     }
-    // notificationItems identity is memoized on user/plan — avoid render loops
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per user/plan
   }, [user?.id, plan]);
 
@@ -64,24 +68,24 @@ export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null
     setSeenMap(next);
   };
 
-  const handleToggleNotifications = () => {
-    const next = !notifOpen;
-    setNotifOpen(next);
-    if (next) markNotificationsAsRead();
+  const handleOpenNotifications = () => {
+    setNotifOpen(true);
+    markNotificationsAsRead();
   };
 
-  useEffect(() => {
-    if (!notifOpen) return undefined;
-    const handlePointerDown = (event) => {
-      if (!notifRef.current?.contains(event.target)) setNotifOpen(false);
-    };
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-    };
-  }, [notifOpen]);
+  const handleNotificationAction = (_item, action) => {
+    setNotifOpen(false);
+    if (action === "upgrade") {
+      onUpgrade?.();
+      return;
+    }
+    if (action === "profile") {
+      if (onTabChange) onTabChange("profile");
+      else onAvatarClick?.();
+      return;
+    }
+    if (action === "buddies") onTabChange?.("buddies");
+  };
 
   return (
     <header style={{
@@ -107,116 +111,50 @@ export default function AppTopBar({ user, onOpenMenu, onAvatarClick, plan = null
           <BrandLogo variant="wordmark" height={24} onDark style={{ maxWidth: "100%" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
-          <div ref={notifRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={handleToggleNotifications}
-              aria-label={`Ouvrir les notifications (${unreadCount} non lues)`}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent", position: "relative" }}
-            >
-              <Bell size={20} color={unreadCount ? G.gold : G.grey} />
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 7,
-                    right: 6,
-                    minWidth: 16,
-                    height: 16,
-                    padding: "0 4px",
-                    borderRadius: 999,
-                    background: G.coral,
-                    color: G.white,
-                    border: `2px solid ${G.glass}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 9,
-                    fontWeight: 800,
-                    lineHeight: 1,
-                  }}
-                >
-                  {Math.min(unreadCount, 9)}
-                </span>
-              )}
-            </button>
-
-            {notifOpen && (
-              <div
+          <button
+            type="button"
+            onClick={handleOpenNotifications}
+            aria-label={`Ouvrir les notifications (${unreadCount} non lues)`}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent", position: "relative" }}
+          >
+            <Bell size={20} color={unreadCount ? G.gold : G.grey} />
+            {unreadCount > 0 && (
+              <span
                 style={{
                   position: "absolute",
-                  top: "calc(100% + 10px)",
-                  right: -4,
-                  width: 320,
-                  maxWidth: "calc(100vw - 24px)",
-                  background: G.surface,
-                  border: `1px solid ${G.greyLight}`,
-                  borderRadius: 18,
-                  boxShadow: "0 18px 40px rgba(0,0,0,0.12)",
-                  padding: 14,
-                  zIndex: 60,
+                  top: 7,
+                  right: 6,
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 4px",
+                  borderRadius: 999,
+                  background: G.coral,
+                  color: G.white,
+                  border: `2px solid ${G.glass}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 9,
+                  fontWeight: 800,
+                  lineHeight: 1,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Notifications</div>
-                    <div style={{ fontSize: 11, color: G.grey }}>
-                      {notificationItems.length
-                        ? `${notificationItems.length} notification${notificationItems.length > 1 ? "s" : ""} dans ton centre`
-                        : "Aucune notification pour l'instant"}
-                    </div>
-                  </div>
-                  <div style={{ width: 32, height: 32, borderRadius: 12, background: unreadCount ? G.goldLight : G.blueLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Bell size={16} color={G.blue} />
-                  </div>
-                </div>
-
-                {notificationItems.length ? (
-                  <div style={{ display: "grid", gap: 8, maxHeight: "min(60vh, 420px)", overflowY: "auto", paddingRight: 2 }}>
-                    {notificationItems.map((item) => {
-                      const kindMeta = NOTIFICATION_KIND_META[item.type] || NOTIFICATION_KIND_META.update;
-                      const Icon = item.accentIcon || kindMeta.Icon;
-                      const bg = item.type === "badge" ? `${item.accentColor}22` : kindMeta.bg;
-                      const color = item.accentColor || kindMeta.color;
-                      return (
-                        <div
-                          key={item.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 10,
-                            background: G.greyXLight,
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                          }}
-                        >
-                          <div style={{ width: 36, height: 36, borderRadius: 12, background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <Icon size={16} />
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: G.ink, marginBottom: 2 }}>{item.title}</div>
-                            <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.45 }}>{item.body}</div>
-                            <div style={{ fontSize: 10, color: G.greyMid, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                              {formatNotificationDate(item.createdAt)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 14px", fontSize: 12, color: G.grey }}>
-                    Ici tu verras les badges, alertes d'abonnement, promos, newsletters, binomes et grosses mises a jour.
-                  </div>
-                )}
-              </div>
+                {Math.min(unreadCount, 9)}
+              </span>
             )}
-          </div>
+          </button>
           <button type="button" onClick={onOpenMenu} aria-label="Ouvrir le menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 10, minWidth: 44, minHeight: 44, WebkitTapHighlightColor: "transparent" }}>
             <Settings size={20} color={G.grey} />
           </button>
         </div>
       </div>
+
+      <NotificationsSheet
+        open={notifOpen}
+        items={notificationItems}
+        onClose={() => setNotifOpen(false)}
+        onAction={handleNotificationAction}
+      />
     </header>
   );
 }

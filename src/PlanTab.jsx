@@ -55,6 +55,8 @@ export default function PlanTab({
           onOpenMenu={onOpenMenu}
           onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
           plan={null}
+          onTabChange={onTabChange}
+          onUpgrade={onUpgrade}
         />
         <div className="app-shell" style={{ paddingTop: 16, paddingBottom: 24 }}>
           <div style={{ marginBottom: 20 }}>
@@ -77,7 +79,7 @@ export default function PlanTab({
   if (!plan?.weeks) {
     return (
       <div style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)", minHeight: "100dvh" }}>
-        <AppTopBar user={user} onOpenMenu={onOpenMenu} onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined} plan={null} />
+        <AppTopBar user={user} onOpenMenu={onOpenMenu} onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined} plan={null} onTabChange={onTabChange} onUpgrade={onUpgrade} />
         <div className="app-shell" style={{ paddingTop: 32 }}>
           <p style={{ color: G.grey, fontSize: 14 }}>Aucun programme pour le moment.</p>
         </div>
@@ -127,6 +129,8 @@ export default function PlanTab({
         onOpenMenu={onOpenMenu}
         onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
         plan={plan}
+        onTabChange={onTabChange}
+        onUpgrade={onUpgrade}
       />
 
       {/* ── Sous-header programme ── */}
@@ -187,11 +191,50 @@ export default function PlanTab({
           stravaBestPace={stravaBestPace}
         />
 
-        {plan.weeks.map((week, i) => (
-          <div key={i}>
-            <WeekCard week={week} weekIndex={i} onComplete={onComplete} onShare={onShare} onEditFeedback={onEditFeedback} isCurrentWeek={i === currentWeekIndex} isPremium={isPremium} onUpgrade={onUpgrade} analyticsCtx={{ planId: activePlanId, profile }} />
-          </div>
-        ))}
+        {(() => {
+          const indexed = plan.weeks.map((week, i) => ({ week, i }));
+          // Semaine courante en tête, puis futures, puis passées (repliées)
+          const ordered = currentWeekIndex < 0
+            ? indexed
+            : [
+                ...indexed.filter(({ i }) => i === currentWeekIndex),
+                ...indexed.filter(({ i }) => i > currentWeekIndex),
+                ...indexed.filter(({ i }) => i < currentWeekIndex),
+              ];
+          const pastStart = currentWeekIndex < 0
+            ? -1
+            : ordered.findIndex(({ i }) => i < currentWeekIndex);
+
+          return ordered.map(({ week, i }, ord) => (
+            <div key={i}>
+              {pastStart >= 0 && ord === pastStart && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: G.grey,
+                    margin: "8px 0 10px",
+                  }}
+                >
+                  Semaines passées
+                </div>
+              )}
+              <WeekCard
+                week={week}
+                weekIndex={i}
+                onComplete={onComplete}
+                onShare={onShare}
+                onEditFeedback={onEditFeedback}
+                isCurrentWeek={i === currentWeekIndex}
+                isPremium={isPremium}
+                onUpgrade={onUpgrade}
+                analyticsCtx={{ planId: activePlanId, profile }}
+              />
+            </div>
+          ));
+        })()}
 
         {isPremium && <ResetConfirmButton onReset={onReset} variant="subtle" />}
       </div>
