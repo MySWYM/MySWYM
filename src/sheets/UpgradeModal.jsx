@@ -103,14 +103,14 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
   };
 
   const ctaLabel = isAnnual
-    ? `Démarrer — ${PRICING.annual.label}/an`
+    ? `Démarrer : ${PRICING.annual.label}/an`
     : isCommit
-      ? `Démarrer — ${PRICING.monthlyCommit.label}/mois · 12 mois`
+      ? `Démarrer : ${PRICING.monthlyCommit.label}/mois · 12 mois`
       : showTrialOffer
-        ? `Essai 7 jours — puis ${PRICING.monthlyFlex.label}/mois`
+        ? `Essai 7 jours, puis ${PRICING.monthlyFlex.label}/mois`
         : hasReferral
-          ? "Démarrer — −20% parrainage"
-          : `Démarrer — ${PRICING.monthlyFlex.label}/mois`;
+          ? "Démarrer : −20% parrainage"
+          : `Démarrer : ${PRICING.monthlyFlex.label}/mois`;
 
   return (
     <div className="sheet-overlay" onClick={e => canDismiss && e.target === e.currentTarget && onClose()}>
@@ -216,7 +216,7 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
 
         {hasReferral && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.mintLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: G.mint }}>Parrainage actif — −20% auto au paiement</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: G.mint }}>Parrainage actif : −20% auto au paiement</span>
           </div>
         )}
 

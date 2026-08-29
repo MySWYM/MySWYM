@@ -1,8 +1,8 @@
 /**
- * GET|POST /api/admin/arthur-optimize — Optimization Loop F3
+ * GET|POST /api/admin/arthur-optimize, Optimization Loop F3
  *
- * GET  — dashboard qualité / CTA / insights / funnel proxy
- * POST — analyze_batch | (refuse send / auto followups)
+ * GET , dashboard qualité / CTA / insights / funnel proxy
+ * POST, analyze_batch | (refuse send / auto followups)
  *
  * Les envois automatiques restent désactivés.
  */

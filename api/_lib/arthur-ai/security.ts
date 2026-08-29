@@ -1,5 +1,5 @@
 /**
- * Sécurité Arthur AI — séparation stricte userId MySWYM / externalUserId.
+ * Sécurité Arthur AI, séparation stricte userId MySWYM / externalUserId.
  */
 import type { AuthContext, ArthurChannel, ProcessArthurMessageInput } from "./types.js";
 
@@ -93,7 +93,7 @@ export function conversationBelongsToAuth(
   },
   auth: AuthContext,
 ): boolean {
-  // Match externe (Instagram) — même si un user_id a été rattaché plus tard
+  // Match externe (Instagram), même si un user_id a été rattaché plus tard
   if (
     auth.externalUserId &&
     conversation.external_user_id === auth.externalUserId

@@ -3,9 +3,9 @@
  */
 
 /**
- * @param {object} session — { details, distance, type, intensity, equipmentRequired? }
+ * @param {object} session, { details, distance, type, intensity, equipmentRequired? }
  * @param {object} sportProfile
- * @param {object} ctx — { volumeTarget, maxIntensityZone, durationMin }
+ * @param {object} ctx, { volumeTarget, maxIntensityZone, durationMin }
  */
 export function validateSession(session, sportProfile, ctx = {}) {
   const errors = [];
@@ -26,7 +26,7 @@ export function validateSession(session, sportProfile, ctx = {}) {
       errors.push("intensité incompatible Découverte");
     }
     if (/rattrapé|catch-up|roulis|virage|petit chien/i.test(text) && !/grand chien|flèche/i.test(text)) {
-      // soft: warning only — generator may still emit
+      // soft: warning only, generator may still emit
       warnings.push("éducatif avancé pour Découverte");
     }
   }

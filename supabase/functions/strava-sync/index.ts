@@ -66,7 +66,7 @@ async function fetchActivitiesPage(accessToken: string, perPage: number, page: n
   );
   if (!actRes.ok) {
     if (actRes.status === 401) {
-      throw new Error("Session Strava expirée — reconnecte Strava depuis ton profil.");
+      throw new Error("Session Strava expirée, reconnecte Strava depuis ton profil.");
     }
     throw new Error("Erreur API Strava lors de la récupération des activités");
   }

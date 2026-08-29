@@ -1,5 +1,5 @@
 /**
- * Dashboard Shadow Mode H1 — validation humaine, zéro envoi auto.
+ * Dashboard Shadow Mode H1, validation humaine, zéro envoi auto.
  */
 import { useCallback, useEffect, useState } from "react";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
@@ -186,7 +186,7 @@ export default function ArthurShadowAdmin() {
             Aucun événement Instagram en base. Si tu viens d’envoyer un DM et que
             rien n’apparaît après refresh, le webhook Meta n’a pas encore été
             accepté (souvent signature). En Shadow H1 le soft-verify est actif
-            après ce deploy — renvoie un DM puis rafraîchis.
+            après ce deploy, renvoie un DM puis rafraîchis.
           </p>
         ) : null}
         {report ? (
@@ -300,7 +300,7 @@ export default function ArthurShadowAdmin() {
                     <span style={{ fontWeight: 700 }}>{p.status}</span>
                     <span style={{ color: C.muted }}>{p.recommended_action}</span>
                     <span style={{ color: bandColor(p.lead_band_snapshot) }}>
-                      score {p.lead_score_snapshot ?? "—"} {p.lead_band_snapshot || ""}
+                      score {p.lead_score_snapshot ?? "-"} {p.lead_band_snapshot || ""}
                     </span>
                     <span style={{ color: C.muted }}>{p.intent}</span>
                     <span style={{ color: C.muted }}>{p.lead_temperature}</span>
@@ -336,7 +336,7 @@ export default function ArthurShadowAdmin() {
                       (!(p.final_message || p.proposed_message || "").trim() &&
                         p.suggested_action === "no_reply") ? (
                       <div style={{ color: C.muted, fontStyle: "italic" }}>
-                        Aucune réponse (ignore / no_reply) — rien à approuver ni
+                        Aucune réponse (ignore / no_reply), rien à approuver ni
                         envoyer.
                       </div>
                     ) : (

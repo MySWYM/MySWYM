@@ -1,5 +1,5 @@
 /**
- * SessionBrief — contrat entre sports-engine (POURQUOI/QUOI) et session-composer (COMMENT).
+ * SessionBrief, contrat entre sports-engine (POURQUOI/QUOI) et session-composer (COMMENT).
  */
 import { composeSessionBlueprint } from "./session-compose.js";
 import { explainSessionWhy } from "./types.js";
@@ -33,7 +33,7 @@ const FOCUS_DECOUVERTE = ["technique_fleche", "technique_grand_chien"];
 
 /**
  * Construit un SessionBrief à partir du contexte semaine + rôle séance.
- * Ne décide pas des exercices — seulement le brief pour le composeur.
+ * Ne décide pas des exercices, seulement le brief pour le composeur.
  */
 export function buildSessionBrief({
   sport,
@@ -162,7 +162,7 @@ export function buildSessionBrief({
     pace100Sec: Number(sport?.pace100) > 0 ? Number(sport.pace100) : null,
     isPremium: !!sport?.isPremium,
     allowPaces: !!(sport?.isPremium && Number(sport?.pace100) > 0),
-    // Étape J2 — safety
+    // Étape J2, safety
     painProtection: !!(
       sport?.hasPainConstraint ||
       weekCtx?.painProtection ||

@@ -1,5 +1,5 @@
 /**
- * Tests Conversion Engine F2 — décision + anti-spam (pas d’envoi Meta).
+ * Tests Conversion Engine F2, décision + anti-spam (pas d’envoi Meta).
  * Run: npm run test:arthur:conversion
  */
 import assert from "node:assert/strict";
@@ -34,7 +34,7 @@ test("suppress score too low", () => {
   if (d.action === "suppress") assert.equal(d.suppress_reason, "score_too_low");
 });
 
-test("suppress user active recently — no spam", () => {
+test("suppress user active recently, no spam", () => {
   const d = decideFollowup({
     external_user_id: "ig1",
     status: "qualified",

@@ -25,7 +25,7 @@ export function notificationActionFor(item) {
 }
 
 /**
- * Centre de notifications — bottom sheet (remplace le dropdown desktop).
+ * Centre de notifications, bottom sheet (remplace le dropdown desktop).
  */
 export default function NotificationsSheet({
   open,

@@ -175,7 +175,7 @@ assert(gen.OW_BASE_SESSIONS === OW_BASE_SESSIONS, "gen.OW alias");
 /* ---- Métadonnées id/source/status (banques runtime étape 1) ---- */
 const catalog = getBankCatalog();
 for (const [bucket, entries] of Object.entries(catalog)) {
-  if (bucket === "canonicalDrills") continue; // étape 2 — schéma / sources distincts
+  if (bucket === "canonicalDrills") continue; // étape 2, schéma / sources distincts
   for (const e of entries) {
     assert(typeof e.id === "string" && e.id.length > 0, `${bucket} id`);
     assert(typeof e.source === "string" && e.source.includes("swim-session-generator.js"), `${bucket} source`);

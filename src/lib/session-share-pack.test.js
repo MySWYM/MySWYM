@@ -36,7 +36,7 @@ assert(caption.includes("ABC123"), "caption invite");
 const clip = formatSessionClipboardText(session, invite);
 assert(clip.includes("Échauffement") || clip.includes("Corps") || clip.includes("400 m"), "détail");
 assert(clip.includes("ABC123"), "clip invite");
-assert(!clip.includes("— MySWYM · myswym.app") || clip.includes("Rejoins"), "invite instead of bare brand");
+assert(!clip.includes(",  MySWYM · myswym.app") || clip.includes("Rejoins"), "invite instead of bare brand");
 
 const pack = buildSessionSharePack(session, invite);
 assert(pack.caption && pack.clipboardText, "pack");

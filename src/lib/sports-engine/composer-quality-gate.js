@@ -625,7 +625,7 @@ export function composeWithQualityGate(brief, composeOnce) {
         stroke: "papillon",
         exerciseId: "safe_pap",
       });
-      minimal.details.splice(-1, 0, "-2 × 25m papillon — nage explicite — repos 20s");
+      minimal.details.splice(-1, 0, "-2 × 25m papillon - nage explicite - repos 20s");
       const vol = minimal.sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
       minimal.volumeFromSets = vol;
       minimal.trainingDistance = vol;
@@ -683,7 +683,7 @@ function buildMinimalSafeSession(brief, constraints) {
     };
     if (/^(crawl|dos|brasse|papillon)$/i.test(label)) s.stroke = label.toLowerCase();
     sets.push(s);
-    details.push(`-${reps} × ${dist}m ${label} — ${cue} — repos 20s`);
+    details.push(`-${reps} × ${dist}m ${label} - ${cue} - repos 20s`);
   };
   // départ
   const depReps = Math.min(3, Math.max(2, Math.floor((maxVol * 0.15) / unit)));
@@ -711,10 +711,10 @@ function buildMinimalSafeSession(brief, constraints) {
   }
   // J3: même en fallback minimal, garder un cue objectif si compatible (pas douleur stricte)
   const obj = String(brief.objectif || brief.goalFamily || "").toLowerCase();
-  let corpsCue = "très facile — Z1";
+  let corpsCue = "très facile - Z1";
   if (!constraints.painProtection) {
-    if (/eau_libre|open_water/.test(obj)) corpsCue = "très facile — Z1 — sighting + allure régulière";
-    else if (/triathlon/.test(obj)) corpsCue = "très facile — Z1 — économie d'énergie — allure régulière";
+    if (/eau_libre|open_water/.test(obj)) corpsCue = "très facile - Z1 - sighting + allure régulière";
+    else if (/triathlon/.test(obj)) corpsCue = "très facile - Z1 - économie d'énergie - allure régulière";
   }
   while (remain >= unit * 2 && sets.filter((s) => s.block === "corps").length < 4) {
     const reps = Math.min(constraints.maxRepsPerSet || 12, Math.floor(remain / unit));
@@ -725,7 +725,7 @@ function buildMinimalSafeSession(brief, constraints) {
   // fin
   pushSeries(2, unit, crawlOnly ? "crawl facile" : "au choix", "récupération", "fin");
   const vol = sets.reduce((a, s) => a + s.reps * s.distancePerRep, 0);
-  details.unshift(`-${Math.max(unit * 2, 100)}m crawl facile — mise en route`);
+  details.unshift(`-${Math.max(unit * 2, 100)}m crawl facile - mise en route`);
   return {
     type: "ENDURANCE",
     title: level === "performance" ? "Performance · séance sécurisée" : `${level} · séance sécurisée`,

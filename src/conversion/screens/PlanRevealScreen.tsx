@@ -83,7 +83,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
               <MetaRow icon={<CalendarDays size={18} />} label="Essai Premium" value="7 jours · sans carte" />
             </motion.div>
 
-            {/* Mini timeline — value before paywall */}
+            {/* Mini timeline, value before paywall */}
             <motion.div variants={fadeUp} className="cv:mt-8 cv:rounded-cv-lg cv:border cv:border-cv-border cv:bg-cv-bg-elevated cv:p-4">
               <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.08em] cv:text-cv-ink-tertiary">
                 Aperçu
@@ -106,7 +106,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
                 })}
               </div>
               <div className="cv:mt-3 cv:flex cv:justify-between cv:text-[11px] cv:text-cv-ink-tertiary">
-                <span>S1 — base</span>
+                <span>S1, base</span>
                 <span>Essai 7j</span>
                 <span>Suite · Premium</span>
               </div>

@@ -1,5 +1,5 @@
 /**
- * Egress user_plans — meta d'abord, pas de blob si le cache local est à jour.
+ * Egress user_plans, meta d'abord, pas de blob si le cache local est à jour.
  * Usage : node src/lib/plan-account-egress.test.js
  */
 import assert from "node:assert/strict";

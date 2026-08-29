@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 
-/** Refresh en cours par user — évite la rotation concurrente du refresh_token Strava. */
+/** Refresh en cours par user, évite la rotation concurrente du refresh_token Strava. */
 const refreshInflight = new Map<string, Promise<string>>();
 
 export async function userHasHealthConsent(
@@ -47,7 +47,7 @@ export async function refreshStravaToken(
       const detail = await res.text().catch(() => "");
       throw new Error(
         res.status === 401 || res.status === 400
-          ? "Session Strava expirée — reconnecte Strava depuis ton profil."
+          ? "Session Strava expirée, reconnecte Strava depuis ton profil."
           : `Impossible de rafraîchir le token Strava${detail ? `: ${detail.slice(0, 120)}` : ""}`,
       );
     }

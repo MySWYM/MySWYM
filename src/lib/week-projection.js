@@ -1,5 +1,5 @@
 /**
- * Projection « ma semaine » — lecture seule pour se projeter (charge / types).
+ * Projection « ma semaine », lecture seule pour se projeter (charge / types).
  */
 
 function parseMeters(distance) {

@@ -1,5 +1,5 @@
 /**
- * Étape K — Couche de persistance sportive.
+ * Étape K, Couche de persistance sportive.
  * Entoure le Sports Engine : faits Supabase ↔ vue `_engineHistory`.
  * NE CALCULE PAS de phase / volume / strategy / séance.
  */
@@ -327,7 +327,7 @@ export function adaptationToRow(userId, planId, weekIndex, weeklyAdaptation, vol
 }
 
 /**
- * Client Supabase — opérations faits (fire-and-forget friendly).
+ * Client Supabase, opérations faits (fire-and-forget friendly).
  * Toutes les écritures filtrent user_id = auth user (RLS).
  */
 export function createSportsPersistence(supabase) {

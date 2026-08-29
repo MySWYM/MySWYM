@@ -1,5 +1,5 @@
 /**
- * Base de connaissance produit MySWYM — disponible au runtime
+ * Base de connaissance produit MySWYM : disponible au runtime
  * (Cursor n’est pas une source de vérité en production).
  *
  * Alignée Tarifs.jsx / Legal / SupportBubble / landing.
@@ -77,7 +77,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "technique_crawl",
       title: "Conseil crawl",
       content:
-        "En crawl : respiration bilatérale (toutes les 3 coulées), oreille dans l’eau, allonge la coulée. La régularité (2–3 séances/semaine) bat les grosses séances isolées.",
+        "En crawl : respiration bilatérale (toutes les 3 coulées), oreille dans l’eau, allonge la coulée. La régularité (2-3 séances/semaine) bat les grosses séances isolées.",
       tags: ["crawl", "respiration", "technique", "progress"],
       intent_hints: ["technique", "swimming_question", "training"],
       priority: 90,
@@ -95,7 +95,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "sport_limits",
       title: "Limites conseil sportif",
       content:
-        "Arthur donne des conseils généraux d’entraînement. Douleur vive, blessure récente ou question médicale individuelle : oriente vers un professionnel de santé — pas de diagnostic.",
+        "Arthur donne des conseils généraux d’entraînement. Douleur vive, blessure récente ou question médicale individuelle : oriente vers un professionnel de santé, pas de diagnostic.",
       tags: ["blessure", "douleur", "santé", "médical"],
       intent_hints: ["support", "training"],
       priority: 70,

@@ -27,7 +27,7 @@ export function WorkoutReminderEmail({
 
   return (
     <EmailLayout
-      preview={`L’eau t’attend — ${sessionTitle}${metersLine ? ` · ${metersLine}` : ""}`}
+      preview={`L’eau t’attend : ${sessionTitle}${metersLine ? ` · ${metersLine}` : ""}`}
       eyebrow="Séance du jour"
       ctaLabel="Ouvrir la séance"
       ctaUrl={ctaUrl}
@@ -36,7 +36,7 @@ export function WorkoutReminderEmail({
         {who ? `${who}, l’eau t’attend` : "L’eau t’attend"}
       </Text>
       <Text style={emailText.p}>
-        Quelques dizaines de minutes et tu coches la case. Pas de pression —
+        Quelques dizaines de minutes et tu coches la case. Pas de pression,
         juste le prochain coup de bras.
       </Text>
       <EmailHighlight dark>

@@ -59,7 +59,7 @@ export function formatOperatorNotify(input: {
     input.body,
     "",
     "↩ Réponds à ce message pour écrire dans l’app.",
-    "/close — clôturer cette conversation",
+    "/close, clôturer cette conversation",
   ].join("\n");
 }
 
@@ -86,11 +86,11 @@ export function formatLandingContactNotify(input: {
   return [
     "✉️ Contact landing",
     who || "Visiteur",
-    `Objet : ${String(input.subject || "").trim() || "—"}`,
+    `Objet : ${String(input.subject || "").trim() || "-"}`,
     "",
     body,
     "",
-    `↪ Réponds par e-mail à ${input.email} — ce n’est pas un fil in-app.`,
+    `↪ Réponds par e-mail à ${input.email}, ce n’est pas un fil in-app.`,
   ].join("\n");
 }
 

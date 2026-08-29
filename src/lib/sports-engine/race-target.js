@@ -1,5 +1,5 @@
 /**
- * RaceTarget — ce que le nageur veut atteindre.
+ * RaceTarget, ce que le nageur veut atteindre.
  * Ne jamais inventer une cible : uniquement sources explicites.
  */
 
@@ -7,8 +7,8 @@
 
 /**
  * @typedef {object} RaceTarget
- * @property {number} distance — mètres (50|100|200|400|…)
- * @property {string} stroke — crawl|dos|brasse|papillon|4n
+ * @property {number} distance, mètres (50|100|200|400|…)
+ * @property {string} stroke, crawl|dos|brasse|papillon|4n
  * @property {number} targetTimeSec
  * @property {string|null} [competitionDate]
  * @property {RaceTargetSource} source
@@ -90,7 +90,7 @@ export function raceTargetPacePer100(target) {
 }
 
 export function formatRaceTime(sec) {
-  if (!Number.isFinite(sec)) return "—";
+  if (!Number.isFinite(sec)) return "-";
   const s = Math.round(sec);
   const m = Math.floor(s / 60);
   const r = s % 60;

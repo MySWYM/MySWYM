@@ -1,5 +1,5 @@
 /**
- * GET/POST /api/instagram/webhook — Meta Instagram Messaging.
+ * GET/POST /api/instagram/webhook, Meta Instagram Messaging.
  *
  * Handlers Web Request/Response (pas @vercel/node helpers) pour que
  * `request.text()` fournisse le corps brut exact signé par Meta

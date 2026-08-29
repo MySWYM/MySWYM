@@ -1,5 +1,5 @@
 /**
- * Graphes SVG pour l’admin — pas de librairie, pas de nouvelle fonction Vercel.
+ * Graphes SVG pour l’admin, pas de librairie, pas de nouvelle fonction Vercel.
  */
 
 const FONT = "Space Grotesk, ui-sans-serif, system-ui, sans-serif";

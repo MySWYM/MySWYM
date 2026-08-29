@@ -1,5 +1,5 @@
 /**
- * Formats de séries Régulier — évite le défaut systématique Nx50.
+ * Formats de séries Régulier, évite le défaut systématique Nx50.
  * Le format répété reste utile ; il n'est plus la réponse unique.
  */
 
@@ -203,7 +203,7 @@ function pickNageableUnit(target, maxReps, preferredUnit, quantum = 50) {
 
 /**
  * Découpe un volume en séries nageables ≤ maxReps.
- * J3 : jamais de filler « suite » — préfère changer d'unité ou 2 blocs intentionnels.
+ * J3 : jamais de filler « suite », préfère changer d'unité ou 2 blocs intentionnels.
  */
 function buildCappedRepeatedSets(target, unit, { maxReps = 12, restSec = 20, label, cue, exerciseId, meta = {} }) {
   const sets = [];
@@ -236,7 +236,7 @@ function buildCappedRepeatedSets(target, unit, { maxReps = 12, restSec = 20, lab
       }
       sets.push(makeSet({
         reps: repsB, unit: unitB, restSec, label,
-        cue: /même allure|2ᵉ série/i.test(String(cue)) ? cue : `${cue} — 2ᵉ série, même allure`,
+        cue: /même allure|2ᵉ série/i.test(String(cue)) ? cue : `${cue} - 2ᵉ série, même allure`,
         exerciseId: `${exerciseId}_b`,
         meta: { ...meta, blockPart: 2 },
       }));
@@ -253,7 +253,7 @@ function buildCappedRepeatedSets(target, unit, { maxReps = 12, restSec = 20, lab
     if (shortFit.reps >= 2) {
       sets.push(makeSet({
         reps: shortFit.reps, unit: shortFit.unit, restSec, label,
-        cue: `${cue} — complément`,
+        cue: `${cue} - complément`,
         exerciseId: `${exerciseId}_c`,
         meta: { ...meta, blockPart: 2 },
       }));
@@ -289,7 +289,7 @@ function fitLastToTarget(sets, target, unit, maxReps = 12) {
       maxReps,
       restSec: last.restSec || 20,
       label: last.label,
-      cue: `${last.cue || "facile"} — 2ᵉ série, même allure`,
+      cue: `${last.cue || "facile"} - 2ᵉ série, même allure`,
       exerciseId: `${last.exerciseId || "corps"}_b`,
       meta: { setFormat: last.setFormat || "repeated", blockPart: 2 },
     });
@@ -335,7 +335,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
       unit: d,
       restSec: 0,
       label,
-      cue: `${cue} — sans pause`,
+      cue: `${cue} - sans pause`,
       exerciseId: `${exerciseId}_cont`,
       continuous: true,
       meta: { setFormat: "continuous" },
@@ -442,7 +442,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     }
     fitLastToTarget(sets, target, unit, maxReps);
   } else if (fmt === "pyramid") {
-    // Profils lisibles — jamais scale×2 vers 1600–1750 m (Ironman perf : absurde).
+    // Profils lisibles, jamais scale×2 vers 1600-1750 m (Ironman perf : absurde).
     // Volume pyramide plafonné ; surplus → séries explicites (pas du « fill pyramide »).
     const pyramidBudget = Math.min(target, MAX_PYRAMID_VOLUME);
     let stepProfile;
@@ -451,7 +451,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     } else if (pyramidBudget <= 750) {
       stepProfile = [50, 100, 150, 200, 150, 100, 50]; // 800 → clamp below
     } else {
-      stepProfile = [100, 200, 300, 200, 100]; // 900 — sommet 300m max utile
+      stepProfile = [100, 200, 300, 200, 100]; // 900, sommet 300m max utile
     }
     // Ajuste si le budget est plus petit que le profil (retire les ailes).
     let distances = [...stepProfile];
@@ -498,7 +498,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
         maxReps,
         restSec: rest("facile", fillUnit, { defaultRest: fillUnit >= 100 ? 25 : 20 }),
         label,
-        cue: "nage appliquée — hors pyramide",
+        cue: "nage appliquée - hors pyramide",
         exerciseId: `${exerciseId}_pyr_fill`,
         meta: { setFormat: "repeated", pyramidFill: true },
       });
@@ -512,7 +512,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     }
     // Ne pas fitLastToTarget sur les paliers (déformerait la pyramide)
   } else if (fmt === "broken") {
-    // 2×(N×unit) — deux blocs séparés, reps plafonnées
+    // 2×(N×unit), deux blocs séparés, reps plafonnées
     const unit = target >= 1000 ? 100 : 50;
     const halfTarget = Math.round(target / 2);
     for (let b = 0; b < 2; b++) {
@@ -521,7 +521,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
           maxReps,
           restSec: rest("facile", unit, { defaultRest: unit >= 100 ? 25 : 20 }),
           label,
-          cue: b === 0 ? `${cue} — 1er bloc` : `${cue} — 2e bloc, contraste`,
+          cue: b === 0 ? `${cue} - 1er bloc` : `${cue} - 2e bloc, contraste`,
           exerciseId: `${exerciseId}_brk_${b}`,
           meta: { setFormat: "broken", brokenBlock: b + 1 },
         }),
@@ -597,7 +597,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     }
     fitLastToTarget(sets, target, 50, maxReps);
   } else if (fmt === "descending") {
-    // Cycles descendants — distances compatibles bassin
+    // Cycles descendants, distances compatibles bassin
     const steps = target >= 1200 ? [200, 150, 100, 50] : [100, 50];
     const useSteps = steps.filter((d) => d % quantum === 0 || d >= 50);
     let used = 0;
@@ -612,7 +612,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
             unit: d,
             restSec: rest(i === 0 ? "soutenu" : "facile", d, { defaultRest: d >= 150 ? 35 : 25 }),
             label,
-            cue: i === 0 ? `${cue} — départ long` : cue,
+            cue: i === 0 ? `${cue} - départ long` : cue,
             exerciseId: `${exerciseId}_desc_${cycle}_${i}`,
             continuous: false,
             meta: { setFormat: "descending", intensity: i === 0 ? "soutenu" : "facile" },
@@ -624,7 +624,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     }
     fitLastToTarget(sets, target, quantum, maxReps);
   } else if (fmt === "race_pace") {
-    // Touches / séries allure — plafonnées (jamais 8×200 si petit budget)
+    // Touches / séries allure, plafonnées (jamais 8×200 si petit budget)
     let unit = preferredUnit || 50;
     if (!preferredUnit) {
       if (target >= 1600) unit = 200;
@@ -665,12 +665,12 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
   }
 
   const lines = sets.map((s) => {
-    const cueTxt = s.cue ? ` — ${s.cue}` : "";
+    const cueTxt = s.cue ? ` - ${s.cue}` : "";
     if (s.continuous || s.reps === 1) {
-      const restTxt = s.continuous || !s.restSec ? "" : ` — repos ${s.restSec}s`;
+      const restTxt = s.continuous || !s.restSec ? "" : ` - repos ${s.restSec}s`;
       return `-${s.distancePerRep}m ${s.label}${cueTxt}${restTxt}`;
     }
-    return `-${s.reps} × ${s.distancePerRep}m ${s.label}${cueTxt} — repos ${s.restSec}s`;
+    return `-${s.reps} × ${s.distancePerRep}m ${s.label}${cueTxt} - repos ${s.restSec}s`;
   });
 
   let displayLines;
@@ -680,9 +680,9 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
     const collapsedPyr = collapseSetsToDisplayLinesExact(pyrSets, "pyramid");
     const fillLines = fillSets.map((s) => {
       if (s.reps === 1) {
-        return `-${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+        return `-${s.distancePerRep}m ${s.label} - ${s.cue} - repos ${s.restSec}s`;
       }
-      return `-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+      return `-${s.reps} × ${s.distancePerRep}m ${s.label} - ${s.cue} - repos ${s.restSec}s`;
     });
     displayLines = [
       ...(collapsedPyr || lines.filter((_, i) => pyramidStepOf(sets[i]) != null)),
@@ -691,7 +691,7 @@ export function buildCorpsByFormat(format, corpsTarget, opts = {}) {
   } else if (fmt === "broken" && sets.length >= 2) {
     const a = sets[0];
     displayLines = [
-      `-2 blocs de ${a.reps} × ${a.distancePerRep}m ${a.label} — ${cue} — repos ${a.restSec || 20}s`,
+      `-2 blocs de ${a.reps} × ${a.distancePerRep}m ${a.label} - ${cue} - repos ${a.restSec || 20}s`,
     ];
   } else {
     const collapsed = collapseSetsToDisplayLinesExact(sets, fmt);

@@ -1,5 +1,5 @@
 /**
- * Vue séance (Accueil / prototype) — synthèse + entrée mode bassin.
+ * Vue séance (Accueil / prototype), synthèse + entrée mode bassin.
  */
 import { useState } from "react";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";

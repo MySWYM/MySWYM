@@ -1,5 +1,5 @@
 /**
- * Readiness V1 — tests R1–R6
+ * Readiness V1, tests R1–R6
  * Usage : node src/lib/sports-engine/readiness.test.js
  */
 import { estimateCapacity, buildSportProfile } from "./index.js";
@@ -45,7 +45,7 @@ const poorRecovery = {
   trainingCaution: false,
 };
 
-console.log("R1 — ancien profil sans readiness → aucune régression");
+console.log("R1 - ancien profil sans readiness → aucune régression");
 {
   const base = { level: "sportif", goal: "progression" };
   const a = estimateCapacity(buildSportProfile(base), { completedSessions: 0 });
@@ -59,7 +59,7 @@ console.log("R1 — ancien profil sans readiness → aucune régression");
   ok(b.readiness == null, "readiness null");
 }
 
-console.log("R2 — débutant + long_break → progression douce");
+console.log("R2 - débutant + long_break → progression douce");
 {
   const sport = buildSportProfile({
     level: "découverte",
@@ -77,7 +77,7 @@ console.log("R2 — débutant + long_break → progression douce");
   ok(String(mod.reason).includes("long_break"), "reason long_break");
 }
 
-console.log("R3 — sportif + good recovery → pas de surcharge");
+console.log("R3 - sportif + good recovery → pas de surcharge");
 {
   const without = estimateCapacity(
     buildSportProfile({ level: "sportif", goal: "course_piscine" }),
@@ -97,7 +97,7 @@ console.log("R3 — sportif + good recovery → pas de surcharge");
   ok(withR.confidence >= without.confidence, "confiance ≥ baseline");
 }
 
-console.log("R4 — recovery poor → pas d'intensité haute via dims");
+console.log("R4 - recovery poor → pas d'intensité haute via dims");
 {
   const cap = estimateCapacity(
     buildSportProfile({ level: "régulier", goal: "progression", readinessProfile: poorRecovery }),
@@ -112,7 +112,7 @@ console.log("R4 — recovery poor → pas d'intensité haute via dims");
   ok(cap.dimensions.intensityTolerance < cap.dimensions.volumeTolerance + 0.05, "intensité ≤ volume");
 }
 
-console.log("R5 — feedback too_hard après readiness → feedback prioritaire");
+console.log("R5 - feedback too_hard après readiness → feedback prioritaire");
 {
   const readiness = longBreakBeginner;
   const soft = estimateCapacity(
@@ -133,7 +133,7 @@ console.log("R5 — feedback too_hard après readiness → feedback prioritaire"
   ok(hard.volumeFactor === hardOnly.volumeFactor, "volumeFactor = feedback seul");
 }
 
-console.log("R6 — reload Supabase → readiness conservé");
+console.log("R6 - reload Supabase → readiness conservé");
 {
   const profile = {
     level: "sportif",

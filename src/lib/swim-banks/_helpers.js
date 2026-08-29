@@ -1,6 +1,6 @@
 /**
  * Helpers de lecture / construction des banques legacy.
- * Déplacés mécaniquement depuis src/lib/swim-session-generator.js — ne pas reformuler.
+ * Déplacés mécaniquement depuis src/lib/swim-session-generator.js, ne pas reformuler.
  */
 
 export const LEGACY_SOURCE_FILE = "src/lib/swim-session-generator.js";

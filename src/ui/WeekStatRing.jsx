@@ -1,5 +1,5 @@
 /**
- * Anneau mètres de la semaine — DA dark (pas les tokens prototype conversion).
+ * Anneau mètres de la semaine, DA dark (pas les tokens prototype conversion).
  */
 export default function WeekStatRing({
   value = 0,
@@ -33,7 +33,7 @@ export default function WeekStatRing({
         position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 13, fontWeight: 700, color: "#f4f8fa", fontFamily: "Space Grotesk, ui-sans-serif, sans-serif",
       }}>
-        {max > 0 ? `${Math.round(pct * 100)}%` : "—"}
+        {max > 0 ? `${Math.round(pct * 100)}%` : "-"}
       </div>
     </div>
   );

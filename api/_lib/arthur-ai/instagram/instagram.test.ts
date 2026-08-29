@@ -136,7 +136,7 @@ await testAsync("send mock outbound", async () => {
   assert.equal(mockMod.getMockOutbound().length, 1);
 });
 
-await testAsync("identity — resolve only verified", async () => {
+await testAsync("identity, resolve only verified", async () => {
   const UID = "11111111-1111-4111-8111-111111111111";
   let status = "pending";
   const admin = {
@@ -173,7 +173,7 @@ await testAsync("identity — resolve only verified", async () => {
   );
 });
 
-await testAsync("identity — refuse collision external==userId", async () => {
+await testAsync("identity, refuse collision external==userId", async () => {
   const UID = "11111111-1111-4111-8111-111111111111";
   const admin = {
     from() {
@@ -241,7 +241,7 @@ test("conversation appartient à external même si user_id rattaché", () => {
   assert.equal(cross, false);
 });
 
-await testAsync("Instagram — writes tools bloqués", async () => {
+await testAsync("Instagram, writes tools bloqués", async () => {
   const r = await executeArthurTool(
     "create_training_plan",
     { confirmed: true },

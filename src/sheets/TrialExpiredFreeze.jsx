@@ -66,7 +66,7 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
           Ton essai est terminé
         </h1>
         <p style={{ fontSize: 15, color: G.grey, lineHeight: 1.55, margin: "0 0 20px" }}>
-          Le coach est en pause. Abonne-toi pour reprendre tes séances — {PRICING_SUMMARY_FR}.
+          Le coach est en pause. Abonne-toi pour reprendre tes séances, {PRICING_SUMMARY_FR}.
         </p>
 
         {heroPreview && (
@@ -91,7 +91,7 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
                 background: "linear-gradient(180deg, transparent 30%, rgba(0,5,20,0.65) 100%)",
               }}
             />
-            <SessionHeroCard preview={heroPreview} kicker="Aperçu — en pause" className="is-compact" />
+            <SessionHeroCard preview={heroPreview} kicker="Aperçu, en pause" className="is-compact" />
           </div>
         )}
 

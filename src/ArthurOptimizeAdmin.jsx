@@ -1,5 +1,5 @@
 /**
- * Dashboard Optimization Loop F3 — qualité, CTA, insights.
+ * Dashboard Optimization Loop F3, qualité, CTA, insights.
  * Pas d’activation des envois automatiques.
  */
 import { useCallback, useEffect, useState } from "react";
@@ -31,7 +31,7 @@ function ensureFonts() {
 }
 
 function pct(n) {
-  if (n == null || Number.isNaN(n)) return "—";
+  if (n == null || Number.isNaN(n)) return "-";
   return `${(n * 100).toFixed(1)}%`;
 }
 
@@ -192,7 +192,7 @@ export default function ArthurOptimizeAdmin() {
                   <div key={label} style={card}>
                     <div style={{ fontSize: 12, color: C.muted }}>{label}</div>
                     <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 800 }}>
-                      {v ?? "—"}
+                      {v ?? "-"}
                     </div>
                   </div>
                 ))}
@@ -219,7 +219,7 @@ export default function ArthurOptimizeAdmin() {
                   <div key={label} style={card}>
                     <div style={{ fontSize: 12, color: C.muted }}>{label}</div>
                     <div style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 800 }}>
-                      {v ?? "—"}
+                      {v ?? "-"}
                     </div>
                   </div>
                 ))}
@@ -316,9 +316,9 @@ export default function ArthurOptimizeAdmin() {
                         >
                           {r.band}
                         </td>
-                        <td style={td}>{r.intent || "—"}</td>
-                        <td style={td}>{r.cta ? r.cta_type || "yes" : "—"}</td>
-                        <td style={td}>{r.channel || "—"}</td>
+                        <td style={td}>{r.intent || "-"}</td>
+                        <td style={td}>{r.cta ? r.cta_type || "yes" : "-"}</td>
+                        <td style={td}>{r.channel || "-"}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,5 +1,5 @@
 /**
- * Façade banques natation — étape 1 (extraction mécanique).
+ * Façade banques natation, étape 1 (extraction mécanique).
  * Runtime historique continue via swim-session-generator.js (ré-exports).
  */
 export { LEGACY_SOURCE_FILE, roundTo, estimateLinesDistance, block, bankMeta } from "./_helpers.js";
@@ -61,7 +61,7 @@ import { SESSION_ARCHETYPE_ENTRIES } from "./session-archetypes.js";
 import { LABEL_ENTRIES } from "./labels.js";
 import { CANONICAL_DRILLS } from "./canonical-drills.js";
 
-/** Inventaire plat métadonnées (id / source / status) — banques runtime étape 1. */
+/** Inventaire plat métadonnées (id / source / status), banques runtime étape 1. */
 export function getBankCatalog() {
   return {
     warmups: WARMUP_ENTRIES,
@@ -70,7 +70,7 @@ export function getBankCatalog() {
     mainSets: MAIN_SET_ENTRIES,
     sessionArchetypes: SESSION_ARCHETYPE_ENTRIES,
     labels: LABEL_ENTRIES,
-    /** Préparation étape 2 — ne pas utiliser pour composer une séance. */
+    /** Préparation étape 2, ne pas utiliser pour composer une séance. */
     canonicalDrills: CANONICAL_DRILLS,
   };
 }

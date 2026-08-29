@@ -31,7 +31,7 @@ export const G_DARK = {
   navGlass: "rgba(6, 16, 31, 0.94)",
 };
 
-/** Palette DA — dark only. Mutée par applyTheme. */
+/** Palette DA, dark only. Mutée par applyTheme. */
 export const G = { ...G_DARK };
 
 export const applyTheme = () => {

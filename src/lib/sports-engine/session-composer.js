@@ -1,5 +1,5 @@
 /**
- * Composeur de séances V1 — exécute un SessionBrief (COMMENT), sans décider la stratégie.
+ * Composeur de séances V1, exécute un SessionBrief (COMMENT), sans décider la stratégie.
  *
  * Flux : VolumeTarget → BlockSplit → ExerciseSelection → SetComposition → Validation → FinalSession
  *
@@ -187,20 +187,20 @@ function formatSetLine(set, _beginnerFriendly) {
   const continuous = set.continuous === true || (set.reps === 1 && set.continuous !== false);
   const rest =
     !continuous && set.restSec > 0
-      ? ` — repos ${set.restSec}s`
+      ? ` - repos ${set.restSec}s`
       : "";
   let cue = set.cue ? String(set.cue).trim() : "";
   // Évite le bruit narratif / doublon d'intensité
   if (/^applique\b/i.test(cue) || /^nage tranquillement/i.test(cue)) cue = "";
   if (/^montée$|^descente$/i.test(cue)) cue = "";
-  const cueTxt = cue ? ` — ${cue}` : "";
+  const cueTxt = cue ? ` - ${cue}` : "";
   if (continuous || set.reps === 1) {
     return `-${set.distancePerRep}m ${set.label || "nage"}${cueTxt}`;
   }
   return `-${set.reps} × ${set.distancePerRep}m ${set.label || "nage"}${cueTxt}${rest}`;
 }
 
-/** Ancien header « Technique · … : » — plus exposé au nageur (reste dispo pour debug). */
+/** Ancien header « Technique · … : », plus exposé au nageur (reste dispo pour debug). */
 function formatTechniqueHeader(exerciseName, equipmentNote) {
   void exerciseName;
   void equipmentNote;
@@ -454,8 +454,8 @@ function equipmentNoteForDecouverte(equipment) {
 }
 
 /**
- * Plafond de nage continue — voir decouverte-intents.js (réexporté).
- * Intention pédagogique — résolue via resolveDecouverteIntent.
+ * Plafond de nage continue, voir decouverte-intents.js (réexporté).
+ * Intention pédagogique, résolue via resolveDecouverteIntent.
  */
 /** J3 : cue objectif injecté dans le corps (pas seulement le titre). */
 function objectiveBodyCue(brief = {}, intent = {}) {
@@ -468,7 +468,7 @@ function objectiveBodyCue(brief = {}, intent = {}) {
   }
   if (obj === "triathlon") {
     if (/triathlon|économie|draft|énergie/i.test(existing)) return null;
-    return "économie d\'énergie — allure régulière";
+    return "économie d\'énergie - allure régulière";
   }
   if (obj === "course_piscine") {
     if (/allure course|seuil|race|spécifique/i.test(existing)) return null;
@@ -492,21 +492,21 @@ function ensureObjectiveCueInDetails(details, brief, intent) {
         /crawl|jambes|nage/i.test(l) &&
         !/mise en route|dos à deux|retour au calme|focus geste/i.test(l),
     );
-    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} - ${objCue}`;
     else details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
   }
   if (
     (brief.objectif === "triathlon" || brief.family === "triathlon") &&
     !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)
   ) {
-    const objCue = "économie d'énergie — allure régulière";
+    const objCue = "économie d'énergie - allure régulière";
     const corpsIdx = details.findIndex(
       (l) =>
         /^-\d/.test(l) &&
         /crawl|jambes/i.test(l) &&
         !/mise en route|dos à deux|focus geste/i.test(l),
     );
-    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+    if (corpsIdx >= 0) details[corpsIdx] = `${details[corpsIdx]} - ${objCue}`;
   }
 }
 
@@ -548,9 +548,9 @@ function ensureEquipmentEngagement(details, eqList, brief) {
   }
   for (const techIdx of candidates) {
     const before = details[techIdx];
-    // « avec un doigt » n’est pas du matos — injecter avant le 1er tiret cadratin
+    // « avec un doigt » n’est pas du matos, injecter avant le 1er tiret cadratin
     if (/ — /.test(before)) {
-      details[techIdx] = before.replace(/ — /, ` avec ${label} — `);
+      details[techIdx] = before.replace(/ — /, ` avec ${label} - `);
     } else {
       details[techIdx] = `${before} avec ${label}`;
     }
@@ -581,7 +581,7 @@ export function validateDecouverteHard(sessionLike, opts = {}) {
   if (/sans pause[^\n]*repos|repos[^\n]*sans pause/i.test(text)) {
     errors.push("repos incohérent après nage continue");
   }
-  // Papillon non maîtrisé : pas de distance papillon réelle — sauf profil 4 nages
+  // Papillon non maîtrisé : pas de distance papillon réelle, sauf profil 4 nages
   if (!fourNagesAllowsPapillon(sessionLike, opts) && (opts.papillonOk === false || sessionLike.papillonMastered === false)) {
     if (/\bpapillon\b/i.test(text) && !/ondulation|prépa|adapt/i.test(text)) {
       errors.push("papillon imposé sans maîtrise");
@@ -624,7 +624,7 @@ export function validateDecouverteHard(sessionLike, opts = {}) {
   return { ok: errors.length === 0, errors };
 }
 
-/** Série répétée exacte — J3 : pas de « suite », préfère unité / 2 blocs. */
+/** Série répétée exacte, J3 : pas de « suite », préfère unité / 2 blocs. */
 function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exerciseId, maxReps = 12, maxContinuous }) {
   const target = Math.max(unit, roundTo(targetM, unit));
   const rest = Math.max(1, Number(restSec) || 20);
@@ -655,7 +655,7 @@ function buildRepeatedExact(targetM, unit, { label, cue, restSec, block, exercis
       distancePerRep: u,
       restSec: rest,
       label,
-      cue: part === 0 ? cue : `${cue} — 2e bloc, contraste`,
+      cue: part === 0 ? cue : `${cue} - 2e bloc, contraste`,
       block,
       exerciseId: part === 0 ? exerciseId : `${exerciseId}_b${part}`,
       continuous: false,
@@ -702,7 +702,7 @@ function tryArthurDepart({ budget, pool, level, brief, strokeFocus, rng, sets, d
   return true;
 }
 
-/** RAC Arthur (D10 dos à deux bras) — fallback FINS_SEMAINE si échec. */
+/** RAC Arthur (D10 dos à deux bras), fallback FINS_SEMAINE si échec. */
 function tryArthurFin({
   budget,
   pool,
@@ -740,7 +740,7 @@ function tryArthurFin({
   return true;
 }
 
-/** Éducatifs Arthur en bloc technique — fallback banque / synthétique. */
+/** Éducatifs Arthur en bloc technique, fallback banque / synthétique. */
 function tryArthurTechnique({
   budget,
   pool,
@@ -782,17 +782,17 @@ function tryArthurTechnique({
     sets.push(s);
     exerciseIds.push(s.exerciseId);
     if (s.continuous || (s.reps === 1 && !(s.restSec > 0))) {
-      details.push(`-${s.distancePerRep} m ${s.label}${s.cue ? ` — ${s.cue}` : ""}`);
+      details.push(`-${s.distancePerRep} m ${s.label}${s.cue ? ` - ${s.cue}` : ""}`);
     } else {
       details.push(
-        `-${s.reps} × ${s.distancePerRep} m ${s.label}${s.cue ? ` — ${s.cue}` : ""} — repos ${s.restSec || 20}s`,
+        `-${s.reps} × ${s.distancePerRep} m ${s.label}${s.cue ? ` - ${s.cue}` : ""} - repos ${s.restSec || 20}s`,
       );
     }
   }
   return true;
 }
 
-/** Corps fun par objectif — fallback formats / banque existants. */
+/** Corps fun par objectif, fallback formats / banque existants. */
 function tryArthurFunCorps({
   budget,
   pool,
@@ -881,7 +881,7 @@ function composeDecouverteSession(brief, rng) {
   const exerciseIds = [];
 
   // --- DÉPART ---
-  // Bascule warmups Arthur (flag) — sinon départ synthétique inchangé
+  // Bascule warmups Arthur (flag), sinon départ synthétique inchangé
   const arthurDepartOk = tryArthurDepart({
     budget: blocks.depart,
     pool,
@@ -1023,7 +1023,7 @@ function composeDecouverteSession(brief, rng) {
       const mid = isApply
         ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
         : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl facile`;
-      details.push(`-${mid}${ts.cue && !isApply ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
+      details.push(`-${mid}${ts.cue && !isApply ? ` - ${ts.cue}` : ""} - repos ${ts.restSec}s`);
     }
     exerciseIds.push(techEx.id);
     }
@@ -1096,7 +1096,7 @@ function composeDecouverteSession(brief, rng) {
     details.push(...fourNPortion.lines);
   }
 
-  // --- FIN --- (respecte maxContinuous : pas de 100–150m continu si plafond 50)
+  // --- FIN --- (respecte maxContinuous : pas de 100-150m continu si plafond 50)
   const finLabel = (isFourNSession(brief, strokeFocus) || strokeFocus === "crawl")
     ? "crawl facile"
     : "au choix (récup)";
@@ -1273,7 +1273,7 @@ function composeDecouverteSession(brief, rng) {
 
 
 /**
- * Hard constraints Régulier — pas de club confirmé automatique.
+ * Hard constraints Régulier, pas de club confirmé automatique.
  */
 export function validateRegulierHard(sessionLike, opts = {}) {
   const errors = [];
@@ -1429,7 +1429,7 @@ function techLabelsRegulier(primary) {
 }
 
 /**
- * Compose une séance Régulier — vraies séries, formats variés, qualité contrôlée.
+ * Compose une séance Régulier, vraies séries, formats variés, qualité contrôlée.
  */
 function composeRegulierSession(brief, rng) {
   const inventory = getExerciseInventory();
@@ -1512,7 +1512,7 @@ function composeRegulierSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  // DÉPART — Arthur warmups (flag) ou synthétique actuel
+  // DÉPART, Arthur warmups (flag) ou synthétique actuel
   const departDist = blocks.depart;
   const arthurDepartOk = tryArthurDepart({
     budget: departDist,
@@ -1653,7 +1653,7 @@ function composeRegulierSession(brief, rng) {
         const mid = isApply
           ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
           : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl facile`;
-        details.push(`-${mid}${!isApply && ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
+        details.push(`-${mid}${!isApply && ts.cue ? ` - ${ts.cue}` : ""} - repos ${ts.restSec}s`);
       }
       exerciseIds.push(primary[0].exerciseId, "tech_apply");
     }
@@ -1728,12 +1728,12 @@ function composeRegulierSession(brief, rng) {
     }
     corpsBuilt.lines = corpsBuilt.sets.map((s) => {
       if (s.continuous || (s.reps === 1 && s.restSec === 0)) {
-        return `-${s.distancePerRep}m ${s.label} — ${s.cue}`;
+        return `-${s.distancePerRep}m ${s.label} - ${s.cue}`;
       }
       if (s.reps === 1) {
-        return `-${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+        return `-${s.distancePerRep}m ${s.label} - ${s.cue} - repos ${s.restSec}s`;
       }
-      return `-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`;
+      return `-${s.reps} × ${s.distancePerRep}m ${s.label} - ${s.cue} - repos ${s.restSec}s`;
     });
     const collapsed = collapseSetsToDisplayLinesExact(corpsBuilt.sets, corpsBuilt.setFormat);
     corpsBuilt.displayLines = collapsed || corpsBuilt.lines;
@@ -1764,7 +1764,7 @@ function composeRegulierSession(brief, rng) {
       applyCue: (() => {
         const base = reprisePattern?.corpsCue || intent.applyCue;
         const obj = objectiveBodyCue(brief, intent);
-        return obj ? `${base || "nage"} — ${obj}` : base;
+        return obj ? `${base || "nage"} - ${obj}` : base;
       })(),
       zone: null,
       maxContinuous: intent.id === "reprise" ? Math.min(maxCont, 100) : maxCont,
@@ -1780,7 +1780,7 @@ function composeRegulierSession(brief, rng) {
         cue: (() => {
           const base = reprisePattern?.corpsCue || intent.applyCue;
           const obj = objectiveBodyCue(brief, intent);
-          return obj ? `${base || "nage"} — ${obj}` : base;
+          return obj ? `${base || "nage"} - ${obj}` : base;
         })(),
         restFor,
         exerciseId: `corps_${intent.id}`,
@@ -1812,7 +1812,7 @@ function composeRegulierSession(brief, rng) {
     details.push(...fourNPortion.lines);
   }
 
-  // FIN — Arthur RAC (D10) ou FINS_SEMAINE
+  // FIN, Arthur RAC (D10) ou FINS_SEMAINE
   const finLabel = (isFourNSession(brief, strokeFocus) || strokeFocus === "crawl")
     ? "crawl facile"
     : "au choix (récup)";
@@ -1985,7 +1985,7 @@ function composeRegulierSession(brief, rng) {
 }
 
 /**
- * Hard constraints Sportif — polarisation, Z4 limitée, allures fiables.
+ * Hard constraints Sportif, polarisation, Z4 limitée, allures fiables.
  */
 export function validateSportifHard(sessionLike, opts = {}) {
   const errors = [];
@@ -2023,7 +2023,7 @@ export function validateSportifHard(sessionLike, opts = {}) {
 }
 
 /**
- * Compose une séance Sportif — polarisation, qualité intentionnelle, allures si T100.
+ * Compose une séance Sportif, polarisation, qualité intentionnelle, allures si T100.
  */
 function composeSportifSession(brief, rng) {
   const isPerf = brief.level === "performance" || brief._performanceMode;
@@ -2092,7 +2092,7 @@ function composeSportifSession(brief, rng) {
   });
   let blocks = { ...blueprint.blocks };
   const taperLoadEarly = brief.taperLoad || brief.performanceStrategy?.taperLoad || null;
-  // Taper : densifier moins — réduire coquille (départ/tech/rac) pour coller au volume cible
+  // Taper : densifier moins, réduire coquille (départ/tech/rac) pour coller au volume cible
   if (
     isPerf &&
     taperLoadEarly &&
@@ -2210,7 +2210,7 @@ function composeSportifSession(brief, rng) {
   const details = [];
   const exerciseIds = [];
 
-  // DÉPART — Arthur warmups (flag) ou Z1 synthétique actuel
+  // DÉPART, Arthur warmups (flag) ou Z1 synthétique actuel
   const departDist = blocks.depart;
   const depCue = cueFor("Z1", departDist, "échauffement facile");
   const departMaxCont = maxContCrawl;
@@ -2238,7 +2238,7 @@ function composeSportifSession(brief, rng) {
     s.blockRole = "preparation";
     if (isFourNSession(brief, strokeFocus)) s.stroke = "crawl";
     sets.push(s);
-    details.push(`-${departDist}m ${departLabel} — ${depCue}`);
+    details.push(`-${departDist}m ${departLabel} - ${depCue}`);
   } else {
     const unit = departMaxCont >= 100 ? 100 : 50;
     const ds = buildRepeatedExact(departDist, unit, {
@@ -2357,7 +2357,7 @@ function composeSportifSession(brief, rng) {
         const mid = isApply
           ? `${ts.reps} × ${ts.distancePerRep}m ${ts.label}`
           : `${ts.reps} × ${ts.distancePerRep}m : ${ts.label} + crawl facile`;
-        details.push(`-${mid}${!isApply && ts.cue ? ` — ${ts.cue}` : ""} — repos ${ts.restSec}s`);
+        details.push(`-${mid}${!isApply && ts.cue ? ` - ${ts.cue}` : ""} - repos ${ts.restSec}s`);
       }
       exerciseIds.push(primary[0].exerciseId, "tech_apply");
     }
@@ -2439,7 +2439,7 @@ function composeSportifSession(brief, rng) {
       distancePerRep: 100,
       restSec: restFor({ intensity: "soutenu", distancePerRep: 100, zone: "Z3", intentId: "test" }),
       label: "crawl",
-      cue: cueFor("Z3", 100, "test 100 — chrono"),
+      cue: cueFor("Z3", 100, "test 100 - chrono"),
       block: "corps",
       exerciseId: "test_100",
       continuous: false,
@@ -2454,7 +2454,7 @@ function composeSportifSession(brief, rng) {
       distancePerRep: longDist,
       restSec: 0,
       label: "crawl",
-      cue: cueFor("Z3", longDist, longDist >= 1000 ? "test long — chrono" : "test 400 — chrono"),
+      cue: cueFor("Z3", longDist, longDist >= 1000 ? "test long - chrono" : "test 400 - chrono"),
       block: "corps",
       exerciseId: `test_${longDist}`,
       continuous: true,
@@ -2488,10 +2488,10 @@ function composeSportifSession(brief, rng) {
       exerciseIds.push(s.exerciseId);
       if (s.continuous || s.reps === 1) {
         details.push(
-          `-${s.distancePerRep}m ${s.label} — ${s.cue}${s.restSec ? ` — repos ${s.restSec}s` : ""}`,
+          `-${s.distancePerRep}m ${s.label} - ${s.cue}${s.restSec ? ` - repos ${s.restSec}s` : ""}`,
         );
       } else {
-        details.push(`-${s.reps} × ${s.distancePerRep}m ${s.label} — ${s.cue} — repos ${s.restSec}s`);
+        details.push(`-${s.reps} × ${s.distancePerRep}m ${s.label} - ${s.cue} - repos ${s.restSec}s`);
       }
     }
     if (fourNPortion && sessionSpecificity !== "race_specific") {
@@ -2508,7 +2508,7 @@ function composeSportifSession(brief, rng) {
       corpsFormat = setFormat === "continuous" ? "broken" : setFormat;
       let prepVol = Math.max(200, roundTo(mainCorpsTarget * 0.28, 50));
       let z4Cap = Math.min(700, Math.max(300, roundTo(mainCorpsTarget * 0.35, 50)));
-      // Taper : rappeler la vitesse sans fatigue — intensité courte
+      // Taper : rappeler la vitesse sans fatigue, intensité courte
       if (Number.isFinite(intensityRetain) && intensityRetain < 1) {
         z4Cap = Math.max(100, roundTo(z4Cap * intensityRetain, 50));
       }
@@ -2521,7 +2521,7 @@ function composeSportifSession(brief, rng) {
 
           const prepBuilt = buildCorpsByFormat("repeated", prepVol, {
         label: "crawl",
-        cue: cueFor("Z2", 100, "préparation — rythme aisé"),
+        cue: cueFor("Z2", 100, "préparation - rythme aisé"),
         restFor: (c) => restFor({ ...c, zone: "Z2" }),
         exerciseId: `corps_${intent.id}_prep`,
         maxContinuous: Math.min(maxContCrawl, 200),
@@ -2536,7 +2536,7 @@ function composeSportifSession(brief, rng) {
       }
       details.push(...(prepBuilt.displayLines || prepBuilt.lines));
 
-          corpsCue = cueFor("Z4", 50, "rapide — récupère bien");
+          corpsCue = cueFor("Z4", 50, "rapide - récupère bien");
       const z4Built = buildCorpsByFormat(corpsFormat, z4Cap, {
         label: corpsLabel.includes("/") ? "crawl" : corpsLabel,
         altLabel: "crawl",
@@ -2557,7 +2557,7 @@ function composeSportifSession(brief, rng) {
 
           const consolBuilt = buildCorpsByFormat("mixed", consolVol, {
         label: "crawl",
-        cue: cueFor("Z2", 100, "consolidation — nage propre après vitesse"),
+        cue: cueFor("Z2", 100, "consolidation - nage propre après vitesse"),
         restFor: (c) => restFor({ ...c, zone: "Z2" }),
         exerciseId: `corps_${intent.id}_consol`,
         maxContinuous: maxContCrawl,
@@ -2626,7 +2626,7 @@ function composeSportifSession(brief, rng) {
         if (aeroShell >= 200) {
           const aeroBuilt = buildCorpsByFormat("repeated", aeroShell, {
             label: corpsLabel,
-            cue: cueFor("Z2", 100, "aérobie — coquille"),
+            cue: cueFor("Z2", 100, "aérobie - coquille"),
             restFor: (c) => restFor({ ...c, zone: "Z2" }),
             exerciseId: `corps_${intent.id}_aero`,
             maxContinuous: maxContCrawl,
@@ -2644,7 +2644,7 @@ function composeSportifSession(brief, rng) {
         }
         const objCue = objectiveBodyCue(brief, intent);
         const z3Fallback = objCue
-          ? `${intent.applyCue || "allure seuil"} — ${objCue}`
+          ? `${intent.applyCue || "allure seuil"} - ${objCue}`
           : (intent.applyCue || "allure seuil");
         corpsCue = cueFor("Z3", preferredUnit, z3Fallback);
         const z3Built = buildCorpsByFormat(corpsFormat, z3Budget, {
@@ -2674,7 +2674,7 @@ function composeSportifSession(brief, rng) {
         } else {
           const aeroTarget = Math.max(400, mainCorpsTarget - touchVol);
           const objCueA = objectiveBodyCue(brief, intent);
-          const aeroCueA = objCueA ? `${intent.applyCue || "aérobie"} — ${objCueA}` : intent.applyCue;
+          const aeroCueA = objCueA ? `${intent.applyCue || "aérobie"} - ${objCueA}` : intent.applyCue;
           let aeroFmtA = ["pyramid", "block"].includes(setFormat) ? "repeated" : setFormat;
           const aeroBuilt = buildCorpsByFormat(aeroFmtA, aeroTarget, {
             label: corpsLabel,
@@ -2713,7 +2713,7 @@ function composeSportifSession(brief, rng) {
         const zoneMain = painBlocked || intent.id === "recuperation" ? "Z1" : "Z2";
         const objCue = objectiveBodyCue(brief, intent);
         const aeroCueBase = objCue
-          ? `${intent.applyCue || "aérobie"} — ${objCue}`
+          ? `${intent.applyCue || "aérobie"} - ${objCue}`
           : intent.applyCue;
         let aeroFmt = isFourNSession(brief, strokeFocus) ? "repeated" : setFormat;
         if (hc.forbidComplexFormats || hc.forbidPyramidFiller || hc.painProtection) {
@@ -2777,7 +2777,7 @@ function composeSportifSession(brief, rng) {
   }
   } // fin else arthurFunSp
 
-  // FIN Z1 — Arthur RAC (D10) ou FINS_SEMAINE
+  // FIN Z1, Arthur RAC (D10) ou FINS_SEMAINE
   const finMaxCont = Math.min(maxContCrawl, brief.hardConstraints?.maxContinuousDistance || maxContCrawl);
   const finLabel = (isFourNSession(brief, strokeFocus) || strokeFocus === "crawl")
     ? "crawl facile"
@@ -2877,13 +2877,13 @@ function composeSportifSession(brief, rng) {
       // Annoter la première ligne corps
       const corpsIdx = details.findIndex((l) => /^-\d/.test(l) && !/Technique|souple —|échauff/i.test(l) && details.indexOf(l) > 0);
       if (corpsIdx >= 0) {
-        details[corpsIdx] = `${details[corpsIdx]} — ${objCue}`;
+        details[corpsIdx] = `${details[corpsIdx]} - ${objCue}`;
       } else {
         details.splice(Math.min(3, details.length), 0, `-Cue eau libre : ${objCue}`);
       }
     }
     if (brief.objectif === "triathlon" && !/triathlon|économie|draft|énergie|allure régulière/i.test(joined)) {
-      const triCue = objCue || "économie d'énergie — allure régulière";
+      const triCue = objCue || "économie d'énergie - allure régulière";
       const corpsIdx = details.findIndex(
         (l) =>
           /^-\d/.test(l) &&
@@ -2892,7 +2892,7 @@ function composeSportifSession(brief, rng) {
       );
       const fallbackIdx = details.findIndex((l) => /^-\d/.test(l) && !/souple|Technique/i.test(l));
       const idx = corpsIdx >= 0 ? corpsIdx : fallbackIdx;
-      if (idx >= 0) details[idx] = `${details[idx]} — ${triCue}`;
+      if (idx >= 0) details[idx] = `${details[idx]} - ${triCue}`;
     }
   }
 
@@ -3026,7 +3026,7 @@ export function composeSession(brief) {
   return composeWithQualityGate(brief, composeSessionOnce);
 }
 
-/** Composition interne (une tentative) — appelée par le quality gate. */
+/** Composition interne (une tentative), appelée par le quality gate. */
 export function composeSessionOnce(brief) {
   if (!brief || !brief.volumeTarget) {
     return { ok: false, reason: "SessionBrief invalide" };

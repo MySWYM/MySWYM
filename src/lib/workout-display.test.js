@@ -114,7 +114,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(formatRestChip(90), "R1'30\"");
   assert.equal(parseAllurePaceRange("crawl @1:39-1:46")?.low, "1:39");
   assert.equal(parseAllurePaceRange("(Z2 @1:05-1:12)")?.high, "1:12");
-  assert.equal(formatAllurePaceChip("1:39", "1:46"), "@1:39–1:46");
+  assert.equal(formatAllurePaceChip("1:39", "1:46"), "@1:39-1:46");
   assert.equal(stripAllurePaceMarkers("moyen @1:39-1:46"), "moyen");
   assert.equal(stripAllurePaceMarkers("(Z3 @1:20-1:26)"), null);
 }
@@ -127,7 +127,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   });
   const ex = view.exercises[0];
   assert.equal(ex.departLabel, "D2'05\"");
-  assert.equal(ex.allurePaceLabel, "@1:39–1:46");
+  assert.equal(ex.allurePaceLabel, "@1:39-1:46");
   assert.equal(ex.allurePaceLow, "1:39");
   assert.equal(ex.allurePaceHigh, "1:46");
   assert.ok(!/@/.test(ex.cue || ""), "allure @ sortie du sous-texte");
@@ -136,8 +136,8 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 {
   const view = buildWorkoutView({
     composedBy: "natation-sheet",
-    details: ["-8 × 50 m crawl — Sprint, départ toutes les 2 min"],
-    sets: [{ block: "corps", label: "8 × 50 m crawl — Sprint, départ toutes les 2 min" }],
+    details: ["-8 × 50 m crawl, Sprint, départ toutes les 2 min"],
+    sets: [{ block: "corps", label: "8 × 50 m crawl, Sprint, départ toutes les 2 min" }],
   });
   const ex = view.exercises[0];
   assert.equal(ex.departLabel, "D2'");
@@ -180,7 +180,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
-  const h = splitHeadline("8 × 50 m crawl — respiration 3 temps");
+  const h = splitHeadline("8 × 50 m crawl, respiration 3 temps");
   assert.equal(h.volume, "8 × 50 m");
   assert.equal(h.stroke, "CRAWL");
 }
@@ -229,8 +229,8 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   // Main « 4 nages » + cue « Crawl ou 4 nages » → pas la pastille 4 NAGES imposée
   const view = buildWorkoutView({
     composedBy: "natation-sheet",
-    details: ["-100 m 4 nages souple — Crawl ou 4 nages"],
-    sets: [{ block: "depart", label: "100 m 4 nages souple — Crawl ou 4 nages" }],
+    details: ["-100 m 4 nages souple - Crawl ou 4 nages"],
+    sets: [{ block: "depart", label: "100 m 4 nages souple - Crawl ou 4 nages" }],
   });
   const ex = view.exercises[0];
   assert.equal(ex.strokeLabel, "CRAWL OU 4N");
@@ -268,8 +268,8 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   // souple + sprint → une pastille Enchaînement (pas SOUPLE + SPRINT)
   const view = buildWorkoutView({
     composedBy: "natation-sheet",
-    details: ["-6 × 50 m nage au choix souple sprint — R30\""],
-    sets: [{ block: "corps", label: "6 × 50 m nage au choix souple sprint — R30\"" }],
+    details: ["-6 × 50 m nage au choix souple sprint, R30\""],
+    sets: [{ block: "corps", label: "6 × 50 m nage au choix souple sprint, R30\"" }],
   });
   const ex = view.exercises[0];
   assert.ok(ex.allureEnchainement, "enchaînement détecté");
@@ -343,7 +343,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 }
 
 {
-  const edu = matchEducatif("4×50m crawl — respiration 3 temps — repos 15s");
+  const edu = matchEducatif("4×50m crawl, respiration 3 temps, repos 15s");
   assert.equal(edu?.id, "respiration_3t");
   assert.equal(edu?.ficheSource, "catalog");
   assert.ok(getEducatifById("godille")?.name);
@@ -356,7 +356,7 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(fleche?.arthurId, "educatif_fleche");
   assert.ok(fleche?.level);
 
-  const grand = matchEducatif("6×25m grand chien — facile");
+  const grand = matchEducatif("6×25m grand chien, facile");
   assert.equal(grand?.arthurId, "educatif_grand_chien");
   assert.equal(grand?.ficheSource, "arthur");
 
@@ -371,12 +371,12 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
     type: "VITESSE",
     distance: "2200m",
     duration: 65,
-    intensity: "Z3 — vitesse contrôlée",
+    intensity: "Z3, vitesse contrôlée",
     equipmentUsed: ["palmes"],
     details: [
       "-Échauffement : 300m mix souple",
-      "-8 × 50m crawl — respiration 3 temps — repos 15s",
-      "-Pyramide crawl 100 → 200 → 300 → 200 → 100 — repos 20s",
+      "-8 × 50m crawl, respiration 3 temps, repos 15s",
+      "-Pyramide crawl 100 → 200 → 300 → 200 → 100, repos 20s",
       "-Retour au calme : 200m dos facile",
     ],
   };
@@ -398,8 +398,8 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
     distance: "1000m",
     details: [
       "-200 m crawl facile",
-      "-8 × 50 m crawl — repos 20s",
-      "-4 × 25 m flèche — repos 15s",
+      "-8 × 50 m crawl, repos 20s",
+      "-4 × 25 m flèche, repos 15s",
       "-100 m crawl facile",
     ],
     sets: [
@@ -461,9 +461,9 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
     distance: "900m",
     details: [
       "-100 m nage libre souple",
-      "-4 × 100 m crawl — allure tenable, focus économie — repos 25s",
-      "-100 m crawl facile — sans forcer",
-      "-200 m crawl — confortable",
+      "-4 × 100 m crawl, allure tenable, focus économie, repos 25s",
+      "-100 m crawl facile, sans forcer",
+      "-200 m crawl, confortable",
       "-50 m dos Normal",
     ],
   };

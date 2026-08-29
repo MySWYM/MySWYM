@@ -94,7 +94,7 @@ function stripIntensityParensAndCodes(text) {
     (_, word, lo, hi) => humanPaceRange(zoneWord(word), lo, hi),
   );
 
-  // Codes bruts : (facile @2), @2, @3 — pas les allures Premium (Z2 @1:42-1:48)
+  // Codes bruts : (facile @2), @2, @3, pas les allures Premium (Z2 @1:42-1:48)
   out = out.replace(/\(\s*(facile|très facile|confortable|soutenu|rapide|Z[1-4])\s*@[1-5]\s*\)/gi, "");
   out = out.replace(/(^|[\s,;:(—–-])@([1-5])(?!\d|:)/g, "$1");
   out = out.replace(/\(\s*facile\s*@[^)]*\)/gi, "");
@@ -131,7 +131,7 @@ export function humanizeBeginnerZoneTags(text) {
 }
 
 /**
- * Règle Arthur D9 — texte affiché nageur : jamais `souple` ni `Z1`.
+ * Règle Arthur D9, texte affiché nageur : jamais `souple` ni `Z1`.
  * Remplacements concrets selon le contexte ; ne change pas volumes ni sélection de blocs.
  */
 export function humanizeArthurDisplayTerms(text) {
@@ -145,13 +145,13 @@ export function humanizeArthurDisplayTerms(text) {
 
   out = out.replace(/—\s*Z1\b/gi, (match, offset, full) => {
     const head = String(full).slice(Math.max(0, offset - 100), offset).toLowerCase();
-    if (/échauff|mise en route|d[ée]part/i.test(head)) return "— mise en route";
-    if (/récup|rac|au choix|lent|retour|très facile/i.test(head)) return "— retour au calme";
+    if (/échauff|mise en route|d[ée]part/i.test(head)) return " - mise en route";
+    if (/récup|rac|au choix|lent|retour|très facile/i.test(head)) return " - retour au calme";
     const lineStart = String(full).slice(0, offset);
     if (/^[\s\-–—]*\d+\s*m\b/i.test(lineStart.trim()) && !/[×x]\s*\d/i.test(lineStart)) {
-      return "— retour au calme";
+      return " - retour au calme";
     }
-    return "— facile";
+    return " - facile";
   });
   out = out.replace(/\bZ1\b/g, "facile");
 
@@ -165,8 +165,8 @@ export function humanizeArthurDisplayTerms(text) {
   out = out.replace(/\bjambes?\s+souples?\b/gi, "jambes sans forcer");
   out = out.replace(/\bmouvements?\s+souples?\b/gi, "mouvements sans forcer");
   out = out.replace(/\btrès\s+souple\b/gi, "très facile");
-  out = out.replace(/—\s*souple\b/gi, "— sans forcer");
-  out = out.replace(/\bsouple\s*—/gi, "facile —");
+  out = out.replace(/—\s*souple\b/gi, " - sans forcer");
+  out = out.replace(/\bsouple\s*—/gi, "facile  - ");
   out = out.replace(/\bsouple\b/gi, "facile");
 
   return out;
@@ -192,7 +192,7 @@ function formatDistanceTokens(text) {
 
 function tidySpaces(text) {
   return String(text || "")
-    .replace(/\s*—\s*—\s*/g, " — ")
+    .replace(/\s*—\s*—\s*/g, " - ")
     .replace(/(\d+)min\b/gi, "$1 min")
     .replace(/(\d+)\s*min(\d+)\s*s/gi, "$1 min $2 s")
     .replace(/(min)\s+(confortable|soutenu|facile|rapide)\b/gi, "$1, $2")
@@ -236,7 +236,7 @@ export function hasEducatifOrConcreteSwim(text) {
   return EDUC_OR_SWIM_RE.test(t);
 }
 
-/** `@2` / `@3` / `facile @` en codes d'intensité — pas `@mm:ss` d'allure. */
+/** `@2` / `@3` / `facile @` en codes d'intensité, pas `@mm:ss` d'allure. */
 export function containsForbiddenIntensityCode(text) {
   const t = String(text || "");
   if (/facile\s@/i.test(t)) return true;
@@ -334,7 +334,7 @@ export function sanitizeSessionDetailLine(text) {
 
 /**
  * Affichage nageur : sanitizer + splits 50 m lisibles (`25 m A + 25 m B`).
- * À n'utiliser que pour l'UI / tests de rendu — pas pour le calcul de volume.
+ * À n'utiliser que pour l'UI / tests de rendu, pas pour le calcul de volume.
  */
 export function prettifySessionDetailLine(text) {
   let out = sanitizeSessionDetailLine(text);

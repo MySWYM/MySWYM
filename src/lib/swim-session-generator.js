@@ -16,10 +16,10 @@ import {
 
 /* ============== BASE DE DONNÉES ============== */
 /* Banques extraites vers src/lib/swim-banks/ (étape 1 refonte).
-   Contenu inchangé — ré-export runtime depuis swim-banks.
+   Contenu inchangé, ré-export runtime depuis swim-banks.
    Principe : chaque bloc de contenu porte sa distance EXACTE, calculée à
    partir des mêmes nombres que ceux affichés dans le texte. Le total d'une
-   séance est TOUJOURS la somme réelle de ses blocs — jamais une estimation
+   séance est TOUJOURS la somme réelle de ses blocs, jamais une estimation
    séparée qui pourrait diverger de ce qui est affiché. */
 
 const NIVEAUX = {
@@ -63,7 +63,7 @@ function formatTime(sec){
   const s = sec%60;
   return `${m}:${s.toString().padStart(2,'0')}`;
 }
-// Allures : T100 uniquement — voir src/lib/swim-pace.js (bandes adaptatives)
+// Allures : T100 uniquement, voir src/lib/swim-pace.js (bandes adaptatives)
 function paceTag(ref100Seconds, _ref400Unused, zoneKey, distance){
   return paceTagFromT100(ref100Seconds, zoneKey, distance);
 }
@@ -90,7 +90,7 @@ function annotateBareZones(lignes, ref100Seconds){
   });
 }
 
-/* ============== GÉNÉRATEUR — SEMAINE COMPLÈTE ============== */
+/* ============== GÉNÉRATEUR, SEMAINE COMPLÈTE ============== */
 
 function computeWeekTarget(niveauKey, typeSemaine, prevDistance){
   const refTotal = { debutant:3600, intermediaire:4800, confirme:6000, triathlete:6600 }[niveauKey] || 4800;
@@ -99,15 +99,15 @@ function computeWeekTarget(niveauKey, typeSemaine, prevDistance){
   }
   if(typeSemaine === "allegee"){
     const target = Math.round(prevDistance*0.70/100)*100;
-    return { target, maxAutorise:null, statutLabel:"Semaine allégée — décharge (~-30%)", prevDistance, refTotal };
+    return { target, maxAutorise:null, statutLabel:"Semaine allégée - décharge (~-30%)", prevDistance, refTotal };
   }
   if(typeSemaine === "test"){
     // Volume modéré : on garde de la fraîcheur pour des chronos propres
     const target = Math.round(prevDistance*0.85/100)*100;
-    return { target, maxAutorise:null, statutLabel:"Semaine test — chronos de contrôle", prevDistance, refTotal };
+    return { target, maxAutorise:null, statutLabel:"Semaine test - chronos de contrôle", prevDistance, refTotal };
   }
   const maxAutorise = Math.floor((prevDistance*1.10) / 100) * 100;
-  return { target: maxAutorise, maxAutorise, statutLabel:"Charge normale — cible +10%", prevDistance, refTotal };
+  return { target: maxAutorise, maxAutorise, statutLabel:"Charge normale - cible +10%", prevDistance, refTotal };
 }
 
 /** Normalise bassin onboarding → 25 | 50 (défaut 50). */
@@ -154,9 +154,9 @@ function adaptLineRepsForPool50(line) {
   t = t.replace(/(\d+)\s*x\s*\(\s*(\d+)\s*x\s*25\s*m\s*\)/gi, (_m, a, b) =>
     `${a}x(${b}x50m : 25m à bloc + 25m relâché)`
   );
-  // « 8x25m godilles R15'' » → « 8x50m : 25m à bloc + 25m relâché — godilles R15'' »
+  // « 8x25m godilles R15'' » → « 8x50m : 25m à bloc + 25m relâché, godilles R15'' »
   t = t.replace(/(\d+)\s*x\s*25\s*m(?:\s+(.+?))?(?=\s+R\d|\s*$)/gi, (_m, n, desc) => {
-    const cue = desc && desc.trim() ? ` — ${desc.trim()}` : "";
+    const cue = desc && desc.trim() ? ` - ${desc.trim()}` : "";
     return `${n}x50m : 25m à bloc + 25m relâché${cue}`;
   });
   return t;
@@ -169,7 +169,7 @@ function appendMatosIfMissing(line, materiel) {
   return `${line.replace(/\s*$/, "")} avec ${note.replace(/^avec\s+/i, "")}`;
 }
 
-/** Bloc technique : lignes d'éducatif nommées — jamais « 600m respiration ». */
+/** Bloc technique : lignes d'éducatif nommées, jamais « 600m respiration ». */
 function pushExplicitTechLines(lignes, techPicked, materiel = "") {
   const drills = (techPicked?.lines || [])
     .map((l) => String(l).trim().replace(/^[·\-\s]+/, ""))
@@ -185,7 +185,7 @@ function pushExplicitTechLines(lignes, techPicked, materiel = "") {
     lignes.push(`-${line.replace(/^-/, "")}`);
   });
 }
-/** Adapte un bloc technique au bassin 50 — distance = somme réelle des reps adaptées. */
+/** Adapte un bloc technique au bassin 50, distance = somme réelle des reps adaptées. */
 function adaptTechBlockForPool(blk, pool) {
   if (pool !== 50 || !blk) return blk;
   const lines = blk.lines.map(adaptLineRepsForPool50);
@@ -194,7 +194,7 @@ function adaptTechBlockForPool(blk, pool) {
 }
 
 /**
- * Volume relatif — même structure de séance, distances adaptées au niveau.
+ * Volume relatif, même structure de séance, distances adaptées au niveau.
  * MySWYM = générateur de séances, pas école de natation.
  */
 const VOL_BY_NIVEAU_KEY = {
@@ -234,12 +234,12 @@ function clarifyBeginnerLine(line) {
   const indent = line.match(/^\s*/)?.[0] || "";
   let t = line.trim();
 
-  t = t.replace(/\bR(\d+)''/g, "— repos $1s");
-  t = t.replace(/\bR(\d+)"/g, "— repos $1s");
-  t = t.replace(/\bR(\d+)'(?!\d)/g, "— repos $1min");
-  t = t.replace(/\bD(\d+)'(\d+)"/g, "— départ toutes les $1min$2s");
-  t = t.replace(/\bD(\d+)'(?!\d)/g, "— départ toutes les $1min");
-  t = t.replace(/\bD(\d+)"/g, "— départ toutes les $1s");
+  t = t.replace(/\bR(\d+)''/g, " -  repos $1s");
+  t = t.replace(/\bR(\d+)"/g, " -  repos $1s");
+  t = t.replace(/\bR(\d+)'(?!\d)/g, " -  repos $1min");
+  t = t.replace(/\bD(\d+)'(\d+)"/g, " -  départ toutes les $1min$2s");
+  t = t.replace(/\bD(\d+)'(?!\d)/g, " -  départ toutes les $1min");
+  t = t.replace(/\bD(\d+)"/g, " -  départ toutes les $1s");
 
   t = humanizeBeginnerZoneTags(t);
 
@@ -253,7 +253,7 @@ function clarifyBeginnerLine(line) {
   t = t.replace(/^(-?\d+x\d+)(?=\s|—|$|\()/i, "$1m");
   t = t.replace(/\b(\d+x\d+)(?=\s*:)/g, "$1m");
 
-  t = t.replace(/\s*—\s*—\s*/g, " — ");
+  t = t.replace(/\s*—\s*—\s*/g, " - ");
   t = t.replace(/\s{2,}/g, " ").trim();
   return indent + t;
 }
@@ -270,7 +270,7 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const isBeginner = simplifyWording != null ? !!simplifyWording : niveauKey === "debutant";
   const isTest = objectifKey === "test";
 
-  // Départ Z1 — jamais jambes si le focus technique est déjà jambes
+  // Départ Z1, jamais jambes si le focus technique est déjà jambes
   // Découverte : départs simples (pas de godilles)
   let departPool;
   if (isBeginner) {
@@ -284,7 +284,7 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   const depart = scaleDepartBlock(pick(departPool, "depart")(), isTest ? Math.min(mult, 0.85) : mult);
   lignes.push(depart.text);
 
-  // Technique rotative — adapter Nx25m si bassin 50
+  // Technique rotative, adapter Nx25m si bassin 50
   // Découverte : flèche / grand chien (FOCUS_CYCLE_DECOUVERTE)
   const techKey = (isBeginner && TECHNIQUE[techniqueFocusKey]) ? techniqueFocusKey
     : (isBeginner ? "technique_fleche" : techniqueFocusKey);
@@ -336,7 +336,7 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
   }
   lignes.push(...principalLines);
 
-  // Fin RAC — scale légère ; total toujours multiple du bassin (25 ou 50)
+  // Fin RAC, scale légère ; total toujours multiple du bassin (25 ou 50)
   const subtotal = depart.distance + techPicked.distance + principalDist;
   const finBase = volumeTier === "allegee" || volumeTier === "test" ? 150 : 200;
   const finTarget = Math.max(100, roundTo(finBase * Math.min(1.2, Math.max(0.6, mult)), 50));
@@ -356,11 +356,11 @@ function genererSeanceDeSemaine(niveauKey, objectifKey, phaseKey, numSemaine, in
 }
 
 /** Retourne les séances structurées pour intégration app (sans en-tête semaine).
- *  sessionRoles (optionnel) : tableau [{ objectif, zone }] longueur = nbSeances — pilotage COSD.
+ *  sessionRoles (optionnel) : tableau [{ objectif, zone }] longueur = nbSeances, pilotage COSD.
  *  opts.volMult : scale distances (même base, volume selon niveau).
  *  opts.simplifyWording : clarifier Z1/R15 pour découverte uniquement.
- *  opts.pool : 25 | 50 — longueur de bassin (onboarding).
- *  opts.tasteHints : goûts client (focus technique / clarté) — voir user-taste.js. */
+ *  opts.pool : 25 | 50, longueur de bassin (onboarding).
+ *  opts.tasteHints : goûts client (focus technique / clarté), voir user-taste.js. */
 export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeances, numSemaine, ref100Str, _ref400Str, typeSemaine, prevDistance, sessionRoles = null, opts = {}) {
   const ref100Seconds = parseTime(ref100Str);
   const bassin = normalizePool(opts.pool);
@@ -375,8 +375,8 @@ export function genererSemaineSessions(niveauKey, objectifKey, phaseKey, nbSeanc
   const sessions = [];
   let totalReel = 0;
   for (let i = 1; i <= nbSeances; i++) {
-    // Rotation sur semaine + séance → tout le cycle apparaît même à 2–3×/sem
-    // Goûts : léger biais jambes vs éducatifs (cap soft — générateur ≠ école)
+    // Rotation sur semaine + séance → tout le cycle apparaît même à 2-3×/sem
+    // Goûts : léger biais jambes vs éducatifs (cap soft, générateur ≠ école)
     const cycleIdx = (numSemaine - 1 + i - 1) % focusCycle.length;
     let focus = focusCycle[cycleIdx];
     if (tasteHints?.ready) {
@@ -431,9 +431,9 @@ export function calcDetailsDistance(details = []) {
 
 /**
  * Séance MySWYM depuis la banque confirmé.
- * @param {number} archeIdx — typiquement wi*3+si
+ * @param {number} archeIdx, typiquement wi*3+si
  * @param {25|50} pool
- * @param {string} level — profile.level (performance/advanced pour confirmé)
+ * @param {string} level, profile.level (performance/advanced pour confirmé)
  * @param {{ isPremium?: boolean, pace100?: number|null }} opts
  */
 export function buildConfirmeArchetypeSession(archeIdx, pool, level, opts = {}) {
@@ -441,7 +441,7 @@ export function buildConfirmeArchetypeSession(archeIdx, pool, level, opts = {}) 
   const n = OW_BASE_SESSIONS.length;
   const idx = ((archeIdx % n) + n) % n;
   const arche = OW_BASE_SESSIONS[idx](P, level, opts);
-  // D9 : banques OW peuvent contenir souple/Z1 en interne — filtrer à la sortie affichage
+  // D9 : banques OW peuvent contenir souple/Z1 en interne, filtrer à la sortie affichage
   const details = sanitizeSessionDetails(arche.details || []);
   const dist = calcDetailsDistance(details);
   return {

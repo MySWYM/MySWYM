@@ -36,7 +36,7 @@ export function registerTabUi(next) {
 export function getTabUi() {
   if (!tabUi) {
     if (import.meta.env?.DEV) {
-      console.warn("[MySWYM] tab UI registry not ready — fallback temporaire");
+      console.warn("[MySWYM] tab UI registry not ready, fallback temporaire");
     }
     return fallbackTabUi();
   }

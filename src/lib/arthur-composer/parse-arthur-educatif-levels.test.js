@@ -10,7 +10,7 @@ function levelsOf(id) {
 // « adaptable à tous » ne doit PAS ouvrir la découverte
 assert.deepEqual(
   parseArthurEducatifLevels(
-    "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
+    "régulier - adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
   ),
   ["regulier", "sportif", "performance"],
 );
@@ -18,7 +18,7 @@ assert.deepEqual(
 // Grand chien : notes Excel « pour les découvertes »
 assert.deepEqual(
   parseArthurEducatifLevels(
-    "régulier — adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
+    "régulier - adaptable à tous niveaux avec une vitesse lente et une consigne simple.",
     {
       id: "educatif_grand_chien",
       notes: "Tubas conseillé pour les découvertes et possible pour les autres niveaux",

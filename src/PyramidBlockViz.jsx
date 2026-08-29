@@ -1,5 +1,5 @@
 /**
- * Schéma pyramide séance — montée / sommet / descente (design page séance).
+ * Schéma pyramide séance, montée / sommet / descente (design page séance).
  * Volume = somme exacte des paliers (jamais un monolithe opaque).
  */
 
@@ -11,7 +11,7 @@ const ROLE_LABEL = {
 
 /**
  * Extrait les paliers depuis une ligne type :
- * `-900m pyramide crawl : 100 → 200 → 300 → 200 → 100 (sommet 300) — repos 20s`
+ * `-900m pyramide crawl : 100 → 200 → 300 → 200 → 100 (sommet 300), repos 20s`
  * @returns {{ steps: number[], peak: number, rest: string|null, label: string, volume: number }|null}
  */
 export function parsePyramidLine(raw) {
@@ -182,14 +182,14 @@ export default function PyramidBlockViz({
               {ROLE_LABEL[g.role]}
             </div>
             <div style={{ fontWeight: 700 }}>
-              {g.items.length ? `${g.items.map((x) => x.d).join(" - ")} m` : "—"}
+              {g.items.length ? `${g.items.map((x) => x.d).join(" - ")} m` : "-"}
             </div>
           </div>
         ))}
       </div>
 
       <div style={{ marginTop: 8, fontSize: 9, color: "#6d7e9b", textAlign: "center", fontWeight: 600 }}>
-        Sommet {pk} m — régulier
+        Sommet {pk} m, régulier
       </div>
     </div>
   );

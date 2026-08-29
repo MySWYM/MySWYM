@@ -1,5 +1,5 @@
 /**
- * Tests Régulier — Étape C session composer.
+ * Tests Régulier, Étape C session composer.
  * Usage : node src/lib/sports-engine/session-composer-regulier.test.js
  */
 import {
@@ -248,7 +248,7 @@ assert(isComposerEnabledForLevel("sportif"), "Sportif enabled");
   assertRegulierSport(r.session, brief);
 }
 
-// === Cas 8 : semaine 3 séances — une seule qualité ===
+// === Cas 8 : semaine 3 séances, une seule qualité ===
 {
   const roles = regulierWeekRoles(3, { objectifV1: "nager_progresser", strokeFocus: "crawl" });
   assert(roles.filter((r) => r.qualitySession).length === 1, "une qualité / semaine");

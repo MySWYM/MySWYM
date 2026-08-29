@@ -1,5 +1,5 @@
 /**
- * Tests Growth Engine F1 — scoring + bandes (pas de relances).
+ * Tests Growth Engine F1, scoring + bandes (pas de relances).
  * Run: npm run test:arthur:growth
  */
 import assert from "node:assert/strict";

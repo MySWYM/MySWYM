@@ -39,7 +39,7 @@ const DEMO_SESSIONS = [
  * Prototype interactif du parcours conversion mySWYM.
  * Route: /prototype/conversion
  *
- * Ne remplace pas encore App.jsx — sert de référence produit + UI à brancher.
+ * Ne remplace pas encore App.jsx, sert de référence produit + UI à brancher.
  */
 export function ConversionFlow() {
   const [step, setStep] = useState<Step>('welcome')
@@ -81,7 +81,7 @@ export function ConversionFlow() {
 
   const afterCelebration = () => {
     setShowCelebration(false)
-    // Soft paywall after first validated session — value already felt
+    // Soft paywall after first validated session, value already felt
     if (completedCount === 1) {
       setSoftContext('after_first_session')
       setShowSoftPaywall(true)
@@ -187,7 +187,7 @@ export function ConversionFlow() {
                     if (navigator.share) {
                       void navigator.share({
                         title: 'mySWYM',
-                        text: `Je progresse avec mySWYM — ${weekMeters} m cette semaine.`,
+                        text: `Je progresse avec mySWYM, ${weekMeters} m cette semaine.`,
                         url: 'https://myswym.app',
                       })
                     }

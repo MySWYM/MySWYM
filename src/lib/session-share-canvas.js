@@ -1,5 +1,5 @@
 /**
- * Canvas fiche partage séance (1080×1080) — design MySWYM.
+ * Canvas fiche partage séance (1080×1080), design MySWYM.
  * @param {object} session
  * @param {string} [goalLabel]
  * @param {{ label?: string, color?: string } | null} [badge]
@@ -112,12 +112,12 @@ export function createShareCanvas(session, goalLabel, badge = null, invite = nul
 
   // Stats
   const stats = [
-    { label: "Distance", value: String(session?.distance || "—") },
+    { label: "Distance", value: String(session?.distance || "-") },
     {
       label: "Durée",
-      value: typeof session?.duration === "number" ? `${session.duration} min` : String(session?.duration || "—"),
+      value: typeof session?.duration === "number" ? `${session.duration} min` : String(session?.duration || "-"),
     },
-    { label: "Intensité", value: String(session?.intensity || "—") },
+    { label: "Intensité", value: String(session?.intensity || "-") },
   ];
   stats.forEach((s, i) => {
     const x = 72 + i * 320;

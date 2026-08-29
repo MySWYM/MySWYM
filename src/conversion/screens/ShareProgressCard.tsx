@@ -12,7 +12,7 @@ interface Props {
   onShare: () => void
 }
 
-/** Viral share card — Strava-style wrap, Apple aesthetic */
+/** Viral share card, Strava-style wrap, Apple aesthetic */
 export function ShareProgressCard({
   meters,
   weeksCompleted,

@@ -1,4 +1,4 @@
-/** Boot loader — logo + barre. Styles dans index.html. */
+/** Boot loader, logo + barre. Styles dans index.html. */
 export default function Loading() {
   return (
     <div className="myswym-boot" role="status" aria-live="polite" aria-busy="true">

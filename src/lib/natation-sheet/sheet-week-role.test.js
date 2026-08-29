@@ -1,5 +1,5 @@
 /**
- * Tests calendrier Sheet — depuis J : S-6 allégée → S-7 test ; 6 travail ; garde 2 sem.
+ * Tests calendrier Sheet, depuis J : S-6 allégée → S-7 test ; 6 travail ; garde 2 sem.
  * Usage : node src/lib/natation-sheet/sheet-week-role.test.js
  */
 import assert from "node:assert/strict";

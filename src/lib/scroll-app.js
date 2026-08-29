@@ -1,5 +1,5 @@
 /**
- * Remonte en haut de page (SPA mobile) — onglets / écrans / retour détail.
+ * Remonte en haut de page (SPA mobile), onglets / écrans / retour détail.
  * Prefer `documentElement` + `body` (iOS Safari).
  */
 export function scrollAppToTop() {

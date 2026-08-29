@@ -113,7 +113,7 @@ const SOCIAL = [
   { id: "linkedin", href: "https://www.linkedin.com/company/myswym", Icon: LinkedinMark },
 ];
 
-/** Footer marketing — afficher sur toutes les pages publiques et l'app. */
+/** Footer marketing, afficher sur toutes les pages publiques et l'app. */
 export default function Footer({ aboveBottomNav = false }) {
   const { t } = useTranslation("common");
   const isMobile = useIsMobile();

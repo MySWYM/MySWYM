@@ -1,7 +1,7 @@
 /**
- * Adaptation feedback (§25–30) + Étape H (boucle FeedbackSignal).
+ * Adaptation feedback (§25-30) + Étape H (boucle FeedbackSignal).
  *
- * decideAdaptAction reste le point d'entrée App — enrichi, pas remplacé.
+ * decideAdaptAction reste le point d'entrée App, enrichi, pas remplacé.
  */
 
 import {

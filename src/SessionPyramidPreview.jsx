@@ -1,5 +1,5 @@
 /**
- * Preview mobile — même composant live que l'app.
+ * Preview mobile, même composant live que l'app.
  * Route : /prototype/session-pyramid
  */
 import SessionLiveView from "./SessionLiveView.jsx";
@@ -7,20 +7,20 @@ import SessionLiveView from "./SessionLiveView.jsx";
 const DEMO_SESSION = {
   title: "Économie Ironman",
   type: "ENDURANCE",
-  intensity: "Z2 — nage économique",
+  intensity: "Z2, nage économique",
   distance: "2500m",
   duration: 72,
   details: [
-    "-200m crawl souple — échauffement facile",
-    "-4 × 100m crawl — exercice bras alterné — repos 30s",
-    "-5 × 50m battements + planche — repos 20s",
-    "-100m crawl — repos 20s",
-    "-200m crawl — repos 20s",
-    "-300m crawl — régulier — repos 20s",
-    "-200m crawl — repos 20s",
-    "-100m crawl — repos 20s",
-    "-8 × 100m crawl — nage appliquée — repos 20s",
-    "-150m crawl souple — Z1",
+    "-200m crawl souple, échauffement facile",
+    "-4 × 100m crawl, exercice bras alterné, repos 30s",
+    "-5 × 50m battements + planche, repos 20s",
+    "-100m crawl, repos 20s",
+    "-200m crawl, repos 20s",
+    "-300m crawl, régulier, repos 20s",
+    "-200m crawl, repos 20s",
+    "-100m crawl, repos 20s",
+    "-8 × 100m crawl, nage appliquée, repos 20s",
+    "-150m crawl souple, Z1",
   ],
 };
 

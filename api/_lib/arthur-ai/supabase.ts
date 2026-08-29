@@ -23,7 +23,7 @@ function serviceRoleKey(): string {
   return (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 }
 
-/** Client admin — contourne RLS. Toujours filtrer par user_id / conversation dans le code. */
+/** Client admin, contourne RLS. Toujours filtrer par user_id / conversation dans le code. */
 export function createArthurAdminClient(): SupabaseClient {
   const url = supabaseUrl();
   const key = serviceRoleKey();

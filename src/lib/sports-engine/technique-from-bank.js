@@ -8,14 +8,14 @@ import {
 } from "./exercise-library.js";
 import { concreteApplyCue, concreteTechLabel, isVagueVolumeThemeTitle } from "./session-labels.js";
 
-/** Danger réel (douleur) — pas ADVANCED_RE (qui tague aussi rattrapé / petit chien). */
+/** Danger réel (douleur), pas ADVANCED_RE (qui tague aussi rattrapé / petit chien). */
 const PAIN_SKIP_RE = /apnée|apnee|\b7T\b|\b9T\b|culbute|hypoxie|VO2|à bloc|depart plongé|sprint|Z4/i;
 
 const LEVEL_RANK = { decouverte: 0, regulier: 1, sportif: 2, performance: 3 };
 
 const APPLY_LINE_RE = /nage complète|nage normale|nage appliquée|retour à nage|crawl facile/i;
 
-/** Cycle éducatifs composeur — ~3/8 jambes, chiens rare, pas de virages en régulier. */
+/** Cycle éducatifs composeur, ~3/8 jambes, chiens rare, pas de virages en régulier. */
 export const COMPOSER_FOCUS_CYCLE_REGULIER = [
   "jambes",
   "respiration",
@@ -97,7 +97,7 @@ export function parseArthurTechLine(raw) {
   return { reps, distancePerRep, cue, restSec };
 }
 
-/** Bassin 50 : pas de Nx25 — même volume (8×25 → 4×50), pas de sprint+relâché. */
+/** Bassin 50 : pas de Nx25, même volume (8×25 → 4×50), pas de sprint+relâché. */
 export function adaptTechSetForPool(parsed, pool) {
   if (!parsed) return null;
   if (pool !== 50 || parsed.distancePerRep !== 25) return { ...parsed };
@@ -286,8 +286,8 @@ export function buildTechniqueFromBank({
     const mid = s.compoundCue
       ? `${s.reps} × ${s.distancePerRep}m : ${s.label}`
       : `${s.reps} × ${s.distancePerRep}m ${s.label}`;
-    const cue = s.cue ? ` — ${s.cue}` : "";
-    return `-${mid}${cue} — repos ${s.restSec}s`;
+    const cue = s.cue ? ` - ${s.cue}` : "";
+    return `-${mid}${cue} - repos ${s.restSec}s`;
   });
 
   return { sets, lines, usedBank: true, exerciseId: techEx.id };

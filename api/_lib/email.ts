@@ -1,5 +1,5 @@
 /**
- * @server-only — ne pas importer depuis le client Vite.
+ * @server-only, ne pas importer depuis le client Vite.
  * Service d’envoi centralisé (Resend + React Email).
  */
 import type { ReactNode } from "react";
@@ -95,7 +95,7 @@ export async function sendWelcomeEmail(
     to: input.to,
     subject: firstName
       ? `${firstName}, ton bassin t’attend`
-      : "Ton bassin t’attend — MySWYM",
+      : "Ton bassin t’attend, MySWYM",
     react: WelcomeEmail({ firstName }),
     userId: input.userId,
   });
@@ -131,7 +131,7 @@ export async function sendSubscriptionConfirmationEmail(
   return sendReactEmail({
     category: "subscription_confirmation",
     to: input.to,
-    subject: `C’est parti — Premium actif (${input.planLabel})`,
+    subject: `C’est parti, Premium actif (${input.planLabel})`,
     react: SubscriptionConfirmationEmail({
       planLabel: input.planLabel,
       manageUrl: input.manageUrl,
@@ -147,7 +147,7 @@ export async function sendWorkoutReminderEmail(
   return sendReactEmail({
     category: "workout_reminder",
     to: input.to,
-    subject: `L’eau t’attend — ${input.sessionTitle}`,
+    subject: `L’eau t’attend : ${input.sessionTitle}`,
     react: WorkoutReminderEmail({
       sessionTitle: input.sessionTitle,
       meters: input.meters,

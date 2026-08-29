@@ -1,5 +1,5 @@
 /**
- * Pack de partage séance — caption + texte presse-papiers + invite parrainage.
+ * Pack de partage séance, caption + texte presse-papiers + invite parrainage.
  * Pattern type Strava : preuve sociale + légende prête avec lien d’invitation.
  */
 
@@ -37,7 +37,7 @@ export function formatSessionShareCaption(session, invite = {}, { badgeLabel = n
     [session.distance, formatDurationLabel(session.duration)].filter(Boolean).join(" · "),
   ]
     .filter(Boolean)
-    .join(" — ");
+    .join(", ");
   const lines = [head];
   if (session.type) lines.push(String(session.type));
   if (badgeLabel) lines.push(`Badge : ${badgeLabel}`);

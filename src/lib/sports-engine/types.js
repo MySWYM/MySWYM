@@ -118,7 +118,7 @@ export function normalizeUiLevel(level) {
 
 /**
  * Construit un SportProfile normalisé (sans side-effects).
- * @param {object} profile — profil App.jsx
+ * @param {object} profile, profil App.jsx
  * @param {object} [opts]
  * @param {number} [opts.weeksAvailable]
  * @param {object} [opts.capacity]
@@ -162,9 +162,9 @@ export function buildSportProfile(profile = {}, opts = {}) {
       (Array.isArray(profile.strokesMastered) && profile.strokesMastered.includes("papillon")),
     strokesMastered: Array.isArray(profile.strokesMastered) ? profile.strokesMastered : null,
     taste: profile.taste || null,
-    /** Disponibilité actuelle (questionnaire) — null = ancien profil / non renseigné */
+    /** Disponibilité actuelle (questionnaire), null = ancien profil / non renseigné */
     readinessProfile: profile.readinessProfile || null,
-    /** Distance moyenne souhaitée / séance (m) — null = legacy */
+    /** Distance moyenne souhaitée / séance (m), null = legacy */
     targetSessionDistance: normalizeTargetSessionDistance(
       profile.targetSessionDistance,
       uiLevel,
@@ -191,7 +191,7 @@ export function buildSportProfile(profile = {}, opts = {}) {
     })(),
     capacity: opts.capacity || null,
     confidence: opts.capacity?.confidence ?? 0.2,
-    // Course piscine — cible explicite uniquement (jamais inventée)
+    // Course piscine, cible explicite uniquement (jamais inventée)
     raceTarget:
       normalizeRaceTarget(profile.raceTarget) ||
       normalizeRaceTarget(
@@ -210,7 +210,7 @@ export function buildSportProfile(profile = {}, opts = {}) {
   };
 }
 
-/** Debug §40 — pourquoi cette séance */
+/** Debug §40, pourquoi cette séance */
 export function explainSessionWhy(ctx = {}) {
   const parts = [
     ctx.objectifV1 && `objectif=${ctx.objectifV1}`,

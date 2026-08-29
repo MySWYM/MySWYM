@@ -1,5 +1,5 @@
 /**
- * Répartition des 4 nages — volume total nagé, blocs explicites.
+ * Répartition des 4 nages, volume total nagé, blocs explicites.
  * Distinct du focus UX : swimStyle=4_nages impose les 4 nages.
  * Plus de pondération par nage favorite.
  */
@@ -307,9 +307,9 @@ export function buildFourNagesStrokeSetsFromAlloc(alloc, opts = {}) {
       };
       sets.push(set);
       if (continuous) {
-        lines.push(`-${distPerRep}m ${label} — ${cue}`);
+        lines.push(`-${distPerRep}m ${label} - ${cue}`);
       } else {
-        lines.push(`-${repCount} × ${distPerRep}m ${label} — ${cue} — repos ${restSec}s`);
+        lines.push(`-${repCount} × ${distPerRep}m ${label} - ${cue} - repos ${restSec}s`);
       }
     });
   }
@@ -329,7 +329,7 @@ export function buildFourNagesCoverageSets(sessionLike, brief = {}) {
     pool,
     level: brief.level,
     block: "corps",
-    cue: "nage explicite — 4 nages",
+    cue: "nage explicite - 4 nages",
     includeStrokes: missing,
     easy: brief.level === "decouverte",
     exercisePrefix: "4n_ensure",

@@ -18,7 +18,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 
 const REFERRAL_CREDIT_CENTS = 499; // 4,99 €
 
-/** IDs retirés / test — ne pas les préférer aux defaults Live via secrets périmés. */
+/** IDs retirés / test, ne pas les préférer aux defaults Live via secrets périmés. */
 const RETIRED_PRICE_IDS = new Set([
   "price_1U67kYAS4mfgF2Twaw269yaU",
   "price_1U67kZAS4mfgF2Twi5Px8ZvG",
@@ -45,17 +45,17 @@ const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U7E38AS4mfgF2TwpJGY
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 
 const PRICE_LABELS: Record<string, string> = {
-  [PRICE_MONTHLY_FLEX]: "Premium — 9,99 € / mois (sans engagement)",
-  [PRICE_MONTHLY_COMMIT]: "Premium — 4,99 € / mois (engagement 12 mois)",
-  [PRICE_ANNUAL]: "Premium — 52,99 € / an",
-  [PRICE_BIENNIAL]: "Premium — 29,99 € / 2 ans",
-  price_1U3N2tAS4mfgF2TwyaI2hf22: "Premium — 9,99 € / mois (sans engagement)",
-  price_1TPjyPAS4mfgF2Twx3Zh4zrJ: "Premium — 4,99 € / mois (engagement 12 mois)",
-  price_1U7E38AS4mfgF2TwpJGYoMpE: "Premium — 52,99 € / an",
-  price_1U67kYAS4mfgF2Twaw269yaU: "Premium — 9,99 € / mois (sans engagement)",
-  price_1U67kZAS4mfgF2Twi5Px8ZvG: "Premium — 4,99 € / mois (engagement 12 mois)",
-  price_1U67kaAS4mfgF2TwvUsVQ3vE: "Premium — annuel (test)",
-  price_1TudyVAS4mfgF2TwHiSo3Vrg: "Premium — annuel (ancien tarif)",
+  [PRICE_MONTHLY_FLEX]: "Premium, 9,99 € / mois (sans engagement)",
+  [PRICE_MONTHLY_COMMIT]: "Premium, 4,99 € / mois (engagement 12 mois)",
+  [PRICE_ANNUAL]: "Premium, 52,99 € / an",
+  [PRICE_BIENNIAL]: "Premium, 29,99 € / 2 ans",
+  price_1U3N2tAS4mfgF2TwyaI2hf22: "Premium, 9,99 € / mois (sans engagement)",
+  price_1TPjyPAS4mfgF2Twx3Zh4zrJ: "Premium, 4,99 € / mois (engagement 12 mois)",
+  price_1U7E38AS4mfgF2TwpJGYoMpE: "Premium, 52,99 € / an",
+  price_1U67kYAS4mfgF2Twaw269yaU: "Premium, 9,99 € / mois (sans engagement)",
+  price_1U67kZAS4mfgF2Twi5Px8ZvG: "Premium, 4,99 € / mois (engagement 12 mois)",
+  price_1U67kaAS4mfgF2TwvUsVQ3vE: "Premium, annuel (test)",
+  price_1TudyVAS4mfgF2TwHiSo3Vrg: "Premium, annuel (ancien tarif)",
 };
 
 function planLabelFromPriceId(priceId: string | undefined): string {
@@ -175,7 +175,7 @@ async function creditReferrer(
     await stripe.customers.createBalanceTransaction(parrainCustomerId, {
       amount: -REFERRAL_CREDIT_CENTS, // crédit = montant négatif
       currency: "eur",
-      description: `Parrainage MySWYM — filleul ${filleul.id.slice(0, 8)}`,
+      description: `Parrainage MySWYM : filleul ${filleul.id.slice(0, 8)}`,
       metadata: { filleul_id: filleul.id, type: "referral_reward" },
     });
   } catch (err) {
@@ -198,7 +198,7 @@ async function creditReferrer(
       id: `referral-joined:${filleul.id}`,
       type: "update",
       title: `${first} a rejoint MySWYM`,
-      body: "Ton parrainage a converti — merci. Le crédit est appliqué sur ton prochain paiement.",
+      body: "Ton parrainage a converti, merci. Le crédit est appliqué sur ton prochain paiement.",
       createdAt: new Date().toISOString(),
     });
     await supabaseAdmin.auth.admin.updateUserById(referredById, {
@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
 
         // Crédit parrain uniquement si paiement réellement encaissé.
         // Essai 7j (payment_status often "no_payment_required") : pas de crédit tant que
-        // le filleul n'a pas été prélevé — sinon crédit orphelin si annulation pendant l'essai.
+        // le filleul n'a pas été prélevé, sinon crédit orphelin si annulation pendant l'essai.
         if (refId && session?.payment_status === "paid") {
           await creditReferrer(supabaseAdmin, filleul, refId);
         } else if (refId) {

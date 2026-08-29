@@ -22,7 +22,7 @@ console.log("CB1 parse");
 {
   const a = parseArthurCorpsLine("8x100m D2'");
   assert(a.kind === "repeated" && a.reps === 8 && a.distancePerRep === 100, "8x100");
-  const b = parseArthurCorpsLine("2x(4x100m R15'') — R45'' entre séries");
+  const b = parseArthurCorpsLine("2x(4x100m R15'') - R45'' entre séries");
   assert(b.kind === "nested" && b.blocks === 2 && b.innerReps === 4 && b.distancePerRep === 100, "nested");
   const c = parseArthurCorpsLine("400m continu (sans pause)");
   assert(c.kind === "continuous" && c.distance === 400, "continu");
@@ -102,7 +102,7 @@ console.log("CB6 nested affichage 2 blocs");
   const built = buildCorpsFromBank({
     corpsEx: {
       id: "corps_endurance_n",
-      instructions: ["2x(4x100m R15'') — R45'' entre séries"],
+      instructions: ["2x(4x100m R15'') - R45'' entre séries"],
     },
     targetVol: 800,
     pool: 50,

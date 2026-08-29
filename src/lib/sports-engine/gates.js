@@ -1,5 +1,5 @@
 /**
- * Portes de progression — une seule difficulté principale à la fois.
+ * Portes de progression, une seule difficulté principale à la fois.
  */
 
 /**

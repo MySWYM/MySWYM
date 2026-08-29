@@ -61,7 +61,7 @@ export function CookieCategories({ prefs, onPrefsChange }) {
             </button>
             {openVendors.analytics ? (
               <ul className="ms-cookie-vendors">
-                <li>PostHog — {t("cookies.vendorPosthog")}</li>
+                <li>PostHog, {t("cookies.vendorPosthog")}</li>
               </ul>
             ) : null}
           </div>
@@ -84,7 +84,7 @@ export function CookieCategories({ prefs, onPrefsChange }) {
             </button>
             {openVendors.performance ? (
               <ul className="ms-cookie-vendors">
-                <li>Vercel Speed Insights — {t("cookies.vendorVercel")}</li>
+                <li>Vercel Speed Insights, {t("cookies.vendorVercel")}</li>
               </ul>
             ) : null}
           </div>

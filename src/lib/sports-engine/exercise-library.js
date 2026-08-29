@@ -1,6 +1,6 @@
 /**
  * Bibliothèque d'exercices = inventaire normalisé des pools existants
- * (TECHNIQUE, CORPS_PHYSIO, DEPARTS, FINS) — pas une nouvelle banque inventée.
+ * (TECHNIQUE, CORPS_PHYSIO, DEPARTS, FINS), pas une nouvelle banque inventée.
  */
 import {
   TECHNIQUE,
@@ -216,7 +216,7 @@ export function buildExerciseInventory() {
     });
   });
 
-  // Corps physio — builders matérialisés une fois
+  // Corps physio, builders matérialisés une fois
   for (const [poolKey, builders] of Object.entries(CORPS_PHYSIO)) {
     builders.forEach((fn, idx) => {
       const sample = fn();

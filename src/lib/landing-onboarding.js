@@ -100,7 +100,7 @@ export function profilePatchFromPrefill(prefill) {
   return patch;
 }
 
-/** Étape questionnaire après un tap landing — on ne refait pas le choix déjà fait. */
+/** Étape questionnaire après un tap landing, on ne refait pas le choix déjà fait. */
 export function stepFromPrefill(prefill) {
   if (!prefill?.category) return 1;
   if (prefill.category === "progression" && prefill.level) return 5;

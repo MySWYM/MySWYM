@@ -1,5 +1,5 @@
 /**
- * arthurAIService — cœur Phase C + Production Readiness (G).
+ * arthurAIService, cœur Phase C + Production Readiness (G).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {

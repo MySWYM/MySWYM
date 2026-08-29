@@ -1,7 +1,7 @@
 @import "tailwindcss" prefix(cv);
 
 @theme {
-  /* Brand — bassin nuit + bleu logo */
+  /* Brand, bassin nuit + bleu logo */
   --color-cv-bg: #000514;
   --color-cv-bg-elevated: #06101f;
   --color-cv-ink: #f4f8fa;
@@ -39,7 +39,7 @@
   --ease-cv-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Root shell — isolates conversion prototype from legacy App styles */
+/* Root shell, isolates conversion prototype from legacy App styles */
 .cv-root {
   font-family: var(--font-cv-body);
   color: var(--color-cv-ink);

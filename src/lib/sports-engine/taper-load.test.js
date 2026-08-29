@@ -1,5 +1,5 @@
 /**
- * Tests Étape G — Taper + Race Week Performance
+ * Tests Étape G, Taper + Race Week Performance
  * Usage : node src/lib/sports-engine/taper-load.test.js
  */
 import {
@@ -135,7 +135,7 @@ assert(stub.raceCompleted && stub.raceResult.deltaSec === 4, "stub delta");
 assert(!arthurFitsTaper({ base_distance_m: 5000, details: [] }, { taperStage: "s1" }, 1200), "arthur reject huge");
 assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z2"] }, { taperStage: "s1" }, 1200), "arthur ok");
 
-// T1 — 3 semaines (S-3)
+// T1, 3 semaines (S-3)
 {
   const roles = rolesAt(21);
   assert(roles.taperLoad.taperStage === "s3", `t1 stage ${roles.taperLoad.taperStage}`);
@@ -146,7 +146,7 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   assert(abs.Z3 + abs.Z4 > 0, "t1 keep some intensity");
 }
 
-// T2 — 2 semaines (S-2)
+// T2, 2 semaines (S-2)
 {
   const roles = rolesAt(14);
   assert(roles.taperLoad.taperStage === "s2", "t2");
@@ -154,7 +154,7 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   assert(roles.taperLoad.volumeFactor > rolesAt(7).taperLoad.volumeFactor, "t2 > t3 factor");
 }
 
-// T3 — 7 jours (S-1)
+// T3, 7 jours (S-1)
 {
   const roles = rolesAt(7);
   assert(roles.taperLoad.taperStage === "s1", "t3");
@@ -165,7 +165,7 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   assert(abs.Z3 + abs.Z4 < s3.abs.Z3 + s3.abs.Z4, "t3 intensity absolute down");
 }
 
-// T4 — 3 jours
+// T4, 3 jours
 {
   const roles = rolesAt(3);
   assert(roles.taperLoad.taperStage === "race_week", "t4");
@@ -177,7 +177,7 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   assert(abs.Z3 + abs.Z4 <= s1.abs.Z3 + s1.abs.Z4, "t4 intensity abs not up");
 }
 
-// T5 — veille
+// T5, veille
 {
   const roles = rolesAt(1, { freq: 3 });
   assert(roles.taperLoad.taperStage === "race_week", "t5");
@@ -186,7 +186,7 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   assert(training.length <= 2, `t5 few trainings ${training.length}`);
 }
 
-// T6 — jour J
+// T6, jour J
 {
   const roles = rolesAt(0);
   assert(roles.taperLoad.taperStage === "race_day", "t6");
@@ -199,66 +199,66 @@ assert(arthurFitsTaper({ base_distance_m: 1600, phases: ["taper"], details: ["-Z
   assert(s.volumeFromSets === 0, "t6 not training volume");
 }
 
-// T7 — 100 m
+// T7, 100 m
 {
   const roles = rolesAt(7, { distance: 100, targetTimeSec: 60, currentTimeSec: 64 });
   assert(roles.performanceStrategy.primaryQuality === "race_pace", `t7 ${roles.performanceStrategy.primaryQuality}`);
   assert(taperRacePaceTouch(100).reps === 4, "t7 touch");
 }
 
-// T8 — 200 m
+// T8, 200 m
 {
   const roles = rolesAt(14, { distance: 200 });
   assert(roles.taperLoad.taperStage === "s2", "t8");
 }
 
-// T9 — 400 m
+// T9, 400 m
 {
   const roles = rolesAt(7, { distance: 400, targetTimeSec: 280, currentTimeSec: 300 });
   assert(roles.taperLoad.intensityRetention <= 0.55, "t9 int");
   assert(taperRacePaceTouch(400).dist === 100, "t9 100m touches");
 }
 
-// T10 — 1500
+// T10, 1500
 {
   const roles = rolesAt(21, { distance: 1500, targetTimeSec: 1200, currentTimeSec: 1260 });
   assert(roles.taperLoad.taperStage === "s3", "t10");
   assert(roles.taperLoad.volumeFactor >= 0.9, "t10 keep some volume early");
 }
 
-// T11 — 4N
+// T11, 4N
 {
   const roles = rolesAt(7, { distance: 200, stroke: "4n", strokeFocus: "4n", limitingStroke: "brasse" });
   assert(roles.performanceStrategy.devExplain.includes("entretenu") || roles.taperStage === "s1", "t11 no rebuild");
   assert(roles.performanceStrategy.primaryQuality === "race_pace", `t11 ${roles.performanceStrategy.primaryQuality}`);
 }
 
-// T12 — eau libre
+// T12, eau libre
 {
   const roles = rolesAt(7, { objectifV1: "eau_libre", distance: 5000 });
   assert(roles.taperLoad.taperStage === "s1", "t12");
   assert(roles.taperLoad.volumeFactor < 0.6, "t12 vol down");
 }
 
-// T13 — triathlon
+// T13, triathlon
 {
   const roles = rolesAt(7, { objectifV1: "triathlon" });
   assert(roles.taperLoad.taperStage === "s1", "t13");
 }
 
-// T14 — freq 2
+// T14, freq 2
 {
   const roles = rolesAt(7, { freq: 2 });
   assert(roles.length === 2, "t14 len");
   assert(roles.taperLoad.volumeFactor > rolesAt(7, { freq: 4 }).taperLoad.volumeFactor - 0.01, "t14 freq effect");
 }
 
-// T15 — freq 3
+// T15, freq 3
 {
   assert(rolesAt(7, { freq: 3 }).length === 3, "t15");
 }
 
-// T16 — freq 4+
+// T16, freq 4+
 {
   const roles = rolesAt(7, { freq: 4 });
   assert(roles.length === 4, "t16");

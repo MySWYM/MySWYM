@@ -1,5 +1,5 @@
 /**
- * Stroke focus — distinct de l'objectif (eau libre ≠ crawl).
+ * Stroke focus, distinct de l'objectif (eau libre ≠ crawl).
  * UX simple → valeur moteur interne. Compatible futurs niveaux.
  *
  * swimStyle=4_nages : l'utilisateur nage les 4 nages → strokeFocus=4n.
@@ -95,7 +95,7 @@ export function strokeSwimLabel(strokeFocus, { papillonOk = false } = {}) {
   }
 }
 
-/** Label départ selon stroke — crawl = 100 % crawl (pas de dos) */
+/** Label départ selon stroke, crawl = 100 % crawl (pas de dos) */
 export function strokeDepartLabel(strokeFocus) {
   if (strokeFocus === "dos") return "dos facile";
   if (strokeFocus === "brasse") return "brasse / crawl facile";

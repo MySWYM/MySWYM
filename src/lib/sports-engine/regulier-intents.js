@@ -1,5 +1,5 @@
 /**
- * Intentions Gold Régulier — références sportives (pas de séances hardcodées).
+ * Intentions Gold Régulier, références sportives (pas de séances hardcodées).
  * Philosophie : « apprendre à s'entraîner » (vs Découverte = aisance).
  */
 
@@ -9,7 +9,7 @@ export function maxContinuousForRegulier(brief = {}) {
   const known = Number(brief.maxContinuousDistance) || 0;
   const confidence = Number(brief.capacity?.confidence) || 0;
   const score = Number(brief.capacity?.score) || 0;
-  // Régulier : enchaîne mieux — défaut 200 m continu OK
+  // Régulier : enchaîne mieux, défaut 200 m continu OK
   let max = 200;
   if (known >= 400 && confidence >= 0.4) max = Math.min(400, Math.round((known * 0.8) / 50) * 50);
   else if (known >= 200) max = 200;
@@ -52,7 +52,7 @@ export const REGULIER_INTENTS = Object.freeze({
     id: "qualite",
     headline: "Aujourd'hui : séance un peu plus soutenue",
     learnCue: "qualité de nage avant la vitesse",
-    applyCue: "1–4 modéré, 5–8 un peu plus soutenu",
+    applyCue: "1-4 modéré, 5-8 un peu plus soutenu",
     techPrimary: "rattrape",
     quality: true,
     volumeHint: [1500, 1900],
@@ -155,7 +155,7 @@ export function resolveRegulierIntent(brief = {}) {
 }
 
 /**
- * Volume cohérent Régulier — peut baisser vs moteur, jamais gonfler.
+ * Volume cohérent Régulier, peut baisser vs moteur, jamais gonfler.
  */
 export function coherentVolumeForRegulier(brief = {}) {
   const engine = Math.max(800, Number(brief.volumeTarget) || 1600);
@@ -182,7 +182,7 @@ export function coherentVolumeForRegulier(brief = {}) {
   return Math.min(engine, Math.max(minVol, Math.round(floored / 50) * 50));
 }
 
-/** Gold Régulier — métadonnées de référence (pas de séances figées). */
+/** Gold Régulier, métadonnées de référence (pas de séances figées). */
 export const REGULIER_GOLD_SCENARIOS = Object.freeze([
   { id: "RG1", intent: "endurance", strokeFocus: "crawl", duration: 45, volumeBand: [1500, 2000] },
   { id: "RG2", intent: "allure_progressive", strokeFocus: "crawl", duration: 45, volumeBand: [1600, 1900], qualitySession: true },

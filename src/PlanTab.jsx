@@ -64,7 +64,7 @@ export default function PlanTab({
               {addingPlan ? "Remplacer mon programme" : "Crée ton programme"}
             </h1>
             <p style={{ fontSize: 14, color: G.grey, marginTop: 6, lineHeight: 1.45 }}>
-              Réponds au questionnaire — Accueil, Profil et Binômes restent accessibles.
+              Réponds au questionnaire, Accueil, Profil et Binômes restent accessibles.
             </p>
           </div>
           <OnboardingWizard

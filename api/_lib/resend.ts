@@ -1,5 +1,5 @@
 /**
- * @server-only — ne pas importer depuis le client Vite.
+ * @server-only, ne pas importer depuis le client Vite.
  * Client Resend singleton (Node / Vercel serverless).
  */
 import { Resend } from "resend";

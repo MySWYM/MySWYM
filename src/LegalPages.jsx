@@ -292,7 +292,7 @@ export function PolitiqueConfidentialitePage() {
 
       <H3>2.12 Avis publics (landing)</H3>
       <Ul items={[
-        "Données : prénom, note (1–5), texte de l’avis, e-mail facultatif (non publié).",
+        "Données : prénom, note (1-5), texte de l’avis, e-mail facultatif (non publié).",
         "Finalité : afficher des avis réels sur le site après modération manuelle ; aucun avis n’est publié automatiquement.",
         "Base légale : intérêt légitime (art. 6.1.f) pour la preuve sociale, ou consentement du dépôt du formulaire.",
         "Durée : jusqu’à suppression de l’avis ou du compte / sur demande.",

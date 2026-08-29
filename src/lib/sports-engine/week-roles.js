@@ -15,7 +15,7 @@ const FAMILY_FROM_ROLE = {
 /**
  * Enrichit les rôles COSD avec famille V1 + flag séance clé.
  * @param {Array<{objectif:string, zone:string}>} roles
- * @param {object} ctx — { phase, level, objectifV1 }
+ * @param {object} ctx, { phase, level, objectifV1 }
  */
 export function enrichWeekRoles(roles, ctx = {}) {
   const n = roles.length;
@@ -200,7 +200,7 @@ export function regulierWeekRoles(n, ctx = {}) {
 }
 
 /**
- * Sportif 3×/sem : polarisation — A aérobie/tech · B une qualité (seuil/vitesse) · C endurance/spécifique.
+ * Sportif 3×/sem : polarisation, A aérobie/tech · B une qualité (seuil/vitesse) · C endurance/spécifique.
  * Une seule qualitySession. Pas 3 séances dures.
  */
 export function sportifWeekRoles(n, ctx = {}) {

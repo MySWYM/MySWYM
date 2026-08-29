@@ -1,6 +1,6 @@
 /**
  * Politique anti-spam Conversion Engine F2.
- * Règles dures — jamais de spam.
+ * Règles dures, jamais de spam.
  */
 
 export const FOLLOWUP_POLICY = {

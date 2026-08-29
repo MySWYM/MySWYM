@@ -1,5 +1,5 @@
 /**
- * Export séance — texte (Strava / WhatsApp) et impression bord de bassin.
+ * Export séance, texte (Strava / WhatsApp) et impression bord de bassin.
  */
 import { buildWorkoutView } from "./workout-display.js";
 
@@ -12,7 +12,7 @@ function formatDurationLabel(duration) {
 }
 
 /**
- * Texte plat structuré (3 phases) — collable dans Strava / WhatsApp.
+ * Texte plat structuré (3 phases), collable dans Strava / WhatsApp.
  * @param {object} session
  * @param {{ withBrandFooter?: boolean }} [opts]
  */
@@ -21,7 +21,7 @@ export function formatSessionPlainText(session, opts = {}) {
   if (!session) return "";
   const view = buildWorkoutView(session);
   const head = [
-    `${session.title || "Séance"}${session.distance ? ` — ${session.distance}` : ""}${session.duration ? ` — ${formatDurationLabel(session.duration)}` : ""}`.trim(),
+    `${session.title || "Séance"}${session.distance ? `, ${session.distance}` : ""}${session.duration ? `, ${formatDurationLabel(session.duration)}` : ""}`.trim(),
   ];
   if (session.type) head.push(String(session.type));
   if (session.intensity) head.push(String(session.intensity));
@@ -53,11 +53,11 @@ export function formatSessionPlainText(session, opts = {}) {
     body.push("");
   }
 
-  if (withBrandFooter) body.push("— MySWYM · myswym.app");
+  if (withBrandFooter) body.push(",  MySWYM · myswym.app");
   return [...head, ...body].join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-/** HTML impression A4 / mobile — gros caractères bord de bassin. */
+/** HTML impression A4 / mobile, gros caractères bord de bassin. */
 export function buildSessionPrintHtml(session) {
   const view = buildWorkoutView(session || {});
   const title = escapeHtml(session?.title || "Séance");
@@ -93,7 +93,7 @@ export function buildSessionPrintHtml(session) {
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>${title} — MySWYM</title>
+<title>${title}, MySWYM</title>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
@@ -149,7 +149,7 @@ export function openSessionPrint(session) {
 /**
  * Copie dans le presse-papiers (async).
  * @param {object} session
- * @param {string} [textOverride] — si fourni, copie ce texte tel quel
+ * @param {string} [textOverride], si fourni, copie ce texte tel quel
  * @returns {Promise<boolean>}
  */
 export async function copySessionText(session, textOverride = null) {

@@ -16,7 +16,7 @@ import {
 import { detectsHumanTakeoverRequest } from "./takeover.js";
 import { isFollowupSendEnabled } from "../conversion/send.js";
 
-test("flags defaults — followups send off + shadow on", () => {
+test("flags defaults, followups send off + shadow on", () => {
   delete process.env.ARTHUR_FOLLOWUPS_SEND;
   delete process.env.ARTHUR_FLAG_ENABLED;
   delete process.env.ARTHUR_FLAG_SHADOW_INSTAGRAM;

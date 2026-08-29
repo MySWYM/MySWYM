@@ -1,5 +1,5 @@
 /**
- * Taper + Race Week — Performance (Étape G).
+ * Taper + Race Week, Performance (Étape G).
  * Réduit volume/densité/fatigue ; conserve touches d'allure et confiance.
  * Pas de coefficient uniforme unique ; pas de surcharge tardive.
  */
@@ -13,8 +13,8 @@ import { weeksToCompetition, horizonBandFromWeeks } from "./performance-strategy
  * @property {number} intensityRetention
  * @property {number} specificityRetention
  * @property {number} recoveryFactor
- * @property {string} taperStage — s3|s2|s1|race_week|race_day|null
- * @property {string} phase — taper|race|… (phase plan effective)
+ * @property {string} taperStage, s3|s2|s1|race_week|race_day|null
+ * @property {string} phase, taper|race|… (phase plan effective)
  * @property {number|null} daysToComp
  * @property {number|null} weeksToComp
  * @property {string|null} horizonBand
@@ -41,7 +41,7 @@ export function daysToCompetition(competitionDate, now = new Date()) {
  */
 export function taperStageFromDays(days) {
   if (days == null || !Number.isFinite(days)) return null;
-  // J3 : post_race limité (~10 j) — pas une traîne de repos jusqu'à la fin du plan
+  // J3 : post_race limité (~10 j), pas une traîne de repos jusqu'à la fin du plan
   if (days < 0) return days >= -10 ? "post_race" : null;
   if (days === 0) return "race_day";
   if (days <= 6) return "race_week";
@@ -52,7 +52,7 @@ export function taperStageFromDays(days) {
 }
 
 /**
- * Phase plan dérivée (TAPER / RACE) — Performance.
+ * Phase plan dérivée (TAPER / RACE), Performance.
  * Si pas de date : conserve ctx.phase (pas d'invention).
  */
 export function resolveTaperPhase(ctx = {}, now = new Date()) {
@@ -83,7 +83,7 @@ function clamp(n, lo, hi) {
 }
 
 /**
- * Modèle de charge taper — paramètres de stratégie (pas règles absolues).
+ * Modèle de charge taper, paramètres de stratégie (pas règles absolues).
  * Ajusté par distance course / objectif / fréquence (pas un ×0.5 global).
  */
 export function resolveTaperLoad(ctx = {}, now = new Date()) {
@@ -117,7 +117,7 @@ export function resolveTaperLoad(ctx = {}, now = new Date()) {
         intensityRetention: 0.3,
         specificityRetention: 0.4,
         recoveryFactor: 1.5,
-        rationale: "post_race_stub — récup légère, pas de reconstruction",
+        rationale: "post_race_stub - récup légère, pas de reconstruction",
       };
     }
     return base;
@@ -233,7 +233,7 @@ export function taperWeekRoleIntents(taperLoad, ctx = {}) {
 
   // Intentions selon distance / objectif
   let raceTouch = "allure_specifique";
-  if (distance <= 100) raceTouch = "vitesse"; // touches courtes — volume plafonné ailleurs
+  if (distance <= 100) raceTouch = "vitesse"; // touches courtes, volume plafonné ailleurs
   if (objectif === "eau_libre") raceTouch = "eau_libre";
   if (objectif === "triathlon") raceTouch = "triathlon";
   if (ctx.strokeFocus === "4n") raceTouch = "quatre_nages";
@@ -298,7 +298,7 @@ export function taperWeekRoleIntents(taperLoad, ctx = {}) {
     };
   }
 
-  // race_week — selon jours restants + fréquence
+  // race_week, selon jours restants + fréquence
   // J-6/J-5 spécifique courte ; J-4/J-3 recup+activation ; J-2 très léger ; J-1 activation ou skip
   const dayPlan = raceWeekDayPlan(days, freq, { distance, objectif, strokeFocus: ctx.strokeFocus });
   return { ...dayPlan, note: `race_week_d${days}` };
@@ -410,7 +410,7 @@ export function raceWeekDayPlan(daysToComp, freq, ctx = {}) {
     }
   }
 
-  // Pad seulement en début de race week (J-6/J-5) — jamais forcer 3 séances à J-2/J-1
+  // Pad seulement en début de race week (J-6/J-5), jamais forcer 3 séances à J-2/J-1
   if (d >= 5) {
     while (slots.length < freq) {
       slots.push({
@@ -462,8 +462,8 @@ export function taperRacePaceTouch(distance) {
  */
 export function buildRestDaySession(ctx = {}) {
   const label = ctx.taperActivation
-    ? "Activation très courte optionnelle — ou repos si fatigué."
-    : "Repos recommandé — pas de nouvelle charge avant la course.";
+    ? "Activation très courte optionnelle - ou repos si fatigué."
+    : "Repos recommandé - pas de nouvelle charge avant la course.";
   return {
     type: "REST",
     title: ctx.taperActivation ? "Performance · Activation / repos" : "Performance · Repos",
@@ -512,7 +512,7 @@ export function buildRaceDaySession(ctx = {}) {
     `→ Jour de course`,
     distance ? `Épreuve : ${distance}m ${stroke}` : `Épreuve : course`,
     timeLabel,
-    "Échauffement libre selon tes habitudes — pas de nouveau matériel ni nouvelle technique.",
+    "Échauffement libre selon tes habitudes - pas de nouveau matériel ni nouvelle technique.",
     "Fais confiance au travail déjà fait.",
   ];
 
@@ -545,7 +545,7 @@ export function buildRaceDaySession(ctx = {}) {
 }
 
 /**
- * Stub résultat course — jamais inventé.
+ * Stub résultat course, jamais inventé.
  * @returns {object|null}
  */
 export function buildRaceResultStub({ distance, stroke, resultTimeSec, targetTimeSec } = {}) {
@@ -566,13 +566,13 @@ export function buildRaceResultStub({ distance, stroke, resultTimeSec, targetTim
 
 function formatTime(sec) {
   const s = Math.round(Number(sec));
-  if (!Number.isFinite(s)) return "—";
+  if (!Number.isFinite(s)) return "-";
   const m = Math.floor(s / 60);
   const r = s % 60;
   return m > 0 ? `${m}:${String(r).padStart(2, "0")}` : `${r}s`;
 }
 
-/** Gold taper — scénarios de référence (métadonnées). */
+/** Gold taper, scénarios de référence (métadonnées). */
 export const TAPER_GOLD_SCENARIOS = Object.freeze([
   { id: "TG1", distance: 100, focus: "vitesse + race pace + tech", j7: "tech+vitesse courte", j3: "race pace courte", j1: "activation/repos" },
   { id: "TG2", distance: 200, focus: "spécifique court", j7: "petit bloc spécifique", j4: "50 race pace", j2: "très léger" },

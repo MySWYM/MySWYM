@@ -1,4 +1,4 @@
-/** CTA app unique — même silhouette que `.lp-btn` / `.ms-plan-reveal-btn`. */
+/** CTA app unique, même silhouette que `.lp-btn` / `.ms-plan-reveal-btn`. */
 export default function Btn({ children, onClick, variant = "primary", disabled, style }) {
   const cls = [
     "ms-app-btn",

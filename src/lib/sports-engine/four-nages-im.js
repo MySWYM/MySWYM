@@ -1,5 +1,5 @@
 /**
- * Formats 4 nages enchaînés (ordre olympique) — 100 / 200 / 400 IM + variantes.
+ * Formats 4 nages enchaînés (ordre olympique), 100 / 200 / 400 IM + variantes.
  * Papillon → dos → brasse → crawl. Distinct des séries mono-nage.
  */
 
@@ -31,7 +31,7 @@ function olympicCue(perStroke, variant, pool) {
   if (variant === "mid_pool") {
     const parts = IM_ORDER.map((s) => `${formatSplitMeters(perStroke)} m ${s}`).join(" / ");
     const where = pool === 50 ? "changement tous les 12,5 m" : "changement au milieu du bassin";
-    return `${parts} — ${where}`;
+    return `${parts} - ${where}`;
   }
   if (variant === "legs") {
     return `${formatSplitMeters(perStroke)} m par nage, dont 25 nage complète / 25 jambes`;
@@ -218,8 +218,8 @@ export function buildFourNagesImSets(opts = {}) {
     zone: opts.zone || null,
   };
   const line = continuous
-    ? `-${fmt.dist}m ${label} — ${cue}`
-    : `-${reps} × ${fmt.dist}m ${label} — ${cue} — repos ${restSec}s`;
+    ? `-${fmt.dist}m ${label} - ${cue}`
+    : `-${reps} × ${fmt.dist}m ${label} - ${cue} - repos ${restSec}s`;
   return {
     sets: [set],
     lines: [line],

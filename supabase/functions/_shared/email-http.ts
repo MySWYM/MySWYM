@@ -1,6 +1,6 @@
 /**
  * Bridge Edge Functions → Vercel email API (same React Email templates).
- * Not wired yet — import from stripe-webhook / Auth hooks when ready.
+ * Not wired yet, import from stripe-webhook / Auth hooks when ready.
  *
  * Secrets (Supabase): INTERNAL_EMAIL_SECRET, APP_URL (e.g. https://myswym.app)
  */

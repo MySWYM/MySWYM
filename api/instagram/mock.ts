@@ -1,5 +1,5 @@
 /**
- * POST /api/instagram/mock — injecte un DM local sans Meta.
+ * POST /api/instagram/mock, injecte un DM local sans Meta.
  * Header: x-myswym-instagram-mock = ARTHUR_AI_INTERNAL_SECRET
  * Body: { senderId, text, referral? }
  */

@@ -1,5 +1,5 @@
 /**
- * Notifications in-app (header) — extrait App.jsx vague 2.
+ * Notifications in-app (header), extrait App.jsx vague 2.
  */
 import { CreditCard, Shield, Star, BookOpen, Users, Trophy, Bell } from "lucide-react";
 import { supabase } from "../supabase.js";
@@ -89,7 +89,7 @@ export const buildAccessNotifications = (user, accessState) => {
       type: "billing",
       title: accessState.trialDaysLeft === 1 ? "Dernier jour d'essai" : `Essai Premium : ${accessState.trialDaysLeft} jours restants`,
       body: accessState.trialDaysLeft === 1
-        ? "Ton essai se termine aujourd'hui. Sans abonnement, tes séances se mettent en pause — tu ne pourras plus rien voir."
+        ? "Ton essai se termine aujourd'hui. Sans abonnement, tes séances se mettent en pause, tu ne pourras plus rien voir."
         : "Ton essai Premium arrive a sa fin. Abonne-toi pour garder tes plans, sinon tes séances se mettent en pause.",
       createdAt: (accessState.accessEndsMs || Date.now()) - (accessState.trialDaysLeft * DAY_MS),
     });
@@ -107,7 +107,7 @@ export const buildAccessNotifications = (user, accessState) => {
     items.push({
       id: `subscription-expired:${accessState.subscriptionEndsAt || accessState.trialEndsAt || "expired"}`,
       type: "security",
-      title: "Essai terminé — séances en pause",
+      title: "Essai terminé, séances en pause",
       body: "Ton essai de 7 jours est fini. Tes séances sont en pause. Abonne-toi pour les retrouver.",
       createdAt: parseNotificationTime(accessState.subscriptionEndsAt || accessState.trialEndsAt, Date.now()),
     });

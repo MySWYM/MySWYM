@@ -1,5 +1,5 @@
 /**
- * Séries principales (corps physio) — endurance / vitesse / mixte / eau_libre / test.
+ * Séries principales (corps physio), endurance / vitesse / mixte / eau_libre / test.
  * Extrait mécaniquement de src/lib/swim-session-generator.js.
  */
 import { bankMeta } from "./_helpers.js";
@@ -32,26 +32,26 @@ const CORPS_PHYSIO_RAW = {
     () => ({ text: `6x300m R30''`, distance: 1800, repDist: 300 }),
     () => ({ text: `4x100m ↘ dégressif R20''`, distance: 400, repDist: 100 }),
     () => ({ text: `16x50m R10''`, distance: 800, repDist: 50 }),
-    () => ({ text: `2x(4x100m R15'') — R45'' entre séries`, distance: 800, repDist: 100 }),
+    () => ({ text: `2x(4x100m R15'') - R45'' entre séries`, distance: 800, repDist: 100 }),
   ],
   vitesse: [
     () => ({ text: `8x50m R30''`, distance: 400, repDist: 50 }),
     () => ({ text: `6x50m R45'' RAC`, distance: 300, repDist: 50 }),
     // 25m : bassin 25 uniquement (sinon stop au milieu en 50m)
     () => ({ text: `10x25m départ plongé R30''`, distance: 250, repDist: 25, pools: [25] }),
-    () => ({ text: `4x(4x25m) R15'' — R1' entre séries`, distance: 400, repDist: 25, pools: [25] }),
+    () => ({ text: `4x(4x25m) R15'' - R1' entre séries`, distance: 400, repDist: 25, pools: [25] }),
     () => ({ text: `6x25m R45'' RAC`, distance: 150, repDist: 25, pools: [25] }),
     // Bassin 50 : même nb de reps, chaque 50 = 25m à bloc + 25m relâché (fini au mur)
-    () => ({ text: `10x50m : 25m à bloc + 25m relâché — départ plongé R30''`, distance: 500, repDist: 50, pools: [50] }),
-    () => ({ text: `4x(4x50m : 25m à bloc + 25m relâché) R15'' — R1' entre séries`, distance: 800, repDist: 50, pools: [50] }),
+    () => ({ text: `10x50m : 25m à bloc + 25m relâché - départ plongé R30''`, distance: 500, repDist: 50, pools: [50] }),
+    () => ({ text: `4x(4x50m : 25m à bloc + 25m relâché) R15'' - R1' entre séries`, distance: 800, repDist: 50, pools: [50] }),
     () => ({ text: `6x50m : 25m à bloc + 25m relâché R45'' RAC`, distance: 300, repDist: 50, pools: [50] }),
-    () => ({ text: `4x50m progressif : · 1 — lent · 2 — ↗ · 3 — ↗ · 4 — rapide`, distance: 200, repDist: 50 }),
-    () => ({ text: `4x50m dégressif : · 1 — rapide · 2 — ↘ · 3 — ↘ · 4 — lent`, distance: 200, repDist: 50 }),
+    () => ({ text: `4x50m progressif : · 1 - lent · 2 - ↗ · 3 - ↗ · 4 - rapide`, distance: 200, repDist: 50 }),
+    () => ({ text: `4x50m dégressif : · 1 - rapide · 2 - ↘ · 3 - ↘ · 4 - lent`, distance: 200, repDist: 50 }),
     () => ({ text: `12x50m R30''`, distance: 600, repDist: 50 }),
     () => ({ text: `8x25m départ plongé R45''`, distance: 200, repDist: 25, pools: [25] }),
-    () => ({ text: `8x50m : 25m à bloc + 25m relâché — départ plongé R45''`, distance: 400, repDist: 50, pools: [50] }),
-    () => ({ text: `5x(3x25m) R10'' — R45'' entre séries`, distance: 375, repDist: 25, pools: [25] }),
-    () => ({ text: `5x(3x50m : 25m à bloc + 25m relâché) R10'' — R45'' entre séries`, distance: 750, repDist: 50, pools: [50] }),
+    () => ({ text: `8x50m : 25m à bloc + 25m relâché - départ plongé R45''`, distance: 400, repDist: 50, pools: [50] }),
+    () => ({ text: `5x(3x25m) R10'' - R45'' entre séries`, distance: 375, repDist: 25, pools: [25] }),
+    () => ({ text: `5x(3x50m : 25m à bloc + 25m relâché) R10'' - R45'' entre séries`, distance: 750, repDist: 50, pools: [50] }),
     () => ({ text: `4x25m sprint max R1'`, distance: 100, repDist: 25, pools: [25] }),
     () => ({ text: `4x50m : 25m sprint max + 25m relâché R1'`, distance: 200, repDist: 50, pools: [50] }),
     () => ({ text: `6x50m accélération progressive sur la longueur R30''`, distance: 300, repDist: 50 }),
@@ -72,8 +72,8 @@ const CORPS_PHYSIO_RAW = {
     () => ({ text: `4x75m : 25m technique + 50m physio R20''`, distance: 300, repDist: 75, pools: [25] }),
     () => ({ text: `4x100m : 50m technique + 50m physio R20''`, distance: 400, repDist: 100, pools: [50] }),
     () => ({ text: `3x200m : 100m technique + 100m physio R30''`, distance: 600, repDist: 200 }),
-    () => ({ text: `2x(4x75m : 25m technique + 50m physio) R15'' — R45'' entre séries`, distance: 600, repDist: 75, pools: [25] }),
-    () => ({ text: `2x(4x100m : 50m technique + 50m physio) R15'' — R45'' entre séries`, distance: 800, repDist: 100, pools: [50] }),
+    () => ({ text: `2x(4x75m : 25m technique + 50m physio) R15'' - R45'' entre séries`, distance: 600, repDist: 75, pools: [25] }),
+    () => ({ text: `2x(4x100m : 50m technique + 50m physio) R15'' - R45'' entre séries`, distance: 800, repDist: 100, pools: [50] }),
     () => ({ text: `8x50m alterné technique/physio R20''`, distance: 400, repDist: 50 }),
   ],
   eau_libre: [
@@ -92,18 +92,18 @@ const CORPS_PHYSIO_RAW = {
     () => ({ text: `1x800m allure course continue, sighting toutes les 8 coups`, distance: 800, repDist: 800 }),
     () => ({ text: `5x200m simulation peloton (drafting mental) R25''`, distance: 1000, repDist: 200 }),
   ],
-  /** Chronos de contrôle — noter les temps pour mesurer l'évolution */
+  /** Chronos de contrôle, noter les temps pour mesurer l'évolution */
   test: [
-    () => ({ text: `400m chrono continu — note ton temps (CSS)`, distance: 400, repDist: 400 }),
-    () => ({ text: `2x200m chrono R3' — note chaque temps`, distance: 400, repDist: 200 }),
-    () => ({ text: `100m chrono max + 300m facile R3' — note le 100m`, distance: 400, repDist: 100 }),
-    () => ({ text: `3x100m chrono R2'30 — note chaque 100m (régularité)`, distance: 300, repDist: 100 }),
-    () => ({ text: `200m allure course + 100m max R2' — note les 2 temps`, distance: 300, repDist: 100 }),
-    () => ({ text: `8x50m D1'15 (Z3) — note le temps moyen /50m`, distance: 400, repDist: 50 }),
-    () => ({ text: `500m chrono continu — note ton temps`, distance: 500, repDist: 500 }),
-    () => ({ text: `4x100m chrono R2' — note chaque temps (régularité)`, distance: 400, repDist: 100 }),
-    () => ({ text: `2x150m chrono R2'30 — note chaque temps`, distance: 300, repDist: 150 }),
-    () => ({ text: `300m allure course + 100m max R3' — note les 2 temps`, distance: 400, repDist: 100 }),
+    () => ({ text: `400m chrono continu - note ton temps (CSS)`, distance: 400, repDist: 400 }),
+    () => ({ text: `2x200m chrono R3' - note chaque temps`, distance: 400, repDist: 200 }),
+    () => ({ text: `100m chrono max + 300m facile R3' - note le 100m`, distance: 400, repDist: 100 }),
+    () => ({ text: `3x100m chrono R2'30 - note chaque 100m (régularité)`, distance: 300, repDist: 100 }),
+    () => ({ text: `200m allure course + 100m max R2' - note les 2 temps`, distance: 300, repDist: 100 }),
+    () => ({ text: `8x50m D1'15 (Z3) - note le temps moyen /50m`, distance: 400, repDist: 50 }),
+    () => ({ text: `500m chrono continu - note ton temps`, distance: 500, repDist: 500 }),
+    () => ({ text: `4x100m chrono R2' - note chaque temps (régularité)`, distance: 400, repDist: 100 }),
+    () => ({ text: `2x150m chrono R2'30 - note chaque temps`, distance: 300, repDist: 150 }),
+    () => ({ text: `300m allure course + 100m max R3' - note les 2 temps`, distance: 400, repDist: 100 }),
   ],
 };
 

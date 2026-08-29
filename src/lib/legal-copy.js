@@ -1,4 +1,4 @@
-/** Microcopy juridique réutilisable (UX) — cohérent avec CGU/CGV. */
+/** Microcopy juridique réutilisable (UX), cohérent avec CGU/CGV. */
 import { withLocalePrefix } from "../i18n/locale-path.js";
 
 export const LEGAL_LINKS = {

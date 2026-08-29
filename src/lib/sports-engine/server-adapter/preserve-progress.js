@@ -1,5 +1,5 @@
 /**
- * Préservation de progression — extrait de la politique App.jsx
+ * Préservation de progression, extrait de la politique App.jsx
  * (shouldPreserveWeek / mergePreservingProgress).
  * Aucune règle d'entraînement ici.
  */

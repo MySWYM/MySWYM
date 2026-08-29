@@ -19,7 +19,7 @@ export function VerificationEmail({ confirmUrl }: VerificationEmailProps) {
         Un dernier clic pour confirmer ton adresse et accéder à ton plan.
       </Text>
       <Text style={emailText.p}>
-        Si tu n’as pas créé de compte, ignore ce message — rien ne se passe.
+        Si tu n’as pas créé de compte, ignore ce message, rien ne se passe.
       </Text>
       <Text style={emailText.muted}>
         Le lien expire après un délai de sécurité. Tu pourras en demander un

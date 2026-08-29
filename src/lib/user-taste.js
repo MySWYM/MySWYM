@@ -1,5 +1,5 @@
 /**
- * Profil de goûts client — apprentissage progressif à partir des retours
+ * Profil de goûts client, apprentissage progressif à partir des retours
  * (rating + tags + commentaire), façon scores d'intérêt Meta/Instagram.
  *
  * Deterministe, pas de LLM. Les scores alimentent le générateur (volume,
@@ -207,7 +207,7 @@ export function applySessionFeedbackToTaste(prevTaste, feedback) {
 }
 
 /**
- * Retour hebdo (smiley) — signal plus large, plus doux.
+ * Retour hebdo (smiley), signal plus large, plus doux.
  * Commentaire libre enrichit keywords / colors / styles comme en séance.
  */
 export function applyWeekFeedbackToTaste(prevTaste, { rating, comment = null } = {}) {
@@ -278,7 +278,7 @@ export function tasteToGeneratorHints(tasteRaw) {
   const softenIntensity = t.intensity < -0.35;
   const pushIntensity = t.intensity > 0.45 && t.enjoyment > 0.25;
   const forceSimplify = t.clarity >= 0.45;
-  // Cap éducatif : MySWYM ≠ école — bias max soft
+  // Cap éducatif : MySWYM ≠ école, bias max soft
   const educatifBias = clamp(t.educatif * 0.55, -0.5, 0.45);
   const preferJambes = t.educatif < -0.25 || t.styles.includes("jambes");
 

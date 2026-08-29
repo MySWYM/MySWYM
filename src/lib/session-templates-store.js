@@ -1,6 +1,6 @@
 /**
  * Cache client des templates `session_templates` (Supabase).
- * Fallback JS si table vide / erreur réseau — generatePlan reste synchrone.
+ * Fallback JS si table vide / erreur réseau, generatePlan reste synchrone.
  */
 import { scaleSessionLinesToVolume } from "./sports-engine/arthur-scale.js";
 import { ARTHUR_GOLD_TEST_FIXTURES } from "./sports-engine/arthur-gold-fixtures.js";
@@ -127,14 +127,14 @@ function expandArthurDetailsForUi(details = []) {
       out.push(full.startsWith("  ") ? full : `  ${text}`);
       continue;
     }
-    const emParts = text.replace(/^[-–—]\s*/, "").split(/\s*[—–]\s*/).map((s) => s.trim()).filter(Boolean);
+    const emParts = text.replace(/^[-–—]\s*/, "").split(/\s*[—–]\s*|\s+-\s+/).map((s) => s.trim()).filter(Boolean);
     const swimMain = emParts[0] || text.replace(/^[-–—]\s*/, "");
     const cues = emParts.slice(1);
     const parts = swimMain.split(/\s*·\s*/).map((s) => s.trim()).filter(Boolean);
     if (parts.length >= 2 && parts.every((p) => setRe.test(p))) {
       const total = parts.reduce((a, p) => a + meters(p), 0);
-      const cueStr = cues.join(" — ");
-      out.push(total > 0 ? `-${total}m${cueStr ? ` — ${cueStr}` : ""} :` : `-Série :`);
+      const cueStr = cues.join(" - ");
+      out.push(total > 0 ? `-${total}m${cueStr ? ` - ${cueStr}` : ""} :` : `-Série :`);
       parts.forEach((p) => out.push(`  · ${p}`));
     } else {
       out.push(text);
@@ -145,9 +145,9 @@ function expandArthurDetailsForUi(details = []) {
 
 /**
  * Rotation / match pattern Arthur gold.
- * @param {string} objectif — eau_libre | mixte
+ * @param {string} objectif, eau_libre | mixte
  * @param {number} archeIdx
- * @param {object} [opts] — { volumeTarget, phase, family, equipment, scaleVolume }
+ * @param {object} [opts], { volumeTarget, phase, family, equipment, scaleVolume }
  * @returns {object|null}
  */
 export function pickArthurBankSession(objectif, archeIdx, opts = {}) {
@@ -191,7 +191,7 @@ export function pickArthurBankSession(objectif, archeIdx, opts = {}) {
     session = scaleSessionToVolume(session, t.base_distance_m, opts.volumeTarget);
   }
 
-  session.engineWhy = `pattern=${t.slug} · famille=${opts.family || t.role || "—"}`;
+  session.engineWhy = `pattern=${t.slug} · famille=${opts.family || t.role || "-"}`;
   return session;
 }
 
@@ -216,7 +216,7 @@ function templateFitsEquipment(t, equipment) {
   return needs.every((n) => equipment.includes(n));
 }
 
-/** Scale distances dans les lignes (reps ou distance) — pas seulement le total annoncé. */
+/** Scale distances dans les lignes (reps ou distance), pas seulement le total annoncé. */
 function scaleSessionToVolume(session, baseDist, targetDist) {
   return scaleSessionLinesToVolume(session, baseDist, targetDist);
 }

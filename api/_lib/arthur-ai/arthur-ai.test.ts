@@ -1,5 +1,5 @@
 /**
- * Tests Arthur AI Phase D — tools + façade moteur.
+ * Tests Arthur AI Phase D, tools + façade moteur.
  * Run: npm run test:arthur
  */
 import assert from "node:assert/strict";
@@ -64,12 +64,12 @@ const UID = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
 
 // ── Phase C regressions ──────────────────────────────────────────
-test("intent technique — Je veux améliorer mon crawl", () => {
+test("intent technique, Je veux améliorer mon crawl", () => {
   assert.equal(inferIntentHeuristic("Je veux améliorer mon crawl"), "technique");
   assert.equal(mockStructuredFromUserPayload("Je veux améliorer mon crawl").intent, "technique");
 });
 
-test("goal extrait — triathlon 12 semaines", () => {
+test("goal extrait, triathlon 12 semaines", () => {
   const msg = "Je prépare un triathlon dans 12 semaines";
   assert.equal(inferIntentHeuristic(msg), "goal");
   const mock = mockStructuredFromUserPayload(msg);
@@ -77,7 +77,7 @@ test("goal extrait — triathlon 12 semaines", () => {
   assert.ok(mock.extracted_data.target_date);
 });
 
-test("sécurité — Instagram ID ≠ userId", () => {
+test("sécurité, Instagram ID ≠ userId", () => {
   const auth = buildAuthContext({
     userId: null,
     externalUserId: "ig_psid_12345",
@@ -191,7 +191,7 @@ test("prompt fallback", () => {
   assert.ok(!FALLBACK_ARTHUR_PROMPT.toLowerCase().includes("je suis une ia"));
 });
 
-// ── Phase D — façade moteur ──────────────────────────────────────
+// ── Phase D : façade moteur ──────────────────────────────────────
 await testAsync("generateArthurPlan utilise buildCoachPlanWeeks", async () => {
   const res = await generateArthurPlan({
     profile: {
@@ -440,20 +440,20 @@ function mockAdminForPlan({ hasPlan = false, premium = true } = {}) {
   };
 }
 
-await testAsync("plan — non authentifié refusé", async () => {
+await testAsync("plan, non authentifié refusé", async () => {
   const r = await createTrainingPlan(mockAdminForPlan(), { userId: null }, { confirmed: true });
   assert.equal(r.success, false);
   assert.equal(r.error, "unauthenticated");
 });
 
-await testAsync("plan — mauvais userId refusé", async () => {
+await testAsync("plan, mauvais userId refusé", async () => {
   const r = await createTrainingPlan(mockAdminForPlan(), { userId: "ig_not_uuid" }, {
     confirmed: true,
   });
   assert.equal(r.success, false);
 });
 
-await testAsync("plan — confirmation obligatoire", async () => {
+await testAsync("plan, confirmation obligatoire", async () => {
   const r = await createTrainingPlan(mockAdminForPlan(), { userId: UID }, {
     confirmed: false,
   });
@@ -462,7 +462,7 @@ await testAsync("plan — confirmation obligatoire", async () => {
   assert.equal(r.reason, "confirmation_required");
 });
 
-await testAsync("plan — actif existant protégé", async () => {
+await testAsync("plan, actif existant protégé", async () => {
   const r = await createTrainingPlan(mockAdminForPlan({ hasPlan: true }), { userId: UID }, {
     confirmed: true,
     replace_existing: false,
@@ -471,7 +471,7 @@ await testAsync("plan — actif existant protégé", async () => {
   assert.equal(r.reason, "active_plan_exists");
 });
 
-await testAsync("plan — création sans plan actif", async () => {
+await testAsync("plan, création sans plan actif", async () => {
   const r = await createTrainingPlan(mockAdminForPlan({ hasPlan: false }), { userId: UID }, {
     confirmed: true,
     weeks: 8,
@@ -483,7 +483,7 @@ await testAsync("plan — création sans plan actif", async () => {
   assert.ok(r.data.weeks_created >= 8);
 });
 
-await testAsync("plan — premium requis", async () => {
+await testAsync("plan, premium requis", async () => {
   const r = await createTrainingPlan(mockAdminForPlan({ premium: false }), { userId: UID }, {
     confirmed: true,
   });
@@ -522,7 +522,7 @@ function mockAdminProfile() {
   };
 }
 
-await testAsync("profil — champ autorisé", async () => {
+await testAsync("profil, champ autorisé", async () => {
   const r = await updateUserProfile(mockAdminProfile(), { userId: UID }, {
     fields: { frequency: 4, level: "sportif" },
   });
@@ -530,7 +530,7 @@ await testAsync("profil — champ autorisé", async () => {
   assert.equal(r.data.updated.frequency, 4);
 });
 
-await testAsync("profil — champ interdit", async () => {
+await testAsync("profil, champ interdit", async () => {
   const r = await updateUserProfile(mockAdminProfile(), { userId: UID }, {
     fields: { email: "x@y.com" },
   });
@@ -538,14 +538,14 @@ await testAsync("profil — champ interdit", async () => {
   assert.equal(r.error, "forbidden_field");
 });
 
-await testAsync("profil — mauvais type", async () => {
+await testAsync("profil, mauvais type", async () => {
   const r = await updateUserProfile(mockAdminProfile(), { userId: UID }, {
     fields: { frequency: 99 },
   });
   assert.equal(r.success, false);
 });
 
-await testAsync("profil — autre user / non auth", async () => {
+await testAsync("profil, autre user / non auth", async () => {
   const r = await updateUserProfile(mockAdminProfile(), { userId: null }, {
     fields: { level: "sportif" },
   });
@@ -553,19 +553,19 @@ await testAsync("profil — autre user / non auth", async () => {
 });
 
 // ── checkout ─────────────────────────────────────────────────────
-await testAsync("checkout — non auth refusé", async () => {
+await testAsync("checkout, non auth refusé", async () => {
   const r = await createCheckout(mockAdminProfile(), { userId: null }, { plan: "monthly" });
   assert.equal(r.success, false);
   assert.equal(r.error, "unauthenticated");
 });
 
-await testAsync("checkout — sans token user refusé", async () => {
+await testAsync("checkout, sans token user refusé", async () => {
   const r = await createCheckout(mockAdminProfile(), { userId: UID }, { plan: "monthly" });
   assert.equal(r.success, false);
   assert.equal(r.error, "missing_user_token");
 });
 
-await testAsync("checkout — pas de secret Stripe dans le tool", async () => {
+await testAsync("checkout, pas de secret Stripe dans le tool", async () => {
   const src = await import("node:fs").then((fs) =>
     fs.readFileSync(new URL("./tools/create-checkout.ts", import.meta.url), "utf8"),
   );
@@ -574,7 +574,7 @@ await testAsync("checkout — pas de secret Stripe dans le tool", async () => {
 });
 
 // ── tool loop mock ───────────────────────────────────────────────
-await testAsync("tool loop — executeArthurTool ignore userId modèle", async () => {
+await testAsync("tool loop, executeArthurTool ignore userId modèle", async () => {
   const admin = mockAdminForPlan({ hasPlan: false });
   const result = await executeArthurTool(
     "create_training_plan",
@@ -589,7 +589,7 @@ await testAsync("tool loop — executeArthurTool ignore userId modèle", async (
   assert.equal(result.reason, "confirmation_required");
 });
 
-await testAsync("tool loop mock — oui génère plan", async () => {
+await testAsync("tool loop mock, oui génère plan", async () => {
   const admin = mockAdminForPlan({ hasPlan: false });
   const res = await callArthurOpenAI({
     systemPrompt: FALLBACK_ARTHUR_PROMPT,

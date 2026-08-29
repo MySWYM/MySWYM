@@ -1,5 +1,5 @@
 /**
- * Validation humaine Shadow proposals (H1) — approve/reject/edit, jamais d’envoi.
+ * Validation humaine Shadow proposals (H1), approve/reject/edit, jamais d’envoi.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";
@@ -150,7 +150,7 @@ export async function buildShadowReport(
     rejected: byStatus.rejected || 0,
     /** Doit rester 0 en H1 */
     sent_count: sentCount,
-    note: "H1 Shadow — validation humaine sans envoi automatique",
+    note: "H1 Shadow, validation humaine sans envoi automatique",
   };
 }
 

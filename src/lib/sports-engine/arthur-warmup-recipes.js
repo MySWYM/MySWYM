@@ -1,5 +1,5 @@
 /**
- * Recettes d’échauffement Arthur — branchées au composeur via flag `warmups`.
+ * Recettes d’échauffement Arthur, branchées au composeur via flag `warmups`.
  * Fallback : départ synthétique existant (inchangé si flag off ou recette incompatible).
  * Source tableur : propositions arthur_echauff_* (validées pédagogiquement).
  */
@@ -172,9 +172,9 @@ export function buildArthurWarmupForBudget({
       reps = Math.max(1, Math.round(distance / maxContinuous));
       distance = reps * distancePerRep;
       continuous = false;
-      text = `${reps} × ${distancePerRep} m — ${recipe.line} — ${cue}`;
+      text = `${reps} × ${distancePerRep} m - ${recipe.line} - ${cue}`;
     } else {
-      text = `${distance} m — ${recipe.line} — ${cue}`;
+      text = `${distance} m - ${recipe.line} - ${cue}`;
     }
   } else if (recipe.kind === "fixed_choice") {
     const choices = (recipe.choices || []).filter((c) => c <= target + 50 && (c <= maxContinuous || level !== "decouverte"));
@@ -184,9 +184,9 @@ export function buildArthurWarmupForBudget({
       reps = Math.max(1, Math.round(distance / maxContinuous));
       distance = reps * distancePerRep;
       continuous = false;
-      text = `${reps} × ${distancePerRep} m ${recipe.label} — ${cue}`;
+      text = `${reps} × ${distancePerRep} m ${recipe.label} - ${cue}`;
     } else {
-      text = `${distance} m ${recipe.label} — ${cue}`;
+      text = `${distance} m ${recipe.label} - ${cue}`;
     }
   } else {
     const step = recipe.step || recipe.cycleM;
@@ -214,7 +214,7 @@ export function buildArthurWarmupForBudget({
       reps = 10;
       distance = reps * distancePerRep;
     }
-    text = `${reps} × ${distancePerRep} m (${parts}) — ${cue}`;
+    text = `${reps} × ${distancePerRep} m (${parts}) - ${cue}`;
   }
 
   if (Math.abs(distance - target) > 75) return null;

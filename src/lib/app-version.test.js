@@ -1,5 +1,5 @@
 /**
- * Version Gate — tests V1
+ * Version Gate, tests V1
  * Usage : node src/lib/app-version.test.js
  */
 import {
@@ -24,7 +24,7 @@ function ok(cond, msg) {
   console.log("  ✓", msg);
 }
 
-console.log("VG1 — semver parse / compare");
+console.log("VG1, semver parse / compare");
 {
   ok(parseSemver("1.0.0")?.join(".") === "1.0.0", "parse 1.0.0");
   ok(parseSemver("1.1")?.join(".") === "1.1.0", "parse 1.1 → 1.1.0");
@@ -35,7 +35,7 @@ console.log("VG1 — semver parse / compare");
   ok(compareSemver("2.0.0", "1.9.9") > 0, "2.0.0 > 1.9.9");
 }
 
-console.log("VG2 — V1.0.0 client + minimum 1.0.0 → OK");
+console.log("VG2, V1.0.0 client + minimum 1.0.0 → OK");
 {
   const r = evaluateVersionGate({
     clientVersion: "1.0.0",
@@ -44,7 +44,7 @@ console.log("VG2 — V1.0.0 client + minimum 1.0.0 → OK");
   ok(r.status === "ok" && !r.mustUpdate, "compatible");
 }
 
-console.log("VG3 — V0.x client + minimum 1.0.0 → BLOCK");
+console.log("VG3, V0.x client + minimum 1.0.0 → BLOCK");
 {
   const r = evaluateVersionGate({
     clientVersion: "0.9.0",
@@ -54,7 +54,7 @@ console.log("VG3 — V0.x client + minimum 1.0.0 → BLOCK");
   ok(isClientBelowMinimum("0.8.1", "1.0.0"), "0.8.1 below");
 }
 
-console.log("VG4 — V1.0.0 client + minimum 1.1.0 → BLOCK");
+console.log("VG4, V1.0.0 client + minimum 1.1.0 → BLOCK");
 {
   const r = evaluateVersionGate({
     clientVersion: "1.0.0",
@@ -63,7 +63,7 @@ console.log("VG4 — V1.0.0 client + minimum 1.1.0 → BLOCK");
   ok(r.status === "block" && r.reason === "below_minimum", "block for 1.1 min");
 }
 
-console.log("VG5 — version compatible → application normale");
+console.log("VG5, version compatible → application normale");
 {
   const r = evaluateVersionGate({
     clientVersion: "1.2.0",
@@ -73,7 +73,7 @@ console.log("VG5 — version compatible → application normale");
   ok(r.status === "ok" && r.reason === "compatible", "app normale");
 }
 
-console.log("VG6 — checkVersionGate serveur mock + fail-open");
+console.log("VG6, checkVersionGate serveur mock + fail-open");
 {
   const blocked = await checkVersionGate({
     clientVersion: "1.0.0",
@@ -109,7 +109,7 @@ console.log("VG6 — checkVersionGate serveur mock + fail-open");
   ok(failOpen.source === "fail_open" && failOpen.mustUpdate === false, "fail-open réseau");
 }
 
-console.log("VG7 — reload force update (pas de wipe storage)");
+console.log("VG7, reload force update (pas de wipe storage)");
 {
   const markers = { replaced: null, cachesDeleted: false };
   const fakeLocation = {
@@ -130,7 +130,7 @@ console.log("VG7 — reload force update (pas de wipe storage)");
       delete this._d[k];
     },
   };
-  // Simule localStorage utilisateur — ne doit pas être touché
+  // Simule localStorage utilisateur, ne doit pas être touché
   const userData = { plans: '[{"id":1}]', auth: "token" };
   globalThis.localStorage = {
     _d: { ...userData },
@@ -165,7 +165,7 @@ console.log("VG7 — reload force update (pas de wipe storage)");
   ok(globalThis.localStorage.getItem("auth") === "token", "auth conservée");
 }
 
-console.log("VG8 — cleanup query + foreground recheck path");
+console.log("VG8, cleanup query + foreground recheck path");
 {
   let replaced = null;
   const fakeWin = {
@@ -181,13 +181,13 @@ console.log("VG8 — cleanup query + foreground recheck path");
   ok(replaced === "/", "query stripped");
 }
 
-console.log("VG9 — CURRENT_APP_VERSION présente");
+console.log("VG9, CURRENT_APP_VERSION présente");
 {
   ok(typeof CURRENT_APP_VERSION === "string" && parseSemver(CURRENT_APP_VERSION), "current version");
   ok(BUILTIN_MIN_SUPPORTED_APP_VERSION === "1.0.0", "builtin min 1.0.0");
 }
 
-console.log("VG10 — connecté / non connecté : gate indépendante de l’auth");
+console.log("VG10, connecté / non connecté : gate indépendante de l’auth");
 {
   // La gate ne lit jamais l’auth ; même décision pour les deux cas.
   const a = evaluateVersionGate({

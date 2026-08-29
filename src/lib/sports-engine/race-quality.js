@@ -1,5 +1,5 @@
 /**
- * QualityToDevelop — qualité limitante à travailler.
+ * QualityToDevelop, qualité limitante à travailler.
  * Ne pas inventer un diagnostic précis sans données → qualité prudente + low confidence.
  */
 
@@ -33,13 +33,13 @@ export const QUALITY_TO_DEVELOP_IDS = Object.freeze([
  * @property {object} gap
  * @property {QualityToDevelop|null} qualityToDevelop
  * @property {string} devExplain
- * @property {boolean} active — true si usable pour influencer les rôles
+ * @property {boolean} active, true si usable pour influencer les rôles
  */
 
 /**
  * Résout qualité à développer.
  * @param {import('./race-target.js').RaceTarget|null} target
- * @param {object} gap — résultat computeRaceGap
+ * @param {object} gap, résultat computeRaceGap
  * @param {object} [evidence]
  * @returns {QualityToDevelop|null}
  */
@@ -153,12 +153,12 @@ export function resolveQualityToDevelop(target, gap, evidence = {}) {
   }
 
   // --- Niveau 1 : chrono cible + meilleur récent uniquement ---
-  // Prior faible selon distance — confidence low/medium, jamais affirmée sans multi-data
+  // Prior faible selon distance, confidence low/medium, jamais affirmée sans multi-data
   if (gap.direction === "ahead" || gap.direction === "on_track") {
     return {
       quality: "race_pace",
       confidence: "low",
-      reason: `gap ${gap.gapSec}s — maintain race-pace sharpness (limited evidence)`,
+      reason: `gap ${gap.gapSec}s - maintain race-pace sharpness (limited evidence)`,
       evidence: evidenceList,
     };
   }
@@ -168,14 +168,14 @@ export function resolveQualityToDevelop(target, gap, evidence = {}) {
       return {
         quality: "specific_speed",
         confidence: "low",
-        reason: `only target+current on ${target.distance}m (gap +${gap.gapSec}s) — weak prior for speed; need more splits to confirm`,
+        reason: `only target+current on ${target.distance}m (gap +${gap.gapSec}s) - weak prior for speed; need more splits to confirm`,
         evidence: evidenceList,
       };
     }
     return {
       quality: "race_pace",
       confidence: "low",
-      reason: `small/medium gap on ${target.distance}m without split profile — race_pace prior`,
+      reason: `small/medium gap on ${target.distance}m without split profile - race_pace prior`,
       evidence: evidenceList,
     };
   }
@@ -185,14 +185,14 @@ export function resolveQualityToDevelop(target, gap, evidence = {}) {
       return {
         quality: "specific_endurance",
         confidence: "low",
-        reason: `only target+current on ${target.distance}m (gap +${gap.gapSec}s) — weak prior for specific endurance`,
+        reason: `only target+current on ${target.distance}m (gap +${gap.gapSec}s) - weak prior for specific endurance`,
         evidence: evidenceList,
       };
     }
     return {
       quality: "threshold",
       confidence: "low",
-      reason: `modest gap on ${target.distance}m without split profile — threshold prior`,
+      reason: `modest gap on ${target.distance}m without split profile - threshold prior`,
       evidence: evidenceList,
     };
   }
@@ -201,14 +201,14 @@ export function resolveQualityToDevelop(target, gap, evidence = {}) {
   return {
     quality: "aerobic_capacity",
     confidence: "low",
-    reason: "insufficient limiting-factor evidence — prudent aerobic_capacity",
+    reason: "insufficient limiting-factor evidence - prudent aerobic_capacity",
     evidence: evidenceList,
   };
 }
 
 /**
  * Analyse complète pour une semaine course.
- * @param {object} profileOrCtx — profil ou ctx roles
+ * @param {object} profileOrCtx, profil ou ctx roles
  * @param {object} [extraEvidence]
  * @returns {RaceWeekAnalysis}
  */
@@ -239,7 +239,7 @@ export function formatRaceDevExplain({ target, gap, qualityToDevelop }) {
   const lines = [];
   if (!target) {
     lines.push("Race target: none");
-    lines.push("Status: insufficient_data — using default Sportif course_piscine roles");
+    lines.push("Status: insufficient_data - using default Sportif course_piscine roles");
     return lines.join("\n");
   }
   lines.push(
@@ -247,7 +247,7 @@ export function formatRaceDevExplain({ target, gap, qualityToDevelop }) {
   );
   if (gap.status === "insufficient_data") {
     lines.push(`Current best: unknown (${gap.reason})`);
-    lines.push("Status: insufficient_data — using default Sportif course_piscine roles");
+    lines.push("Status: insufficient_data - using default Sportif course_piscine roles");
     return lines.join("\n");
   }
   lines.push(`Current best: ${formatRaceTime(gap.currentTimeSec)}`);

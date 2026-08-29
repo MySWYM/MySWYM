@@ -1,5 +1,5 @@
 /**
- * Rappels séance — préférence locale + signal « rappeler aujourd’hui ».
+ * Rappels séance, préférence locale + signal « rappeler aujourd’hui ».
  * L’envoi e-mail cron peut s’appuyer sur user_metadata.session_reminders.
  */
 
@@ -48,7 +48,7 @@ export function sessionReminderCopy({ sessionTitle, streak = 0 } = {}) {
   if (streak >= 3) {
     return {
       title: "Rappel séance",
-      body: `Ta prochaine séance t’attend — garde ta série de ${streak}.`,
+      body: `Ta prochaine séance t’attend, garde ta série de ${streak}.`,
     };
   }
   return {

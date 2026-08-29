@@ -1,4 +1,4 @@
-/** Tokens MySWYM — bassin nuit + bleu logo. Ne pas modifier `src/landing/landing.css`. */
+/** Tokens MySWYM : bassin nuit + bleu logo. Ne pas modifier `src/landing/landing.css`. */
 
 export const BRAND = {
   bg: "#000514",

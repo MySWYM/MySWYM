@@ -141,7 +141,7 @@ console.log("4N0 allocate + normalize");
   assert(!isFourNagesDeclared({ level: "sportif", swimStyle: "crawl" }), "intermédiaire crawl = crawl");
 }
 
-console.log("4N1 sans préférence — les 4 nages");
+console.log("4N1 sans préférence - les 4 nages");
 {
   const r = composeSession(brief4n({ preferredStroke: null, seed: "4n1", pool: 25 }));
   assert(r.ok, `4N1 ${r.reason}`);
@@ -226,7 +226,7 @@ console.log("4N6 hors 4 nages : comportement crawl conservé");
   assert(!/\b\d+\s*×\s*\d+m papillon\b/i.test(txt), "4N6 pas de papillon imposé");
 }
 
-console.log("4N7 IM 100 — 25 pap / dos / brasse / crawl");
+console.log("4N7 IM 100 - 25 pap / dos / brasse / crawl");
 {
   const r = composeSession(brief4n({ seed: "4n7", pool: 25, forcedImFormat: "im_100" }));
   assert(r.ok, `4N7 ${r.reason}`);
@@ -276,7 +276,7 @@ console.log("4N8 IM 200 / 400 + fun");
   assert(/25 nage complète \/ 25 technique de la nage/i.test(rDrill.session.details.join("\n")), "4N8 technique de la nage");
 }
 
-console.log("4N9 8×50 — 12,5 m par nage");
+console.log("4N9 8×50 - 12,5 m par nage");
 {
   const r = composeSession(brief4n({ seed: "4n9", pool: 25, forcedImFormat: "im_50" }));
   assert(r.ok, `4N9 ${r.reason}`);
@@ -284,7 +284,7 @@ console.log("4N9 8×50 — 12,5 m par nage");
   assert(/12,5 m papillon \/ 12,5 m dos \/ 12,5 m brasse \/ 12,5 m crawl/i.test(txt), `4N9 12,5\n${txt}`);
   assert(/changement au milieu du bassin/i.test(txt), "4N9 milieu");
   const imSet = (r.session.sets || []).find((s) => s.imFormat === "im_50");
-  assert(imSet && imSet.reps >= 6 && imSet.distancePerRep === 50, "4N9 6–8×50");
+  assert(imSet && imSet.reps >= 6 && imSet.distancePerRep === 50, "4N9 6-8×50");
 }
 
 console.log("4N10 builder IM + Découverte sans IM");

@@ -1,5 +1,5 @@
 /**
- * Catalogue Stripe MySWYM — source de vérité des offres payantes.
+ * Catalogue Stripe MySWYM : source de vérité des offres payantes.
  *
  *   monthly_flex   9,99 € / mois · sans engagement
  *   monthly_commit 4,99 € / mois · engagement 12 mois
@@ -10,21 +10,21 @@
  * Pour tester en mode Test Stripe : poser les IDs test + `sk_test_…`.
  */
 
-/** Live — MySWYM Premium Flexible 9,99 €/mois */
+/** Live, MySWYM Premium Flexible 9,99 €/mois */
 const FLEX_ID = "price_1U3N2tAS4mfgF2TwyaI2hf22";
-/** Live — MySWYM Premium 12 mois 4,99 €/mois */
+/** Live, MySWYM Premium 12 mois 4,99 €/mois */
 const COMMIT_ID = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
-/** Live — MySWYM Premium Annuel 52,99 €/an */
+/** Live, MySWYM Premium Annuel 52,99 €/an */
 const ANNUAL_ID = "price_1U7E38AS4mfgF2TwpJGYoMpE";
 
-/** IDs mode Test (uniquement si clé sk_test) — ne pas utiliser en prod. */
+/** IDs mode Test (uniquement si clé sk_test), ne pas utiliser en prod. */
 export const TEST_STRIPE_PRICE_IDS = {
   monthlyFlex: "price_1U67kYAS4mfgF2Twaw269yaU",
   monthlyCommit: "price_1U67kZAS4mfgF2Twi5Px8ZvG",
   annual: "price_1U67kaAS4mfgF2TwvUsVQ3vE",
 };
 
-/** Anciens IDs (autre compte / offres retirées) — encore acceptés au checkout. */
+/** Anciens IDs (autre compte / offres retirées), encore acceptés au checkout. */
 export const LEGACY_STRIPE_PRICE_IDS = [
   "price_1U67kYAS4mfgF2Twaw269yaU",
   "price_1U67kZAS4mfgF2Twi5Px8ZvG",

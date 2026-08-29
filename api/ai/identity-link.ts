@@ -1,5 +1,5 @@
 /**
- * POST /api/ai/identity-link — rattache un IGSID à un compte MySWYM authentifié.
+ * POST /api/ai/identity-link, rattache un IGSID à un compte MySWYM authentifié.
  * Jamais appelé depuis le webhook Instagram seul.
  *
  * Body: { provider: "instagram", externalUserId: "..." }

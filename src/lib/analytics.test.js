@@ -1,5 +1,5 @@
 /**
- * Unit tests — analytics sanitize + once (no PostHog network).
+ * Unit tests, analytics sanitize + once (no PostHog network).
  * Run: node src/lib/analytics.test.js
  */
 import assert from "node:assert/strict";
@@ -30,7 +30,7 @@ ok(normalizeAnalyticsLevel("Performance") === "performance", "level perf");
 ok(normalizeAnalyticsObjective({ goal: "eau_libre" }) === "eau_libre", "obj goal");
 ok(normalizeAnalyticsObjective({ category: "triathlon" }) === "triathlon", "obj cat");
 
-// Person props — no email / injury note
+// Person props, no email / injury note
 {
   const p = personPropertiesFromProfile({
     level: "Sportif",
@@ -46,7 +46,7 @@ ok(normalizeAnalyticsObjective({ category: "triathlon" }) === "triathlon", "obj 
   ok(p.injuryNote == null, "no injury note");
 }
 
-// Session props — no details lines
+// Session props, no details lines
 {
   const s = sessionAnalyticsProps(
     { level: "Régulier", goal: "eau_libre", pool: 50 },

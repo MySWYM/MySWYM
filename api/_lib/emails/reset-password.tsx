@@ -20,7 +20,7 @@ export function ResetPasswordEmail({ resetUrl }: ResetPasswordEmailProps) {
         en choisir un nouveau.
       </Text>
       <Text style={emailText.p}>
-        Si tu n’es pas à l’origine de cette demande, ignore cet email — ton
+        Si tu n’es pas à l’origine de cette demande, ignore cet email, ton
         compte reste inchangé.
       </Text>
       <Text style={emailText.muted}>

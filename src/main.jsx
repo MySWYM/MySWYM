@@ -199,7 +199,7 @@ createRoot(document.getElementById('root')).render(
       <LegacyQueryRedirects />
       <Suspense fallback={<RouteFallback />}>
       <Routes>
-        {/* App (questionnaire + plans) — pas de préfixe /fr */}
+        {/* App (questionnaire + plans), pas de préfixe /fr */}
         <Route path="/app" element={<App />} />
         <Route path="/app/*" element={<App />} />
         <Route path="/connexion" element={<App />} />

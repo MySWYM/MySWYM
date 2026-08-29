@@ -602,7 +602,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
       setMsg({
         type: "ok",
         text: discoverable
-          ? "Profil visible — ton numéro reste privé jusqu’à une mise en relation mutuelle."
+          ? "Profil visible, ton numéro reste privé jusqu’à une mise en relation mutuelle."
           : "Profil enregistré (non visible).",
       });
       trackEvent("buddy_profile_save", { discoverable }, { essential: true });
@@ -939,7 +939,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
               <Shield size={18} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ fontSize: 12, color: G.blueDeep, lineHeight: 1.5 }}>
                 Ton numéro n’apparaît jamais sur l’annuaire. Pour y figurer, il faut une ville, un numéro
-                enregistré et le consentement de partage — l’échange du n° n’a lieu qu’après acceptation mutuelle
+                enregistré et le consentement de partage, l’échange du n° n’a lieu qu’après acceptation mutuelle
                 (distinct du compte et des données de santé).
               </div>
             </div>
@@ -983,7 +983,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 16px" }}>
                   {activeFilters
                     ? "Élargis la ville ou retire un filtre."
-                    : "Publie ton profil (ville + numéro + consentement) pour apparaître — et pour que d’autres te trouvent. Le n° reste privé jusqu’à un accord mutuel."}
+                    : "Publie ton profil (ville + numéro + consentement) pour apparaître, et pour que d’autres te trouvent. Le n° reste privé jusqu’à un accord mutuel."}
                 </p>
                 {!activeFilters && (
                   <div style={{ textAlign: "left", background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: G.ink, lineHeight: 1.5 }}>
@@ -1326,7 +1326,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange }) {
                 }}
               >
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-                  Numéro privé (WhatsApp) — jamais public
+                  Numéro privé (WhatsApp), jamais public
                 </label>
                 <input
                   type="tel"

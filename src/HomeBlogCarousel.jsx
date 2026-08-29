@@ -125,7 +125,7 @@ function BlogCard({ article, colors, width }) {
 }
 
 /**
- * Carrousel swipeable des 3 derniers articles blog — Accueil app.
+ * Carrousel swipeable des 3 derniers articles blog, Accueil app.
  * Clic → ouvre /blog/:slug dans un nouvel onglet.
  */
 export default function HomeBlogCarousel() {

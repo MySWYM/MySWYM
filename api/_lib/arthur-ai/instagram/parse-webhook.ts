@@ -66,7 +66,7 @@ export function verifyMetaSignature(
   }
 }
 
-/** Bypass temporaire Shadow H1 — à retirer dès que META_APP_SECRET matche. */
+/** Bypass temporaire Shadow H1, à retirer dès que META_APP_SECRET matche. */
 export function isMetaSignatureSkipEnabled(): boolean {
   const v = (process.env.ARTHUR_META_SKIP_SIGNATURE || "").trim();
   return v === "1" || v === "true";
@@ -198,7 +198,7 @@ export function detectKeyword(text: string): string | null {
   return m ? m[1].toUpperCase() : null;
 }
 
-/** Corps brut pour signature — best-effort sur Vercel (body déjà parsé). */
+/** Corps brut pour signature, best-effort sur Vercel (body déjà parsé). */
 export function rawBodyFromRequest(body: unknown, rawFallback?: string): string {
   if (typeof rawFallback === "string" && rawFallback.length) return rawFallback;
   if (typeof body === "string") return body;

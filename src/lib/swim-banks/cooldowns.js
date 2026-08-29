@@ -1,5 +1,5 @@
 /**
- * Retours au calme / fins — runtime = FINS_SEMAINE ; RETOURS_CALME = legacy mort.
+ * Retours au calme / fins, runtime = FINS_SEMAINE ; RETOURS_CALME = legacy mort.
  * Extrait mécaniquement de src/lib/swim-session-generator.js.
  */
 import { roundTo, bankMeta } from "./_helpers.js";
@@ -16,19 +16,19 @@ const RETOURS_CALME_RAW = [
   (d)=>[`· ${d}m facile, une nage différente à chaque longueur`],
   (d)=>{ const a=roundTo(d*0.6,25); return [`· ${a}m crawl très facile + ${d-a}m dos souple`]; },
   (d)=>{ const a=roundTo(d*0.5,25); return [`· ${a}m facile + ${d-a}m étirements épaules dans l'eau`]; },
-  (d)=>[`· ${d}m très facile — Z1`],
+  (d)=>[`· ${d}m très facile - Z1`],
 ];
 const FINS_SEMAINE_RAW = [
-  (d) => `-${d}m au choix — Z1`,
-  (d) => `-${d}m libre récup — Z1`,
-  (d) => `-${d}m le + lent possible — Z1`,
-  (d) => `-${d}m au choix — Z1`,
-  (d) => `-${d}m au choix — souple`,
-  (d) => `-${d}m dos très facile — Z1`,
-  (d) => `-${d}m multi-nages, sans chrono — Z1`,
-  (d) => `-${d}m au choix, dernière longueur en godilles — Z1`,
-  (d) => `-${d}m relâché, respiration ample — Z1`,
-  (d) => `-${d}m souple — Z1`,
+  (d) => `-${d}m au choix - Z1`,
+  (d) => `-${d}m libre récup - Z1`,
+  (d) => `-${d}m le + lent possible - Z1`,
+  (d) => `-${d}m au choix - Z1`,
+  (d) => `-${d}m au choix - souple`,
+  (d) => `-${d}m dos très facile - Z1`,
+  (d) => `-${d}m multi-nages, sans chrono - Z1`,
+  (d) => `-${d}m au choix, dernière longueur en godilles - Z1`,
+  (d) => `-${d}m relâché, respiration ample - Z1`,
+  (d) => `-${d}m souple - Z1`,
 ];
 
 export const FINS_SEMAINE = FINS_SEMAINE_RAW;

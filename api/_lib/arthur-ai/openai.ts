@@ -1,5 +1,5 @@
 /**
- * Client OpenAI (Responses API) — serveur uniquement + tool loop.
+ * Client OpenAI (Responses API), serveur uniquement + tool loop.
  */
 import OpenAI from "openai";
 import { arthurLog } from "./logging.js";
@@ -96,7 +96,7 @@ export async function callArthurOpenAI(
       );
       toolCallsLog.push({ name: "create_training_plan", result });
       if (result.success) {
-        structured.message = `C’est fait — ton plan est généré (${(result.data as { weeks_created?: number })?.weeks_created ?? "?"} semaines). Ouvre MySWYM (/app) pour le suivre.`;
+        structured.message = `C’est fait, ton plan est généré (${(result.data as { weeks_created?: number })?.weeks_created ?? "?"} semaines). Ouvre MySWYM (/app) pour le suivre.`;
         structured.intent = "plan_request";
         structured.suggested_action = "continue";
         structured.extracted_data.needs_plan = false;

@@ -1,9 +1,9 @@
 /**
- * Étape I — Orchestration / Single Source of Truth.
+ * Étape I, Orchestration / Single Source of Truth.
  *
  * Une phase effective par semaine (weekStart → daysToComp).
  * Une application de charge finale (pas de doubles multiplicateurs).
- * Ne remplace pas les règles sportives — orchestre seulement.
+ * Ne remplace pas les règles sportives, orchestre seulement.
  */
 
 import { daysToCompetition, taperStageFromDays, resolveTaperLoad } from "./taper-load.js";
@@ -53,7 +53,7 @@ export function weekStartDate(planStart, weekIndex = 0) {
  * Mapping (réutilise seuils taper-load existants) :
  * - pas de date → phaseList
  * - days > 27 → development (ou phaseList si peak/test…)
- * - s3 (21–27) → peak/specific (charge s3, pas encore taper « affûtage »)
+ * - s3 (21-27) → peak/specific (charge s3, pas encore taper « affûtage »)
  * - s2/s1/race_week → taper
  * - race_day → race
  * - post_race → bilan
@@ -81,7 +81,7 @@ export function resolveEffectiveWeekPhase({
     effectivePhase = "bilan";
     source = "post_race_flag";
   } else if (competitionDate && days != null && days < -10) {
-    // J3 : fin de fenêtre post-race — plus de repos 0m en traîne
+    // J3 : fin de fenêtre post-race, plus de repos 0m en traîne
     if (phaseListPhase === "taper" || phaseListPhase === "competition" || phaseListPhase === "bilan") {
       effectivePhase = "base";
       source = "post_race_exit→base";
@@ -96,7 +96,7 @@ export function resolveEffectiveWeekPhase({
     effectivePhase = "taper";
     source = `taper_stage:${taperStage}`;
   } else if (taperStage === "s3") {
-    // S-3 = encore spécifique / peak — charge via taperLoad s3, pas PHASE_MULT taper
+    // S-3 = encore spécifique / peak, charge via taperLoad s3, pas PHASE_MULT taper
     effectivePhase = "peak";
     source = "taper_stage:s3→peak";
   } else if (competitionDate && days != null && days > 27) {
@@ -147,7 +147,7 @@ export function resolveEffectiveWeekVolume({
   /** weeklyAdaptation.volumeMul si décision moteur ; sinon null */
   adaptationMul = null,
   adaptationObserveOnly = false,
-  /** legacy volumeAdj — utilisé SEULEMENT si adaptationMul == null */
+  /** legacy volumeAdj, utilisé SEULEMENT si adaptationMul == null */
   volumeAdjLegacy = 1,
   tasteVolumeMul = 1,
   effectivePhase = "development",
@@ -159,7 +159,7 @@ export function resolveEffectiveWeekVolume({
   freq = 3,
   ambition = "full",
   leverHint = "volume",
-  /** Préférence questionnaire (m) — ancre les séances si renseignée */
+  /** Préférence questionnaire (m), ancre les séances si renseignée */
   targetSessionDistance = null,
 } = {}) {
   const raw = WEEK_REF[level] ?? WEEK_REF.regulier;
@@ -176,7 +176,7 @@ export function resolveEffectiveWeekVolume({
   const tasteFactor = Math.min(1.08, Math.max(0.92, Number(tasteVolumeMul) || 1));
   const adapted = capacityAdjusted * adaptFactor * tasteFactor;
 
-  // Phase OU taper — jamais les deux en pile
+  // Phase OU taper, jamais les deux en pile
   let phaseOrTaper = 1;
   const tf = Number(taperVolumeFactor);
   if (effectiveTaperStage && Number.isFinite(tf) && tf < 1) {
@@ -192,7 +192,7 @@ export function resolveEffectiveWeekVolume({
   if (ambition === "finish") phaseAdjusted *= 0.9;
   if (ambition === "rebuild") phaseAdjusted *= 0.75;
 
-  // Deload planifié / adaptatif — seulement hors taper date déjà réduit
+  // Deload planifié / adaptatif, seulement hors taper date déjà réduit
   const plannedDeload = weekIndex > 0 && (weekIndex + 1) % 4 === 0;
   const inDateTaper = !!(effectiveTaperStage && ["s1", "s2", "s3", "race_week", "race_day"].includes(effectiveTaperStage));
   let typeSemaine = "normale";
@@ -333,7 +333,7 @@ export function applyPainSafetyToRoles(roles = []) {
 }
 
 /**
- * Taste APRÈS WeekRoles — préférences secondaires, garde-fous sportifs.
+ * Taste APRÈS WeekRoles, préférences secondaires, garde-fous sportifs.
  */
 export function biasWeekRolesForTaste(roles, hints, guards = {}) {
   if (!hints?.ready || !Array.isArray(roles)) return roles;
@@ -412,10 +412,10 @@ export function formatEffectiveEngineWhy({
   lever,
 } = {}) {
   const parts = [
-    `objectif=${objectifV1 || "—"}`,
-    `effectivePhase=${effectivePhase || "—"}`,
+    `objectif=${objectifV1 || " - "}`,
+    `effectivePhase=${effectivePhase || " - "}`,
     effectiveTaperStage ? `taperStage=${effectiveTaperStage}` : null,
-    `effectiveWeekVolume=${effectiveWeekVolume ?? "—"}m`,
+    `effectiveWeekVolume=${effectiveWeekVolume ?? " - "}m`,
     lever ? `lever=${lever}` : null,
     primaryQuality ? `primary=${primaryQuality}` : null,
     secondaryQuality ? `secondary=${secondaryQuality}` : null,
@@ -477,7 +477,7 @@ export function buildWeekOrchestration({
 
   const adaptation = history.weeklyAdaptation || null;
   // Charge persistante = volumeAdj (App cumule déjà les muls H).
-  // weeklyAdaptation pilote levier / deload / pain — pas un 2e × volumeMul.
+  // weeklyAdaptation pilote levier / deload / pain, pas un 2e × volumeMul.
   const volume = resolveEffectiveWeekVolume({
     level,
     capacityFactor: capacity?.volumeFactor ?? 1,

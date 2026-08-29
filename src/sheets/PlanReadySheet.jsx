@@ -92,7 +92,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
             {weeks > 4 && !isLoop ? `Ton plan ${weeks} semaines est prêt` : "Ton coach a préparé ton plan"}
           </h3>
           <p style={{ color: G.grey, fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-            Débloque les séances et l’adaptation coach — 7 jours offerts sans carte à l’inscription. Ensuite tes séances se mettent en pause.
+            Débloque les séances et l’adaptation coach, 7 jours offerts sans carte à l’inscription. Ensuite tes séances se mettent en pause.
           </p>
         </div>
 
@@ -190,7 +190,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
           </div>
         )}
         <Btn variant="blue" onClick={handleContinue} disabled={loading}>
-          {loading ? "Redirection…" : "S’abonner — débloquer mon coach"}
+          {loading ? "Redirection…" : "S’abonner : débloquer mon coach"}
         </Btn>
         <button
           type="button"

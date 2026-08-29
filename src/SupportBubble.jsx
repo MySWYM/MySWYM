@@ -7,7 +7,7 @@ import { getSupportSessionRef } from "./lib/support-context.js";
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
 const BLUE = "#006bfd";
-/** Thème clair du widget — contraste avec le fond sombre de l’app. */
+/** Thème clair du widget, contraste avec le fond sombre de l’app. */
 const INK = "#0b1526";
 const MUTED = "#5c6b7e";
 const LINE = "rgba(11, 21, 38, 0.1)";
@@ -16,7 +16,7 @@ const PAGE = "#f3f6fa";
 const BUBBLE = "#e8eef5";
 const ARTHUR_PHOTO = "/coach.webp";
 
-/** FAQ rule-based — produit + vocabulaire / méthode natation MySWYM. */
+/** FAQ rule-based, produit + vocabulaire / méthode natation MySWYM. */
 const FAQ_RULES = [
   // ── Produit ──────────────────────────────────────────────
   {
@@ -168,7 +168,7 @@ const FAQ_RULES = [
 ];
 
 const FALLBACK =
-  "Pas de réponse auto pour celle-ci. J’envoie ça à Arthur — il te répond ici.";
+  "Pas de réponse auto pour celle-ci. J’envoie ça à Arthur, il te répond ici.";
 
 function stripAccents(s) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -206,7 +206,7 @@ const HELP_ARTICLES = [
 
 const WELCOME = {
   role: "bot",
-  text: "Salut ! Tu parles à l’assistance MySWYM. Je peux t’aider sur le produit et la natation. Tu peux demander l’équipe à tout moment — Arthur te répond ici.",
+  text: "Salut ! Tu parles à l’assistance MySWYM. Je peux t’aider sur le produit et la natation. Tu peux demander l’équipe à tout moment, Arthur te répond ici.",
 };
 
 function wantsHuman(text) {
@@ -312,7 +312,7 @@ function ArthurAvatar({ size = 44, radius = 12 }) {
   );
 }
 
-/** Mascotte MySWYM. Accueil du widget seulement — le fil garde la photo d'Arthur. */
+/** Mascotte MySWYM. Accueil du widget seulement, le fil garde la photo d'Arthur. */
 function LoutreAvatar({ height = 92 }) {
   return (
     <img
@@ -948,7 +948,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
                       {firstName ? `Salut ${firstName}` : "Salut"}
                     </h4>
                     <p style={{ margin: "0 0 18px", fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-                      Moi c’est la loutre MySWYM, bras droit d’Arthur — et la seule ici
+                      Moi c’est la loutre MySWYM, bras droit d’Arthur, et la seule ici
                       qui n’a jamais eu besoin de palmes. Comment je peux t’aider ?
                     </p>
                     {hasHistory ? (

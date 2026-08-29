@@ -1,5 +1,5 @@
 /**
- * Récupération variable — le repos est une variable de charge / densité.
+ * Récupération variable, le repos est une variable de charge / densité.
  * Pas de R20 systématique.
  */
 
@@ -96,7 +96,7 @@ export function restSecFor(ctx = {}) {
     return 0;
   }
 
-  // Endurance / eau libre / triathlon / 4n — selon distance
+  // Endurance / eau libre / triathlon / 4n, selon distance
   if (dist >= 200) return 35;
   if (dist >= 100) {
     if (intent === "eau_libre" || intent === "triathlon") return 25;
@@ -104,7 +104,7 @@ export function restSecFor(ctx = {}) {
   }
   if (dist <= 25) return 15;
 
-  // Défaut non-systématique : 15–25 selon niveau
+  // Défaut non-systématique : 15-25 selon niveau
   if (level === "decouverte") return 20;
   return intensity.includes("soutenu") ? 25 : 15;
 }

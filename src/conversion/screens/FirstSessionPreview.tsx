@@ -64,7 +64,7 @@ export function FirstSessionPreview({
 
         <div className="cv:mt-auto cv:space-y-3 cv:pt-10">
           <Button fullWidth onClick={onStart}>
-            C’est parti — je nage
+            C’est parti, je nage
           </Button>
           <Button fullWidth variant="ghost" onClick={onLater}>
             Plus tard, montrer l’accueil

@@ -2,7 +2,7 @@ import { Component } from "react";
 import { trackUiError } from "./lib/analytics.js";
 
 /**
- * Filet global — évite l’écran blanc / « Chargement » mort après un crash React.
+ * Filet global, évite l’écran blanc / « Chargement » mort après un crash React.
  * Télémétrie : PostHog `ui_error` uniquement (pas de Sentry).
  */
 export default class AppErrorBoundary extends Component {
@@ -61,7 +61,7 @@ export default class AppErrorBoundary extends Component {
       >
         <p style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Un souci est survenu</p>
         <p style={{ margin: 0, fontSize: 14, color: "#9aafc4", maxWidth: 320, lineHeight: 1.45 }}>
-          Recharge l’app — ton plan reste enregistré. Si ça continue, écris à support@myswym.app.
+          Recharge l’app, ton plan reste enregistré. Si ça continue, écris à support@myswym.app.
         </p>
         <button
           type="button"

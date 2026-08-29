@@ -84,7 +84,7 @@ export function composeSessionBlueprint({
     objectif: objKey,
     volumeTarget: blocks.total,
     blocks,
-    why: `${family} · ${objKey || "—"} · ${blocks.depart}+${blocks.technique}+${blocks.corps}+${blocks.rac}m`,
+    why: `${family} · ${objKey || " - "} · ${blocks.depart}+${blocks.technique}+${blocks.corps}+${blocks.rac}m`,
   };
 }
 

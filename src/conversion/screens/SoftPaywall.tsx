@@ -29,7 +29,7 @@ const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: str
   },
 }
 
-/** Soft paywall — dismissible, value-first, no countdown dark patterns */
+/** Soft paywall, dismissible, value-first, no countdown dark patterns */
 export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }: Props) {
   const copy = COPY[context]
   const { annual, monthly } = tokens.pricing
@@ -80,7 +80,7 @@ export function SoftPaywall({ open, onClose, onSubscribe, context = 'generic' }:
       </ul>
 
       <Button fullWidth variant="premium" className="cv:mt-6" onClick={() => onSubscribe('monthly')}>
-        Continuer — {monthly.label}/mois
+        Continuer, {monthly.label}/mois
       </Button>
       <button
         type="button"

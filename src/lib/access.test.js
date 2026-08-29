@@ -78,7 +78,7 @@ const nowSec = Math.floor(Date.now() / 1000);
     subscription_status: ACCESS_STATUS.EXPIRED,
   }));
   assert.equal(state.hasPremiumAccess, false);
-  assert.equal(state.canUseMultiPlan, false, "multi-plans retired — always false");
+  assert.equal(state.canUseMultiPlan, false, "multi-plans retired, always false");
 }
 
 {

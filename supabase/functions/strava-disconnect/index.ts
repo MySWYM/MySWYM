@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (tokenRow?.access_token) {
-      // Best-effort revocation — don't fail if Strava is unreachable
+      // Best-effort revocation, don't fail if Strava is unreachable
       await fetch(STRAVA_DEAUTH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

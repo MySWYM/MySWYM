@@ -1,5 +1,5 @@
 /**
- * Instagram — file d’attente, conversion, qualité Arthur.
+ * Instagram, file d’attente, conversion, qualité Arthur.
  * Réutilise les APIs existantes (pas de 13e fonction).
  */
 import { useCallback, useEffect, useState } from "react";
@@ -8,12 +8,12 @@ import { BarChart, DonutChart, FunnelChart } from "./admin/AdminCharts.jsx";
 import { adminGetJson } from "./lib/arthur-admin-auth.js";
 
 function dash(v) {
-  if (v == null || v === "") return "—";
+  if (v == null || v === "") return "-";
   return v;
 }
 
 function pct(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
+  if (n == null || Number.isNaN(Number(n))) return "-";
   const x = Number(n);
   const ratio = x > 1 ? x / 100 : x;
   return `${Math.round(ratio * 100)} %`;
@@ -253,7 +253,7 @@ export default function ArthurInstagramAdmin() {
               </div>
               <div style={{ fontSize: 12, color: "#7a8a9a", marginBottom: 4 }}>Ils ont écrit</div>
               <div style={{ whiteSpace: "pre-wrap", marginBottom: 10 }}>
-                {p.inbound_message || "—"}
+                {p.inbound_message || "-"}
               </div>
               <div style={{ fontSize: 12, color: "#7a8a9a", marginBottom: 4 }}>Proposition Arthur</div>
               {editId === p.id ? (
@@ -265,7 +265,7 @@ export default function ArthurInstagramAdmin() {
                 />
               ) : (
                 <div style={{ whiteSpace: "pre-wrap", marginBottom: 12 }}>
-                  {p.final_message || p.proposed_message || "—"}
+                  {p.final_message || p.proposed_message || "-"}
                 </div>
               )}
               {p.status === "pending" ? (
@@ -405,7 +405,7 @@ export default function ArthurInstagramAdmin() {
         >
           <div style={card}>
             <div style={{ fontSize: 13, color: "#5a6a7a" }}>Note moyenne</div>
-            <div style={{ fontSize: 28, fontWeight: 800 }}>{dash(q.avg_score ?? "—")}</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{dash(q.avg_score ?? "-")}</div>
           </div>
           <div style={{ ...card }}>
             <div style={{ fontSize: 13, color: "#5a6a7a" }}>Très bonnes</div>

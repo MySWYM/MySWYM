@@ -1,7 +1,7 @@
 /**
  * Estimation capacité interne (ne modifie pas le niveau UI).
  * Étape H : mise à jour progressive depuis FeedbackSignal / tendance.
- * Readiness V1 : signal d'entrée soft (questionnaire) — jamais prioritaire vs feedback/historique.
+ * Readiness V1 : signal d'entrée soft (questionnaire), jamais prioritaire vs feedback/historique.
  */
 import { normalizeUiLevel } from "./types.js";
 import { estimateReadinessModifier, readinessHistoryWeight } from "./readiness.js";
@@ -35,8 +35,8 @@ export function confidenceFromSampleCount(n, coherent = false) {
 }
 
 /**
- * @param {object} sportProfile — buildSportProfile()
- * @param {object} [history] — { recentEasy, recentHard, completedSessions, avgWeekDistance, daysSinceLast }
+ * @param {object} sportProfile, buildSportProfile()
+ * @param {object} [history], { recentEasy, recentHard, completedSessions, avgWeekDistance, daysSinceLast }
  */
 export function estimateCapacity(sportProfile, history = {}) {
   const level = sportProfile.level || normalizeUiLevel(sportProfile.levelRaw);
@@ -61,7 +61,7 @@ export function estimateCapacity(sportProfile, history = {}) {
   if (easy >= 2) score += 0.04;
   if (hard >= 2) score -= 0.06;
 
-  // Dimensions persistées (Étape H) — influence douce
+  // Dimensions persistées (Étape H), influence douce
   const dims = history.capacityDimensions || history.capacityUpdate?.dimensions;
   if (dims && typeof dims === "object") {
     const vt = Number(dims.volumeTolerance);
@@ -89,7 +89,7 @@ export function estimateCapacity(sportProfile, history = {}) {
   score = Math.min(1, Math.max(0.2, score));
   confidence = Math.min(1, Math.max(0.15, confidence));
 
-  // Readiness questionnaire — entrée soft, fade si historique / feedback réel
+  // Readiness questionnaire, entrée soft, fade si historique / feedback réel
   const readinessMod = estimateReadinessModifier(sportProfile.readinessProfile);
   const hardFeedback = (Number(history.recentHard) || 0) >= 1;
   const muteReadiness =
@@ -153,9 +153,9 @@ function clamp01(n, lo = 0.15, hi = 1) {
 }
 
 /**
- * Mise à jour progressive des dimensions — jamais brutale sur 1 feedback.
- * @param {object} base — estimateCapacity()
- * @param {object} adaptation — decideWeeklyAdaptation()
+ * Mise à jour progressive des dimensions, jamais brutale sur 1 feedback.
+ * @param {object} base, estimateCapacity()
+ * @param {object} adaptation, decideWeeklyAdaptation()
  */
 export function applyCapacitySignalUpdate(base, adaptation = {}, opts = {}) {
   const dims = { ...(base.dimensions || blankCapacityDimensions(base.score)) };
@@ -190,7 +190,7 @@ export function applyCapacitySignalUpdate(base, adaptation = {}, opts = {}) {
       deltas.continuousCapacity = -0.03;
     }
   } else if (action === "PROGRESS" && !adaptation.taperBlocked) {
-    // Une séance easy ≠ preuve de capacité ↑ — exige confiance medium+
+    // Une séance easy ≠ preuve de capacité ↑, exige confiance medium+
     if (band !== "low") {
       if (lever === "volume") {
         deltas.volumeTolerance = 0.04;

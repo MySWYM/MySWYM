@@ -1,5 +1,5 @@
 /**
- * Flags pédagogiques — un seul générateur (session-composer).
+ * Flags pédagogiques, un seul générateur (session-composer).
  * Rollback d’une bascule : MYSWYM_PEDAGOGY_<NAME>=0
  * Ne bump pas PLAN_VERSION ; ne régénère pas les séances persistées.
  */

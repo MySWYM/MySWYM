@@ -1,5 +1,5 @@
 /**
- * create_checkout — appelle l’Edge Function existante (pas de secret Stripe ici).
+ * create_checkout, appelle l’Edge Function existante (pas de secret Stripe ici).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUuid } from "../security.js";
@@ -48,7 +48,7 @@ export async function createCheckout(
   ctx: {
     userId: string | null;
     conversationId?: string | null;
-    /** JWT utilisateur — requis pour l’Edge Function create-checkout */
+    /** JWT utilisateur, requis pour l’Edge Function create-checkout */
     accessToken?: string | null;
   },
   args: {
@@ -67,7 +67,7 @@ export async function createCheckout(
     });
   }
 
-  // Ne jamais lire de secret Stripe ici — uniquement JWT user → Edge Function.
+  // Ne jamais lire de secret Stripe ici, uniquement JWT user → Edge Function.
   const supabaseUrl = (
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||

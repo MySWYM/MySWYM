@@ -45,9 +45,9 @@ const session = {
   distance: 1100,
   duration: 35,
   details: [
-    "-200 m souple — échauffement",
+    "-200 m souple, échauffement",
     "-6 × 100 m crawl endurance",
-    "-100 m souple — retour au calme",
+    "-100 m souple, retour au calme",
   ],
 };
 const preview = sessionPreviewFromPlan({ weeks: [{ sessions: [session] }] });

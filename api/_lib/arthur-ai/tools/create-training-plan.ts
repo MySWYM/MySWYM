@@ -1,5 +1,5 @@
 /**
- * create_training_plan — persiste un plan via generateArthurPlan (moteur existant).
+ * create_training_plan, persiste un plan via generateArthurPlan (moteur existant).
  * userId = contexte serveur uniquement (jamais depuis le modèle).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -148,7 +148,7 @@ export async function createTrainingPlan(
     });
   }
 
-  // Nouveau plan_id à chaque génération — l'ancien part en plan_history
+  // Nouveau plan_id à chaque génération, l'ancien part en plan_history
   const planId = `plan_${Date.now()}`;
 
   const entryProfile = { ...generated.profile };

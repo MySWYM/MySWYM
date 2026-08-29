@@ -83,7 +83,7 @@ async function sendResendEmail(to: string, code: string): Promise<boolean> {
     body: JSON.stringify({
       from,
       to: [to],
-      subject: "Code MySWYM — vérifier ton numéro",
+      subject: "Code MySWYM : vérifier ton numéro",
       text: `Ton code MySWYM pour confirmer ton numéro Binômes : ${code}\nValable 10 minutes.\n`,
     }),
   });
@@ -165,10 +165,10 @@ Deno.serve(async (req) => {
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (rowErr || !row) throw new Error("Aucun code en cours — renvoie un code.");
+      if (rowErr || !row) throw new Error("Aucun code en cours, renvoie un code.");
       if (row.phone_e164 !== phone) throw new Error("Numéro différent de celui du code.");
-      if (new Date(row.expires_at).getTime() < Date.now()) throw new Error("Code expiré — renvoie un code.");
-      if ((row.attempts || 0) >= 5) throw new Error("Trop d’essais — renvoie un code.");
+      if (new Date(row.expires_at).getTime() < Date.now()) throw new Error("Code expiré, renvoie un code.");
+      if ((row.attempts || 0) >= 5) throw new Error("Trop d’essais, renvoie un code.");
 
       const expect = await sha256Hex(`${user.id}:${phone}:${code}`);
       if (expect !== row.code_hash) {

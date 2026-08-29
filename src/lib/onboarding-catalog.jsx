@@ -1,5 +1,5 @@
 /**
- * Catalogues onboarding / profil — extrait App.jsx vague 2.
+ * Catalogues onboarding / profil, extrait App.jsx vague 2.
  */
 import {
   Activity, Waves, Shield, Award, Trophy, RotateCcw, Target, TrendingUp,
@@ -21,7 +21,7 @@ export const GOALS = [
   { id: "bpjeps_aan",        label: "Prépa BPJEPS AAN",       dist: "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"", icon: <Award size={20} />, wellness: false },
   { id: "caepmns",           label: "Prépa CAEPMNS",          dist: "300 m palmes · parcours sauvetage", icon: <Shield size={20} />, wellness: false },
   { id: "tests_pompiers",    label: "Tests Pompiers",         dist: "400 m NL + 50 m sauvetage",    icon: <Shield size={20} />,   wellness: false },
-  { id: "competition_maitre",label: "Compétition Maître",     dist: "50–1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
+  { id: "competition_maitre",label: "Compétition Maître",     dist: "50-1 500 m",                   icon: <Trophy size={20} />,   wellness: false },
   { id: "reprendre",         label: "Reprendre la natation",  dist: "6 semaines · en douceur",      icon: <RotateCcw size={20} />, wellness: true },
   { id: "perte_de_poids",    label: "Activité physique",       dist: "Durée selon ton objectif",     icon: <Target size={20} />,   wellness: true  },
 ];
@@ -131,7 +131,7 @@ export const FREQUENCIES = [
 
 export const POOLS = [{ id: 25, label: "25 m" }, { id: 50, label: "50 m" }];
 
-/** Style d'entraînement — stocké crawl | 4_nages (UX : sais-tu nager du 4 nages ?) */
+/** Style d'entraînement, stocké crawl | 4_nages (UX : sais-tu nager du 4 nages ?) */
 export const SWIM_STYLES = [
   { id: "crawl", label: "Non", desc: "Je nage surtout en crawl" },
   { id: "4_nages", label: "Oui", desc: "Je sais nager les quatre nages" },
@@ -162,7 +162,7 @@ export const PREFERRED_STROKES = [
 export const STROKE_LABELS = Object.fromEntries(PREFERRED_STROKES.map((s) => [s.id, s.label]));
 export const STYLE_LABELS = { crawl: "Crawl", "4_nages": "4 nages" };
 
-/** Matériel — édité dans Profil (plus dans le questionnaire) et affiché sur les séances. */
+/** Matériel, édité dans Profil (plus dans le questionnaire) et affiché sur les séances. */
 export const EQUIPMENT_OPTS = [
   { id: "palmes" },
   { id: "tuba" },

@@ -1,5 +1,5 @@
 /**
- * Client Meta / Instagram Messaging — envoi de DM.
+ * Client Meta / Instagram Messaging, envoi de DM.
  * Secret : INSTAGRAM_ACCESS_TOKEN (jamais exposé client).
  */
 import { arthurLog } from "../logging.js";

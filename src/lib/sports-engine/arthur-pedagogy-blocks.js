@@ -97,10 +97,10 @@ function volumeOf(sets) {
 function linesFromSets(sets) {
   return sets.map((s) => {
     if (s.continuous || (s.reps === 1 && !s.restSec)) {
-      return line(`${s.distancePerRep} m ${s.label}${s.cue ? ` — ${s.cue}` : ""}`);
+      return line(`${s.distancePerRep} m ${s.label}${s.cue ? ` - ${s.cue}` : ""}`);
     }
     return line(
-      `${s.reps} × ${s.distancePerRep} m ${s.label}${s.cue ? ` — ${s.cue}` : ""} — repos ${s.restSec || 20}s`,
+      `${s.reps} × ${s.distancePerRep} m ${s.label}${s.cue ? ` - ${s.cue}` : ""} - repos ${s.restSec || 20}s`,
     );
   });
 }
@@ -176,7 +176,7 @@ export function mapBriefToPedagogyObjective(brief = {}, intent = {}) {
 }
 
 /**
- * D10 — dos à deux bras 100 ou 200 m « facile, sans forcer ».
+ * D10, dos à deux bras 100 ou 200 m « facile, sans forcer ».
  * Respecte maxContinuous (séries si besoin). Distance totale = budget.
  */
 export function buildArthurCooldownForBudget({
@@ -230,7 +230,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${coreDist} m ${label} — ${cue}`));
+      lines.push(line(`${coreDist} m ${label} - ${cue}`));
     } else {
       const reps = Math.max(2, Math.round(coreDist / unit));
       const dist = reps * unit;
@@ -245,7 +245,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${reps} × ${unit} m ${label} — ${cue} — repos 15s`));
+      lines.push(line(`${reps} × ${unit} m ${label} - ${cue} - repos 15s`));
       coreDist = reps * unit;
     }
     remaining = target - coreDist;
@@ -263,7 +263,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${remaining} m ${fillLabel} — retour au calme, sans forcer`));
+      lines.push(line(`${remaining} m ${fillLabel} - retour au calme, sans forcer`));
     } else {
       const reps = Math.max(2, Math.round(remaining / unit));
       const dist = reps * unit;
@@ -277,7 +277,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${reps} × ${unit} m ${fillLabel} — retour au calme — repos 15s`));
+      lines.push(line(`${reps} × ${unit} m ${fillLabel} - retour au calme - repos 15s`));
       // Ajuster si écart
       const got = reps * unit;
       if (got !== remaining && sets.length) {
@@ -299,7 +299,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${target} m ${easyLabel} — retour au calme, sans forcer`));
+      lines.push(line(`${target} m ${easyLabel} - retour au calme, sans forcer`));
     } else {
       const reps = Math.max(2, Math.round(target / unit));
       sets.push(
@@ -312,7 +312,7 @@ export function buildArthurCooldownForBudget({
           zone,
         }),
       );
-      lines.push(line(`${reps} × ${unit} m ${easyLabel} — retour au calme — repos 15s`));
+      lines.push(line(`${reps} × ${unit} m ${easyLabel} - retour au calme - repos 15s`));
     }
   }
 
@@ -410,7 +410,7 @@ function selectDrills(rng, { level, objective, equipment, count = 2, papillonOk 
 }
 
 /**
- * Bloc technique éducatifs Arthur — volume ≈ targetVol.
+ * Bloc technique éducatifs Arthur, volume ≈ targetVol.
  */
 export function buildArthurTechniqueBlock({
   budget,
@@ -491,7 +491,7 @@ export function buildArthurTechniqueBlock({
     const mat = needLabel.length
       ? ` avec ${needLabel.map((e) => (e === "pull-buoy" ? "pull-buoy" : e === "tuba" ? "tuba frontal" : e)).join(" et ")}`
       : "";
-    const cue = "facile, sans forcer — focus geste";
+    const cue = "facile, sans forcer - focus geste";
     const rest = restCue(level);
     sets.push(
       makeSeries(reps, unit, {
@@ -503,7 +503,7 @@ export function buildArthurTechniqueBlock({
         zone,
       }),
     );
-    lines.push(line(`${reps} × ${unit} m ${displayName}${mat} — ${cue} — ${rest}`));
+    lines.push(line(`${reps} × ${unit} m ${displayName}${mat} - ${cue} - ${rest}`));
     used.push({ id: d.id, name: displayName });
   });
 
@@ -523,7 +523,7 @@ export function buildArthurTechniqueBlock({
         zone,
       }),
     );
-    lines.push(line(`${reps} × ${unit} m ${label} — ${cue} — repos 15s`));
+    lines.push(line(`${reps} × ${unit} m ${label} - ${cue} - repos 15s`));
     remaining -= reps * unit;
   }
 
@@ -536,7 +536,7 @@ export function buildArthurTechniqueBlock({
 }
 
 /**
- * Corps fun par objectif — formats plats, allures contrastées.
+ * Corps fun par objectif, formats plats, allures contrastées.
  */
 export function buildArthurFunMainBlock({
   budget,
@@ -569,7 +569,7 @@ export function buildArthurFunMainBlock({
         zone,
       }),
     );
-    lines.push(line(`${r} × ${d} m ${label}${cue ? ` — ${cue}` : ""} — repos ${restSec || 20}s`));
+    lines.push(line(`${r} × ${d} m ${label}${cue ? ` - ${cue}` : ""} - repos ${restSec || 20}s`));
     return r * d;
   };
 
@@ -658,9 +658,9 @@ export function buildArthurFunMainBlock({
     }
   } else if (obj === "technique" || (obj === "endurance" && level === "decouverte")) {
     const cycles = Math.max(3, Math.min(5, Math.floor(target / (unit * 3))));
-    filled += pushSeries(cycles, unit, "crawl", "lent — focus glisse", 20, "corps_tech_lent");
-    filled += pushSeries(cycles, unit, "crawl", "moyen — respiration", 20, "corps_tech_moy");
-    filled += pushSeries(cycles, unit, "crawl", "vite — fluide", longRest === "repos 40s" ? 40 : 35, "corps_tech_vite");
+    filled += pushSeries(cycles, unit, "crawl", "lent - focus glisse", 20, "corps_tech_lent");
+    filled += pushSeries(cycles, unit, "crawl", "moyen - respiration", 20, "corps_tech_moy");
+    filled += pushSeries(cycles, unit, "crawl", "vite - fluide", longRest === "repos 40s" ? 40 : 35, "corps_tech_vite");
     const left = target - filled;
     if (left >= unit * 4) {
       const reps = Math.max(2, Math.floor(left / (unit * 2)));
@@ -730,7 +730,7 @@ export function buildArthurFunMainBlock({
     if (sets[i].cue && sets[i].cue === sets[i - 1].cue && sets[i].label === sets[i - 1].label) {
       sets[i].cue = "contrasté, change de focus";
       const li = lines[i];
-      if (li) lines[i] = line(li.replace(/^-/, "").replace(/—[^—]+—/, "— contrasté, change de focus —"));
+      if (li) lines[i] = line(li.replace(/^-/, "").replace(/—[^—]+—/, " -  contrasté, change de focus  - "));
     }
   }
 

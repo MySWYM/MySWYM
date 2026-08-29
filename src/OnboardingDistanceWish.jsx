@@ -15,7 +15,7 @@ export function defaultDistancePresetForLevel(level) {
   return defaultSessionDistanceForLevel(level);
 }
 
-/** Distance moyenne par séance — jauge / slider */
+/** Distance moyenne par séance, jauge / slider */
 export function StepSessionDistance({ value, level, onChange, onNext, onBack, Btn, G }) {
   const { t } = useTranslation("onboarding");
   const presets = SESSION_DISTANCE_PRESETS_UI;

@@ -1,0 +1,43 @@
+---
+description: Typographie FR, interdiction du tiret cadratin (U+2014)
+alwaysApply: true
+---
+
+# Typographie française MySWYM
+
+## Interdit
+
+- Tiret cadratin `—` (U+2014)
+- Demi-cadratin `–` (U+2013) dans le copy produit (UI, emails, SEO, blog, textes coach)
+
+Ne pas les utiliser dans les chaînes visibles, les templates email, l’i18n, ni le copy généré pour le nageur.
+
+## À la place
+
+Ponctuation classique ou mots de liaison :
+
+| Intention | Préférer |
+| --- | --- |
+| Incise / précision | virgule, parenthèses, ou reformuler |
+| Explication / conséquence | deux-points, ou « donc », « car », « puis » |
+| Titre / marque + sous-titre | ` : ` (ex. `MySWYM : plan d'entraînement`) |
+| Libellé compact UI | point médian ` · ` déjà utilisé sur le site, ou ` : ` |
+| CTA + prix | ` : ` (ex. `Démarrer : 9,90 €/mois`) |
+| Séparateur structurel séances (main / cue / repos) | ` - ` ASCII (ex. `4 × 50m crawl - repos 20s`). Les parsers acceptent encore `—` en lecture seule (legacy). |
+
+## Exemples
+
+- `Choisis celui qui te décrit aujourd’hui — pas celui que tu vises.`
+  → `Choisis celui qui te décrit aujourd’hui, pas celui que tu vises.`
+- `Essai 7 jours — puis 12 €/mois`
+  → `Essai 7 jours, puis 12 €/mois`
+- `MySWYM — Plan d'entraînement…`
+  → `MySWYM : plan d'entraînement…`
+
+## Exceptions techniques
+
+- **Parsers / regex** : peuvent encore *matcher* `—` et `–` pour lire d’anciennes séances stockées. Ne pas les émettre dans le copy généré ni l’UI.
+- **Valeur manquante UI** : utiliser `-` (ASCII), pas `—`.
+- **Plages numériques** : tiret ASCII `10-20`, pas `10–20`.
+- Commentaires code : préférer `-` ASCII ou reformuler.
+- Vendors / skills tiers non MySWYM : ne pas retoucher.

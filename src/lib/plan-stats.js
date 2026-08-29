@@ -1,5 +1,5 @@
 /**
- * Stats plan + badges — extrait de App.jsx.
+ * Stats plan + badges, extrait de App.jsx.
  */
 import {
   Droplets, Ruler, Waves, Flame, Star, Zap, Target, TrendingUp, Trophy,
@@ -11,7 +11,7 @@ export const BADGE_DEFS = [
   { id: "first_session", label: "Premier plongeon",   desc: "1re séance complétée",                icon: Droplets, color: G.water },
   { id: "km1",           label: "1 km nagé",          desc: "1 000 m au compteur",                  icon: Ruler,    color: G.blue },
   { id: "km5",           label: "5 km nagé",          desc: "5 000 m parcourus",                    icon: Waves,    color: G.blueDeep },
-  { id: "km10",          label: "10 km nagé",         desc: "10 000 m — niveau avancé",             icon: Waves,    color: G.purple },
+  { id: "km10",          label: "10 km nagé",         desc: "10 000 m, niveau avancé",             icon: Waves,    color: G.purple },
   { id: "streak3",       label: "Série de 3",         desc: "3 séances consécutives",               icon: Flame,    color: G.coral },
   { id: "streak5",       label: "Série de 5",         desc: "5 séances consécutives",               icon: Flame,    color: "#FF3D00" },
   { id: "week_perfect",  label: "Semaine parfaite",   desc: "Toutes les séances d'une semaine",     icon: Star,     color: G.gold },

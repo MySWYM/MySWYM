@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Non authentifié — pas de token JWT");
+    if (!authHeader) throw new Error("Non authentifié, pas de token JWT");
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       }
     }
     if (!resolvedCustomerId) {
-      throw new Error(`stripe_customer_id manquant (user: ${user.id}) — clique sur « Actualiser le statut » dans Profil`);
+      throw new Error(`stripe_customer_id manquant (user: ${user.id}), clique sur « Actualiser le statut » dans Profil`);
     }
 
     const returnOrigin = reqOrigin && isAllowedOrigin(reqOrigin)
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
           stripe_customer_id: null,
         });
         await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);
-        throw new Error("Lien Stripe périmé — ton compte a été réinitialisé. Contacte support@myswym.app si le problème persiste.");
+        throw new Error("Lien Stripe périmé, ton compte a été réinitialisé. Contacte support@myswym.app si le problème persiste.");
       }
       throw stripeErr;
     }

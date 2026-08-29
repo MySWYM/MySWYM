@@ -77,7 +77,7 @@ export function getAccessState(user) {
     canSeeAdvancedAnalysis: hasPremiumAccess,
     canUseAdaptiveFeatures: hasPremiumAccess,
     canUsePremiumVideos: hasPremiumAccess,
-    // Legacy flag — multi-plans retiré (1 plan actif max). Toujours false.
+    // Legacy flag, multi-plans retiré (1 plan actif max). Toujours false.
     canUseMultiPlan: false,
     canUseAdvancedStats: hasPremiumAccess,
     accessEndsMs,
@@ -106,12 +106,12 @@ export function getAccessLabel(accessState) {
     case ACCESS_STATUS.TRIAL:
       return accessState.trialDaysLeft > 0
         ? `Essai Premium · ${accessState.trialDaysLeft} jour${accessState.trialDaysLeft > 1 ? "s" : ""} restant${accessState.trialDaysLeft > 1 ? "s" : ""}`
-        : "Essai terminé — séances en pause";
+        : "Essai terminé, séances en pause";
     case ACCESS_STATUS.ACTIVE:
       return "Premium actif";
     case ACCESS_STATUS.CANCELED:
       return "Premium annulé";
     default:
-      return "Essai terminé — séances en pause";
+      return "Essai terminé, séances en pause";
   }
 }

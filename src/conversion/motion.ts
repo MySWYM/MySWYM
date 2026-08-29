@@ -1,6 +1,6 @@
 import type { Transition, Variants } from 'framer-motion'
 
-/** Shared motion language — Apple-like, never flashy */
+/** Shared motion language, Apple-like, never flashy */
 export const easeOut: Transition = {
   duration: 0.45,
   ease: [0.22, 1, 0.36, 1],

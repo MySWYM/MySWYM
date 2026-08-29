@@ -81,7 +81,7 @@ console.log("L4 header vague + enfants → on garde l'éducatif");
 
 console.log("L5 allure structurée conservée");
 {
-  const keep = "12×50 m — départ toutes les 1 min, confortable entre 44 et 47 s";
+  const keep = "12×50 m - départ toutes les 1 min, confortable entre 44 et 47 s";
   const out = prettifySessionDetailLine(keep);
   assert(/12\s*×\s*50\s*m/.test(out), `reps ${out}`);
   assert(/départ toutes les 1 min/i.test(out), `départ ${out}`);
@@ -91,11 +91,11 @@ console.log("L5 allure structurée conservée");
 
 console.log("L6 (facile @pace) → mots, Premium (Z2 @mm:ss) conservé");
 {
-  const beginner = prettifySessionDetailLine("-12x50 — départ toutes les 1 min (facile @00:44-00:47)");
+  const beginner = prettifySessionDetailLine("-12x50 - départ toutes les 1 min (facile @00:44-00:47)");
   noForbiddenIntensity(beginner, "L6a");
   assert(/entre 44 et 47 s/i.test(beginner), `pace words: ${beginner}`);
 
-  const premium = prettifySessionDetailLine("-12 × 50 m crawl — (Z2 @0:44-0:47) — repos 20s");
+  const premium = prettifySessionDetailLine("-12 × 50 m crawl - (Z2 @0:44-0:47) - repos 20s");
   assert(/@0:44-0:47/.test(premium), `premium pace kept: ${premium}`);
   noForbiddenIntensity(premium, "L6b");
 }
@@ -200,13 +200,13 @@ console.log("L10 sanitizeSessionDetails idempotent + @2 RPE");
   for (const line of once) noForbiddenIntensity(line, "L10");
 }
 
-console.log("L11 D9 — jamais souple ni Z1 à l'affichage");
+console.log("L11 D9 - jamais souple ni Z1 à l'affichage");
 {
   const samples = [
     "-400m crawl souple (Z1)",
-    "-200m au choix — Z1",
-    "-200m souple — Z1",
-    "-6 × 25 m : flèche + crawl souple — échauffement",
+    "-200m au choix - Z1",
+    "-200m souple - Z1",
+    "-6 × 25 m : flèche + crawl souple - échauffement",
     "première moitié Z1/Z2 souple",
   ];
   for (const raw of samples) {
@@ -214,14 +214,14 @@ console.log("L11 D9 — jamais souple ni Z1 à l'affichage");
     assert(!/\bsouple\b/i.test(out), `souple restant: ${raw} → ${out}`);
     assert(!/\bZ1\b/.test(out), `Z1 restant: ${raw} → ${out}`);
   }
-  const hum = humanizeArthurDisplayTerms("-200m dos très facile — Z1");
+  const hum = humanizeArthurDisplayTerms("-200m dos très facile - Z1");
   assert(/retour au calme|facile/i.test(hum), `fin Z1: ${hum}`);
   assert(!/\bZ1\b/.test(hum), hum);
   const clean = assertDisplayLabelsClean(samples.map((s) => sanitizeSessionDetailLine(s)));
   assert(clean.ok, clean.bad.join("; "));
 }
 
-console.log("L12 D9 — chemins confirme archetype + compose 4 nages");
+console.log("L12 D9 - chemins confirme archetype + compose 4 nages");
 {
   assert(usesConfirmeArchetypeBank("confirme", "eau_libre"), "bank gate");
   for (let i = 0; i < OW_BASE_SESSIONS.length; i++) {

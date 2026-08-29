@@ -16,10 +16,10 @@ export function formatCoachAdaptLine(plan) {
     return `Semaine prochaine : volume un peu relevé (+${pct} %).`;
   }
   if (last && /hold|maintain|observe/i.test(String(last))) {
-    return "Retour pris en compte — on maintient le cap.";
+    return "Retour pris en compte, on maintient le cap.";
   }
   if (last) {
-    return "Retour pris en compte — prochaines séances adaptées.";
+    return "Retour pris en compte, prochaines séances adaptées.";
   }
   return null;
 }
@@ -29,15 +29,15 @@ export function formatCoachAdaptLine(plan) {
  */
 export function formatFeedbackToast({ isPremium, legacyRating, hasPain, tasteDriven, plan }) {
   if (hasPain) {
-    return "Retour noté. En cas de douleur inhabituelle, ne force pas — on allège la suite.";
+    return "Retour noté. En cas de douleur inhabituelle, ne force pas, on allège la suite.";
   }
   if (!isPremium) {
     return "Retour enregistré. Premium ajuste volume et style des prochaines séances.";
   }
   const adapt = formatCoachAdaptLine(plan);
   if (adapt) return adapt;
-  if (legacyRating === "easy") return "Trop facile noté — on pourra monter un peu la charge.";
-  if (legacyRating === "hard") return "Trop dur noté — on allège un peu la suite.";
+  if (legacyRating === "easy") return "Trop facile noté, on pourra monter un peu la charge.";
+  if (legacyRating === "hard") return "Trop dur noté, on allège un peu la suite.";
   if (tasteDriven) return "Prochaines séances adaptées à tes goûts.";
-  return "Retour enregistré — merci.";
+  return "Retour enregistré, merci.";
 }

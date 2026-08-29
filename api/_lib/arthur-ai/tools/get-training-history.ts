@@ -1,5 +1,5 @@
 /**
- * get_training_history — lecture seule (faits K récents), filtrée userId.
+ * get_training_history, lecture seule (faits K récents), filtrée userId.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUuid } from "../security.js";

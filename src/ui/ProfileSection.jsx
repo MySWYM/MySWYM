@@ -4,7 +4,7 @@ import { FONT_DISPLAY } from "../theme/brand.js";
 import { G } from "../theme/palette.js";
 
 /**
- * Section collapsible pour Profil — une intention, un titre, touch ≥ 44px.
+ * Section collapsible pour Profil, une intention, un titre, touch ≥ 44px.
  */
 export default function ProfileSection({
   id,

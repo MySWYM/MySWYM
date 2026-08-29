@@ -1,4 +1,4 @@
-/** Logo mySWYM — lockup icône+texte, ou wordmark seul. */
+/** Logo mySWYM, lockup icône+texte, ou wordmark seul. */
 const ASSETS = {
   full: {
     dark: "/logo-full.png",

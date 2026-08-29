@@ -67,7 +67,7 @@ export interface ArthurAttribution {
 }
 
 export interface ProcessArthurMessageInput {
-  /** MySWYM auth.users.id — jamais un ID Instagram. */
+  /** MySWYM auth.users.id, jamais un ID Instagram. */
   userId?: string | null;
   /** Identifiant canal externe (ex. IGPSID). Jamais un substitute de userId. */
   externalUserId?: string | null;
@@ -117,7 +117,7 @@ export interface ArthurContextPayload {
   facts: Record<string, unknown>;
   recent_messages: ArthurRecentMessage[];
   lead_context: Record<string, unknown>;
-  /** Snippets coaching (F3) — courts, optionnels. */
+  /** Snippets coaching (F3), courts, optionnels. */
   knowledge_hints?: Array<{ topic: string; title: string; content: string }>;
 }
 

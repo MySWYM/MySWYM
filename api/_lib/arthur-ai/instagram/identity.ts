@@ -93,7 +93,7 @@ export async function ensurePendingIdentityLink(
 
 /**
  * Vérifie un lien après preuve forte côté app (ex. user connecté + code / deep link).
- * À appeler depuis un endpoint authentifié MySWYM — PAS depuis le webhook Instagram seul.
+ * À appeler depuis un endpoint authentifié MySWYM : PAS depuis le webhook Instagram seul.
  */
 export async function verifyIdentityLink(
   admin: SupabaseClient,

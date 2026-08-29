@@ -1,5 +1,5 @@
 /**
- * Étape K — Tests persistance (logique locale + contrats).
+ * Étape K, Tests persistance (logique locale + contrats).
  * Usage : node src/lib/sports-persistence/sports-persistence.test.js
  *
  * K11 (RLS) = vérifié dans la migration SQL (policies auth.uid() = user_id).
