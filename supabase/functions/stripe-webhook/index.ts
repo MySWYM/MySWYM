@@ -18,8 +18,11 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 
 const REFERRAL_CREDIT_CENTS = 499; // 4,99 €
 
-const LEGACY_PRICE_IDS = new Set([
-  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+/** IDs retirés / test — ne pas les préférer aux defaults Live via secrets périmés. */
+const RETIRED_PRICE_IDS = new Set([
+  "price_1U67kYAS4mfgF2Twaw269yaU",
+  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
@@ -29,16 +32,16 @@ const LEGACY_PRICE_IDS = new Set([
 
 function envPrice(name: string, fallback: string) {
   const v = Deno.env.get(name);
-  if (v && !LEGACY_PRICE_IDS.has(v)) return v;
+  if (v && !RETIRED_PRICE_IDS.has(v)) return v;
   return fallback;
 }
 
-const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1U67kYAS4mfgF2Twaw269yaU");
+const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1U3N2tAS4mfgF2TwyaI2hf22");
 const PRICE_MONTHLY_COMMIT = envPrice(
   "STRIPE_PRICE_MONTHLY_COMMIT",
-  envPrice("STRIPE_PRICE_MONTHLY", "price_1U67kZAS4mfgF2Twi5Px8ZvG"),
+  envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
-const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U67kaAS4mfgF2TwvUsVQ3vE");
+const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U7E38AS4mfgF2TwpJGYoMpE");
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 
 const PRICE_LABELS: Record<string, string> = {
@@ -46,10 +49,12 @@ const PRICE_LABELS: Record<string, string> = {
   [PRICE_MONTHLY_COMMIT]: "Premium — 4,99 € / mois (engagement 12 mois)",
   [PRICE_ANNUAL]: "Premium — 52,99 € / an",
   [PRICE_BIENNIAL]: "Premium — 29,99 € / 2 ans",
+  price_1U3N2tAS4mfgF2TwyaI2hf22: "Premium — 9,99 € / mois (sans engagement)",
+  price_1TPjyPAS4mfgF2Twx3Zh4zrJ: "Premium — 4,99 € / mois (engagement 12 mois)",
+  price_1U7E38AS4mfgF2TwpJGYoMpE: "Premium — 52,99 € / an",
   price_1U67kYAS4mfgF2Twaw269yaU: "Premium — 9,99 € / mois (sans engagement)",
   price_1U67kZAS4mfgF2Twi5Px8ZvG: "Premium — 4,99 € / mois (engagement 12 mois)",
-  price_1U67kaAS4mfgF2TwvUsVQ3vE: "Premium — 52,99 € / an",
-  price_1TPjyPAS4mfgF2Twx3Zh4zrJ: "Premium — mensuel (ancien tarif)",
+  price_1U67kaAS4mfgF2TwvUsVQ3vE: "Premium — annuel (test)",
   price_1TudyVAS4mfgF2TwHiSo3Vrg: "Premium — annuel (ancien tarif)",
 };
 

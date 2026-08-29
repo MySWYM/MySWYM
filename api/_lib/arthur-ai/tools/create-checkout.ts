@@ -7,8 +7,10 @@ import { arthurLog } from "../logging.js";
 import { trackAiEvent } from "../tracking.js";
 import { toolFail, toolOk } from "./result.js";
 
-const LEGACY_PRICE_IDS = new Set([
-  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+const RETIRED_PRICE_IDS = new Set([
+  "price_1U67kYAS4mfgF2Twaw269yaU",
+  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
@@ -19,14 +21,14 @@ const LEGACY_PRICE_IDS = new Set([
 function envPrice(names: string[], fallback: string) {
   for (const name of names) {
     const v = process.env[name];
-    if (v && !LEGACY_PRICE_IDS.has(v)) return v;
+    if (v && !RETIRED_PRICE_IDS.has(v)) return v;
   }
   return fallback;
 }
 
 const PRICE_MONTHLY_FLEX = envPrice(
   ["STRIPE_PRICE_MONTHLY_FLEX", "VITE_STRIPE_PRICE_MONTHLY_FLEX"],
-  "price_1U67kYAS4mfgF2Twaw269yaU",
+  "price_1U3N2tAS4mfgF2TwyaI2hf22",
 );
 const PRICE_MONTHLY_COMMIT = envPrice(
   [
@@ -34,11 +36,11 @@ const PRICE_MONTHLY_COMMIT = envPrice(
     "VITE_STRIPE_PRICE_MONTHLY_COMMIT",
     "STRIPE_PRICE_MONTHLY",
   ],
-  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
 );
 const PRICE_ANNUAL = envPrice(
   ["STRIPE_PRICE_ANNUAL", "VITE_STRIPE_PRICE_ANNUAL"],
-  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
+  "price_1U7E38AS4mfgF2TwpJGYoMpE",
 );
 
 export async function createCheckout(

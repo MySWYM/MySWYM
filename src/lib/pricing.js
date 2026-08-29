@@ -5,16 +5,30 @@
  *   monthly_commit 4,99 € / mois · engagement 12 mois
  *   annual         52,99 € / an  · paiement en 1 fois
  *
- * Price IDs : `VITE_STRIPE_PRICE_*` (front) / `STRIPE_PRICE_*` (Edge).
- * Les anciens IDs restent acceptés au checkout (abonnés / cache).
+ * Defaults = Price IDs **Live** (compte acct_1TP5ueAS4mfgF2Tw).
+ * Override via `VITE_STRIPE_PRICE_*` (front) / `STRIPE_PRICE_*` (Edge).
+ * Pour tester en mode Test Stripe : poser les IDs test + `sk_test_…`.
  */
 
-const FLEX_ID = "price_1U67kYAS4mfgF2Twaw269yaU";
-const COMMIT_ID = "price_1U67kZAS4mfgF2Twi5Px8ZvG";
-const ANNUAL_ID = "price_1U67kaAS4mfgF2TwvUsVQ3vE";
+/** Live — MySWYM Premium Flexible 9,99 €/mois */
+const FLEX_ID = "price_1U3N2tAS4mfgF2TwyaI2hf22";
+/** Live — MySWYM Premium 12 mois 4,99 €/mois */
+const COMMIT_ID = "price_1TPjyPAS4mfgF2Twx3Zh4zrJ";
+/** Live — MySWYM Premium Annuel 52,99 €/an */
+const ANNUAL_ID = "price_1U7E38AS4mfgF2TwpJGYoMpE";
 
+/** IDs mode Test (uniquement si clé sk_test) — ne pas utiliser en prod. */
+export const TEST_STRIPE_PRICE_IDS = {
+  monthlyFlex: "price_1U67kYAS4mfgF2Twaw269yaU",
+  monthlyCommit: "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  annual: "price_1U67kaAS4mfgF2TwvUsVQ3vE",
+};
+
+/** Anciens IDs (autre compte / offres retirées) — encore acceptés au checkout. */
 export const LEGACY_STRIPE_PRICE_IDS = [
-  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+  "price_1U67kYAS4mfgF2Twaw269yaU",
+  "price_1U67kZAS4mfgF2Twi5Px8ZvG",
+  "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
