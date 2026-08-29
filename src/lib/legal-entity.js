@@ -10,7 +10,7 @@ export const LEGAL_ENTITY = {
   email: "contact@myswym.app",
   supportEmail: "support@myswym.app",
   dpoEmail: "contact@myswym.app",
-  site: "https://myswym.app",
+  site: "https://www.myswym.app",
   siret: "941 900 052 00015",
   address: "21 Rue du Cachon, 55000 Fains-Véel, France",
   apeCode: "4791A",

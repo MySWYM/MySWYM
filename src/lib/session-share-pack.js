@@ -19,7 +19,7 @@ export function formatInviteBlock(invite = {}) {
   const code = invite?.code ? String(invite.code).toUpperCase() : "";
   const shareUrl = invite?.shareUrl ? String(invite.shareUrl).trim() : "";
   if (!code && !shareUrl) {
-    return "Rejoins MySWYM → https://myswym.app";
+    return "Rejoins MySWYM → https://www.myswym.app";
   }
   const lines = ["Rejoins-moi sur MySWYM"];
   if (shareUrl) lines.push(shareUrl);

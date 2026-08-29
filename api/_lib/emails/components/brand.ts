@@ -16,13 +16,13 @@ export const emailBrand = {
   mutedOnDark: "#9bb0c8",
   border: "rgba(0, 107, 253, 0.18)",
   borderSoft: "rgba(10, 22, 44, 0.08)",
-  site: "https://myswym.app",
+  site: "https://www.myswym.app",
   contact: "contact@myswym.app",
   support: "support@myswym.app",
   logoText: "MySWYM",
   /** Absolute URLs required in email clients */
-  logoOnDark: "https://myswym.app/logo-myswym-banner-blanc.png",
-  logoOnLight: "https://myswym.app/logo-myswym-on-light.png",
+  logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
+  logoOnLight: "https://www.myswym.app/logo-myswym-on-light.png",
   tagline: "ton coach natation",
   /** Pricing — source: src/lib/pricing.js */
   pricingLine:

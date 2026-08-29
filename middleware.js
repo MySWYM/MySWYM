@@ -8,7 +8,7 @@
 import pages from "./seo-pages.json";
 import { LANG_COOKIE, localeFromPathname, stripLocalePrefix, withLocalePrefix } from "./src/i18n/locale-path.js";
 
-const SITE = "https://myswym.app";
+const SITE = "https://www.myswym.app";
 const OG_IMAGE = `${SITE}/og-share.png`;
 
 const SOCIAL_BOT =
