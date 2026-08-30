@@ -24,17 +24,23 @@ export const TEST_STRIPE_PRICE_IDS = {
   annual: "price_1U67kaAS4mfgF2TwvUsVQ3vE",
 };
 
-/** Anciens IDs (autre compte / offres retirées), encore acceptés au checkout. */
+/** Anciens IDs (autre compte / offres retirées), encore acceptés au checkout.
+ *  Inclut le Price ID biennal legacy `price_1Tue7cAS4mfgF2TwP53wZ7qn` (24 mois) :
+ *  plus commercialisé sur Tarifs ; conservé pour abonnés historiques + webhooks. */
 export const LEGACY_STRIPE_PRICE_IDS = [
   "price_1U67kYAS4mfgF2Twaw269yaU",
   "price_1U67kZAS4mfgF2Twi5Px8ZvG",
   "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   "price_1TudyVAS4mfgF2TwHiSo3Vrg",
+  /** Biennal 24 mois - legacy only, ne plus vendre */
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
   "price_1TP5yOAVxucD4jHaRYk2cbHC",
   "price_1TPKQfAVxucD4jHaUDssY5cs",
 ];
+
+/** Price ID biennal (legacy). Ne pas exposer sur Tarifs / UpgradeModal. */
+export const LEGACY_BIENNIAL_PRICE_ID = "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 
 function readEnv(name) {
   try {

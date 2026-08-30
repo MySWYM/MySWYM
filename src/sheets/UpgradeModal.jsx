@@ -201,7 +201,7 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
         {isCommit && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: G.goldLight, border: `1px solid ${G.greyLight}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: G.gold, lineHeight: 1.45, textAlign: "center" }}>
-              {PRICING.monthlyCommit.label}/mois pendant 12 mois · engagement d’un an
+              {PRICING.monthlyCommit.label}/mois pendant 12 mois · pas de remboursement ni de fin anticipée avant la fin (hors cas légaux)
             </span>
           </div>
         )}

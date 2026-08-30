@@ -1,5 +1,6 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { commitmentMetadataForCheckout } from "../_shared/stripe-commitment.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -28,6 +29,7 @@ const PRICE_MONTHLY_COMMIT = envPrice(
   envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
 const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U7E38AS4mfgF2TwpJGYoMpE");
+/** Legacy biennal (24 mois) : plus vendu sur Tarifs ; gardé pour abonnés historiques. */
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
 
@@ -322,6 +324,7 @@ Deno.serve(async (req) => {
     // Fenêtre 2 min : double-clic / refresh ne créent pas 2 sessions Stripe.
     const idempotencyKey = `checkout:${user.id}:${price}:${Math.floor(Date.now() / 120_000)}`;
     const planTier = planTierFromPrice(price);
+    const commitMeta = planTier === "monthly_commit" ? commitmentMetadataForCheckout() : null;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -336,12 +339,14 @@ Deno.serve(async (req) => {
       metadata: {
         supabase_user_id: user.id,
         ...(planTier ? { plan_tier: planTier } : {}),
+        ...(commitMeta ?? {}),
         ...(referredByUserId ? { referred_by: referredByUserId } : {}),
       },
       subscription_data: {
         metadata: {
           supabase_user_id: user.id,
           ...(planTier ? { plan_tier: planTier } : {}),
+          ...(commitMeta ?? {}),
           ...(referredByUserId ? { referred_by: referredByUserId } : {}),
         },
       },

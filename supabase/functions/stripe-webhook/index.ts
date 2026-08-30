@@ -13,6 +13,7 @@ import {
 } from "../_shared/access-state.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
 import { sendResendEvent } from "../_shared/resend-events.ts";
+import { revertEarlyCancelIfCommitment } from "../_shared/stripe-commitment.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -42,6 +43,7 @@ const PRICE_MONTHLY_COMMIT = envPrice(
   envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
 const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U7E38AS4mfgF2TwpJGYoMpE");
+/** Legacy biennal (24 mois) : plus vendu sur Tarifs ; gardé pour abonnés historiques. */
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 
 const PRICE_LABELS: Record<string, string> = {
@@ -384,22 +386,26 @@ Deno.serve(async (req) => {
         await creditReferrer(supabaseAdmin, user, refId);
       }
 
-      // Annulation demandée (fin de période) → automation Resend
+      // Annulation demandée (fin de période) → bloquer si engagement 12 mois encore en cours
       const prev = (event.data as { previous_attributes?: { cancel_at_period_end?: boolean } })
         ?.previous_attributes;
       if (
         event.type === "customer.subscription.updated" &&
         sub?.cancel_at_period_end === true &&
-        prev?.cancel_at_period_end === false &&
-        user.email
+        prev?.cancel_at_period_end === false
       ) {
-        try {
-          await sendResendEvent("subscription.canceled", user.email, {
-            firstName: firstNameFromUser(user) || "Salut",
-            userId: user.id,
-          });
-        } catch (evErr) {
-          console.error("[stripe-webhook] subscription.canceled event error:", evErr);
+        const blocked = await revertEarlyCancelIfCommitment(stripe, sub as Stripe.Subscription);
+        if (blocked) {
+          console.warn("[stripe-webhook] cancel bloqué (engagement 12 mois)", sub?.id);
+        } else if (user.email) {
+          try {
+            await sendResendEvent("subscription.canceled", user.email, {
+              firstName: firstNameFromUser(user) || "Salut",
+              userId: user.id,
+            });
+          } catch (evErr) {
+            console.error("[stripe-webhook] subscription.canceled event error:", evErr);
+          }
         }
       }
     }

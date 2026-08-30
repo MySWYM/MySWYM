@@ -19,7 +19,7 @@
 | Confirmation pays d’hébergement Supabase (région projet) | Transferts / registre | `[À FOURNIR]` |
 | Politique rétention inactivité (36 mois proposé) | Minimisation | `[À VALIDER]` |
 | Configuration Stripe Billing (retries, past_due, grace) | Alignement CGV ↔ produit | `[À DOCUMENTER]` |
-| Offre biennale : commercialisée ou non sur Tarifs | Cohérence publicité | `[À CLARIFIER]` |
+| Offre biennale : commercialisée ou non sur Tarifs | Cohérence publicité | `[CLARIFIÉ]` : legacy only (`LEGACY_BIENNIAL_PRICE_ID`), plus vendue |
 | AIPD / DPIA données blessure-douleur | Art. 35 RGPD probable | `[À VALIDER JURIDIQUEMENT]` |
 | Assurance RC pro / cyber | Risque opérationnel | Recommandé |
 | Registre des traitements | Art. 30 RGPD | À établir |

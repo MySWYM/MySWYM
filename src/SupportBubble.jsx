@@ -46,7 +46,7 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour te désabonner : dans l’app, ouvre Profil (icône en bas) → le menu Paramètres → « Gérer mon abonnement ». Tu arrives sur Stripe : choisis Annuler l’abonnement. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause (plus de prélèvement). Essai 7 jours sans carte : rien à résilier, ça s’arrête tout seul. Offre 4,99€/mois : engagement 12 mois. Annuel 52,99€ : déjà payé pour l’année, pas de remboursement au prorata (hors cas légaux). Supprimer le compte ne coupe pas l’abonnement : passe d’abord par « Gérer mon abonnement ».",
+      "Pour te désabonner : dans l’app, ouvre Profil (icône en bas) → le menu Paramètres → « Gérer mon abonnement ». Tu arrives sur Stripe : choisis Annuler l’abonnement. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause (plus de prélèvement). Essai 7 jours sans carte : rien à résilier, ça s’arrête tout seul. Offre 4,99€/mois : engagement 12 mois (pas de remboursement ; une résiliation ou suppression de compte n’arrête pas les prélèvements avant la fin des 12 mois, hors cas légaux). Annuel 52,99€ : déjà payé pour l’année, pas de remboursement au prorata (hors cas légaux). Supprimer le compte ne coupe pas l’abonnement : passe d’abord par « Gérer mon abonnement ».",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],

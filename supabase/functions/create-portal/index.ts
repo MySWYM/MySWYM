@@ -8,6 +8,10 @@ import {
   stripEntitlementFromUserMeta,
   type AuthUser,
 } from "../_shared/access-state.ts";
+import {
+  findActiveCommitmentSubscription,
+  resolveNoCancelPortalConfigId,
+} from "../_shared/stripe-commitment.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -92,11 +96,26 @@ Deno.serve(async (req) => {
       : ALLOWED_ORIGINS[0] ?? "https://myswym.app";
 
     console.log("[create-portal] creating portal session for customer:", resolvedCustomerId);
+    const commitSub = await findActiveCommitmentSubscription(stripe, resolvedCustomerId);
+    let portalConfiguration: string | undefined;
+    if (commitSub) {
+      try {
+        portalConfiguration = await resolveNoCancelPortalConfigId(stripe);
+        console.log(
+          "[create-portal] engagement 12 mois actif → portail sans annulation",
+          commitSub.id,
+          portalConfiguration,
+        );
+      } catch (cfgErr) {
+        console.error("[create-portal] portal config no_cancel failed:", cfgErr);
+      }
+    }
     let session;
     try {
       session = await stripe.billingPortal.sessions.create({
         customer: resolvedCustomerId,
         return_url: `${returnOrigin}/app?payment=portal`,
+        ...(portalConfiguration ? { configuration: portalConfiguration } : {}),
       });
     } catch (stripeErr: unknown) {
       const code = (stripeErr as { code?: string })?.code;

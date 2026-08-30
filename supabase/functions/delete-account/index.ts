@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "npm:stripe@14";
+import {
+  findActiveCommitmentSubscription,
+  isCommitmentInForce,
+} from "../_shared/stripe-commitment.ts";
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") ?? "",
@@ -39,9 +43,20 @@ async function cancelStripeSubscriptionsForUser(
     }
   }
   for (const customerId of customerIds) {
+    const commitSub = await findActiveCommitmentSubscription(stripe, customerId);
+    if (commitSub) {
+      throw new Error(
+        "Engagement 12 mois en cours : tu ne peux pas supprimer le compte tant que l’abonnement engagé n’est pas terminé. Écris à support@myswym.app pour un cas légal (rétractation, etc.).",
+      );
+    }
     const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 30 });
     for (const sub of subs.data) {
       if (sub.status === "canceled" || sub.status === "incomplete_expired") continue;
+      if (isCommitmentInForce(sub)) {
+        throw new Error(
+          "Engagement 12 mois en cours : tu ne peux pas supprimer le compte tant que l’abonnement engagé n’est pas terminé. Écris à support@myswym.app pour un cas légal (rétractation, etc.).",
+        );
+      }
       try {
         // Annulation immédiate à la suppression de compte (évite prélèvement orphelin).
         await stripe.subscriptions.cancel(sub.id, { prorate: false });
