@@ -67,6 +67,13 @@ export type ContactEmailInput = {
   message: string;
 };
 
+export type ReactivationEmailInput = {
+  to: string;
+  firstName?: string;
+  ctaUrl?: string;
+  userId?: string;
+};
+
 export type EmailKind =
   | "welcome"
   | "verification"
@@ -74,7 +81,8 @@ export type EmailKind =
   | "subscription_confirmation"
   | "workout_reminder"
   | "newsletter"
-  | "contact";
+  | "contact"
+  | "reactivation";
 
 export type EmailPayloadByKind = {
   welcome: WelcomeEmailInput;
@@ -84,4 +92,5 @@ export type EmailPayloadByKind = {
   workout_reminder: WorkoutReminderEmailInput;
   newsletter: NewsletterEmailInput;
   contact: ContactEmailInput;
+  reactivation: ReactivationEmailInput;
 };

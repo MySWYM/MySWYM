@@ -2,6 +2,9 @@
  * Admin: relance email des comptes sans accès Premium en cours.
  * Auth: header x-myswym-email-secret === INTERNAL_EMAIL_SECRET
  * Body: { dry_run?: boolean, limit?: number }
+ *
+ * Campagne `session-gen-2026-08` : indépendante de `reactivation_email_sent` (v1
+ * « le plan n'a pas bougé ») pour que les destinataires v1 reçoivent ce mail.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
@@ -12,6 +15,8 @@ import {
   isoFromUnixSeconds,
 } from "../_shared/access-state.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
+
+export const RELAUNCH_CAMPAIGN_ID = "session-gen-2026-08";
 
 type ListedUser = {
   id: string;
@@ -177,7 +182,7 @@ Deno.serve(async (req) => {
     }
 
     const candidates = withEmail.filter((u) => {
-      if (u.app_metadata?.reactivation_email_sent === true) return false;
+      if (u.app_metadata?.reactivation_campaign === RELAUNCH_CAMPAIGN_ID) return false;
       return !userIsEntitled(u, accessByUser.get(u.id));
     });
 
@@ -186,6 +191,7 @@ Deno.serve(async (req) => {
     console.log(
       JSON.stringify({
         event: "reactivate-nonpayers.scan",
+        campaign: RELAUNCH_CAMPAIGN_ID,
         dry_run: dryRun,
         total_users: allUsers.length,
         with_email: withEmail.length,
@@ -200,6 +206,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           ok: true,
           dry_run: true,
+          campaign: RELAUNCH_CAMPAIGN_ID,
           total_users: allUsers.length,
           with_email: withEmail.length,
           candidates: candidates.length,
@@ -224,7 +231,7 @@ Deno.serve(async (req) => {
       const result = await sendEmailViaHttp("reactivation", {
         to: email,
         firstName,
-        ctaUrl: "https://myswym.app/app",
+        ctaUrl: "https://www.myswym.app/app",
         userId: user.id,
       });
 
@@ -237,6 +244,7 @@ Deno.serve(async (req) => {
       const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
         app_metadata: {
           ...(user.app_metadata ?? {}),
+          reactivation_campaign: RELAUNCH_CAMPAIGN_ID,
           reactivation_email_sent: true,
         },
       });
@@ -253,6 +261,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         dry_run: false,
+        campaign: RELAUNCH_CAMPAIGN_ID,
         candidates: candidates.length,
         limit,
         sent: sent.length,

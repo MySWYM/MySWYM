@@ -344,30 +344,37 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       };
     }
     case "reactivation": {
+      // Campagne générateur (session-gen-2026-08). Keep copy in sync with
+      // api/_lib/emails/reactivation.tsx. CTA aligned with RETRIAL_ON_LOGIN.
       const to = str("to");
       const firstName = str("firstName");
       const ctaUrl = str("ctaUrl") || `${B.site}/app`;
       if (!to.includes("@")) return { error: "payload.to must be an email" };
       const title = firstName
-        ? `${firstName}, ton plan n’a pas bougé`
-        : "Ton plan n’a pas bougé";
+        ? `${firstName}, tes séances ont changé`
+        : "Tes séances ont changé";
       return {
         to,
         subject: firstName
-          ? `${firstName}, ton plan MySWYM t’attend`
-          : "Ton plan MySWYM t’attend",
+          ? `${firstName}, tes séances MySWYM ont changé`
+          : "Tes séances MySWYM ont changé",
         category: "reactivation",
         html: layout({
-          preview: "Reprends exactement où tu en étais.",
-          eyebrow: "On te garde une place",
+          preview: "Ouvre l'app : ta semaine se met à jour. 7 jours pour voir.",
+          eyebrow: "Mise à jour",
           title,
           bodyHtml:
+            p("On a repris le générateur de séances.") +
             p(
-              "Ton plan MySWYM est toujours là, séances structurées, progression claire, sans tout recommencer.",
+              "Plus de structure coach : éducatifs, allures, semaine jusqu'à ton objectif.",
             ) +
-            p(`Premium : ${B.pricingLine}. Essai 7 jours sans carte.`) +
-            p("Un clic et tu reprends exactement où tu en étais."),
-          cta: { label: "Reprendre mon plan", url: ctaUrl },
+            bullets([
+              "Tes séances déjà validées restent",
+              "Le reste de la semaine se met à jour à l'ouverture",
+              "7 jours pour tout voir, sans carte",
+            ]),
+          cta: { label: "Rouvrir MySWYM", url: ctaUrl },
+          showUnsubscribe: true,
         }),
       };
     }

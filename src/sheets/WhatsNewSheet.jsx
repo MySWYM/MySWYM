@@ -3,7 +3,7 @@ import { FONT, FONT_DISPLAY } from "../theme/brand.js";
 import { G } from "../theme/palette.js";
 
 /** Bump la clé pour une future campagne « nouveautés ». */
-export const WHATS_NEW_STORAGE_KEY = "myswym_whats_new_v2026_08_28";
+export const WHATS_NEW_STORAGE_KEY = "myswym_whats_new_v2026_08_30";
 
 export function hasSeenWhatsNew() {
   try {
@@ -19,18 +19,19 @@ export function markWhatsNewSeen() {
   } catch { /* ignore */ }
 }
 
+/** Keep themes in sync with api/_lib/emails/reactivation.tsx (campagne session-gen). */
 const BULLETS = [
   {
-    title: "Planning jusqu’à ta course",
-    body: "Sur l’accueil, tu vois les semaines S-n jusqu’au jour J, où tu en es, et ce qui vient.",
+    title: "Catalogue coach enrichi",
+    body: "Éducatifs, allures et +1000 séances : triathlon, eau libre et Nager, adaptés à ton niveau.",
   },
   {
-    title: "Allégée & test calés sur J",
-    body: "Les semaines allégées et de test s’enchaînent vers ta date, sans casser ton rythme de travail.",
+    title: "Semaine jusqu’à ton objectif",
+    body: "Sur l’accueil : planning S-n jusqu’au jour J, semaines allégées et de test calées sur ta date.",
   },
   {
-    title: "+1000 nouvelles séances",
-    body: "Triathlon, eau libre et Nager : un catalogue coach enrichi, avec éducatifs adaptés à ton niveau.",
+    title: "Tes validées restent",
+    body: "En continuant, le reste de la semaine se met à jour. Les séances déjà validées sont gardées.",
   },
 ];
 
@@ -91,7 +92,7 @@ export default function WhatsNewSheet({ onContinue, loading = false }) {
             margin: "0 0 8px",
           }}
         >
-          Du nouveau dans MySWYM
+          Tes séances ont changé
         </h3>
         <p
           style={{
@@ -102,8 +103,8 @@ export default function WhatsNewSheet({ onContinue, loading = false }) {
             margin: "0 0 18px",
           }}
         >
-          En continuant, on met à jour ta semaine en cours avec le nouveau catalogue.
-          Les séances déjà validées sont gardées.
+          On a repris le générateur de séances. En continuant, ta semaine se met à jour
+          avec le nouveau catalogue.
         </p>
         <ul
           style={{

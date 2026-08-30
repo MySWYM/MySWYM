@@ -10,6 +10,7 @@ import type {
   EmailPayloadByKind,
   EmailSendResult,
   NewsletterEmailInput,
+  ReactivationEmailInput,
   ResetPasswordEmailInput,
   SubscriptionConfirmationEmailInput,
   VerificationEmailInput,
@@ -23,6 +24,8 @@ import { SubscriptionConfirmationEmail } from "./emails/subscription-confirmatio
 import { WorkoutReminderEmail } from "./emails/workout-reminder";
 import { NewsletterEmail } from "./emails/newsletter";
 import { ContactNotificationEmail } from "./emails/contact-notification";
+import { ReactivationEmail } from "./emails/reactivation";
+import { emailBrand } from "./emails/components/brand";
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
@@ -180,6 +183,24 @@ export async function sendNewsletterEmail(
   });
 }
 
+export async function sendReactivationEmail(
+  input: ReactivationEmailInput,
+): Promise<EmailSendResult> {
+  const firstName = input.firstName?.trim() || undefined;
+  return sendReactEmail({
+    category: "reactivation",
+    to: input.to,
+    subject: firstName
+      ? `${firstName}, tes séances MySWYM ont changé`
+      : "Tes séances MySWYM ont changé",
+    react: ReactivationEmail({
+      firstName,
+      ctaUrl: input.ctaUrl || `${emailBrand.site}/app`,
+    }),
+    userId: input.userId,
+  });
+}
+
 export async function sendContactEmail(
   input: ContactEmailInput,
 ): Promise<EmailSendResult> {
@@ -222,6 +243,8 @@ export async function sendEmail<K extends EmailKind>(
       return sendNewsletterEmail(payload as NewsletterEmailInput);
     case "contact":
       return sendContactEmail(payload as ContactEmailInput);
+    case "reactivation":
+      return sendReactivationEmail(payload as ReactivationEmailInput);
     default:
       return { ok: false, error: `Unknown email kind: ${String(kind)}` };
   }
