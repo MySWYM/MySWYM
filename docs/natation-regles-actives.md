@@ -5,7 +5,7 @@
 
 ---
 
-1. **Un seul générateur visible** — Point d’entrée unique : `composeSession`. Arthur **apprend au LLM à entraîner** (règles, catalogues Gold, corrections, lots). Le LLM rédige, varie, propose ; une séance nageur ne part jamais sans moteur + quality gate + validation Arthur. Pas de LLM in-app non cadré (CGU). L’ancien moteur est un fallback technique temporaire, jamais une source de décision concurrente.
+1. **Sources visibles Soft vs hors Soft** : familles Soft **01–13** (Nager, triathlon, eau libre) = catalogue Google Sheet uniquement (`composedBy=natation-sheet`), pas de fallback composeur. Hors Sheet (diplômes, etc.) = `composeSession` + quality gate. Arthur **apprend au LLM à entraîner** (règles, catalogues, corrections) ; le LLM propose, il ne publie pas une séance nageur sans le chemin Soft Sheet ou composeur + validation Arthur. Pas de LLM in-app non cadré (CGU). L’ancien moteur = fallback technique temporaire hors Soft, jamais une 3ᵉ source concurrente.
 
 2. **Distances / bassin** — Chaque bloc est un multiple de la longueur du bassin. Le volume total affiché est la somme exacte des blocs, sans arrondi silencieux. Une séance doit toujours se terminer sur un total finissant par `00` ou `50 m`, jamais par `25 m` ou `75 m`. En bassin de 25 m, un bloc peut faire 25 m ; cette tolérance ne vaut pas pour le total final de séance. Si le total cible ne respecte pas cette règle, le composeur ajuste un bloc de nage facile ou le retour au calme.
 
@@ -35,7 +35,7 @@
 
 15. **Migration plan** — `PLAN_VERSION` = métadonnées. Merge séance par séance : séance `completed` / `skipped` conservée intacte ; séance non validée remplacée par le moteur ; semaine avec feedback/satisfaction conservée entière ; nombre de séances différent → fallback semaine entière. `FORCE_PLAN_REGEN` ne bypass jamais le merge (pas d’écrasement total).
 
-16. **Quality Gate** — Toute séance composée passe `validateComposedSession`. Arthur ne contourne pas le gate. Sous-volume > séance incohérente.
+16. **Quality Gate** : séances **composeur** (hors Soft Sheet) passent `validateComposedSession` ; Arthur ne contourne pas le gate ; sous-volume > séance incohérente. Séances Soft Sheet **01–13** : **pas** de quality gate ni parse strict sur les lignes (option A) : le Sheet Arthur fait foi ; une ligne incorrecte se corrige dans le Sheet.
 
 17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre : sighting / lieu. Triathlon : cues course. Même niveau + même focus nage : l’objectif (`roleObjectif`) doit changer intent et proportions de blocs (pas seulement le libellé). MySWYM = générateur de séances, pas école de natation.
 

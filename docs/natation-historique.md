@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-30 | Soft Sheet vs composeur + QG | Règle 1 : Soft **01–13** = Sheet visible ; composeur = hors Sheet. QG : option **A** (pas de gate / parse strict sur lignes Sheet ; Sheet = foi). Checklist staging : `npm run test:natation-sheet`. | ✅ active |
 | 2026-08-28 | Pop Nouveautés + refresh semaine | Sheet one-shot `WhatsNewSheet` : Continuer régénère les séances **non validées** de la semaine boucle via Sheet (validées gardées). Clé `myswym_whats_new_v2026_08_28`. | ✅ active |
 | 2026-08-28 | Pop Nouveautés | Sheet one-shot `WhatsNewSheet` (clé `myswym_whats_new_v2026_08_28`) : planning S-n, allégée/test, séances Sheet. Pas de reset plan ni re-quiz. | ↩ remplacée |
 | 2026-08-28 | Relance essai + plans v49 | `RETRIAL` campagne : nouveau 7j au sync/login si plus d’accès (abo Stripe intacts), jusqu’au **2026-09-07 23:59 Paris** (`RETRIAL_UNTIL_ISO`). `PLAN_VERSION` 49 : regen one-shot merge (validées gardées) ; boucle → semaine N séances Sheet. | ✅ active |

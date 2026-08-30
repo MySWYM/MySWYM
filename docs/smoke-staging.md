@@ -8,6 +8,7 @@ Base : https://staging.myswym.app
 - [ ] Deploy Vercel staging vert
 - [ ] Hard refresh (ou Version Gate « Mettre à jour »)
 - [ ] Compte essai/premium de test prêt
+- [ ] `npm run test:natation-sheet` vert (parse catalogue Sheet + pace + rôle de semaine)
 
 ## 1. Auth & déconnexion
 
