@@ -30,6 +30,8 @@ export type AccessStateRow = {
 
 export type GrantTrialOpts = {
   userCreatedAt?: string | null;
+  /** Horloge injectée (tests) ; défaut = maintenant. */
+  nowMs?: number;
 };
 
 export const ENTITLEMENT_KEYS = [
@@ -52,9 +54,14 @@ const MIN_GRANTED_TRIAL_MS = (TRIAL_LENGTH_DAYS - 1) * 24 * 60 * 60 * 1000;
  * Campagne pré-lancement Soft Sheet : au prochain sync/login, nouveau 7j
  * pour tout compte **sans accès en cours** (essai brûlé, gelé, désabo hors période).
  * Les abo Stripe actifs / canceled encore couverts restent intacts (hasEntitlement).
- * Remettre à false après la campagne.
+ * Fin : lundi 7 septembre 2026 23:59:59.999 heure de Paris (CEST, UTC+2).
  */
-export const RETRIAL_ON_LOGIN = true;
+export const RETRIAL_UNTIL_ISO = "2026-09-07T23:59:59.999+02:00";
+
+export function isRetrialCampaignActive(refMs = Date.now()) {
+  const untilMs = Date.parse(RETRIAL_UNTIL_ISO);
+  return Number.isFinite(untilMs) && refMs <= untilMs;
+}
 
 export function stripEntitlementFromUserMeta(meta: Record<string, unknown> | undefined) {
   const next = { ...(meta ?? {}) };
@@ -148,7 +155,7 @@ export function buildTrialState(userId: string, current?: Partial<AccessStateRow
  * Un essai sans carte par compte, à la première connexion.
  * Réaccorde si l’essai n’a jamais eu de fenêtre valide, ou s’il s’est terminé
  * avant la création du compte Auth (customer Stripe d’un autre essai / e-mail).
- * Campagne RETRIAL_ON_LOGIN : aussi si essai déjà consommé / désabo sans accès restant.
+ * Campagne re-essai (jusqu’à RETRIAL_UNTIL_ISO) : aussi si essai déjà consommé / désabo sans accès restant.
  */
 export function shouldGrantCardlessTrial(
   current?: Partial<AccessStateRow> | null,
@@ -167,7 +174,7 @@ export function shouldGrantCardlessTrial(
   const createdMs = parseIsoMs(opts?.userCreatedAt);
   const trialEndMs = parseIsoMs(current.trial_ends_at);
   if (createdMs != null && trialEndMs != null && trialEndMs <= createdMs) return true;
-  if (RETRIAL_ON_LOGIN) return true;
+  if (isRetrialCampaignActive(opts?.nowMs ?? Date.now())) return true;
   return false;
 }
 

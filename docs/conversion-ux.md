@@ -6,7 +6,7 @@ Module code : `src/conversion/`
 
 ---
 
-## Modèle live (août 2026) — essai 7j sans carte, puis gel
+## Modèle live (août 2026) : essai 7j sans carte, puis gel
 
 ```
 Création de compte
@@ -20,7 +20,7 @@ Création de compte
 
 Entitlements : `src/lib/access.js` (`subscription_status` trial/active/canceled/expired).  
 Grant essai : `sync-subscription` → `resolveAccessWithoutStripeSub`.  
-Campagne pré-lancement (`RETRIAL_ON_LOGIN = true` dans `access-policy.ts`) : à la **prochaine connexion**, nouveau 7j si plus d’accès (essai brûlé, gelé, désabo hors période). Abo Stripe actifs / période payée restante = intacts. Remettre le flag à `false` après la campagne.  
+Campagne pré-lancement (`isRetrialCampaignActive` / `RETRIAL_UNTIL_ISO` dans `access-policy.ts`) : à la **prochaine connexion**, nouveau 7j si plus d’accès (essai brûlé, gelé, désabo hors période), **jusqu’au lundi 7 septembre 2026 23:59 heure de Paris**. Après cette date, plus de re-essai au login. Abo Stripe actifs / période payée restante = intacts.  
 Insights paywall : `src/lib/coach-insights.js`.
 
 ### Pricing
