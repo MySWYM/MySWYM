@@ -1,5 +1,6 @@
 /**
  * Carte exercice compacte (pas de tiroir / dépliable).
+ * Mode dense (Programme / prep) : liste scannable, pastilles ⓘ à droite.
  * Allures Sheet : pastilles ⓘ + Enchaînement (multi-allures) ; Lent ≠ Souple.
  * Départ à la montre : pastille D2' + tip horloge de bassin (4 aiguilles).
  * Allure chiffrée : pastille @1:42-1:48 + tip plage cible.
@@ -491,7 +492,7 @@ function chipToneStyles(tone, G) {
   return { bg, color };
 }
 
-function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName }) {
+function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName, dense = false }) {
   const tip = tipKey ? ALLURE_TIPS[tipKey] : null;
   const resolvedLabel = label || tip?.label;
   if (!resolvedLabel) return null;
@@ -504,23 +505,24 @@ function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName 
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 4,
+        gap: dense ? 3 : 4,
         border: `1px solid ${G.greyLight}`,
         background: bg,
         color,
-        fontSize: 11,
+        fontSize: dense ? 10 : 11,
         fontWeight: 800,
-        padding: "4px 9px",
+        padding: dense ? "3px 7px" : "4px 9px",
         borderRadius: 999,
         cursor: "pointer",
         letterSpacing: "0.02em",
         textTransform: tipKey ? "uppercase" : "none",
-        minHeight: 28,
+        minHeight: dense ? 28 : 28,
         fontVariantNumeric: "tabular-nums",
+        flexShrink: 0,
       }}
     >
       {resolvedLabel}
-      <Info size={12} strokeWidth={2.5} />
+      <Info size={dense ? 11 : 12} strokeWidth={2.5} />
     </button>
   );
 }
@@ -539,6 +541,7 @@ export default function WorkoutExerciseCard({
   const [restOpen, setRestOpen] = useState(false);
   if (!exercise) return null;
 
+  const dense = nested || compact;
   const volume = exercise.volumeLabel || (exercise.meters ? `${exercise.meters} m` : null);
   const stroke = exercise.strokeLabel;
   const drills =
@@ -558,117 +561,59 @@ export default function WorkoutExerciseCard({
   const restChip = exercise.restChip || null;
   const restSeconds = exercise.restSeconds || 30;
 
-  return (
-    <div
-      style={{
-        background: nested ? "transparent" : G.surface,
-        borderRadius: nested ? 12 : 16,
-        border: nested ? "none" : `1px solid ${G.greyLight}`,
-        overflow: "hidden",
-        padding: compact ? "14px 14px" : "16px 16px",
-        minHeight: 56,
-        display: "flex",
-        gap: 12,
-        alignItems: "flex-start",
-      }}
-    >
-      <div style={{
-        width: 28, height: 28, borderRadius: 9, flexShrink: 0, marginTop: 2,
-        background: accent?.bg || G.blueLight, color: accent?.color || G.blue,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 12, fontWeight: 800,
-      }}>
-        {exercise.index}
-      </div>
+  const chips = (
+    <>
+      {allureChips.map((key) => (
+        <AllureInfoChip
+          key={key}
+          tipKey={key}
+          onClick={() => setTipKey(key)}
+          G={G}
+          dense={dense}
+        />
+      ))}
+      {restChip && !departLabel ? (
+        <AllureInfoChip
+          tipKey={null}
+          label={restChip}
+          tone="blue"
+          ariaName={`récupération ${restChip}`}
+          onClick={() => setRestOpen(true)}
+          G={G}
+          dense={dense}
+        />
+      ) : null}
+      {departLabel ? (
+        <AllureInfoChip
+          tipKey={null}
+          label={departLabel}
+          tone="blue"
+          ariaName={`départ ${departLabel}`}
+          onClick={() => setDepartOpen(true)}
+          G={G}
+          dense={dense}
+        />
+      ) : null}
+      {allurePaceLabel ? (
+        <AllureInfoChip
+          tipKey={null}
+          label={allurePaceLabel}
+          tone="mint"
+          ariaName={`allure ${allurePaceLabel}`}
+          onClick={() => setAllurePaceOpen(true)}
+          G={G}
+          dense={dense}
+        />
+      ) : null}
+    </>
+  );
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: compact ? 17 : 18,
-          fontWeight: 800,
-          color: G.ink,
-          lineHeight: 1.2,
-          letterSpacing: "-0.01em",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 8,
-        }}>
-          <span>
-            {volume || exercise.main}
-            {stroke ? (
-              <span style={{ color: accent?.color || G.blue, fontWeight: 800 }}>
-                {" · "}{stroke}
-              </span>
-            ) : null}
-          </span>
-          {allureChips.map((key) => (
-            <AllureInfoChip key={key} tipKey={key} onClick={() => setTipKey(key)} G={G} />
-          ))}
-          {/* Avec départ D…, le R est redondant (récup déjà dans le cycle de départ) */}
-          {restChip && !departLabel ? (
-            <AllureInfoChip
-              tipKey={null}
-              label={restChip}
-              tone="blue"
-              ariaName={`récupération ${restChip}`}
-              onClick={() => setRestOpen(true)}
-              G={G}
-            />
-          ) : null}
-          {departLabel ? (
-            <AllureInfoChip
-              tipKey={null}
-              label={departLabel}
-              tone="blue"
-              ariaName={`départ ${departLabel}`}
-              onClick={() => setDepartOpen(true)}
-              G={G}
-            />
-          ) : null}
-          {allurePaceLabel ? (
-            <AllureInfoChip
-              tipKey={null}
-              label={allurePaceLabel}
-              tone="mint"
-              ariaName={`allure ${allurePaceLabel}`}
-              onClick={() => setAllurePaceOpen(true)}
-              G={G}
-            />
-          ) : null}
-        </div>
+  const cueText = primaryCue
+    ? primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)
+    : null;
 
-        {primaryCue && volume && (
-          <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35, fontWeight: 600 }}>
-            {primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)}
-          </div>
-        )}
-        {!volume && exercise.main && primaryCue && (
-          <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35 }}>
-            {primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)}
-          </div>
-        )}
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-          {exercise.restLabel && !restChip && !departLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
-          {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
-          {drills.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                border: "none", background: G.blueLight, color: G.blue,
-                fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 10,
-                cursor: "pointer", minHeight: 32,
-              }}
-            >
-              <Info size={12} />{" "}
-              {multiDrills ? "Voir les éducatifs" : "Voir l’éducatif"}
-            </button>
-          )}
-        </div>
-      </div>
-
+  const tipSheets = (
+    <>
       {tipKey ? (
         <AllureTipSheet
           tipKey={tipKey}
@@ -702,6 +647,210 @@ export default function WorkoutExerciseCard({
           colors={G}
         />
       ) : null}
+    </>
+  );
+
+  /* Liste dense (Programme / prep) : titre à gauche, pastilles ⓘ à droite */
+  if (dense) {
+    return (
+      <div
+        style={{
+          background: "transparent",
+          border: "none",
+          padding: "10px 4px",
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-start",
+          minHeight: 44,
+        }}
+      >
+        <div
+          style={{
+            width: 22,
+            flexShrink: 0,
+            marginTop: 2,
+            fontSize: 13,
+            fontWeight: 800,
+            color: accent?.color || G.blue,
+            fontVariantNumeric: "tabular-nums",
+            textAlign: "right",
+            lineHeight: 1.3,
+          }}
+        >
+          {exercise.index}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: G.ink,
+                  lineHeight: 1.25,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {volume || exercise.main}
+                {stroke ? (
+                  <span style={{ color: accent?.color || G.blue, fontWeight: 800 }}>
+                    {" · "}{stroke}
+                  </span>
+                ) : null}
+              </div>
+              {cueText && (volume || exercise.main) ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: G.inkLight,
+                    marginTop: 3,
+                    lineHeight: 1.35,
+                    fontWeight: 600,
+                  }}
+                >
+                  {cueText}
+                </div>
+              ) : null}
+              {(exercise.restLabel && !restChip && !departLabel) || drills.length > 0 || exercise.kind === "warm" ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                  {exercise.restLabel && !restChip && !departLabel && (
+                    <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>
+                  )}
+                  {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
+                  {drills.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        border: "none",
+                        background: G.blueLight,
+                        color: G.blue,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "4px 8px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        minHeight: 28,
+                      }}
+                    >
+                      <Info size={11} />
+                      {multiDrills ? "Éducatifs" : "Éducatif"}
+                    </button>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+                gap: 5,
+                maxWidth: "46%",
+                flexShrink: 0,
+              }}
+            >
+              {chips}
+            </div>
+          </div>
+        </div>
+
+        {tipSheets}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        background: G.surface,
+        borderRadius: 16,
+        border: `1px solid ${G.greyLight}`,
+        overflow: "hidden",
+        padding: "16px 16px",
+        minHeight: 56,
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
+      }}
+    >
+      <div style={{
+        width: 28, height: 28, borderRadius: 9, flexShrink: 0, marginTop: 2,
+        background: accent?.bg || G.blueLight, color: accent?.color || G.blue,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 12, fontWeight: 800,
+      }}>
+        {exercise.index}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 18,
+          fontWeight: 800,
+          color: G.ink,
+          lineHeight: 1.2,
+          letterSpacing: "-0.01em",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          <span>
+            {volume || exercise.main}
+            {stroke ? (
+              <span style={{ color: accent?.color || G.blue, fontWeight: 800 }}>
+                {" · "}{stroke}
+              </span>
+            ) : null}
+          </span>
+          {chips}
+        </div>
+
+        {cueText && volume && (
+          <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35, fontWeight: 600 }}>
+            {cueText}
+          </div>
+        )}
+        {!volume && exercise.main && cueText && (
+          <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35 }}>
+            {cueText}
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {exercise.restLabel && !restChip && !departLabel && <MetaPill G={G} tone="blue">{exercise.restLabel}</MetaPill>}
+          {exercise.kind === "warm" && <MetaPill G={G}>Facile</MetaPill>}
+          {drills.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                border: "none", background: G.blueLight, color: G.blue,
+                fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 10,
+                cursor: "pointer", minHeight: 32,
+              }}
+            >
+              <Info size={12} />{" "}
+              {multiDrills ? "Voir les éducatifs" : "Voir l’éducatif"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {tipSheets}
     </div>
   );
 }

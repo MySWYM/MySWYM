@@ -1,6 +1,7 @@
 /**
  * Vue synthèse / préparation d’une séance (pas le mode bassin).
  * 3 blocs phase : Échauffement · Corps · Retour au calme.
+ * Liste dense (lisible en un écran) + pastilles ⓘ.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Play, Lock, Check, Copy } from "lucide-react";
@@ -191,7 +192,7 @@ export default function WorkoutPrepView({
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {sections.map((section) => {
           const tone = phaseTone(section.id, G);
           return (
@@ -199,7 +200,7 @@ export default function WorkoutPrepView({
               key={section.id}
               aria-label={section.label}
               style={{
-                borderRadius: 18,
+                borderRadius: 14,
                 border: `1px solid ${tone.border}`,
                 background: G.surface,
                 overflow: "hidden",
@@ -210,15 +211,16 @@ export default function WorkoutPrepView({
                 alignItems: "baseline",
                 justifyContent: "space-between",
                 gap: 12,
-                padding: embedded ? "12px 14px" : "14px 16px",
+                padding: embedded ? "10px 12px" : "11px 14px",
                 background: tone.headerBg,
                 borderBottom: `1px solid ${tone.border}`,
               }}>
                 <div style={{
                   fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
-                  letterSpacing: "-0.01em",
+                  letterSpacing: "0.02em",
+                  textTransform: "uppercase",
                   color: tone.accent,
                 }}>
                   {section.label}
@@ -238,7 +240,7 @@ export default function WorkoutPrepView({
                 display: "flex",
                 flexDirection: "column",
                 gap: 0,
-                padding: embedded ? "6px 8px 10px" : "8px 10px 12px",
+                padding: embedded ? "2px 8px 6px" : "4px 10px 8px",
               }}>
                 {section.exercises.map((ex, i) => (
                   <div
@@ -246,7 +248,7 @@ export default function WorkoutPrepView({
                     style={{
                       filter: locked && section.id === "main" && i > 1 ? "blur(3px)" : "none",
                       opacity: locked && section.id === "main" && i > 1 ? 0.75 : 1,
-                      marginTop: i === 0 ? 0 : 8,
+                      borderTop: i === 0 ? "none" : `1px solid ${G.greyLight}`,
                     }}
                   >
                     <WorkoutExerciseCard
