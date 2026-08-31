@@ -231,3 +231,168 @@ export function canResolveSheetPace(opts = {}) {
   if (opts.isPremium !== true) return false;
   return Number(opts.pace100) > 0;
 }
+
+const PACE_INTENTS = /** @type {const} */ (["facile", "endurance", "seuil", "vo2", "sprint"]);
+
+/**
+ * Retrouve l’intent Sheet le plus proche d’un départ déjà matérialisé.
+ * @param {number} pace100
+ * @param {number} departSeconds
+ * @param {number} [repMeters]
+ * @returns {PaceIntent|null}
+ */
+export function inferPaceIntentFromDepart(pace100, departSeconds, repMeters = 100) {
+  const t100 = Number(pace100);
+  const target = Number(departSeconds);
+  if (!(t100 > 0) || !(target > 0)) return null;
+  let best = null;
+  let bestDelta = Infinity;
+  for (const intent of PACE_INTENTS) {
+    const sec = computeDepartSeconds(t100, intent, repMeters);
+    if (sec == null) continue;
+    const delta = Math.abs(sec - target);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = intent;
+    }
+  }
+  // Tolérance : si le D stocké est très loin de toute formule, ne pas inventer.
+  if (best == null || bestDelta > 45) return null;
+  return best;
+}
+
+/**
+ * Intent depuis une plage @mm:ss-mm:ss déjà matérialisée (milieu de bande).
+ * @param {number} pace100
+ * @param {number} lowSeconds
+ * @param {number} highSeconds
+ * @param {number} [repMeters]
+ * @returns {PaceIntent|null}
+ */
+export function inferPaceIntentFromAllure(pace100, lowSeconds, highSeconds, repMeters = 100) {
+  const t100 = Number(pace100);
+  const mid = (Number(lowSeconds) + Number(highSeconds)) / 2;
+  if (!(t100 > 0) || !(mid > 0)) return null;
+  let best = null;
+  let bestDelta = Infinity;
+  for (const intent of PACE_INTENTS) {
+    const range = computeAllureAtRange(t100, intent, repMeters);
+    if (!range) continue;
+    const m = range.match(/@\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+    if (!m) continue;
+    const lo = paceClockToSec(m[1]);
+    const hi = paceClockToSec(m[2]);
+    if (lo == null || hi == null) continue;
+    const delta = Math.abs((lo + hi) / 2 - mid);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = intent;
+    }
+  }
+  if (best == null || bestDelta > 25) return null;
+  return best;
+}
+
+function paceClockToSec(mmss) {
+  const m = String(mmss || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const min = parseInt(m[1], 10);
+  const sec = parseInt(m[2], 10);
+  if (!Number.isFinite(min) || !Number.isFinite(sec) || sec > 59) return null;
+  return min * 60 + sec;
+}
+
+/**
+ * Recalcule D… et @… d’une ligne à partir du nouveau T100 (même séance, pas de regen).
+ * @param {string} line
+ * @param {{ fromPace100: number, toPace100: number }} opts
+ */
+export function rewritePaceMarkersInLine(line, opts = {}) {
+  const fromPace = Number(opts.fromPace100);
+  const toPace = Number(opts.toPace100);
+  const s = String(line || "");
+  if (!(fromPace > 0) || !(toPace > 0) || fromPace === toPace) return s;
+  if (!/\bD\s*\d/i.test(s) && !/@\s*\d{1,2}:\d{2}/.test(s)) return s;
+
+  const repMeters = inferRepMetersFromLine(s);
+  let out = s;
+
+  const departRe = /\bD\s*(\d+)\s*['′]\s*(\d{0,2})\s*["″]?/gi;
+  out = out.replace(departRe, (raw, minStr, secStr) => {
+    const min = parseInt(minStr, 10);
+    const sec = secStr != null && String(secStr).length ? parseInt(secStr, 10) : 0;
+    const departSec = min * 60 + (Number.isFinite(sec) ? sec : 0);
+    const intent = inferPaceIntentFromDepart(fromPace, departSec, repMeters);
+    if (!intent) {
+      // Fallback proportionnel (marge repos approximée).
+      const scaled = Math.max(20, Math.round((departSec * toPace) / fromPace / 5) * 5);
+      return formatSheetDepart(scaled);
+    }
+    const next = computeDepartSeconds(toPace, intent, repMeters);
+    return next != null ? formatSheetDepart(next) : raw;
+  });
+
+  const allureRe = /@\s*(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g;
+  out = out.replace(allureRe, (raw, low, high) => {
+    const lo = paceClockToSec(low);
+    const hi = paceClockToSec(high);
+    if (lo == null || hi == null) return raw;
+    const intent = inferPaceIntentFromAllure(fromPace, lo, hi, repMeters);
+    if (!intent) return raw;
+    return computeAllureAtRange(toPace, intent, repMeters) || raw;
+  });
+
+  return tidyLine(out);
+}
+
+/**
+ * Recalcule D/@ sur une séance stockée (details + sets.label).
+ * Ne touche pas aux séances validées / skippées.
+ * @param {object} session
+ * @param {{ fromPace100: number, toPace100: number, isPremium?: boolean, levelBand?: string }} opts
+ */
+export function rewriteSessionPaceMarkers(session, opts = {}) {
+  if (!session || typeof session !== "object") return session;
+  if (session.completed || session.skipped) return session;
+  if (!canResolveSheetPace({
+    levelBand: opts.levelBand,
+    isPremium: opts.isPremium === true,
+    pace100: opts.toPace100,
+  })) {
+    return session;
+  }
+  const fromPace = Number(opts.fromPace100);
+  const toPace = Number(opts.toPace100);
+  if (!(fromPace > 0) || !(toPace > 0) || fromPace === toPace) return session;
+
+  const rewriteOpts = { fromPace100: fromPace, toPace100: toPace };
+  const details = Array.isArray(session.details)
+    ? session.details.map((line) => rewritePaceMarkersInLine(line, rewriteOpts))
+    : session.details;
+  const sets = Array.isArray(session.sets)
+    ? session.sets.map((set) => {
+        if (!set || typeof set !== "object") return set;
+        if (set.label == null) return set;
+        return { ...set, label: rewritePaceMarkersInLine(set.label, rewriteOpts) };
+      })
+    : session.sets;
+
+  return { ...session, details, ...(sets ? { sets } : {}) };
+}
+
+/**
+ * Applique le nouveau T100 à toutes les séances non validées du plan.
+ * @param {object} plan
+ * @param {{ fromPace100: number, toPace100: number, isPremium?: boolean, levelBand?: string }} opts
+ */
+export function rewritePlanPaceMarkers(plan, opts = {}) {
+  if (!plan || !Array.isArray(plan.weeks)) return plan;
+  const weeks = plan.weeks.map((week) => {
+    if (!week || !Array.isArray(week.sessions)) return week;
+    return {
+      ...week,
+      sessions: week.sessions.map((s) => rewriteSessionPaceMarkers(s, opts)),
+    };
+  });
+  return { ...plan, weeks };
+}

@@ -19,6 +19,8 @@ import { describePlanSyncChange } from "./lib/plan-sync-message.js";
 import { readSeenNotifications, writeSeenNotifications } from "./lib/in-app-notifications.js";
 import { loadSessionTemplates } from "./lib/session-templates-store.js";
 import { prefetchNatationCatalogue } from "./lib/natation-sheet/client.js";
+import { levelBandFromProfile } from "./lib/natation-sheet/parse.js";
+import { rewritePlanPaceMarkers } from "./lib/natation-sheet/pace-placeholders.js";
 import { buildSessionProvenance } from "./lib/session-provenance.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, buildProgressionLoopWeek, expandLoopWeekSessions, formatLoopSessionTitle, formatLoopWeekSessionTitle, loopDisplaySession, loopSessionOrdinalIndex, withLoopSessionTitle, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
@@ -10262,6 +10264,11 @@ export default function App() {
       return Promise.resolve();
     }
     const week = getCurrentWeekNumber(activePlanEntry.plan);
+    const fromPace =
+      Number(activePlanEntry.profile?.pace100) > 0
+        ? Number(activePlanEntry.profile.pace100)
+        : null;
+    const toPace = Number(newPace100) > 0 ? Number(newPace100) : null;
     let nextProfile = {
       ...activePlanEntry.profile,
       pace100: newPace100,
@@ -10273,38 +10280,72 @@ export default function App() {
       source: "manual",
     });
 
-    setPlans(prev => prev.map(e => (e.id !== activePlanId ? e : { ...e, profile: nextProfile })));
+    // Recalcule D… / @… sur les séances déjà là (sans régénérer le contenu).
+    let nextPlan = activePlanEntry.plan;
+    if (
+      isPremium &&
+      fromPace &&
+      toPace &&
+      fromPace !== toPace &&
+      nextPlan?.weeks
+    ) {
+      nextPlan = rewritePlanPaceMarkers(nextPlan, {
+        fromPace100: fromPace,
+        toPace100: toPace,
+        isPremium: true,
+        levelBand: levelBandFromProfile(nextProfile),
+      });
+    }
 
-    // Applique les allures aux semaines non entamées (plans classiques Premium)
-    if (!canUpdateProgram || activePlanEntry.plan?.isSessionLoop) return Promise.resolve();
+    setPlans((prev) =>
+      prev.map((e) =>
+        e.id !== activePlanId
+          ? e
+          : { ...e, profile: nextProfile, plan: nextPlan },
+      ),
+    );
+
+    // Premier T100 seulement : matérialiser D/@ sur les semaines encore génériques.
+    if (fromPace || !toPace || !canUpdateProgram || activePlanEntry.plan?.isSessionLoop) {
+      return Promise.resolve();
+    }
 
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
     const taste = activePlanEntry.plan?.taste || tasteProfile;
     const planIdToUpdate = activePlanId;
-    const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? Date.now();
+    const originalStartDate =
+      activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? Date.now();
 
-    return generatePlan({ ...nextProfile, taste }, true, originalStartDate, { skipDelay: true }).then((newPlan) => {
-      const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
-      setPlans(prev => prev.map(e => {
-        if (e.id !== planIdToUpdate) return e;
-        return {
-          ...e,
-          profile: nextProfile,
-          plan: {
-            ...newPlan,
-            taste,
-            weeks: mergedWeeks,
-            ...(e.plan?.startDate ? { startDate: e.plan.startDate } : {}),
-            history: e.plan?.history,
-            freeSessionsUsed: e.plan?.freeSessionsUsed,
-            weekGenKey: e.plan?.weekGenKey,
-            weekGenCount: e.plan?.weekGenCount,
-            sessionCursor: e.plan?.sessionCursor,
-            loopBlocked: e.plan?.loopBlocked,
-          },
-        };
-      }));
-    }).catch(() => { /* profil déjà sauvé */ });
+    return generatePlan({ ...nextProfile, taste }, true, originalStartDate, {
+      skipDelay: true,
+    })
+      .then((newPlan) => {
+        const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+        setPlans((prev) =>
+          prev.map((e) => {
+            if (e.id !== planIdToUpdate) return e;
+            return {
+              ...e,
+              profile: nextProfile,
+              plan: {
+                ...newPlan,
+                taste,
+                weeks: mergedWeeks,
+                ...(e.plan?.startDate ? { startDate: e.plan.startDate } : {}),
+                history: e.plan?.history,
+                freeSessionsUsed: e.plan?.freeSessionsUsed,
+                weekGenKey: e.plan?.weekGenKey,
+                weekGenCount: e.plan?.weekGenCount,
+                sessionCursor: e.plan?.sessionCursor,
+                loopBlocked: e.plan?.loopBlocked,
+              },
+            };
+          }),
+        );
+      })
+      .catch(() => {
+        /* profil déjà sauvé */
+      });
   };
 
   /** Régénère les séances non commencées après changement profil (pool / matos / nage). */
