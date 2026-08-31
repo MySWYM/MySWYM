@@ -10,8 +10,8 @@
     "titleLine1": "Ta prochaine séance de natation,",
     "titleAccent": "en 3 questions",
     "subtitle": "Objectif, niveau, fréquence. MySWYM compose tes séances. Fini les séances au hasard.",
-    "cta": "Générer ma séance",
-    "ctaSecondary": "Créer mon plan",
+    "cta": "Créer mon plan",
+    "ctaSecondary": "Voir une séance",
     "seeSession": "Voir une séance",
     "freeNote": "Essai 7 jours · sans carte · dès 4,99€/mois",
     "proof1Value": "+15",
@@ -238,7 +238,7 @@
     "titleLine1": "Plonge dans ta",
     "titleLine2": "première séance",
     "subtitle": "Génère ton plan maintenant. Tu nages, tu vois si ça tient.",
-    "cta": "Commencer",
+    "cta": "Créer mon plan",
     "signoff": "À bientôt dans le bassin."
   },
   "mock": {
@@ -440,7 +440,7 @@
     "name": "Nom complet *",
     "namePh": "Ton nom",
     "email": "Email *",
-    "emailPh": "toi@exemple.com",
+    "emailPh": "exemple@email.com",
     "subject": "Objet du message *",
     "subjectPh": "Sujet",
     "message": "Message *",

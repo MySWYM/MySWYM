@@ -649,7 +649,15 @@ body:has(.ms-root) {
 .ms-footer-apps {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.55rem;
+  opacity: 0.55;
+}
+
+.ms-footer-apps .ms-footer-heading {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(155, 176, 200, 0.65);
 }
 
 .ms-footer-store {
@@ -680,7 +688,7 @@ body:has(.ms-root) {
 }
 
 .ms-footer-store-soon {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;

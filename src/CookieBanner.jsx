@@ -63,17 +63,14 @@ export default function CookieBanner() {
       {banner && !manager ? (
         <div className="ms-cookie-banner" role="dialog" aria-label={t("cookies.bannerAria")}>
           <p>
-            {t("cookies.bannerBefore")}{" "}
-            <strong>{t("cookies.necessaryWord")}</strong> {t("cookies.bannerMid")}{" "}
-            <strong>PostHog</strong> {t("cookies.bannerAnd")}{" "}
-            <strong>Vercel Speed Insights</strong> {t("cookies.bannerAfter")}{" "}
+            {t("cookies.bannerShort")}{" "}
             <LocalizedLink to={{ pathname: "/politique-cookies", hash: "#parametrage-cookies" }}>{t("cookies.learnMore")}</LocalizedLink>
           </p>
           <div className="ms-cookie-banner-actions">
-            <button type="button" className="ms-cookie-btn" onClick={() => persist({ analytics: false, performance: false })}>
+            <button type="button" className="ms-cookie-btn ms-cookie-btn--secondary" onClick={() => persist({ analytics: false, performance: false })}>
               {t("cookies.rejectAll")}
             </button>
-            <button type="button" className="ms-cookie-btn" onClick={() => persist({ analytics: true, performance: true })}>
+            <button type="button" className="ms-cookie-btn ms-cookie-btn--primary" onClick={() => persist({ analytics: true, performance: true })}>
               {t("cookies.acceptAll")}
             </button>
           </div>

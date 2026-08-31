@@ -9,8 +9,7 @@ import { getUpgradeCopy } from "../lib/coach-insights.js";
 import { trackEvent } from "../lib/analytics.js";
 import { captureReferralFromUrl, resolveReferralCode } from "../lib/referral.js";
 
-const PREMIUM_TIER_LINES = [
-  `Essai 7 jours sans carte, puis ${PRICING_SUMMARY_FR}`,
+const PREMIUM_LINES_ACTIVE = [
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
@@ -36,6 +35,7 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
   }, [legalReady]);
 
   const hasReferral = Boolean(resolveReferralCode(user));
+  // Essai 7j = à l’inscription (sans carte), pas via Stripe Checkout.
   const showTrialOffer = false;
   const isAnnual = period === "annual";
   const isCommit = period === "monthly_commit";
@@ -48,6 +48,12 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
   });
   const headline = copy.headline;
   const subtitle = copy.subtitle;
+  const premiumLines = trialEnded
+    ? PREMIUM_LINES_ACTIVE
+    : [
+        `Essai 7 jours sans carte à l’inscription, puis ${PRICING_SUMMARY_FR}`,
+        ...PREMIUM_LINES_ACTIVE,
+      ];
 
   const handleAcceptTerms = (checked) => {
     setAcceptTerms(checked);
@@ -230,8 +236,8 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
           <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
             Inclus avec Premium
           </div>
-          {PREMIUM_TIER_LINES.map((line, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: i < PREMIUM_TIER_LINES.length - 1 ? 8 : 0 }}>
+          {premiumLines.map((line, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: i < premiumLines.length - 1 ? 8 : 0 }}>
               <Check size={14} color={G.blue} style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>{line}</span>
             </div>

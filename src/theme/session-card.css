@@ -18,7 +18,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--lp-primary, var(--accent));
+  color: color-mix(in srgb, var(--lp-primary, var(--accent)) 62%, white);
 }
 .ms-session-card-head h2 {
   margin: 0.35rem 0 0;
@@ -42,7 +42,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--lp-primary, var(--accent));
+  color: color-mix(in srgb, var(--lp-primary, var(--accent)) 62%, white);
 }
 .ms-session-card-block p {
   margin: 0.4rem 0 0;

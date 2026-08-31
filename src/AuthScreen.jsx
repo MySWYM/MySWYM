@@ -24,35 +24,63 @@ export const getAuthInpStyle = () => ({
   boxSizing: "border-box",
 });
 
-export const PasswordInput = ({ placeholder, value, onChange, onEnter, autoComplete = "current-password" }) => {
+export const PasswordInput = ({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  onEnter,
+  autoComplete = "current-password",
+}) => {
   const [visible, setVisible] = useState(false);
+  const inputId = id || "auth-password";
   return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <input
-        type={visible ? "text" : "password"}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        onKeyDown={e => e.key === "Enter" && onEnter?.()}
-        autoComplete={autoComplete}
-        style={{ ...getAuthInpStyle(), paddingRight: 48 }}
-      />
-      <button
-        type="button"
-        onClick={() => setVisible(v => !v)}
-        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-        style={{
-          position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-          background: "none", border: "none", padding: 4, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: G.greyMid, lineHeight: 0,
-        }}
-      >
-        {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
-      </button>
+    <div style={{ width: "100%" }}>
+      {label ? (
+        <label htmlFor={inputId} style={{ display: "block", fontSize: 13, fontWeight: 600, color: G.ink, marginBottom: 6 }}>
+          {label}
+        </label>
+      ) : null}
+      <div style={{ position: "relative", width: "100%" }}>
+        <input
+          id={inputId}
+          type={visible ? "text" : "password"}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          onKeyDown={e => e.key === "Enter" && onEnter?.()}
+          autoComplete={autoComplete}
+          style={{ ...getAuthInpStyle(), paddingRight: 48 }}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(v => !v)}
+          aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          style={{
+            position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+            background: "none", border: "none", padding: 4, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: G.greyMid, lineHeight: 0, minWidth: 44, minHeight: 44,
+          }}
+        >
+          {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
+        </button>
+      </div>
     </div>
   );
 };
+
+function mapAuthError(raw, t) {
+  const msg = String(raw || "");
+  if (/invalid login credentials|invalid_credentials/i.test(msg)) return t("auth.errCredentials", { defaultValue: "Email ou mot de passe incorrect." });
+  if (/email not confirmed/i.test(msg)) return t("auth.errConfirm", { defaultValue: "Confirme ton email avant de te connecter." });
+  if (/user already registered|already been registered/i.test(msg)) return t("auth.errExists", { defaultValue: "Ce compte existe déjà. Connecte-toi ou réinitialise ton mot de passe." });
+  if (/password/i.test(msg) && /at least|characters|weak/i.test(msg)) return t("auth.errPassword", { defaultValue: "Mot de passe trop court. Utilise au moins 6 caractères." });
+  if (/rate limit|too many/i.test(msg)) return t("auth.errRate", { defaultValue: "Trop de tentatives. Réessaie dans une minute." });
+  if (/network|fetch/i.test(msg)) return t("auth.errNetwork", { defaultValue: "Connexion impossible. Vérifie ton réseau et réessaie." });
+  return msg || t("auth.errGeneric", { defaultValue: "Une erreur est survenue. Réessaie." });
+}
 
 const GoogleMark = () => (
   <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -193,7 +221,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         if (error) throw error;
         setSuccess(t("auth.resetSent"));
       }
-    } catch (e) { setError(e.message || t("auth.genericError")); }
+    } catch (e) { setError(mapAuthError(e.message || e, t)); }
     finally { setLoading(false); }
   };
 
@@ -218,7 +246,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
   const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
 
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: "calc(8.5rem + env(safe-area-inset-bottom, 0px))" }}>
       {(showBrandHeader || onBack) && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
@@ -264,10 +292,26 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
-          <input type="email" placeholder={t("auth.email")} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()} style={getAuthInpStyle()} />
+          <div>
+            <label htmlFor="auth-email" style={{ display: "block", fontSize: 13, fontWeight: 600, color: G.ink, marginBottom: 6 }}>
+              {t("auth.email")}
+            </label>
+            <input
+              id="auth-email"
+              type="email"
+              autoComplete="email"
+              placeholder="exemple@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handle()}
+              style={getAuthInpStyle()}
+            />
+          </div>
           {(mode === "password" || mode === "register") && (
             <PasswordInput
-              placeholder={t("auth.password")}
+              id="auth-password"
+              label={t("auth.password")}
+              placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
               onEnter={handle}
@@ -313,8 +357,20 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         )}
 
         <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
-          {loading ? "…" : ctaMap[mode]}
+          {loading
+            ? (mode === "register" ? "Création…" : mode === "reset" ? "Envoi…" : "Connexion…")
+            : ctaMap[mode]}
         </Btn>
+        {(mode === "password" || mode === "register") && (!email || !password) && !loading ? (
+          <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 0 0", lineHeight: 1.4 }}>
+            Renseigne email et mot de passe pour continuer.
+          </p>
+        ) : null}
+        {registerBlocked && !loading ? (
+          <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 0 0", lineHeight: 1.4 }}>
+            {t("auth.needChecks")}
+          </p>
+        ) : null}
 
         {/* Toggles secondaires */}
         <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>

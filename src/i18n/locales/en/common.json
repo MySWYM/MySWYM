@@ -9,17 +9,17 @@
     "contact": "Contact",
     "login": "Log in",
     "logout": "Log out",
-    "cta": "Get started",
-    "ctaShort": "Get started",
+    "cta": "Create my plan",
+    "ctaShort": "My plan",
     "openApp": "My plan",
     "openAppShort": "My plan",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
   "stickyBar": {
-    "kicker": "Start today",
+    "kicker": "Create your plan now",
     "title": "Your plan, in the browser",
-    "cta": "Get started",
+    "cta": "Create my plan",
     "kickerApp": "You're in",
     "titleApp": "Back to your sessions",
     "ctaApp": "My plan"
@@ -117,6 +117,7 @@
   },
   "cookies": {
     "bannerAria": "Cookie consent",
+    "bannerShort": "Necessary cookies keep the site working. With your OK: product analytics (PostHog) and performance (Vercel).",
     "bannerBefore": "We use cookies and local storage that are",
     "necessaryWord": "necessary",
     "bannerMid": "for the site to work (session, security, preferences). With your consent, we also measure product usage with",

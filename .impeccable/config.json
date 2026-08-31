@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-08-31T10:09:03.021Z",
+        "reason": "product type system: MySWYM brand pair Geist + Space Grotesk (critique FP, incumbent)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-08-31T10:09:03.050Z",
+        "reason": "product type system: MySWYM brand pair Geist + Space Grotesk (critique FP, incumbent)"
+      }
+    ]
+  }
+}

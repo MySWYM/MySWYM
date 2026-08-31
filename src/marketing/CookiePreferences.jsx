@@ -109,13 +109,13 @@ export function CookiePreferenceActions({ prefs, onPersist, className = "ms-cook
   const { t } = useTranslation("common");
   return (
     <div className={className}>
-      <button type="button" className="ms-cookie-btn" onClick={() => onPersist({ analytics: false, performance: false })}>
+      <button type="button" className="ms-cookie-btn ms-cookie-btn--secondary" onClick={() => onPersist({ analytics: false, performance: false })}>
         {t("cookies.rejectAll")}
       </button>
-      <button type="button" className="ms-cookie-btn" onClick={() => onPersist({ analytics: true, performance: true })}>
+      <button type="button" className="ms-cookie-btn ms-cookie-btn--primary" onClick={() => onPersist({ analytics: true, performance: true })}>
         {t("cookies.acceptAll")}
       </button>
-      <button type="button" className="ms-cookie-btn" onClick={() => onPersist(prefs)}>
+      <button type="button" className="ms-cookie-btn ms-cookie-btn--secondary" onClick={() => onPersist(prefs)}>
         {t("cookies.save")}
       </button>
     </div>
