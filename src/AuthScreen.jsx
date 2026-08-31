@@ -246,7 +246,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
   const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
 
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: "calc(8.5rem + env(safe-area-inset-bottom, 0px))" }}>
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}>
       {(showBrandHeader || onBack) && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
           {showBrandHeader ? (
@@ -322,7 +322,14 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
 
         {mode === "password" && (
           <div style={{ textAlign: "right", marginBottom: 16 }}>
-            <button onClick={() => switchMode("reset")} style={{ background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer", padding: 0 }}>
+            <button
+              type="button"
+              onClick={() => switchMode("reset")}
+              style={{
+                background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer",
+                minHeight: 44, padding: "10px 4px", display: "inline-flex", alignItems: "center",
+              }}
+            >
               {t("auth.forgot")}
             </button>
           </div>
@@ -375,19 +382,38 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         {/* Toggles secondaires */}
         <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
           {mode === "password" && (
-            <>
-              <button onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-                {t("auth.createAccount")}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))}
+              style={{
+                background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14,
+                minHeight: 44, padding: "10px 12px", display: "inline-flex", alignItems: "center",
+              }}
+            >
+              {t("auth.createAccount")}
+            </button>
           )}
           {mode === "register" && (
-            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+            <button
+              type="button"
+              onClick={() => switchMode("password")}
+              style={{
+                background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14,
+                minHeight: 44, padding: "10px 12px", display: "inline-flex", alignItems: "center",
+              }}
+            >
               {t("auth.hasAccount")}
             </button>
           )}
           {mode === "reset" && (
-            <button onClick={() => switchMode("password")} style={{ background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+            <button
+              type="button"
+              onClick={() => switchMode("password")}
+              style={{
+                background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14,
+                minHeight: 44, padding: "10px 12px", display: "inline-flex", alignItems: "center",
+              }}
+            >
               {t("auth.backLogin")}
             </button>
           )}

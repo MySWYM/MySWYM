@@ -14,6 +14,24 @@
         "value": "space grotesk",
         "createdAt": "2026-08-31T10:09:03.050Z",
         "reason": "product type system: MySWYM brand pair Geist + Space Grotesk (critique FP, incumbent)"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/landing/landing.css"
+        ],
+        "createdAt": "2026-08-31T10:33:04.302Z",
+        "reason": "intentional blockquote left rule on .lp-quote (critique FP)"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "src/landing/landing.css"
+        ],
+        "createdAt": "2026-08-31T10:33:04.373Z",
+        "reason": "reviews dot width pill indicator (scoped, low impact; critique FP)"
       }
     ]
   }
