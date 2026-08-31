@@ -10,8 +10,8 @@
     "titleLine1": "Your next swim session,",
     "titleAccent": "in 3 questions",
     "subtitle": "Goal, level, frequency. MySWYM builds the sessions. No more guessing at the pool.",
-    "cta": "Generate my session",
-    "ctaSecondary": "Create my plan",
+    "cta": "Create my plan",
+    "ctaSecondary": "See a session",
     "seeSession": "See a session",
     "freeNote": "7-day trial · no card · from €4.99/month",
     "proof1Value": "+15",
@@ -238,7 +238,7 @@
     "titleLine1": "Dive into your",
     "titleLine2": "first session",
     "subtitle": "Generate your plan now. Swim it, see if it fits.",
-    "cta": "Get started",
+    "cta": "Create my plan",
     "signoff": "See you in the pool."
   },
   "mock": {

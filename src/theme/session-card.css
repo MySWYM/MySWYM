@@ -18,9 +18,10 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--lp-primary, var(--accent));
+  color: color-mix(in srgb, var(--lp-primary, var(--accent)) 62%, white);
 }
-.ms-session-card-head h2 {
+.ms-session-card-head h2,
+.ms-session-card-head p:first-of-type {
   margin: 0.35rem 0 0;
   font-family: var(--lp-display, var(--heading));
   font-size: 1.25rem;
@@ -28,10 +29,14 @@
   letter-spacing: -0.03em;
   color: var(--lp-fg, var(--text-h));
 }
-.ms-session-card-head p {
+.ms-session-card-head h2 + p,
+.ms-session-card-head p:first-of-type + p {
   margin: 0.25rem 0 0;
   color: var(--lp-muted, var(--text));
   font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
 }
 .ms-session-card-block {
   padding: 1rem 1.25rem;
@@ -42,7 +47,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--lp-primary, var(--accent));
+  color: color-mix(in srgb, var(--lp-primary, var(--accent)) 62%, white);
 }
 .ms-session-card-block p {
   margin: 0.4rem 0 0;

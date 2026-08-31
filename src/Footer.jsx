@@ -45,7 +45,7 @@ function NavCol({ title, links, collapse }) {
   }
   return (
     <div className="ms-footer-col">
-      <h3 className="ms-footer-heading">{title}</h3>
+      <p className="ms-footer-heading">{title}</p>
       {items}
     </div>
   );
@@ -200,7 +200,7 @@ export default function Footer({ aboveBottomNav = false }) {
           </nav>
 
           <div className="ms-footer-apps">
-            <h3 className="ms-footer-heading">{t("footer.downloadApp")}</h3>
+            <p className="ms-footer-heading">{t("footer.downloadApp")}</p>
             <StoreBadge store="apple" label={t("footer.appStore")} soon={t("footer.comingSoon")} />
             <StoreBadge store="google" label={t("footer.googlePlay")} soon={t("footer.comingSoon")} />
           </div>

@@ -114,6 +114,8 @@ body:has(.lp-root) {
   color: inherit;
   text-decoration: none;
   flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.35rem 0;
 }
 
 .lp-brand img {
@@ -144,8 +146,11 @@ body:has(.lp-root) {
 }
 
 .lp-nav a {
+  display: inline-flex;
+  align-items: center;
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
+  min-height: 44px;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--lp-muted);
@@ -511,7 +516,7 @@ body:has(.lp-root) {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--lp-primary);
+  color: color-mix(in srgb, var(--lp-primary) 55%, white);
 }
 
 .lp-stats dd {
@@ -819,7 +824,7 @@ body:has(.lp-root) {
   padding: 0.12rem 0.45rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--lp-muted) 18%, transparent);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;

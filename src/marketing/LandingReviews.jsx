@@ -284,11 +284,14 @@ export default function LandingReviews({ asPage = false, showWriteCta = true }) 
     );
   }
 
+  // Landing : pas de section « avis vides » (creux de confiance).
+  if (!loading && reviews.length === 0) return null;
+
   return (
     <section id="avis" className="lp-section">
       <div className="lp-wrap lp-reviews">
         <div className="lp-reviews-head">
-          {!loading && reviews.length > 0 ? (
+          {reviews.length > 0 ? (
             <p className="lp-reviews-meta">
               <StarDisplay value={avg} label={t("reviewsPage.starAria")} />
               <span>{t("reviewsPage.count", { count: reviews.length })}</span>

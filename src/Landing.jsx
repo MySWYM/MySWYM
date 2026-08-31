@@ -66,6 +66,7 @@ function SessionCard({ compact = false }) {
     <SessionHeroCard
       className={compact ? "is-compact" : "is-featured"}
       kicker={t("session.type")}
+      titleAs={compact ? "p" : "h2"}
       preview={{ title: t("session.heading"), meta: t("session.meta"), blocks: shown }}
       tip={compact ? null : t("session.tip")}
       wrapCta={false}

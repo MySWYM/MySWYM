@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   Award, Lock, Flame, Waves, Trophy, TrendingUp,
 } from "lucide-react";
@@ -8,7 +8,6 @@ import CoachCard from "./CoachCard.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import EventWeekPlanCard from "./EventWeekPlanCard.jsx";
-import PoolMode from "./workout/PoolMode.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
@@ -31,8 +30,11 @@ import {
   shouldShowAllureUnlockTip,
 } from "./lib/allure-unlock-tip.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
+import { ACCESS_STATUS } from "./lib/access.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { getTabUi } from "./tab-ui-registry.js";
+
+const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
 
 /** Badges sur l’accueil / profil : colorés si débloqués, grisés sinon. */
 export function HomeBadgesSection({ plan }) {
@@ -116,7 +118,7 @@ export function HomeBadgesSection({ plan }) {
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
-/** Après la 1re séance : coach, allure, Strava et badges, tout visible. */
+/** Après 2+ séances validées : coach, allure, Strava et badges. */
 function HomeSecondaryStack({
   plan, profile, user, isPremium, onUpgrade, onPaceUpdate, onValidateSession,
 }) {
@@ -175,6 +177,9 @@ export default function Dashboard({
   const next = findNextSession(plan);
   const preview = next?.session ? sessionCardModel(next.session) : null;
   const hasSwum = stats.totalSessions > 0;
+  const showHomeExtras = stats.totalSessions >= 2;
+  const trialBannerActive =
+    accessState?.status === ACCESS_STATUS.TRIAL && (Number(accessState.trialDaysLeft) || 0) > 0;
   const showProfileNudge = !!plan && shouldShowProfileNudge(profile, { dismissed: nudgeDismissed, hasSwum });
   const showAllureTip = shouldShowAllureUnlockTip(profile, {
     dismissed: allureTipDismissed,
@@ -272,7 +277,7 @@ export default function Dashboard({
 
         <TrialCountdownBanner accessState={accessState} onUpgrade={onUpgrade} />
 
-        {plan && !next?.resolved && shouldShowSessionReminderBanner({
+        {!trialBannerActive && plan && !next?.resolved && shouldShowSessionReminderBanner({
           enabled: getSessionRemindersEnabled(user?.id),
           hasPlan: true,
           nextResolved: false,
@@ -283,7 +288,7 @@ export default function Dashboard({
             {sessionReminderCopy({ sessionTitle: next?.session?.title, streak: stats.streak }).body}
           </div>
         )}
-        {plan && !next?.resolved && !shouldShowSessionReminderBanner({
+        {!trialBannerActive && plan && !next?.resolved && !shouldShowSessionReminderBanner({
           enabled: getSessionRemindersEnabled(user?.id),
           hasPlan: true,
           nextResolved: false,
@@ -296,13 +301,13 @@ export default function Dashboard({
                 : <>Ta première séance t’attend, coche-la après le bassin.</>}
           </div>
         )}
-        {plan && next?.resolved && stats.streak > 0 && (
+        {!trialBannerActive && plan && next?.resolved && stats.streak > 0 && (
           <div className="ms-habit-banner is-done" role="status">
             Séance du jour validée · série de <strong>{stats.streak}</strong>, reviens demain.
           </div>
         )}
 
-        {showProfileNudge && (
+        {showProfileNudge && !trialBannerActive && (
           <ProfileNudgeCard
             onOpenProfile={() => onTabChange?.("profile")}
             onDismiss={() => {
@@ -412,7 +417,7 @@ export default function Dashboard({
               </div>
             )}
 
-            {hasSwum && (
+            {showHomeExtras && (
               <HomeSecondaryStack
                 plan={plan}
                 profile={profile}
@@ -421,6 +426,13 @@ export default function Dashboard({
                 onUpgrade={onUpgrade}
                 onPaceUpdate={onPaceUpdate}
                 onValidateSession={onValidateSession}
+              />
+            )}
+            {hasSwum && !showHomeExtras && isPremium && plan?.weeks?.length > 0 && (
+              <CoachCard
+                plan={plan}
+                profile={profile}
+                currentWeekIndex={Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))}
               />
             )}
           </div>
@@ -452,6 +464,7 @@ export default function Dashboard({
         />
 
         {poolOpen && next?.session && (
+          <Suspense fallback={null}>
           <PoolMode
             session={next.session}
             sessionKey={`${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}`}
@@ -475,6 +488,7 @@ export default function Dashboard({
                   }
             }
           />
+          </Suspense>
         )}
 
         {showAllureTip && (
