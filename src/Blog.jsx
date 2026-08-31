@@ -27,7 +27,7 @@ function ArticleCard({ article, t }) {
     <LocalizedLink to={`/blog/${article.slug}`} className="ms-blog-card-link">
       <article className="ms-blog-card">
         <div className="ms-blog-card-media">
-          <img src={cover} alt="" width={640} height={400} loading="lazy" />
+          <img src={cover} alt={article.titre || ""} width={640} height={400} loading="lazy" />
         </div>
         <div className="ms-blog-card-body">
           {article.categorie ? <span className="ms-blog-tag">{article.categorie}</span> : null}

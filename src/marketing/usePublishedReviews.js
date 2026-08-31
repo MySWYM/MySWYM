@@ -14,7 +14,10 @@ export function usePublishedReviews() {
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (cancelled) return;
-        if (!error) {
+        if (error) {
+          // Table absente / RLS / 404 PostgREST : pas d’avis, pas de surface d’erreur.
+          setReviews([]);
+        } else {
           setReviews(
             (data || []).map((row) => ({
               id: row.id,
@@ -27,7 +30,10 @@ export function usePublishedReviews() {
         setLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setReviews([]);
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;

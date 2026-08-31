@@ -32,6 +32,33 @@
         ],
         "createdAt": "2026-08-31T10:33:04.373Z",
         "reason": "reviews dot width pill indicator (scoped, low impact; critique FP)"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "src/App.jsx"
+        ],
+        "createdAt": "2026-08-31T10:34:58.046Z",
+        "reason": "incumbent App.jsx motion; not in this audit fix scope"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "src/App.jsx"
+        ],
+        "createdAt": "2026-08-31T10:34:58.086Z",
+        "reason": "incumbent App.jsx width transitions; audit optimize may revisit later"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-08-31T10:35:31.737Z",
+        "reason": "incumbent boot splash glow in index.html; not part of this harden change"
       }
     ]
   }

@@ -2621,7 +2621,7 @@ const Step1_Category = ({ onSelect }) => {
   const { t } = useTranslation("onboarding");
   return (
   <div className="fade-up">
-    <h2 style={{ ...onboardingTitleStyle(), marginBottom: 10 }}>{t("category.title")}</h2>
+    <h1 style={{ ...onboardingTitleStyle(), marginBottom: 10 }}>{t("category.title")}</h1>
     <p style={{ fontSize: 15, color: G.grey, marginBottom: 22, lineHeight: 1.5 }}>
       {t("category.lead")}
     </p>
@@ -7862,6 +7862,13 @@ export default function App() {
     if (screen === "app" || screen === "onboarding" || screen === "auth") {
       scrollAppToTop();
     }
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen !== "onboarding") return undefined;
+    const prev = document.title;
+    document.title = "Créer mon plan | MySWYM";
+    return () => { document.title = prev; };
   }, [screen]);
 
   // Sprint C, jamais rester bloqué sur Loading / sync accès

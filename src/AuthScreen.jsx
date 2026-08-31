@@ -10,6 +10,7 @@ import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import { track } from "./lib/analytics.js";
 import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js";
 import { legalHref } from "./lib/legal-copy.js";
+import { usePageSeo } from "./lib/seo.js";
 
 export const getAuthInpStyle = () => ({
   width: "100%",
@@ -170,6 +171,19 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
       track("signup_started", { source: "auth_screen" }, { onceKey: "signup_started:auth_screen" });
     }
   }, [mode]);
+
+  const authPath = mode === "register" ? "/inscription" : mode === "reset" ? "/connexion" : "/connexion";
+  usePageSeo({
+    title: locale === "en"
+      ? (mode === "register" ? "Sign up | MySWYM" : mode === "reset" ? "Reset password | MySWYM" : "Log in | MySWYM")
+      : (mode === "register" ? "Inscription | MySWYM" : mode === "reset" ? "Mot de passe oublié | MySWYM" : "Connexion | MySWYM"),
+    description: locale === "en"
+      ? "Log in or create your MySWYM account. 7-day Premium trial, no card."
+      : "Connecte-toi ou crée ton compte MySWYM. Essai Premium 7 jours, sans carte.",
+    path: authPath,
+    noIndex: true,
+  });
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -262,9 +276,9 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         </div>
       )}
       <div className="fade-up">
-        <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
           {titleMap[mode]}
-        </h2>
+        </h1>
         <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
           {subtitleMap[mode]}
         </p>

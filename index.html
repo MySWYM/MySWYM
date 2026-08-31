@@ -26,6 +26,23 @@
     <link rel="alternate" hreflang="en" href="https://www.myswym.app/" />
     <link rel="alternate" hreflang="fr" href="https://www.myswym.app/fr" />
     <link rel="alternate" hreflang="x-default" href="https://www.myswym.app/" />
+    <script>
+      (function () {
+        try {
+          var path = location.pathname || "/";
+          var fr = path === "/fr" || path.indexOf("/fr/") === 0;
+          var stored = "";
+          try { stored = localStorage.getItem("i18nextLng") || ""; } catch (e) {}
+          var useFr = fr || stored.indexOf("fr") === 0;
+          if (useFr) {
+            document.documentElement.lang = "fr";
+            document.title = "MySWYM : Plan d'entraînement natation personnalisé";
+          } else {
+            document.documentElement.lang = "en";
+          }
+        } catch (e) {}
+      })();
+    </script>
     <style>
       html, body, #root {
         margin: 0;
