@@ -162,7 +162,11 @@ import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
 import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
-import WhatsNewSheet, { hasSeenWhatsNew, markWhatsNewSeen } from "./sheets/WhatsNewSheet.jsx";
+import WhatsNewSheet, {
+  hasSeenWhatsNew,
+  markWhatsNewSeen,
+  syncWhatsNewSeenIfNeeded,
+} from "./sheets/WhatsNewSheet.jsx";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -7986,10 +7990,16 @@ export default function App() {
     };
   }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
 
-  // Pop « Nouveautés » one-shot (pas de reset plan / quiz).
+  // Pop « Nouveautés » one-shot / compte (pas de reset plan / quiz).
   useEffect(() => {
     if (screen !== "app" || !user || !plan) return;
-    if (showWhatsNew || hasSeenWhatsNew()) return;
+    if (showWhatsNew) return;
+    if (hasSeenWhatsNew(user)) {
+      void syncWhatsNewSeenIfNeeded(user).then((u) => {
+        if (u) setUser(u);
+      });
+      return;
+    }
     if (showUpgrade || showPlanReady || softPaywallPending) return;
     if (sessionCelebrate || sessionFeedbackTarget !== null || feedbackWeek !== null) return;
     if (loopPaywall || replaceConfirmOpen || deletePlanId) return;
@@ -9539,10 +9549,11 @@ export default function App() {
     setTimeout(() => setToast(null), 3200);
   };
 
-  /** Continuer WhatsNew : rafraîchit la semaine boucle (ouvert → Sheet), garde les validées. */
+  /** Continuer WhatsNew : 1× / compte — rafraîchit la semaine boucle (ouvert → Sheet), garde les validées. */
   const handleWhatsNewContinue = async () => {
     if (whatsNewLoading) return;
-    markWhatsNewSeen();
+    const updatedUser = await markWhatsNewSeen(user);
+    if (updatedUser) setUser(updatedUser);
     const entry = plans.find((e) => e.id === activePlanId);
     const loopOk = entry?.plan?.isSessionLoop && usesSessionLoop(entry.profile);
 
