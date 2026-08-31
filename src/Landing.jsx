@@ -84,18 +84,6 @@ function Hero() {
             </a>
           </div>
           <p className="lp-hero-note">{t("hero.freeNote")}</p>
-          <dl className="lp-stats">
-            {[
-              [t("hero.proof1Value"), t("hero.proof1Label")],
-              [t("hero.proof2Value"), t("hero.proof2Label")],
-              [t("hero.proof3Value"), t("hero.proof3Label")],
-            ].map(([n, l]) => (
-              <div key={l}>
-                <dt className="lp-display">{n}</dt>
-                <dd>{l}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
         <aside className="lp-hero-phones" aria-label={t("session.label")}>
           <a href="#seance" className="lp-hero-phones-link">
@@ -109,6 +97,18 @@ function Hero() {
             />
           </a>
         </aside>
+        <dl className="lp-stats lp-hero-stats">
+          {[
+            [t("hero.proof1Value"), t("hero.proof1Label")],
+            [t("hero.proof2Value"), t("hero.proof2Label")],
+            [t("hero.proof3Value"), t("hero.proof3Label")],
+          ].map(([n, l]) => (
+            <div key={l}>
+              <dt className="lp-display">{n}</dt>
+              <dd>{l}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );
@@ -402,6 +402,17 @@ function SessionPreview() {
           <p className="lp-kicker">{t("session.label")}</p>
           <h2 className="lp-h2 lp-display">{t("session.title")}</h2>
           <p className="lp-lead lp-lead-tight">{t("session.subtitle")}</p>
+          <div className="lp-session-preview-detail">
+            <img
+              src="/session-detail-mockup.png"
+              alt={t("session.detailMockupAlt")}
+              className="lp-session-preview-detail-img"
+              width={459}
+              height={956}
+              decoding="async"
+              loading="lazy"
+            />
+          </div>
           <ul className="lp-session-beats">
             {beats.map((b) => (
               <li key={b.label} className="lp-session-beat">
