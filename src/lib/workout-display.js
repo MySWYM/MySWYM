@@ -532,6 +532,22 @@ export function stripAllurePaceMarkers(text) {
   );
 }
 
+/** Retire R… / repos … du sous-texte (pastille R ou D porte l’info). */
+export function stripRestMarkers(text) {
+  if (!text) return text;
+  return (
+    String(text)
+      .replace(/,?\s*repos\s+\d+\s*min(?:utes?)?(?:\s+\d+\s*s(?:ec(?:ondes?)?)?)?/gi, "")
+      .replace(/,?\s*repos\s+\d+\s*s(?:ec(?:ondes?)?)?/gi, "")
+      .replace(/\bR\s*\d+\s*['′]\s*\d{0,2}\s*["″]?/gi, "")
+      .replace(/\bR\s*\d+\s*["″']?/gi, "")
+      .replace(/\s*[,;·]+\s*$/g, "")
+      .replace(/^\s*[,;·]+\s*/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim() || null
+  );
+}
+
 export function stripSprintMarkers(text) {
   if (!text) return text;
   return (
@@ -922,10 +938,18 @@ export function buildWorkoutView(session = {}) {
       cues = cues.map((c) => stripAllurePaceMarkers(c)).filter(Boolean);
     }
 
+    // R Sheet : pastille seulement SANS départ D… (avec D, la récup est dans l’intervalle).
+    // Avec {@:} sans D → on garde le R Sheet.
+    const restBlob = [parsed?.rest, cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
     const restFromField =
       parsed?.rest && !/^D/i.test(String(parsed.rest)) ? parseRestInterval(parsed.rest) : null;
-    const restChip = restFromField ? formatRestChip(restFromField.seconds) : null;
-    const restSeconds = restFromField ? restFromField.seconds : null;
+    const restParsed = restFromField || (!departLabel ? parseRestInterval(restBlob) : null);
+    let restChip = !departLabel && restParsed ? formatRestChip(restParsed.seconds) : null;
+    let restSeconds = !departLabel && restParsed ? restParsed.seconds : null;
+    if (restChip || departLabel) {
+      cuePrimary = stripRestMarkers(cuePrimary);
+      cues = cues.map((c) => stripRestMarkers(c)).filter(Boolean);
+    }
 
     const sprintBlob = [cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
     // Sprint seul → pastille SPRINT ; déjà dans Enchaînement → ne pas doubler / stripper le cue
@@ -994,13 +1018,17 @@ export function buildWorkoutView(session = {}) {
       steps: parsed?.steps || null,
       pyramid,
       children: childParsed.map((c) => {
+        const childDepart =
+          (c.rest && /^D/i.test(String(c.rest)) ? parseDepartInterval(c.rest) : null) ||
+          parseDepartInterval([c.main, c.rest, ...(c.cues || [])].filter(Boolean).join(" "));
         const childRest = c.rest && !/^D/i.test(String(c.rest)) ? parseRestInterval(c.rest) : null;
+        const showChildRest = !childDepart && childRest;
         return {
           main: c.main,
           rest: c.rest,
           restLabel: formatRestLabel(c.rest),
-          restChip: childRest ? formatRestChip(childRest.seconds) : null,
-          restSeconds: childRest ? childRest.seconds : null,
+          restChip: showChildRest ? formatRestChip(childRest.seconds) : null,
+          restSeconds: showChildRest ? childRest.seconds : null,
           cues: (c.cues || []).filter((x) => !isSoftFillCue(x)),
           headline: splitHeadline(c.main),
         };

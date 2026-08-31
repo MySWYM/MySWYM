@@ -11,6 +11,7 @@ import {
   parseAllurePaceRange,
   formatAllurePaceChip,
   stripAllurePaceMarkers,
+  stripRestMarkers,
   stripDepartMarkers,
   stripSprintMarkers,
   parseRepAllureEnchainement,
@@ -117,6 +118,8 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(formatAllurePaceChip("1:39", "1:46"), "@1:39-1:46");
   assert.equal(stripAllurePaceMarkers("moyen @1:39-1:46"), "moyen");
   assert.equal(stripAllurePaceMarkers("(Z3 @1:20-1:26)"), null);
+  assert.equal(stripRestMarkers("crawl repos 30 s"), "crawl");
+  assert.equal(stripRestMarkers('R20"'), null);
 }
 
 {
@@ -131,6 +134,45 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(ex.allurePaceLow, "1:39");
   assert.equal(ex.allurePaceHigh, "1:46");
   assert.ok(!/@/.test(ex.cue || ""), "allure @ sortie du sous-texte");
+}
+
+{
+  // D + repos Sheet → pastille D seulement (pas de R)
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ['-3 × 50 m crawl D1\'10", repos 20 s'],
+    sets: [{ block: "corps", label: '3 × 50 m crawl D1\'10", repos 20 s' }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.departLabel, "D1'10\"");
+  assert.equal(ex.restChip, null, "pas de R quand D présent");
+  assert.ok(!/repos/i.test(ex.cue || ""), ex.cue);
+}
+
+{
+  // @ + repos Sheet → pastille @ + R
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-3 × 50 m crawl @0:50-0:53, repos 20 s"],
+    sets: [{ block: "corps", label: "3 × 50 m crawl @0:50-0:53, repos 20 s" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.allurePaceLabel, "@0:50-0:53");
+  assert.equal(ex.restChip, 'R20"');
+  assert.equal(ex.departLabel, null);
+  assert.ok(!/repos/i.test(ex.cue || ""), ex.cue);
+}
+
+{
+  // Sans D → R Sheet seul
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-3 × 50 m crawl, repos 20 s"],
+    sets: [{ block: "corps", label: "3 × 50 m crawl, repos 20 s" }],
+  });
+  const ex = view.exercises[0];
+  assert.equal(ex.restChip, 'R20"');
+  assert.equal(ex.departLabel, null);
 }
 
 {

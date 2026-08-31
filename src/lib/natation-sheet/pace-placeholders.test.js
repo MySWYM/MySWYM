@@ -43,6 +43,17 @@ assert.match(formatSheetDepart(110), /^D1'/);
 }
 
 {
+  // Sheet a déjà un repos → ne pas injecter un 2ᵉ « repos 30 s »
+  const keepSheet = resolvePacePlaceholders("3 × 50 m crawl {D:endurance}, repos 20 s", {
+    allowPace: false,
+    pace100: 90,
+  });
+  assert.match(keepSheet, /repos 20 s/);
+  assert.ok(!/repos 30 s/.test(keepSheet), keepSheet);
+  assert.ok(!/\{D:/i.test(keepSheet));
+}
+
+{
   const ok = resolvePacePlaceholders("8 × 100 m crawl, {D:endurance} {@:endurance}", {
     allowPace: true,
     pace100: 90,
@@ -75,6 +86,24 @@ assert.match(formatSheetDepart(110), /^D1'/);
     { levelBand: "debutant", nage: "crawl", pace100: 90, isPremium: true },
   );
   assert.match(filled.bloc, /repos 30 s/);
+}
+
+{
+  const filled = materializeSession(
+    {
+      n: 62,
+      phase: null,
+      bande: "intermédiaire",
+      total_m: 2000,
+      echauffement: "200 m",
+      bloc: "3 × 50 m crawl {D:endurance}, repos 20 s",
+      rac: "100 m",
+    },
+    [],
+    { levelBand: "debutant", nage: "crawl", pace100: 90, isPremium: true },
+  );
+  assert.match(filled.bloc, /repos 20 s/);
+  assert.ok(!/repos 30 s/.test(filled.bloc), filled.bloc);
 }
 
 {

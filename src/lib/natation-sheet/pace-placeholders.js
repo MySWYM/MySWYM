@@ -179,8 +179,18 @@ function tidyLine(line) {
     .trim();
 }
 
+/** True si la ligne Sheet porte déjà un repos / R… (ne pas injecter un 2ᵉ « repos 30 s »). */
+export function lineHasSheetRest(text) {
+  const s = String(text || "");
+  if (/\brepos\s+\d+\s*(?:s|sec|min)?/i.test(s)) return true;
+  if (/\bR\s*\d+\s*['′]?\s*\d{0,2}\s*["″]?/i.test(s)) return true;
+  return false;
+}
+
 /**
  * Remplace `{D:…}` / `{@:…}` sur une ligne.
+ * Si `{D:}` ne peut pas devenir un départ : on retire le token quand un repos Sheet
+ * est déjà là (évite « repos 30 s » + « repos 20 s »). Sinon fallback `repos 30 s`.
  * @param {string} line
  * @param {{ allowPace?: boolean, pace100?: number|null }} opts
  */
@@ -191,17 +201,19 @@ export function resolvePacePlaceholders(line, opts = {}) {
   const allowPace = opts.allowPace === true && Number(opts.pace100) > 0;
   const pace100 = Number(opts.pace100);
   const repMeters = inferRepMetersFromLine(s);
+  const sheetRest = lineHasSheetRest(s);
+  const dFallback = sheetRest ? "" : "repos 30 s";
 
   const out = s.replace(PACE_TOKEN_RE, (_full, kind, intentRaw) => {
     const intent = normalizePaceIntent(intentRaw);
     if (!intent) return "";
     if (!allowPace) {
-      if (String(kind).toUpperCase() === "D") return "repos 30 s";
+      if (String(kind).toUpperCase() === "D") return dFallback;
       return "";
     }
     if (String(kind).toUpperCase() === "D") {
       const sec = computeDepartSeconds(pace100, intent, repMeters);
-      return sec != null ? formatSheetDepart(sec) : "repos 30 s";
+      return sec != null ? formatSheetDepart(sec) : dFallback;
     }
     return computeAllureAtRange(pace100, intent, repMeters) || "";
   });
