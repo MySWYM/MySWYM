@@ -7,9 +7,12 @@ import {
   canResolveSheetPace,
   computeDepartSeconds,
   formatSheetDepart,
+  inferPaceIntentFromDepart,
   inferRepMetersFromLine,
   normalizePaceIntent,
   resolvePacePlaceholders,
+  rewritePaceMarkersInLine,
+  rewriteSessionPaceMarkers,
 } from "./pace-placeholders.js";
 import { materializeSession } from "./parse.js";
 
@@ -122,6 +125,40 @@ assert.match(formatSheetDepart(110), /^D1'/);
   );
   assert.match(filled.bloc, /D\d+'/);
   assert.match(filled.bloc, /@\d+:\d+/);
+}
+
+{
+  const fromPace = 105; // ~1:45
+  const toPace = 79; // ~1:19
+  const line = resolvePacePlaceholders("8 × 100 m crawl, {D:endurance} {@:endurance}", {
+    allowPace: true,
+    pace100: fromPace,
+  });
+  const departSec = computeDepartSeconds(fromPace, "endurance", 100);
+  assert.equal(inferPaceIntentFromDepart(fromPace, departSec, 100), "endurance");
+  const rewritten = rewritePaceMarkersInLine(line, {
+    fromPace100: fromPace,
+    toPace100: toPace,
+  });
+  const expectedD = formatSheetDepart(computeDepartSeconds(toPace, "endurance", 100));
+  assert.ok(rewritten.includes(expectedD), rewritten);
+  assert.ok(!rewritten.includes(formatSheetDepart(departSec)) || expectedD === formatSheetDepart(departSec), rewritten);
+  assert.match(rewritten, /@\d+:\d+-\d+:\d+/);
+}
+
+{
+  const sess = rewriteSessionPaceMarkers(
+    {
+      details: ["- 8 × 100 m crawl " + formatSheetDepart(computeDepartSeconds(100, "seuil", 100))],
+      completed: true,
+    },
+    { fromPace100: 100, toPace100: 80, isPremium: true, levelBand: "intermediaire" },
+  );
+  assert.equal(
+    sess.details[0],
+    "- 8 × 100 m crawl " + formatSheetDepart(computeDepartSeconds(100, "seuil", 100)),
+    "séance validée intacte",
+  );
 }
 
 console.log("pace-placeholders.test.js OK");

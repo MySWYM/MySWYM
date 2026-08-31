@@ -29,7 +29,7 @@
 
 12. **Libellés** — Jamais `(facile @2)` / `@2` / `@3` dans un titre nageur. Jamais un bloc = volume + thème seul (`600m respiration`, `6x50 technique`). Éducatif nommé ou nage concrète.
 
-13. **Premium / gratuit** — Allures `@mm:ss`, départs `D…`, step allures, vidéos IG sous séance = Premium. Gratuit : `R…` sans tags d’allure. T100 seul (plus de T400).
+13. **Premium / gratuit** — Allures `@mm:ss`, départs `D…`, step allures, vidéos IG sous séance = Premium. Gratuit : `R…` sans tags d’allure. T100 seul (plus de T400). Changement de T100 : **recalcule** les `D…` / `@…` des séances non validées **sans régénérer** le contenu (intent Sheet déduit du départ actuel).
 
 14. **Périodisation volume** — Semaine N ≤ N−1 × 1,10. Feedback hebdo `volumeAdj` plafonné [0,70 ; 1,30]. Ne jamais régénérer silencieusement une semaine déjà commencée.
 

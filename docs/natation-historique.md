@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-08-31 | T100 → départs live | Changer le T100 recalcule `D…` / `@…` sur les séances non validées (intent déduit), sans regen ni rechargement de séance. Validées intactes. | ✅ active |
 | 2026-08-31 | Pop Nouveautés 1× / compte | `WhatsNewSheet` : vu en `user_metadata.whats_new_seen` (+ cache local par userId). Continuer = regen semaine 1× ; plus de pop multi-navigateur. Campagne `v2026_08_30`. | ✅ active |
 | 2026-08-30 | Soft Sheet vs composeur + QG | Règle 1 : Soft **01–13** = Sheet visible ; composeur = hors Sheet. QG : option **A** (pas de gate / parse strict sur lignes Sheet ; Sheet = foi). Checklist staging : `npm run test:natation-sheet`. | ✅ active |
 | 2026-08-30 | Pop Nouveautés session-gen | Sheet `WhatsNewSheet` aligné mail campagne `session-gen-2026-08` (clé `myswym_whats_new_v2026_08_30`) : générateur repris, validées gardées, refresh semaine. | ↩ remplacée |
