@@ -1,6 +1,5 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/lp-accordion.jsx";
 import { LpButton } from "./ui/lp-button.jsx";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/lp-tabs.jsx";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -24,7 +23,6 @@ import LandingReviews from "./marketing/LandingReviews.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
 import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
-import SessionHeroCard from "./SessionHeroCard.jsx";
 import "./landing/landing.css";
 
 const OBJECTIVE_TABS = [
@@ -52,33 +50,6 @@ const INCLUDE_ITEMS = [
 
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function SessionCard({ compact = false }) {
-  const { t } = useTranslation("landing");
-  const blocks = [
-    { label: t("session.warmLabel"), detail: t("session.warmContent") },
-    { label: t("session.mainLabel"), detail: t("session.mainContent") },
-    { label: t("session.coolLabel"), detail: t("session.coolContent") },
-  ];
-  const shown = compact ? blocks.slice(0, 2) : blocks;
-  return (
-    <SessionHeroCard
-      className={compact ? "is-compact" : "is-featured"}
-      kicker={t("session.type")}
-      titleAs={compact ? "p" : "h2"}
-      preview={{ title: t("session.heading"), meta: t("session.meta"), blocks: shown }}
-      tip={compact ? null : t("session.tip")}
-      wrapCta={false}
-    >
-      {compact ? (
-        <a href="#seance" className="ms-session-card-more">
-          {t("hero.seeSession")}
-          <ArrowRight size={14} />
-        </a>
-      ) : null}
-    </SessionHeroCard>
-  );
 }
 
 function Hero() {
@@ -126,184 +97,254 @@ function Hero() {
             ))}
           </dl>
         </div>
-        <aside className="lp-hero-session" aria-label={t("session.label")}>
-          <SessionCard compact />
+        <aside className="lp-hero-phones" aria-label={t("session.label")}>
+          <a href="#seance" className="lp-hero-phones-link">
+            <img
+              src="/hero-phone-mockup.png"
+              alt={t("hero.mockupAlt")}
+              className="lp-hero-phones-img"
+              width={682}
+              height={1024}
+              decoding="async"
+            />
+          </a>
         </aside>
       </div>
     </section>
   );
 }
 
-function cardStep(scroller) {
-  const card = scroller?.querySelector(".lp-obj-card");
-  return card ? card.getBoundingClientRect().width + 16 : (scroller?.clientWidth || 0) * 0.8;
-}
-
 function Objectives() {
   const { t } = useTranslation("landing");
   const cta = usePublicCta();
-  const [tabId, setTabId] = useState("progression");
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
-  const [cardIndex, setCardIndex] = useState(0);
-  const scrollerRef = useRef(null);
+  const initialCat = 1;
+  const [tabId, setTabId] = useState(OBJECTIVE_TABS[initialCat].id);
+  const [catIndex, setCatIndex] = useState(initialCat);
+  const [canPrev, setCanPrev] = useState(initialCat > 0);
+  const [canNext, setCanNext] = useState(initialCat < OBJECTIVE_TABS.length - 1);
+  const railRef = useRef(null);
+  const listRef = useRef(null);
+  const catIndexRef = useRef(initialCat);
   const activeTab = OBJECTIVE_TABS.find((item) => item.id === tabId) || OBJECTIVE_TABS[0];
   const cardCount = activeTab.cards.length;
 
-  const updateScroll = () => {
-    const el = scrollerRef.current;
+  const syncFromRail = () => {
+    const el = railRef.current;
     if (!el) return;
-    setCanPrev(el.scrollLeft > 12);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 12);
-    const step = cardStep(el);
-    if (!step) return;
-    const index = Math.round(el.scrollLeft / step);
-    setCardIndex(Math.min(Math.max(index, 0), el.querySelectorAll(".lp-obj-card").length - 1));
+    const cards = el.querySelectorAll(".lp-obj-cat-card");
+    if (!cards.length) return;
+    const center = el.scrollLeft + el.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    cards.forEach((card, i) => {
+      const mid = card.offsetLeft + card.offsetWidth / 2;
+      const dist = Math.abs(mid - center);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    });
+    const next = OBJECTIVE_TABS[best];
+    if (!next) return;
+    catIndexRef.current = best;
+    setCatIndex(best);
+    setTabId(next.id);
+    setCanPrev(best > 0);
+    setCanNext(best < OBJECTIVE_TABS.length - 1);
+  };
+
+  const scrollToCat = (index, behavior) => {
+    const el = railRef.current;
+    const card = el?.querySelectorAll(".lp-obj-cat-card")?.[index];
+    if (!el || !card) return;
+    const left = card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2;
+    el.scrollTo({
+      left: Math.max(0, left),
+      behavior:
+        behavior ?? (prefersReducedMotion() ? "auto" : "smooth"),
+    });
   };
 
   useEffect(() => {
-    const el = scrollerRef.current;
+    const el = railRef.current;
     if (!el) return undefined;
-    el.scrollTo({ left: 0 });
-    setCardIndex(0);
-    const frame = requestAnimationFrame(updateScroll);
-    el.addEventListener("scroll", updateScroll, { passive: true });
-    window.addEventListener("resize", updateScroll);
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(syncFromRail);
+    };
+    const onResize = () => {
+      scrollToCat(catIndexRef.current, "auto");
+      syncFromRail();
+    };
+    // Démarre sur la 2e image pour montrer qu’on peut glisser (peek gauche + droite)
+    scrollToCat(initialCat, "auto");
+    syncFromRail();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(frame);
-      el.removeEventListener("scroll", updateScroll);
-      window.removeEventListener("resize", updateScroll);
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
     };
+  }, []);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
   }, [tabId]);
 
-  const scrollByCard = (dir) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * cardStep(el), behavior: prefersReducedMotion() ? "auto" : "smooth" });
-  };
-
-  const scrollToCard = (index) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ left: index * cardStep(el), behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  const scrollByCat = (dir) => {
+    scrollToCat(Math.min(OBJECTIVE_TABS.length - 1, Math.max(0, catIndex + dir)));
   };
 
   return (
-    <section className="lp-section">
-      <Tabs value={tabId} onValueChange={setTabId}>
-        <div className="lp-wrap">
-          <div className="lp-intro">
-            <h2 className="lp-h2 lp-display">{t("objectives.title")}</h2>
-            <p className="lp-lead lp-lead-tight">{t("objectives.subtitle")}</p>
-          </div>
-          <TabsList className="lp-obj-tabs" aria-label={t("objectives.tabsAria")}>
-            {OBJECTIVE_TABS.map((item) => (
-              <TabsTrigger
-                key={item.id}
-                value={item.id}
-                id={`lp-obj-tab-${item.id}`}
-                className={`lp-obj-tab${item.comingSoon ? " is-soon" : ""}`}
-              >
-                {t(`objectives.${item.labelKey}`)}
-                {item.comingSoon ? (
-                  <span className="lp-obj-tab-soon">{t("objectives.comingSoonShort")}</span>
-                ) : null}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <p className="lp-obj-hint">
-            {t("objectives.hint", {
-              category: t(`objectives.${activeTab.labelKey}`),
-              qty: cardCount,
-              kind: t(`objectives.${activeTab.kindKey}`),
-            })}
-          </p>
+    <section className="lp-section lp-obj-section">
+      <div className="lp-wrap">
+        <div className="lp-intro">
+          <h2 className="lp-h2 lp-display">{t("objectives.title")}</h2>
+          <p className="lp-lead lp-lead-tight">{t("objectives.subtitle")}</p>
         </div>
-        {OBJECTIVE_TABS.map((item) => (
-          <TabsContent
-            key={item.id}
-            value={item.id}
-            className={`lp-obj-stage${item.media ? " has-media" : ""}`}
-            data-obj={item.id}
+        <p className="lp-obj-hint" aria-live="polite">
+          {t("objectives.hint", {
+            category: t(`objectives.${activeTab.labelKey}`),
+            qty: cardCount,
+            kind: t(`objectives.${activeTab.kindKey}`),
+          })}
+        </p>
+      </div>
+
+      <div className="lp-obj-phone-stage">
+        <button
+          type="button"
+          className="lp-obj-phone-nav lp-obj-phone-nav-prev"
+          aria-label={t("objectives.scrollPrev")}
+          disabled={!canPrev}
+          onClick={() => scrollByCat(-1)}
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <div className="lp-obj-phone-scene">
+          <div
+            className="lp-obj-cat-rail"
+            ref={railRef}
+            role="tablist"
+            aria-label={t("objectives.tabsAria")}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight") {
+                e.preventDefault();
+                scrollByCat(1);
+              } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                scrollByCat(-1);
+              } else if (e.key === "Home") {
+                e.preventDefault();
+                scrollToCat(0);
+              } else if (e.key === "End") {
+                e.preventDefault();
+                scrollToCat(OBJECTIVE_TABS.length - 1);
+              }
+            }}
           >
-            {item.media ? (
-              <div className="lp-obj-media" aria-hidden>
-                <img src={item.media} alt="" width={item.width} height={item.height} />
-              </div>
-            ) : null}
-            <div className="lp-wrap lp-obj-stage-inner">
-              <div className="lp-obj-scroller-wrap">
+            {OBJECTIVE_TABS.map((item, index) => {
+              const selected = item.id === tabId;
+              return (
                 <button
+                  key={item.id}
                   type="button"
-                  className="lp-obj-nav lp-obj-nav-prev"
-                  aria-label={t("objectives.scrollPrev")}
-                  disabled={!canPrev}
-                  onClick={() => scrollByCard(-1)}
+                  role="tab"
+                  id={`lp-obj-tab-${item.id}`}
+                  aria-selected={selected}
+                  tabIndex={selected ? 0 : -1}
+                  className={`lp-obj-cat-card${selected ? " is-active" : ""}${item.comingSoon ? " is-soon" : ""}`}
+                  onClick={() => scrollToCat(index)}
                 >
-                  <ChevronLeft size={20} />
+                  <img
+                    src={item.media}
+                    alt=""
+                    width={item.width}
+                    height={item.height}
+                    draggable={false}
+                  />
+                  <span className="lp-obj-cat-label">
+                    {t(`objectives.${item.labelKey}`)}
+                    {item.comingSoon ? (
+                      <span className="lp-obj-cat-soon">{t("objectives.comingSoonShort")}</span>
+                    ) : null}
+                  </span>
                 </button>
+              );
+            })}
+          </div>
+
+          <div className="lp-obj-phone">
+            <span className="lp-obj-phone-btn lp-obj-phone-btn-silent" aria-hidden />
+            <span className="lp-obj-phone-btn lp-obj-phone-btn-vol-up" aria-hidden />
+            <span className="lp-obj-phone-btn lp-obj-phone-btn-vol-down" aria-hidden />
+            <span className="lp-obj-phone-btn lp-obj-phone-btn-power" aria-hidden />
+            <div className="lp-obj-phone-frame">
+              <div className="lp-obj-phone-island" aria-hidden>
+                <span className="lp-obj-phone-island-lens" />
+                <span className="lp-obj-phone-island-sensor" />
+              </div>
+              <div className="lp-obj-phone-glass">
+                <div className="lp-obj-phone-window" aria-hidden />
                 <div
-                  className="lp-obj-grid"
-                  ref={item.id === tabId ? scrollerRef : undefined}
+                  className="lp-obj-phone-panel"
+                  ref={listRef}
+                  role="tabpanel"
+                  aria-labelledby={`lp-obj-tab-${activeTab.id}`}
+                  aria-live="polite"
                 >
-                  {item.cards.map((key) => (
-                    item.comingSoon ? (
-                      <div key={key} className="lp-obj-card is-soon" aria-disabled="true">
-                        <p className="lp-card-kicker">{t(`objectives.${item.tagKey}`)}</p>
-                        <h3 className="lp-obj-card-title">{t(`objectives.${key}Title`)}</h3>
-                        <p className="lp-obj-card-meta">{t(`objectives.${key}Meta`)}</p>
-                        <p className="lp-obj-card-desc">{t(`objectives.${key}Desc`)}</p>
-                        <span className="lp-obj-card-cta">
-                          {t("objectives.comingSoon")}
-                        </span>
-                      </div>
-                    ) : (
-                    <LocalizedLink key={key} to={landingCtaPath(key, cta.href)} className="lp-obj-card">
-                      <p className="lp-card-kicker">{t(`objectives.${item.tagKey}`)}</p>
-                      <h3 className="lp-obj-card-title">{t(`objectives.${key}Title`)}</h3>
-                      <p className="lp-obj-card-meta">{t(`objectives.${key}Meta`)}</p>
-                      <p className="lp-obj-card-desc">{t(`objectives.${key}Desc`)}</p>
-                      <span className="lp-obj-card-cta">
-                        {t("objectives.cta")}
-                        <ArrowRight size={16} />
-                      </span>
-                    </LocalizedLink>
-                    )
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="lp-obj-nav lp-obj-nav-next"
-                  aria-label={t("objectives.scrollNext")}
-                  disabled={!canNext}
-                  onClick={() => scrollByCard(1)}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-              {item.id === tabId ? (
-                <div className="lp-obj-pager">
-                  <p className="lp-obj-counter" aria-live="polite">
-                    {t("objectives.counter", { current: cardIndex + 1, total: cardCount })}
+                  <p className="lp-obj-phone-panel-kicker">
+                    {t(`objectives.${activeTab.tagKey}`)}
+                    {" · "}
+                    {cardCount} {t(`objectives.${activeTab.kindKey}`)}
                   </p>
-                  <div className="lp-obj-dots" role="tablist" aria-label={t("objectives.dotsAria")}>
-                    {item.cards.map((key, index) => (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`lp-obj-dot${index === cardIndex ? " is-active" : ""}`}
-                        aria-label={t("objectives.dotAria", { current: index + 1, total: cardCount })}
-                        aria-current={index === cardIndex ? "true" : undefined}
-                        onClick={() => scrollToCard(index)}
-                      />
+                  <ul className="lp-obj-format-list">
+                    {activeTab.cards.map((key) => (
+                      <li key={key}>
+                        {activeTab.comingSoon ? (
+                          <div className="lp-obj-format-card is-soon" aria-disabled="true">
+                            <h3 className="lp-obj-format-title">{t(`objectives.${key}Title`)}</h3>
+                            <p className="lp-obj-format-meta">{t(`objectives.${key}Meta`)}</p>
+                            <p className="lp-obj-format-desc">{t(`objectives.${key}Desc`)}</p>
+                            <span className="lp-obj-format-cta">{t("objectives.comingSoon")}</span>
+                          </div>
+                        ) : (
+                          <LocalizedLink
+                            to={landingCtaPath(key, cta.href)}
+                            className="lp-obj-format-card"
+                          >
+                            <h3 className="lp-obj-format-title">{t(`objectives.${key}Title`)}</h3>
+                            <p className="lp-obj-format-meta">{t(`objectives.${key}Meta`)}</p>
+                            <p className="lp-obj-format-desc">{t(`objectives.${key}Desc`)}</p>
+                            <span className="lp-obj-format-cta">
+                              {t("objectives.cta")}
+                              <ArrowRight size={14} />
+                            </span>
+                          </LocalizedLink>
+                        )}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
-              ) : null}
+                <div className="lp-obj-phone-glare" aria-hidden />
+              </div>
             </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="lp-obj-phone-nav lp-obj-phone-nav-next"
+          aria-label={t("objectives.scrollNext")}
+          disabled={!canNext}
+          onClick={() => scrollByCat(1)}
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
     </section>
   );
 }
@@ -337,13 +378,46 @@ function WhyMyswym() {
 
 function SessionPreview() {
   const { t } = useTranslation("landing");
+  const cta = usePublicCta();
+  const beats = [
+    { label: t("session.warmLabel"), detail: t("session.warmContent") },
+    { label: t("session.mainLabel"), detail: t("session.mainContent") },
+    { label: t("session.coolLabel"), detail: t("session.coolContent") },
+  ];
   return (
     <section id="seance" className="lp-band">
-      <div className="lp-wrap lp-section">
-        <p className="lp-kicker">{t("session.label")}</p>
-        <h2 className="lp-h2 lp-display">{t("session.title")}</h2>
-        <p className="lp-lead lp-lead-tight">{t("session.subtitle")}</p>
-        <SessionCard />
+      <div className="lp-wrap lp-section lp-session-preview">
+        <div className="lp-session-preview-phone">
+          <img
+            src="/session-phone-mockup.png"
+            alt={t("session.mockupAlt")}
+            className="lp-session-preview-phone-img"
+            width={682}
+            height={1024}
+            decoding="async"
+            loading="lazy"
+          />
+        </div>
+        <div className="lp-session-preview-copy">
+          <p className="lp-kicker">{t("session.label")}</p>
+          <h2 className="lp-h2 lp-display">{t("session.title")}</h2>
+          <p className="lp-lead lp-lead-tight">{t("session.subtitle")}</p>
+          <ul className="lp-session-beats">
+            {beats.map((b) => (
+              <li key={b.label} className="lp-session-beat">
+                <strong>{b.label}</strong>
+                <p>{b.detail}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="lp-session-tip">{t("session.tip")}</p>
+          <LpButton asChild className="lp-session-cta">
+            <Link to={cta.href}>
+              {t("session.cta")}
+              <ArrowRight size={14} />
+            </Link>
+          </LpButton>
+        </div>
       </div>
     </section>
   );
@@ -426,28 +500,64 @@ function Includes() {
 function FAQ() {
   const { t } = useTranslation("landing");
   const items = [1, 2, 3, 4, 5].map((n) => ({ id: `faq-${n}`, q: t(`faq.q${n}`), a: t(`faq.a${n}`) }));
+  const chatPoints = [1, 2, 3].map((n) => t(`faq.chatPoint${n}`));
   return (
     <section id="faq" className="lp-section">
-      <div className="lp-wrap lp-faq-wrap">
-        <p className="lp-kicker lp-center">{t("faq.label")}</p>
-        <h2 className="lp-h2 lp-display lp-faq-title">{t("faq.title")}</h2>
-        <Accordion type="single" collapsible className="lp-faq-list">
-          {items.map((item) => (
-            <AccordionItem key={item.id} value={item.id} className="lp-faq-item">
-              <AccordionTrigger>
-                <span>{item.q}</span>
-                <ChevronDown size={16} color="var(--lp-primary)" aria-hidden />
-              </AccordionTrigger>
-              <AccordionContent>{item.a}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-        <p className="lp-see">
-          <LocalizedLink to="/faq" className="lp-see-link">
-            {t("faq.seeAll")}
-            <ArrowRight size={14} />
-          </LocalizedLink>
-        </p>
+      <div className="lp-wrap lp-faq-section">
+        <div className="lp-faq-intro">
+          <p className="lp-kicker lp-center">{t("faq.label")}</p>
+          <h2 className="lp-h2 lp-display lp-faq-title">{t("faq.title")}</h2>
+        </div>
+        <div className="lp-faq-layout">
+          <div className="lp-faq-main">
+            <Accordion type="single" collapsible className="lp-faq-list">
+              {items.map((item) => (
+                <AccordionItem key={item.id} value={item.id} className="lp-faq-item">
+                  <AccordionTrigger>
+                    <span>{item.q}</span>
+                    <ChevronDown size={16} color="var(--lp-primary)" aria-hidden />
+                  </AccordionTrigger>
+                  <AccordionContent>{item.a}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+            <p className="lp-see">
+              <LocalizedLink to="/faq" className="lp-see-link">
+                {t("faq.seeAll")}
+                <ArrowRight size={14} />
+              </LocalizedLink>
+            </p>
+          </div>
+          <aside className="lp-faq-chat" aria-label={t("faq.chatTitle")}>
+            <div className="lp-faq-chat-phone">
+              <img
+                src="/faq-chat-mockup.png"
+                alt={t("faq.mockupAlt")}
+                className="lp-faq-chat-phone-img"
+                width={682}
+                height={1024}
+                decoding="async"
+                loading="lazy"
+              />
+            </div>
+            <div className="lp-faq-chat-copy">
+              <p className="lp-kicker">{t("faq.chatKicker")}</p>
+              <h3 className="lp-faq-chat-title lp-display">{t("faq.chatTitle")}</h3>
+              <p className="lp-faq-chat-body">{t("faq.chatBody")}</p>
+              <ul className="lp-faq-chat-points">
+                {chatPoints.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+              <LpButton asChild className="lp-faq-chat-cta">
+                <LocalizedLink to="/tarifs">
+                  {t("faq.chatCta")}
+                  <ArrowRight size={14} />
+                </LocalizedLink>
+              </LpButton>
+            </div>
+          </aside>
+        </div>
       </div>
     </section>
   );
