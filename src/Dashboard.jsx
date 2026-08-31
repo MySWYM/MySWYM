@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   Award, Lock, Flame, Waves, Trophy, TrendingUp,
 } from "lucide-react";
@@ -8,7 +8,6 @@ import CoachCard from "./CoachCard.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import EventWeekPlanCard from "./EventWeekPlanCard.jsx";
-import PoolMode from "./workout/PoolMode.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
@@ -34,6 +33,8 @@ import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { ACCESS_STATUS } from "./lib/access.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { getTabUi } from "./tab-ui-registry.js";
+
+const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
 
 /** Badges sur l’accueil / profil : colorés si débloqués, grisés sinon. */
 export function HomeBadgesSection({ plan }) {
@@ -463,6 +464,7 @@ export default function Dashboard({
         />
 
         {poolOpen && next?.session && (
+          <Suspense fallback={null}>
           <PoolMode
             session={next.session}
             sessionKey={`${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}`}
@@ -486,6 +488,7 @@ export default function Dashboard({
                   }
             }
           />
+          </Suspense>
         )}
 
         {showAllureTip && (

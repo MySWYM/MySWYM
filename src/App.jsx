@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
@@ -93,7 +93,6 @@ import {
 } from "./lib/swim-pace.js";
 import PyramidBlockViz, { parsePyramidLine } from "./PyramidBlockViz.jsx";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
-import PoolMode from "./workout/PoolMode.jsx";
 import { buildWorkoutView } from "./lib/workout-display.js";
 import { toCoachDetailLines } from "./lib/sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./lib/sports-engine/session-labels.js";
@@ -137,24 +136,15 @@ import {
 } from "./lib/onboarding-catalog.jsx";
 import { impliedSwimStyleForLevel, isBeginnerBlockedForGoal, isBeginnerLevelId } from "./lib/onboarding-level-gate.js";
 import ProfileTab from "./ProfileTab.jsx";
-import SettingsDrawer from "./SettingsDrawer.jsx";
-
-/** Étape K, faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
-const sportsPersistence = createSportsPersistence(supabase);
-
-const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
-const isAuthPath = (pathname) => pathname in AUTH_PATHS;
 
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
-import SupportBubble from "./SupportBubble.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import AuthScreen, { PasswordInput } from "./AuthScreen.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import i18n, { getStoredLanguage } from "./i18n/index.js";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
-import BuddyMatching from "./BuddyMatching.jsx";
 import FeedbackModal from "./sheets/FeedbackModal.jsx";
 import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
@@ -206,6 +196,17 @@ import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
 import { fetchReferralInvite } from "./lib/referral-share.js";
+
+const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
+const SettingsDrawer = lazy(() => import("./SettingsDrawer.jsx"));
+const SupportBubble = lazy(() => import("./SupportBubble.jsx"));
+const BuddyMatching = lazy(() => import("./BuddyMatching.jsx"));
+
+/** Étape K, faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
+const sportsPersistence = createSportsPersistence(supabase);
+
+const AUTH_PATHS = { "/connexion": "password", "/inscription": "register" };
+const isAuthPath = (pathname) => pathname in AUTH_PATHS;
 
 applyTheme();
 
@@ -4413,7 +4414,7 @@ const SessionCard = ({
             </div>
           )}
           {poolOpen && (
-            <PoolMode
+            <Suspense fallback={null}><PoolMode
               session={session}
               sessionKey={poolSessionKey}
               colors={G}
@@ -4431,7 +4432,7 @@ const SessionCard = ({
                     }
                   : undefined
               }
-            />
+            /></Suspense>
           )}
             </>
           )}
@@ -4948,7 +4949,7 @@ const ProgressionLoopView = ({
         </div>
 
         {poolOpen && (
-          <PoolMode
+          <Suspense fallback={null}><PoolMode
             session={session}
             sessionKey={`${activePlanId || "loop"}:today`}
             colors={G}
@@ -4958,7 +4959,7 @@ const ProgressionLoopView = ({
               setPoolOpen(false);
               onComplete("done");
             }}
-          />
+          /></Suspense>
         )}
 
         {!resolved && isPremium && (
@@ -10886,10 +10887,13 @@ export default function App() {
           onEditProfile: () => goTab("profile"),
         }} />}
         {activeTab === "profile" && <ProfileTab  plan={plan} profile={activeProfile} user={user} onUserUpdate={setUser} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} onEquipmentChange={handleEquipmentChange} onSwimmerProfileChange={handleSwimmerProfileChange} />}
+        <Suspense fallback={null}>
         {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
+        </Suspense>
 
-        <SupportBubble aboveBottomNav user={user} />
+        <Suspense fallback={null}><SupportBubble aboveBottomNav user={user} /></Suspense>
         <BottomNav active={activeTab} onChange={goTab} newBadge={newBadgeId !== null} hideBuddies={!hasSwumNav} lockBuddies={!accessState.canUseBuddies} />
+        <Suspense fallback={null}>
         <SettingsDrawer
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
@@ -10923,6 +10927,7 @@ export default function App() {
           )}
           referralSlot={<ReferralShareCard />}
         />
+        </Suspense>
 
         {cancelSurveyOpen && (
           <CancelSurveySheet
