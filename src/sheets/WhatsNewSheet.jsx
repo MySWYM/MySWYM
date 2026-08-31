@@ -2,22 +2,16 @@ import { Sparkles } from "lucide-react";
 import { FONT, FONT_DISPLAY } from "../theme/brand.js";
 import { G } from "../theme/palette.js";
 
-/** Bump la clé pour une future campagne « nouveautés ». */
-export const WHATS_NEW_STORAGE_KEY = "myswym_whats_new_v2026_08_30";
-
-export function hasSeenWhatsNew() {
-  try {
-    return localStorage.getItem(WHATS_NEW_STORAGE_KEY) === "1";
-  } catch {
-    return true;
-  }
-}
-
-export function markWhatsNewSeen() {
-  try {
-    localStorage.setItem(WHATS_NEW_STORAGE_KEY, "1");
-  } catch { /* ignore */ }
-}
+export {
+  WHATS_NEW_CAMPAIGN,
+  WHATS_NEW_STORAGE_KEY,
+  WHATS_NEW_META_KEY,
+  whatsNewStorageKey,
+  normalizeWhatsNewSeenMap,
+  hasSeenWhatsNew,
+  markWhatsNewSeen,
+  syncWhatsNewSeenIfNeeded,
+} from "../lib/whats-new-seen.js";
 
 /** Keep themes in sync with api/_lib/emails/reactivation.tsx (campagne session-gen). */
 const BULLETS = [
@@ -36,8 +30,8 @@ const BULLETS = [
 ];
 
 /**
- * Pop one-shot « Nouveautés ».
- * Continuer peut rafraîchir la semaine boucle (séances non validées → Sheet).
+ * Pop one-shot « Nouveautés » (1× / compte).
+ * Continuer régénère la semaine boucle une seule fois (séances non validées → Sheet).
  */
 export default function WhatsNewSheet({ onContinue, loading = false }) {
   return (
