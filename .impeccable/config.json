@@ -61,5 +61,6 @@
         "reason": "incumbent boot splash glow in index.html; not part of this harden change"
       }
     ]
-  }
+  },
+  "buildPath": "comp"
 }
