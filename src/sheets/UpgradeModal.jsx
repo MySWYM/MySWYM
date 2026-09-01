@@ -119,7 +119,11 @@ export default function UpgradeModal ({ onClose, weeksBlocked, softContext = nul
           : `Démarrer : ${PRICING.monthlyFlex.label}/mois`;
 
   return (
-    <div className="sheet-overlay" onClick={e => canDismiss && e.target === e.currentTarget && onClose()}>
+    <div
+      className="sheet-overlay"
+      onClick={e => canDismiss && e.target === e.currentTarget && onClose()}
+      style={{ zIndex: 500 }}
+    >
       <div className="sheet-panel ms-sheet-card scale-in">
         <div className="ms-sheet-handle" />
         <div style={{ textAlign: "center", marginBottom: 22, paddingTop: 4 }}>
