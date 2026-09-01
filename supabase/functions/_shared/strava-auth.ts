@@ -53,15 +53,23 @@ export async function refreshStravaToken(
     }
 
     const data = await res.json();
-    const { error: upsertError } = await supabaseAdmin.from("strava_tokens").upsert({
-      user_id: userId,
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at: data.expires_at,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+    // UPDATE, pas upsert : athlete_id est NOT NULL sans défaut.
+    // Un upsert sans athlete_id échoue à l'INSERT (avant ON CONFLICT),
+    // donc le refresh n'était jamais persisté après 6 h.
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from("strava_tokens")
+      .update({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: data.expires_at,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .select("user_id")
+      .maybeSingle();
 
-    if (upsertError) throw upsertError;
+    if (updateError) throw updateError;
+    if (!updated) throw new Error("Compte Strava non connecté");
     return data.access_token as string;
   })();
 
