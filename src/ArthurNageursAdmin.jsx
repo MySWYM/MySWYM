@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useArthurAdmin } from "./ArthurAdminShell.jsx";
 import { adminGetJson } from "./lib/arthur-admin-auth.js";
+import { DonutChart } from "./admin/AdminCharts.jsx";
 
 function dash(v) {
   if (v == null || v === "") return "-";
@@ -19,6 +20,10 @@ function hoursLabel(h) {
   if (x < 1) return `${Math.round(x * 60)} min`;
   if (x < 48) return `${Math.round(x)} h`;
   return `${Math.round(x / 24)} j`;
+}
+
+function donutSlices(rows) {
+  return (rows || []).map((row) => ({ label: row.type, value: row.count }));
 }
 
 function Card({ label, value, hint }) {
@@ -86,11 +91,15 @@ function Breakdown({ title, rows, empty, hint }) {
 }
 
 export default function ArthurNageursAdmin() {
-  const { headers } = useArthurAdmin();
-  const [days, setDays] = useState(30);
+  const { headers, days, setDays } = useArthurAdmin();
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
   const [data, setData] = useState(null);
+  const [lookup, setLookup] = useState("");
+  const [fiche, setFiche] = useState(null);
+  const [ficheLoading, setFicheLoading] = useState(false);
+  const [ficheError, setFicheError] = useState("");
+  const [hits, setHits] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +120,68 @@ export default function ArthurNageursAdmin() {
       setLoading(false);
     }
   }, [days, headers]);
+
+  const openFiche = useCallback(async (q) => {
+    setFicheLoading(true);
+    setFicheError("");
+    try {
+      const h = await headers();
+      const json = await adminGetJson(
+        `/api/admin/arthur-readiness?nageur=${encodeURIComponent(q)}`,
+        h,
+      );
+      if (json.missing) {
+        setFiche(null);
+        setFicheError("Les APIs ne répondent pas.");
+      } else if (json.auth) {
+        setFiche(null);
+        setFicheError(json.error || "Accès refusé");
+      } else {
+        setFiche(json);
+      }
+    } catch {
+      setFiche(null);
+      setFicheError("Recherche impossible pour le moment.");
+    } finally {
+      setFicheLoading(false);
+    }
+  }, [headers]);
+
+  const searchNageur = useCallback(async (ev) => {
+    ev?.preventDefault?.();
+    const q = String(lookup || "").trim();
+    if (!q) return;
+    setFicheLoading(true);
+    setFicheError("");
+    setHits([]);
+    try {
+      const h = await headers();
+      const found = await adminGetJson(
+        `/api/admin/arthur-readiness?nageur_search=${encodeURIComponent(q)}`,
+        h,
+      );
+      if (found.missing_table || found.source === "missing_table") {
+        await openFiche(q);
+        return;
+      }
+      const list = found.hits || [];
+      if (list.length === 1) {
+        setHits([]);
+        await openFiche(list[0].user_id);
+        return;
+      }
+      if (list.length > 1) {
+        setHits(list);
+        setFiche(null);
+        setFicheLoading(false);
+        return;
+      }
+      await openFiche(q);
+    } catch {
+      setFicheError("Recherche impossible pour le moment.");
+      setFicheLoading(false);
+    }
+  }, [headers, lookup, openFiche]);
 
   useEffect(() => {
     load();
@@ -133,6 +204,10 @@ export default function ArthurNageursAdmin() {
   const reasons = m.cancel_reasons || [];
   const d7 = m.d7 || {};
   const d30 = m.d30_churn || {};
+  const slices = data?.slices || {};
+  const prof = fiche?.profile || {};
+  const who = fiche?.user || {};
+  const acc = fiche?.access || {};
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 72px" }}>
@@ -166,6 +241,7 @@ export default function ArthurNageursAdmin() {
             <option value={7}>7 jours</option>
             <option value={30}>30 jours</option>
             <option value={90}>90 jours</option>
+            <option value={0}>Tout</option>
           </select>
         </label>
         <button
@@ -191,6 +267,233 @@ export default function ArthurNageursAdmin() {
         Est-ce qu’ils nagent vraiment ? Pas Instagram : le produit. 1re séance, habitude, trop dur /
         trop facile, et ceux qui paient sans jamais aller à l’eau. Ici : où ça casse, le moteur, D7/D30.
       </p>
+
+      <form
+        onSubmit={searchNageur}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 24,
+          alignItems: "center",
+        }}
+      >
+          <input
+            type="search"
+            value={lookup}
+            onChange={(ev) => setLookup(ev.target.value)}
+            placeholder="Email, prénom ou UUID"
+            aria-label="Email, prénom ou UUID"
+            style={{
+              flex: "1 1 240px",
+              width: "100%",
+              boxSizing: "border-box",
+              minHeight: 44,
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid #d8dee6",
+              fontSize: 16,
+            }}
+          />
+        <button
+          type="submit"
+          disabled={ficheLoading || !String(lookup).trim()}
+          style={{
+            minHeight: 44,
+            padding: "10px 16px",
+            border: 0,
+            borderRadius: 10,
+            background: "#154388",
+            color: "#fff",
+            fontWeight: 700,
+            cursor: ficheLoading ? "wait" : "pointer",
+            fontSize: 15,
+          }}
+        >
+          {ficheLoading ? "Recherche…" : "Ouvrir la fiche"}
+        </button>
+      </form>
+      {hits.length > 1 ? (
+        <ul style={{ listStyle: "none", margin: "0 0 20px", padding: 0 }}>
+          {hits.map((hit) => (
+            <li key={hit.user_id} style={{ marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={() => openFiche(hit.user_id)}
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  color: "#154388",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: 15,
+                  padding: 0,
+                }}
+              >
+                {hit.firstname || "Sans prénom"} · {hit.email || hit.user_id}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {ficheError ? (
+        <p
+          style={{
+            background: "#fff6e8",
+            color: "#7a4a12",
+            padding: 14,
+            borderRadius: 10,
+            marginBottom: 20,
+            lineHeight: 1.5,
+          }}
+        >
+          {ficheError}
+        </p>
+      ) : null}
+      {fiche && !fiche.found ? (
+        <p
+          style={{
+            background: "#f4f7fb",
+            color: "#5a6a7a",
+            padding: 14,
+            borderRadius: 10,
+            marginBottom: 20,
+            lineHeight: 1.5,
+          }}
+        >
+          Pas de nageur pour « {fiche.query} ».
+        </p>
+      ) : null}
+      {fiche?.found ? (
+        <>
+        <Section title={who.firstname ? `Fiche : ${who.firstname}` : "Fiche nageur"}>
+          <Card label="Prénom" value={who.firstname || "Non renseigné"} />
+          <Card label="Email" value={who.email} />
+          <Card label="Id" value={who.id} />
+          <Card label="Sexe" value={prof.gender_label || "Non renseigné"} />
+          <Card label="Âge" value={prof.age ?? "Non renseigné"} />
+          <Card label="Niveau" value={prof.level_label || prof.level || "Non renseigné"} />
+          <Card label="Objectif" value={prof.objective_label || prof.objective || "Non renseigné"} />
+          <Card label="Nage" value={prof.swim_style_label || "Non renseigné"} />
+          <Card label="Fréquence" value={prof.frequency_label || "Non renseigné"} />
+          <Card label="Bassin" value={prof.pool_label || "Non renseigné"} />
+          <Card
+            label="Ancienneté"
+            value={who.tenure_days != null ? `${who.tenure_days} j` : "-"}
+          />
+          <Card
+            label="Accès"
+            value={acc.status_label || acc.status}
+            hint={acc.entitled ? "Accès ouvert." : "Sans accès."}
+          />
+        </Section>
+        <Section title="Séances">
+          <Card label="Générées" value={fiche.kpis?.generated} hint="Toutes, pas seulement les 12 affichées." />
+          <Card label="Terminées" value={fiche.kpis?.completed} />
+          <Card label="Sautées" value={fiche.kpis?.skipped} />
+          <Card
+            label="Complétion"
+            value={fiche.kpis?.completion != null ? `${Math.round(fiche.kpis.completion * 100)} %` : "-"}
+          />
+          <Card
+            label="Distance"
+            value={fiche.kpis?.distance_m ? `${fiche.kpis.distance_m} m` : "-"}
+            hint="Somme des 12 dernières séances (volume stocké)."
+          />
+        </Section>
+        {Array.isArray(fiche.timeline) && fiche.timeline.length ? (
+          <section style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 750, color: "#0c1a2e", margin: "0 0 12px" }}>Timeline</h2>
+            <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+              {fiche.timeline.map((row, i) => (
+                <li key={`${row.at}-${i}`} style={{ fontSize: 14, color: "#0c1a2e", marginBottom: 8, lineHeight: 1.4 }}>
+                  {String(row.at).slice(0, 10)} · {row.label}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        </>
+      ) : null}
+
+      <section style={{ marginBottom: 28 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 750, color: "#0c1a2e", margin: "0 0 8px" }}>
+          Qui nage
+        </h2>
+        <p style={{ color: "#5a6a7a", margin: "0 0 12px", fontSize: 14, lineHeight: 1.45 }}>
+          Totaux all-time sur tous les profils. La période 7/30/90 j ne change pas ces donuts.
+          L’usage par segment est plus bas.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 12,
+          }}
+        >
+          <DonutChart title="Sexe" slices={donutSlices(slices.by_gender)} />
+          <DonutChart title="Âge" slices={donutSlices(slices.by_age)} />
+          <DonutChart title="Niveau" slices={donutSlices(slices.by_level)} />
+          <DonutChart title="Objectif" slices={donutSlices(slices.by_goal)} />
+        </div>
+      </section>
+
+      <Section title="Objectif × activité (période choisie)">
+        {(slices.by_objective || []).length ? (
+          slices.by_objective.map((row) => (
+            <Card
+              key={row.type}
+              label={row.type}
+              value={row.nageurs}
+              hint={`${Math.round((row.pct_actifs || 0) * 100)} % actifs · ${row.seances_moy ?? "-"} séances · complétion ${row.completion == null ? "-" : `${Math.round(row.completion * 100)} %`}`}
+            />
+          ))
+        ) : (
+          <Card label="Pas encore de profils" value="-" />
+        )}
+      </Section>
+      <Section title="Niveau × activité">
+        {(slices.by_level_usage || []).length ? (
+          slices.by_level_usage.map((row) => (
+            <Card
+              key={row.type}
+              label={row.type}
+              value={row.nageurs}
+              hint={`${Math.round((row.pct_actifs || 0) * 100)} % actifs · ${row.seances_moy ?? "-"} séances`}
+            />
+          ))
+        ) : (
+          <Card label="Pas encore de profils" value="-" />
+        )}
+      </Section>
+      <Section title="Bassin × activité">
+        {(slices.by_pool || []).length ? (
+          slices.by_pool.map((row) => (
+            <Card
+              key={row.type}
+              label={row.type}
+              value={row.nageurs}
+              hint={`${Math.round((row.pct_actifs || 0) * 100)} % actifs · ${row.seances_moy ?? "-"} séances`}
+            />
+          ))
+        ) : (
+          <Card label="Pas encore de profils" value="-" />
+        )}
+      </Section>
+      <Section title="Fréquence × activité">
+        {(slices.by_frequency || []).length ? (
+          slices.by_frequency.map((row) => (
+            <Card
+              key={row.type}
+              label={row.type}
+              value={row.nageurs}
+              hint={`${Math.round((row.pct_actifs || 0) * 100)} % actifs · ${row.seances_moy ?? "-"} séances`}
+            />
+          ))
+        ) : (
+          <Card label="Pas encore de profils" value="-" />
+        )}
+      </Section>
 
       {offline ? (
         <p

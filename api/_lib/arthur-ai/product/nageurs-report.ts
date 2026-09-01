@@ -3,6 +3,27 @@
  * Servi par GET /api/admin/arthur-readiness?nageurs=1 (pas de 13e fonction Hobby).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  accessStatusOf,
+  ageBandLabel,
+  ageSliceEntries,
+  buildProductInsights,
+  dailyBuckets,
+  feedbackCategoryFr,
+  genderLabelFr,
+  genderSliceEntries,
+  generatorVersionOf,
+  resolveProfileAge,
+  resolveProfileGender,
+  retentionCohorts,
+} from "./nageurs-helpers.js";
+import {
+  frequencyLabelFr,
+  goalLabelFr,
+  levelLabelFr,
+  poolLabelFr,
+} from "./product-labels.js";
+import { dropInternalUsers, loadInternalTestUserIds } from "./internal-test-accounts.js";
 
 const SIGNUP_EVENTS = ["signup_completed", "signup"];
 const SIGNUP_STARTED_EVENTS = ["signup_started"];
@@ -52,8 +73,10 @@ export type NageursReport = {
     checkout_to_paid: number | null;
   };
   usage: {
+    swimmers_1d: number;
     swimmers_7d: number;
     swimmers_period: number;
+    swimmers_30d: number;
     sessions_planned: number;
     sessions_done: number;
     sessions_skipped: number;
@@ -82,6 +105,14 @@ export type NageursReport = {
     top_skipped: Array<{ type: string; count: number }>;
     top_liked: Array<{ type: string; count: number }>;
     adaptations: { total: number; lowered: number; raised: number; hold: number };
+    feedback_categories: Array<{ type: string; count: number }>;
+    by_version: Array<{
+      type: string;
+      generated: number;
+      completed: number;
+      skipped: number;
+      completion: number | null;
+    }>;
   };
   money: {
     trial: number;
@@ -95,12 +126,88 @@ export type NageursReport = {
     cancel_reasons: Array<{ reason: string; count: number }>;
     d7: { eligible: number; converted: number; rate: number | null };
     d30_churn: { eligible: number; churned: number; rate: number | null };
+    by_objective: Array<{
+      type: string;
+      nageurs: number;
+      payants: number;
+      conversion: number | null;
+    }>;
   };
+  slices: {
+    scope: "all_profiles";
+    by_gender: Array<{ type: string; count: number }>;
+    by_age: Array<{ type: string; count: number }>;
+    by_level: Array<{ type: string; count: number }>;
+    by_goal: Array<{ type: string; count: number }>;
+    by_objective: Array<{
+      type: string;
+      nageurs: number;
+      actifs: number;
+      pct_actifs: number | null;
+      seances_moy: number | null;
+      completion: number | null;
+    }>;
+    by_level_usage: Array<{
+      type: string;
+      nageurs: number;
+      actifs: number;
+      pct_actifs: number | null;
+      seances_moy: number | null;
+      completion: number | null;
+    }>;
+    by_pool: Array<{
+      type: string;
+      nageurs: number;
+      actifs: number;
+      pct_actifs: number | null;
+      seances_moy: number | null;
+      completion: number | null;
+    }>;
+    by_frequency: Array<{
+      type: string;
+      nageurs: number;
+      actifs: number;
+      pct_actifs: number | null;
+      seances_moy: number | null;
+      completion: number | null;
+    }>;
+  };
+  funnel: Array<{
+    key: string;
+    label: string;
+    value: number | null;
+    available: boolean;
+    proxy?: string | null;
+  }>;
+  compare: {
+    previous_days: number | null;
+    signups: number | null;
+    first_session: number | null;
+    sessions_done: number | null;
+    sessions_planned: number | null;
+    swimmers_period: number | null;
+    completion_rate: number | null;
+    too_hard_rate: number | null;
+  };
+  daily: Array<{
+    day: string;
+    signups: number;
+    first_session: number;
+    trials: number;
+    payments: number;
+    sessions_done: number;
+  }>;
+  cohorts: Array<{ cohort: string; size: number; rates: Array<number | null> }>;
+  insights: string[];
+  instrumentation: Array<{ event: string; status: "ok" | "proxy" | "missing"; note: string }>;
   notes: string[];
 };
 
 export function clampDays(raw: unknown, fallback = 30): number {
+  const token = String(raw ?? "").trim().toLowerCase();
+  if (token === "all" || token === "tout") return 0;
   const n = Number(raw);
+  if (n === 0) return 0;
   if (!Number.isFinite(n)) return fallback;
   if (n <= 7) return 7;
   if (n <= 30) return 30;
@@ -221,13 +328,14 @@ export function trialToPaidD7(
     trial_started_at?: string | null;
     subscription_started_at?: string | null;
     status?: string | null;
+    access_status?: string | null;
   }>,
   now: Date,
 ): { eligible: number; converted: number; rate: number | null } {
   const cutoff = new Date(now.getTime() - 7 * 864e5).toISOString();
   const eligible = access.filter((r) => r.trial_started_at && r.trial_started_at <= cutoff);
   const converted = eligible.filter(
-    (r) => r.subscription_started_at || r.status === "active",
+    (r) => r.subscription_started_at || accessStatusOf(r) === "active",
   );
   return {
     eligible: eligible.length,
@@ -240,6 +348,7 @@ export function paidChurnD30(
   access: Array<{
     subscription_started_at?: string | null;
     status?: string | null;
+    access_status?: string | null;
   }>,
   now: Date,
 ): { eligible: number; churned: number; rate: number | null } {
@@ -247,7 +356,10 @@ export function paidChurnD30(
   const eligible = access.filter(
     (r) => r.subscription_started_at && r.subscription_started_at <= cutoff,
   );
-  const churned = eligible.filter((r) => r.status === "canceled" || r.status === "expired");
+  const churned = eligible.filter((r) => {
+    const s = accessStatusOf(r);
+    return s === "canceled" || s === "expired";
+  });
   return {
     eligible: eligible.length,
     churned: churned.length,
@@ -288,6 +400,26 @@ function distinctUsers(rows: { user_id?: string | null }[]): number {
   return new Set(rows.map((r) => r.user_id).filter(Boolean) as string[]).size;
 }
 
+async function usersWhoCompleted(
+  admin: SupabaseClient,
+  userIds: string[],
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (let i = 0; i < userIds.length; i += 200) {
+    const chunk = userIds.slice(i, i + 200);
+    const { data, error } = await admin
+      .from("planned_sessions")
+      .select("user_id")
+      .in("user_id", chunk)
+      .eq("status", "completed");
+    if (error) throw error;
+    for (const r of data || []) {
+      if (r.user_id) out.add(String(r.user_id));
+    }
+  }
+  return out;
+}
+
 function earliestByUser(
   rows: { user_id?: string | null; created_at?: string | null }[],
 ): Map<string, string> {
@@ -305,8 +437,12 @@ export async function buildNageursReport(
   { days = 30, now = new Date() }: { days?: number; now?: Date } = {},
 ): Promise<NageursReport> {
   const windowDays = clampDays(days);
-  const since = sinceIso(windowDays, now);
+  const allTime = windowDays === 0;
+  const since = allTime ? "2015-01-01T00:00:00.000Z" : sinceIso(windowDays, now);
+  const fetchSince = allTime ? since : sinceIso(windowDays * 2, now);
   const since7 = sinceIso(7, now);
+  const since1 = sinceIso(1, now);
+  const since30 = sinceIso(30, now);
   const notes: string[] = [];
 
   const allEventNames = [
@@ -335,7 +471,7 @@ export async function buildNageursReport(
       admin,
       "conversion_events",
       "user_id, event_name, created_at, properties",
-      (q) => q.gte("created_at", since).in("event_name", allEventNames),
+      (q) => q.gte("created_at", fetchSince).in("event_name", allEventNames),
     );
   } catch {
     notes.push("Événements d’inscription / checkout indisponibles.");
@@ -345,11 +481,21 @@ export async function buildNageursReport(
     planned = await listRows(
       admin,
       "planned_sessions",
-      "user_id, status, completed_at, created_at, session_type, week_index, family, intent, session_payload",
-      (q) => q.or(`created_at.gte.${since},completed_at.gte.${since}`),
+      "user_id, status, completed_at, created_at, session_type, week_index, family, intent, generator_version, session_payload",
+      (q) => q.or(`created_at.gte.${fetchSince},completed_at.gte.${fetchSince}`),
     );
   } catch {
-    notes.push("Table des séances planifiées absente ou illisible.");
+    try {
+      planned = await listRows(
+        admin,
+        "planned_sessions",
+        "user_id, status, completed_at, created_at, session_type, week_index, family, intent, session_payload",
+        (q) => q.or(`created_at.gte.${fetchSince},completed_at.gte.${fetchSince}`),
+      );
+      notes.push("Colonne generator_version absente. Relance la migration planned_sessions.");
+    } catch {
+      notes.push("Table des séances planifiées absente ou illisible.");
+    }
   }
 
   try {
@@ -357,7 +503,7 @@ export async function buildNageursReport(
       admin,
       "session_feedback",
       "user_id, rating, pain, session_type, session_title, week_number, created_at",
-      (q) => q.gte("created_at", since),
+      (q) => q.gte("created_at", fetchSince),
     );
   } catch {
     notes.push("Retours de séances indisponibles.");
@@ -367,17 +513,37 @@ export async function buildNageursReport(
     access = await listRows(
       admin,
       "user_access_state",
-      "user_id, status, trial_started_at, subscription_started_at",
+      "user_id, access_status, trial_started_at, trial_ends_at, subscription_started_at, subscription_ends_at, cancel_at_period_end",
       (q) => q,
     );
-  } catch {
-    notes.push("Statuts d’abonnement indisponibles.");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    notes.push(
+      msg
+        ? `Statuts d’abonnement indisponibles (${msg.slice(0, 80)}).`
+        : "Statuts d’abonnement indisponibles.",
+    );
   }
 
   try {
-    profiles = await listRows(admin, "sport_profiles", "user_id, level, objective", (q) => q);
+    profiles = await listRows(
+      admin,
+      "sport_profiles",
+      "user_id, level, objective, frequency, pool_length, age, gender, extra",
+      (q) => q,
+    );
   } catch {
-    notes.push("Profils nageur (niveau / objectif) indisponibles.");
+    try {
+      profiles = await listRows(
+        admin,
+        "sport_profiles",
+        "user_id, level, objective, frequency, pool_length, age, extra",
+        (q) => q,
+      );
+      notes.push("Colonne sexe pas encore en base. Relance la migration sport_profiles.gender.");
+    } catch {
+      notes.push("Profils nageur (niveau, objectif, âge, sexe) indisponibles.");
+    }
   }
 
   try {
@@ -391,8 +557,53 @@ export async function buildNageursReport(
     notes.push("Adaptations moteur indisponibles.");
   }
 
-  const byEvent = (names: string[]) =>
-    conversions.filter((r) => names.includes(String(r.event_name || "")));
+  const internal = await loadInternalTestUserIds(admin);
+  const skip = internal.ids;
+  if (skip.size) {
+    conversions = dropInternalUsers(conversions, skip);
+    planned = dropInternalUsers(planned, skip);
+    feedbacks = dropInternalUsers(feedbacks, skip);
+    access = dropInternalUsers(access, skip);
+    profiles = dropInternalUsers(profiles, skip);
+    adaptations = dropInternalUsers(adaptations, skip);
+    notes.push(
+      internal.source === "directory"
+        ? `${skip.size} compte(s) de test exclus des stats (y compris les +alias).`
+        : `${skip.size} compte(s) de test exclus des stats. +alias exclus seulement après migration admin_user_directory.`,
+    );
+  } else if (internal.source === "none") {
+    notes.push(
+      "Comptes de test (arthur.no / j.wiackowska / admin) non exclus : index nageurs absent.",
+    );
+  }
+
+  const conversionsNow = conversions.filter((r) => allTime || String(r.created_at || "") >= since);
+  const conversionsPrev = allTime
+    ? []
+    : conversions.filter((r) => {
+      const t = String(r.created_at || "");
+      return t >= fetchSince && t < since;
+    });
+  const plannedNow = planned.filter((r) => {
+    const t = String(r.completed_at || r.created_at || "");
+    return allTime || t >= since;
+  });
+  const plannedPrev = allTime
+    ? []
+    : planned.filter((r) => {
+      const t = String(r.completed_at || r.created_at || "");
+      return t >= fetchSince && t < since;
+    });
+  const feedbacksNow = feedbacks.filter((r) => allTime || String(r.created_at || "") >= since);
+  const feedbacksPrev = allTime
+    ? []
+    : feedbacks.filter((r) => {
+      const t = String(r.created_at || "");
+      return t >= fetchSince && t < since;
+    });
+
+  const byEvent = (names: string[], rows = conversionsNow) =>
+    rows.filter((r) => names.includes(String(r.event_name || "")));
 
   const signups = distinctUsers(byEvent(SIGNUP_EVENTS));
   const plans = distinctUsers(byEvent(PLAN_EVENTS));
@@ -409,20 +620,26 @@ export async function buildNageursReport(
     if (h != null) delays.push(h);
   }
 
-  const donePlanned = planned.filter((r) => r.status === "completed");
-  const skipPlanned = planned.filter((r) => r.status === "skipped" || r.status === "missed");
+  const donePlanned = plannedNow.filter((r) => r.status === "completed");
+  const skipPlanned = plannedNow.filter((r) => r.status === "skipped" || r.status === "missed");
   const swimmersPeriod = new Set<string>();
   const swimmers7 = new Set<string>();
+  const swimmers1 = new Set<string>();
+  const swimmers30 = new Set<string>();
+  const markSwimmer = (uid: string, when: string) => {
+    if (!uid) return;
+    swimmersPeriod.add(uid);
+    if (when >= since1) swimmers1.add(uid);
+    if (when >= since7) swimmers7.add(uid);
+    if (when >= since30) swimmers30.add(uid);
+  };
   for (const r of donePlanned) {
     if (!r.user_id) continue;
-    swimmersPeriod.add(r.user_id);
-    const when = r.completed_at || r.created_at;
-    if (when && when >= since7) swimmers7.add(r.user_id);
+    markSwimmer(r.user_id, String(r.completed_at || r.created_at || ""));
   }
-  for (const r of feedbacks) {
+  for (const r of feedbacksNow) {
     if (!r.user_id) continue;
-    swimmersPeriod.add(r.user_id);
-    if (r.created_at && r.created_at >= since7) swimmers7.add(r.user_id);
+    markSwimmer(r.user_id, String(r.created_at || ""));
   }
   for (const uid of firstAt.keys()) swimmersPeriod.add(uid);
 
@@ -445,15 +662,17 @@ export async function buildNageursReport(
   for (const p of profiles) {
     if (p.user_id) profileByUser.set(p.user_id, p);
   }
-  for (const r of feedbacks) {
+  const categoryMap = new Map<string, number>();
+  for (const r of feedbacksNow) {
     const rating = String(r.rating || "");
     const label = sessionLabel(r);
+    tally(categoryMap, feedbackCategoryFr(rating));
     if (TOO_HARD.has(rating)) {
       tooHard += 1;
       tally(hardByType, String(r.session_type || "non classé"));
       const prof = profileByUser.get(r.user_id) || {};
-      tally(hardByLevel, String(prof.level || "inconnu"));
-      tally(hardByGoal, String(prof.objective || "inconnu"));
+      tally(hardByLevel, levelLabelFr((prof as { level?: string }).level));
+      tally(hardByGoal, goalLabelFr((prof as { objective?: string }).objective));
       const week = r.week_number != null ? `S${r.week_number}` : "semaine ?";
       tally(hardByWeek, week);
     } else if (TOO_EASY.has(rating)) tooEasy += 1;
@@ -482,7 +701,7 @@ export async function buildNageursReport(
     adaptCounts[classifyAdaptation(r)] += 1;
   }
 
-  const weekly = weeklyVolumeBuckets(planned, since7);
+  const weekly = weeklyVolumeBuckets(plannedNow, since7);
   const signupStarted = distinctUsers(byEvent(SIGNUP_STARTED_EVENTS));
   const paywalls = distinctUsers(byEvent(PAYWALL_EVENTS));
   const checkoutRows = byEvent(CHECKOUT_EVENTS);
@@ -491,10 +710,20 @@ export async function buildNageursReport(
   const abandoned = byEvent(CHECKOUT_ABANDONED_EVENTS).length;
   const paidish = distinctUsers([...byEvent(TRIAL_EVENTS), ...byEvent(PAYMENT_EVENTS)]);
 
-  const accessBy = (status: string) => access.filter((r) => r.status === status).length;
-  const payingOrTrial = access.filter((r) => r.status === "trial" || r.status === "active");
+  const accessBy = (status: string) => access.filter((r) => accessStatusOf(r) === status).length;
+  const payingOrTrial = access.filter((r) => {
+    const s = accessStatusOf(r);
+    return s === "trial" || s === "active";
+  });
   const everSwam = new Set<string>([...swimmersPeriod, ...firstAt.keys()]);
-  for (const r of feedbacks) if (r.user_id) everSwam.add(r.user_id);
+  for (const r of feedbacksNow) if (r.user_id) everSwam.add(r.user_id);
+  const payingIds = payingOrTrial.map((r) => String(r.user_id || "")).filter(Boolean);
+  try {
+    const swamEver = await usersWhoCompleted(admin, payingIds);
+    for (const id of swamEver) everSwam.add(id);
+  } catch {
+    notes.push("Contrôle « payent sans séance » limité à la période (requête lifetime indisponible).");
+  }
   const noSession = payingOrTrial.filter((r) => r.user_id && !everSwam.has(r.user_id)).length;
 
   const reasonMap = new Map<string, number>();
@@ -502,10 +731,164 @@ export async function buildNageursReport(
     tally(reasonMap, cancelReasonFromProperties(r.properties));
   }
 
-  const sessionsDone = donePlanned.length || feedbacks.length;
-  const sessionsPlanned = planned.length;
+  const sessionsDone = donePlanned.length;
+  const sessionsPlanned = plannedNow.length;
   const d7 = trialToPaidD7(access, now);
   const d30 = paidChurnD30(access, now);
+
+  const genderMap = new Map<string, number>();
+  const ageMap = new Map<string, number>();
+  const levelMap = new Map<string, number>();
+  const goalMap = new Map<string, number>();
+  for (const p of profiles) {
+    tally(genderMap, genderLabelFr(resolveProfileGender(p)));
+    tally(ageMap, ageBandLabel(resolveProfileAge(p)));
+    tally(levelMap, levelLabelFr(p.level));
+    tally(goalMap, goalLabelFr(p.objective));
+  }
+
+  const doneByUser = new Map<string, number>();
+  const plannedByUser = new Map<string, number>();
+  for (const r of plannedNow) {
+    if (!r.user_id) continue;
+    plannedByUser.set(r.user_id, (plannedByUser.get(r.user_id) || 0) + 1);
+    if (r.status === "completed") {
+      doneByUser.set(r.user_id, (doneByUser.get(r.user_id) || 0) + 1);
+    }
+  }
+
+  const usageSegment = (
+    keyFn: (p: any) => string,
+  ): Array<{
+    type: string;
+    nageurs: number;
+    actifs: number;
+    pct_actifs: number | null;
+    seances_moy: number | null;
+    completion: number | null;
+  }> => {
+    const groups = new Map<string, any[]>();
+    for (const p of profiles) {
+      const key = keyFn(p);
+      const list = groups.get(key) || [];
+      list.push(p);
+      groups.set(key, list);
+    }
+    return [...groups.entries()]
+      .map(([type, rows]) => {
+        const nageurs = rows.length;
+        let actifs = 0;
+        let plannedCount = 0;
+        let doneCount = 0;
+        for (const p of rows) {
+          const uid = String(p.user_id || "");
+          const done = doneByUser.get(uid) || 0;
+          const plannedN = plannedByUser.get(uid) || 0;
+          if (done > 0 || swimmersPeriod.has(uid)) actifs += 1;
+          plannedCount += plannedN;
+          doneCount += done;
+        }
+        return {
+          type,
+          nageurs,
+          actifs,
+          pct_actifs: ratio(actifs, nageurs),
+          seances_moy: nageurs ? Math.round((doneCount / nageurs) * 10) / 10 : null,
+          completion: ratio(doneCount, plannedCount),
+        };
+      })
+      .sort((a, b) => b.nageurs - a.nageurs)
+      .slice(0, 12);
+  };
+
+  const prevSignups = distinctUsers(byEvent(SIGNUP_EVENTS, conversionsPrev));
+  const prevFirst = distinctUsers(byEvent(FIRST_SESSION_EVENTS, conversionsPrev));
+  const prevDone = plannedPrev.filter((r) => r.status === "completed").length;
+  const prevPlanned = plannedPrev.length;
+  const prevSwimmers = new Set(
+    plannedPrev.filter((r) => r.status === "completed" && r.user_id).map((r) => r.user_id),
+  ).size;
+  const prevCompletion = ratio(
+    prevDone,
+    prevPlanned || prevDone + plannedPrev.filter((r) => r.status === "skipped" || r.status === "missed").length,
+  );
+  const prevTooHard = feedbacksPrev.filter((r) => TOO_HARD.has(String(r.rating || ""))).length;
+  const prevTooHardRate = ratio(prevTooHard, feedbacksPrev.length);
+
+  const paidPeriodIds = new Set(
+    byEvent(PAYMENT_EVENTS).map((r) => r.user_id).filter(Boolean) as string[],
+  );
+  const paidPeriod = paidPeriodIds.size;
+  const trialsPeriod = distinctUsers(byEvent(TRIAL_EVENTS));
+  const generatedUsers = distinctUsers(plannedNow);
+  const completedUsers = distinctUsers(donePlanned);
+
+  const versionMap = new Map<string, { generated: number; completed: number; skipped: number }>();
+  for (const r of plannedNow) {
+    const ver = generatorVersionOf(r);
+    const cur = versionMap.get(ver) || { generated: 0, completed: 0, skipped: 0 };
+    cur.generated += 1;
+    if (r.status === "completed") cur.completed += 1;
+    if (r.status === "skipped" || r.status === "missed") cur.skipped += 1;
+    versionMap.set(ver, cur);
+  }
+  const byVersion = [...versionMap.entries()]
+    .map(([type, v]) => ({
+      type,
+      generated: v.generated,
+      completed: v.completed,
+      skipped: v.skipped,
+      completion: ratio(v.completed, v.generated),
+    }))
+    .sort((a, b) => b.generated - a.generated);
+
+  const byObjectiveUsage = usageSegment((p) => goalLabelFr(p.objective));
+  const moneyByObjective = byObjectiveUsage.map((row) => {
+    const nageursOf = profiles.filter((p) => goalLabelFr(p.objective) === row.type);
+    const payants = nageursOf.filter((p) => p.user_id && paidPeriodIds.has(p.user_id)).length;
+    return {
+      type: row.type,
+      nageurs: row.nageurs,
+      payants,
+      conversion: ratio(payants, row.nageurs),
+    };
+  });
+
+  const daily = dailyBuckets(conversionsNow, allTime ? 30 : windowDays, now);
+  const dailyDays = allTime ? 30 : windowDays;
+  const dailySince = sinceIso(dailyDays, now);
+  for (const r of donePlanned) {
+    const day = String(r.completed_at || r.created_at || "").slice(0, 10);
+    const bucket = daily.find((d) => d.day === day);
+    if (bucket && (allTime || String(r.completed_at || r.created_at || "") >= dailySince)) {
+      bucket.sessions_done += 1;
+    }
+  }
+
+  const allSignupAt = earliestByUser(byEvent(SIGNUP_EVENTS, conversions));
+  const cohorts = retentionCohorts(
+    allSignupAt,
+    planned
+      .filter((r) => r.status === "completed")
+      .map((r) => ({ user_id: r.user_id, completed_at: r.completed_at || r.created_at })),
+    now,
+  );
+
+  const completionRate = ratio(
+    sessionsDone,
+    sessionsPlanned || sessionsDone + skipPlanned.length,
+  );
+  const tooHardRate = ratio(tooHard, feedbacksNow.length);
+  const insights = buildProductInsights({
+    allTime,
+    completion: completionRate,
+    prevCompletion,
+    tooHardRate,
+    prevTooHardRate,
+    payingNoSession: noSession,
+    byObjective: byObjectiveUsage,
+    byVersion,
+  });
 
   return {
     days: windowDays,
@@ -535,33 +918,34 @@ export async function buildNageursReport(
       checkout_to_paid: ratio(paidish, checkoutUsers),
     },
     usage: {
+      swimmers_1d: swimmers1.size,
       swimmers_7d: swimmers7.size,
+      swimmers_30d: swimmers30.size,
       swimmers_period: swimmersPeriod.size,
       sessions_planned: sessionsPlanned,
       sessions_done: sessionsDone,
       sessions_skipped: skipPlanned.length,
-      completion_rate: ratio(
-        sessionsDone,
-        sessionsPlanned || sessionsDone + skipPlanned.length,
-      ),
+      completion_rate: completionRate,
       weekly,
     },
     engine: {
-      feedbacks: feedbacks.length,
+      feedbacks: feedbacksNow.length,
       too_hard: tooHard,
       too_easy: tooEasy,
       ok,
       pain,
-      too_hard_rate: ratio(tooHard, feedbacks.length),
-      too_easy_rate: ratio(tooEasy, feedbacks.length),
-      pain_rate: ratio(pain, feedbacks.length),
+      too_hard_rate: tooHardRate,
+      too_easy_rate: ratio(tooEasy, feedbacksNow.length),
+      pain_rate: ratio(pain, feedbacksNow.length),
       hard_by_type: topEntries(hardByType),
       hard_by_level: topEntries(hardByLevel),
-      hard_by_goal: topEntries(hardByGoal),
       hard_by_week: topEntries(hardByWeek),
+      hard_by_goal: topEntries(hardByGoal),
       top_skipped: topEntries(skippedByLabel, 10),
       top_liked: topEntries(likedByLabel, 10),
       adaptations: adaptCounts,
+      feedback_categories: topEntries(categoryMap, 12),
+      by_version: byVersion,
     },
     money: {
       trial: accessBy("trial"),
@@ -578,7 +962,87 @@ export async function buildNageursReport(
       })),
       d7,
       d30_churn: d30,
+      by_objective: moneyByObjective,
     },
+    slices: {
+      scope: "all_profiles",
+      by_gender: genderSliceEntries(genderMap),
+      by_age: ageSliceEntries(ageMap),
+      by_level: topEntries(levelMap),
+      by_goal: topEntries(goalMap),
+      by_objective: byObjectiveUsage,
+      by_level_usage: usageSegment((p) => levelLabelFr(p.level)),
+      by_pool: usageSegment((p) => poolLabelFr(p.pool_length ?? p.extra?.pool_length)),
+      by_frequency: usageSegment((p) => frequencyLabelFr(p.frequency)),
+    },
+    funnel: [
+      { key: "signup", label: "Inscription", value: signups, available: true },
+      {
+        key: "onboarding",
+        label: "Onboarding terminé",
+        value: null,
+        available: false,
+        proxy: null,
+      },
+      { key: "plan", label: "Plan créé", value: plans, available: true },
+      {
+        key: "generated",
+        label: "Séance générée (nageurs)",
+        value: generatedUsers,
+        available: true,
+        proxy: "planned_sessions distinct users",
+      },
+      {
+        key: "opened",
+        label: "Séance ouverte",
+        value: null,
+        available: false,
+        proxy: null,
+      },
+      {
+        key: "started",
+        label: "Séance commencée",
+        value: null,
+        available: false,
+        proxy: null,
+      },
+      {
+        key: "completed",
+        label: "Séance terminée (nageurs)",
+        value: completedUsers,
+        available: true,
+        proxy: "planned_sessions.completed distinct users",
+      },
+      { key: "trial", label: "Trial", value: trialsPeriod, available: true },
+      { key: "paid", label: "Payant", value: paidPeriod, available: true },
+    ],
+    compare: {
+      previous_days: allTime ? null : windowDays,
+      signups: allTime ? null : prevSignups,
+      first_session: allTime ? null : prevFirst,
+      sessions_done: allTime ? null : prevDone,
+      sessions_planned: allTime ? null : prevPlanned,
+      swimmers_period: allTime ? null : prevSwimmers,
+      completion_rate: allTime ? null : prevCompletion,
+      too_hard_rate: allTime ? null : prevTooHardRate,
+    },
+    daily,
+    cohorts,
+    insights,
+    instrumentation: [
+      { event: "signup_completed", status: "ok", note: "conversion_events" },
+      { event: "onboarding_completed", status: "missing", note: "Pas encore émis. À ajouter après le dernier step questionnaire." },
+      { event: "plan_generated", status: "ok", note: "conversion_events" },
+      { event: "workout_generated", status: "proxy", note: "planned_sessions.created_at. Pas d’event dédié." },
+      { event: "workout_opened", status: "missing", note: "À émettre à l’ouverture de la séance." },
+      { event: "workout_started", status: "missing", note: "À émettre au premier chrono / premier bloc." },
+      { event: "workout_completed", status: "proxy", note: "planned_sessions.status=completed + first_session_completed." },
+      { event: "workout_abandoned", status: "proxy", note: "skipped/missed. Pas d’abandon mid-séance." },
+      { event: "workout_regenerated", status: "missing", note: "À émettre si une séance est régénérée." },
+      { event: "generator_version", status: "proxy", note: "Tampon 1.9 à la persistance. Anciennes séances : inconnue tant que non remigrées." },
+      { event: "trial_started", status: "ok", note: "conversion_events" },
+      { event: "subscription_started", status: "proxy", note: "payment_succeeded + user_access_state.access_status." },
+    ],
     notes,
   };
 }

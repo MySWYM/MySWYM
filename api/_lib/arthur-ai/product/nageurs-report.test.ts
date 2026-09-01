@@ -18,6 +18,21 @@ import {
   trialToPaidD7,
   topEntries,
 } from "./nageurs-report.js";
+import {
+  ageBandLabel,
+  buildProductInsights,
+  feedbackCategoryFr,
+  genderLabelFr,
+  generatorVersionOf,
+  normalizeGender,
+  resolveProfileAge,
+  resolveProfileGender,
+  retentionCohorts,
+} from "./nageurs-helpers.js";
+import {
+  canonicalizeEmail,
+  isInternalTestEmail,
+} from "./internal-test-accounts.js";
 
 function test(name: string, fn: () => void | Promise<void>) {
   const out = fn();
@@ -46,6 +61,10 @@ function fakeAdmin(tables: Record<string, Record<string, unknown>[]>) {
           preds.push((r) => vals.includes(String(r[col] || "")));
           return api;
         },
+        eq(col, val) {
+          preds.push((r) => String(r[col] ?? "") === String(val));
+          return api;
+        },
         or() {
           return api;
         },
@@ -67,6 +86,17 @@ await test("clampDays buckets", () => {
   assert.equal(clampDays(30), 30);
   assert.equal(clampDays(80), 90);
   assert.equal(clampDays("x"), 30);
+  assert.equal(clampDays(0), 0);
+  assert.equal(clampDays("all"), 0);
+});
+
+await test("gender / age slices helpers", () => {
+  assert.equal(normalizeGender("Femme"), "femme");
+  assert.equal(normalizeGender("non-genré"), "");
+  assert.equal(genderLabelFr("homme"), "Homme");
+  assert.equal(ageBandLabel(32), "25-34");
+  assert.equal(resolveProfileGender({ extra: { gender: "femme" } }), "femme");
+  assert.equal(resolveProfileAge({ extra: { age: 41 } }), 41);
 });
 
 await test("medianNumber / ratio / tally", () => {
@@ -171,9 +201,9 @@ await test("buildNageursReport aggregates funnel, engine, money", async () => {
       },
     ],
     user_access_state: [
-      { user_id: "u1", status: "active" },
-      { user_id: "u2", status: "trial" },
-      { user_id: "u5", status: "canceled" },
+      { user_id: "u1", access_status: "active" },
+      { user_id: "u2", access_status: "trial" },
+      { user_id: "u5", access_status: "canceled" },
     ],
   });
 
@@ -296,7 +326,8 @@ await test("buildNageursReport P0 dropoff, engine slices, weekly, cohorts", asyn
       },
     ],
     sport_profiles: [
-      { user_id: "u1", level: "sportif", objective: "5km" },
+      { user_id: "u1", level: "sportif", objective: "5km", age: 32, gender: "femme" },
+      { user_id: "u2", level: "régulier", objective: "forme", extra: { gender: "homme", age: 41 } },
     ],
     weekly_adaptations: [
       { user_id: "u1", action: "REDUCE", volume_mul: 0.9, created_at: "2026-08-19T00:00:00.000Z" },
@@ -329,8 +360,8 @@ await test("buildNageursReport P0 dropoff, engine slices, weekly, cohorts", asyn
   assert.equal(report.usage.weekly.users, 2);
   assert.equal(report.usage.weekly.one, 1);
   assert.equal(report.usage.weekly.zero, 1);
-  assert.equal(report.engine.hard_by_level[0].type, "sportif");
-  assert.equal(report.engine.hard_by_goal[0].type, "5km");
+  assert.equal(report.engine.hard_by_level[0].type, "Intermédiaire");
+  assert.equal(report.engine.hard_by_goal[0].type, "5 km");
   assert.equal(report.engine.hard_by_week[0].type, "S2");
   assert.equal(report.engine.top_skipped[0].type, "8x50");
   assert.equal(report.engine.top_liked[0].type, "200s souples");
@@ -340,6 +371,92 @@ await test("buildNageursReport P0 dropoff, engine slices, weekly, cohorts", asyn
   assert.equal(report.money.d7.converted, 1);
   assert.equal(report.money.d30_churn.eligible, 1);
   assert.equal(report.money.d30_churn.churned, 1);
+  assert.equal(report.slices.by_gender.find((x) => x.type === "Femme")?.count, 1);
+  assert.equal(report.slices.by_gender.find((x) => x.type === "Homme")?.count, 1);
+  assert.equal(report.slices.by_age.find((x) => x.type === "25-34")?.count, 1);
+  assert.equal(report.slices.by_age.find((x) => x.type === "35-44")?.count, 1);
+  assert.equal(report.slices.by_level[0].type, "Intermédiaire");
+  assert.equal(report.engine.feedback_categories[0].type, "Trop difficile");
+  assert.ok(Array.isArray(report.insights));
+  assert.ok(Array.isArray(report.cohorts));
+  assert.equal(typeof report.usage.swimmers_1d, "number");
+  const generatedStep = report.funnel.find((s) => s.key === "generated");
+  assert.equal(generatedStep?.value, 2);
+});
+
+await test("labels, cohorts, insights", () => {
+  assert.equal(feedbackCategoryFr("too_hard"), "Trop difficile");
+  assert.equal(feedbackCategoryFr("ok"), "Adaptée");
+  assert.equal(generatorVersionOf({ generator_version: "1.9" }), "1.9");
+  assert.equal(generatorVersionOf({ session_payload: { generator_version: "1.8" } }), "1.8");
+  assert.equal(generatorVersionOf({}), "inconnue");
+  const now = new Date("2026-08-20T12:00:00.000Z");
+  const cohorts = retentionCohorts(
+    new Map([
+      ["a", "2026-08-03T00:00:00.000Z"],
+      ["b", "2026-08-04T00:00:00.000Z"],
+    ]),
+    [
+      { user_id: "a", completed_at: "2026-08-05T00:00:00.000Z" },
+      { user_id: "b", completed_at: "2026-08-12T00:00:00.000Z" },
+    ],
+    now,
+  );
+  assert.equal(cohorts.length, 1);
+  assert.equal(cohorts[0].size, 2);
+  assert.equal(cohorts[0].rates[0], 0.5);
+  const insights = buildProductInsights({
+    allTime: false,
+    completion: 0.4,
+    prevCompletion: 0.5,
+    tooHardRate: 0.4,
+    prevTooHardRate: 0.2,
+    payingNoSession: 3,
+    byObjective: [
+      { type: "Eau libre", pct_actifs: 0.8, nageurs: 20 },
+      { type: "Forme", pct_actifs: 0.4, nageurs: 20 },
+    ],
+  });
+  assert.ok(insights.some((t) => t.includes("complétion")));
+  assert.ok(insights.some((t) => t.includes("sans séance")));
+});
+
+await test("internal test emails and +aliases", () => {
+  assert.equal(canonicalizeEmail("Arthur.No+test3@Outlook.fr"), "arthur.no@outlook.fr");
+  assert.equal(isInternalTestEmail("arthur.no@outlook.fr"), true);
+  assert.equal(isInternalTestEmail("arthur.no+foo@outlook.fr"), true);
+  assert.equal(isInternalTestEmail("j.wiackowska+dev@outlook.fr"), true);
+  assert.equal(isInternalTestEmail("admin@myswym.app"), true);
+  assert.equal(isInternalTestEmail("quelquun@outlook.fr"), false);
+});
+
+await test("buildNageursReport drops internal test accounts from aggregates", async () => {
+  const now = new Date("2026-08-20T12:00:00.000Z");
+  const admin = fakeAdmin({
+    admin_user_directory: [
+      { user_id: "u-test", email: "arthur.no+staging@outlook.fr" },
+      { user_id: "u1", email: "marie@example.com" },
+    ],
+    conversion_events: [
+      { user_id: "u1", event_name: "signup_completed", created_at: "2026-08-10T00:00:00.000Z" },
+      { user_id: "u-test", event_name: "signup_completed", created_at: "2026-08-10T00:00:00.000Z" },
+    ],
+    planned_sessions: [],
+    session_feedback: [],
+    user_access_state: [
+      { user_id: "u1", access_status: "active" },
+      { user_id: "u-test", access_status: "active" },
+    ],
+    sport_profiles: [
+      { user_id: "u1", level: "sportif", objective: "forme" },
+      { user_id: "u-test", level: "sportif", objective: "forme" },
+    ],
+  });
+  const report = await buildNageursReport(admin as any, { days: 30, now });
+  assert.equal(report.activation.signups, 1);
+  assert.equal(report.money.active, 1);
+  assert.equal(report.slices.by_level[0].count, 1);
+  assert.ok(report.notes.some((n) => /compte\(s\) de test exclus/i.test(n)));
 });
 
 console.log("arthur nageurs tests passed");

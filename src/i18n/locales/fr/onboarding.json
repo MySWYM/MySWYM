@@ -76,8 +76,11 @@
   },
   "physique": {
     "title": "Ton profil",
-    "lead": "Date de naissance, poids et taille, pour mieux adapter ton plan.",
+    "lead": "Date de naissance, sexe, poids et taille.",
     "birth": "Naissance",
+    "sexe": "Sexe",
+    "sexeHomme": "Homme",
+    "sexeFemme": "Femme",
     "day": "Jour",
     "month": "Mois",
     "year": "Année",

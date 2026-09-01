@@ -7712,6 +7712,7 @@ const BLANK_PROFILE = {
   birthDay: "",
   birthYear: "",
   age: "",
+  gender: "",
   weightKg: "",
   heightCm: "",
   injuryStatus: null, // "aucune" | "oui"

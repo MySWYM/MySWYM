@@ -92,9 +92,14 @@ const BLOCKED_PROPS = new Set([
   "bpm",
   "age",
   "birthMonth",
+  "birthDay",
   "birthYear",
   "birth_month",
+  "birth_day",
   "birth_year",
+  "gender",
+  "sexe",
+  "sex",
   "details",
   "blocks",
   "rationale",
@@ -103,6 +108,9 @@ const BLOCKED_PROPS = new Set([
   "capacityDimensions",
   "password",
   "token",
+  "user_id",
+  "userId",
+  "uuid",
 ]);
 
 let initialized = false;

@@ -4,8 +4,9 @@
  * NE CALCULE PAS de phase / volume / strategy / séance.
  */
 
-import { computeAgeFromBirth } from "../swimmer-profile.js";
+import { computeAgeFromBirth, normalizeGender } from "../swimmer-profile.js";
 import { resolveInjuryFields } from "../health-data.js";
+import { GENERATOR_VERSION } from "../sports-engine/generator-version.js";
 
 /** Distance d'entraînement (jamais la course). Aligné week-orchestration. */
 export function trainingDistanceOfSession(session) {
@@ -163,6 +164,8 @@ export function sportProfileToRow(userId, profile = {}) {
     if (Number.isFinite(ageNum)) age = Math.round(ageNum);
   }
 
+  const gender = normalizeGender(profile.gender) || null;
+
   const injury = resolveInjuryFields(profile);
 
   return {
@@ -177,6 +180,7 @@ export function sportProfileToRow(userId, profile = {}) {
     preferred_stroke: profile.preferredStroke || profile.strokeFocus || null,
     swim_style: profile.swimStyle || null,
     age,
+    gender,
     race_target: profile.raceTarget || null,
     injury_status: injury.injuryStatus ?? profile.injuryStatus ?? null,
     injury_zone: injury.injuryZone ?? profile.injuryZone ?? null,
@@ -196,6 +200,7 @@ export function sportProfileToRow(userId, profile = {}) {
       birthDay,
       birthYear,
       age,
+      gender,
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
       swimStyle: profile.swimStyle || null,
@@ -261,6 +266,7 @@ export function rowToSportProfileFields(row) {
       ? Math.round(birthYear)
       : null,
     age: age != null && Number.isFinite(Number(age)) ? Number(age) : (extra.age ?? null),
+    gender: normalizeGender(row.gender ?? extra.gender) || "",
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     injuryZone: row.injury_zone || extra.injuryZone || null,
@@ -293,6 +299,11 @@ export function sessionToPlannedRow(userId, planId, weekIndex, sessionIndex, ses
   else if (session?.skipped === "missed") status = "missed";
   else if (session?.skipped) status = "skipped";
 
+  const version = session?.generator_version || GENERATOR_VERSION;
+  const payload = session && typeof session === "object"
+    ? { ...session, generator_version: version }
+    : { generator_version: version };
+
   return {
     user_id: userId,
     plan_id: String(planId),
@@ -307,7 +318,8 @@ export function sessionToPlannedRow(userId, planId, weekIndex, sessionIndex, ses
     volume: parseInt(String(session?.distance || "").replace(/\D/g, ""), 10) || training || null,
     training_distance: training,
     status,
-    session_payload: session || null,
+    generator_version: version,
+    session_payload: payload,
     completed_at: status === "completed" ? session?.completedAt || new Date().toISOString() : null,
     actual_distance: session?.actualDistance ?? null,
     actual_duration: session?.actualDuration ?? null,
@@ -370,7 +382,15 @@ export function createSportsPersistence(supabase) {
 
     async upsertSportProfile(userId, profile) {
       const row = sportProfileToRow(userId, profile);
-      const { error } = await supabase.from("sport_profiles").upsert(row, { onConflict: "user_id" });
+      let { error } = await supabase.from("sport_profiles").upsert(row, { onConflict: "user_id" });
+      if (error && /gender/i.test(String(error.message || error.code || ""))) {
+        const { gender: _genderCol, ...withoutCol } = row;
+        const retry = await supabase.from("sport_profiles").upsert(
+          { ...withoutCol, extra: { ...row.extra, gender: row.gender || row.extra?.gender || null } },
+          { onConflict: "user_id" },
+        );
+        error = retry.error;
+      }
       return { ok: !error, error };
     },
 
@@ -382,10 +402,16 @@ export function createSportsPersistence(supabase) {
         });
       });
       if (!rows.length) return { ok: true, count: 0 };
-      // Upsert par lots
-      const { error } = await supabase.from("planned_sessions").upsert(rows, {
+      let { error } = await supabase.from("planned_sessions").upsert(rows, {
         onConflict: "user_id,plan_id,week_index,session_index",
       });
+      if (error && /generator_version/i.test(String(error.message || error.code || ""))) {
+        const stripped = rows.map(({ generator_version: _v, ...rest }) => rest);
+        const retry = await supabase.from("planned_sessions").upsert(stripped, {
+          onConflict: "user_id,plan_id,week_index,session_index",
+        });
+        error = retry.error;
+      }
       return { ok: !error, error, count: rows.length };
     },
 

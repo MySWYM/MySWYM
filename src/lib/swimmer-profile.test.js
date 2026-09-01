@@ -14,6 +14,8 @@ import {
   hydrateSwimmerFromSources,
   computeAgeFromBirth,
   withDerivedAge,
+  normalizeGender,
+  ageBandLabel,
 } from "./swimmer-profile.js";
 
 {
@@ -38,6 +40,10 @@ import {
   assert.equal(sw.birthMonth, 3);
   assert.equal(sw.birthYear, 1998);
   assert.equal(typeof sw.age, "number");
+  assert.equal(extractSwimmerProfile({ gender: "Femme" }).gender, "femme");
+  assert.equal(extractSwimmerProfile({ gender: "homme" }).gender, "homme");
+  assert.equal(extractSwimmerProfile({ gender: "non-genré" }).gender, "");
+  assert.equal(extractSwimmerProfile({ level: "sportif" }).gender, undefined);
   const obj = extractPlanObjective(src);
   assert.equal(obj.goal, "triathlon_olympic");
   assert.equal(obj.trainingFocus, "technique");
@@ -60,6 +66,17 @@ import {
   assert.equal(derived.age, 36);
   const legacy = withDerivedAge({ age: 28 }, new Date("2026-08-15"));
   assert.equal(legacy.age, 28);
+}
+
+{
+  assert.equal(normalizeGender("Homme"), "homme");
+  assert.equal(normalizeGender("woman"), "femme");
+  assert.equal(normalizeGender("non-genré"), "");
+  assert.equal(normalizeGender(""), "");
+  assert.equal(ageBandLabel(22), "< 25");
+  assert.equal(ageBandLabel(32), "25-34");
+  assert.equal(ageBandLabel(48), "45-54");
+  assert.equal(ageBandLabel(null), "inconnu");
 }
 
 {
