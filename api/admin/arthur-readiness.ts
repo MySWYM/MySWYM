@@ -19,6 +19,9 @@ import { arthurLog } from "../_lib/arthur-ai/logging.js";
 import { asNonEmptyString, isUuid } from "../_lib/arthur-ai/security.js";
 import { buildAuthContext } from "../_lib/arthur-ai/security.js";
 import { buildNageursReport, clampDays } from "../_lib/arthur-ai/product/nageurs-report.js";
+import { buildNageurFiche } from "../_lib/arthur-ai/product/nageur-fiche.js";
+import { searchNageurDirectory } from "../_lib/arthur-ai/product/nageur-search.js";
+import { buildAdminOpsReport, moderateLandingReview } from "../_lib/arthur-ai/product/admin-ops.js";
 
 export const config = {
   maxDuration: 60,
@@ -99,9 +102,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: true, action, takeovers: rows });
       }
 
+      if (action === "moderate_review") {
+        const reviewId = asNonEmptyString(body.reviewId, 64);
+        const status = String(body.status || "");
+        if (!reviewId) {
+          return res.status(400).json({ ok: false, error: "reviewId requis" });
+        }
+        const result = await moderateLandingReview(admin, {
+          reviewId,
+          status: status === "rejected" ? "rejected" : "published",
+        });
+        if (!result.ok) {
+          return res.status(400).json({ ok: false, error: result.error });
+        }
+        return res.status(200).json({ ok: true, action });
+      }
+
       return res.status(400).json({
         ok: false,
-        error: "action invalide (release_takeover | start_takeover | list_takeovers)",
+        error: "action invalide (release_takeover | start_takeover | list_takeovers | moderate_review)",
       });
     }
 
@@ -110,7 +129,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    if (String(req.query.nageurs || "") === "1") {
+    if (String(req.query.nageur_search || "").trim()) {
+      const result = await searchNageurDirectory(admin, String(req.query.nageur_search));
+      return res.status(200).json({ ok: true, nageur_search: true, ...result });
+    }
+
+    if (String(req.query.nageur || "").trim()) {
+      const fiche = await buildNageurFiche(admin, {
+        query: String(req.query.nageur),
+      });
+      return res.status(200).json({ ok: true, nageur: true, ...fiche });
+    }
+
+    if (String(req.query.ops || "") === "1") {
+      const ops = await buildAdminOpsReport(admin);
+      return res.status(200).json({ ok: true, ops: true, ...ops });
+    }
+
+    if (String(req.query.nageurs || "") === "1" || String(req.query.cockpit || "") === "1") {
       const report = await buildNageursReport(admin, {
         days: clampDays(req.query.days),
       });

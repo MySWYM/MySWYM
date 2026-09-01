@@ -69,11 +69,18 @@ ok(normalizeAnalyticsObjective({ category: "triathlon" }) === "triathlon", "obj 
     capacityDimensions: { x: 1 },
     pain: true,
     injuries: [{ zone: "knee", severity: "mild" }],
+    gender: "femme",
+    sexe: "femme",
+    age: 34,
+    user_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    uuid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     action: "REDUCE",
   });
   ok(clean.difficulty === "too_hard", "diff ok");
   ok(clean.pain == null, "pain blocked (health)");
   ok(clean.injuries == null, "injuries blocked (health)");
+  ok(clean.gender == null && clean.sexe == null && clean.age == null, "no gender/age");
+  ok(clean.user_id == null && clean.uuid == null, "no uuid");
   ok(clean.notes == null && clean.comment == null, "no free text");
   ok(clean._engineHistory == null, "no history");
 }

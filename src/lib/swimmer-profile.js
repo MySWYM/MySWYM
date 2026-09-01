@@ -15,6 +15,7 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "birthDay",
   "birthYear",
   "age", // dérivé de birthDay/birthMonth/birthYear (miroir legacy)
+  "gender", // homme | femme, optionnel (libellé UI : sexe)
   "weightKg",
   "heightCm",
   "equipment",
@@ -34,7 +35,6 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "sessionDuration",
 ]);
 
-/** Mois de naissance (1-12), libellés FR pour selects. */
 export const BIRTH_MONTH_OPTIONS = Object.freeze([
   { value: 1, label: "Janvier" },
   { value: 2, label: "Février" },
@@ -79,6 +79,44 @@ export function computeAgeFromBirth(birthMonth, birthYear, now = new Date(), bir
   if (nowMonth < m || (nowMonth === m && nowDay < day)) age -= 1;
   if (age < 0 || age > 120) return null;
   return age;
+}
+
+/** Sexe déclaré (optionnel). Pas utilisé par le moteur de séances. */
+export const GENDER_IDS = Object.freeze(["homme", "femme"]);
+
+export const GENDER_OPTIONS = Object.freeze([
+  { id: "homme", label: "Homme" },
+  { id: "femme", label: "Femme" },
+]);
+
+export function normalizeGender(value) {
+  if (value == null || value === "") return "";
+  const s = String(value)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (s === "homme" || s === "male" || s === "man" || s === "h") return "homme";
+  if (s === "femme" || s === "female" || s === "woman" || s === "f") return "femme";
+  return "";
+}
+
+export function genderLabelFr(value) {
+  const id = normalizeGender(value);
+  if (id === "homme") return "Homme";
+  if (id === "femme") return "Femme";
+  return "Non renseigné";
+}
+
+export function ageBandLabel(age) {
+  if (age == null || age === "") return "inconnu";
+  const n = Number(age);
+  if (!Number.isFinite(n) || n < 0 || n > 120) return "inconnu";
+  if (n < 25) return "< 25";
+  if (n < 35) return "25-34";
+  if (n < 45) return "35-44";
+  if (n < 55) return "45-54";
+  return "55+";
 }
 
 /** Normalise jour/mois/année et recalcule `age` si possible (sinon conserve age legacy). */
@@ -238,7 +276,10 @@ export function extractSwimmerProfile(source = {}) {
     if (Number.isFinite(n)) raw.sessionsPerWeek = Math.max(1, Math.min(5, n));
   }
   const withAge = withDerivedAge(raw);
-  return { ...withAge, ...resolveInjuryFields(withAge) };
+  const out = { ...withAge, ...resolveInjuryFields(withAge) };
+  const genderRaw = withAge.gender ?? source.gender;
+  if (genderRaw !== undefined) out.gender = normalizeGender(genderRaw);
+  return out;
 }
 
 /** Extrait l'objectif / préférences de cycle (plan). */
@@ -359,6 +400,7 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     birthDay: "",
     birthYear: "",
     age: "",
+    gender: "",
     weightKg: "",
     heightCm: "",
     injuryStatus: null,
@@ -394,6 +436,11 @@ export function hydrateSwimmerFromSources({ sportRowFields = {}, planProfile = {
   }
   if (!Array.isArray(merged.equipment) && Array.isArray(fromSport.equipment)) {
     merged.equipment = fromSport.equipment;
+  }
+  for (const key of ["gender", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm"]) {
+    if ((merged[key] == null || merged[key] === "") && fromSport[key] != null && fromSport[key] !== "") {
+      merged[key] = fromSport[key];
+    }
   }
   // Compte = source de vérité santé (pas le blob plan).
   if (

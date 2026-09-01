@@ -22,7 +22,7 @@ const ALLOWED_LEVELS = new Set([
   "advanced",
 ]);
 
-/** Champs coaching autorisés (jamais abo / email / stripe / rôle). */
+/** Champs coaching autorisés (jamais abo / email / stripe / rôle / sexe / âge). */
 const FIELD_MAP: Record<
   string,
   {

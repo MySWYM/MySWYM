@@ -31,6 +31,7 @@ import {
 } from "./lib/health-data.js";
 import {
   BIRTH_MONTH_OPTIONS,
+  GENDER_OPTIONS,
   TRAINING_FOCUS_OPTIONS,
   computeAgeFromBirth,
   daysInBirthMonth,
@@ -467,7 +468,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
 
         {onSwimmerProfileChange && (
           <>
-            <ProfileSection id="profile-physique" title="Mon profil" summary="Âge, poids, taille" defaultOpen={false}>
+            <ProfileSection id="profile-physique" title="Mon profil" summary="Âge, sexe, poids, taille" defaultOpen={false}>
               {(() => {
                 const nowY = new Date().getFullYear();
                 const birthMonth = profile?.birthMonth ?? "";
@@ -555,6 +556,34 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                           style={fieldStyle}
                         />
                       </label>
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      {to("physique.sexe")}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                      {GENDER_OPTIONS.map((opt) => {
+                        const active = profile?.gender === opt.id;
+                        const labelKey = opt.id === "homme" ? "physique.sexeHomme" : "physique.sexeFemme";
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => onSwimmerProfileChange({ gender: active ? "" : opt.id })}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: 10,
+                              cursor: "pointer",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                              background: active ? G.blueLight : G.surface,
+                              color: active ? G.blue : G.ink,
+                            }}
+                          >
+                            {to(labelKey)}
+                          </button>
+                        );
+                      })}
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {[

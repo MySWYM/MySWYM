@@ -58,6 +58,26 @@ function phases(n, pattern) {
   console.log("K1 PASS");
 }
 
+{
+  const row = sportProfileToRow("u-g", {
+    level: "sportif",
+    sessionsPerWeek: 3,
+    pool: 25,
+    gender: "Femme",
+  });
+  assert(row.gender === "femme", "K1g gender column");
+  assert(row.extra.gender === "femme", "K1g extra gender");
+  const fields = rowToSportProfileFields(row);
+  assert(fields.gender === "femme", "K1g round-trip");
+  const fromExtra = rowToSportProfileFields({
+    ...row,
+    gender: null,
+    extra: { ...row.extra, gender: "homme" },
+  });
+  assert(fromExtra.gender === "homme", "K1g extra fallback");
+  console.log("K1g PASS");
+}
+
 // ── K1b birth → age round-trip ──
 {
   const row = sportProfileToRow("u2", {

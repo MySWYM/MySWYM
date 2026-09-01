@@ -11,7 +11,12 @@ import {
   writeStoredAdminSecret,
 } from "./lib/arthur-admin-auth.js";
 
-const AdminCtx = createContext({ secret: "", headers: async () => ({}) });
+const AdminCtx = createContext({
+  secret: "",
+  headers: async () => ({}),
+  days: 30,
+  setDays: () => {},
+});
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useArthurAdmin() {
@@ -21,6 +26,10 @@ export function useArthurAdmin() {
 const NAV = [
   { to: "/admin", label: "Accueil", end: true },
   { to: "/admin/arthur-nageurs", label: "Nageurs", end: false },
+  { to: "/admin/activite", label: "Activité", end: false },
+  { to: "/admin/generateur", label: "Générateur", end: false },
+  { to: "/admin/business", label: "Business", end: false },
+  { to: "/admin/feedbacks", label: "Feedbacks", end: false },
   { to: "/admin/instagram", label: "Instagram", end: false },
   { to: "/admin/coulisses", label: "Coulisses", end: false },
 ];
@@ -34,6 +43,7 @@ export default function ArthurAdminShell() {
   const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [days, setDays] = useState(30);
 
   const headers = useCallback(
     () => arthurAdminHeaders(secret, { json: true }),
@@ -204,7 +214,7 @@ export default function ArthurAdminShell() {
   }
 
   return (
-    <AdminCtx.Provider value={{ secret, headers }}>
+    <AdminCtx.Provider value={{ secret, headers, days, setDays }}>
       <div
         style={{
           minHeight: "100vh",

@@ -7,8 +7,10 @@ const BLOCKED_PROPS = new Set([
   "comment", "notes", "note", "injuryNote", "injury_note", "injuryStatus", "injury_status",
   "injuryZone", "injury_zone", "injurySeverity", "injury_severity", "injuries", "injury_zones", "has_injury",
   "healthConsent", "health_consent", "pain", "heart_rate", "heartrate", "average_heartrate",
-  "hr", "bpm", "age", "birthMonth", "birthYear", "birth_month", "birth_year", "details", "blocks",
+  "hr", "bpm", "age", "birthMonth", "birthDay", "birthYear", "birth_month", "birth_day", "birth_year",
+  "gender", "sexe", "sex", "details", "blocks",
   "rationale", "devExplain", "_engineHistory", "capacityDimensions", "password", "token",
+  "user_id", "userId", "uuid",
 ]);
 
 export function sanitizeForTest(properties = {}) {

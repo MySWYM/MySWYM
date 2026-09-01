@@ -67,6 +67,27 @@ export async function adminGetJson(url, headers) {
   return json;
 }
 
+export async function adminPostJson(url, headers, body) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    cache: "no-store",
+    body: JSON.stringify(body || {}),
+  });
+  const type = res.headers.get("content-type") || "";
+  if (!type.includes("application/json")) {
+    return { missing: true, offline: true };
+  }
+  const json = await res.json().catch(() => ({}));
+  if (res.status === 401 || res.status === 403) {
+    return { missing: true, auth: true, error: json.error || "Accès refusé" };
+  }
+  if (!res.ok || json.ok === false) {
+    return { missing: true, error: json.error || `HTTP ${res.status}` };
+  }
+  return json;
+}
+
 export async function probeArthurAdmin(secret = "") {
   const headers = await arthurAdminHeaders(secret);
   const res = await fetch("/api/admin/arthur-readiness?ping=1", { headers });

@@ -32,7 +32,9 @@ export function FunnelChart({
           const v = Number(s.value) || 0;
           const w = Math.max(8, Math.round((v / max) * 100));
           const prev = i === 0 ? null : Number(steps[i - 1].value) || 0;
-          const conv = prev ? Math.round((v / prev) * 100) : null;
+          const first = Number(steps[0]?.value) || 0;
+          const ofFirst = first ? Math.round((v / first) * 100) : null;
+          const drop = prev ? Math.max(0, 100 - Math.round((v / prev) * 100)) : null;
           return (
             <div key={s.label}>
               <div
@@ -46,7 +48,8 @@ export function FunnelChart({
               >
                 <span>
                   {s.label}
-                  {conv != null ? `  ·  ${conv} % de l’étape d’avant` : ""}
+                  {ofFirst != null ? `  ·  ${ofFirst} %` : ""}
+                  {drop != null ? `  ·  drop ${drop} %` : ""}
                 </span>
                 <strong style={{ color: INK }}>{v}</strong>
               </div>
@@ -208,6 +211,47 @@ export function DonutChart({ title, slices = [], caption }) {
           ))}
         </ul>
       </div>
+      {caption ? (
+        <p style={{ margin: "8px 0 0", fontSize: 13, color: MUTED }}>{caption}</p>
+      ) : null}
+    </div>
+  );
+}
+
+export function LineChart({ title, points = [], caption, empty = "Données insuffisantes." }) {
+  const vals = points.map((p) => Number(p.value) || 0);
+  const max = Math.max(1, ...vals);
+  const w = 320;
+  const h = 120;
+  const pad = 8;
+  const coords = points.map((p, i) => {
+    const x = pad + (i / Math.max(1, points.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((Number(p.value) || 0) / max) * (h - pad * 2);
+    return `${x},${y}`;
+  });
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #d8dee6",
+        borderRadius: 16,
+        padding: 18,
+        minHeight: 180,
+      }}
+    >
+      <div style={{ fontSize: 14, fontWeight: 700, color: INK, marginBottom: 8 }}>{title}</div>
+      {!points.length ? (
+        <p style={{ color: MUTED, fontSize: 14, margin: 0 }}>{empty}</p>
+      ) : (
+        <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="140" role="img" aria-label={title}>
+          <polyline
+            fill="none"
+            stroke={BLUE}
+            strokeWidth="2.5"
+            points={coords.join(" ")}
+          />
+        </svg>
+      )}
       {caption ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, color: MUTED }}>{caption}</p>
       ) : null}

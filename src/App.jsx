@@ -2059,6 +2059,13 @@ const StravaSection = ({
     checkConnection();
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user) return;
+    const onStrava = () => { checkConnection(); };
+    window.addEventListener("myswym:strava-connected", onStrava);
+    return () => window.removeEventListener("myswym:strava-connected", onStrava);
+  }, [user?.id]);
+
   async function checkConnection() {
     try {
       const { data: rpcRows, error: rpcError } = await supabase.rpc("get_strava_connection_status");
@@ -7712,6 +7719,7 @@ const BLANK_PROFILE = {
   birthDay: "",
   birthYear: "",
   age: "",
+  gender: "",
   weightKg: "",
   heightCm: "",
   injuryStatus: null, // "aucune" | "oui"
@@ -8184,6 +8192,7 @@ export default function App() {
             ? ` · ${json.initial_sync.synced} activité(s) importée(s)`
             : "";
         showToast(`Strava connecté${json.athlete ? `, Bonjour ${json.athlete}` : ""}${syncNote}`, 8000);
+        window.dispatchEvent(new Event("myswym:strava-connected"));
         setActiveTab("home");
       } catch (e) {
         showToast(`Erreur Strava : ${e.message}`, 8000);

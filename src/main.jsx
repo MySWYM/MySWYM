@@ -30,6 +30,10 @@ const ArthurAdminShell = lazy(() => import('./ArthurAdminShell.jsx'))
 const ArthurAdminHome = lazy(() => import('./ArthurAdminHome.jsx'))
 const ArthurNageursAdmin = lazy(() => import('./ArthurNageursAdmin.jsx'))
 const ArthurInstagramAdmin = lazy(() => import('./ArthurInstagramAdmin.jsx'))
+const ArthurActiviteAdmin = lazy(() => import('./ArthurActiviteAdmin.jsx'))
+const ArthurGenerateurAdmin = lazy(() => import('./ArthurGenerateurAdmin.jsx'))
+const ArthurBusinessAdmin = lazy(() => import('./ArthurBusinessAdmin.jsx'))
+const ArthurOpsAdmin = lazy(() => import('./ArthurOpsAdmin.jsx'))
 const ArthurReadinessAdmin = lazy(() => import('./ArthurReadinessAdmin.jsx'))
 
 function RouteFallback() {
@@ -213,6 +217,10 @@ createRoot(document.getElementById('root')).render(
         <Route path="/admin" element={<ArthurAdminShell />}>
           <Route index element={<ArthurAdminHome />} />
           <Route path="arthur-nageurs" element={<ArthurNageursAdmin />} />
+          <Route path="activite" element={<ArthurActiviteAdmin />} />
+          <Route path="generateur" element={<ArthurGenerateurAdmin />} />
+          <Route path="business" element={<ArthurBusinessAdmin />} />
+          <Route path="feedbacks" element={<ArthurOpsAdmin />} />
           <Route path="instagram" element={<ArthurInstagramAdmin />} />
           <Route path="coulisses" element={<ArthurReadinessAdmin />} />
           <Route path="arthur-growth" element={<Navigate to="/admin/instagram" replace />} />
