@@ -5,6 +5,7 @@
  */
 
 import { computeAgeFromBirth } from "../swimmer-profile.js";
+import { resolveInjuryFields } from "../health-data.js";
 
 /** Distance d'entraînement (jamais la course). Aligné week-orchestration. */
 export function trainingDistanceOfSession(session) {
@@ -162,6 +163,8 @@ export function sportProfileToRow(userId, profile = {}) {
     if (Number.isFinite(ageNum)) age = Math.round(ageNum);
   }
 
+  const injury = resolveInjuryFields(profile);
+
   return {
     user_id: userId,
     level: profile.level || null,
@@ -175,9 +178,9 @@ export function sportProfileToRow(userId, profile = {}) {
     swim_style: profile.swimStyle || null,
     age,
     race_target: profile.raceTarget || null,
-    injury_status: profile.injuryStatus || null,
-    injury_zone: profile.injuryZone || null,
-    injury_severity: profile.injurySeverity || null,
+    injury_status: injury.injuryStatus ?? profile.injuryStatus ?? null,
+    injury_zone: injury.injuryZone ?? profile.injuryZone ?? null,
+    injury_severity: injury.injurySeverity ?? profile.injurySeverity ?? null,
     injury_note: null, // free-text désactivé (minimisation art. 9)
     health_consent: profile.healthConsent === true,
     health_consent_at: profile.healthConsent === true
@@ -196,8 +199,11 @@ export function sportProfileToRow(userId, profile = {}) {
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
       swimStyle: profile.swimStyle || null,
-      injuryZone: profile.injuryZone || null,
-      injurySeverity: profile.injurySeverity || null,
+      injuryZone: injury.injuryZone ?? profile.injuryZone ?? null,
+      injurySeverity: injury.injurySeverity ?? profile.injurySeverity ?? null,
+      injuries: Array.isArray(injury.injuries)
+        ? injury.injuries
+        : (Array.isArray(profile.injuries) ? profile.injuries : []),
       healthConsent: profile.healthConsent === true,
       healthConsentAt: profile.healthConsent === true
         ? (profile.healthConsentAt || new Date().toISOString())
@@ -257,9 +263,15 @@ export function rowToSportProfileFields(row) {
     age: age != null && Number.isFinite(Number(age)) ? Number(age) : (extra.age ?? null),
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
-    injuryNote: null,
     injuryZone: row.injury_zone || extra.injuryZone || null,
     injurySeverity: row.injury_severity || extra.injurySeverity || null,
+    ...resolveInjuryFields({
+      injuryStatus: row.injury_status,
+      injuryZone: row.injury_zone || extra.injuryZone || null,
+      injurySeverity: row.injury_severity || extra.injurySeverity || null,
+      injuries: extra.injuries,
+    }),
+    injuryNote: null,
     healthConsent: row.health_consent === true || extra.healthConsent === true,
     healthConsentAt: row.health_consent_at || extra.healthConsentAt || null,
     healthDeclaration: extra.healthDeclaration === true,

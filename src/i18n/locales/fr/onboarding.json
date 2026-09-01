@@ -96,8 +96,8 @@
     "none": "Aucune blessure",
     "noneDesc": "Je nage sans gêne particulière",
     "yes": "Oui, j'ai une blessure / gêne",
-    "yesDesc": "Zone + gravité ci-dessous",
-    "zone": "Zone du corps",
+    "yesDesc": "Zones + gravité ci-dessous",
+    "zone": "Zones du corps",
     "severity": "Gravité",
     "zones": {
       "shoulder": "Épaule",

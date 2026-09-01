@@ -7717,6 +7717,7 @@ const BLANK_PROFILE = {
   injuryStatus: null, // "aucune" | "oui"
   injuryZone: null,
   injurySeverity: null,
+  injuries: [],
   injuryNote: "", // legacy, plus collecté en free-text
   healthConsent: false,
   healthConsentAt: null,
@@ -10453,7 +10454,7 @@ export default function App() {
     if (!partial || typeof partial !== "object") return;
     const swimmerPartial = extractSwimmerProfile(partial);
     const nextPatch = { ...swimmerPartial };
-    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuryNote", "healthConsent", "healthConsentAt", "healthDeclaration"]) {
+    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuries", "injuryNote", "healthConsent", "healthConsentAt", "healthDeclaration"]) {
       if (partial[k] !== undefined) nextPatch[k] = partial[k];
     }
     const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...nextPatch };

@@ -152,6 +152,7 @@ export function buildSportProfile(profile = {}, opts = {}) {
     pace100: profile.pace100 > 0 ? profile.pace100 : null,
     volumeAdj: Math.min(1.3, Math.max(0.7, Number(profile.volumeAdj) || 1)),
     injuryStatus: profile.injuryStatus || null,
+    // injuries[] : collecte profil seulement, pas d’adaptation par zone
     injuryNote: profile.injuryNote || "",
     hasPainConstraint: profile.injuryStatus === "oui" || profile.painFlag === true,
     swimStyle: profile.swimStyle || null,

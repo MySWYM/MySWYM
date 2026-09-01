@@ -79,6 +79,8 @@ const BLOCKED_PROPS = new Set([
   "injury_zone",
   "injurySeverity",
   "injury_severity",
+  "injuries",
+  "injury_zones",
   "has_injury",
   "healthConsent",
   "health_consent",

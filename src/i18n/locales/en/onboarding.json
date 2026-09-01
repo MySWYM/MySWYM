@@ -96,8 +96,8 @@
     "none": "No injury",
     "noneDesc": "I swim without particular discomfort",
     "yes": "Yes, I have an injury / discomfort",
-    "yesDesc": "Zone + severity below",
-    "zone": "Body area",
+    "yesDesc": "Areas + severity below",
+    "zone": "Body areas",
     "severity": "Severity",
     "zones": {
       "shoulder": "Shoulder",

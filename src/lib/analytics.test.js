@@ -68,10 +68,12 @@ ok(normalizeAnalyticsObjective({ category: "triathlon" }) === "triathlon", "obj 
     _engineHistory: { a: 1 },
     capacityDimensions: { x: 1 },
     pain: true,
+    injuries: [{ zone: "knee", severity: "mild" }],
     action: "REDUCE",
   });
   ok(clean.difficulty === "too_hard", "diff ok");
   ok(clean.pain == null, "pain blocked (health)");
+  ok(clean.injuries == null, "injuries blocked (health)");
   ok(clean.notes == null && clean.comment == null, "no free text");
   ok(clean._engineHistory == null, "no history");
 }

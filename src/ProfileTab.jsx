@@ -23,6 +23,11 @@ import {
   HEALTH_CONSENT_CHECKBOX,
   INJURY_ZONES,
   INJURY_SEVERITIES,
+  formatInjurySummary,
+  injuriesForUi,
+  toggleInjuryZone,
+  setInjurySeverity,
+  clearInjuries,
 } from "./lib/health-data.js";
 import {
   BIRTH_MONTH_OPTIONS,
@@ -226,6 +231,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
     || "Mon objectif";
 
   const profileDirty = natationDirty || equipmentDirty;
+  const declaredInjuries = injuriesForUi(profile);
   const saveEquipment = () => {
     if (!onEquipmentChange || !equipmentDirty) return;
     onEquipmentChange([...draftEquipment]);
@@ -844,7 +850,11 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
           <ProfileSection
             id="profile-health"
             title="Santé et blessures"
-            summary={profile?.injuryStatus === "oui" ? "Blessure déclarée" : (profile?.injuryStatus === "aucune" ? "Aucune blessure" : "À compléter")}
+            summary={
+              profile?.injuryStatus === "oui"
+                ? formatInjurySummary(profile)
+                : (profile?.injuryStatus === "aucune" ? "Aucune blessure" : "À compléter")
+            }
             defaultOpen={false}
           >
             <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Blessure</div>
@@ -860,12 +870,7 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                     type="button"
                     onClick={() => {
                       if (o.id === "aucune") {
-                        onSwimmerProfileChange({
-                          injuryStatus: "aucune",
-                          injuryZone: null,
-                          injurySeverity: null,
-                          healthDeclaration: false,
-                        });
+                        onSwimmerProfileChange(clearInjuries());
                       } else {
                         onSwimmerProfileChange({ injuryStatus: "oui" });
                       }
@@ -884,15 +889,18 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
             </div>
             {profile?.injuryStatus === "oui" && (
               <>
-                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zone</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Zones</div>
+                <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px" }}>
+                  Tu peux en cocher plusieurs, chacune avec sa gravité. Le programme ne se réécrit pas tout seul, ça nous aide à mieux te connaître.
+                </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                   {INJURY_ZONES.map((z) => {
-                    const active = profile?.injuryZone === z.id;
+                    const active = declaredInjuries.some((i) => i.zone === z.id);
                     return (
                       <button
                         key={z.id}
                         type="button"
-                        onClick={() => onSwimmerProfileChange({ injuryZone: z.id })}
+                        onClick={() => onSwimmerProfileChange(toggleInjuryZone(declaredInjuries, z.id))}
                         style={{
                           padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
                           border: `1.5px solid ${active ? G.blue : G.greyLight}`,
@@ -905,27 +913,36 @@ export default function ProfileTab({ plan, profile, user, onUserUpdate, onOpenMe
                     );
                   })}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sévérité</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                  {INJURY_SEVERITIES.map((s) => {
-                    const active = profile?.injurySeverity === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => onSwimmerProfileChange({ injurySeverity: s.id })}
-                        style={{
-                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
-                          border: `1.5px solid ${active ? G.blue : G.greyLight}`,
-                          background: active ? G.blueLight : G.surface,
-                          color: active ? G.blue : G.ink,
-                        }}
-                      >
-                        {s.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {declaredInjuries.map((item) => {
+                  const zoneLabel = INJURY_ZONES.find((z) => z.id === item.zone)?.label || item.zone;
+                  return (
+                    <div key={item.zone} style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Gravité · {zoneLabel}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {INJURY_SEVERITIES.map((s) => {
+                          const active = item.severity === s.id;
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => onSwimmerProfileChange(setInjurySeverity(declaredInjuries, item.zone, s.id))}
+                              style={{
+                                padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                                border: `1.5px solid ${active ? G.blue : G.greyLight}`,
+                                background: active ? G.blueLight : G.surface,
+                                color: active ? G.blue : G.ink,
+                              }}
+                            >
+                              {s.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </>
             )}
             <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, cursor: "pointer" }}>

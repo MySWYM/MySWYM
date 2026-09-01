@@ -5,6 +5,7 @@
  */
 
 import { impliedSwimStyleForLevel } from "./onboarding-level-gate.js";
+import { resolveInjuryFields } from "./health-data.js";
 
 export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "level",
@@ -23,6 +24,7 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "injuryStatus",
   "injuryZone",
   "injurySeverity",
+  "injuries",
   "injuryNote",
   "healthConsent",
   "healthConsentAt",
@@ -235,7 +237,8 @@ export function extractSwimmerProfile(source = {}) {
     const n = Number(raw.sessionsPerWeek);
     if (Number.isFinite(n)) raw.sessionsPerWeek = Math.max(1, Math.min(5, n));
   }
-  return withDerivedAge(raw);
+  const withAge = withDerivedAge(raw);
+  return { ...withAge, ...resolveInjuryFields(withAge) };
 }
 
 /** Extrait l'objectif / préférences de cycle (plan). */
@@ -361,6 +364,7 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     injuryStatus: null,
     injuryZone: null,
     injurySeverity: null,
+    injuries: [],
     injuryNote: "",
     healthConsent: false,
     healthConsentAt: null,
@@ -391,5 +395,12 @@ export function hydrateSwimmerFromSources({ sportRowFields = {}, planProfile = {
   if (!Array.isArray(merged.equipment) && Array.isArray(fromSport.equipment)) {
     merged.equipment = fromSport.equipment;
   }
-  return merged;
+  // Compte = source de vérité santé (pas le blob plan).
+  if (
+    fromSport.injuryStatus != null
+    || (Array.isArray(fromSport.injuries) && fromSport.injuries.length > 0)
+  ) {
+    return { ...merged, ...resolveInjuryFields(fromSport) };
+  }
+  return { ...merged, ...resolveInjuryFields(merged) };
 }
