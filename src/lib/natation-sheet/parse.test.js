@@ -4,9 +4,12 @@
  */
 import {
   fillPlaceholders,
+  fourNagesDisplayCue,
   lineAllowsMateriel,
   lineHasFourNagesEducatifs,
   materializeSession,
+  parseFourNagesMode,
+  stripFourNagesModeToken,
   parseEducatifsCsv,
   parseSessionsCsv,
   pickEducatif,
@@ -286,7 +289,48 @@ ok(
 
 ok(lineHasFourNagesEducatifs("100 m 4 nages éducatifs"), "détecte 4 nages + éducatifs");
 ok(lineHasFourNagesEducatifs("4 × 50 m (25 m {éducatif} + 25 m) (4 nages)"), "détecte 4 nages + {éducatif}");
+ok(lineHasFourNagesEducatifs("4 × 100 m 4 nages {par 25m}"), "jeton {par 25m}");
+ok(lineHasFourNagesEducatifs("4 × 100 m 4 nages {par 100m}"), "jeton {par 100m}");
+ok(lineHasFourNagesEducatifs("4 × 100 m 4 nages {25m éducatif + 25m nage}"), "jeton drill+nage");
 ok(!lineHasFourNagesEducatifs("100 m crawl {éducatif}"), "pas 4 nages → mono");
+
+ok(parseFourNagesMode("4 × 100 m 4 nages {par 25m}")?.kind === "im", "{par 25m} = IM");
+ok(parseFourNagesMode("4 × 100 m 4 nages {par 100m}")?.kind === "per_rep", "{par 100m} = 1 nage / rep");
+ok(parseFourNagesMode("4 × 50 m 4 nages {par 50m}")?.kind === "per_rep", "{par 50m} = 1 nage / rep");
+ok(
+  parseFourNagesMode("4 × 100 m 4 nages {25m éducatif + 25m nage}")?.kind === "drill_then_swim",
+  "{25m éducatif + 25m nage}",
+);
+ok(!parseFourNagesMode("4 × 100 m 4 nages éducatifs"), "sans jeton → null (legacy injecte les noms)");
+ok(
+  stripFourNagesModeToken("4 × 100 m 4 nages {par 25m}") === "4 × 100 m 4 nages",
+  "strip {par 25m}",
+);
+ok(
+  fourNagesDisplayCue({ kind: "im", sliceMeters: 25 }) === "4 nages enchaîné, 25 m par nage",
+  "cue IM",
+);
+ok(
+  fourNagesDisplayCue({ kind: "per_rep" }) === "4 éducatifs (1 / nage)",
+  "cue 1 nage / rep",
+);
+ok(
+  fourNagesDisplayCue({ kind: "drill_then_swim", sliceMeters: 25 }, "4 × 100 m") ===
+    "1 nage / 100 m · 25 m éducatif + 25 m nage",
+  "cue 25 éducatif + 25 nage",
+);
+
+const keptIm = fillPlaceholders("4 × 100 m 4 nages {par 25m}", {
+  fourNagesLabel: "ondule-tête (pap) + rattrapé (dos) + opp (brasse) + doigts (crawl)",
+});
+ok(keptIm.includes("{par 25m}"), "fill garde {par 25m}");
+ok(!/ondule-tête/.test(keptIm), "fill ne dump pas les 4 noms si jeton");
+
+const keptMix = fillPlaceholders("4 × 100 m 4 nages {25m éducatif + 25m nage}", {
+  fourNagesLabel: "ondule-tête (pap) + rattrapé (dos)",
+});
+ok(keptMix.includes("{25m éducatif + 25m nage}"), "fill garde le jeton 25+25");
+ok(!/ondule-tête/.test(keptMix), "fill ne casse pas éducatif du jeton");
 
 const four = pickFourNagesEducatifs(edu, { levelBand: "intermediaire" }, () => 0);
 ok(four.papillon?.nage === "papillon", "1 papillon");
@@ -317,6 +361,24 @@ ok(
   /Pap un bras|Dos deux bras|Coulée brasse|Flèche|Grand chien|Petit chien/.test(filled4.echauffement),
   "noms réels dans la ligne",
 );
+
+const sessTokCsv = `n°,bande,total_m,échauffement,bloc de séance,retour au calme,contrôle_somme
+1,intermédiaire,1400,"100 m crawl","4 × 100 m 4 nages {par 25m}","4 × 100 m 4 nages {25m éducatif + 25m nage}",1400
+`;
+const sessTok = parseSessionsCsv(sessTokCsv, { hasPhase: false });
+const filledTok = materializeSession(
+  sessTok[0],
+  edu,
+  { levelBand: "intermediaire", nage: "4_nages" },
+  () => 0,
+);
+ok(filledTok.bloc.includes("{par 25m}"), "materialize garde {par 25m}");
+ok(
+  filledTok.rac.includes("{25m éducatif + 25m nage}"),
+  "materialize garde {25m éducatif + 25m nage}",
+);
+ok(filledTok.educatifs?.length === 4, "jetons : 4 éducatifs quand même attachés");
+ok(!/Pap un bras/.test(filledTok.bloc), "jeton IM : pas de dump des noms dans la ligne");
 
 const histEdu4 = excludeEducatifNamesFromHistory(
   [{ sheetMeta: { educatifs: ["Pap un bras", "Dos deux bras", "Coulée brasse", "Petit chien"] } }],

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 import { formatDepartHuman, formatRestHuman } from "../lib/workout-display.js";
+import { fourNagesDisplayCue } from "../lib/natation-sheet/parse.js";
 
 const ALLURE_TIPS = {
   souple: {
@@ -551,7 +552,8 @@ export default function WorkoutExerciseCard({
         ? [exercise.educatif]
         : [];
   const multiDrills = drills.length > 1;
-  const primaryCue = multiDrills ? "4 éducatifs (1 / nage)" : exercise.cue;
+  const primaryCue = fourNagesDisplayCue(exercise.fourNagesMode, exercise.volumeLabel)
+    || (multiDrills ? "4 éducatifs (1 / nage)" : exercise.cue);
   const allureChips = detectAllureTips(exercise);
   const departLabel = exercise.departLabel || null;
   const departSeconds = exercise.departSeconds || 60;

@@ -313,10 +313,58 @@ export function normalizeNageKey(raw) {
   return t;
 }
 
-/** Ligne Sheet : « 4 nages » + « éducatif(s) » → 1 éducatif par nage. */
+/** Ligne Sheet : « 4 nages » + éducatif(s) ou jeton `{par …m}` / `{25m éducatif + 25m nage}`. */
+export function parseFourNagesMode(line) {
+  const s = String(line || "");
+  const drillThen = s.match(
+    /\{25\s*m\s+[ée]ducatifs?\s*\+\s*25\s*m\s+(?:nage|complet)\}/i,
+  );
+  if (drillThen) return { kind: "drill_then_swim", sliceMeters: 25 };
+  const par = s.match(/\{par\s*(\d+)\s*m\}/i);
+  if (par) {
+    const sliceMeters = parseInt(par[1], 10);
+    if (!Number.isFinite(sliceMeters) || sliceMeters <= 0) return null;
+    if (sliceMeters <= 25) return { kind: "im", sliceMeters };
+    return { kind: "per_rep", sliceMeters };
+  }
+  return null;
+}
+
+export function stripFourNagesModeToken(text) {
+  if (!text) return text;
+  return String(text)
+    .replace(/\{par\s*\d+\s*m\}/gi, "")
+    .replace(/\{25\s*m\s+[ée]ducatifs?\s*\+\s*25\s*m\s+(?:nage|complet)\}/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,;:.])/g, "$1")
+    .trim();
+}
+
+export function parseRepMetersFromVolumeLabel(volumeLabel) {
+  const m = String(volumeLabel || "").match(/\d+\s*[×x]\s*(\d+)\s*m/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Cue nageur selon le jeton Sheet (pas le dump MIXTE 25+25). */
+export function fourNagesDisplayCue(mode, volumeLabel) {
+  if (!mode) return null;
+  if (mode.kind === "im") {
+    return `4 nages enchaîné, ${mode.sliceMeters} m par nage`;
+  }
+  if (mode.kind === "drill_then_swim") {
+    const rep = parseRepMetersFromVolumeLabel(volumeLabel) || 100;
+    return `1 nage / ${rep} m · ${mode.sliceMeters} m éducatif + ${mode.sliceMeters} m nage`;
+  }
+  return "4 éducatifs (1 / nage)";
+}
+
+/** Ligne Sheet : « 4 nages » + « éducatif(s) » ou jeton de mode → 1 éducatif par nage. */
 export function lineHasFourNagesEducatifs(line) {
   const s = String(line || "");
   if (!/4\s*nages/i.test(s)) return false;
+  if (parseFourNagesMode(s)) return true;
   return /[ée]ducatif/i.test(s);
 }
 
@@ -470,11 +518,13 @@ export function fillPlaceholders(text, fill) {
     }
   }
   if (fill.fourNagesLabel && lineHasFourNagesEducatifs(out)) {
-    // Distances inchangées : on remplace seulement le trou / le mot « éducatif(s) »
-    if (/\{éducatif\}|\{educatif\}/i.test(out)) {
-      out = out.replaceAll("{éducatif}", fill.fourNagesLabel).replaceAll("{educatif}", fill.fourNagesLabel);
-    } else {
-      out = out.replace(/[ée]ducatifs?/gi, fill.fourNagesLabel);
+    // Jetons `{par Xm}` / `{25m éducatif + 25m nage}` : ne pas injecter les 4 noms dans la ligne.
+    if (!parseFourNagesMode(out)) {
+      if (/\{éducatif\}|\{educatif\}/i.test(out)) {
+        out = out.replaceAll("{éducatif}", fill.fourNagesLabel).replaceAll("{educatif}", fill.fourNagesLabel);
+      } else {
+        out = out.replace(/[ée]ducatifs?/gi, fill.fourNagesLabel);
+      }
     }
   } else if (fill.educatifNom) {
     out = out.replaceAll("{éducatif}", fill.educatifNom).replaceAll("{educatif}", fill.educatifNom);

@@ -5,6 +5,11 @@
 import { toCoachDetailLines } from "./sports-engine/coach-restitution.js";
 import { prettifySessionDetailLine } from "./sports-engine/session-labels.js";
 import { matchEducatif } from "../content/educatifs-catalog.js";
+import {
+  lineHasFourNagesEducatifs,
+  parseFourNagesMode,
+  stripFourNagesModeToken,
+} from "./natation-sheet/parse.js";
 
 const REST_CHUNK_RE = /^(R\d+["']?|repos\s+\d+\s*(?:s|sec|min)?|D(?:toutes les )?\d+['′]\d+"|D\d+")$/i;
 const SWIM_SET_PART_RE = /^(?:\d+\s*[x×]\s*\d+\s*m|\d+\s*m)\b/i;
@@ -864,11 +869,21 @@ export function buildWorkoutView(session = {}) {
   const pushExercise = ({ raw, parsed, children = [], section }) => {
     const pyramid = parsePyramidLine(raw) || (children[0] ? parsePyramidLine(children[0]) : null);
     const childParsed = children.map((c) => parseSessionDetail(c)).filter(Boolean);
+    const fourBlob = `${raw || ""} ${parsed?.main || ""} ${(parsed?.cues || []).join(" ")}`;
+    let fourNagesMode = parseFourNagesMode(fourBlob);
+    if (
+      !fourNagesMode
+      && (lineHasFourNagesEducatifs(raw) || lineHasFourNagesEducatifs(parsed?.main))
+    ) {
+      fourNagesMode = { kind: "per_rep" };
+    }
     const meters =
       pyramid?.volume ||
       parseMetersFromLine(parsed?.main || raw) ||
       childParsed.reduce((a, c) => a + parseMetersFromLine(c.main), 0);
-    const headline = splitHeadline(scrubLegacyNormalWording(parsed?.main));
+    const headline = splitHeadline(
+      stripFourNagesModeToken(scrubLegacyNormalWording(parsed?.main)),
+    );
     const firstCue = parsed?.cues?.[0] ? scrubLegacyNormalWording(parsed.cues[0]) : null;
     // Ne pas laisser un cue « souple » (pastille) écraser la répartition MIXTE (headline.rest)
     let cuePrimary = scrubLegacyNormalWording(
@@ -887,6 +902,10 @@ export function buildWorkoutView(session = {}) {
       cuePrimary = stripSoupleMarkers(cuePrimary);
     }
     if (isSoftFillCue(cuePrimary)) cuePrimary = null;
+    if (fourNagesMode) {
+      cuePrimary = stripFourNagesModeToken(cuePrimary);
+      if (/25\s*m/i.test(cuePrimary || "") && /\+/.test(cuePrimary || "")) cuePrimary = null;
+    }
     let cues = (parsed?.cues || [])
       .map((c) => scrubLegacyNormalWording(c))
       .map((c) => (effortLabel ? stripSoupleMarkers(c) : c))
@@ -911,7 +930,9 @@ export function buildWorkoutView(session = {}) {
     }
     cues = cues.filter((c) => !isRedundantAllureCue(c));
     if (!cuePrimary && cues[0] && !isRedundantAllureCue(cues[0])) cuePrimary = cues[0];
-    const mainClean = scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw));
+    const mainClean = stripFourNagesModeToken(
+      scrubLegacyNormalWording(parsed?.main || stripDetailPrefix(raw)),
+    );
 
     // Départ à la montre → pastille D2' (pas dans le sous-texte)
     const departBlob = [parsed?.rest, cuePrimary, mainClean, raw, ...cues].filter(Boolean).join(" ");
@@ -969,11 +990,20 @@ export function buildWorkoutView(session = {}) {
         : session.sheetEducatif?.name
           ? [session.sheetEducatif]
           : [];
-      for (const sheetFiche of fiches) {
-        if (!sheetFiche?.name) continue;
-        const re = new RegExp(sheetFiche.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-        if (re.test(blob) || re.test(String(mainClean || ""))) {
-          educatifs.push(sheetFiche);
+      const fourLine = Boolean(
+        fourNagesMode
+        || lineHasFourNagesEducatifs(raw)
+        || lineHasFourNagesEducatifs(mainClean),
+      );
+      if (fourLine && fiches.length > 1) {
+        educatifs = fiches.filter((f) => f?.name);
+      } else {
+        for (const sheetFiche of fiches) {
+          if (!sheetFiche?.name) continue;
+          const re = new RegExp(sheetFiche.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+          if (re.test(blob) || re.test(String(mainClean || ""))) {
+            educatifs.push(sheetFiche);
+          }
         }
       }
       educatif = educatifs[0] || null;
@@ -985,6 +1015,7 @@ export function buildWorkoutView(session = {}) {
     // Cue « Crawl ou 4 nages » même si le main disait seulement « 4 nages »
     const choiceBlob = [mainClean, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
     let strokeLabel = headline.stroke;
+    if (fourNagesMode) strokeLabel = "4 NAGES";
     if (isCrawlOrFourNagesChoice(choiceBlob)) {
       strokeLabel = "CRAWL OU 4N";
       if (isCrawlOrFourNagesChoice(cuePrimary)) {
@@ -1004,6 +1035,7 @@ export function buildWorkoutView(session = {}) {
       effortLabel: effortLabel || null,
       allureEnchainement: allureEnchainement || null,
       sprint: hasSprint,
+      fourNagesMode: fourNagesMode || null,
       cue: cuePrimary,
       cues,
       rest: parsed?.rest || null,
