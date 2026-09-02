@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import {
   Award, Lock, Flame, Waves, Trophy, TrendingUp,
 } from "lucide-react";
@@ -33,8 +33,6 @@ import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { ACCESS_STATUS } from "./lib/access.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { getTabUi } from "./tab-ui-registry.js";
-
-const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
 
 /** Badges sur l’accueil / profil : colorés si débloqués, grisés sinon. */
 export function HomeBadgesSection({ plan }) {
@@ -158,7 +156,7 @@ function HomeSecondaryStack({
 }
 export default function Dashboard({
   plan, profile, onTabChange, onSignOut, user,
-  isPremium = false, onComplete, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
+  isPremium = false, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
   activePlanId = null,
   accessState = null,
 }) {
@@ -170,7 +168,6 @@ export default function Dashboard({
   } = getTabUi();
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
-  const [poolOpen, setPoolOpen] = useState(false);
   const [homePrepOpen, setHomePrepOpen] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(() => isProfileNudgeDismissed(user?.id));
   const [allureTipDismissed, setAllureTipDismissed] = useState(() => hasSeenAllureUnlockTip(user?.id));
@@ -448,7 +445,6 @@ export default function Dashboard({
           planId={activePlanId}
           whyLine={next?.session ? sessionWhyLine(next.session, profile) : null}
           onClose={() => setHomePrepOpen(false)}
-          onStart={() => setPoolOpen(true)}
           onUpgrade={onUpgrade}
           onTooHard={
             isPremium
@@ -462,34 +458,6 @@ export default function Dashboard({
                 }
           }
         />
-
-        {poolOpen && next?.session && (
-          <Suspense fallback={null}>
-          <PoolMode
-            session={next.session}
-            sessionKey={`${activePlanId || "plan"}:${next.weekIndex}:${next.sessionIndex}`}
-            colors={G}
-            accent={{ bg: tm.bg, color: tm.color }}
-            onClose={() => setPoolOpen(false)}
-            onFinish={() => {
-              setPoolOpen(false);
-              setHomePrepOpen(false);
-              onComplete?.(next.weekIndex, next.sessionIndex, "done");
-            }}
-            onTooHard={
-              isPremium
-                ? () => {
-                    setPoolOpen(false);
-                    onEditFeedback?.(next.weekIndex, next.sessionIndex);
-                  }
-                : () => {
-                    setPoolOpen(false);
-                    onUpgrade?.("feedback_adjust");
-                  }
-            }
-          />
-          </Suspense>
-        )}
 
         {showAllureTip && (
           <AllureUnlockSheet
