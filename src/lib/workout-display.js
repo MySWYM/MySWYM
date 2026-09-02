@@ -663,6 +663,38 @@ export function isRedundantAllureCue(cue) {
   );
 }
 
+/** Mots d’allure déjà portés par une pastille LENT / MOYEN / … (pas l’enchaînement). */
+const ALLURE_CHIP_WORD_RE = {
+  lent: "lent",
+  souple: "souple",
+  moyen: "moyen",
+  progressif: "progressif",
+  vite: "vite|rapide",
+  abloc: "à\\s*bloc|a\\s*bloc",
+  sprint: "sprints?",
+};
+
+/**
+ * Retire du sous-texte le mot d’allure déjà dans une pastille.
+ * « Lent par 12,5 m » + pastille LENT → « par 12,5 m ».
+ * L’enchaînement (« lent · progressif ») reste intact.
+ */
+export function stripAllureWordsDuplicatedByChips(cue, chipKeys = []) {
+  const keys = Array.isArray(chipKeys) ? chipKeys : [];
+  if (!cue) return cue;
+  if (keys.includes("enchainement")) return cue;
+  const parts = keys.map((k) => ALLURE_CHIP_WORD_RE[k]).filter(Boolean);
+  if (!parts.length) return String(cue);
+  const re = new RegExp(`\\b(?:${parts.join("|")})\\b`, "gi");
+  return (
+    String(cue)
+      .replace(re, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[-–—·:,\s]+|[-–—·:,\s]+$/g, "")
+      .trim() || null
+  );
+}
+
 /**
  * Répartition MIXTE pour le sous-texte (style Sheet, entre parenthèses).
  * Ex. « en alternant (75 m crawl et 25 m dos) » → « (75 m crawl et 25 m dos) »

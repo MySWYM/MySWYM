@@ -11,6 +11,7 @@ import {
   parseAllurePaceRange,
   formatAllurePaceChip,
   stripAllurePaceMarkers,
+  stripAllureWordsDuplicatedByChips,
   stripRestMarkers,
   stripDepartMarkers,
   stripSprintMarkers,
@@ -55,6 +56,26 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   assert.equal(seq3.cue, "souple · moyen · vite");
   assert.ok(hasContrastingPaces("crawl souple moyen vite"));
   assert.equal(parseSequentialAllureEnchainement("200 m crawl souple"), null);
+}
+
+{
+  assert.equal(
+    stripAllureWordsDuplicatedByChips("Lent par 12,5 m", ["lent"]),
+    "par 12,5 m",
+  );
+  assert.equal(
+    stripAllureWordsDuplicatedByChips("Lent, par 12,5 m", ["lent"]),
+    "par 12,5 m",
+  );
+  assert.equal(stripAllureWordsDuplicatedByChips("Lent", ["lent"]), null);
+  assert.equal(
+    stripAllureWordsDuplicatedByChips("lent · progressif", ["enchainement"]),
+    "lent · progressif",
+  );
+  assert.equal(
+    stripAllureWordsDuplicatedByChips("respiration 3 temps", ["lent"]),
+    "respiration 3 temps",
+  );
 }
 
 {
@@ -574,6 +595,19 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   }).exercises[0];
   assert.equal(fourEx.educatifs?.length, 4);
   assert.equal(fourEx.educatif?.name, "Pap un bras");
+}
+
+{
+  const view = buildWorkoutView({
+    composedBy: "natation-sheet",
+    details: ["-8 × 50 m crawl lent par 12,5 m"],
+  });
+  const ex = view.exercises[0];
+  assert.match(String(ex.cue || ""), /lent/i);
+  assert.equal(
+    stripAllureWordsDuplicatedByChips(ex.cue, ["lent"]),
+    "par 12,5 m",
+  );
 }
 
 console.log("workout-display.test.js PASS");
