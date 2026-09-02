@@ -109,6 +109,6 @@ Autres contrôles :
 
 - Chaque séance affiche une réf. discrète `Réf. <onglet>-<ligne>` (ex. `01-42`) en bas de la vue séance et dans l'historique. Clic = copie de la ligne complète (`session-provenance.js`).
 - Une séance composée hors Sheet affiche `Réf. C-1500` et la mention « pas de ligne Sheet » : **ne jamais inventer un n° de ligne** pour un fallback composeur.
-- `Séance n°6` (titre nageur) = 6e validation, **≠** ligne du Sheet. Les deux figurent dans la réf. copiée (`UI n°6 | Sheet «01 Nager deb crawl» ligne n°42`).
+- `séance n°6` (titre nageur) = 6e validation, **≠** ligne du Sheet. Les deux figurent dans la réf. copiée (`séance n°6 | réf. 01-42`). Niveau = bande Sheet uniquement (`débutant` / `intermédiaire` / `avancé`). `4nages: oui` ou `non` (plus `nage: crawl`).
 - La réf. de la dernière séance vue part automatiquement avec les messages support (ligne `🏊` dans Telegram) et dans les events PostHog (`composedBy`, `sheetFamily`, `sheetN`).
 - Vue séance partagée publiquement (`SessionLiveView`) : pas de réf. affichée.
