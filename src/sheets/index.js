@@ -7,4 +7,5 @@ export { default as CancelSurveySheet } from "./CancelSurveySheet.jsx";
 export { default as TrialExpiredFreeze } from "./TrialExpiredFreeze.jsx";
 export { default as WhatsNewSheet, hasSeenWhatsNew, markWhatsNewSeen, syncWhatsNewSeenIfNeeded, WHATS_NEW_STORAGE_KEY, WHATS_NEW_CAMPAIGN } from "./WhatsNewSheet.jsx";
 export { default as SessionPrepSheet } from "./SessionPrepSheet.jsx";
+export { default as HistorySessionSheet } from "./HistorySessionSheet.jsx";
 export { default as NotificationsSheet } from "./NotificationsSheet.jsx";

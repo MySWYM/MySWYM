@@ -610,4 +610,20 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   );
 }
 
+{
+  const archived = buildWorkoutView({
+    title: "Séance n°1",
+    type: "ENDURANCE",
+    distance: "1800m",
+    completed: true,
+    details: [
+      "400 m crawl aisance",
+      "8 × 100 m éducatif",
+      "200 m retour au calme",
+    ],
+  });
+  assert.ok(archived.sections.length >= 2, "séance archivée encore découpée");
+  assert.match(archived.exercises.map((e) => e.main || e.raw || "").join(" "), /éducatif|crawl|retour/i);
+}
+
 console.log("workout-display.test.js PASS");

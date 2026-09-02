@@ -160,6 +160,7 @@ import WhatsNewSheet, {
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
+import HistorySessionSheet from "./sheets/HistorySessionSheet.jsx";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -4794,6 +4795,7 @@ const ProgressionLoopView = ({
   const stats = computeStats(plan);
   const [poolOpen, setPoolOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historySession, setHistorySession] = useState(null);
   const [copiedRef, setCopiedRef] = useState(null);
   const HISTORY_PREVIEW = 3;
   // ordinal = rang réel de validation, conservé malgré le slice/reverse d'affichage
@@ -5045,9 +5047,12 @@ const ProgressionLoopView = ({
             background: G.surface, borderRadius: 18, padding: "16px",
             border: `1px solid ${G.greyLight}`, marginBottom: 12,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
               Historique
             </div>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 12px" }}>
+              Touche une séance pour relire les blocs.
+            </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {historyVisible.map(({ session: s, ordinal }, i) => {
                 const rowKey = `${s.title}-${ordinal}`;
@@ -5056,36 +5061,75 @@ const ProgressionLoopView = ({
                   profile,
                   planId: activePlanId,
                 });
+                const label = formatLoopSessionTitle(ordinal);
                 return (
-                  <div key={rowKey} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                    padding: "8px 0", borderBottom: i < historyVisible.length - 1 ? `1px solid ${G.greyXLight}` : "none",
-                  }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {formatLoopSessionTitle(ordinal)}
+                  <div
+                    key={rowKey}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      borderBottom: i < historyVisible.length - 1 ? `1px solid ${G.greyXLight}` : "none",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setHistorySession({ session: s, ordinal })}
+                      aria-label={`Voir ${label}`}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 48,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        padding: "8px 0",
+                        border: "none",
+                        background: "none",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {label}
+                        </div>
+                        <div style={{ fontSize: 11, color: G.greyMid, marginTop: 2 }}>
+                          {s.distance} · {s.completed ? "Terminée" : "Abandonnée"}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11, color: G.greyMid, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span>{s.distance} · {s.completed ? "Terminée" : "Abandonnée"}</span>
-                        {prov && (
-                          <button
-                            type="button"
-                            onClick={() => copyHistoryRef(rowKey, prov.supportLine)}
-                            title={prov.shortLabel}
-                            aria-label={`Copier la référence séance ${prov.refCode} pour le support`}
-                            style={{
-                              border: "none", background: "none", padding: 0, cursor: "pointer",
-                              fontSize: 11, fontWeight: 700, color: G.greyMid,
-                              textDecoration: "underline", textUnderlineOffset: 2,
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            {copiedRef === rowKey ? "réf. copiée" : `réf. ${prov.refCode}`}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.coral} />}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        {s.completed ? <Check size={14} color={G.mint} /> : <X size={14} color={G.coral} />}
+                        <ChevronRight size={16} color={G.greyMid} />
+                      </span>
+                    </button>
+                    {prov && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyHistoryRef(rowKey, prov.supportLine);
+                        }}
+                        title={prov.shortLabel}
+                        aria-label={`Copier la référence séance ${prov.refCode} pour le support`}
+                        style={{
+                          border: "none",
+                          background: "none",
+                          padding: "8px 0",
+                          cursor: "pointer",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: G.greyMid,
+                          textDecoration: "underline",
+                          textUnderlineOffset: 2,
+                          fontVariantNumeric: "tabular-nums",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {copiedRef === rowKey ? "réf. copiée" : `réf. ${prov.refCode}`}
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -5117,6 +5161,22 @@ const ProgressionLoopView = ({
             )}
           </div>
         )}
+
+        <HistorySessionSheet
+          open={!!historySession}
+          session={historySession?.session}
+          ordinal={historySession?.ordinal ?? 0}
+          accent={{
+            bg: getTypeMeta(historySession?.session?.type).bg,
+            color: getTypeMeta(historySession?.session?.type).color,
+          }}
+          isPremium={isPremium}
+          profile={profile}
+          planId={activePlanId}
+          onClose={() => setHistorySession(null)}
+          onUpgrade={onUpgrade}
+          onShare={onShare}
+        />
       </div>
     </div>
   );
