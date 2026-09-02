@@ -250,7 +250,7 @@ def build_rows():
             "« Cette semaine » suit les semaines validées (Semaine 2 → S-n−1), pas seulement le calendrier.",
         ),
         ("Soft-branch 01–13", "Pas de fallback composeur", "Diplômes = composeur (pas d’onglet Sheet)."),
-        ("Réf. séance", "UI n° ≠ ligne Sheet", "Réf. 01-42 = onglet+ligne · Séance n°6 = compteur nageur."),
+        ("Réf. séance", "séance n° ≠ ligne Sheet", "Réf. 01-42 = onglet+ligne · séance n°6 = compteur nageur."),
         ("Regen Excel", "python3 docs/coach-ligne/build_lexique_sheet.py", "1 onglet « Lexique MySWYM » — à glisser / importer dans le Google Sheet."),
     ]
     for n in notes:
