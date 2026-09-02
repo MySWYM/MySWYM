@@ -17,7 +17,6 @@ export default function SessionPrepSheet({
   planId = null,
   whyLine = null,
   onClose,
-  onStart,
   onUpgrade,
   onTooHard,
 }) {
@@ -93,7 +92,7 @@ export default function SessionPrepSheet({
                   lineHeight: 1.3,
                 }}
               >
-                Vérifie ta séance, puis lance le mode bassin
+                Vérifie ta séance avant d’aller nager
               </div>
             </div>
             <button
@@ -131,13 +130,11 @@ export default function SessionPrepSheet({
             colors={colors}
             accent={accent}
             isPremium={isPremium}
-            showStart
-            startLabel="C’est parti, je nage"
+            showStart={false}
             profile={profile}
             planId={planId}
             whyLine={whyLine}
             onUpgrade={onUpgrade}
-            onStart={onStart}
             onTooHard={onTooHard}
           />
         </div>

@@ -3471,7 +3471,7 @@ const SessionExportBar = ({
     <div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button type="button" onClick={runCopy} style={{ ...btn, background: copied ? G.mint : G.surface, borderColor: copied ? G.mint : G.greyLight, color: copied ? G.white : G.inkLight }}>
-          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Copier Strava</>}
+          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
         </button>
         <button type="button" onClick={runShareImage} style={btn}>
           <Share2 size={13} /> Partager
@@ -10924,7 +10924,7 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onComplete={handleComplete} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
