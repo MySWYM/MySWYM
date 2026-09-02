@@ -8,6 +8,7 @@ import CoachCard from "./CoachCard.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import EventWeekPlanCard from "./EventWeekPlanCard.jsx";
+import SwimmerAnalyticsCard from "./SwimmerAnalyticsCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
 import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
@@ -162,7 +163,6 @@ export default function Dashboard({
 }) {
   const {
     AppTopBar,
-    WeekProjectionCard,
     PremiumTeaser,
     getTypeMeta,
   } = getTabUi();
@@ -388,10 +388,9 @@ export default function Dashboard({
             )}
 
             {plan && (
-              <WeekProjectionCard
+              <SwimmerAnalyticsCard
                 plan={plan}
                 profile={profile}
-                onOpenPlan={() => onTabChange?.("plan")}
               />
             )}
 
