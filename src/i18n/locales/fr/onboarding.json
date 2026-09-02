@@ -139,7 +139,8 @@
     "pull": "Pull-buoy",
     "planche": "Planche",
     "plaquettes": "Plaquettes",
-    "elastique": "Élastique"
+    "plaquettes_doigts": "Plaquettes doigts",
+    "elastique": "Élastique chevilles"
   },
   "distance": {
     "title": "Quelle distance veux-tu nager en moyenne par séance ?",

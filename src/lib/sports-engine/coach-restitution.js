@@ -135,7 +135,7 @@ export function toCoachDetailLines(details = []) {
     next = cleanCueNoise(next);
     // Matos sur ligne nageable : `crawl · pull-buoy` → `crawl avec pull-buoy`
     next = next.replace(
-      /\s*[·•]\s*(palmes(?:\s*\+\s*tuba(?:\s+frontal)?)?|tuba(?:\s+frontal)?|pull-buoy|pull\b|plaquettes?|planche|élastique)/gi,
+      /\s*[·•]\s*(palmes(?:\s*\+\s*tuba(?:\s+frontal)?)?|tuba(?:\s+frontal)?|pull-buoy|pull\b|plaquettes?\s*doigts|plaquettes?|planche|élastique(?:\s*chevilles)?)/gi,
       " avec $1",
     );
 

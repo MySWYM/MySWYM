@@ -247,6 +247,7 @@ const EQUIPMENT_IDS = new Set([
   "palmes",
   "tuba",
   "plaquettes",
+  "plaquettes_doigts",
   "elastique",
 ]);
 

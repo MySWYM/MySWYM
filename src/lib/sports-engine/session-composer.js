@@ -211,7 +211,7 @@ function formatTechniqueHeader(exerciseName, equipmentNote) {
 function labelWithMatos(label, matosNote) {
   if (!matosNote) return label;
   const base = String(label || "nage").trim();
-  if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
+  if (/palmes|tuba|pull|planche|plaquette|[ée]lastique|avec\s/i.test(base)) return base;
   const note = String(matosNote).replace(/\bpalmes\s*\+\s*tuba(?:\s+frontal)?/gi, "palmes et tuba frontal");
   return `${base} avec ${note}`;
 }
@@ -519,7 +519,9 @@ function harvestEquipmentFromDetails(details, inventory = []) {
     else if (e === "palmes" && /palmes/i.test(joined)) out.push("palmes");
     else if (e === "tuba" && /tuba/i.test(joined)) out.push("tuba");
     else if (e === "planche" && /planche/i.test(joined)) out.push("planche");
-    else if (e === "plaquettes" && /plaquette/i.test(joined)) out.push("plaquettes");
+    else if (e === "plaquettes_doigts" && /plaquette[s]?\s*doigts|finger\s*paddles?/i.test(joined)) out.push("plaquettes_doigts");
+    else if (e === "plaquettes" && /plaquette/i.test(joined.replace(/finger\s*paddles?|plaquettes?\s*doigts|palettes?\s*digitales/gi, ""))) out.push("plaquettes");
+    else if (e === "elastique" && /[ée]lastique/i.test(joined)) out.push("elastique");
   }
   return out;
 }
@@ -535,9 +537,12 @@ function ensureEquipmentEngagement(details, eqList, brief) {
   else if (eqList.includes("palmes")) inject.push("palmes");
   else if (eqList.includes("planche")) inject.push("planche");
   else if (eqList.includes("pull")) inject.push("pull-buoy");
+  else if (eqList.includes("plaquettes_doigts")) inject.push("plaquettes doigts");
+  else if (eqList.includes("plaquettes")) inject.push("plaquettes");
+  else if (eqList.includes("elastique")) inject.push("élastique");
   if (!inject.length) return used;
   const label = inject.map((x) => (x === "tuba" ? "tuba frontal" : x)).join(" et ");
-  const matosRe = /palmes|tuba|pull|planche|plaquette|élastique|elastique/i;
+  const matosRe = /palmes|tuba|pull|planche|plaquette|[ée]lastique|elastique|finger\s*paddle/i;
   const candidates = [];
   for (let i = 0; i < details.length; i++) {
     const l = details[i];
@@ -1174,15 +1179,7 @@ function composeDecouverteSession(brief, rng) {
     };
   }
 
-  const usedEq = [];
-  const joinedDetails = details.join("\n");
-  for (const e of eqList) {
-    if (e === "pull" && /pull/i.test(joinedDetails)) usedEq.push("pull");
-    else if (e === "palmes" && /palmes/i.test(joinedDetails)) usedEq.push("palmes");
-    else if (e === "tuba" && /tuba/i.test(joinedDetails)) usedEq.push("tuba");
-    else if (e === "planche" && /planche/i.test(joinedDetails)) usedEq.push("planche");
-    else if (e === "plaquettes" && /plaquette/i.test(joinedDetails)) usedEq.push("plaquettes");
-  }
+  const usedEq = harvestEquipmentFromDetails(details, eqList);
 
   // Engagement matos : inventaire non vide → annoter une ligne technique si rien de visible
   if (eqList.length && !usedEq.length && !isEquipmentEngagementExempt(brief)) {
@@ -1325,7 +1322,7 @@ function tryAppendTechniqueFromBank({
   const pickEq = techAllowed.length ? techAllowed : [];
   const avoid = [];
   if (pickEq.includes("palmes")) avoid.push("pull");
-  if (techMeta.focus === "technique_roulis") avoid.push("plaquettes");
+  if (techMeta.focus === "technique_roulis") avoid.push("plaquettes", "plaquettes_doigts");
   const techEx = pickTechniqueFromBank({
     focusKey: techMeta.focus,
     level: brief.level,

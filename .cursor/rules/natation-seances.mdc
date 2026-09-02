@@ -29,7 +29,7 @@ alwaysApply: false
 
 - **Distances** : blocs = multiples du bassin ; total = somme exacte ; total final …00 ou …50 (jamais …25/…75). `block()` = somme exacte, pas d’arrondi correcteur.
 - **Cohérence** : chaque bloc a une distance ; volume affiché = somme des blocs ; pas d’incohérence d’unité.
-- **Matériel** : disponibilité ≠ obligation ; matos utilisé = visible sur la ligne ; jamais pull + palmes **dans le même exercice** ; lié à l’éducatif.
+- **Matériel** : disponibilité ≠ obligation ; matos utilisé = visible sur la ligne ; jamais pull + palmes **dans le même exercice** ; jamais élastique + palmes / planche même ligne ; pull + élastique OK ; fingers = appui, plaquettes = force ; lié à l’éducatif.
 - **4 nages** : crawl = plus grande part, mix 40/20/20/20. Débutant = crawl seulement. Avancé = 4 nages. Pas de nage favorite.
 - **Éducatifs** : jambes + nage appliquée prioritaires ; chiens rares (~1/8). Soft Sheet : fiche UI = onglet Éducatifs (`sheetEducatif`), pas Arthur `.js`. Vague 1 = Nager 01–03.
 - **Découverte** : flèche + grand chien (+ palmes/tuba) ; pas de T100.

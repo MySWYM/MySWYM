@@ -76,6 +76,9 @@ ok(normalizeTargetSessionDistance(null, "regulier") == null, "legacy null");
   ok(hints.preferEquipment.includes("plaquettes"), "hint plaq owned");
   const denied = trainingWishToHints(wish, { equipmentOwned: ["palmes"] });
   ok(!denied.preferEquipment.includes("plaquettes"), "no plaq if missing");
+  const fingers = parseTrainingWish("travailler l'appui avec des finger paddles");
+  ok(fingers.equipment.includes("plaquettes_doigts"), "finger paddles wish");
+  ok(!fingers.equipment.includes("plaquettes"), "finger paddles ≠ plaquettes");
 }
 
 {

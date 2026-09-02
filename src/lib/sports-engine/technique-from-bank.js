@@ -58,7 +58,12 @@ function drillHasEq(ex, eq) {
   if (eq === "palmes") return /palmes?/i.test(t);
   if (eq === "tuba") return /tuba/i.test(t);
   if (eq === "pull") return /pull/i.test(t);
-  if (eq === "plaquettes") return /plaquette/i.test(t);
+  if (eq === "plaquettes_doigts") return /plaquette[s]?\s*doigts|finger\s*paddles?/i.test(t);
+  if (eq === "plaquettes") {
+    const stripped = t.replace(/finger\s*paddles?|plaquettes?\s*doigts|palettes?\s*digitales/gi, "");
+    return /plaquette/i.test(stripped);
+  }
+  if (eq === "elastique") return /[ée]lastique/i.test(t);
   return false;
 }
 
@@ -232,7 +237,7 @@ export function buildTechniqueFromBank({
     if (isVagueVolumeThemeTitle(`${reps} × ${dist}m ${label}`)) {
       label = concreteTechLabel("", techEx.focusKey);
     }
-    const alreadyHasMatos = /palmes|tuba|pull|planche|plaquette|avec\s/i.test(label);
+    const alreadyHasMatos = /palmes|tuba|pull|planche|plaquette|[ée]lastique|avec\s/i.test(label);
     const skipGlue =
       !matosNote ||
       alreadyHasMatos ||

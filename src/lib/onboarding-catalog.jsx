@@ -169,5 +169,7 @@ export const EQUIPMENT_OPTS = [
   { id: "pull" },
   { id: "planche" },
   { id: "plaquettes" },
+  { id: "plaquettes_doigts" },
+  { id: "elastique" },
 ];
 export const eqLabel = (id) => i18n.t(`equipment.${id}`, { ns: "onboarding", defaultValue: id });

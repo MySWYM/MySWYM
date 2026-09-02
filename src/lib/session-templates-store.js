@@ -210,8 +210,10 @@ function templateFitsEquipment(t, equipment) {
   if (/palmes?/i.test(text)) needs.push("palmes");
   if (/tuba/i.test(text)) needs.push("tuba");
   if (/pull/i.test(text)) needs.push("pull");
-  if (/plaquette/i.test(text)) needs.push("plaquettes");
+  if (/plaquette[s]?\s*doigts|finger\s*paddles?/i.test(text)) needs.push("plaquettes_doigts");
+  if (/plaquette/i.test(text.replace(/finger\s*paddles?|plaquettes?\s*doigts|palettes?\s*digitales/gi, ""))) needs.push("plaquettes");
   if (/planche/i.test(text)) needs.push("planche");
+  if (/[ée]lastique/i.test(text)) needs.push("elastique");
   if (equipment.length === 0) return needs.length === 0;
   return needs.every((n) => equipment.includes(n));
 }

@@ -7,16 +7,17 @@
  * @typedef {'none'|'optional'|'meaningful'} EquipmentUsage
  */
 
-const KNOWN = ["palmes", "tuba", "pull", "plaquettes", "pull-buoy", "planche", "elastique"];
+const KNOWN = ["palmes", "tuba", "pull", "plaquettes", "plaquettes_doigts", "pull-buoy", "planche", "elastique"];
 
 export function normalizeEquipmentList(equipment) {
   if (!Array.isArray(equipment)) return [];
   return equipment
     .map((e) => String(e || "").toLowerCase().trim())
-    .filter((e) => KNOWN.includes(e) || e === "pullbuoy" || e === "élastique")
+    .filter((e) => KNOWN.includes(e) || e === "pullbuoy" || e === "élastique" || e === "finger paddles" || e === "finger paddle" || e === "plaquettes doigts")
     .map((e) => {
       if (e === "pullbuoy" || e === "pull-buoy") return "pull";
       if (e === "élastique") return "elastique";
+      if (e === "finger paddles" || e === "finger paddle" || e === "plaquettes doigts") return "plaquettes_doigts";
       return e;
     });
 }
@@ -48,7 +49,9 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
     case "technique_croisement":
       return ["tuba"];
     case "technique_catchup":
-      return level === "regulier" || level === "decouverte" ? ["palmes"] : ["plaquettes", "palmes"];
+      return level === "regulier" || level === "decouverte"
+        ? ["palmes"]
+        : ["plaquettes_doigts", "plaquettes", "palmes"];
     case "technique_fleche":
     case "technique_grand_chien":
       return ["palmes", "tuba"];
@@ -60,9 +63,10 @@ export function pedagogicalTechEquipment(techFocus, level = "regulier") {
 }
 
 export function forbiddenTechEquipment(techFocus) {
-  if (techFocus === "technique_roulis") return ["plaquettes"];
-  if (techFocus === "technique_jambes") return ["pull", "plaquettes"];
-  if (techFocus === "technique_respiration") return ["plaquettes", "palmes"];
+  const paddles = ["plaquettes", "plaquettes_doigts"];
+  if (techFocus === "technique_roulis") return [...paddles];
+  if (techFocus === "technique_jambes") return ["pull", "elastique", ...paddles];
+  if (techFocus === "technique_respiration") return [...paddles, "palmes"];
   return [];
 }
 
@@ -73,7 +77,20 @@ function firstOwned(prefer, available) {
 function displayName(eq) {
   if (eq === "pull") return "pull-buoy";
   if (eq === "tuba") return "tuba frontal";
+  if (eq === "plaquettes_doigts") return "plaquettes doigts";
+  if (eq === "elastique") return "élastique";
   return eq;
+}
+
+/** Si les deux paddle types sont possédés : fingers = appui, plaquettes = force. Un seul = il couvre les deux. */
+function preferPaddleForRole(available, role) {
+  const hasFingers = available.includes("plaquettes_doigts");
+  const hasClassic = available.includes("plaquettes");
+  if (hasFingers && hasClassic) {
+    return role === "appui" ? "plaquettes_doigts" : "plaquettes";
+  }
+  if (role === "appui") return hasFingers ? "plaquettes_doigts" : hasClassic ? "plaquettes" : null;
+  return hasClassic ? "plaquettes" : hasFingers ? "plaquettes_doigts" : null;
 }
 
 function pickOne(list, rng) {
@@ -87,7 +104,7 @@ function pickOne(list, rng) {
  * Inventaire non vide + hors exempt → engagement visible.
  */
 export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
-  const available = normalizeEquipmentList(brief.equipment);
+  const rawAvailable = normalizeEquipmentList(brief.equipment);
   const empty = {
     usage: "none",
     applied: [],
@@ -96,12 +113,15 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
     corpsNote: "",
     engaged: false,
   };
-  if (!available.length) return empty;
-
   const intent = brief.sessionIntent || brief.intent || "";
   const quality = !!brief.qualitySession;
   const techFocus = brief.techFocus || brief.primaryTechnicalGoal || "";
   const level = brief.level || "regulier";
+  const available = level === "decouverte"
+    ? rawAvailable.filter((e) => !["plaquettes", "plaquettes_doigts", "elastique"].includes(e))
+    : rawAvailable;
+  if (!available.length) return empty;
+  const forbidden = forbiddenTechEquipment(techFocus);
   const exempt = isEquipmentEngagementExempt(brief);
   const roll = typeof rng === "function" ? rng() : Math.random();
 
@@ -114,9 +134,13 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   const wishPrefer = Array.isArray(brief.wishPreferEquipment)
     ? brief.wishPreferEquipment.filter((e) => available.includes(e))
     : [];
-  const techEq =
+  let techEq =
     firstOwned(wishPrefer.length ? wishPrefer : prefer, available) ||
     firstOwned(prefer, available);
+  if (techEq === "plaquettes" || techEq === "plaquettes_doigts") {
+    const role = /catchup|appui/.test(techFocus) ? "appui" : "force";
+    techEq = preferPaddleForRole(available, role) || techEq;
+  }
 
   let useTech = false;
   if (techEq === "planche" && techFocus === "technique_jambes") useTech = roll < 0.9;
@@ -129,7 +153,7 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   const techNote = [];
   const corpsNote = [];
 
-  if (useTech && techEq) {
+  if (useTech && techEq && !forbidden.includes(techEq)) {
     if (techFocus === "technique_fleche" || techFocus === "technique_grand_chien") {
       if (available.includes("palmes")) {
         applied.push("palmes");
@@ -147,15 +171,22 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
 
   // Engagement hors exempt : garantir ≥1 item pédagogique / wish / inventaire
   if (!exempt && applied.length === 0 && available.length) {
-    const fallbackPool = wishPrefer.length
+    let fallbackPool = wishPrefer.length
       ? wishPrefer
       : prefer.filter((e) => available.includes(e)).length
         ? prefer.filter((e) => available.includes(e))
-        : available;
+        : available.filter((e) => !forbidden.includes(e));
+    if (available.includes("plaquettes") && available.includes("plaquettes_doigts")) {
+      const keep = /catchup|appui/.test(techFocus) ? "plaquettes_doigts" : "plaquettes";
+      const drop = keep === "plaquettes_doigts" ? "plaquettes" : "plaquettes_doigts";
+      const narrowed = fallbackPool.filter((e) => e !== drop);
+      if (narrowed.length) fallbackPool = narrowed;
+    }
     const pick = pickOne(fallbackPool.length ? fallbackPool : available, typeof rng === "function" ? rng : Math.random);
-    if (pick) {
+    if (pick && !forbidden.includes(pick)) {
       applied.push(pick);
       if (pick === "pull") corpsNote.push("pull-buoy");
+      else if (pick === "elastique") corpsNote.push("élastique");
       else techNote.push(displayName(pick));
     }
   }
@@ -163,12 +194,42 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
   const canPull =
     available.includes("pull") &&
     !quality &&
-    !/vitesse|vo2|test/.test(intent);
+    !/vitesse|vo2|test/.test(intent) &&
+    !forbidden.includes("pull");
   const rollC = typeof rng === "function" ? rng() : Math.random();
   if (canPull && rollC < 0.4 && !applied.includes("pull") && !wishPrefer.includes("palmes")) {
     // Autorisé même si palmes déjà dans la séance : conflit géré à la ligne d'exo.
     applied.push("pull");
     corpsNote.push("pull-buoy");
+  }
+
+  const canElastique =
+    available.includes("elastique") &&
+    !quality &&
+    !/vitesse|vo2|test/.test(intent) &&
+    !forbidden.includes("elastique");
+  if (canElastique && !applied.includes("elastique") && (applied.includes("pull") ? rollC < 0.55 : rollC < 0.32)) {
+    applied.push("elastique");
+    corpsNote.push("élastique");
+    // Premier temps : pull + élastique, plus facile (jambes portées).
+    if (canPull && !applied.includes("pull")) {
+      applied.push("pull");
+      corpsNote.push("pull-buoy");
+    }
+  }
+
+  const forcePaddle = preferPaddleForRole(available, "force");
+  if (
+    forcePaddle &&
+    !applied.includes(forcePaddle) &&
+    !applied.includes("plaquettes") &&
+    !applied.includes("plaquettes_doigts") &&
+    !forbidden.includes(forcePaddle) &&
+    (applied.includes("pull") || applied.includes("elastique")) &&
+    rollC < 0.35
+  ) {
+    applied.push(forcePaddle);
+    corpsNote.push(displayName(forcePaddle));
   }
 
   // Plus de purge session-wide pull+palmes, règle = même exercice seulement.
@@ -197,6 +258,6 @@ export function resolveEquipmentUsage(brief = {}, rng = Math.random) {
 export function labelWithEquipment(baseLabel, eqUsage) {
   if (!eqUsage?.corpsNote) return baseLabel;
   const base = String(baseLabel || "nage").trim();
-  if (/palmes|tuba|pull|planche|plaquette|avec\s/i.test(base)) return base;
+  if (/palmes|tuba|pull|planche|plaquette|[ée]lastique|avec\s/i.test(base)) return base;
   return `${base} avec ${eqUsage.corpsNote}`;
 }

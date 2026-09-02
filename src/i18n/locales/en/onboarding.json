@@ -139,7 +139,8 @@
     "pull": "Pull buoy",
     "planche": "Kickboard",
     "plaquettes": "Paddles",
-    "elastique": "Resistance band"
+    "plaquettes_doigts": "Finger paddles",
+    "elastique": "Ankle band"
   },
   "distance": {
     "title": "What distance do you want to swim on average per session?",

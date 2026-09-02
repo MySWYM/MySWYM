@@ -63,6 +63,7 @@ import {
   decideAdaptAction,
   normalizeFeedbackRating,
   missedSessionPolicy,
+  EQUIPMENT_IDS,
 } from "./lib/sports-engine/index.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
 import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress, planProgressScore, loopSessionNeedsAdvance } from "./lib/plan-progress-merge.js";
@@ -8870,7 +8871,7 @@ export default function App() {
       // Matériel : null legacy → [] (aucun) pour que le composeur n'autorise plus tout silencieusement
       const equipment = Array.isArray(entry.profile?.equipment)
         ? entry.profile.equipment.filter((e) =>
-            ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
+            EQUIPMENT_IDS.includes(e)
           )
         : [];
       const profileForGen = { ...entry.profile, taste, equipment };
@@ -9270,7 +9271,7 @@ export default function App() {
         genProfile = {
           ...genProfile,
           equipment: genProfile.equipment.filter((e) =>
-            ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
+            EQUIPMENT_IDS.includes(e)
           ),
         };
       }
@@ -10442,7 +10443,7 @@ export default function App() {
   const handleEquipmentChange = (nextEquipment) => {
     const equipment = Array.isArray(nextEquipment)
       ? nextEquipment.filter((e) =>
-          ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"].includes(e)
+          EQUIPMENT_IDS.includes(e)
         )
       : [];
     const nextProfile = { ...activeProfile, equipment };

@@ -50,12 +50,14 @@ Autres règles de structure :
 Le matériel déclaré indique ce que le nageur peut utiliser, jamais ce qu’il doit utiliser.  
 Une séance peut être sans matériel même si l’inventaire est rempli.  
 Lorsqu’un matériel est utilisé, il doit être affiché explicitement sur la ligne d’exercice concernée.  
-Les contraintes existantes restent actives : jamais pull-buoy + palmes **dans le même exercice** (même ligne) ; matériel lié à l’éducatif, jamais tiré au sort.
+Les contraintes existantes restent actives : jamais pull-buoy + palmes **dans le même exercice** (même ligne) ; jamais élastique chevilles + palmes ni élastique + planche **même ligne** ; pull + élastique autorisé (plus facile au début) ; matériel lié à l’éducatif, jamais tiré au sort.
 
 Rappels pédagogiques :
 
-- Planche sur les jambes ; palmes sur le roulis (jamais plaquettes) ; tuba sur la respiration ; pull sur le corps aérobie si pas de palmes ce jour-là.
-- Matos dans la ligne d’exo (`avec palmes` / `avec pull-buoy`), jamais collé au hasard sur le titre de bloc.
+- Planche sur les jambes ; palmes sur le roulis (jamais plaquettes ni finger paddles) ; tuba sur la respiration ; pull sur le corps aérobie.
+- Finger paddles = technique / appui ; plaquettes = force / traction. Si le nageur n’a qu’un des deux, cet outil peut couvrir l’autre rôle.
+- Élastique = bande aux chevilles (bras / gainage). Avec pull = entrée plus facile. Sans pull = plus dur (jambes qui coulent).
+- Matos dans la ligne d’exo (`avec palmes` / `avec pull-buoy` / `avec plaquettes doigts`), jamais collé au hasard sur le titre de bloc.
 - « Aucun » = zéro matos. « sans planche » ≠ exige une planche.
 - ~~Inventaire non vide → ≥1 item visible par séance~~ — **↩ remplacée** (disponibilité ≠ obligation).
 

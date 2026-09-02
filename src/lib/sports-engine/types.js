@@ -9,7 +9,7 @@
 /** @typedef {'base'|'development'|'peak'|'taper'|'competition'|'test'|'bilan'} PlanPhase */
 /** @typedef {'volume'|'effort_duration'|'density'|'intensity'|'specificity'|'complexity'} ProgressionLever */
 /** @typedef {'PROGRESSER'|'MAINTENIR'|'AJUSTER'|'RECUPERER'} AdaptAction */
-/** @typedef {'planche'|'pull'|'palmes'|'tuba'|'plaquettes'} EquipmentId */
+/** @typedef {'planche'|'pull'|'palmes'|'tuba'|'plaquettes'|'plaquettes_doigts'|'elastique'} EquipmentId */
 
 import { normalizeStrokeFocus } from "./stroke-focus.js";
 import { normalizeRaceTarget } from "./race-target.js";
@@ -40,7 +40,7 @@ export const SESSION_FAMILIES = [
   "test",
 ];
 
-export const EQUIPMENT_IDS = ["planche", "pull", "palmes", "tuba", "plaquettes", "elastique"];
+export const EQUIPMENT_IDS = ["planche", "pull", "palmes", "tuba", "plaquettes", "plaquettes_doigts", "elastique"];
 
 /** Labels UI (IDs stables moteur). */
 export const EQUIPMENT_LABELS = {
@@ -49,7 +49,8 @@ export const EQUIPMENT_LABELS = {
   palmes: "Palmes",
   tuba: "Tuba frontal",
   plaquettes: "Plaquettes",
-  elastique: "Élastique",
+  plaquettes_doigts: "Plaquettes doigts",
+  elastique: "Élastique chevilles",
 };
 
 /** Normalise une liste onboarding → IDs connus (jamais null après réponse). */
@@ -59,7 +60,8 @@ export function normalizeProfileEquipment(equipment) {
     .map((e) => {
       const s = String(e || "").toLowerCase().trim();
       if (s === "pullbuoy" || s === "pull-buoy" || s === "pull buoy") return "pull";
-      if (s === "élastique" || s === "elastique" || s === "elastic") return "elastique";
+      if (s === "élastique" || s === "elastique" || s === "elastic" || s === "ankle band") return "elastique";
+      if (s === "plaquettes_doigts" || s === "finger_paddles" || s === "finger paddle" || s === "finger paddles" || s === "plaquettes doigts") return "plaquettes_doigts";
       if (s === "snorkel" || s === "tuba frontal") return "tuba";
       if (s === "fins" || s === "palme") return "palmes";
       return s;
@@ -128,7 +130,7 @@ export function buildSportProfile(profile = {}, opts = {}) {
   const objectifV1 = mapGoalToObjectifV1(profile);
   const goal = canonicalizeGoal(profile.goal) || profile.goal || "";
   const equipmentRaw = Array.isArray(profile.equipment)
-    ? profile.equipment.filter((e) => EQUIPMENT_IDS.includes(e) || ["pullbuoy", "pull-buoy", "élastique", "elastique", "fins", "snorkel"].includes(String(e).toLowerCase()))
+        ? profile.equipment.filter((e) => EQUIPMENT_IDS.includes(e) || ["pullbuoy", "pull-buoy", "élastique", "elastique", "fins", "snorkel", "finger paddle", "finger paddles", "plaquettes doigts", "ankle band"].includes(String(e).toLowerCase()))
     : null;
   const equipment = equipmentRaw == null
     ? null

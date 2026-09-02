@@ -11,6 +11,7 @@ import {
   EQUIPMENT_IDS,
   validateComposedSession,
   hasPullPalmesConflict,
+  hasElastiqueKickConflict,
 } from "./index.js";
 import { sessionFitsEquipment, detectEquipmentInDetails } from "./session-compose.js";
 
@@ -87,6 +88,8 @@ function briefFrom({
 
 // Structure
 ok(EQUIPMENT_IDS.includes("elastique"), "elastique id");
+ok(EQUIPMENT_IDS.includes("plaquettes_doigts"), "plaquettes_doigts id");
+ok(normalizeProfileEquipment(["finger paddles"]).includes("plaquettes_doigts"), "alias finger paddles");
 ok(normalizeProfileEquipment(["fins", "pull-buoy"]).includes("palmes"), "alias fins→palmes");
 ok(normalizeProfileEquipment(["pull-buoy"]).includes("pull"), "alias pull");
 ok(normalizeProfileEquipment(null) === null, "null unknown");
@@ -277,6 +280,16 @@ for (const [level, equipment, objectif, seed] of [
   };
   const vAcross = validateComposedSession(fakeAcross, briefFrom({ level: "régulier", equipment: owned, seed: "qg-across" }));
   ok(vAcross.ok || !(vAcross.errors || []).some((e) => String(e).includes("pull + palmes")), "QG allows across lines");
+}
+
+{
+  ok(detectEquipmentInDetails(["6×50 crawl avec plaquettes doigts"]).includes("plaquettes_doigts"), "detect fingers");
+  ok(!detectEquipmentInDetails(["6×50 crawl avec plaquettes doigts"]).includes("plaquettes"), "fingers ≠ plaquettes");
+  ok(detectEquipmentInDetails(["6×50 crawl avec plaquettes"]).includes("plaquettes"), "detect classic");
+  ok(!hasElastiqueKickConflict(["4×100 pull-buoy + élastique", "8×50 palmes"]), "élastique+pull OK, palmes other line");
+  ok(hasElastiqueKickConflict(["4×100 crawl élastique palmes"]), "élastique+palmes same line");
+  ok(hasElastiqueKickConflict(["4×50 planche élastique"]), "élastique+planche same line");
+  ok(sessionFitsEquipment(["4×100 crawl avec pull-buoy et élastique"], ["pull", "elastique"]), "pull+élastique fits");
 }
 
 // Négatif QG

@@ -18,7 +18,8 @@ const EQUIPMENT_LABELS = {
   palmes: "Palmes",
   tuba: "Tuba",
   plaquettes: "Plaquettes",
-  elastique: "Élastique",
+  plaquettes_doigts: "Plaquettes doigts",
+  elastique: "Élastique chevilles",
 };
 
 function phaseTone(sectionId, G) {

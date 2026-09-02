@@ -51,6 +51,8 @@ const EQUIPMENT_IMAGES = {
   pull: "/equip-pull.webp",
   planche: "/equip-planche.webp",
   plaquettes: "/equip-plaquettes.webp",
+  plaquettes_doigts: "/equip-plaquettes-doigts.webp",
+  elastique: "/equip-elastique.webp",
 };
 
 function equipKey(list) {

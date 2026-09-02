@@ -5,19 +5,46 @@
 import { splitSessionBlocks, splitSessionBlocksDecouverte, splitSessionBlocksRegulier, splitSessionBlocksSportif, splitSessionBlocksPerformance, biasBlocksForObjectif } from "./volume.js";
 import { EQUIPMENT_IDS } from "./types.js";
 
+const FINGER_PADDLE_RE = /finger\s*paddles?|plaquettes?\s*doigts|palettes?\s*digitales/i;
 const EQUIP_KEYWORDS = {
   planche: /planche/i,
   pull: /pull|pull-buoy|pull buoy/i,
   palmes: /palmes?/i,
   tuba: /tuba/i,
+  plaquettes_doigts: FINGER_PADDLE_RE,
   plaquettes: /plaquette/i,
-  elastique: /elastique|élastique|elastic\s*band/i,
+  elastique: /elastique|élastique|ankle\s*band/i,
 };
+
+function stripSansEquipment(text) {
+  return String(text || "").replace(
+    /sans\s+(planche|palmes|pull|tuba|plaquettes?(?:\s*doigts)?|finger\s*paddles?|[ée]lastique)/gi,
+    "",
+  );
+}
 
 /** Détecte le matériel requis dans des lignes de détail */
 export function detectEquipmentInDetails(details = []) {
-  const text = details.join(" ").replace(/sans\s+(planche|palmes|pull|tuba|plaquettes?)/gi, "");
-  return EQUIPMENT_IDS.filter((id) => EQUIP_KEYWORDS[id].test(text));
+  const text = stripSansEquipment(details.join(" "));
+  return EQUIPMENT_IDS.filter((id) => {
+    if (id === "plaquettes") {
+      const stripped = text.replace(FINGER_PADDLE_RE, "");
+      return EQUIP_KEYWORDS.plaquettes.test(stripped);
+    }
+    return EQUIP_KEYWORDS[id]?.test(text);
+  });
+}
+
+function eachDetailLine(source, fn) {
+  const chunks = Array.isArray(source) ? source.filter(Boolean) : [String(source || "")];
+  for (const chunk of chunks) {
+    for (const line of String(chunk).split(/\n+/)) {
+      const t = line.trim();
+      if (!t) continue;
+      if (fn(t)) return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -25,15 +52,19 @@ export function detectEquipmentInDetails(details = []) {
  * Posséder les deux, ou les utiliser le même jour sur des lignes différentes, est OK.
  */
 export function hasPullPalmesConflict(source) {
-  const chunks = Array.isArray(source) ? source.filter(Boolean) : [String(source || "")];
-  for (const chunk of chunks) {
-    for (const line of String(chunk).split(/\n+/)) {
-      const t = line.trim();
-      if (!t) continue;
-      if (/pull/i.test(t) && /palmes?/i.test(t)) return true;
-    }
-  }
-  return false;
+  return eachDetailLine(source, (t) => /pull/i.test(t) && /palmes?/i.test(t));
+}
+
+/** Élastique chevilles : jamais avec palmes ni planche sur la même ligne. Pull + élastique OK. */
+export function hasElastiqueKickConflict(source) {
+  return eachDetailLine(source, (t) => {
+    if (!/[ée]lastique/i.test(t)) return false;
+    return /palmes?/i.test(t) || /planche/i.test(t);
+  });
+}
+
+export function hasEquipmentLineConflict(source) {
+  return hasPullPalmesConflict(source) || hasElastiqueKickConflict(source);
 }
 
 /**
@@ -42,7 +73,7 @@ export function hasPullPalmesConflict(source) {
  */
 export function sessionFitsEquipment(details, equipment) {
   const required = detectEquipmentInDetails(details);
-  if (hasPullPalmesConflict(details)) return false;
+  if (hasEquipmentLineConflict(details)) return false;
 
   if (equipment == null) return true; // inconnu
   if (equipment.length === 0) {

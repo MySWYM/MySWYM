@@ -122,6 +122,8 @@ export {
   sessionFitsEquipment,
   detectEquipmentInDetails,
   hasPullPalmesConflict,
+  hasElastiqueKickConflict,
+  hasEquipmentLineConflict,
 } from "./session-compose.js";
 export { validateSession, maxZoneForProfile } from "./validate.js";
 export {

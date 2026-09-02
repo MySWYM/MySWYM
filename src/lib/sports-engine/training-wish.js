@@ -15,9 +15,10 @@ const EQUIPMENT_PATTERNS = [
   { id: "palmes", re: /\bpalmes?\b|fins?\b/i },
   { id: "tuba", re: /\btuba\b|snorkel/i },
   { id: "pull", re: /\bpull(?:-|\s*)?buoy\b|\bpull\b/i },
-  { id: "plaquettes", re: /\bplaquettes?\b|paddles?/i },
+  { id: "plaquettes_doigts", re: /finger\s*paddles?|plaquettes?\s*doigts|palettes?\s*digitales/i },
+  { id: "plaquettes", re: /\bplaquettes?\b|\bpaddles?\b/i },
   { id: "planche", re: /\bplanche\b|kickboard/i },
-  { id: "elastique", re: /\b[eé]lastique\b|band/i },
+  { id: "elastique", re: /\b[eé]lastique\b|ankle\s*band/i },
 ];
 
 const INTENT_PATTERNS = [
@@ -74,7 +75,10 @@ export function parseTrainingWish(raw, { createdAt = null } = {}) {
   if (!text) return empty;
 
   const strokes = matchIds(text, STROKE_PATTERNS);
-  const equipment = matchIds(text, EQUIPMENT_PATTERNS);
+  const equipment = matchIds(text, EQUIPMENT_PATTERNS).filter((id, _, list) => {
+    if (id === "plaquettes" && list.includes("plaquettes_doigts")) return false;
+    return true;
+  });
   const intents = matchIds(text, INTENT_PATTERNS);
   const techFocus = matchIds(text, TECH_PATTERNS);
   const extraTags = matchIds(text, TAG_PATTERNS);

@@ -132,8 +132,9 @@ export function normalizeMaterielToken(token) {
   if (/^palme/.test(t) || t === "fins") return "palmes";
   if (/^tuba/.test(t) || t.includes("snorkel")) return "tuba";
   if (/^planche/.test(t) || t.includes("kickboard")) return "planche";
-  if (/^plaquette/.test(t) || t.includes("paddle")) return "plaquettes";
-  if (/elastique|elastic/.test(t)) return "elastique";
+  if (/finger\s*paddle|plaquettes?\s*doigts|palettes?\s*digitales/.test(t)) return "plaquettes_doigts";
+  if (/^plaquette/.test(t) || (t.includes("paddle") && !t.includes("finger"))) return "plaquettes";
+  if (/elastique|elastic|ankle\s*band/.test(t)) return "elastique";
   return t;
 }
 
@@ -444,7 +445,12 @@ export function lineAllowsMateriel(line, adding = []) {
   const blob = `${line} ${adding.join(" ")}`;
   const hasPull = /pull/i.test(blob);
   const hasPalmes = /palmes?/i.test(blob);
-  return !(hasPull && hasPalmes);
+  const hasElastique = /[ée]lastique/i.test(blob);
+  const hasPlanche = /planche/i.test(blob);
+  if (hasPull && hasPalmes) return false;
+  if (hasElastique && hasPalmes) return false;
+  if (hasElastique && hasPlanche) return false;
+  return true;
 }
 
 /**
@@ -509,6 +515,8 @@ export function pickMaterielForLine(edu, equipment, line, rng = Math.random) {
   const pick = ok[Math.floor(rng() * ok.length) % ok.length];
   if (pick === "pull") return "pull-buoy";
   if (pick === "tuba") return "tuba";
+  if (pick === "plaquettes_doigts") return "plaquettes doigts";
+  if (pick === "elastique") return "élastique";
   return pick;
 }
 

@@ -211,7 +211,7 @@ function coreAfterVolume(text) {
     .replace(/\s*[:.]\s*$/, "")
     .replace(/\([^)]*\)/g, " ")
     .replace(/\s*—\s*.*$/, "")
-    .replace(/\bavec\s+(?:palmes|tuba|planche|pull|plaquette).*$/i, "")
+    .replace(/\bavec\s+(?:palmes|tuba|planche|pull|plaquette|[ée]lastique).*$/i, "")
     .replace(/\bpalmes\b.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();

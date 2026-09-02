@@ -18,6 +18,7 @@ import {
   educatifRowToUiFiche,
   sheetFamilyIdFromProfile,
   formatFourNagesEducatifsLabel,
+  normalizeMaterielToken,
 } from "./parse.js";
 
 function ok(cond, msg) {
@@ -170,6 +171,12 @@ ok(
 
 ok(lineAllowsMateriel("4 × 50 m crawl", ["palmes"]), "palmes alone ok");
 ok(!lineAllowsMateriel("4 × 50 m crawl pull-buoy", ["palmes"]), "pull+palmes line no");
+ok(lineAllowsMateriel("4 × 50 m crawl pull-buoy", ["élastique"]), "pull+élastique ok");
+ok(!lineAllowsMateriel("4 × 50 m crawl palmes", ["élastique"]), "élastique+palmes line no");
+ok(!lineAllowsMateriel("4 × 50 m planche", ["élastique"]), "élastique+planche line no");
+ok(normalizeMaterielToken("finger paddles") === "plaquettes_doigts", "finger paddles token");
+ok(normalizeMaterielToken("plaquettes") === "plaquettes", "plaquettes token");
+ok(normalizeMaterielToken("paddle") === "plaquettes", "paddle → plaquettes");
 
 const fiche = educatifRowToUiFiche({
   nom: "toucher cuisse",
