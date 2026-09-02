@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-09-02 | Jetons Sheet 4 nages | Trois écritures, pas un dump MIXTE : `{par 25m}` = IM 25 m/nage ; `{par 100m}` / `{par 50m}` = 1 éducatif / nage sur toute la rep ; `{25m éducatif + 25m nage}` = 25 drill + 25 nage. Sans jeton, « 4 nages éducatifs » reste 1 nage / rep. App + PDF. Ne plus écrire `(25 m {éducatif} + 25 m) (4 nages)`. | ✅ active |
 | 2026-09-02 | Finger paddles + élastique | Inventaire : `plaquettes_doigts` distinct des plaquettes ; `elastique` visible Profil (bande chevilles). Fingers = appui / technique, plaquettes = force / traction, un seul des deux peut couvrir l’autre. Élastique + pull OK (plus facile) ; jamais élastique + palmes ou planche même ligne. Parseur : `finger paddle` avant `paddle`. | ✅ active |
 | 2026-08-31 | T100 → départs live | Changer le T100 recalcule `D…` / `@…` sur les séances non validées (intent déduit), sans regen ni rechargement de séance. Validées intactes. | ✅ active |
 | 2026-08-31 | Pop Nouveautés 1× / compte | `WhatsNewSheet` : vu en `user_metadata.whats_new_seen` (+ cache local par userId). Continuer = regen semaine 1× ; plus de pop multi-navigateur. Campagne `v2026_08_30`. | ✅ active |

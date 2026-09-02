@@ -4,8 +4,9 @@
  * Liste dense (lisible en un écran) + pastilles ⓘ.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Play, Lock, Check, Copy } from "lucide-react";
+import { Play, Lock, Check, Copy, Printer } from "lucide-react";
 import { buildWorkoutView } from "../lib/workout-display.js";
+import { openSessionPrint } from "../lib/session-export.js";
 import { formatLoopSessionTitle } from "../lib/swim-plan-bridge.js";
 import { buildSessionProvenance } from "../lib/session-provenance.js";
 import { setSupportSessionRef } from "../lib/support-context.js";
@@ -345,6 +346,37 @@ export default function WorkoutPrepView({
           {cta}
         </button>
       )}
+
+      <button
+        type="button"
+        onClick={() => {
+          if (locked) {
+            onUpgrade?.();
+            return;
+          }
+          openSessionPrint(session);
+        }}
+        aria-label="Imprimer la fiche de séance"
+        style={{
+          width: "100%",
+          marginTop: showStart ? 10 : 20,
+          minHeight: 44,
+          border: `1.5px solid ${G.greyLight}`,
+          borderRadius: 12,
+          background: "transparent",
+          color: G.inkLight,
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+        }}
+      >
+        <Printer size={16} color={G.inkLight} />
+        Imprimer la fiche
+      </button>
 
       {onTooHard && !locked && (
         <button
