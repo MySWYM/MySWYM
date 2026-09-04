@@ -27,6 +27,94 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* App shell — mobile first, calm and focused like a training companion. */
+:root {
+  --app-max: 520px;
+  --app-pad-x: 18px;
+  --bottom-nav-h: 76px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-lift: 8px;
+  --myswym-bg: #06101f;
+  --myswym-surface: #0b1a2e;
+  --myswym-ink: #f4f8fa;
+  --myswym-grey: #9bb0c8;
+  --myswym-grey-mid: #6b7c90;
+  --myswym-grey-light: rgba(142, 179, 255, 0.18);
+  --myswym-grey-xlight: #10243c;
+  --myswym-blue: #5c9dff;
+  --myswym-blue-light: rgba(92, 157, 255, 0.14);
+  --myswym-blue-mid: #8eb3ff;
+  --myswym-glass: rgba(6, 16, 31, 0.88);
+}
+
+.app-shell {
+  width: min(100%, var(--app-max));
+  margin: 0 auto;
+  padding-left: var(--app-pad-x);
+  padding-right: var(--app-pad-x);
+  box-sizing: border-box;
+}
+
+.app-shell--flush {
+  width: 100%;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.app-shell-inner {
+  width: min(100%, var(--app-max));
+  margin: 0 auto;
+  padding-left: var(--app-pad-x);
+  padding-right: var(--app-pad-x);
+  box-sizing: border-box;
+}
+
+button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--myswym-blue);
+  outline-offset: 3px;
+}
+
+.bottom-nav {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 50;
+  padding: 0 var(--app-pad-x) var(--safe-bottom);
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 5, 20, 0.82) 30%);
+  pointer-events: none;
+}
+.bottom-nav-inner {
+  pointer-events: auto;
+  width: min(100%, var(--app-max));
+  min-height: var(--bottom-nav-h);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 8px 8px !important;
+  border: 1px solid rgba(142, 179, 255, 0.18);
+  border-radius: 24px 24px 16px 16px;
+  background: rgba(11, 26, 46, 0.94);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.bottom-nav-inner button { border-radius: 16px; transition: background 160ms ease, transform 160ms ease; }
+.bottom-nav-inner button[aria-current="page"] { background: rgba(92, 157, 255, 0.14) !important; }
+.bottom-nav-inner button:active { transform: scale(0.96); }
+
+.ms-home-greet { margin-bottom: 20px; }
+.ms-home-greet h1 { font-size: clamp(26px, 8vw, 34px); }
+.ms-habit-banner, .ms-trial-banner { border-radius: 18px; }
+.ms-plan-reveal-btn { border-radius: 16px; font-weight: 750; box-shadow: 0 10px 28px rgba(0, 107, 253, 0.24); }
+
+@media (min-width: 700px) {
+  :root { --app-pad-x: 24px; --app-max: 560px; }
+  .bottom-nav { padding-left: 0; padding-right: 0; }
+}
+
 body {
   margin: 0;
 }
