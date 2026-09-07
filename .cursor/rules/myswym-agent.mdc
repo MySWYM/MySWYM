@@ -32,5 +32,7 @@ Quand l'utilisateur (Arthur) corrige le **contenu des séances**, un **objectif*
 
 ## Skills DA / motion (app)
 
-- UI app glass / minimal : skill `.cursor/skills/myswym-app-glass` (prioritaire pour l’app loguée).
+- **Source de vérité DA** : `DESIGN.md` (racine). App soft mist d’abord ; landing alignée quand on la touche.
+- UI app glass / minimal : skill `.cursor/skills/myswym-app-glass` (rappel court, pointe vers `DESIGN.md`).
 - GSAP : skills `gsap-*` sous `.cursor/skills/` (officiel GreenSock). Ne pas `npm i gsap` pour un polish UI app ; framer-motion d’abord. Pas de WebGL liquid-glass-studio dans l’app.
+- Ne pas réutiliser `stitch_tableau_de_bord_myswym/**/DESIGN.md` (DA dark obsolète).
