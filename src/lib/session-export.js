@@ -91,10 +91,15 @@ function printDrills(ex) {
 }
 
 function formatPrintCue(ex) {
-  const modeCue = fourNagesDisplayCue(ex.fourNagesMode, ex.volumeLabel);
-  if (modeCue) return modeCue;
   const drills = printDrills(ex);
-  if (drills.length > 1) return "4 éducatifs (1 / nage)";
+  const isFourNages = /4\s*nages/i.test(String(ex?.strokeLabel || ""));
+  const modeCue = fourNagesDisplayCue(ex.fourNagesMode, ex.volumeLabel, {
+    educatifCount: !isFourNages && drills.length > 1 ? drills.length : null,
+  });
+  if (modeCue) return modeCue;
+  if (drills.length > 1) {
+    return isFourNages ? "4 éducatifs (1 / nage)" : `${drills.length} éducatifs`;
+  }
   const blob = `${ex?.strokeLabel || ""} ${ex?.volumeLabel || ""} ${ex?.cue || ""}`;
   if (/4\s*nages/i.test(blob) && /25\s*m/i.test(ex?.cue || "") && /\+/.test(ex?.cue || "")) {
     return "4 éducatifs (1 / nage)";
@@ -105,11 +110,12 @@ function formatPrintCue(ex) {
 
 const FOUR_NAGES_STROKE_LABELS = ["papillon", "dos", "brasse", "crawl"];
 
-/** Papier : 1 ligne par nage, selon le jeton Sheet. */
+/** Papier : 1 ligne par nage (4 nages) ou par éducatif (round-robin Soft). */
 function formatPrintDrillLines(ex) {
   const drills = printDrills(ex);
   if (drills.length <= 1) return [];
   const mode = ex.fourNagesMode;
+  const isFourNages = /4\s*nages/i.test(String(ex?.strokeLabel || ""));
   const repMeters = parseRepMetersFromVolumeLabel(ex.volumeLabel)
     || (ex.meters ? Number(ex.meters) : null)
     || 50;
@@ -118,6 +124,12 @@ function formatPrintDrillLines(ex) {
     .map((d, i) => {
       const name = nageurText(d.name || d.nom || "").trim();
       if (!name) return "";
+      if (!isFourNages) {
+        if (mode?.kind === "drill_then_swim") {
+          return `${repMeters} m : ${slice} m ${name} + ${slice} m nage`;
+        }
+        return name;
+      }
       const stroke = FOUR_NAGES_STROKE_LABELS[i];
       if (!stroke) return name;
       if (mode?.kind === "im") return `${slice} m ${stroke} : ${name}`;
