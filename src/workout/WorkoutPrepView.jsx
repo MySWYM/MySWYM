@@ -301,8 +301,22 @@ export default function WorkoutPrepView({
 
       {drill && (
         <DrillInfoSheet
-          educatif={Array.isArray(drill) ? undefined : drill}
-          educatifs={Array.isArray(drill) ? drill : undefined}
+          educatif={
+            Array.isArray(drill)
+              ? undefined
+              : drill?.educatifs
+                ? undefined
+                : drill
+          }
+          educatifs={
+            Array.isArray(drill)
+              ? drill
+              : Array.isArray(drill?.educatifs)
+                ? drill.educatifs
+                : undefined
+          }
+          layout={drill?.layout}
+          strokeHint={drill?.strokeHint}
           onClose={() => setDrill(null)}
           colors={G}
         />

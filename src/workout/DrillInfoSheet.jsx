@@ -1,11 +1,13 @@
 /**
  * Bottom sheet éducatif, contenu MySWYM uniquement.
- * 1 fiche, ou liste (4 nages = 1 / nage) sans encombrer la carte.
+ * - 1 fiche
+ * - liste 4 nages (1 / nage, ordre pap → crawl)
+ * - liste même nage (ex. Soft · 3 éducatifs crawl)
  */
 import { Play } from "lucide-react";
 import SoftMistSheet from "../sheets/SoftMistSheet.jsx";
 
-const STROKE_LABELS = ["Papillon", "Dos", "Brasse", "Crawl"];
+const IM_STROKE_LABELS = ["Papillon", "Dos", "Brasse", "Crawl"];
 
 function SingleDrillBody({ educatif }) {
   const hasVideo = !!(educatif.videoUrl && String(educatif.videoUrl).trim());
@@ -69,11 +71,16 @@ function SingleDrillBody({ educatif }) {
   );
 }
 
-function MultiDrillBody({ educatifs }) {
+function MultiDrillBody({ educatifs, layout, strokeHint }) {
+  const fourNages = layout === "four-nages";
+  const sameStrokeLabel = !fourNages
+    ? formatStrokeHint(strokeHint) || "Crawl"
+    : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {educatifs.map((edu, i) => {
-        const stroke = STROKE_LABELS[i] || null;
+        const stroke = fourNages ? IM_STROKE_LABELS[i] || null : sameStrokeLabel;
         return (
           <div key={edu.id || edu.name || i} className="ms-drill-card">
             {stroke ? <div className="ms-drill-stroke">{stroke}</div> : null}
@@ -101,7 +108,25 @@ function MultiDrillBody({ educatifs }) {
   );
 }
 
-export default function DrillInfoSheet({ educatif, educatifs, onClose }) {
+function formatStrokeHint(raw) {
+  const t = String(raw || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (!t) return null;
+  if (/4\s*nages|im/.test(t)) return null;
+  if (/pap/.test(t)) return "Papillon";
+  if (/dos|back/.test(t)) return "Dos";
+  if (/brasse|breast/.test(t)) return "Brasse";
+  if (/crawl|nl|free|nage\s*libre/.test(t)) return "Crawl";
+  return String(raw).trim();
+}
+
+/**
+ * @param {{ educatif?: object, educatifs?: object[], layout?: 'four-nages'|'same-stroke', strokeHint?: string|null, onClose: () => void }} props
+ */
+export default function DrillInfoSheet({ educatif, educatifs, layout, strokeHint, onClose }) {
   const list =
     Array.isArray(educatifs) && educatifs.length
       ? educatifs
@@ -113,8 +138,27 @@ export default function DrillInfoSheet({ educatif, educatifs, onClose }) {
   if (!list.length) return null;
 
   const multi = list.length > 1;
-  const title = multi ? "4 éducatifs" : list[0].name;
-  const eyebrow = multi ? "1 par nage · pap → crawl" : "Éducatif";
+  // Défaut sûr : multi sans layout explicite = même nage (évite le faux pap→crawl)
+  const resolvedLayout =
+    layout === "four-nages" || layout === "same-stroke"
+      ? layout
+      : multi
+        ? "same-stroke"
+        : "same-stroke";
+  const fourNages = resolvedLayout === "four-nages";
+
+  const title = multi
+    ? fourNages
+      ? "4 éducatifs"
+      : `${list.length} éducatifs`
+    : list[0].name;
+  const eyebrow = multi
+    ? fourNages
+      ? "1 par nage · pap → crawl"
+      : formatStrokeHint(strokeHint)
+        ? `${list.length} éducatifs · ${formatStrokeHint(strokeHint)}`
+        : `${list.length} éducatifs · même nage`
+    : "Éducatif";
 
   return (
     <SoftMistSheet
@@ -124,7 +168,11 @@ export default function DrillInfoSheet({ educatif, educatifs, onClose }) {
       lockScroll={false}
       zIndex={560}
     >
-      {multi ? <MultiDrillBody educatifs={list} /> : <SingleDrillBody educatif={list[0]} />}
+      {multi ? (
+        <MultiDrillBody educatifs={list} layout={resolvedLayout} strokeHint={strokeHint} />
+      ) : (
+        <SingleDrillBody educatif={list[0]} />
+      )}
     </SoftMistSheet>
   );
 }

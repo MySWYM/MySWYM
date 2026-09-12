@@ -504,10 +504,13 @@ export default function WorkoutExerciseCard({
         ? [exercise.educatif]
         : [];
   const multiDrills = drills.length > 1;
+  const isFourNagesStroke = /4\s*nages/i.test(String(exercise.strokeLabel || ""));
   const allureChips = detectAllureTips(exercise);
   const primaryCue = stripAllureWordsDuplicatedByChips(
-    fourNagesDisplayCue(exercise.fourNagesMode, exercise.volumeLabel)
-      || (multiDrills ? "4 éducatifs (1 / nage)" : exercise.cue),
+    fourNagesDisplayCue(exercise.fourNagesMode, exercise.volumeLabel, {
+      educatifCount: !isFourNagesStroke && drills.length > 1 ? drills.length : null,
+    })
+      || (multiDrills ? (isFourNagesStroke ? "4 éducatifs (1 / nage)" : `${drills.length} éducatifs`) : exercise.cue),
     allureChips,
   );
   const departLabel = exercise.departLabel || null;
@@ -685,7 +688,17 @@ export default function WorkoutExerciseCard({
                   {drills.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
+                      onClick={() =>
+                        onOpenDrill?.(
+                          multiDrills
+                            ? {
+                                educatifs: drills,
+                                layout: isFourNagesStroke ? "four-nages" : "same-stroke",
+                                strokeHint: stroke,
+                              }
+                            : drills[0],
+                        )
+                      }
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
@@ -792,7 +805,17 @@ export default function WorkoutExerciseCard({
           {drills.length > 0 && (
             <button
               type="button"
-              onClick={() => onOpenDrill?.(multiDrills ? drills : drills[0])}
+              onClick={() =>
+                onOpenDrill?.(
+                  multiDrills
+                    ? {
+                        educatifs: drills,
+                        layout: isFourNagesStroke ? "four-nages" : "same-stroke",
+                        strokeHint: stroke,
+                      }
+                    : drills[0],
+                )
+              }
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 border: "none", background: G.blueLight, color: G.blue,

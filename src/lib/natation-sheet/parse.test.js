@@ -11,9 +11,12 @@ import {
   parseFourNagesMode,
   stripFourNagesModeToken,
   parseEducatifsCsv,
+  parseEducatifCountFromLine,
+  parseRepMetersFromVolumeLabel,
   parseSessionsCsv,
   pickEducatif,
   pickFourNagesEducatifs,
+  pickNEducatifs,
   pickMaterielForLine,
   pickSession,
   excludeSheetNsFromHistory,
@@ -326,6 +329,55 @@ ok(
     "1 nage / 100 m · 25 m éducatif + 25 m nage",
   "cue 25 éducatif + 25 nage",
 );
+ok(
+  fourNagesDisplayCue(
+    { kind: "drill_then_swim", sliceMeters: 25 },
+    "4 × (3 × 50 m)",
+    { educatifCount: 3 },
+  ) === "3 éducatifs · 25 m éducatif + 25 m nage",
+  "cue round-robin 3 éducatifs",
+);
+ok(parseEducatifCountFromLine("4 × (3 × 50 m) crawl {25m éducatif + 25m nage} · 3 éducatifs, repos 20 s") === 3, "count 3");
+ok(parseEducatifCountFromLine("100 m crawl {éducatif}") == null, "pas de count mono");
+ok(parseRepMetersFromVolumeLabel("4 × (3 × 50 m)") === 50, "rep nested = 50");
+
+{
+  const eduPool = [
+    { nom: "A", garder: true, debutant: true, intermediaire: true, avance: true, nage: "crawl" },
+    { nom: "B", garder: true, debutant: true, intermediaire: true, avance: true, nage: "crawl" },
+    { nom: "C", garder: true, debutant: true, intermediaire: true, avance: true, nage: "crawl" },
+    { nom: "D", garder: true, debutant: true, intermediaire: true, avance: true, nage: "crawl" },
+    { nom: "PapX", garder: true, debutant: true, intermediaire: true, avance: true, nage: "papillon" },
+    { nom: "VideNage", garder: true, debutant: true, intermediaire: true, avance: true, nage: "" },
+  ];
+  const three = pickNEducatifs(eduPool, { levelBand: "debutant", nage: "crawl" }, 3, () => 0);
+  ok(three.length === 3, "pickN 3");
+  ok(new Set(three.map((e) => e.nom)).size === 3, "pickN distincts");
+  ok(three.every((e) => e.nage === "crawl"), "pickN strict crawl only");
+  ok(!three.some((e) => e.nom === "PapX" || e.nom === "VideNage"), "pas pap / nage vide");
+  const noCrawl = pickEducatif(
+    [{ nom: "PapOnly", garder: true, debutant: true, intermediaire: true, avance: true, nage: "papillon" }],
+    { levelBand: "debutant", nage: "crawl", strictNage: true },
+    () => 0,
+  );
+  ok(noCrawl == null, "strictNage crawl refuse pap");
+  const filledRR = materializeSession(
+    {
+      n: 101,
+      bande: "débutant",
+      total_m: 1300,
+      echauffement: "200 m crawl\n200 m dos\n100 m brasse",
+      bloc: "4 × (3 × 50 m) crawl {25m éducatif + 25m nage} · 3 éducatifs, repos 20 s",
+      rac: "200 m nage libre",
+    },
+    eduPool,
+    { levelBand: "debutant", nage: "crawl" },
+    () => 0,
+  );
+  ok(filledRR.educatifs?.length === 3, "materialize 3 éducatifs");
+  ok(filledRR.educatifs.every((e) => e.nage === "crawl"), "materialize crawl only");
+  ok(filledRR.bloc.includes("{25m éducatif + 25m nage}"), "garde jeton 25+25");
+}
 
 const keptIm = fillPlaceholders("4 × 100 m 4 nages {par 25m}", {
   fourNagesLabel: "ondule-tête (pap) + rattrapé (dos) + opp (brasse) + doigts (crawl)",

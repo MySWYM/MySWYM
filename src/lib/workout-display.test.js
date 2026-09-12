@@ -403,6 +403,12 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
 {
   assert.equal(parseMetersFromLine("4 × 100 m crawl"), 400);
   assert.equal(parseMetersFromLine("300 m mix"), 300);
+  assert.equal(
+    parseMetersFromLine("4 × (3 × 50 m) crawl {25m éducatif + 25m nage} · 3 éducatifs, repos 20 s"),
+    600,
+  );
+  assert.equal(splitHeadline("4 × (3 × 50 m) crawl").volume, "4 × (3 × 50 m)");
+  assert.equal(splitHeadline("4 × (3 × 50 m) crawl").stroke, "CRAWL");
 }
 
 {
@@ -595,6 +601,25 @@ import { matchEducatif, getEducatifById } from "../content/educatifs-catalog.js"
   }).exercises[0];
   assert.equal(fourEx.educatifs?.length, 4);
   assert.equal(fourEx.educatif?.name, "Pap un bras");
+
+  // Round-robin Soft : crawl + jeton 25+25 + 3 éducatifs attachés
+  const rrFiches = [
+    { id: "sheet:a", name: "Flèche", ficheSource: "sheet" },
+    { id: "sheet:b", name: "Rattrapé", ficheSource: "sheet" },
+    { id: "sheet:c", name: "Coulée", ficheSource: "sheet" },
+  ];
+  const rrEx = buildWorkoutView({
+    composedBy: "natation-sheet",
+    sheetEducatifs: rrFiches,
+    details: [
+      "-4 × (3 × 50 m) crawl {25m éducatif + 25m nage} · 3 éducatifs, repos 20 s",
+    ],
+  }).exercises[0];
+  assert.equal(rrEx.meters, 600);
+  assert.equal(rrEx.volumeLabel, "4 × (3 × 50 m)");
+  assert.equal(rrEx.strokeLabel, "CRAWL");
+  assert.equal(rrEx.fourNagesMode?.kind, "drill_then_swim");
+  assert.equal(rrEx.educatifs?.length, 3);
 }
 
 {

@@ -67,7 +67,9 @@ export function classifyDetailLine(raw) {
 
 function estimateSetPartMeters(part) {
   const t = String(part);
-  let m = t.match(/(\d+)\s*[x×]\s*(\d+)\s*m/i);
+  let m = t.match(/(\d+)\s*[x×]\s*\(\s*(\d+)\s*[x×]\s*(\d+)\s*m/i);
+  if (m) return parseInt(m[1], 10) * parseInt(m[2], 10) * parseInt(m[3], 10);
+  m = t.match(/(\d+)\s*[x×]\s*(\d+)\s*m/i);
   if (m) return parseInt(m[1], 10) * parseInt(m[2], 10);
   m = t.match(/(\d+)\s*m\b/i);
   return m ? parseInt(m[1], 10) : 0;
@@ -353,6 +355,11 @@ export function parseSessionDetail(raw) {
 
 export function parseMetersFromLine(text) {
   const t = String(text || "");
+  // Nested Soft : `4 × (3 × 50 m)` = 600 (avant le match simple `3 × 50`)
+  const nested = t.match(/(\d+)\s*[×x]\s*\(\s*(\d+)\s*[×x]\s*(\d+)\s*m/i);
+  if (nested) {
+    return parseInt(nested[1], 10) * parseInt(nested[2], 10) * parseInt(nested[3], 10);
+  }
   const nxm = t.match(/(\d+)\s*[×x]\s*(\d+)\s*m/i);
   if (nxm) return parseInt(nxm[1], 10) * parseInt(nxm[2], 10);
   const pyramid = parsePyramidLine(t);
@@ -815,14 +822,18 @@ export function inferStrokeLabel(blob) {
   return { label: null, consumePrefix: null };
 }
 
-/** Extrait « 8 × 50 m » et « CRAWL » / « MIXTE » d’un main pour la hiérarchie visuelle. */
+/** Extrait « 8 × 50 m » / « 4 × (3 × 50 m) » et « CRAWL » / « MIXTE » d’un main. */
 export function splitHeadline(main) {
   if (!main) return { volume: null, stroke: null, rest: main, effort: null };
   let text = scrubLegacyNormalWording(main);
   let volume = null;
+  const nested = text.match(/^(\d+\s*[x×]\s*\(\s*\d+\s*[x×]\s*\d+\s*m\s*\))/i);
   const nx = text.match(/^(\d+\s*[x×]\s*\d+\s*m)\b/i);
   const sm = text.match(/^(\d+\s*m)\b/i);
-  if (nx) {
+  if (nested) {
+    volume = nested[1].replace(/x/gi, "×").replace(/\s+/g, " ");
+    text = text.slice(nested[0].length).trim();
+  } else if (nx) {
     volume = nx[1].replace(/x/gi, "×").replace(/\s+/g, " ");
     text = text.slice(nx[0].length).trim();
   } else if (sm) {
@@ -1023,11 +1034,15 @@ export function buildWorkoutView(session = {}) {
           ? [session.sheetEducatif]
           : [];
       const fourLine = Boolean(
-        fourNagesMode
-        || lineHasFourNagesEducatifs(raw)
+        lineHasFourNagesEducatifs(raw)
         || lineHasFourNagesEducatifs(mainClean),
       );
-      if (fourLine && fiches.length > 1) {
+      // Round-robin Soft : `{25m éducatif + 25m nage} · 3 éducatifs` (mono-nage)
+      const multiDrill = Boolean(
+        fourNagesMode?.kind === "drill_then_swim"
+        || /[·•]\s*\d+\s*[ée]ducatifs?\b/i.test(`${raw || ""} ${mainClean || ""}`),
+      );
+      if ((fourLine || multiDrill) && fiches.length > 1) {
         educatifs = fiches.filter((f) => f?.name);
       } else {
         for (const sheetFiche of fiches) {
@@ -1047,7 +1062,10 @@ export function buildWorkoutView(session = {}) {
     // Cue « Crawl ou 4 nages » même si le main disait seulement « 4 nages »
     const choiceBlob = [mainClean, cuePrimary, raw, ...(parsed?.cues || [])].filter(Boolean).join(" ");
     let strokeLabel = headline.stroke;
-    if (fourNagesMode) strokeLabel = "4 NAGES";
+    // Pastille 4 NAGES seulement si la ligne dit 4 nages (pas le jeton 25+25 seul sur crawl)
+    if (fourNagesMode && (lineHasFourNagesEducatifs(raw) || lineHasFourNagesEducatifs(mainClean))) {
+      strokeLabel = "4 NAGES";
+    }
     if (isCrawlOrFourNagesChoice(choiceBlob)) {
       strokeLabel = "CRAWL OU 4N";
       if (isCrawlOrFourNagesChoice(cuePrimary)) {

@@ -342,19 +342,29 @@ export function stripFourNagesModeToken(text) {
 }
 
 export function parseRepMetersFromVolumeLabel(volumeLabel) {
-  const m = String(volumeLabel || "").match(/\d+\s*[×x]\s*(\d+)\s*m/i);
+  const s = String(volumeLabel || "");
+  const nested = s.match(/\d+\s*[×x]\s*\(\s*\d+\s*[×x]\s*(\d+)\s*m/i);
+  if (nested) {
+    const n = parseInt(nested[1], 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  const m = s.match(/\d+\s*[×x]\s*(\d+)\s*m/i);
   if (!m) return null;
   const n = parseInt(m[1], 10);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 /** Cue nageur selon le jeton Sheet (pas le dump MIXTE 25+25). */
-export function fourNagesDisplayCue(mode, volumeLabel) {
+export function fourNagesDisplayCue(mode, volumeLabel, opts = {}) {
   if (!mode) return null;
   if (mode.kind === "im") {
     return `4 nages enchaîné, ${mode.sliceMeters} m par nage`;
   }
   if (mode.kind === "drill_then_swim") {
+    const count = Number(opts.educatifCount) > 1 ? Number(opts.educatifCount) : null;
+    if (count) {
+      return `${count} éducatifs · ${mode.sliceMeters} m éducatif + ${mode.sliceMeters} m nage`;
+    }
     const rep = parseRepMetersFromVolumeLabel(volumeLabel) || 100;
     return `1 nage / ${rep} m · ${mode.sliceMeters} m éducatif + ${mode.sliceMeters} m nage`;
   }
@@ -422,10 +432,17 @@ export function pickEducatif(educatifs, opts, rng = Math.random) {
         .split(/[,/]+/)
         .map((x) => normalizeNageKey(x.trim()))
         .filter(Boolean);
-      if (!parts.length) return true;
+      if (!parts.length) {
+        // Soft strict : pas de fiche sans nage sur une ligne crawl/dos/…
+        return opts.strictNage !== true;
+      }
+      if (opts.strictNage === true) {
+        return parts.includes(nageWant);
+      }
       return parts.includes(nageWant) || parts.includes("toutes");
     });
     if (byNage.length) pool = byNage;
+    else if (opts.strictNage === true) pool = [];
   }
   // Matériel = optionnel sur la fiche : ne filtre JAMAIS le choix d’éducatif.
   // Le matos n’intervient que sur le placeholder {matériel} (voir pickMaterielForLine).
@@ -462,6 +479,7 @@ export function pickFourNagesEducatifs(educatifs, opts, rng = Math.random) {
       {
         ...opts,
         nage: stroke,
+        strictNage: true,
         hardExcludeNames: [...(opts.hardExcludeNames || []), ...used],
         excludeNames: [...(opts.excludeNames || []), ...used],
       },
@@ -472,6 +490,56 @@ export function pickFourNagesEducatifs(educatifs, opts, rng = Math.random) {
   }
   const list = FOUR_NAGES_STROKES.map((s) => byStroke[s]).filter(Boolean);
   return { ...byStroke, list };
+}
+
+/**
+ * N éducatifs distincts (même nage), ex. Soft `· 3 éducatifs` sur crawl.
+ * @returns {EducatifRow[]}
+ */
+export function pickNEducatifs(educatifs, opts, n, rng = Math.random) {
+  const count = Math.max(1, Math.min(8, Number(n) || 1));
+  const list = [];
+  const used = [];
+  for (let i = 0; i < count; i++) {
+    const pick = pickEducatif(
+      educatifs,
+      {
+        ...opts,
+        strictNage: true,
+        hardExcludeNames: [...(opts.hardExcludeNames || []), ...used],
+        excludeNames: [...(opts.excludeNames || []), ...used],
+      },
+      rng,
+    );
+    if (!pick?.nom) break;
+    list.push(pick);
+    used.push(pick.nom);
+  }
+  return list;
+}
+
+/** `· 3 éducatifs` / `3 éducatifs` en fin de ligne Soft (pas « 4 nages éducatifs »). */
+export function parseEducatifCountFromLine(line) {
+  const s = String(line || "");
+  if (!s.trim()) return null;
+  const m =
+    s.match(/[·•]\s*(\d+)\s*[ée]ducatifs?\b/i) ||
+    s.match(/(?:^|[,\s])(\d+)\s*[ée]ducatifs?\b/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  if (!Number.isFinite(n) || n < 2 || n > 8) return null;
+  return n;
+}
+
+export function sessionMultiEducatifCount(session) {
+  let max = 0;
+  for (const block of [session?.echauffement, session?.bloc, session?.rac]) {
+    for (const line of String(block || "").split("\n")) {
+      const c = parseEducatifCountFromLine(line);
+      if (c && c > max) max = c;
+    }
+  }
+  return max;
 }
 
 /** Libellé des 4 noms (distances inchangées, on ne touche qu’aux noms). */
@@ -582,12 +650,17 @@ export function materializeSession(session, educatifs, opts, rng = Math.random) 
     sessionHasFourNagesEducatifs(session) || /\{[ée]ducatif_(pap|dos|brasse|crawl)/i.test(blob);
   const four = wantsFour ? pickFourNagesEducatifs(educatifs, opts, rng) : null;
   const fourLabel = four ? formatFourNagesEducatifsLabel(four) : null;
+  const multiCount = !wantsFour ? sessionMultiEducatifCount(session) : 0;
+  const multiList =
+    multiCount >= 2 ? pickNEducatifs(educatifs, opts, multiCount, rng) : null;
   // Séance mono-nage (ou lignes hors « 4 nages éducatifs ») : 1 éducatif comme avant
+  // sauf `· N éducatifs` Soft (pickN).
   const edu =
-    (!wantsFour && pickEducatif(educatifs, opts, rng)) ||
+    (!wantsFour && multiList?.[0]) ||
+    (!wantsFour && pickEducatif(educatifs, { ...opts, strictNage: true }, rng)) ||
     four?.crawl ||
     four?.list?.[0] ||
-    pickEducatif(educatifs, opts, rng);
+    pickEducatif(educatifs, { ...opts, strictNage: true }, rng);
   const educatifNom = edu?.nom || "éducatif";
   const allowPace = canResolveSheetPace(opts);
   const fillBlock = (block) => {
@@ -617,7 +690,13 @@ export function materializeSession(session, educatifs, opts, rng = Math.random) 
   return {
     ...session,
     educatif: edu,
-    educatifs: four?.list?.length ? four.list : edu ? [edu] : [],
+    educatifs: four?.list?.length
+      ? four.list
+      : multiList?.length
+        ? multiList
+        : edu
+          ? [edu]
+          : [],
     educatifsByStroke: four || null,
     echauffement: fillBlock(session.echauffement),
     bloc: fillBlock(session.bloc),
