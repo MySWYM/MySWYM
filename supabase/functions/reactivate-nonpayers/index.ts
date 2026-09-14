@@ -106,13 +106,7 @@ async function listAllUsers(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers":
-          "authorization, x-client-info, apikey, content-type, x-myswym-email-secret",
-      },
-    });
+    return new Response(null, { status: 204 });
   }
 
   if (req.method !== "POST") {

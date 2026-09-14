@@ -3,31 +3,11 @@ import {
   getStravaAccessToken,
   userHasHealthConsent,
 } from "../_shared/strava-auth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities";
 
 const SWIM_TYPES = new Set(["Swim", "OpenWaterSwim"]);
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "http://localhost:5173",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some(
-    (o) => origin === o || origin.endsWith(".vercel.app") || origin.endsWith(".myswym.app")
-  );
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin =
-    reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 function computePace(activity: Record<string, unknown>): number | null {
   if (!SWIM_TYPES.has(activity.type as string)) return null;

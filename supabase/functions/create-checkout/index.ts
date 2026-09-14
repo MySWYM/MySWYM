@@ -1,6 +1,7 @@
 import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { commitmentMetadataForCheckout } from "../_shared/stripe-commitment.ts";
+import { corsHeaders, FALLBACK_ORIGIN, isAllowedOrigin } from "../_shared/cors.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -75,31 +76,6 @@ const ALLOWED_PRICE_IDS = new Set([
 
 const BLOCKING_SUB_STATUSES = new Set(["active", "trialing", "past_due", "unpaid"]);
 
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "https://myswym.app",
-  "https://www.myswym.app",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5175",
-  "http://127.0.0.1:5175",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some((o) => origin === o)
-    || origin.endsWith(".vercel.app")
-    || origin === "https://myswym.app"
-    || origin.endsWith(".myswym.app");
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin = reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 function stripeErrorMessage(err: unknown): string {
   const e = err as { type?: string; code?: string; message?: string };
@@ -247,7 +223,7 @@ Deno.serve(async (req) => {
 
     const origin = reqOrigin && isAllowedOrigin(reqOrigin)
       ? reqOrigin
-      : ALLOWED_ORIGINS[0] ?? "https://myswym.app";
+      : FALLBACK_ORIGIN;
 
     const appPath = `${origin}/app`;
 

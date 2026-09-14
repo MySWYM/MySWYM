@@ -1,27 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, FALLBACK_ORIGIN, isAllowedOrigin } from "../_shared/cors.ts";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "http://localhost:5173",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some(
-    (o) => origin === o || origin.endsWith(".vercel.app") || origin.endsWith(".myswym.app")
-  );
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin =
-    reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 function resolveRedirectUri(reqOrigin: string | null, bodyRedirect?: string) {
   if (bodyRedirect && typeof bodyRedirect === "string") {
@@ -33,7 +13,7 @@ function resolveRedirectUri(reqOrigin: string | null, bodyRedirect?: string) {
   if (reqOrigin && isAllowedOrigin(reqOrigin)) {
     return `${reqOrigin.replace(/\/$/, "")}/app`;
   }
-  return `${(ALLOWED_ORIGINS[0] || "https://myswym.app").replace(/\/$/, "")}/app`;
+  return `${FALLBACK_ORIGIN}/app`;
 }
 
 Deno.serve(async (req) => {

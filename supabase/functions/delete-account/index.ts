@@ -4,29 +4,7 @@ import {
   findActiveCommitmentSubscription,
   isCommitmentInForce,
 } from "../_shared/stripe-commitment.ts";
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "https://myswym.app",
-  "https://www.myswym.app",
-  "http://localhost:5173",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some(
-    (o) => origin === o || origin.endsWith(".vercel.app") || origin.endsWith(".myswym.app")
-  );
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin =
-    reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "https://myswym.app";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
+import { corsHeaders } from "../_shared/cors.ts";
 
 async function cancelStripeSubscriptionsForUser(
   stripe: Stripe,
