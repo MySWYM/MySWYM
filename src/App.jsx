@@ -161,6 +161,7 @@ import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
 import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
 import WhatsNewSheet, {
   hasSeenWhatsNew,
+  shouldShowWhatsNew,
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
@@ -7976,10 +7977,12 @@ export default function App() {
   useEffect(() => {
     if (screen !== "app" || !user || !plan) return;
     if (showWhatsNew) return;
-    if (hasSeenWhatsNew(user)) {
-      void syncWhatsNewSeenIfNeeded(user).then((u) => {
-        if (u) setUser(u);
-      });
+    if (!shouldShowWhatsNew(user)) {
+      if (hasSeenWhatsNew(user)) {
+        void syncWhatsNewSeenIfNeeded(user).then((u) => {
+          if (u) setUser(u);
+        });
+      }
       return;
     }
     if (showUpgrade || showPlanReady || softPaywallPending) return;
