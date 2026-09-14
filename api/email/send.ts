@@ -18,6 +18,7 @@ const KINDS = [
   "newsletter",
   "contact",
   "reactivation",
+  "account_deleted",
 ] as const;
 
 type EmailKind = (typeof KINDS)[number];
@@ -375,6 +376,35 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
             ]),
           cta: { label: "Rouvrir MySWYM", url: ctaUrl },
           showUnsubscribe: true,
+        }),
+      };
+    }
+    case "account_deleted": {
+      const to = str("to");
+      const firstName = str("firstName");
+      if (!to.includes("@")) return { error: "payload.to must be an email" };
+      const title = firstName ? `${firstName}, c’est fait.` : "C’est fait.";
+      return {
+        to,
+        subject: firstName
+          ? `${firstName}, ton compte MySWYM a été supprimé`
+          : "Ton compte MySWYM a été supprimé",
+        category: "account_deleted",
+        html: layout({
+          preview:
+            "Tes données ont été effacées. Tu peux recréer un compte à tout moment.",
+          eyebrow: "Compte supprimé",
+          title,
+          bodyHtml:
+            p("Ton compte MySWYM a bien été supprimé.") +
+            bullets([
+              "Profil, plans et données associées sont effacés",
+              "S’il restait un abonnement sans engagement, il a été arrêté",
+              "Recréer un compte, c’est repartir de zéro",
+            ]) +
+            `<p style="color:${B.muted};font-size:13px;line-height:20px;margin:16px 0 0">Une question ? Écris-nous à support@myswym.app.</p>`,
+          cta: { label: "Créer un nouveau compte", url: `${B.site}/inscription` },
+          secondary: { label: "Écrire au support", url: "mailto:support@myswym.app" },
         }),
       };
     }

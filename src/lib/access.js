@@ -101,6 +101,32 @@ export function isAccessMetadataPending(user) {
   return true;
 }
 
+export const FRESH_SIGNUP_GRACE_MS = 15 * 60 * 1000;
+
+export function isFreshSignup(user, nowMs = Date.now()) {
+  const createdMs = parseMs(user?.created_at);
+  if (createdMs == null) return false;
+  return nowMs - createdMs >= 0 && nowMs - createdMs < FRESH_SIGNUP_GRACE_MS;
+}
+
+/**
+ * Freeze « essai terminé » seulement quand le sync a tranché et que ce n’est
+ * pas un compte tout neuf (JWT encore vide / essai 7j pas encore écrit).
+ */
+export function shouldShowTrialFreeze(user, {
+  accessSynced = false,
+  generatingPlan = false,
+  revealActive = false,
+  nowMs = Date.now(),
+} = {}) {
+  if (!user) return false;
+  if (!accessSynced || generatingPlan || revealActive) return false;
+  if (getAccessState(user).hasPremiumAccess) return false;
+  if (isAccessMetadataPending(user)) return false;
+  if (isFreshSignup(user, nowMs)) return false;
+  return true;
+}
+
 export function getAccessLabel(accessState) {
   switch (accessState?.status) {
     case ACCESS_STATUS.TRIAL:

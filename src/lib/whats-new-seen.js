@@ -4,6 +4,8 @@
 
 /** Bump pour une future campagne (1 pop + regen 1×). */
 export const WHATS_NEW_CAMPAIGN = "v2026_08_30";
+/** Comptes créés à partir de cette date : Sheet en direct, plus de pop ni de 2e chargement. */
+export const WHATS_NEW_ELIGIBLE_BEFORE = "2026-09-01T00:00:00+02:00";
 /** @deprecated legacy global (pre per-user) — encore lu pour migration */
 export const WHATS_NEW_STORAGE_KEY = `myswym_whats_new_${WHATS_NEW_CAMPAIGN}`;
 export const WHATS_NEW_META_KEY = "whats_new_seen";
@@ -42,6 +44,21 @@ export function hasSeenWhatsNew(user) {
   const meta = normalizeWhatsNewSeenMap(user.user_metadata?.[WHATS_NEW_META_KEY]);
   if (meta[WHATS_NEW_CAMPAIGN]) return true;
   return readLocalSeen(user.id);
+}
+
+/** Compte d’avant le 1er sept. 2026 : encore éligible au one-shot Sheet. */
+export function isWhatsNewEligibleAccount(user) {
+  if (!user?.id) return false;
+  const cutoffMs = Date.parse(WHATS_NEW_ELIGIBLE_BEFORE);
+  const createdMs = Date.parse(user.created_at);
+  if (!Number.isFinite(createdMs)) return true;
+  return createdMs < cutoffMs;
+}
+
+/** Pop + regen semaine : seulement reconnectés d’avant la maj Sheet, pas encore vus. */
+export function shouldShowWhatsNew(user) {
+  if (!isWhatsNewEligibleAccount(user)) return false;
+  return !hasSeenWhatsNew(user);
 }
 
 /**

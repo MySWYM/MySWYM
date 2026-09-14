@@ -9,6 +9,7 @@ export {
   whatsNewStorageKey,
   normalizeWhatsNewSeenMap,
   hasSeenWhatsNew,
+  shouldShowWhatsNew,
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "../lib/whats-new-seen.js";

@@ -16,6 +16,7 @@ import type {
   VerificationEmailInput,
   WelcomeEmailInput,
   WorkoutReminderEmailInput,
+  AccountDeletedEmailInput,
 } from "./email-types";
 import { WelcomeEmail } from "./emails/welcome";
 import { VerificationEmail } from "./emails/verification";
@@ -25,6 +26,7 @@ import { WorkoutReminderEmail } from "./emails/workout-reminder";
 import { NewsletterEmail } from "./emails/newsletter";
 import { ContactNotificationEmail } from "./emails/contact-notification";
 import { ReactivationEmail } from "./emails/reactivation";
+import { AccountDeletedEmail } from "./emails/account-deleted";
 import { emailBrand } from "./emails/components/brand";
 
 function maskEmail(email: string): string {
@@ -201,6 +203,21 @@ export async function sendReactivationEmail(
   });
 }
 
+export async function sendAccountDeletedEmail(
+  input: AccountDeletedEmailInput,
+): Promise<EmailSendResult> {
+  const firstName = input.firstName?.trim() || undefined;
+  return sendReactEmail({
+    category: "account_deleted",
+    to: input.to,
+    subject: firstName
+      ? `${firstName}, ton compte MySWYM a été supprimé`
+      : "Ton compte MySWYM a été supprimé",
+    react: AccountDeletedEmail({ firstName }),
+    userId: input.userId,
+  });
+}
+
 export async function sendContactEmail(
   input: ContactEmailInput,
 ): Promise<EmailSendResult> {
@@ -245,6 +262,8 @@ export async function sendEmail<K extends EmailKind>(
       return sendContactEmail(payload as ContactEmailInput);
     case "reactivation":
       return sendReactivationEmail(payload as ReactivationEmailInput);
+    case "account_deleted":
+      return sendAccountDeletedEmail(payload as AccountDeletedEmailInput);
     default:
       return { ok: false, error: `Unknown email kind: ${String(kind)}` };
   }
