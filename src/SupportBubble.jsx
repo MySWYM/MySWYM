@@ -41,7 +41,7 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour te désabonner : dans l’app, ouvre Profil (icône en bas) → le menu Paramètres → « Gérer mon abonnement ». Tu arrives sur Stripe : choisis Annuler l’abonnement. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause (plus de prélèvement). Essai 7 jours sans carte : rien à résilier, ça s’arrête tout seul. Offre 4,99€/mois : engagement 12 mois (pas de remboursement ; une résiliation ou suppression de compte n’arrête pas les prélèvements avant la fin des 12 mois, hors cas légaux). Annuel 52,99€ : déjà payé pour l’année, pas de remboursement au prorata (hors cas légaux). Supprimer le compte ne coupe pas l’abonnement : passe d’abord par « Gérer mon abonnement ».",
+      "Pour te désabonner : dans l’app, ouvre Profil → « Gérer mon abonnement ». Sur Stripe, annule si l’offre le permet. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : déjà payé, pas de remboursement au prorata, suppression bloquée jusqu’à la fin de l’année. Mensuel 9,99€ sans engagement : tu peux supprimer le compte, ça arrête l’abo tout de suite.",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -66,7 +66,7 @@ const FAQ_RULES = [
   {
     keys: ["compte", "connexion", "mot de passe", "inscription", "supprimer"],
     answer:
-      "Connexion et inscription via /connexion et /inscription. Pour supprimer ton compte : Profil → Paramètres → « Supprimer mon compte ». Un souci ? Écris ici, Arthur te répond dans cette conversation.",
+      "Connexion et inscription via /connexion et /inscription. Pour supprimer ton compte : Profil → « Supprimer mon compte ». Si tu as un engagement 12 mois ou un annuel en cours, le bouton est bloqué : tu gardes le compte tant que tu paies. Mensuel 9,99€ : supprimer arrête l’abo tout de suite. Un souci ? Écris ici.",
   },
 
   // ── Natation / méthode ───────────────────────────────────

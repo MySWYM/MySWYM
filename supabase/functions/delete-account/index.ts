@@ -1,11 +1,23 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "npm:stripe@14";
-import {
-  findActiveCommitmentSubscription,
-  isCommitmentInForce,
-} from "../_shared/stripe-commitment.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
+import {
+  DELETE_BLOCK,
+  DeleteAccountBlockedError,
+  evaluateDeleteGate,
+  gateFromUnverifiedAccess,
+  paidAccessLooksLive,
+  throwIfBlocked,
+  type DeleteGate,
+} from "../_shared/delete-account-policy.ts";
+
+type AuthUser = {
+  id: string;
+  email?: string;
+  app_metadata?: Record<string, unknown>;
+  user_metadata?: Record<string, unknown>;
+};
 
 function firstNameFromUser(user: {
   email?: string | null;
@@ -21,10 +33,10 @@ function firstNameFromUser(user: {
   return trimmed || undefined;
 }
 
-async function cancelStripeSubscriptionsForUser(
+async function collectCustomerIds(
   stripe: Stripe,
-  user: { id: string; email?: string; app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> },
-) {
+  user: AuthUser,
+): Promise<string[]> {
   const stored = (user.app_metadata?.stripe_customer_id
     ?? user.user_metadata?.stripe_customer_id) as string | undefined;
   const customerIds = new Set<string>();
@@ -35,27 +47,59 @@ async function cancelStripeSubscriptionsForUser(
       if (!(c as { deleted?: boolean }).deleted) customerIds.add(c.id);
     }
   }
+  return [...customerIds];
+}
+
+async function listSubscriptionsForCustomers(
+  stripe: Stripe,
+  customerIds: string[],
+) {
+  const all: Stripe.Subscription[] = [];
   for (const customerId of customerIds) {
-    const commitSub = await findActiveCommitmentSubscription(stripe, customerId);
-    if (commitSub) {
-      throw new Error(
-        "Engagement 12 mois en cours : tu ne peux pas supprimer le compte tant que l’abonnement engagé n’est pas terminé. Écris à support@myswym.app pour un cas légal (rétractation, etc.).",
-      );
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 30,
+      expand: ["data.items.data.price"],
+    });
+    all.push(...subs.data);
+  }
+  return all;
+}
+
+async function resolveDeleteGate(opts: {
+  stripe: Stripe | null;
+  user: AuthUser;
+  access: { access_status?: string | null; subscription_ends_at?: string | null } | null;
+}): Promise<DeleteGate> {
+  const { stripe, user, access } = opts;
+  if (!stripe) {
+    if (paidAccessLooksLive(access)) return gateFromUnverifiedAccess();
+    return evaluateDeleteGate([]);
+  }
+
+  try {
+    const customerIds = await collectCustomerIds(stripe, user);
+    if (customerIds.length === 0) {
+      if (paidAccessLooksLive(access)) return gateFromUnverifiedAccess();
+      return evaluateDeleteGate([]);
     }
-    const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 30 });
-    for (const sub of subs.data) {
-      if (sub.status === "canceled" || sub.status === "incomplete_expired") continue;
-      if (isCommitmentInForce(sub)) {
-        throw new Error(
-          "Engagement 12 mois en cours : tu ne peux pas supprimer le compte tant que l’abonnement engagé n’est pas terminé. Écris à support@myswym.app pour un cas légal (rétractation, etc.).",
-        );
-      }
-      try {
-        // Annulation immédiate à la suppression de compte (évite prélèvement orphelin).
-        await stripe.subscriptions.cancel(sub.id, { prorate: false });
-      } catch (err) {
-        console.error("[delete-account] stripe cancel failed", sub.id, err);
-      }
+    const subs = await listSubscriptionsForCustomers(stripe, customerIds);
+    return evaluateDeleteGate(subs);
+  } catch (err) {
+    if (err instanceof DeleteAccountBlockedError) throw err;
+    console.error("[delete-account] stripe inspect failed:", err);
+    return gateFromUnverifiedAccess();
+  }
+}
+
+async function cancelListedSubscriptions(stripe: Stripe, ids: string[]) {
+  for (const id of ids) {
+    try {
+      await stripe.subscriptions.cancel(id, { prorate: false });
+    } catch (err) {
+      console.error("[delete-account] stripe cancel failed", id, err);
+      throw new DeleteAccountBlockedError(DELETE_BLOCK.cancelFailed, "cancel_failed", 409);
     }
   }
 }
@@ -64,10 +108,19 @@ Deno.serve(async (req) => {
   const reqOrigin = req.headers.get("origin");
   const cors = corsHeaders(reqOrigin);
 
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        ...cors,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      },
+    });
+  }
 
   try {
-    if (req.method !== "POST") throw new Error("Méthode non autorisée");
+    if (req.method !== "POST" && req.method !== "GET") {
+      throw new Error("Méthode non autorisée");
+    }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Non authentifié");
@@ -87,20 +140,41 @@ Deno.serve(async (req) => {
     const uid = user.id;
     const notifyEmail = user.email?.trim();
     const notifyFirstName = firstNameFromUser(user);
+    const { data: { user: adminUser } } = await admin.auth.admin.getUserById(uid);
+    const sourceUser = (adminUser ?? user) as AuthUser;
 
-    // Annuler les abonnements Stripe avant suppression (best-effort).
+    const { data: access } = await admin
+      .from("user_access_state")
+      .select("access_status, subscription_ends_at")
+      .eq("user_id", uid)
+      .maybeSingle();
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (stripeKey) {
-      try {
-        const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
-        const { data: { user: adminUser } } = await admin.auth.admin.getUserById(uid);
-        await cancelStripeSubscriptionsForUser(stripe, adminUser ?? user);
-      } catch (stripeErr) {
-        console.error("[delete-account] stripe cleanup error:", stripeErr);
-      }
+    const stripe = stripeKey
+      ? new Stripe(stripeKey, { apiVersion: "2024-04-10" })
+      : null;
+
+    const gate = await resolveDeleteGate({
+      stripe,
+      user: sourceUser,
+      access,
+    });
+
+    if (req.method === "GET") {
+      return new Response(JSON.stringify(gate), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
     }
 
-    // Best-effort purge données applicatives
+    throwIfBlocked(gate);
+
+    if (gate.cancelIds.length > 0) {
+      if (!stripe) {
+        throw new DeleteAccountBlockedError(DELETE_BLOCK.cancelFailed, "cancel_failed", 409);
+      }
+      await cancelListedSubscriptions(stripe, gate.cancelIds);
+    }
+
     const tables = [
       "strava_tokens",
       "strava_activities",
@@ -118,7 +192,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Buddy relations (colonnes requester/recipient / reporter / blocker)
     const buddyPairDeletes: Array<{ table: string; filters: Array<[string, string]> }> = [
       { table: "buddy_connections", filters: [["requester_id", uid], ["recipient_id", uid]] },
       { table: "buddy_blocks", filters: [["blocker_id", uid], ["blocked_id", uid]] },
@@ -134,7 +207,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Avatars Storage : dossier uid/
     try {
       const { data: files } = await admin.storage.from("avatars").list(uid);
       if (files?.length) {
@@ -170,9 +242,14 @@ Deno.serve(async (req) => {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (err) {
+    const blocked = err instanceof DeleteAccountBlockedError;
     const message = err instanceof Error ? err.message : "Erreur inconnue";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 400,
+    const status = blocked ? err.httpStatus : 400;
+    return new Response(JSON.stringify({
+      error: message,
+      code: blocked ? err.code : "error",
+    }), {
+      status,
       headers: { ...cors, "Content-Type": "application/json" },
     });
   }

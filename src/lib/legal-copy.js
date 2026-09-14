@@ -37,7 +37,10 @@ export const SPORT_SAFETY_SHORT =
   "Entraîne-toi selon ta forme. Arrête en cas de symptôme inquiétant et consulte un professionnel de santé si besoin. Eau libre : ne nage jamais seul.";
 
 export const ACCOUNT_DELETE_WARNING =
-  "La suppression est définitive : profil, plans et données associées seront effacés dans la mesure techniquement possible. Résilie d’abord ton abonnement Stripe si tu veux éviter un prochain prélèvement.";
+  "La suppression est définitive : profil, plans et données associées seront effacés dans la mesure techniquement possible.";
+
+export const ACCOUNT_DELETE_FLEX_WARNING =
+  "La suppression est définitive : profil, plans et données associées seront effacés. Ton abonnement sans engagement sera arrêté tout de suite, plus de prélèvement. Tu perds les jours déjà payés ce mois-ci.";
 
 /** @deprecated use HEALTH_CONSENT_* from health-data.js */
 export const INJURY_HEALTH_NOTICE =

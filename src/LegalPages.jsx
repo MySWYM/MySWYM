@@ -340,7 +340,8 @@ export function PolitiqueConfidentialitePage() {
       </P>
       <P>
         Pour exercer vos droits (y compris données de santé) : <Mail to={email} /> : réponse sous 1 mois.
-        Vous pouvez aussi supprimer votre compte depuis les paramètres de l’application.
+        Vous pouvez aussi supprimer votre compte depuis les paramètres de l’application, sauf abonnement annuel
+        ou engagement 12 mois encore en cours (le compte de connexion est alors conservé jusqu’à la fin de période, voir CGV).
       </P>
 
       <H>7. Sécurité</H>
@@ -425,7 +426,7 @@ export function CguPage() {
         <>Sécurité : vous maintenez la confidentialité de vos identifiants et notifiez {tradeName} en cas d’usage non autorisé (<Mail to={email} />).</>,
         "Usage personnel : un compte = une personne physique ; le partage d’un accès Premium à des tiers non autorisés est interdit.",
         <>Suspension / résiliation par {tradeName} : en cas de violation des CGU, usage frauduleux, fausses déclarations répétées, tentative d’accès non autorisé aux données d’autrui, fraude (paiement, parrainage), atteinte à la sécurité, ou injonction légale.</>,
-        <>Suppression : vous pouvez supprimer votre compte depuis les paramètres de l’application ou en écrivant à <Mail to={email} />.</>,
+        <>Suppression : vous pouvez supprimer votre compte depuis les paramètres de l’application ou en écrivant à <Mail to={email} />, sauf abonnement annuel ou engagement 12 mois encore en cours (voir CGV).</>,
       ]} />
 
       <H>4. Utilisation autorisée et interdite</H>
@@ -583,8 +584,8 @@ export function CgvPage() {
       <Ul items={[
         "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est interrompu (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
         "Mensuel sans engagement : 9,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai. En souscrivant, tu t’engages pour 12 mois, facturés chaque mois. Pendant ces 12 mois : aucun remboursement des mensualités, et aucune demande de résiliation ou de suppression de compte n’interrompt l’engagement ni les prélèvements avant la fin des 12 mois, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Même règle que sur la page Tarifs.",
-        "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs).",
+        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai. En souscrivant, tu t’engages pour 12 mois, facturés chaque mois. Pendant ces 12 mois : aucun remboursement des mensualités, et la suppression du compte est refusée tant que l’engagement n’est pas terminé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Même règle que sur la page Tarifs.",
+        "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). La suppression du compte est refusée jusqu’à la fin de la période déjà payée ; tu peux couper le renouvellement via le portail Stripe.",
         "Offre biennale héritée (24 mois) : Price ID Stripe legacy uniquement (plus commercialisée sur Tarifs). Conservée pour d’éventuels abonnés historiques. Les droits légaux du consommateur restent applicables.",
       ]} />
       <P>
@@ -613,10 +614,10 @@ export function CgvPage() {
       <Ul items={[
         "Pendant l’essai 7 jours sans carte : aucune résiliation Stripe n’est nécessaire ; l’accès s’arrête automatiquement au bout de 7 jours et l’accès aux séances est en pause.",
         "Mensuel sans engagement : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
-        "Mensuel avec engagement 12 mois : les prélèvements continuent jusqu’à la fin des 12 mois. Une résiliation via le portail Stripe ou une suppression de compte avant cette échéance n’arrête pas l’engagement ni les mensualités restantes, hors cas légaux.",
-        "Annuel / biennal (legacy) : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période.",
+        "Mensuel avec engagement 12 mois : les prélèvements continuent jusqu’à la fin des 12 mois. La suppression du compte est refusée tant que l’engagement n’est pas terminé, hors cas légaux. Le portail Stripe n’offre pas d’annulation pendant cette période.",
+        "Annuel / biennal (legacy) : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période. La suppression du compte est refusée jusqu’à la fin de la période déjà payée.",
         "Résiliation (hors engagement 12 mois en cours) : depuis Profil → Paramètres → « Gérer mon abonnement » (portail Stripe), ou via les outils Stripe Customer Portal.",
-        "La suppression du compte n’équivaut pas à une résiliation anticipée de l’offre engagée 12 mois, ni à un remboursement.",
+        "La suppression du compte n’est possible que sans abonnement Stripe vivant (essai, accès en pause, ou après la fin de période). Un mensuel sans engagement est arrêté immédiatement si la suppression est acceptée. Un engagement 12 mois ou un annuel / prépayé en cours bloque la suppression.",
       ]} />
 
       <H>7. Droit de rétractation (14 jours)</H>
