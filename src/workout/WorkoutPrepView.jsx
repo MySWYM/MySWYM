@@ -4,9 +4,11 @@
  * Liste dense (lisible en un écran) + pastilles ⓘ.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Printer } from "lucide-react";
+import { Check, Copy, Printer, Watch } from "lucide-react";
 import { buildWorkoutView } from "../lib/workout-display.js";
 import { openSessionPrint } from "../lib/session-export.js";
+import { downloadWatchExport } from "../lib/watch-export.js";
+import { track } from "../lib/analytics.js";
 import { formatLoopSessionTitle } from "../lib/swim-plan-bridge.js";
 import { buildSessionProvenance } from "../lib/session-provenance.js";
 import { setSupportSessionRef } from "../lib/support-context.js";
@@ -64,6 +66,7 @@ export default function WorkoutPrepView({
   const view = useMemo(() => buildWorkoutView(session), [session]);
   const [drill, setDrill] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
   const locked = !isPremium || lockedPreview;
 
   const provenance = useMemo(
@@ -297,6 +300,37 @@ export default function WorkoutPrepView({
       >
         <Printer size={16} color="currentColor" />
         Imprimer la fiche
+      </button>
+
+      <button
+        type="button"
+        className="ms-workout-secondary"
+        disabled={watchBusy}
+        onClick={async () => {
+          if (locked) {
+            onUpgrade?.("session_locked");
+            return;
+          }
+          if (watchBusy) return;
+          setWatchBusy(true);
+          try {
+            const result = await downloadWatchExport(session, {
+              profile,
+              isPremium: true,
+            });
+            if (result.ok) {
+              track("watch_export_downloaded", { format: "fit", garmin: true });
+            }
+          } catch {
+            /* share / téléchargement refusé par le navigateur */
+          } finally {
+            setWatchBusy(false);
+          }
+        }}
+        aria-label="Envoyer la séance à la montre Garmin"
+      >
+        <Watch size={16} color="currentColor" />
+        {watchBusy ? "Préparation du fichier…" : "Envoyer à la montre"}
       </button>
 
       {drill && (
