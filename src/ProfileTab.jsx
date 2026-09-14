@@ -17,6 +17,11 @@ import {
   clearCachedAvatar,
 } from "./lib/avatar.js";
 import {
+  readCachedFirstName,
+  writeCachedFirstName,
+  resolveDisplayFirstName,
+} from "./lib/identity-cache.js";
+import {
   playUiSound,
   getUiSoundsEnabled,
   setUiSoundsEnabled,
@@ -113,7 +118,6 @@ export default function ProfileTab({
   referralSlot = null,
 }) {
   const { t: to } = useTranslation("onboarding");
-  const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
@@ -153,14 +157,9 @@ export default function ProfileTab({
 
   // Avatar + firstName, user_metadata (cross-device) en priorité, cache local en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => resolveAvatarUrl(user));
-  const [firstName, setFirstName] = useState(() => {
-    try {
-      return user?.user_metadata?.firstname
-        || (user?.id ? localStorage.getItem(`myswym_firstname_${user.id}`) : null)
-        || localStorage.getItem("myswym_firstname")
-        || "";
-    } catch { return ""; }
-  });
+  const [firstName, setFirstName] = useState(() => (
+    user?.user_metadata?.firstname || readCachedFirstName(user?.id) || ""
+  ));
   const [nameInput, setNameInput] = useState(firstName);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
@@ -179,10 +178,8 @@ export default function ProfileTab({
   useEffect(() => {
     if (user?.user_metadata?.firstname) setFirstName(user.user_metadata.firstname);
     else if (user?.id) {
-      try {
-        const cached = localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        if (cached) setFirstName(cached);
-      } catch {}
+      const cached = readCachedFirstName(user.id);
+      if (cached) setFirstName(cached);
     }
     if (avatarBusy) return;
     const next = resolveAvatarUrl(user);
@@ -210,10 +207,7 @@ export default function ProfileTab({
 
   const openEditProfile = () => {
     playUiSound("soft");
-    const fallback = firstName
-      || user?.user_metadata?.full_name?.split(" ")[0]
-      || user?.email?.split("@")[0]
-      || "Nageur";
+    const fallback = resolveDisplayFirstName(user);
     setNameInput(fallback);
     setEditProfileOpen(true);
   };
@@ -293,10 +287,7 @@ export default function ProfileTab({
   const saveName = () => {
     const v = nameInput.trim();
     if (v) {
-      try {
-        localStorage.setItem(nameStorageKey, v);
-        localStorage.setItem("myswym_firstname", v);
-      } catch {}
+      writeCachedFirstName(user?.id, v);
       setFirstName(v);
       supabase.auth.updateUser({ data: { firstname: v } })
         .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
@@ -357,7 +348,7 @@ export default function ProfileTab({
     }
   };
 
-  const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
+  const displayName = firstName || resolveDisplayFirstName(user);
   const initials = displayName.slice(0, 2).toUpperCase();
   const levelLabel = findLevelById(profile?.level)?.label || profile?.level || "Nageur";
   const goalLabel = findGoalById(profile?.goal)?.label

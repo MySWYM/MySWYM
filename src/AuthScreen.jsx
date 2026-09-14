@@ -108,6 +108,10 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
     onError?.(null);
     try {
       try { sessionStorage.setItem("myswym_oauth_intent", intent); } catch { /* ignore */ }
+      if (intent === "signup") {
+        const { data: existingSession } = await supabase.auth.getSession();
+        if (existingSession?.session) await supabase.auth.signOut();
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -210,6 +214,10 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
       } else if (mode === "register") {
         if (!acceptAge || !acceptTerms) {
           throw new Error(t("auth.needChecks"));
+        }
+        const { data: existingSession } = await supabase.auth.getSession();
+        if (existingSession?.session) {
+          await supabase.auth.signOut();
         }
         const { data, error } = await supabase.auth.signUp({
           email,

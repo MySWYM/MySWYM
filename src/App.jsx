@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState, isAccessMetadataPending } from "./lib/access.js";
+import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import {
   track,
@@ -172,6 +172,7 @@ import {
   hydrateAvatarFromStorage,
   clearCachedAvatar,
 } from "./lib/avatar.js";
+import { clearIdentityLocalCache } from "./lib/identity-cache.js";
 import {
   ACCOUNT_DELETE_WARNING,
 } from "./lib/legal-copy.js";
@@ -7729,10 +7730,12 @@ export default function App() {
   /** Incrémente à chaque tentative de save, empêche un upsert obsolète d'écraser un 3× tout juste régénéré. */
   const plansSaveGenRef = useRef(0);
   const plansRef = useRef(plans);
+  const userRef = useRef(user);
   const lastPlanVisibilitySyncAtRef = useRef(0);
   const activePlanIdRef = useRef(activePlanId);
   const planHistoryRef = useRef(planHistory);
   plansRef.current = plans;
+  userRef.current = user;
   activePlanIdRef.current = activePlanId;
   planHistoryRef.current = planHistory;
   /** Évite un double enchaînement (effet + bouton, Strict Mode). */
@@ -7756,10 +7759,52 @@ export default function App() {
     || (plansRef.current?.length || 0) > 0
   );
 
+  const accessSyncInFlightRef = useRef(null);
+  const syncAccessRef = useRef(async (u) => u);
+  const syncAccessForUser = async (fallbackUser) => {
+    if (accessSyncInFlightRef.current) {
+      try {
+        return (await accessSyncInFlightRef.current) || fallbackUser;
+      } catch {
+        return fallbackUser;
+      }
+    }
+    const run = (async () => {
+      try {
+        const synced = await syncSubscriptionFromStripe();
+        const next = synced || fallbackUser;
+        if (next) {
+          userRef.current = next;
+          setUser(next);
+          setIsPremium(checkIsPremium(next));
+        }
+        setAccessSynced(true);
+        return next;
+      } catch {
+        setAccessSynced(true);
+        return fallbackUser;
+      } finally {
+        accessSyncInFlightRef.current = null;
+      }
+    })();
+    accessSyncInFlightRef.current = run;
+    return run;
+  };
+  syncAccessRef.current = syncAccessForUser;
+
   // Valeurs dérivées du plan actif
   const accessState = getAccessState(user);
-  const waitingForAccess = Boolean(user && isAccessMetadataPending(user) && !accessSynced);
-  const isFrozen = Boolean(user && !accessState.hasPremiumAccess && !isAccessMetadataPending(user));
+  const waitingForAccess = Boolean(
+    user
+    && !accessSynced
+    && !accessState.hasPremiumAccess
+    && (isAccessMetadataPending(user) || isFreshSignup(user))
+  );
+  const isFrozen = shouldShowTrialFreeze(user, {
+    accessSynced,
+    generatingPlan: planGenerationInFlightRef.current || screen === "planReveal" || screen === "loading",
+    revealActive: Boolean(planRevealActiveRef.current) || screen === "planReveal",
+  });
   const canGenerateProgram = !!user && accessState.canGenerateProgram;
   const canUpdateProgram = !!user && accessState.canUpdateProgram;
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
@@ -7824,8 +7869,19 @@ export default function App() {
       return;
     }
     if (isAuthPath(location.pathname)) {
-      // Déjà connecté → /app, SAUF pendant une déconnexion (forceAuth déjà true).
-      // Sinon : navigate(/connexion) avant signOut → bounce /app → quiz.
+      // /inscription avec une session déjà ouverte : ne pas rester collé à ce compte.
+      if (user && location.pathname === "/inscription" && !signingOutRef.current) {
+        forceAuthRef.current = true;
+        authOpenedFromUrlRef.current = true;
+        setScreen("auth");
+        signingOutRef.current = true;
+        clearIdentityLocalCache(user.id);
+        void supabase.auth.signOut().finally(() => {
+          setTimeout(() => { signingOutRef.current = false; }, 500);
+        });
+        return;
+      }
+      // Déjà connecté sur /connexion → /app, SAUF pendant une déconnexion (forceAuth déjà true).
       if (user && !forceAuthRef.current) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
@@ -8169,18 +8225,29 @@ export default function App() {
       setIsPremium(checkIsPremium(u));
       if (u) {
         setAccessSynced(!isAccessMetadataPending(u));
-        // Si on est sur /connexion alors qu’une session existe, renvoyer à l’app
-        // (ne jamais laisser loadUserData coller le quiz sous l’URL auth).
+        const droppingSessionForRegister = locationRef.current.pathname === "/inscription"
+          && event === "INITIAL_SESSION";
+        // /connexion avec session → /app. /inscription + session existante : ne pas bounce
+        // (INITIAL_SESSION), le route effect déconnecte pour un vrai nouveau compte.
         if (isAuthPath(locationRef.current.pathname)) {
-          forceAuthRef.current = false;
-          authOpenedFromUrlRef.current = false;
-          navigate("/app", { replace: true });
+          if (droppingSessionForRegister) {
+            forceAuthRef.current = true;
+            authOpenedFromUrlRef.current = true;
+          } else {
+            forceAuthRef.current = false;
+            authOpenedFromUrlRef.current = false;
+            navigate("/app", { replace: true });
+          }
         } else {
           forceAuthRef.current = false;
         }
-        loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
+        if (!droppingSessionForRegister) {
+          loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
+        } else {
+          setAuthLoading(false);
+        }
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
-        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        if (!droppingSessionForRegister && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)
@@ -8191,31 +8258,26 @@ export default function App() {
               })
               .finally(() => { welcomeEmailInFlightRef.current = null; });
           }
-          syncSubscriptionFromStripe()
-            .then(async (synced) => {
-              const effective = synced || u;
+          syncAccessRef.current(u)
+            .then(async (effective) => {
               if (!effective) return;
-              if (synced) {
-                setUser(synced);
-                const premium = checkIsPremium(synced);
-                setIsPremium(premium);
-                const syncedAccess = getAccessState(synced);
-                if (syncedAccess.status === ACCESS_STATUS.TRIAL) {
-                  trackEvent("trial_started", {
-                    trial_ends_at: syncedAccess.trialEndsAt,
-                  }, { essential: true });
-                  track("trial_started", {
-                    trial_ends_at: syncedAccess.trialEndsAt,
-                    premium: true,
-                  }, { onceKey: `trial_started:${synced.id}` });
-                }
-                if (syncedAccess.status === ACCESS_STATUS.ACTIVE) {
-                  track("subscription_started", {
-                    premium: true,
-                  }, { onceKey: `subscription_started:${synced.id}` });
-                }
-                if (premium !== checkIsPremium(u)) loadUserData(synced.id, premium);
+              const premium = checkIsPremium(effective);
+              const syncedAccess = getAccessState(effective);
+              if (syncedAccess.status === ACCESS_STATUS.TRIAL) {
+                trackEvent("trial_started", {
+                  trial_ends_at: syncedAccess.trialEndsAt,
+                }, { essential: true });
+                track("trial_started", {
+                  trial_ends_at: syncedAccess.trialEndsAt,
+                  premium: true,
+                }, { onceKey: `trial_started:${effective.id}` });
               }
+              if (syncedAccess.status === ACCESS_STATUS.ACTIVE) {
+                track("subscription_started", {
+                  premium: true,
+                }, { onceKey: `subscription_started:${effective.id}` });
+              }
+              if (premium !== checkIsPremium(u)) loadUserData(effective.id, premium);
               // Quiz stashed → générer l’aperçu (même si sync a partiellement échoué)
               if (
                 (event === "SIGNED_IN" || event === "INITIAL_SESSION")
@@ -8251,6 +8313,7 @@ export default function App() {
           signingOutRef.current = true;
           plansHydratedRef.current = false;
           resetAnalytics();
+          clearIdentityLocalCache();
           setPlans([]);
           setActivePlanId(null);
           setPlanHistory([]);
@@ -8262,7 +8325,9 @@ export default function App() {
           forceAuthRef.current = true;
           authOpenedFromUrlRef.current = true;
           setScreen("auth");
-          navigate("/connexion", { replace: true });
+          if (locationRef.current.pathname !== "/inscription") {
+            navigate("/connexion", { replace: true });
+          }
           setTimeout(() => { signingOutRef.current = false; }, 500);
         }
       } else {
@@ -8584,14 +8649,14 @@ export default function App() {
 
       const pending = readPendingOnboarding();
       if (pending?.profile && !checkoutAbandonedRef.current) {
-        // Reprendre ICI (source unique), ne pas attendre sync-subscription
-        // sinon sync KO / hang = spinner Loading éternel.
+        // Reprendre ICI. syncAccess (essai 7j) est attendu dans resumePending.
         showCoachBuildingScreen();
         try {
           const { data } = await supabase.auth.getUser();
           const u = data?.user;
           if (u) {
-            const ok = await resumePendingRef.current(u);
+            const live = await syncAccessRef.current(u);
+            const ok = await resumePendingRef.current(live || u);
             if (ok || shouldKeepOnboardingFlow()) return;
           }
         } catch { /* fall through */ }
@@ -9250,7 +9315,7 @@ export default function App() {
         });
       }
       const entryTaste = taste || tasteProfile;
-      const livePremium = !!(user && checkIsPremium(user));
+      const livePremium = checkIsPremium(userRef.current);
       // Aperçu avant paiement = contenu généré, mais flag isPremium = accès live (anti-voleur)
       const entry = {
         id,
@@ -9338,7 +9403,8 @@ export default function App() {
     if (pending.tasteProfile) setTasteProfile(normalizeTaste(pending.tasteProfile));
     setProfile(pending.profile);
     if (pending.addingPlan) setAddingPlan(true);
-    const needsPaywall = !checkIsPremium(u);
+    const live = await syncAccessRef.current(u);
+    const needsPaywall = !checkIsPremium(live || u);
     // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
       planGenerationInFlightRef.current = false;
@@ -10604,6 +10670,7 @@ export default function App() {
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    clearIdentityLocalCache(user?.id);
     // signOut AVANT navigate : sinon user encore set + /connexion → effet renvoie vers /app
     try {
       await supabase.auth.signOut();
@@ -10635,6 +10702,7 @@ export default function App() {
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    clearIdentityLocalCache(user?.id);
     try {
       await supabase.auth.signOut();
     } finally {
