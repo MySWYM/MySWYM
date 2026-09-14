@@ -7739,6 +7739,22 @@ export default function App() {
   const loopAdvanceKeyRef = useRef(null);
   /** Reprise questionnaire → checkout / génération après auth ou Stripe (évite stale closures). */
   const resumePendingRef = useRef(async () => false);
+  /** Empêche loadUserData / SIGNED_IN de réafficher le quiz pendant la génération. */
+  const planGenerationInFlightRef = useRef(false);
+  /** Reste vrai tant que l’écran coach / trophée est affiché (même après la génération). */
+  const planRevealActiveRef = useRef(false);
+
+  const showCoachBuildingScreen = () => {
+    planRevealActiveRef.current = true;
+    setPlanReveal({ phase: "building" });
+    setScreen("planReveal");
+  };
+
+  const shouldKeepOnboardingFlow = () => (
+    planGenerationInFlightRef.current
+    || planRevealActiveRef.current
+    || (plansRef.current?.length || 0) > 0
+  );
 
   // Valeurs dérivées du plan actif
   const accessState = getAccessState(user);
@@ -7972,6 +7988,9 @@ export default function App() {
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
+    if (readPendingOnboarding()?.profile && !checkoutAbandonedRef.current) {
+      showCoachBuildingScreen();
+    }
     navigate("/app", { replace: true });
   };
 
@@ -8211,6 +8230,7 @@ export default function App() {
               if (readPendingOnboarding() && !checkoutAbandonedRef.current) {
                 try { await resumePendingRef.current(u); }
                 catch {
+                  if (shouldKeepOnboardingFlow()) return;
                   clearPendingOnboarding();
                   if (!(isAuthPath(locationRef.current.pathname) || forceAuthRef.current)) {
                     setStep(1);
@@ -8300,6 +8320,10 @@ export default function App() {
   // Compte connecté : ne jamais rester bloqué sur le questionnaire plein écran (perte paramètres)
   useEffect(() => {
     if (!user || screen !== "onboarding") return;
+    if (planGenerationInFlightRef.current || planRevealActiveRef.current || readPendingOnboarding()?.profile) {
+      showCoachBuildingScreen();
+      return;
+    }
     setScreen("app");
     // Plans encore en chargement : ne pas écraser l'onglet courant (loadUserData
     // envoie lui-même sur Programme quand le compte n'a réellement aucun plan).
@@ -8378,7 +8402,9 @@ export default function App() {
       if (merged.length > 0) {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
-        setScreen("app");
+        if (!planRevealActiveRef.current && !planGenerationInFlightRef.current) {
+          setScreen("app");
+        }
         plansHydratedRef.current = true;
         return true;
       }
@@ -8548,8 +8574,10 @@ export default function App() {
         }
       } catch {}
 
-      // /connexion|/inscription gagne toujours, ne jamais écraser AuthScreen
-      if (isAuthPath(locationRef.current.pathname) || forceAuthRef.current) {
+      // /connexion|/inscription : ne pas coller AuthScreen si un plan est en cours de génération
+      const generatingNow = shouldKeepOnboardingFlow()
+        || Boolean(readPendingOnboarding()?.profile && !checkoutAbandonedRef.current);
+      if ((isAuthPath(locationRef.current.pathname) || forceAuthRef.current) && !generatingNow) {
         setScreen("auth");
         return;
       }
@@ -8558,15 +8586,16 @@ export default function App() {
       if (pending?.profile && !checkoutAbandonedRef.current) {
         // Reprendre ICI (source unique), ne pas attendre sync-subscription
         // sinon sync KO / hang = spinner Loading éternel.
-        setScreen("loading");
+        showCoachBuildingScreen();
         try {
           const { data } = await supabase.auth.getUser();
           const u = data?.user;
           if (u) {
             const ok = await resumePendingRef.current(u);
-            if (ok) return;
+            if (ok || shouldKeepOnboardingFlow()) return;
           }
         } catch { /* fall through */ }
+        if (shouldKeepOnboardingFlow()) return;
         clearPendingOnboarding();
       }
 
@@ -8579,6 +8608,7 @@ export default function App() {
         plansHydratedRef.current = true;
         return;
       }
+      if (shouldKeepOnboardingFlow()) return;
       setPlans([]);
       setActivePlanId(null);
       setPlanHistory(mergedHistorySeed);
@@ -9038,6 +9068,7 @@ export default function App() {
   };
 
   const dismissPlanReveal = () => {
+    planRevealActiveRef.current = false;
     setPlanReveal(null);
     if (!hasSeenFirstSwimTip()) {
       setScreen("firstSwimTip");
@@ -9129,11 +9160,11 @@ export default function App() {
   };
 
   const generatePlanFromProfile = async (sourceProfile, { taste = null, openPaywallAfter = false } = {}) => {
+    planGenerationInFlightRef.current = true;
     const showReveal = shouldShowPlanReveal({ addingPlan });
     planRevealPaywallRef.current = !!(showReveal && openPaywallAfter);
     if (showReveal) {
-      setPlanReveal({ phase: "building" });
-      setScreen("planReveal");
+      showCoachBuildingScreen();
     } else {
       setScreen("loading");
     }
@@ -9230,6 +9261,7 @@ export default function App() {
       // 1 user = 1 plan actif : remplace toujours (ancien → historique)
       const replaced = replaceActivePlan(plans, planHistory, entry, activePlanId);
       setPlans(replaced.plans);
+      plansRef.current = replaced.plans;
       setPlanHistory(replaced.history);
       setActivePlanId(replaced.activeId);
       setAddingPlan(false);
@@ -9277,6 +9309,7 @@ export default function App() {
         if (openPaywallAfter) setShowPlanReady(true);
       }
     } catch {
+      planRevealActiveRef.current = false;
       setPlanReveal(null);
       planRevealPaywallRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
@@ -9289,12 +9322,17 @@ export default function App() {
       } else {
         setScreen("onboarding");
       }
+    } finally {
+      planGenerationInFlightRef.current = false;
     }
   };
 
   const resumePendingOnboarding = async (u) => {
+    if (planGenerationInFlightRef.current) return true;
     const pending = readPendingOnboarding();
-    if (!pending?.profile) return false;
+    if (!pending?.profile) return (plansRef.current?.length || 0) > 0;
+    planGenerationInFlightRef.current = true;
+    if (!pending.addingPlan) showCoachBuildingScreen();
     // Clear tôt : évite boucle questionnaire / checkout si abandon Stripe
     clearPendingOnboarding();
     if (pending.tasteProfile) setTasteProfile(normalizeTaste(pending.tasteProfile));
@@ -9303,6 +9341,7 @@ export default function App() {
     const needsPaywall = !checkIsPremium(u);
     // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
+      planGenerationInFlightRef.current = false;
       openUpgrade("trial_required");
       setScreen("app");
       return true;

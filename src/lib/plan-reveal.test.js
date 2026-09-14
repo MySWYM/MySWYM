@@ -35,6 +35,7 @@ ok(revealLevelLabel({ level: "performance" }) === "Avancé", "performance → av
 ok(revealLevelLabel({ level: "découverte" }) === "Découverte", "accented level");
 ok(revealLevelLabel({ level: "decouverte" }) === "Découverte", "unaccented level");
 
+ok(PLAN_REVEAL_MIN_MS >= 3000, "coach building screen holds long enough to read");
 ok(revealMinWaitMs(0) === PLAN_REVEAL_MIN_MS, "full wait if generate is instant");
 ok(revealMinWaitMs(PLAN_REVEAL_MIN_MS + 200) === 0, "no extra wait if generate was slow");
 ok(revealMinWaitMs(0, true) === 0, "reduced motion skips wait");

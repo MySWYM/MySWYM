@@ -8,10 +8,10 @@ import { markBootWarm } from "./lib/boot-warm.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 
 const BUILD_LINES = [
-  "Analyse de ton objectif…",
-  "Calibrage du volume…",
-  "Construction des phases…",
-  "Personnalisation des séances…",
+  "Ton coach lit tes réponses…",
+  "Il calibre le volume…",
+  "Il pose les séances de la semaine…",
+  "Il personnalise les éducatifs…",
 ];
 const BUILD_LINE_MS = 900;
 
@@ -65,7 +65,7 @@ export default function PlanRevealView({
               height={22}
               width={95}
             />
-            <h1 id="ms-plan-reveal-build-title" className="ms-plan-reveal-title">Préparation de ton plan</h1>
+            <h1 id="ms-plan-reveal-build-title" className="ms-plan-reveal-title">Ton coach prépare ton plan</h1>
             <p className="ms-plan-reveal-sub">
               {BUILD_LINES[Math.min(lineIdx, BUILD_LINES.length - 1)]}
             </p>
