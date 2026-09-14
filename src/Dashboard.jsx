@@ -10,6 +10,7 @@ import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
 import TrialCountdownBanner from "./ui/TrialCountdownBanner.jsx";
 import CoachCard from "./CoachCard.jsx";
 import { track } from "./lib/analytics.js";
+import { resolveDisplayFirstName } from "./lib/identity-cache.js";
 import { findNextSession, sessionCardModel } from "./lib/plan-reveal.js";
 import {
   hasSeenAllureUnlockTip,
@@ -90,18 +91,7 @@ export default function Dashboard({
     }, { onceKey: `allure_unlock_tip:${user?.id || "anon"}` });
   }, [showAllureTip, isPremium, profile?.pace100, user?.id]);
 
-  const firstName = user?.user_metadata?.firstname
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        }
-        return localStorage.getItem("myswym_firstname");
-      } catch { return null; }
-    })()
-    || user?.user_metadata?.full_name?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || "Nageur";
+  const firstName = resolveDisplayFirstName(user);
 
   const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
   const coachWeek = plan?.weeks?.length
