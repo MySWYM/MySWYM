@@ -5,6 +5,21 @@ import {
   isCommitmentInForce,
 } from "../_shared/stripe-commitment.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { sendEmailViaHttp } from "../_shared/email-http.ts";
+
+function firstNameFromUser(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}): string | undefined {
+  const meta = user.user_metadata ?? {};
+  const fromMeta =
+    (typeof meta.first_name === "string" && meta.first_name) ||
+    (typeof meta.firstName === "string" && meta.firstName) ||
+    (typeof meta.full_name === "string" && meta.full_name.split(/\s+/)[0]) ||
+    (typeof meta.name === "string" && meta.name.split(/\s+/)[0]);
+  const trimmed = fromMeta?.trim();
+  return trimmed || undefined;
+}
 
 async function cancelStripeSubscriptionsForUser(
   stripe: Stripe,
@@ -70,6 +85,8 @@ Deno.serve(async (req) => {
     if (userError || !user) throw new Error("Utilisateur introuvable");
 
     const uid = user.id;
+    const notifyEmail = user.email?.trim();
+    const notifyFirstName = firstNameFromUser(user);
 
     // Annuler les abonnements Stripe avant suppression (best-effort).
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -129,6 +146,25 @@ Deno.serve(async (req) => {
 
     const { error: delErr } = await admin.auth.admin.deleteUser(uid);
     if (delErr) throw new Error(delErr.message || "Impossible de supprimer le compte");
+
+    if (notifyEmail?.includes("@")) {
+      try {
+        const result = await sendEmailViaHttp("account_deleted", {
+          to: notifyEmail,
+          firstName: notifyFirstName,
+          userId: uid,
+        });
+        if (!result.ok) {
+          console.error("[delete-account] email failed:", result.error);
+        } else {
+          console.log("[delete-account] email sent:", result.id);
+        }
+      } catch (emailErr) {
+        console.error("[delete-account] email unexpected:", emailErr);
+      }
+    } else {
+      console.warn("[delete-account] skip email: no address");
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...cors, "Content-Type": "application/json" },
