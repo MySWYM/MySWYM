@@ -74,6 +74,12 @@ export type ReactivationEmailInput = {
   userId?: string;
 };
 
+export type AccountDeletedEmailInput = {
+  to: string;
+  firstName?: string;
+  userId?: string;
+};
+
 export type EmailKind =
   | "welcome"
   | "verification"
@@ -82,7 +88,8 @@ export type EmailKind =
   | "workout_reminder"
   | "newsletter"
   | "contact"
-  | "reactivation";
+  | "reactivation"
+  | "account_deleted";
 
 export type EmailPayloadByKind = {
   welcome: WelcomeEmailInput;
@@ -93,4 +100,5 @@ export type EmailPayloadByKind = {
   newsletter: NewsletterEmailInput;
   contact: ContactEmailInput;
   reactivation: ReactivationEmailInput;
+  account_deleted: AccountDeletedEmailInput;
 };
