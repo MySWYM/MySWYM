@@ -3,28 +3,7 @@
  * + confirmation → phone_verified = true.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "https://myswym.app",
-  "https://www.myswym.app",
-  "http://localhost:5173",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some((o) => origin === o)
-    || origin.endsWith(".vercel.app")
-    || origin.endsWith(".myswym.app");
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin = reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
+import { corsHeaders } from "../_shared/cors.ts";
 
 function normalizeE164(raw: string): string | null {
   let digits = String(raw || "").replace(/\D/g, "");

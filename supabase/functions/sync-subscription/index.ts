@@ -10,31 +10,11 @@ import {
   type AccessStateRow,
   type AuthUser,
 } from "../_shared/access-state.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5175",
-  "http://127.0.0.1:5175",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some(o => origin === o || origin.endsWith(".vercel.app") || origin.endsWith(".myswym.app"));
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin = reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 /** Uniquement l’id déjà rattaché au compte (checkout). Jamais de lookup e-mail : ça vole l’essai 7j. */
 async function resolveStoredCustomerId(user: AuthUser) {

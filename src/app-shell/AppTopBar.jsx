@@ -3,6 +3,7 @@ import { Bell, Menu } from "lucide-react";
 import { G } from "../theme/palette.js";
 import BrandLogo from "../BrandLogo.jsx";
 import { resolveAvatarUrl } from "../lib/avatar.js";
+import { resolveDisplayFirstName } from "../lib/identity-cache.js";
 import {
   buildInAppNotifications,
   readSeenNotifications,
@@ -22,18 +23,7 @@ export default function AppTopBar({
   immersive = false,
 }) {
   const avatarUrl = resolveAvatarUrl(user);
-  const firstName = user?.user_metadata?.firstname
-    || (() => {
-      try {
-        if (user?.id) {
-          return localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        }
-        return localStorage.getItem("myswym_firstname");
-      } catch { return null; }
-    })()
-    || user?.user_metadata?.full_name?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || "Nageur";
+  const firstName = resolveDisplayFirstName(user);
   const initials = firstName.slice(0, 2).toUpperCase();
   const [notifOpen, setNotifOpen] = useState(false);
   const notificationItems = useMemo(

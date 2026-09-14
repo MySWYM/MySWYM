@@ -12,7 +12,8 @@ export type EmailHttpKind =
   | "workout_reminder"
   | "newsletter"
   | "contact"
-  | "reactivation";
+  | "reactivation"
+  | "account_deleted";
 
 
 export type EmailHttpResult =

@@ -17,12 +17,17 @@ import {
   clearCachedAvatar,
 } from "./lib/avatar.js";
 import {
+  readCachedFirstName,
+  writeCachedFirstName,
+  resolveDisplayFirstName,
+} from "./lib/identity-cache.js";
+import {
   playUiSound,
   getUiSoundsEnabled,
   setUiSoundsEnabled,
 } from "./lib/ui-sounds.js";
 import { PRICING } from "./lib/pricing.js";
-import { ACCOUNT_DELETE_WARNING } from "./lib/legal-copy.js";
+import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING } from "./lib/legal-copy.js";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import {
   ProfileHelpSettingsRows,
@@ -113,10 +118,15 @@ export default function ProfileTab({
   referralSlot = null,
 }) {
   const { t: to } = useTranslation("onboarding");
-  const nameStorageKey = user?.id ? `myswym_firstname_${user.id}` : "myswym_firstname";
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
+  const [deleteGate, setDeleteGate] = useState({
+    allowed: false,
+    code: "pending",
+    message: "Vérification de l’abonnement…",
+    willCancelSubscription: false,
+  });
   const [soundsOn, setSoundsOn] = useState(() => getUiSoundsEnabled());
   const [draftEquipment, setDraftEquipment] = useState(() =>
     Array.isArray(profile?.equipment) ? [...profile.equipment] : []
@@ -131,6 +141,75 @@ export default function ProfileTab({
   useEffect(() => {
     setSoundsOn(getUiSoundsEnabled());
   }, []);
+
+  useEffect(() => {
+    if (!user?.id || !onDeleteAccount) return undefined;
+    let cancelled = false;
+    setDeleteGate({
+      allowed: false,
+      code: "pending",
+      message: "Vérification de l’abonnement…",
+      willCancelSubscription: false,
+    });
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      const status = user?.app_metadata?.subscription_status;
+      const looksPaid = status === "active" || status === "canceled";
+      const paidFallback = {
+        allowed: false,
+        code: "unverified",
+        message: "Impossible de vérifier l’abonnement. Le compte n’a pas été supprimé.",
+        willCancelSubscription: false,
+      };
+      const freeFallback = {
+        allowed: true,
+        code: "ok",
+        message: null,
+        willCancelSubscription: false,
+      };
+      if (!token) {
+        if (!cancelled) {
+          setDeleteGate({
+            allowed: false,
+            code: "unverified",
+            message: "Reconnecte-toi pour vérifier si le compte peut être supprimé.",
+            willCancelSubscription: false,
+          });
+        }
+        return;
+      }
+      try {
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+        });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok) {
+          setDeleteGate(looksPaid ? {
+            ...paidFallback,
+            message: json.error || paidFallback.message,
+            code: json.code || "unverified",
+          } : freeFallback);
+          return;
+        }
+        setDeleteGate({
+          allowed: json.allowed === true,
+          code: json.code || (json.allowed ? "ok" : "unverified"),
+          message: json.message || null,
+          willCancelSubscription: json.willCancelSubscription === true,
+          endsAt: json.endsAt || null,
+        });
+      } catch {
+        if (!cancelled) setDeleteGate(looksPaid ? paidFallback : freeFallback);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   useEffect(() => {
     setDraftNatation(snapshotNatation(profile));
@@ -153,14 +232,9 @@ export default function ProfileTab({
 
   // Avatar + firstName, user_metadata (cross-device) en priorité, cache local en fallback
   const [avatarUrl, setAvatarUrl] = useState(() => resolveAvatarUrl(user));
-  const [firstName, setFirstName] = useState(() => {
-    try {
-      return user?.user_metadata?.firstname
-        || (user?.id ? localStorage.getItem(`myswym_firstname_${user.id}`) : null)
-        || localStorage.getItem("myswym_firstname")
-        || "";
-    } catch { return ""; }
-  });
+  const [firstName, setFirstName] = useState(() => (
+    user?.user_metadata?.firstname || readCachedFirstName(user?.id) || ""
+  ));
   const [nameInput, setNameInput] = useState(firstName);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
@@ -179,10 +253,8 @@ export default function ProfileTab({
   useEffect(() => {
     if (user?.user_metadata?.firstname) setFirstName(user.user_metadata.firstname);
     else if (user?.id) {
-      try {
-        const cached = localStorage.getItem(`myswym_firstname_${user.id}`) || localStorage.getItem("myswym_firstname");
-        if (cached) setFirstName(cached);
-      } catch {}
+      const cached = readCachedFirstName(user.id);
+      if (cached) setFirstName(cached);
     }
     if (avatarBusy) return;
     const next = resolveAvatarUrl(user);
@@ -210,10 +282,7 @@ export default function ProfileTab({
 
   const openEditProfile = () => {
     playUiSound("soft");
-    const fallback = firstName
-      || user?.user_metadata?.full_name?.split(" ")[0]
-      || user?.email?.split("@")[0]
-      || "Nageur";
+    const fallback = resolveDisplayFirstName(user);
     setNameInput(fallback);
     setEditProfileOpen(true);
   };
@@ -293,10 +362,7 @@ export default function ProfileTab({
   const saveName = () => {
     const v = nameInput.trim();
     if (v) {
-      try {
-        localStorage.setItem(nameStorageKey, v);
-        localStorage.setItem("myswym_firstname", v);
-      } catch {}
+      writeCachedFirstName(user?.id, v);
       setFirstName(v);
       supabase.auth.updateUser({ data: { firstname: v } })
         .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
@@ -357,7 +423,7 @@ export default function ProfileTab({
     }
   };
 
-  const displayName = firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Nageur";
+  const displayName = firstName || resolveDisplayFirstName(user);
   const initials = displayName.slice(0, 2).toUpperCase();
   const levelLabel = findLevelById(profile?.level)?.label || profile?.level || "Nageur";
   const goalLabel = findGoalById(profile?.goal)?.label
@@ -1240,33 +1306,55 @@ export default function ProfileTab({
             <ChevronRight size={18} color={G.coral} />
           </button>
           {user && onDeleteAccount ? (
-            <button
-              type="button"
-              disabled={deleteBusy}
-              className="ms-profile-account-row"
-              onClick={async () => {
-                setDeleteErr(null);
-                const ok = window.confirm(
-                  `${ACCOUNT_DELETE_WARNING}\n\nConfirmer la suppression définitive du compte ?`,
-                );
-                if (!ok) return;
-                setDeleteBusy(true);
-                try {
-                  await onDeleteAccount();
-                } catch (e) {
-                  setDeleteErr(e?.message || "Suppression impossible.");
-                  setDeleteBusy(false);
-                }
-              }}
-            >
-              <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
-                <Trash2 size={18} color={G.coral} />
-              </span>
-              <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>
-                {deleteBusy ? "Suppression…" : "Supprimer mon compte"}
-              </span>
-              <ChevronRight size={18} color={G.coral} />
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={deleteBusy || !deleteGate.allowed}
+                className="ms-profile-account-row"
+                style={!deleteGate.allowed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
+                onClick={async () => {
+                  if (!deleteGate.allowed) return;
+                  setDeleteErr(null);
+                  const warning = deleteGate.willCancelSubscription
+                    ? ACCOUNT_DELETE_FLEX_WARNING
+                    : ACCOUNT_DELETE_WARNING;
+                  const ok = window.confirm(
+                    `${warning}\n\nConfirmer la suppression définitive du compte ?`,
+                  );
+                  if (!ok) return;
+                  setDeleteBusy(true);
+                  try {
+                    await onDeleteAccount();
+                  } catch (e) {
+                    setDeleteErr(e?.message || "Suppression impossible.");
+                    setDeleteBusy(false);
+                  }
+                }}
+              >
+                <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
+                  <Trash2 size={18} color={G.coral} />
+                </span>
+                <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>
+                  {deleteBusy ? "Suppression…" : "Supprimer mon compte"}
+                </span>
+                <ChevronRight size={18} color={G.coral} />
+              </button>
+              {!deleteGate.allowed && deleteGate.message ? (
+                <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral, lineHeight: 1.45 }}>
+                  {deleteGate.message}
+                  {deleteGate.endsAt ? (
+                    <>
+                      {" "}
+                      Fin : {new Date(deleteGate.endsAt).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}.
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
           ) : null}
           {deleteErr ? (
             <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral }}>{deleteErr}</div>

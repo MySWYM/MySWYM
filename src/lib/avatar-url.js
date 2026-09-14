@@ -23,10 +23,9 @@ export function withAvatarCacheBust(url) {
 }
 
 export function readCachedAvatar(userId) {
+  if (!userId) return null;
   try {
-    const keyed = userId ? localStorage.getItem(avatarCacheKey(userId)) : null;
-    const legacy = localStorage.getItem("myswym_avatar");
-    return normalizeAvatarUrl(keyed) || normalizeAvatarUrl(legacy);
+    return normalizeAvatarUrl(localStorage.getItem(avatarCacheKey(userId)));
   } catch {
     return null;
   }
@@ -34,10 +33,9 @@ export function readCachedAvatar(userId) {
 
 export function writeCachedAvatar(userId, url) {
   const clean = normalizeAvatarUrl(url);
-  if (!clean) return;
+  if (!userId || !clean) return;
   try {
     localStorage.setItem(avatarCacheKey(userId), clean);
-    localStorage.setItem("myswym_avatar", clean);
   } catch { /* quota / private mode */ }
 }
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getAccessState, ACCESS_STATUS, isAccessMetadataPending } from "./access.js";
+import { getAccessState, ACCESS_STATUS, isAccessMetadataPending, shouldShowTrialFreeze, isFreshSignup } from "./access.js";
 
 function userWith(meta) {
   return { app_metadata: meta };
@@ -177,6 +177,49 @@ const nowSec = Math.floor(Date.now() / 1000);
     subscription_status: ACCESS_STATUS.EXPIRED,
   }));
   assert.equal(expired.canUseBuddies, false);
+}
+
+{
+  const fresh = {
+    created_at: new Date().toISOString(),
+    app_metadata: {
+      subscription: "free",
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: new Date(Date.now() - 1000).toISOString(),
+    },
+  };
+  assert.equal(isFreshSignup(fresh), true);
+  assert.equal(
+    shouldShowTrialFreeze(fresh, { accessSynced: true }),
+    false,
+    "compte neuf : pas de freeze même si metadata stale expired",
+  );
+}
+
+{
+  const oldExpired = {
+    created_at: "2026-01-01T10:00:00.000Z",
+    app_metadata: {
+      subscription: "free",
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+      trial_started_at: "2026-01-01T10:00:00.000Z",
+      trial_ends_at: "2026-01-08T10:00:00.000Z",
+    },
+  };
+  assert.equal(isFreshSignup(oldExpired), false);
+  assert.equal(shouldShowTrialFreeze(oldExpired, { accessSynced: false }), false, "attendre le sync");
+  assert.equal(shouldShowTrialFreeze(oldExpired, { accessSynced: true }), true);
+  assert.equal(shouldShowTrialFreeze(oldExpired, { accessSynced: true, generatingPlan: true }), false);
+  assert.equal(shouldShowTrialFreeze(oldExpired, { accessSynced: true, revealActive: true }), false);
+}
+
+{
+  const emptyMeta = { created_at: new Date().toISOString(), app_metadata: {} };
+  assert.equal(isAccessMetadataPending(emptyMeta), true);
+  assert.equal(shouldShowTrialFreeze(emptyMeta, { accessSynced: true }), false);
 }
 
 console.log("access.test.js OK");
