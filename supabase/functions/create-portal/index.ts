@@ -12,26 +12,10 @@ import {
   findActiveCommitmentSubscription,
   resolveNoCancelPortalConfigId,
 } from "../_shared/stripe-commitment.ts";
+import { corsHeaders, FALLBACK_ORIGIN, isAllowedOrigin } from "../_shared/cors.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "http://localhost:5173",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function isAllowedOrigin(origin: string) {
-  return ALLOWED_ORIGINS.some(o => origin === o || origin.endsWith(".vercel.app") || origin.endsWith(".myswym.app"));
-}
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin = reqOrigin && isAllowedOrigin(reqOrigin) ? reqOrigin : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 Deno.serve(async (req) => {
   const reqOrigin = req.headers.get("origin");
@@ -93,7 +77,7 @@ Deno.serve(async (req) => {
 
     const returnOrigin = reqOrigin && isAllowedOrigin(reqOrigin)
       ? reqOrigin
-      : ALLOWED_ORIGINS[0] ?? "https://myswym.app";
+      : FALLBACK_ORIGIN;
 
     console.log("[create-portal] creating portal session for customer:", resolvedCustomerId);
     const commitSub = await findActiveCommitmentSubscription(stripe, resolvedCustomerId);

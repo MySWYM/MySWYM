@@ -4,30 +4,9 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendResendEvent } from "../_shared/resend-events.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const ALLOWED = new Set(["session.completed"]);
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") ?? "",
-  "https://myswym.app",
-  "https://www.myswym.app",
-  "http://localhost:5173",
-  "http://localhost:4173",
-].filter(Boolean);
-
-function corsHeaders(reqOrigin: string | null) {
-  const origin =
-    reqOrigin &&
-    (ALLOWED_ORIGINS.includes(reqOrigin) ||
-      reqOrigin.endsWith(".vercel.app") ||
-      reqOrigin.endsWith(".myswym.app"))
-      ? reqOrigin
-      : ALLOWED_ORIGINS[0] ?? "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  };
-}
 
 Deno.serve(async (req) => {
   const cors = corsHeaders(req.headers.get("origin"));

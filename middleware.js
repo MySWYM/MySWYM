@@ -11,6 +11,13 @@ import { LANG_COOKIE, localeFromPathname, stripLocalePrefix, withLocalePrefix } 
 const SITE = "https://www.myswym.app";
 const OG_IMAGE = `${SITE}/og-share.png`;
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Content-Security-Policy": "frame-ancestors 'none'",
+};
+
 const SOCIAL_BOT =
   /facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|LinkedInBot|TelegramBot|Discordbot|Pinterest|vkShare|Iframely|Embedly/i;
 
@@ -101,7 +108,10 @@ export default function middleware(request) {
   ) {
     const dest = new URL(withLocalePrefix(url.pathname, "fr"), url.origin);
     dest.search = url.search;
-    return Response.redirect(dest, 302);
+    return new Response(null, {
+      status: 302,
+      headers: { Location: dest.href, ...SECURITY_HEADERS },
+    });
   }
 
   if (!isSocial) return;
@@ -143,6 +153,7 @@ export default function middleware(request) {
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "public, max-age=300",
+      ...SECURITY_HEADERS,
     },
   });
 }
