@@ -45,8 +45,11 @@
         try {
           var path = location.pathname || "/";
           var p = path.replace(/\/+$/, "") || "/";
-          var gif = p === "/app" || p.indexOf("/app/") === 0;
+          var native = location.protocol === "capacitor:" || location.protocol === "ionic:"
+            || (location.hostname === "localhost" && window.webkit && window.webkit.messageHandlers);
+          var gif = native || p === "/app" || p.indexOf("/app/") === 0;
           if (!gif) document.documentElement.classList.add("myswym-boot-public");
+          else document.documentElement.classList.remove("myswym-boot-public");
           var warm = sessionStorage.getItem("myswym-boot-warm") === "1";
           if (!warm) {
             for (var i = 0; i < localStorage.length; i++) {

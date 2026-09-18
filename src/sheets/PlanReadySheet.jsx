@@ -8,6 +8,7 @@ import { buildPlanReadyInsights } from "../lib/coach-insights.js";
 import { sessionCardModel } from "../lib/plan-reveal.js";
 import SessionHeroCard from "../SessionHeroCard.jsx";
 import { canonicalizeGoal } from "../lib/sports-engine/race-event.js";
+import { isNativeApp } from "../lib/native-platform.js";
 
 const GOAL_LABELS = {
   progression: "Nager & Progresser",
@@ -52,6 +53,10 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
   };
 
   const handleContinue = () => {
+    if (isNativeApp()) {
+      onDismiss?.();
+      return;
+    }
     const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
     if (gateError) {
       setErr(gateError);
@@ -153,6 +158,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
         </div>
       ) : null}
 
+      {!isNativeApp() && (
       <CheckoutLegalGates
         acceptTerms={acceptTerms}
         onAcceptTerms={handleAcceptTerms}
@@ -163,6 +169,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
         linkColor={G.blue}
         idPrefix="plan-ready-legal"
       />
+      )}
 
       {err ? (
         <div
@@ -179,7 +186,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
         </div>
       ) : null}
       <Btn variant="blue" onClick={handleContinue} disabled={loading}>
-        {loading ? "Redirection…" : "S’abonner : débloquer mon coach"}
+        {isNativeApp() ? "Voir mon plan" : loading ? "Redirection…" : "S’abonner : débloquer mon coach"}
       </Btn>
       <button
         type="button"

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { FONT_DISPLAY } from "./theme/brand.js";
+import { isNativeIos } from "./lib/native-platform.js";
 import { supabase } from "./supabase.js";
 import {
   resolveAvatarUrl,
@@ -35,6 +36,7 @@ import {
   ProfileLegalPanel,
 } from "./ProfileHelpPanels.jsx";
 import ProfileSection from "./ui/ProfileSection.jsx";
+import FrequencyGauge from "./ui/FrequencyGauge.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import SoftMistSheet from "./sheets/SoftMistSheet.jsx";
 import { PasswordInput } from "./AuthScreen.jsx";
@@ -62,7 +64,7 @@ import {
 import i18n from "./i18n/index.js";
 
 import {
-  CATEGORIES, FREQUENCIES, POOLS, SWIM_STYLES,
+  CATEGORIES, POOLS, SWIM_STYLES,
   EQUIPMENT_OPTS, eqLabel, hidesFourNagesChoice, findGoalById, levelsForPicker, findLevelById,
 } from "./lib/onboarding-catalog.jsx";
 import { impliedSwimStyleForLevel, isBeginnerBlockedForGoal } from "./lib/onboarding-level-gate.js";
@@ -112,6 +114,7 @@ export default function ProfileTab({
   isPremium = false,
   onUpgrade,
   onPortal,
+  onCancelSubscription,
   onRefreshStatus,
   onSignOut,
   onDeleteAccount,
@@ -751,6 +754,7 @@ export default function ProfileTab({
 
         <div className="ms-profile-group-label">Réglages</div>
         <div className="ms-profile-settings-list">
+          {!isNativeIos() && (
           <div className="ms-profile-settings-row">
             <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
               <Volume2 size={18} color={G.blue} />
@@ -774,6 +778,7 @@ export default function ProfileTab({
               <span />
             </button>
           </div>
+          )}
           <LanguageSwitcher variant="settings" />
           <ProfileHelpSettingsRows
             onOpenSupport={() => setHelpPanel("support")}
@@ -975,62 +980,10 @@ export default function ProfileTab({
                 })}
               </div>
               <div className="ms-profile-label">Fréquence</div>
-              {(() => {
-                const freqIds = FREQUENCIES.map((f) => f.id);
-                const minF = freqIds[0] ?? 1;
-                const maxF = freqIds[freqIds.length - 1] ?? 5;
-                const raw = Number(draftNatation.sessionsPerWeek);
-                const value = Number.isFinite(raw) && raw >= minF && raw <= maxF ? raw : minF;
-                const idx = Math.max(0, freqIds.indexOf(value));
-                const pct = freqIds.length > 1 ? (idx / (freqIds.length - 1)) * 100 : 0;
-                const meta = FREQUENCIES.find((f) => f.id === value) || FREQUENCIES[0];
-                return (
-                  <div className="ms-freq-gauge">
-                    <div className="ms-freq-gauge-value">
-                      {value}
-                      <span className="ms-freq-gauge-unit">× / semaine</span>
-                    </div>
-                    {meta?.desc ? (
-                      <div className="ms-freq-gauge-desc">{meta.desc}</div>
-                    ) : null}
-                    <div className="ms-freq-gauge-track-wrap">
-                      <div className="ms-freq-gauge-track" aria-hidden />
-                      <div
-                        className="ms-freq-gauge-fill"
-                        aria-hidden
-                        style={{ width: `calc((100% - 22px) * ${pct / 100})` }}
-                      />
-                      <input
-                        type="range"
-                        className="ms-distance-slider ms-freq-gauge-input"
-                        min={minF}
-                        max={maxF}
-                        step={1}
-                        value={value}
-                        onChange={(e) => {
-                          const next = Number(e.target.value);
-                          setDraftNatation((prev) => ({ ...prev, sessionsPerWeek: next }));
-                        }}
-                        aria-label="Séances par semaine"
-                        aria-valuemin={minF}
-                        aria-valuemax={maxF}
-                        aria-valuenow={value}
-                        aria-valuetext={meta?.label || `${value} fois par semaine`}
-                      />
-                    </div>
-                    <div className="ms-freq-gauge-ticks" aria-hidden>
-                      {FREQUENCIES.map((f) => (
-                        <span
-                          key={f.id}
-                          className={f.id === value ? "is-active" : undefined}
-                        >
-                          {f.id}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+              <FrequencyGauge
+                value={draftNatation.sessionsPerWeek}
+                onChange={(next) => setDraftNatation((prev) => ({ ...prev, sessionsPerWeek: next }))}
+              />
               {!hidesFourNagesChoice({ ...profile, ...draftNatation }) && (
                 <>
                   <div className="ms-profile-label">
@@ -1266,9 +1219,21 @@ export default function ProfileTab({
               </div>
             </div>
             {isPremium ? (
-              <button type="button" onClick={onPortal} className="ms-pill-cta ms-pill-cta-secondary" style={{ minHeight: 44 }}>
-                Gérer mon abonnement
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <button type="button" onClick={onPortal} className="ms-pill-cta ms-pill-cta-secondary" style={{ minHeight: 44 }}>
+                  Modifier mon abonnement
+                </button>
+                <button
+                  type="button"
+                  onClick={onCancelSubscription}
+                  style={{
+                    width: "100%", minHeight: 44, border: "none", background: "none",
+                    color: G.grey, fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  Résilier
+                </button>
+              </div>
             ) : (
               <button type="button" onClick={() => onUpgrade?.("profile")} className="ms-pill-cta" style={{ minHeight: 44 }}>
                 S’abonner : dès {PRICING.monthlyCommit.label}/mois

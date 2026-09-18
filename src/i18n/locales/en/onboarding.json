@@ -6,7 +6,17 @@
     "generate": "Generate my plan",
     "cancel": "← Cancel",
     "edit": "Edit",
-    "or": "or"
+    "or": "or",
+    "createProgram": "Create your program",
+    "createProgramLead": "A few questions, then we build your sessions."
+  },
+  "welcome": {
+    "title": "Your swim session, ready to go",
+    "lead": "A plan made for you, so you enjoy the water and progress every session.",
+    "continue": "Create an account",
+    "legal": "By continuing, you accept our <cgu>Terms of use</cgu> and our <privacy>Privacy policy</privacy>.",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign in"
   },
   "months": {
     "1": "January",
@@ -174,6 +184,7 @@
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "pickDay": "Pick a day…",
+    "pickHint": "Pick a day, at least 6 weeks from today.",
     "minWeeks": "Minimum 6 weeks from today",
     "weeks": "{{count}} weeks",
     "weeksHint": "of prep · Full programme"
@@ -197,12 +208,17 @@
     "backLogin": "← Back to log in",
     "age": "I confirm I am 18 or over.",
     "terms": "I accept the <cgu>terms of use</cgu> and the <privacy>privacy policy</privacy>.",
+    "newsletter": "I agree to receive MySWYM news by email.",
     "trial": "7-day trial at account creation, no card. Then your sessions pause until you subscribe.",
     "google": "Continue with Google",
     "apple": "Continue with Apple",
     "comingSoon": "Coming soon",
     "redirecting": "Redirecting…",
+    "connecting": "Signing in…",
+    "accountFollows": "Same account as the website: your sessions, photo and details follow you.",
     "googleBlocked": "Tick both boxes below to continue with Google.",
+    "appleBlocked": "Tick both boxes below to continue with Apple.",
+    "socialBlocked": "Tick both boxes below to continue.",
     "needChecks": "Confirm you are 18+ and accept the terms / privacy policy to create an account.",
     "exists": "An account already exists with this email.",
     "created": "Account created! Check your email to confirm, then log in.",

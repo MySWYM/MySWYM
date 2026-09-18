@@ -25,7 +25,7 @@ export const CARDLESS_TRIAL_NOTE =
   "7 jours d’essai offerts à la création du compte, sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement.";
 
 export const CHECKOUT_RENEWAL_NOTICE =
-  "Abonnement à reconduction tacite. Tu peux résilier à tout moment via « Gérer mon abonnement » (portail Stripe) ; l’accès reste actif jusqu’à la fin de la période déjà payée.";
+  "Abonnement à reconduction tacite. Tu peux changer d’offre via « Modifier mon abonnement », ou résilier via « Résilier » (portail Stripe). L’accès reste actif jusqu’à la fin de la période déjà payée.";
 
 export const CHECKOUT_WITHDRAWAL_LABEL =
   "Je demande l’accès immédiat à Premium et reconnais que, dès l’ouverture de l’accès, je perds mon droit de rétractation de 14 jours pour le service numérique pleinement exécuté (art. L221-28 du Code de la consommation), dans la mesure permise par la loi.";

@@ -8,6 +8,8 @@ export default function AppStatusScreen({
   onPrimary,
   secondaryLabel = null,
   onSecondary = null,
+  tertiaryLabel = null,
+  onTertiary = null,
   primaryDisabled = false,
   primaryBusyLabel = null,
   meta = null,
@@ -56,6 +58,15 @@ export default function AppStatusScreen({
             onClick={onSecondary}
           >
             {secondaryLabel}
+          </button>
+        ) : null}
+        {tertiaryLabel && onTertiary ? (
+          <button
+            type="button"
+            className="ms-status-secondary"
+            onClick={onTertiary}
+          >
+            {tertiaryLabel}
           </button>
         ) : null}
         {meta ? <p className="ms-status-meta">{meta}</p> : null}

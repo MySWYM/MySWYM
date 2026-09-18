@@ -1,13 +1,27 @@
+import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { G } from "../theme/palette.js";
 import { PRICING_SUMMARY_FR } from "../lib/pricing.js";
+import { getAccessState } from "../lib/access.js";
+import { isNativeApp } from "../lib/native-platform.js";
+import { syncSubscriptionFromStripe } from "../lib/sync-subscription.js";
+import { supabase } from "../supabase.js";
 import Btn from "../ui/Btn.jsx";
 import SoftMistSheet from "./SoftMistSheet.jsx";
 import SessionHeroCard from "../SessionHeroCard.jsx";
+import SupportBubble from "../SupportBubble.jsx";
 
 const MUTED = "#4a5d72";
 
 export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = null }) {
+  const native = isNativeApp();
+  const [user, setUser] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncErr, setSyncErr] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
+  }, []);
   const heroPreview = preview
     ? {
         title: preview.title || "Séance",
@@ -18,12 +32,36 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
       }
     : null;
 
+  const handleNativeSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncErr("");
+    try {
+      const u = await syncSubscriptionFromStripe();
+      setUser(u);
+      if (u && getAccessState(u).hasPremiumAccess) {
+        window.location.reload();
+        return;
+      }
+      setSyncErr("Pas d’abonnement actif sur ce compte. L’abonnement iOS arrive via l’App Store.");
+    } catch {
+      setSyncErr("Impossible de synchroniser. Réessaie ou écris au support.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
+    <>
     <SoftMistSheet
       open
       eyebrow="Essai terminé"
       title="Ton essai est terminé"
-      subtitle={`Le coach est en pause. Abonne-toi pour reprendre tes séances, ${PRICING_SUMMARY_FR}.`}
+      subtitle={
+        native
+          ? "Le coach est en pause. Si tu es déjà Premium sur le site, synchronise ton compte. Sinon l’abonnement iOS arrive via l’App Store."
+          : `Le coach est en pause. Abonne-toi pour reprendre tes séances, ${PRICING_SUMMARY_FR}.`
+      }
       onClose={undefined}
       dismissOnOverlay={false}
       zIndex={500}
@@ -62,7 +100,7 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
             style={{
               position: "absolute",
               inset: 0,
-              borderRadius: "1.25rem",
+              borderRadius: 28,
               zIndex: 1,
               background: "linear-gradient(180deg, transparent 30%, rgba(244, 248, 252, 0.85) 100%)",
             }}
@@ -71,9 +109,20 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
         </div>
       ) : null}
 
-      <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
-        Reprendre avec Premium
-      </Btn>
+      {native ? (
+        <Btn variant="blue" onClick={handleNativeSync} style={{ width: "100%", minHeight: 52 }} disabled={syncing}>
+          {syncing ? "Synchronisation…" : "J’ai déjà Premium sur le site"}
+        </Btn>
+      ) : (
+        <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
+          Reprendre avec Premium
+        </Btn>
+      )}
+      {syncErr ? (
+        <p style={{ fontSize: 13, color: G.coral, marginTop: 12, lineHeight: 1.45, textAlign: "center" }}>
+          {syncErr}
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={onSignOut}
@@ -92,12 +141,24 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
       >
         Se déconnecter
       </button>
-      <p style={{ fontSize: 12, color: MUTED, marginTop: 16, lineHeight: 1.45, textAlign: "center" }}>
-        Besoin d’aide ?{" "}
-        <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
-          support@myswym.app
-        </a>
-      </p>
+      {native ? (
+        <p style={{ fontSize: 12, color: MUTED, marginTop: 16, lineHeight: 1.45, textAlign: "center" }}>
+          Besoin d’aide ? La loutre en bas à droite ouvre le support.
+        </p>
+      ) : (
+        <p style={{ fontSize: 12, color: MUTED, marginTop: 16, lineHeight: 1.45, textAlign: "center" }}>
+          Besoin d’aide ?{" "}
+          <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
+            support@myswym.app
+          </a>
+        </p>
+      )}
     </SoftMistSheet>
+    {native ? (
+      <div className="trial-freeze-support">
+        <SupportBubble aboveBottomNav={false} user={user} />
+      </div>
+    ) : null}
+    </>
   );
 }

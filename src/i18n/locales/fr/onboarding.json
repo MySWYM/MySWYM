@@ -6,7 +6,17 @@
     "generate": "Générer mon plan",
     "cancel": "← Annuler",
     "edit": "Modifier",
-    "or": "ou"
+    "or": "ou",
+    "createProgram": "Crée ton programme",
+    "createProgramLead": "Quelques questions, on construit tes séances."
+  },
+  "welcome": {
+    "title": "Ta séance natation clé en main",
+    "lead": "Ton plan sur-mesure pour nager avec plaisir et progresser à chaque entraînement.",
+    "continue": "Créer son compte",
+    "legal": "En continuant, tu acceptes nos <cgu>Conditions d’utilisation</cgu> et notre <privacy>Politique de confidentialité</privacy>.",
+    "hasAccount": "Déjà un compte ?",
+    "signIn": "Se connecter"
   },
   "months": {
     "1": "Janvier",
@@ -174,6 +184,7 @@
     "prevMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "pickDay": "Choisir un jour…",
+    "pickHint": "Touche un jour, au moins 6 semaines plus tard.",
     "minWeeks": "Minimum 6 semaines à partir d'aujourd'hui",
     "weeks": "{{count}} semaines",
     "weeksHint": "de préparation · Programme complet"
@@ -197,12 +208,17 @@
     "backLogin": "← Retour à la connexion",
     "age": "Je confirme avoir 18 ans révolus.",
     "terms": "J’accepte les <cgu>CGU</cgu> et la <privacy>politique de confidentialité</privacy>.",
+    "newsletter": "J’accepte de recevoir les actus MySWYM par e-mail.",
     "trial": "7 jours d’essai offerts à la création du compte, sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement.",
     "google": "Continuer avec Google",
     "apple": "Continuer avec Apple",
     "comingSoon": "À venir",
     "redirecting": "Redirection…",
+    "connecting": "Connexion…",
+    "accountFollows": "Même compte que sur le site : tes séances, ta photo et tes infos te suivent.",
     "googleBlocked": "Coche les deux cases plus bas pour continuer avec Google.",
+    "appleBlocked": "Coche les deux cases plus bas pour continuer avec Apple.",
+    "socialBlocked": "Coche les deux cases plus bas pour continuer.",
     "needChecks": "Confirme ton âge (18+) et accepte les CGU / confidentialité pour créer un compte.",
     "exists": "Un compte existe déjà avec cet email.",
     "created": "Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.",

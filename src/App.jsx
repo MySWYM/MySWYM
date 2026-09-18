@@ -46,6 +46,9 @@ import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
+import FrequencyGauge from "./ui/FrequencyGauge.jsx";
+import "./theme/onboarding-date.css";
+import { flushPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
 import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel, sessionWhyLine } from "./lib/plan-reveal.js";
 import { bootElapsedMs, isBootWarm, remainingColdBootMs } from "./lib/boot-warm.js";
 import {
@@ -194,6 +197,7 @@ import {
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
+  ChevronLeft,
   Bell, CreditCard, Link2, ChevronRight, Eye,
   Camera, Trash2, Users, ExternalLink, Info, Pencil, Share2,
 } from "lucide-react";
@@ -1044,9 +1048,18 @@ const onboardingTitleStyle = () => ({
 });
 
 const Progress = ({ step, total }) => (
-  <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
+  <div
+    className="ms-onboard-progress"
+    role="progressbar"
+    aria-valuenow={step}
+    aria-valuemin={1}
+    aria-valuemax={total}
+  >
     {Array.from({ length: total }).map((_, i) => (
-      <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < step ? G.blue : G.greyLight, transition: "background 0.3s" }} />
+      <div
+        key={i}
+        className={`ms-onboard-progress-seg${i < step ? " is-on" : ""}`}
+      />
     ))}
   </div>
 );
@@ -2766,23 +2779,6 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 };
 
 
-const dateSelectStyle = {
-  flex: 1,
-  minWidth: 0,
-  padding: "12px 14px",
-  borderRadius: 12,
-  border: `1.5px solid ${G.greyLight}`,
-  background: G.greyXLight,
-  fontSize: 15,
-  fontWeight: 600,
-  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-  color: G.ink,
-  cursor: "pointer",
-  outline: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-};
-
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   const { t, i18n } = useTranslation("onboarding");
   const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
@@ -2807,9 +2803,6 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   }, [value]);
 
   const weeks = weeksUntil(value);
-  const years = [];
-  for (let y = minD.getFullYear(); y <= maxYear; y++) years.push(y);
-
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDow = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
   const calendarCells = [];
@@ -2829,125 +2822,74 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   };
 
   const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
   };
 
   const canPrevMonth = viewYear > minD.getFullYear() || (viewYear === minD.getFullYear() && viewMonth > minD.getMonth());
-  const maxMonth = new Date(maxYear, 11, 31);
   const canNextMonth = viewYear < maxYear || (viewYear === maxYear && viewMonth < 11);
 
-  const dayOptions = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(viewYear, viewMonth, d);
-    date.setHours(0, 0, 0, 0);
-    if (date >= minD && date <= maxMonth) dayOptions.push(d);
-  }
+  const isDaySelected = (day) =>
+    !!selected
+    && selected.getFullYear() === viewYear
+    && selected.getMonth() === viewMonth
+    && selected.getDate() === day;
 
-  const selectedDay = selected && selected.getFullYear() === viewYear && selected.getMonth() === viewMonth
-    ? selected.getDate()
+  const selectedLabel = selected
+    ? selected.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long" })
     : "";
 
-  const isDaySelected = (day) =>
-    !!selected &&
-    selected.getFullYear() === viewYear &&
-    selected.getMonth() === viewMonth &&
-    selected.getDate() === day;
-
   return (
-    <div className="fade-up">
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>{t("date.kicker")}</p>
-      <h2 style={{ ...onboardingTitleStyle(), fontSize: 32, marginBottom: 10 }}>{t("date.title")}</h2>
-      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>{t("date.lead")}</p>
-      <div style={{ background: G.surface, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
-        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>{t("date.label")}</label>
+    <div className="ms-date-step fade-up">
+      <h2 className="ms-type-page ms-date-step-title">{t("date.title")}</h2>
+      <p className="ms-date-step-lead">{t("date.lead")}</p>
 
-        {value && !err && (
-          <div style={{ fontSize: 15, fontWeight: 600, color: G.blue, marginBottom: 14, textTransform: "capitalize" }}>
-            {parseISODate(value)?.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <select
-            value={viewMonth}
-            onChange={e => setViewMonth(Number(e.target.value))}
-            style={dateSelectStyle}
-            aria-label={t("date.month")}
-          >
-            {monthNames.map((name, i) => {
-              const monthStart = new Date(viewYear, i, 1);
-              const monthEnd = new Date(viewYear, i + 1, 0);
-              monthEnd.setHours(23, 59, 59, 999);
-              if (monthEnd < minD || monthStart > maxMonth) return null;
-              return <option key={name} value={i}>{name}</option>;
-            })}
-          </select>
-          <select
-            value={viewYear}
-            onChange={e => setViewYear(Number(e.target.value))}
-            style={{ ...dateSelectStyle, flex: "0 0 96px" }}
-            aria-label={t("date.year")}
-          >
-            {years.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      <div className={`ms-date-cal${err ? " is-error" : ""}${weeks && !err ? " is-ready" : ""}`}>
+        <div className="ms-date-cal-nav">
           <button
             type="button"
+            className="ms-date-cal-nav-btn"
             onClick={prevMonth}
             disabled={!canPrevMonth}
             aria-label={t("date.prevMonth")}
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canPrevMonth ? "pointer" : "not-allowed", opacity: canPrevMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
-          >‹</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: G.inkLight }}>{monthNames[viewMonth]} {viewYear}</span>
+          >
+            <ChevronLeft size={20} strokeWidth={2.25} />
+          </button>
+          <p className="ms-date-cal-month">{monthNames[viewMonth]} {viewYear}</p>
           <button
             type="button"
+            className="ms-date-cal-nav-btn"
             onClick={nextMonth}
             disabled={!canNextMonth}
             aria-label={t("date.nextMonth")}
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canNextMonth ? "pointer" : "not-allowed", opacity: canNextMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
-          >›</button>
+          >
+            <ChevronRight size={20} strokeWidth={2.25} />
+          </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 14 }}>
-          {(Array.isArray(weekdayNames) ? weekdayNames : WEEKDAYS_FR).map(w => (
-            <div key={w} style={{ fontSize: 11, fontWeight: 700, color: G.grey, textAlign: "center", padding: "4px 0" }}>{w}</div>
+        <div className="ms-date-cal-weekdays" aria-hidden>
+          {(Array.isArray(weekdayNames) ? weekdayNames : WEEKDAYS_FR).map((w) => (
+            <span key={w}>{w}</span>
           ))}
+        </div>
+        <div className="ms-date-cal-grid">
           {calendarCells.map((day, i) => {
-            if (!day) return <div key={`e-${i}`} />;
+            if (!day) return <span key={`e-${i}`} className="ms-date-cal-empty" />;
             const disabled = new Date(viewYear, viewMonth, day) < minD;
             const isSel = isDaySelected(day);
-            const isToday = (() => {
-              const now = new Date(); now.setHours(0, 0, 0, 0);
-              const d = new Date(viewYear, viewMonth, day);
-              return d.getTime() === now.getTime();
-            })();
             return (
               <button
                 key={`d-${day}-${i}`}
                 type="button"
+                className={`ms-date-cal-day${isSel ? " is-on" : ""}`}
                 disabled={disabled}
                 onClick={() => pickDate(day)}
                 aria-label={`${day} ${monthNames[viewMonth]} ${viewYear}`}
                 aria-pressed={isSel}
-                style={{
-                  aspectRatio: "1",
-                  border: "none",
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: isSel ? 700 : 500,
-                  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-                  cursor: disabled ? "not-allowed" : "pointer",
-                  background: isSel ? G.blue : isToday ? G.blueLight : "transparent",
-                  color: isSel ? G.white : disabled ? G.greyMid : G.ink,
-                  opacity: disabled ? 0.35 : 1,
-                }}
               >
                 {day}
               </button>
@@ -2955,40 +2897,21 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, flexShrink: 0 }}>{t("date.day")}</span>
-          <select
-            value={selectedDay}
-            onChange={e => { const d = Number(e.target.value); if (d) pickDate(d); }}
-            style={{ ...dateSelectStyle, flex: 1 }}
-            aria-label={t("date.day")}
-          >
-            <option value="">{t("date.pickDay")}</option>
-            {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </div>
+        {err ? (
+          <p className="ms-date-cal-msg is-error" role="alert">{err}</p>
+        ) : weeks ? (
+          <p className="ms-date-cal-msg">
+            <span className="ms-date-cal-picked">{selectedLabel}</span>
+            {" · "}
+            {t("date.weeks", { count: weeks })}
+          </p>
+        ) : (
+          <p className="ms-date-cal-msg is-placeholder">{t("date.pickHint")}</p>
+        )}
       </div>
-      {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
-      {weeks && !err && (
-        <div style={{
-          background: G.blueLight,
-          borderRadius: 14,
-          padding: "16px 20px",
-          marginBottom: 28,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          border: `1px solid ${G.greyLight}`,
-        }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t("date.weeks", { count: weeks })}</div>
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{t("date.weeksHint")}</div>
-          </div>
-          <Calendar size={20} color={G.blue} />
-        </div>
-      )}
+
       <Btn onClick={onNext} disabled={!value}>{t("common.generate")}</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
+      <button type="button" className="ms-date-step-back" onClick={onBack}>{t("common.back")}</button>
     </div>
   );
 };
@@ -3112,41 +3035,24 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
   );
 }
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => {
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false }) => {
   const { t } = useTranslation("onboarding");
+  const fallback = 2;
+
+  useEffect(() => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 1 || n > 5) onChange(fallback);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
   <div className="fade-up">
     <h2 style={onboardingTitleStyle()}>{t("frequency.title")}</h2>
     <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
       {t("frequency.lead")}
     </p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
-      {FREQUENCIES.map(f => {
-        const locked = false;
-        const isActive = value === f.id;
-        return (
-          <button key={f.id} onClick={() => onChange(f.id)} style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "18px 20px", borderRadius: 16,
-            border: `2px solid ${isActive ? G.blue : locked ? G.greyLight : G.greyLight}`,
-            background: isActive ? G.blue : locked ? G.greyXLight : G.surface,
-            cursor: "pointer", transition: "all 0.2s",
-            boxShadow: isActive ? "0 4px 16px rgba(0,87,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)",
-            opacity: locked ? 0.8 : 1,
-          }}>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{t("frequency.n", { count: f.id })}</div>
-            </div>
-            {isActive && !locked && <Check size={16} color={G.white} />}
-            {locked && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, background: G.gold + "22", borderRadius: 100, padding: "4px 10px" }}>
-                <Lock size={11} color={G.gold} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: G.gold }}>Premium</span>
-              </div>
-            )}
-          </button>
-        );
-      })}
+    <div style={{ marginBottom: 24 }}>
+      <FrequencyGauge value={value} onChange={onChange} fallback={fallback} />
     </div>
     <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? t("common.generate") : t("common.continue")}</Btn>
     <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
@@ -8044,6 +7950,7 @@ export default function App() {
     if (isSignup) {
       track("signup_completed", {}, { onceKey: `signup_completed:${u?.id || "anon"}` });
     }
+    void flushPendingNewsletterOptIn();
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
@@ -8251,6 +8158,7 @@ export default function App() {
         }
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (!droppingSessionForRegister && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          void flushPendingNewsletterOptIn();
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)
@@ -10732,7 +10640,11 @@ export default function App() {
     }
   };
 
-  const handlePortal = async () => {
+  const handlePortal = () => {
+    proceedToStripePortal(null);
+  };
+
+  const handleCancelSubscription = () => {
     setCancelSurveyOpen(true);
   };
 
@@ -10989,6 +10901,7 @@ export default function App() {
             isPremium={isPremium}
             onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
             onPortal={handlePortal}
+            onCancelSubscription={handleCancelSubscription}
             onRefreshStatus={handleRefreshStatus}
             onSignOut={handleSignOut}
             onDeleteAccount={handleDeleteAccount}

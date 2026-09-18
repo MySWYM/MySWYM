@@ -10,7 +10,7 @@ import {
 } from "./lib/version-gate.js";
 import Loading from "./app-shell/Loading.jsx";
 import PublicLoading from "./app-shell/PublicLoading.jsx";
-import { isAppGifPath } from "./lib/boot-warm.js";
+import { shouldUseAppGifLoader } from "./lib/boot-warm.js";
 import AppStatusScreen from "./app-shell/AppStatusScreen.jsx";
 
 /**
@@ -85,7 +85,7 @@ export default function VersionGate({ children }) {
   };
 
   if (!state.ready) {
-    return isAppGifPath(window.location.pathname) ? <Loading /> : <PublicLoading />;
+    return shouldUseAppGifLoader(window.location.pathname) ? <Loading /> : <PublicLoading />;
   }
 
   if (state.mustUpdate) {

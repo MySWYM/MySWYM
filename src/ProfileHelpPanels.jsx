@@ -45,7 +45,9 @@ function LinkedinMark({ size = 18, color = "currentColor" }) {
 }
 
 export function openSupportChat(tab = "messages") {
-  window.dispatchEvent(new CustomEvent("myswym:open-support", { detail: { tab } }));
+  const view = tab === "chat" ? "chat" : "tabs";
+  const resolvedTab = tab === "chat" ? "messages" : tab;
+  window.dispatchEvent(new CustomEvent("myswym:open-support", { detail: { tab: resolvedTab, view } }));
 }
 
 function PanelShell({ title, onBack, children }) {
@@ -147,10 +149,7 @@ export function ProfileSupportPanel({ onBack }) {
           icon={Bug}
           title="Signaler un bug"
           subtitle="Aide-nous à améliorer l’app"
-          onClick={() => {
-            onBack();
-            openSupportChat("messages");
-          }}
+          onClick={() => openSupportChat("chat")}
         />
         <HelpRow
           icon={Star}

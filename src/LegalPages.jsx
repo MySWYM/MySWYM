@@ -1,5 +1,6 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import { isNativeApp } from "./lib/native-platform.js";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import CookiePreferencesPanel from "./marketing/CookiePreferences.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
@@ -25,6 +26,17 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
   });
   return (
     <div className="ms-root">
+      {isNativeApp() ? (
+        <main className="ms-legal-main">
+          <div className="ms-legal-wrap">
+            <h1 className="ms-legal-h1">{title}</h1>
+            <p className="ms-legal-lead">{subtitle}</p>
+            <div className="ms-legal-card">{children}</div>
+            {after ? <div className="ms-legal-after">{after}</div> : null}
+          </div>
+        </main>
+      ) : (
+        <>
       <PublicNav />
       <main className="ms-legal-main">
         <div className="ms-legal-wrap">
@@ -39,6 +51,8 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
         </div>
       </main>
       <Footer />
+        </>
+      )}
     </div>
   );
 }
@@ -616,7 +630,7 @@ export function CgvPage() {
         "Mensuel sans engagement : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
         "Mensuel avec engagement 12 mois : les prélèvements continuent jusqu’à la fin des 12 mois. La suppression du compte est refusée tant que l’engagement n’est pas terminé, hors cas légaux. Le portail Stripe n’offre pas d’annulation pendant cette période.",
         "Annuel / biennal (legacy) : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période. La suppression du compte est refusée jusqu’à la fin de la période déjà payée.",
-        "Résiliation (hors engagement 12 mois en cours) : depuis Profil → Paramètres → « Gérer mon abonnement » (portail Stripe), ou via les outils Stripe Customer Portal.",
+        "Résiliation (hors engagement 12 mois en cours) : depuis Profil → Paramètres → « Résilier » (portail Stripe), ou via les outils Stripe Customer Portal. Pour changer d’offre sans partir : « Modifier mon abonnement ».",
         "La suppression du compte n’est possible que sans abonnement Stripe vivant (essai, accès en pause, ou après la fin de période). Un mensuel sans engagement est arrêté immédiatement si la suppression est acceptée. Un engagement 12 mois ou un annuel / prépayé en cours bloque la suppression.",
       ]} />
 

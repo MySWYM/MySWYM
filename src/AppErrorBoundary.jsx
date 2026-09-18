@@ -37,6 +37,15 @@ export default class AppErrorBoundary extends Component {
     }
   }
 
+  goPath = (path) => {
+    this.setState({ hasError: false });
+    if (window.location.pathname === path) {
+      window.location.reload();
+      return;
+    }
+    window.location.assign(path);
+  };
+
   handleReload = () => {
     this.setState({ hasError: false });
     window.location.reload();
@@ -51,6 +60,10 @@ export default class AppErrorBoundary extends Component {
         body="Recharge la page. Si ça continue, écris à support@myswym.app."
         primaryLabel="Relancer"
         onPrimary={this.handleReload}
+        secondaryLabel="Se connecter"
+        onSecondary={() => this.goPath("/connexion")}
+        tertiaryLabel="Créer un compte"
+        onTertiary={() => this.goPath("/inscription")}
       />
     );
   }

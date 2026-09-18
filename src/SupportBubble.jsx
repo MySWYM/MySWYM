@@ -41,7 +41,7 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour te désabonner : dans l’app, ouvre Profil → « Gérer mon abonnement ». Sur Stripe, annule si l’offre le permet. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : déjà payé, pas de remboursement au prorata, suppression bloquée jusqu’à la fin de l’année. Mensuel 9,99€ sans engagement : tu peux supprimer le compte, ça arrête l’abo tout de suite.",
+      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : déjà payé, pas de remboursement au prorata, suppression bloquée jusqu’à la fin de l’année. Mensuel 9,99€ sans engagement : tu peux supprimer le compte, ça arrête l’abo tout de suite.",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -337,6 +337,12 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
     const openFromEvent = (e) => {
       const detail = e?.detail || {};
       setOpen(true);
+      setError("");
+      if (detail.view === "chat") {
+        setTab("messages");
+        setView("chat");
+        return;
+      }
       if (detail.tab === "messages" || detail.tab === "help" || detail.tab === "home") {
         setTab(detail.tab);
         setView("tabs");

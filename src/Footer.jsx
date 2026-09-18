@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { openCookieManager } from "./lib/cookie-consent.js";
 import BrandLogo from "./BrandLogo.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { isNativeApp } from "./lib/native-platform.js";
 import "./theme/public.css";
 
 function useIsMobile(bp = 900) {
@@ -142,6 +143,8 @@ export default function Footer({ aboveBottomNav = false }) {
     [t("footer.cgu"), "/cgu"],
     [t("footer.cgv"), "/cgv"],
   ];
+
+  if (isNativeApp()) return null;
 
   return (
     <footer

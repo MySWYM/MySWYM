@@ -9,9 +9,11 @@ import frSettings from "./locales/fr/settings.json";
 import enSettings from "./locales/en/settings.json";
 import frOnboarding from "./locales/fr/onboarding.json";
 import enOnboarding from "./locales/en/onboarding.json";
-import { isAppPath, localeFromPathname, LANG_COOKIE } from "./locale-path.js";
+import { isNativeApp } from "../lib/native-platform.js";
+import { isAppPath, languageFromNavigator, localeFromPathname, LANG_COOKIE } from "./locale-path.js";
 
 export const LANG_STORAGE_KEY = "myswym_lang";
+export const NATIVE_LANG_STORAGE_KEY = "myswym_lang_native";
 export const SUPPORTED_LANGS = ["fr", "en"];
 
 function persistLanguageCookie(lng) {
@@ -23,7 +25,7 @@ function persistLanguageCookie(lng) {
   }
 }
 
-export function getStoredLanguage() {
+export function readPersistedLanguage() {
   try {
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
     if (SUPPORTED_LANGS.includes(stored)) return stored;
@@ -36,12 +38,33 @@ export function getStoredLanguage() {
   } catch {
     /* ignore */
   }
-  return "fr";
+  return null;
 }
 
-/** Marketing : l’URL impose la langue. App : cookie / localStorage. */
+export function readPersistedNativeLanguage() {
+  try {
+    const stored = localStorage.getItem(NATIVE_LANG_STORAGE_KEY);
+    if (SUPPORTED_LANGS.includes(stored)) return stored;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+export function getStoredLanguage() {
+  return readPersistedLanguage() || "fr";
+}
+
+export function languageFromDevice() {
+  const lang =
+    (typeof navigator !== "undefined" && (navigator.language || navigator.userLanguage)) || "";
+  return languageFromNavigator(lang);
+}
+
+/** Marketing web : l’URL impose la langue. iOS : iPhone (clé dédiée, ignore le cookie site). */
 export function detectInitialLanguage() {
   if (typeof window === "undefined") return "en";
+  if (isNativeApp()) return readPersistedNativeLanguage() || languageFromDevice();
   const path = window.location.pathname || "/";
   if (!isAppPath(path)) return localeFromPathname(path);
   return getStoredLanguage();
@@ -50,7 +73,8 @@ export function detectInitialLanguage() {
 export function setAppLanguage(lng) {
   const next = SUPPORTED_LANGS.includes(lng) ? lng : "en";
   try {
-    localStorage.setItem(LANG_STORAGE_KEY, next);
+    if (isNativeApp()) localStorage.setItem(NATIVE_LANG_STORAGE_KEY, next);
+    else localStorage.setItem(LANG_STORAGE_KEY, next);
   } catch {
     /* ignore */
   }
@@ -77,7 +101,8 @@ document.documentElement.lang = i18n.language;
 i18n.on("languageChanged", (lng) => {
   document.documentElement.lang = lng;
   try {
-    localStorage.setItem(LANG_STORAGE_KEY, lng);
+    if (isNativeApp()) localStorage.setItem(NATIVE_LANG_STORAGE_KEY, lng);
+    else localStorage.setItem(LANG_STORAGE_KEY, lng);
   } catch {
     /* ignore */
   }

@@ -1,0 +1,438 @@
+html.myswym-ios,
+html.myswym-ios body {
+  overscroll-behavior-y: none;
+  height: 100%;
+}
+
+html.myswym-ios input,
+html.myswym-ios textarea,
+html.myswym-ios select {
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+html.myswym-ios input,
+html.myswym-ios textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* App.jsx onboarding still reserves landing padding + logo; PublicNav is already null. */
+html.myswym-ios .myswym-native-onboarding [style*="padding-top: 64px"] {
+  padding-top: 0 !important;
+  background: transparent !important;
+  min-height: 0 !important;
+}
+
+html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] {
+  padding-top: 8px !important;
+  padding-bottom: 24px !important;
+}
+
+html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] > div:first-child {
+  display: none;
+}
+
+html.myswym-ios .myswym-native-onboarding img[alt="MySWYM"] {
+  display: none;
+}
+
+.native-onboarding-shell {
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+
+html.myswym-ios .myswym-native-guest .ms-screen-enter {
+  min-height: 0 !important;
+  height: 100dvh;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+.native-guest-chip {
+  width: auto !important;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  font-size: var(--ms-type-body);
+  font-weight: 600;
+  color: var(--ms-ink);
+  text-decoration: none;
+}
+
+.native-auth-fit {
+  box-sizing: border-box;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+html.myswym-ios .myswym-native-guest.is-welcome,
+html.myswym-ios .myswym-native-guest.is-funnel {
+  min-height: 100dvh;
+  background: var(--ms-blue, #006bfd);
+}
+
+.native-funnel-shell {
+  min-height: 100dvh;
+  background: var(--ms-blue, #006bfd);
+  color: #fff;
+}
+
+html.myswym-ios .is-funnel .native-guest-chip,
+html.myswym-ios .native-auth-funnel .native-guest-chip {
+  color: #fff !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.12) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+}
+
+.native-auth-funnel {
+  color: #fff;
+}
+
+.native-auth-funnel ::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.native-auth-funnel .ms-app-btn {
+  position: relative;
+  min-height: 56px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.16) 100%);
+  color: #fff;
+  box-shadow:
+    0 14px 34px -8px rgba(15, 27, 45, 0.28),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(28px) saturate(1.9);
+  -webkit-backdrop-filter: blur(28px) saturate(1.9);
+}
+
+.native-auth-funnel .ms-app-btn:not(:disabled):hover {
+  filter: none;
+}
+
+html.myswym-ios .myswym-native-onboarding {
+  color: #fff;
+}
+
+html.myswym-ios .myswym-native-onboarding h1,
+html.myswym-ios .myswym-native-onboarding h2 {
+  color: #fff !important;
+  font-family: var(--ms-sans) !important;
+}
+
+html.myswym-ios .myswym-native-onboarding .fade-up > p,
+html.myswym-ios .myswym-native-onboarding .ms-date-step-lead {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-onboard-progress-seg {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-onboard-progress-seg.is-on {
+  background: #fff;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-app-btn {
+  min-height: 56px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.16) 100%) !important;
+  color: #fff !important;
+  box-shadow:
+    0 14px 34px -8px rgba(15, 27, 45, 0.28),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(28px) saturate(1.9);
+  -webkit-backdrop-filter: blur(28px) saturate(1.9);
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-date-step-back,
+html.myswym-ios .myswym-native-onboarding button[style*="background: none"],
+html.myswym-ios .myswym-native-onboarding button[style*="background:none"] {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-freq-gauge {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+html.myswym-ios .is-funnel .ms-app-immersive-bg {
+  display: none;
+}
+
+.native-welcome-fork {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ms-blue, #006bfd);
+  color: #fff;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.native-welcome-swimmer {
+  position: absolute;
+  top: calc(-12px - env(safe-area-inset-top, 0px));
+  left: -24px;
+  right: -24px;
+  height: 75dvh;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.native-welcome-swimmer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 45% 28%;
+  opacity: 0.14;
+  mix-blend-mode: screen;
+  filter: brightness(1.4) saturate(0.5) contrast(0.88);
+}
+
+.native-welcome-swimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 78% 70% at 50% 38%, rgba(0, 107, 253, 0.2) 0%, var(--ms-blue, #006bfd) 78%),
+    linear-gradient(180deg, rgba(0, 107, 253, 0.28) 0%, transparent 22%, transparent 54%, var(--ms-blue, #006bfd) 84%);
+  pointer-events: none;
+}
+
+.native-welcome-fork ::selection {
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.native-welcome-main {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 40px;
+}
+
+.native-welcome-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: native-welcome-logo 5.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  transform-origin: center;
+  will-change: transform;
+  filter: drop-shadow(0 8px 20px rgba(15, 27, 45, 0.28));
+}
+
+.native-welcome-logo img {
+  display: block;
+  height: 105px;
+  width: auto;
+}
+
+.native-welcome-copy {
+  max-width: 320px;
+  animation: native-welcome-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.native-welcome-copy h1 {
+  margin: 0;
+  font-family: var(--ms-sans);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.native-welcome-copy p {
+  margin: 12px 0 0;
+  font-family: var(--ms-sans);
+  font-size: var(--ms-type-body, 0.9375rem);
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.native-welcome-fork-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 14px;
+  width: 100%;
+  max-width: 390px;
+  margin: 0 auto;
+  animation: native-welcome-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+.native-welcome-cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.16) 100%);
+  color: #fff;
+  font-family: var(--ms-sans);
+  text-decoration: none;
+  box-shadow:
+    0 14px 34px -8px rgba(15, 27, 45, 0.28),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(28px) saturate(1.9);
+  -webkit-backdrop-filter: blur(28px) saturate(1.9);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.native-welcome-cta.is-secondary {
+  min-height: 54px;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.07) 100%);
+  box-shadow:
+    0 8px 24px -6px rgba(15, 27, 45, 0.22),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.5);
+}
+
+.native-welcome-cta:active {
+  transform: scale(0.98);
+}
+
+.native-welcome-cta-sheen {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 48%;
+  pointer-events: none;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.native-welcome-cta.is-secondary .native-welcome-cta-sheen {
+  opacity: 0.6;
+}
+
+.native-welcome-cta-label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.native-welcome-cta.is-secondary .native-welcome-cta-label {
+  font-size: var(--ms-type-body, 0.9375rem);
+  font-weight: 600;
+}
+
+.native-welcome-legal {
+  margin: 6px auto 0;
+  max-width: 290px;
+  text-align: center;
+  font-family: var(--ms-sans);
+  font-size: var(--ms-type-caption, 0.75rem);
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.native-welcome-legal a {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+
+.native-welcome-cta:focus-visible,
+.native-welcome-legal a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.native-welcome-legal a:focus-visible {
+  border-radius: 10px;
+}
+
+@keyframes native-welcome-logo {
+  0%,
+  60%,
+  100% { transform: translateY(0) rotate(0deg); }
+  15%,
+  45% { transform: translateY(-18px) rotate(0deg); }
+  30% { transform: translateY(0) rotate(0deg); }
+  85% { transform: translateY(0) rotate(360deg); }
+}
+
+@keyframes native-welcome-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-welcome-logo,
+  .native-welcome-copy,
+  .native-welcome-fork-actions {
+    animation: none;
+  }
+}
+
+html.myswym-ios .myswym-native-guest .ms-contact,
+html.myswym-ios .myswym-native-guest .ms-legal-main {
+  padding: 8px 20px 48px;
+}
+
+html.myswym-ios .trial-freeze-support .support-fab,
+html.myswym-ios .trial-freeze-support .support-widget {
+  z-index: 620;
+}
+
+html.myswym-ios .trial-freeze-support .support-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+html.myswym-ios .trial-freeze-support .support-widget {
+  position: fixed;
+  right: 16px;
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+}

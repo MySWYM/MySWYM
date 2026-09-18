@@ -10,6 +10,7 @@ import { supabase } from "./supabase.js";
 import { reset as resetAnalytics } from "./lib/analytics.js";
 import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from "./ui/lp-dialog.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import { isNativeApp } from "./lib/native-platform.js";
 import "./theme/public.css";
 
 export default function PublicNav() {
@@ -54,6 +55,8 @@ export default function PublicNav() {
       window.removeEventListener("resize", onResize);
     };
   }, []);
+
+  if (isNativeApp()) return null;
 
   return (
     <Dialog open={menuOpen} onOpenChange={setMenuOpen}>

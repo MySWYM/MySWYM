@@ -9,6 +9,9 @@ import { PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "../lib/pricing.js";
 import { getUpgradeCopy } from "../lib/coach-insights.js";
 import { trackEvent } from "../lib/analytics.js";
 import { captureReferralFromUrl, resolveReferralCode } from "../lib/referral.js";
+import { nativeBillingBlocked, NATIVE_BILLING_TOAST } from "../lib/native-billing.js";
+import { syncSubscriptionFromStripe } from "../lib/sync-subscription.js";
+import { getAccessState } from "../lib/access.js";
 
 const PREMIUM_LINES_ACTIVE = [
   "Séances complètes + allures à la seconde (T100)",
@@ -91,6 +94,23 @@ export default function UpgradeModal({
   };
 
   const handleCheckout = async () => {
+    if (nativeBillingBlocked()) {
+      setLoading(true);
+      setErr(null);
+      try {
+        const u = await syncSubscriptionFromStripe();
+        if (u && getAccessState(u).hasPremiumAccess) {
+          window.location.reload();
+          return;
+        }
+        setErr(NATIVE_BILLING_TOAST);
+      } catch (e) {
+        setErr(e.message || NATIVE_BILLING_TOAST);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     if (loading) return;
     const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
     if (gateError) {
@@ -335,6 +355,7 @@ export default function UpgradeModal({
         ))}
       </div>
 
+      {!nativeBillingBlocked() && (
       <CheckoutLegalGates
         acceptTerms={acceptTerms}
         onAcceptTerms={handleAcceptTerms}
@@ -345,6 +366,7 @@ export default function UpgradeModal({
         linkColor={G.blue}
         idPrefix="upgrade-modal-legal"
       />
+      )}
 
       {err ? (
         <div
@@ -361,7 +383,9 @@ export default function UpgradeModal({
         </div>
       ) : null}
       <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
-        {loading ? "Redirection…" : ctaLabel}
+        {nativeBillingBlocked()
+          ? loading ? "Synchronisation…" : "J’ai déjà Premium sur le site"
+          : loading ? "Redirection…" : ctaLabel}
       </Btn>
       {canDismiss ? (
         <button
