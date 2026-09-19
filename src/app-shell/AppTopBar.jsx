@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Menu } from "lucide-react";
 import { G } from "../theme/palette.js";
 import BrandLogo from "../BrandLogo.jsx";
@@ -11,6 +11,11 @@ import {
 } from "../lib/in-app-notifications.js";
 import NotificationsSheet from "../sheets/NotificationsSheet.jsx";
 import { playUiSound } from "../lib/ui-sounds.js";
+import { getAppScrollY } from "../lib/scroll-app.js";
+import "./AppTopBar.css";
+
+const SCROLL_GLASS_ON = 12;
+const SCROLL_GLASS_OFF = 4;
 
 /** Barre haute Miracle : hamburger · picto MySWYM · notifs + avatar */
 export default function AppTopBar({
@@ -31,6 +36,9 @@ export default function AppTopBar({
     [user, plan],
   );
   const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user));
+  const [scrolled, setScrolled] = useState(false);
+  const headerRef = useRef(null);
+  const probeRef = useRef(null);
   const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
 
   useEffect(() => {
@@ -88,9 +96,64 @@ export default function AppTopBar({
 
   const iconColor = G.ink;
 
+  useEffect(() => {
+    if (!immersive) {
+      setScrolled(false);
+      return undefined;
+    }
+
+    const apply = (y) => {
+      setScrolled((prev) => (prev ? y > SCROLL_GLASS_OFF : y > SCROLL_GLASS_ON));
+    };
+
+    const onWindowScroll = () => apply(getAppScrollY());
+    onWindowScroll();
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+
+    let scrollParent = null;
+    const header = headerRef.current;
+    if (header) {
+      let node = header.parentElement;
+      while (node && node !== document.body && node !== document.documentElement) {
+        const overflowY = getComputedStyle(node).overflowY;
+        if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight + 1) {
+          scrollParent = node;
+          break;
+        }
+        node = node.parentElement;
+      }
+    }
+    const onParentScroll = () => apply(scrollParent?.scrollTop || 0);
+    scrollParent?.addEventListener("scroll", onParentScroll, { passive: true });
+
+    let io;
+    const probe = probeRef.current;
+    if (probe && typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(([entry]) => {
+        apply(entry.isIntersecting ? 0 : SCROLL_GLASS_ON + 1);
+      }, { threshold: 1 });
+      io.observe(probe);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", onWindowScroll);
+      scrollParent?.removeEventListener("scroll", onParentScroll);
+      io?.disconnect();
+    };
+  }, [immersive]);
+
   return (
+    <>
+    {immersive ? (
+      <div ref={probeRef} className="ms-app-topbar-scroll-probe" aria-hidden />
+    ) : null}
     <header
-      className={immersive ? "ms-app-topbar is-immersive" : "ms-app-topbar"}
+      ref={headerRef}
+      className={[
+        "ms-app-topbar",
+        immersive ? "is-immersive" : "",
+        immersive && scrolled ? "is-scrolled" : "",
+      ].filter(Boolean).join(" ")}
       style={{
         position: "sticky",
         top: 0,
@@ -225,5 +288,6 @@ export default function AppTopBar({
         onAction={handleNotificationAction}
       />
     </header>
+    </>
   );
 }

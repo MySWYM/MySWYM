@@ -2,6 +2,14 @@
  * Remonte en haut de page (SPA mobile), onglets / écrans / retour détail.
  * Prefer `documentElement` + `body` (iOS Safari).
  */
+export function getAppScrollY() {
+  if (typeof window === "undefined") return 0;
+  return window.scrollY
+    || document.documentElement?.scrollTop
+    || document.body?.scrollTop
+    || 0;
+}
+
 export function scrollAppToTop() {
   if (typeof window === "undefined") return;
   try {
