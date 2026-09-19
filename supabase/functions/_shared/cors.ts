@@ -13,6 +13,9 @@ const STATIC_ORIGINS = [
   "http://localhost:5175",
   "http://127.0.0.1:5175",
   "http://localhost:4173",
+  "capacitor://localhost",
+  "ionic://localhost",
+  "https://localhost",
 ];
 
 const DEFAULT_ALLOW_HEADERS = "authorization, x-client-info, apikey, content-type";
@@ -44,12 +47,29 @@ export function isAllowedOrigin(origin: string, extra: readonly string[] = extra
     const url = new URL(origin);
     if (url.username || url.password) return false;
     const host = url.hostname.toLowerCase();
-    if (isLocalHost(host)) return url.protocol === "http:";
+    if (isLocalHost(host)) {
+      if (url.protocol === "http:") return true;
+      if (url.protocol === "capacitor:" || url.protocol === "ionic:") return true;
+      return false;
+    }
     if (isMyswymHost(host)) return url.protocol === "https:";
     return false;
   } catch {
     return false;
   }
+}
+
+/** Return URL Stripe : jamais capacitor:// (Safari ne peut pas y revenir). */
+export function portalReturnOrigin(reqOrigin: string | null): string {
+  if (!reqOrigin || !isAllowedOrigin(reqOrigin)) return FALLBACK_ORIGIN;
+  try {
+    const url = new URL(reqOrigin);
+    if (url.protocol === "capacitor:" || url.protocol === "ionic:") return FALLBACK_ORIGIN;
+    if (isLocalHost(url.hostname.toLowerCase())) return FALLBACK_ORIGIN;
+  } catch {
+    return FALLBACK_ORIGIN;
+  }
+  return reqOrigin;
 }
 
 export function corsHeaders(

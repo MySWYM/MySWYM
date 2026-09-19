@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
+import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import {
   track,
@@ -168,6 +168,9 @@ import WhatsNewSheet, {
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
+import { restoreAndSyncAppleIap, openAppleSubscriptionManagement } from "./lib/native-iap.js";
+import { openStripePortalUrl } from "./lib/native-billing.js";
+import { isNativeIos } from "./lib/native-platform.js";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -341,10 +344,12 @@ const css = `
   .app-shell {
     width: 100%;
     max-width: var(--app-max);
+    min-width: 0;
     margin-left: auto;
     margin-right: auto;
     padding-left: var(--app-pad-x);
     padding-right: var(--app-pad-x);
+    box-sizing: border-box;
   }
   .app-shell--flush {
     padding-left: 0;
@@ -359,7 +364,7 @@ const css = `
     left: 50%;
     right: auto;
     z-index: 100;
-    width: min(var(--app-max), calc(100vw - 40px));
+    width: min(var(--app-max), calc(100% - 40px));
     max-width: 380px;
     transform: translateX(-50%);
     bottom: max(var(--nav-lift), env(safe-area-inset-bottom, 0px));
@@ -381,14 +386,14 @@ const css = `
   .app-toast {
     position: fixed;
     z-index: 300;
-    left: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
-    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    left: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab {
     position: fixed;
     z-index: 170;
-    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab--bare {
@@ -397,9 +402,9 @@ const css = `
   .support-widget {
     position: fixed;
     z-index: 160;
-    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px + 66px);
-    width: min(380px, calc(100vw - 32px));
+    width: min(380px, calc(100% - 32px));
     height: min(560px, calc(100dvh - var(--bottom-nav-h) - var(--safe-bottom) - var(--nav-lift) - 108px));
   }
   .support-widget--bare {
@@ -481,7 +486,7 @@ const css = `
       box-shadow: 0 24px 64px rgba(25,28,30,0.22);
     }
     .bottom-nav {
-      width: min(var(--app-max), calc(100vw - 32px));
+      width: min(var(--app-max), calc(100% - 32px));
       bottom: var(--nav-lift);
       border-color: rgba(255, 255, 255, 0.9);
       box-shadow: 0 12px 40px rgba(15, 60, 120, 0.14);
@@ -10625,9 +10630,17 @@ export default function App() {
   };
 
   const handleRefreshStatus = async () => {
-    showToast("Synchronisation avec Stripe…");
+    showToast("Synchronisation…");
     try {
-      const u = await syncSubscriptionFromStripe();
+      let u = null;
+      if (isLiveStripeBilling(user)) {
+        u = await syncSubscriptionFromStripe();
+      } else {
+        const appleUser = await restoreAndSyncAppleIap();
+        u = (appleUser && checkIsPremium(appleUser))
+          ? appleUser
+          : await syncSubscriptionFromStripe();
+      }
       if (u) {
         setUser(u);
         const premium = checkIsPremium(u);
@@ -10641,10 +10654,26 @@ export default function App() {
   };
 
   const handlePortal = () => {
+    if (getAccessState(user).billingProvider === "apple") {
+      if (isNativeIos()) {
+        void openAppleSubscriptionManagement();
+        return;
+      }
+      showToast("Abonnement App Store : gère-le sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
+      return;
+    }
     proceedToStripePortal(null);
   };
 
   const handleCancelSubscription = () => {
+    if (getAccessState(user).billingProvider === "apple") {
+      if (isNativeIos()) {
+        void openAppleSubscriptionManagement();
+        return;
+      }
+      showToast("Abonnement App Store : résilie sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
+      return;
+    }
     setCancelSurveyOpen(true);
   };
 
@@ -10653,7 +10682,7 @@ export default function App() {
     if (cancelReason) {
       trackEvent("cancel_survey", { reason: cancelReason }, { essential: true });
     }
-    showToast("Redirection vers Stripe…");
+    showToast(isNativeIos() ? "Ouverture du navigateur…" : "Redirection vers Stripe…");
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
       const session = refreshData?.session;
@@ -10666,7 +10695,10 @@ export default function App() {
         body: JSON.stringify({ origin: window.location.origin, cancelReason }),
       });
       const json = await res.json();
-      if (json.url) { window.location.href = json.url; return; }
+      if (json.url) {
+        await openStripePortalUrl(json.url);
+        return;
+      }
       showToast(json.error || "Impossible d'ouvrir le portail Stripe.");
     } catch (e) {
       showToast("Erreur réseau. Réessaie.");

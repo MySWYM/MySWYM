@@ -12,6 +12,14 @@ import { captureReferralFromUrl, resolveReferralCode } from "../lib/referral.js"
 import { nativeBillingBlocked, NATIVE_BILLING_TOAST } from "../lib/native-billing.js";
 import { syncSubscriptionFromStripe } from "../lib/sync-subscription.js";
 import { getAccessState } from "../lib/access.js";
+import {
+  APPLE_IAP_ANNUAL_ID,
+  APPLE_IAP_MONTHLY_ID,
+  displayPriceForProduct,
+  isAppleIapCancel,
+} from "../lib/apple-iap-catalog.js";
+import { loadAppleIapProducts, purchaseAppleProduct, restoreAndSyncAppleIap } from "../lib/native-iap.js";
+import IosIapPaywall from "./IosIapPaywall.jsx";
 
 const PREMIUM_LINES_ACTIVE = [
   "Séances complètes + allures à la seconde (T100)",
@@ -30,18 +38,29 @@ export default function UpgradeModal({
   planWeeks = 0,
   canDismiss = true,
 }) {
+  const native = nativeBillingBlocked();
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
-  const [period, setPeriod] = useState("monthly_flex");
+  const [period, setPeriod] = useState(native ? "annual" : "monthly_flex");
   const [user, setUser] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
-  const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
+  const [appleProducts, setAppleProducts] = useState([]);
+  const legalReady = native ? true : checkoutGatesReady(acceptTerms, acceptWithdrawal);
 
   useEffect(() => {
     captureReferralFromUrl();
     supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
   }, []);
+
+  useEffect(() => {
+    if (!native) return;
+    loadAppleIapProducts().then(setAppleProducts).catch(() => setAppleProducts([]));
+  }, [native]);
+
+  useEffect(() => {
+    if (native && period === "monthly_commit") setPeriod("monthly_flex");
+  }, [native, period]);
 
   useEffect(() => {
     if (legalReady) setErr(null);
@@ -93,19 +112,57 @@ export default function UpgradeModal({
     return res.json();
   };
 
+  const appleProductId = isAnnual ? APPLE_IAP_ANNUAL_ID : APPLE_IAP_MONTHLY_ID;
+  const monthlyPrice = displayPriceForProduct(
+    appleProducts.find((p) => p.id === APPLE_IAP_MONTHLY_ID),
+    APPLE_IAP_MONTHLY_ID,
+  );
+  const annualPrice = displayPriceForProduct(
+    appleProducts.find((p) => p.id === APPLE_IAP_ANNUAL_ID),
+    APPLE_IAP_ANNUAL_ID,
+  );
+
+  const handleNativeSync = async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const restored = await restoreAndSyncAppleIap();
+      if (restored && getAccessState(restored).hasPremiumAccess) {
+        window.location.reload();
+        return;
+      }
+      const u = await syncSubscriptionFromStripe();
+      if (u && getAccessState(u).hasPremiumAccess) {
+        window.location.reload();
+        return;
+      }
+      setErr("Pas d’abonnement actif sur ce compte.");
+    } catch (e) {
+      setErr(e.message || NATIVE_BILLING_TOAST);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCheckout = async () => {
-    if (nativeBillingBlocked()) {
+    if (native) {
       setLoading(true);
       setErr(null);
       try {
-        const u = await syncSubscriptionFromStripe();
+        trackEvent("checkout_started", {
+          source: "upgrade_modal_iap",
+          product_id: appleProductId,
+          soft_context: softContext || null,
+        }, { essential: true });
+        const u = await purchaseAppleProduct(appleProductId);
         if (u && getAccessState(u).hasPremiumAccess) {
           window.location.reload();
           return;
         }
-        setErr(NATIVE_BILLING_TOAST);
+        setErr("Achat enregistré, synchronisation en cours. Réessaie Restaurer si tes séances restent en pause.");
       } catch (e) {
-        setErr(e.message || NATIVE_BILLING_TOAST);
+        if (isAppleIapCancel(e)) return;
+        setErr(e.message || "Achat Apple impossible.");
       } finally {
         setLoading(false);
       }
@@ -157,6 +214,32 @@ export default function UpgradeModal({
         : hasReferral
           ? "Démarrer : −20% parrainage"
           : `Démarrer : ${PRICING.monthlyFlex.label}/mois`;
+
+  if (native) {
+    return (
+      <SoftMistSheet
+        open
+        onClose={canDismiss ? onClose : undefined}
+        dismissOnOverlay={canDismiss}
+        fullscreenMobile
+        zIndex={500}
+        ariaLabel="Abonnement Premium"
+        className="ms-iap-paywall-overlay"
+        bodyClassName="ms-soft-sheet-body--tall"
+      >
+        <IosIapPaywall
+          period={period}
+          onPeriodChange={setPeriod}
+          monthlyPrice={monthlyPrice}
+          annualPrice={annualPrice}
+          loading={loading}
+          err={err}
+          onSubscribe={handleCheckout}
+          onRestore={handleNativeSync}
+        />
+      </SoftMistSheet>
+    );
+  }
 
   const planBtn = (id, label, commitment, price, suffix) => {
     const active = period === id;
@@ -240,9 +323,9 @@ export default function UpgradeModal({
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-        {planBtn("monthly_flex", "MENSUEL", PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, " /mois")}
-        {planBtn("monthly_commit", "MENSUEL 12 MOIS", PRICING.monthlyCommit.commitmentFr, PRICING.monthlyCommit.label, " /mois")}
-        {planBtn("annual", "ANNUEL", PRICING.annual.commitmentFr, PRICING.annual.label, " /an")}
+        {planBtn("monthly_flex", "Mensuel", PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, " /mois")}
+        {planBtn("monthly_commit", "Mensuel 12 mois", PRICING.monthlyCommit.commitmentFr, PRICING.monthlyCommit.label, " /mois")}
+        {planBtn("annual", "Annuel", PRICING.annual.commitmentFr, PRICING.annual.label, " /an")}
       </div>
 
       {showTrialOffer ? (
@@ -355,7 +438,6 @@ export default function UpgradeModal({
         ))}
       </div>
 
-      {!nativeBillingBlocked() && (
       <CheckoutLegalGates
         acceptTerms={acceptTerms}
         onAcceptTerms={handleAcceptTerms}
@@ -366,7 +448,6 @@ export default function UpgradeModal({
         linkColor={G.blue}
         idPrefix="upgrade-modal-legal"
       />
-      )}
 
       {err ? (
         <div
@@ -383,9 +464,7 @@ export default function UpgradeModal({
         </div>
       ) : null}
       <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
-        {nativeBillingBlocked()
-          ? loading ? "Synchronisation…" : "J’ai déjà Premium sur le site"
-          : loading ? "Redirection…" : ctaLabel}
+        {loading ? "Redirection…" : ctaLabel}
       </Btn>
       {canDismiss ? (
         <button

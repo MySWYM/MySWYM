@@ -59,6 +59,106 @@
         ],
         "createdAt": "2026-08-31T10:35:31.737Z",
         "reason": "incumbent boot splash glow in index.html; not part of this harden change"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#c2410c",
+        "createdAt": "2026-09-14T13:12:27.129Z",
+        "reason": "Agent: pre-existing SupportBubble error color, unchanged by this billing-block copy edit"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(124, 107, 207, 0.12)",
+        "createdAt": "2026-09-14T13:12:27.157Z",
+        "reason": "Agent: tint already used on ProfileTab newsletter icon (G.purple at 12%), pre-existing DA"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "16px",
+        "createdAt": "2026-09-16T21:02:04.730Z",
+        "reason": "iOS WKWebView: inputs under 16px zoom the page and the software keyboard fails to stay up"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#d4e8fb",
+        "createdAt": "2026-09-17T06:17:11.987Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "1px",
+        "createdAt": "2026-09-17T06:17:12.016Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "34px",
+        "files": [
+          "src/FaqPage.jsx"
+        ],
+        "createdAt": "2026-09-17T06:23:34.591Z",
+        "reason": "Existing marketing FAQ h1 clamp, not a new type step"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "src/App.jsx"
+        ],
+        "createdAt": "2026-09-17T12:29:19.373Z",
+        "reason": "App.jsx existing shell CSS, not a new typeface"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "src/App.jsx"
+        ],
+        "createdAt": "2026-09-17T12:29:19.405Z",
+        "reason": "App.jsx existing tokens in a 6k-line file, billing split only"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "src/App.jsx"
+        ],
+        "createdAt": "2026-09-17T12:29:19.445Z",
+        "reason": "App.jsx existing radii, billing split only"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "src/index.css"
+        ],
+        "createdAt": "2026-09-19T19:27:32.194Z",
+        "reason": "Agent: incumbent index.css radii, unchanged by iOS fluid-layout fix"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "src/index.css"
+        ],
+        "createdAt": "2026-09-19T19:27:32.223Z",
+        "reason": "Agent: incumbent index.css type sizes, unchanged by iOS fluid-layout fix"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "src/index.css"
+        ],
+        "createdAt": "2026-09-19T19:27:32.253Z",
+        "reason": "Agent: incumbent index.css colors, unchanged by iOS fluid-layout fix"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "src/App.css"
+        ],
+        "createdAt": "2026-09-19T19:27:32.285Z",
+        "reason": "Agent: incumbent App.css radii, not touched by iOS fluid-layout fix"
       }
     ]
   },

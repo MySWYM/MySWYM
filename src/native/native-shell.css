@@ -2,6 +2,20 @@ html.myswym-ios,
 html.myswym-ios body {
   overscroll-behavior-y: none;
   height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+html.myswym-ios .app-shell,
+html.myswym-ios .ms-app-immersive,
+html.myswym-ios .myswym-app {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html.myswym-ios .bottom-nav {
+  width: min(var(--app-max), calc(100% - 40px));
 }
 
 html.myswym-ios input,
@@ -435,4 +449,10 @@ html.myswym-ios .trial-freeze-support .support-widget {
   position: fixed;
   right: 16px;
   bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+}
+
+html.myswym-ios .ms-pill-cta-gold {
+  background: #D4A017;
+  color: #0F1B2D;
+  box-shadow: 0 10px 28px rgba(212, 160, 23, 0.32);
 }

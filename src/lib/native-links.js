@@ -34,7 +34,8 @@ export function isNativeExternalSitePath(pathname) {
   return !isAppPath(path);
 }
 
-function openInSystemBrowser(url) {
+/** Ouvre une URL https hors WebView (navigateur par défaut iOS). */
+export function openInSystemBrowser(url) {
   if (typeof document === "undefined" || !url) return;
   const a = document.createElement("a");
   a.href = url;

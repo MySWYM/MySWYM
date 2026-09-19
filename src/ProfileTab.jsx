@@ -28,6 +28,8 @@ import {
   setUiSoundsEnabled,
 } from "./lib/ui-sounds.js";
 import { PRICING } from "./lib/pricing.js";
+import { getAccessState } from "./lib/access.js";
+import { openAppleSubscriptionManagement } from "./lib/native-iap.js";
 import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING } from "./lib/legal-copy.js";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import {
@@ -121,6 +123,7 @@ export default function ProfileTab({
   referralSlot = null,
 }) {
   const { t: to } = useTranslation("onboarding");
+  const applePaid = getAccessState(user).billingProvider === "apple";
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
@@ -819,7 +822,7 @@ export default function ProfileTab({
                 for (let d = 1; d <= dim; d++) dayOpts.push(d);
                 return (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1.3fr 0.9fr", gap: 8, marginBottom: 12 }}>
+                    <div className="ms-profile-birth-grid">
                       <label style={{ display: "block" }}>
                         <div className="ms-profile-label">
                           {to("physique.day")}
@@ -896,7 +899,7 @@ export default function ProfileTab({
                         );
                       })}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div className="ms-profile-metrics-grid">
                       {[
                         { key: "weightKg", label: "Poids", placeholder: "kg" },
                         { key: "heightCm", label: "Taille", placeholder: "cm" },
@@ -1074,7 +1077,6 @@ export default function ProfileTab({
                         alt=""
                         width={36}
                         height={36}
-                        style={{ width: 36, height: 36, objectFit: "contain", display: "block" }}
                       />
                     ) : null}
                   </span>
@@ -1214,29 +1216,70 @@ export default function ProfileTab({
               <div style={{ flex: 1 }}>
                 <div className="ms-profile-settings-label">Abonnement</div>
                 <div className="ms-profile-settings-hint">
-                  {isPremium ? "Premium actif" : "Essai ou découverte"}
+                  {isPremium
+                    ? (applePaid ? "Premium App Store" : "Premium actif")
+                    : "Essai ou découverte"}
                 </div>
               </div>
             </div>
             {isPremium ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <button type="button" onClick={onPortal} className="ms-pill-cta ms-pill-cta-secondary" style={{ minHeight: 44 }}>
-                  Modifier mon abonnement
-                </button>
-                <button
-                  type="button"
-                  onClick={onCancelSubscription}
-                  style={{
-                    width: "100%", minHeight: 44, border: "none", background: "none",
-                    color: G.grey, fontWeight: 600, cursor: "pointer",
-                  }}
-                >
-                  Résilier
-                </button>
+                {applePaid && isNativeIos() ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { void openAppleSubscriptionManagement(); }}
+                      className="ms-pill-cta ms-pill-cta-secondary"
+                      style={{ minHeight: 44 }}
+                    >
+                      Modifier mon abonnement
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { void openAppleSubscriptionManagement(); }}
+                      style={{
+                        width: "100%", minHeight: 44, border: "none", background: "none",
+                        color: G.grey, fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Résilier
+                    </button>
+                  </>
+                ) : applePaid ? (
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: G.grey }}>
+                    Abonnement App Store. Gère-le sur l’iPhone : Réglages → Apple ID → Abonnements.
+                  </p>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onPortal()}
+                      className="ms-pill-cta ms-pill-cta-secondary"
+                      style={{ minHeight: 44 }}
+                    >
+                      Modifier mon abonnement
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onCancelSubscription()}
+                      style={{
+                        width: "100%", minHeight: 44, border: "none", background: "none",
+                        color: G.grey, fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Résilier
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
-              <button type="button" onClick={() => onUpgrade?.("profile")} className="ms-pill-cta" style={{ minHeight: 44 }}>
-                S’abonner : dès {PRICING.monthlyCommit.label}/mois
+              <button
+                type="button"
+                onClick={() => onUpgrade?.("profile")}
+                className={isNativeIos() ? "ms-pill-cta ms-pill-cta-gold" : "ms-pill-cta"}
+                style={{ minHeight: 44 }}
+              >
+                {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyCommit.label}/mois`}
               </button>
             )}
             {isPremium ? referralSlot : null}
@@ -1252,7 +1295,7 @@ export default function ProfileTab({
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}
             >
-              <RotateCcw size={14} /> Restaurer les achats
+              <RotateCcw size={14} /> {isNativeIos() && !applePaid ? "Synchroniser l’abonnement" : "Restaurer les achats"}
             </button>
           </div>
         </div>

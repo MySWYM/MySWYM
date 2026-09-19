@@ -15,6 +15,13 @@ export type AuthUser = {
   app_metadata?: Record<string, unknown>;
 };
 
+export const BILLING_PROVIDER = {
+  stripe: "stripe",
+  apple: "apple",
+} as const;
+
+export type BillingProvider = typeof BILLING_PROVIDER[keyof typeof BILLING_PROVIDER];
+
 export type AccessStateRow = {
   user_id: string;
   access_status: AccessStatus;
@@ -25,6 +32,10 @@ export type AccessStateRow = {
   subscription_ends_at: string | null;
   cancel_at_period_end: boolean;
   stripe_customer_id: string | null;
+  billing_provider: BillingProvider | null;
+  apple_original_transaction_id: string | null;
+  apple_product_id: string | null;
+  apple_environment: string | null;
   updated_at?: string;
 };
 
@@ -44,6 +55,7 @@ export const ENTITLEMENT_KEYS = [
   "trial_ends_at",
   "trial_used",
   "subscription_started_at",
+  "billing_provider",
 ];
 
 export const TRIAL_LENGTH_DAYS = 7;
@@ -102,6 +114,42 @@ export function hasEntitlement(state: Pick<AccessStateRow, "access_status" | "tr
   return false;
 }
 
+export function isLiveAppleEntitlement(state?: Partial<AccessStateRow> | null) {
+  if (!state || state.billing_provider !== BILLING_PROVIDER.apple) return false;
+  return hasEntitlement({
+    access_status: state.access_status ?? ACCESS_STATUS.expired,
+    trial_ends_at: state.trial_ends_at ?? null,
+    subscription_ends_at: state.subscription_ends_at ?? null,
+  });
+}
+
+/**
+ * Abo Stripe payant encore couvert. Pas l’essai 7 jours sans carte :
+ * un nageur en essai doit pouvoir passer à l’App Store.
+ */
+export function isLiveStripeEntitlement(state?: Partial<AccessStateRow> | null) {
+  if (!state) return false;
+  if (state.billing_provider === BILLING_PROVIDER.apple) return false;
+  if (state.access_status === ACCESS_STATUS.trial) return false;
+  if (state.billing_provider !== BILLING_PROVIDER.stripe && !state.stripe_customer_id) {
+    return false;
+  }
+  return hasEntitlement({
+    access_status: state.access_status ?? ACCESS_STATUS.expired,
+    trial_ends_at: state.trial_ends_at ?? null,
+    subscription_ends_at: state.subscription_ends_at ?? null,
+  });
+}
+
+function storeFields(current?: Partial<AccessStateRow> | null) {
+  return {
+    billing_provider: current?.billing_provider ?? null,
+    apple_original_transaction_id: current?.apple_original_transaction_id ?? null,
+    apple_product_id: current?.apple_product_id ?? null,
+    apple_environment: current?.apple_environment ?? null,
+  };
+}
+
 export function stateToAppMetadata(state: AccessStateRow) {
   const entitled = hasEntitlement(state);
   const endIso = state.access_status === ACCESS_STATUS.trial
@@ -117,6 +165,7 @@ export function stateToAppMetadata(state: AccessStateRow) {
     trial_ends_at: state.trial_ends_at,
     trial_used: state.trial_used,
     subscription_started_at: state.subscription_started_at,
+    billing_provider: state.billing_provider,
   };
 }
 
@@ -148,6 +197,10 @@ export function buildTrialState(userId: string, current?: Partial<AccessStateRow
     subscription_ends_at: current?.subscription_ends_at ?? null,
     cancel_at_period_end: false,
     stripe_customer_id: current?.stripe_customer_id ?? null,
+    billing_provider: null,
+    apple_original_transaction_id: current?.apple_original_transaction_id ?? null,
+    apple_product_id: current?.apple_product_id ?? null,
+    apple_environment: current?.apple_environment ?? null,
   } satisfies AccessStateRow;
 }
 
@@ -215,6 +268,70 @@ export function buildExpiredState(userId: string, current?: Partial<AccessStateR
     subscription_ends_at: current?.subscription_ends_at ?? null,
     cancel_at_period_end: false,
     stripe_customer_id: current?.stripe_customer_id ?? null,
+    ...storeFields(current),
+  } satisfies AccessStateRow;
+}
+
+export type AppleTransactionLike = {
+  bundleId?: string | null;
+  productId?: string | null;
+  originalTransactionId?: string | null;
+  transactionId?: string | null;
+  expiresDate?: number | string | null;
+  purchaseDate?: number | string | null;
+  environment?: string | null;
+  revocationDate?: number | string | null;
+};
+
+function msFromAppleDate(value: number | string | null | undefined) {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  if (Number.isFinite(n) && n > 0) return n;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Mappe une transaction auto-renewable StoreKit vers user_access_state. */
+export function buildSubscriptionStateFromApple(
+  userId: string,
+  current: AccessStateRow | null | undefined,
+  tx: AppleTransactionLike,
+  opts?: { cancelAtPeriodEnd?: boolean; nowMs?: number },
+): AccessStateRow {
+  const nowMs = opts?.nowMs ?? Date.now();
+  const revokedMs = msFromAppleDate(tx.revocationDate ?? null);
+  const endsMs = msFromAppleDate(tx.expiresDate ?? null);
+  const startMs = msFromAppleDate(tx.purchaseDate ?? null);
+  const subscriptionEndsAt = endsMs != null ? new Date(endsMs).toISOString() : null;
+  const subscriptionStartedAt = startMs != null
+    ? new Date(startMs).toISOString()
+    : (current?.subscription_started_at ?? nowIso());
+  const cancelAtPeriodEnd = opts?.cancelAtPeriodEnd === true;
+  const stillCovered = endsMs != null && endsMs > nowMs && revokedMs == null;
+
+  let accessStatus: AccessStatus;
+  if (!stillCovered) {
+    accessStatus = ACCESS_STATUS.expired;
+  } else if (cancelAtPeriodEnd) {
+    accessStatus = ACCESS_STATUS.canceled;
+  } else {
+    accessStatus = ACCESS_STATUS.active;
+  }
+
+  return {
+    user_id: userId,
+    access_status: accessStatus,
+    trial_started_at: current?.trial_started_at ?? null,
+    trial_ends_at: current?.trial_ends_at ?? null,
+    trial_used: current?.trial_used ?? true,
+    subscription_started_at: subscriptionStartedAt,
+    subscription_ends_at: subscriptionEndsAt,
+    cancel_at_period_end: cancelAtPeriodEnd && stillCovered,
+    stripe_customer_id: current?.stripe_customer_id ?? null,
+    billing_provider: BILLING_PROVIDER.apple,
+    apple_original_transaction_id: String(tx.originalTransactionId || tx.transactionId || "") || null,
+    apple_product_id: tx.productId ? String(tx.productId) : null,
+    apple_environment: tx.environment ? String(tx.environment) : null,
   } satisfies AccessStateRow;
 }
 
@@ -264,5 +381,9 @@ export function buildSubscriptionStateFromStripe(
     subscription_ends_at: subscriptionEndsAt,
     cancel_at_period_end: cancelAtPeriodEnd && (isPaidActive || isTrialing),
     stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
+    billing_provider: isPaidActive || isTrialing ? BILLING_PROVIDER.stripe : (current?.billing_provider ?? null),
+    apple_original_transaction_id: current?.apple_original_transaction_id ?? null,
+    apple_product_id: current?.apple_product_id ?? null,
+    apple_environment: current?.apple_environment ?? null,
   };
 }

@@ -5,6 +5,7 @@ import {
   buildSubscriptionStateFromStripe,
   getAccessState,
   hasEntitlement,
+  isLiveAppleEntitlement,
   persistAccessState,
   resolveAccessWithoutStripeSub,
   type AccessStateRow,
@@ -67,8 +68,12 @@ Deno.serve(async (req) => {
     const grantOpts = { userCreatedAt: sourceUser.created_at ?? null };
     let nextState: AccessStateRow;
 
-    // Abo Stripe encore valide → Stripe gagne. Sinon essai 7j sans carte (1×) puis pause.
-    if (customerId) {
+    if (isLiveAppleEntitlement(currentState)) {
+      nextState = {
+        ...currentState,
+        stripe_customer_id: customerId ?? currentState.stripe_customer_id,
+      };
+    } else if (customerId) {
       const sub = await findActiveSubscription(customerId);
       if (sub) {
         const mapped = buildSubscriptionStateFromStripe(user.id, currentState, customerId, sub);

@@ -5,6 +5,7 @@ import { PRICING_SUMMARY_FR } from "../lib/pricing.js";
 import { getAccessState } from "../lib/access.js";
 import { isNativeApp } from "../lib/native-platform.js";
 import { syncSubscriptionFromStripe } from "../lib/sync-subscription.js";
+import { restoreAndSyncAppleIap } from "../lib/native-iap.js";
 import { supabase } from "../supabase.js";
 import Btn from "../ui/Btn.jsx";
 import SoftMistSheet from "./SoftMistSheet.jsx";
@@ -37,13 +38,16 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
     setSyncing(true);
     setSyncErr("");
     try {
-      const u = await syncSubscriptionFromStripe();
+      const restored = await restoreAndSyncAppleIap();
+      const u = restored && getAccessState(restored).hasPremiumAccess
+        ? restored
+        : await syncSubscriptionFromStripe();
       setUser(u);
       if (u && getAccessState(u).hasPremiumAccess) {
         window.location.reload();
         return;
       }
-      setSyncErr("Pas d’abonnement actif sur ce compte. L’abonnement iOS arrive via l’App Store.");
+      setSyncErr("Pas d’abonnement actif sur ce compte.");
     } catch {
       setSyncErr("Impossible de synchroniser. Réessaie ou écris au support.");
     } finally {
@@ -59,7 +63,7 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
       title="Ton essai est terminé"
       subtitle={
         native
-          ? "Le coach est en pause. Si tu es déjà Premium sur le site, synchronise ton compte. Sinon l’abonnement iOS arrive via l’App Store."
+          ? "Le coach est en pause. Abonne-toi via l’App Store, ou synchronise si tu es déjà Premium sur le site."
           : `Le coach est en pause. Abonne-toi pour reprendre tes séances, ${PRICING_SUMMARY_FR}.`
       }
       onClose={undefined}
@@ -110,9 +114,14 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
       ) : null}
 
       {native ? (
-        <Btn variant="blue" onClick={handleNativeSync} style={{ width: "100%", minHeight: 52 }} disabled={syncing}>
-          {syncing ? "Synchronisation…" : "J’ai déjà Premium sur le site"}
-        </Btn>
+        <>
+          <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
+            Reprendre avec Premium
+          </Btn>
+          <Btn variant="ghost" onClick={handleNativeSync} style={{ width: "100%", minHeight: 52, marginTop: 10 }} disabled={syncing}>
+            {syncing ? "Synchronisation…" : "J’ai déjà Premium, restaurer"}
+          </Btn>
+        </>
       ) : (
         <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
           Reprendre avec Premium

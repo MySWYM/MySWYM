@@ -12,7 +12,7 @@ import {
   findActiveCommitmentSubscription,
   resolveNoCancelPortalConfigId,
 } from "../_shared/stripe-commitment.ts";
-import { corsHeaders, FALLBACK_ORIGIN, isAllowedOrigin } from "../_shared/cors.ts";
+import { corsHeaders, portalReturnOrigin } from "../_shared/cors.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -75,9 +75,7 @@ Deno.serve(async (req) => {
       throw new Error(`stripe_customer_id manquant (user: ${user.id}), clique sur « Actualiser le statut » dans Profil`);
     }
 
-    const returnOrigin = reqOrigin && isAllowedOrigin(reqOrigin)
-      ? reqOrigin
-      : FALLBACK_ORIGIN;
+    const returnOrigin = portalReturnOrigin(reqOrigin);
 
     console.log("[create-portal] creating portal session for customer:", resolvedCustomerId);
     const commitSub = await findActiveCommitmentSubscription(stripe, resolvedCustomerId);

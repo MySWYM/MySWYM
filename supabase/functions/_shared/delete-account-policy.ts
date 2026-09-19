@@ -52,11 +52,13 @@ export const DELETE_BLOCK = {
     "Tu as un abonnement annuel (ou prépayé) encore en cours. Tu ne peux pas supprimer le compte tant que la période déjà payée n’est pas terminée. Pour éviter un renouvellement, ouvre « Gérer mon abonnement ». Cas légal : support@myswym.app.",
   unverified:
     "Impossible de vérifier ton abonnement Stripe. Le compte n’a pas été supprimé. Réessaie plus tard ou écris à support@myswym.app.",
+  apple:
+    "Tu as un abonnement App Store encore en cours. Résilie-le d’abord sur l’iPhone (Réglages → Apple ID → Abonnements), puis réessaie. Cas légal : support@myswym.app.",
   cancelFailed:
     "Impossible d’arrêter l’abonnement Stripe. Le compte n’a pas été supprimé, pour éviter un prélèvement orphelin. Réessaie ou écris à support@myswym.app.",
 } as const;
 
-export type DeleteGateCode = "ok" | "commitment" | "prepaid" | "unverified";
+export type DeleteGateCode = "ok" | "commitment" | "prepaid" | "unverified" | "apple";
 
 export type SubLike = {
   id: string;
@@ -239,6 +241,10 @@ export function paidAccessLooksLive(
 
 export function gateFromUnverifiedAccess(): DeleteGate {
   return block("unverified", DELETE_BLOCK.unverified, null);
+}
+
+export function gateFromAppleAccess(endsAt: string | null = null): DeleteGate {
+  return block("apple", DELETE_BLOCK.apple, endsAt);
 }
 
 export function throwIfBlocked(gate: DeleteGate): asserts gate is Extract<DeleteGate, { allowed: true }> {

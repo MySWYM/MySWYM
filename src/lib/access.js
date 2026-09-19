@@ -67,6 +67,7 @@ export function getAccessState(user) {
     trialUsed,
     cancelAtPeriodEnd,
     entitledByStatus,
+    billingProvider: meta.billing_provider || null,
     hasPremiumAccess,
     /** Matching PII (tél., ville, prénom) : abo payant seulement, pas l’essai. */
     canUseBuddies: hasPremiumAccess && status !== ACCESS_STATUS.TRIAL,
@@ -83,6 +84,21 @@ export function getAccessState(user) {
     accessEndsMs,
     trialDaysLeft,
   };
+}
+
+/**
+ * Premium payant Stripe encore couvert. Pas l’essai 7 jours :
+ * un nageur en essai peut s’abonner via l’App Store.
+ */
+export function isLiveStripeBilling(user) {
+  if (!user) return false;
+  const state = getAccessState(user);
+  if (!state.hasPremiumAccess) return false;
+  if (state.billingProvider === "apple") return false;
+  if (state.status === ACCESS_STATUS.TRIAL) return false;
+  const customerId = user.app_metadata?.stripe_customer_id
+    || user.user_metadata?.stripe_customer_id;
+  return state.billingProvider === "stripe" || Boolean(customerId);
 }
 
 /** Pas d'essai encore consommé : attendre le sync (il peut accorder 7 jours) avant de mettre l’accès en pause. */
