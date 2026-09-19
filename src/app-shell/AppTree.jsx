@@ -19,8 +19,7 @@ import { RouteFallback, RoutedErrorBoundary } from "./RoutedBoot.jsx";
 import { LocaleSync } from "../i18n/locale-routing.jsx";
 import { localeFromPathname, withLocalePrefix } from "../i18n/locale-path.js";
 import { isNativeApp, isNativeMarketingPath } from "../lib/native-platform.js";
-import { hasPersistedAuth } from "../lib/boot-warm.js";
-import { markNativeQuizStarted, nativeQuizStarted, NATIVE_QUIZ_EVENT } from "../lib/native-welcome.js";
+import { markNativeQuizStarted, nativeGuestSurface, nativeQuizStarted, NATIVE_QUIZ_EVENT } from "../lib/native-welcome.js";
 import { useAuthSession } from "../lib/use-auth-session.js";
 import NativeGuestShell, { NativeOnboardingFrame } from "../native/NativeGuestShell.jsx";
 import NativeWelcomeFork from "../native/NativeWelcomeFork.jsx";
@@ -164,39 +163,38 @@ function NativeIosShell({ children }) {
   const { isLoggedIn, loading } = useAuthSession();
   const [quizOpen, setQuizOpen] = useState(() => nativeQuizStarted());
   useEffect(() => {
-    const sync = () => {
-      if (nativeQuizStarted()) setQuizOpen(true);
-    };
+    const sync = () => setQuizOpen(nativeQuizStarted());
     window.addEventListener(NATIVE_QUIZ_EVENT, sync);
     return () => window.removeEventListener(NATIVE_QUIZ_EVENT, sync);
   }, []);
   if (!isNativeApp()) return children;
 
-  const auth = pathname === "/connexion" || pathname === "/inscription";
-  const app = pathname === "/app" || pathname.startsWith("/app/");
-  if (auth) {
+  const surface = nativeGuestSurface({
+    pathname,
+    loading,
+    isLoggedIn,
+    quizStarted: quizOpen,
+  });
+  if (surface === "auth") {
     return (
       <div className="myswym-native-guest is-funnel">
         <NativeGuestShell funnel showHeader={false}>{children}</NativeGuestShell>
       </div>
     );
   }
-  if (app && !loading && !isLoggedIn) {
-    if (hasPersistedAuth(typeof localStorage !== "undefined" ? localStorage : null)) {
-      return <Navigate to="/connexion" replace />;
-    }
-    if (!quizOpen) {
-      return (
-        <div className="myswym-native-guest is-welcome">
-          <NativeWelcomeFork
-            onCreate={() => {
-              markNativeQuizStarted();
-              setQuizOpen(true);
-            }}
-          />
-        </div>
-      );
-    }
+  if (surface === "welcome") {
+    return (
+      <div className="myswym-native-guest is-welcome">
+        <NativeWelcomeFork
+          onCreate={() => {
+            markNativeQuizStarted();
+            setQuizOpen(true);
+          }}
+        />
+      </div>
+    );
+  }
+  if (surface === "onboarding") {
     return (
       <NativeOnboardingFrame>
         <div className="myswym-native-onboarding">{children}</div>

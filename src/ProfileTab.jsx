@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Check, Pencil, Camera, Trash2, X, AlertTriangle, ChevronLeft,
   Volume2, CreditCard, LogOut, RotateCcw, ChevronRight, Mail, User,
-  Target, Waves, Package, HeartPulse, CalendarDays,
+  Target, Waves, Package, HeartPulse, CalendarDays, Settings,
 } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { FONT_DISPLAY } from "./theme/brand.js";
@@ -123,7 +123,9 @@ export default function ProfileTab({
   referralSlot = null,
 }) {
   const { t: to } = useTranslation("onboarding");
-  const applePaid = getAccessState(user).billingProvider === "apple";
+  const access = getAccessState(user);
+  const applePaid = access.billingProvider === "apple";
+  const canManageSubscription = access.canManageSubscription;
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
@@ -252,6 +254,7 @@ export default function ProfileTab({
   const [pwdError, setPwdError] = useState(null);
   const [pwdOk, setPwdOk] = useState(false);
   const [helpPanel, setHelpPanel] = useState(null); // "support" | "legal" | null
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -475,8 +478,252 @@ export default function ProfileTab({
       {helpPanel === "legal" ? (
         <ProfileLegalPanel onBack={() => setHelpPanel(null)} />
       ) : null}
-      <AppShell style={helpPanel ? { display: "none" } : undefined}>
-      <header className="ms-profile-toolbar">
+      {settingsOpen && !helpPanel ? (
+        <div className="ms-profile-subpanel">
+          <header className="ms-profile-subpanel-toolbar">
+            <button
+              type="button"
+              className="ms-glass-icon-btn"
+              aria-label="Retour"
+              onClick={() => {
+                playUiSound("soft");
+                setSettingsOpen(false);
+              }}
+            >
+              <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
+            </button>
+            <h1>Paramètres</h1>
+            <div style={{ width: 44 }} aria-hidden />
+          </header>
+          <div className="ms-profile-subpanel-body">
+          {msg && (
+            <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 13 }}>
+              {msg.text}
+            </div>
+          )}
+
+          <div className="ms-profile-group-label">Compte</div>
+          <div className="ms-profile-account-stack">
+            <button type="button" className="ms-profile-account-row" onClick={openAccountSheet}>
+              <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
+                <Mail size={18} color={G.blue} />
+              </span>
+              <span className="ms-profile-settings-label" style={{ flex: 1 }}>Email et mot de passe</span>
+              <span className="ms-profile-account-value" style={{ maxWidth: "40%" }}>
+                {user?.email || "-"}
+              </span>
+              <ChevronRight size={18} color={G.greyMid} />
+            </button>
+          </div>
+
+          <div className="ms-profile-group-label">Réglages</div>
+          <div className="ms-profile-settings-list">
+            {!isNativeIos() && (
+            <div className="ms-profile-settings-row">
+              <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
+                <Volume2 size={18} color={G.blue} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="ms-profile-settings-label">Sons de l’app</div>
+                <div className="ms-profile-settings-hint">Retours sonores sur les boutons</div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={soundsOn}
+                className={`ms-menu-switch${soundsOn ? " is-on" : ""}`}
+                onClick={() => {
+                  const next = !soundsOn;
+                  setSoundsOn(next);
+                  setUiSoundsEnabled(next);
+                  if (next) playUiSound("success");
+                }}
+              >
+                <span />
+              </button>
+            </div>
+            )}
+            <LanguageSwitcher variant="settings" />
+            <ProfileHelpSettingsRows
+              onOpenSupport={() => setHelpPanel("support")}
+              onOpenLegal={() => setHelpPanel("legal")}
+            />
+          </div>
+
+          <div className="ms-profile-group-label">Abonnement</div>
+          <div className="ms-profile-settings-list" style={{ marginBottom: 16 }}>
+            <div className="ms-profile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span className="ms-profile-settings-icon" style={{ background: G.goldLight }}>
+                  <CreditCard size={18} color={G.gold} />
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div className="ms-profile-settings-label">Abonnement</div>
+                  <div className="ms-profile-settings-hint">
+                    {canManageSubscription
+                      ? (access.cancelAtPeriodEnd
+                        ? (applePaid ? "Premium App Store, jusqu’à la fin de période" : "Premium actif, jusqu’à la fin de période")
+                        : (applePaid ? "Premium App Store" : "Premium actif"))
+                      : isPremium
+                        ? "Essai 7 jours"
+                        : "Essai terminé"}
+                  </div>
+                </div>
+              </div>
+              {canManageSubscription ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {applePaid && isNativeIos() ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { void openAppleSubscriptionManagement(); }}
+                        className="ms-pill-cta ms-pill-cta-secondary"
+                        style={{ minHeight: 44 }}
+                      >
+                        Modifier mon abonnement
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { void openAppleSubscriptionManagement(); }}
+                        style={{
+                          width: "100%", minHeight: 44, border: "none", background: "none",
+                          color: G.grey, fontWeight: 600, cursor: "pointer",
+                        }}
+                      >
+                        Résilier
+                      </button>
+                    </>
+                  ) : applePaid ? (
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: G.grey }}>
+                      Abonnement App Store. Gère-le sur l’iPhone : Réglages, Apple ID, Abonnements.
+                    </p>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onPortal()}
+                        className="ms-pill-cta ms-pill-cta-secondary"
+                        style={{ minHeight: 44 }}
+                      >
+                        Modifier mon abonnement
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onCancelSubscription()}
+                        style={{
+                          width: "100%", minHeight: 44, border: "none", background: "none",
+                          color: G.grey, fontWeight: 600, cursor: "pointer",
+                        }}
+                      >
+                        Résilier
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onUpgrade?.("profile")}
+                  className={isNativeIos() ? "ms-pill-cta ms-pill-cta-gold" : "ms-pill-cta"}
+                  style={{ minHeight: 44 }}
+                >
+                  {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyCommit.label}/mois`}
+                </button>
+              )}
+              {canManageSubscription ? referralSlot : null}
+              <button
+                type="button"
+                onClick={() => {
+                  playUiSound("soft");
+                  onRefreshStatus?.();
+                }}
+                style={{
+                  width: "100%", minHeight: 40, border: "none", background: "none",
+                  color: G.grey, fontWeight: 600, cursor: "pointer",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                <RotateCcw size={14} /> Restaurer les achats
+              </button>
+              <p className="ms-profile-settings-hint" style={{ margin: 0, textAlign: "center" }}>
+                Si un achat n’apparaît pas
+              </p>
+            </div>
+          </div>
+
+          <div className="ms-profile-group-label">Zone sensible</div>
+          <div className="ms-profile-account-stack" style={{ marginBottom: 16 }}>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="ms-profile-account-row"
+            >
+              <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
+                <LogOut size={18} color={G.coral} />
+              </span>
+              <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>Déconnexion</span>
+              <ChevronRight size={18} color={G.coral} />
+            </button>
+            {user && onDeleteAccount ? (
+              <>
+                <button
+                  type="button"
+                  disabled={deleteBusy || !deleteGate.allowed}
+                  className="ms-profile-account-row"
+                  style={!deleteGate.allowed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
+                  onClick={async () => {
+                    if (!deleteGate.allowed) return;
+                    setDeleteErr(null);
+                    const warning = deleteGate.willCancelSubscription
+                      ? ACCOUNT_DELETE_FLEX_WARNING
+                      : ACCOUNT_DELETE_WARNING;
+                    const ok = window.confirm(
+                      `${warning}\n\nConfirmer la suppression définitive du compte ?`,
+                    );
+                    if (!ok) return;
+                    setDeleteBusy(true);
+                    try {
+                      await onDeleteAccount();
+                    } catch (e) {
+                      setDeleteErr(e?.message || "Suppression impossible.");
+                      setDeleteBusy(false);
+                    }
+                  }}
+                >
+                  <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
+                    <Trash2 size={18} color={G.coral} />
+                  </span>
+                  <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>
+                    {deleteBusy ? "Suppression…" : "Supprimer mon compte"}
+                  </span>
+                  <ChevronRight size={18} color={G.coral} />
+                </button>
+                {!deleteGate.allowed && deleteGate.message ? (
+                  <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral, lineHeight: 1.45 }}>
+                    {deleteGate.message}
+                    {deleteGate.endsAt ? (
+                      <>
+                        {" "}
+                        Fin : {new Date(deleteGate.endsAt).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}.
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+            {deleteErr ? (
+              <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral }}>{deleteErr}</div>
+            ) : null}
+          </div>
+          </div>
+        </div>
+      ) : null}
+      <AppShell style={helpPanel || settingsOpen ? { display: "none" } : undefined}>
+      <header className="ms-profile-toolbar" style={{ position: "relative" }}>
         <button
           type="button"
           className="ms-glass-icon-btn"
@@ -489,24 +736,47 @@ export default function ProfileTab({
         >
           <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
         </button>
+        <h1 style={{
+          margin: 0,
+          fontSize: 18,
+          fontWeight: 800,
+          color: G.ink,
+          letterSpacing: "-0.02em",
+          position: "absolute",
+          left: "50%",
+          transform: "translateX(-50%)",
+          pointerEvents: "none",
+        }}>Profil</h1>
         <button
           type="button"
           className="ms-glass-icon-btn"
-          aria-label="Modifier le profil"
-          onClick={openEditProfile}
+          aria-label="Paramètres"
+          onClick={() => {
+            playUiSound("soft");
+            setSettingsOpen(true);
+          }}
         >
-          <Pencil size={16} color={G.ink} strokeWidth={2.25} />
+          <Settings size={18} color={G.ink} strokeWidth={2.25} />
         </button>
       </header>
 
       <div className="ms-profile-head">
-        <div className="ms-profile-head-avatar" aria-hidden>
+        <button
+          type="button"
+          className="ms-profile-head-avatar"
+          onClick={openEditProfile}
+          aria-label="Modifier le profil"
+          style={{ padding: 0, border: "none", cursor: "pointer", font: "inherit" }}
+        >
           <span className="ms-profile-head-avatar-media">
             {avatarUrl
               ? <img src={avatarUrl} alt="" />
               : <span style={{ fontSize: 28, fontWeight: 800, color: G.blue }}>{initials}</span>}
           </span>
-        </div>
+          <span className="ms-profile-head-avatar-badge" aria-hidden>
+            <Pencil size={12} color="#fff" strokeWidth={2.5} />
+          </span>
+        </button>
         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
         <h1 className="ms-profile-head-name">{String(displayName).toUpperCase()}</h1>
         <p className="ms-profile-head-email">{user?.email || "Compte mySWYM"}</p>
@@ -650,28 +920,6 @@ export default function ProfileTab({
           </div>
         )}
 
-        <div className="ms-profile-group-label">Informations du compte</div>
-        <div className="ms-profile-account-stack">
-          <button type="button" className="ms-profile-account-row" onClick={openEditProfile}>
-            <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
-              <User size={18} color={G.blue} />
-            </span>
-            <span className="ms-profile-settings-label" style={{ flex: 1 }}>Prénom</span>
-            <span className="ms-profile-account-value">{displayName}</span>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-          <button type="button" className="ms-profile-account-row" onClick={openAccountSheet}>
-            <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
-              <Mail size={18} color={G.blue} />
-            </span>
-            <span className="ms-profile-settings-label" style={{ flex: 1 }}>Email</span>
-            <span className="ms-profile-account-value" style={{ maxWidth: "46%" }}>
-              {user?.email || "-"}
-            </span>
-            <ChevronRight size={18} color={G.greyMid} />
-          </button>
-        </div>
-
         <SoftMistSheet
           open={accountSheetOpen}
           onClose={closeAccountSheet}
@@ -754,40 +1002,6 @@ export default function ProfileTab({
             </div>
           </div>
         </SoftMistSheet>
-
-        <div className="ms-profile-group-label">Réglages</div>
-        <div className="ms-profile-settings-list">
-          {!isNativeIos() && (
-          <div className="ms-profile-settings-row">
-            <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
-              <Volume2 size={18} color={G.blue} />
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="ms-profile-settings-label">Sons de l’app</div>
-              <div className="ms-profile-settings-hint">Retours sonores sur les boutons</div>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={soundsOn}
-              className={`ms-menu-switch${soundsOn ? " is-on" : ""}`}
-              onClick={() => {
-                const next = !soundsOn;
-                setSoundsOn(next);
-                setUiSoundsEnabled(next);
-                if (next) playUiSound("success");
-              }}
-            >
-              <span />
-            </button>
-          </div>
-          )}
-          <LanguageSwitcher variant="settings" />
-          <ProfileHelpSettingsRows
-            onOpenSupport={() => setHelpPanel("support")}
-            onOpenLegal={() => setHelpPanel("legal")}
-          />
-        </div>
 
         <div className="ms-profile-group-label">Natation</div>
 
@@ -1205,169 +1419,6 @@ export default function ProfileTab({
             </label>
           </ProfileSection>
         )}
-
-        <div className="ms-profile-group-label">Compte</div>
-        <div className="ms-profile-settings-list" style={{ marginBottom: 16 }}>
-          <div className="ms-profile-settings-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span className="ms-profile-settings-icon" style={{ background: G.goldLight }}>
-                <CreditCard size={18} color={G.gold} />
-              </span>
-              <div style={{ flex: 1 }}>
-                <div className="ms-profile-settings-label">Abonnement</div>
-                <div className="ms-profile-settings-hint">
-                  {isPremium
-                    ? (applePaid ? "Premium App Store" : "Premium actif")
-                    : "Essai ou découverte"}
-                </div>
-              </div>
-            </div>
-            {isPremium ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {applePaid && isNativeIos() ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => { void openAppleSubscriptionManagement(); }}
-                      className="ms-pill-cta ms-pill-cta-secondary"
-                      style={{ minHeight: 44 }}
-                    >
-                      Modifier mon abonnement
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { void openAppleSubscriptionManagement(); }}
-                      style={{
-                        width: "100%", minHeight: 44, border: "none", background: "none",
-                        color: G.grey, fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      Résilier
-                    </button>
-                  </>
-                ) : applePaid ? (
-                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: G.grey }}>
-                    Abonnement App Store. Gère-le sur l’iPhone : Réglages → Apple ID → Abonnements.
-                  </p>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onPortal()}
-                      className="ms-pill-cta ms-pill-cta-secondary"
-                      style={{ minHeight: 44 }}
-                    >
-                      Modifier mon abonnement
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onCancelSubscription()}
-                      style={{
-                        width: "100%", minHeight: 44, border: "none", background: "none",
-                        color: G.grey, fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      Résilier
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onUpgrade?.("profile")}
-                className={isNativeIos() ? "ms-pill-cta ms-pill-cta-gold" : "ms-pill-cta"}
-                style={{ minHeight: 44 }}
-              >
-                {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyCommit.label}/mois`}
-              </button>
-            )}
-            {isPremium ? referralSlot : null}
-            <button
-              type="button"
-              onClick={() => {
-                playUiSound("soft");
-                onRefreshStatus?.();
-              }}
-              style={{
-                width: "100%", minHeight: 40, border: "none", background: "none",
-                color: G.grey, fontWeight: 600, cursor: "pointer",
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}
-            >
-              <RotateCcw size={14} /> {isNativeIos() && !applePaid ? "Synchroniser l’abonnement" : "Restaurer les achats"}
-            </button>
-          </div>
-        </div>
-
-        <div className="ms-profile-group-label">Zone sensible</div>
-        <div className="ms-profile-account-stack" style={{ marginBottom: 16 }}>
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="ms-profile-account-row"
-          >
-            <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
-              <LogOut size={18} color={G.coral} />
-            </span>
-            <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>Déconnexion</span>
-            <ChevronRight size={18} color={G.coral} />
-          </button>
-          {user && onDeleteAccount ? (
-            <>
-              <button
-                type="button"
-                disabled={deleteBusy || !deleteGate.allowed}
-                className="ms-profile-account-row"
-                style={!deleteGate.allowed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
-                onClick={async () => {
-                  if (!deleteGate.allowed) return;
-                  setDeleteErr(null);
-                  const warning = deleteGate.willCancelSubscription
-                    ? ACCOUNT_DELETE_FLEX_WARNING
-                    : ACCOUNT_DELETE_WARNING;
-                  const ok = window.confirm(
-                    `${warning}\n\nConfirmer la suppression définitive du compte ?`,
-                  );
-                  if (!ok) return;
-                  setDeleteBusy(true);
-                  try {
-                    await onDeleteAccount();
-                  } catch (e) {
-                    setDeleteErr(e?.message || "Suppression impossible.");
-                    setDeleteBusy(false);
-                  }
-                }}
-              >
-                <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
-                  <Trash2 size={18} color={G.coral} />
-                </span>
-                <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>
-                  {deleteBusy ? "Suppression…" : "Supprimer mon compte"}
-                </span>
-                <ChevronRight size={18} color={G.coral} />
-              </button>
-              {!deleteGate.allowed && deleteGate.message ? (
-                <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral, lineHeight: 1.45 }}>
-                  {deleteGate.message}
-                  {deleteGate.endsAt ? (
-                    <>
-                      {" "}
-                      Fin : {new Date(deleteGate.endsAt).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}.
-                    </>
-                  ) : null}
-                </div>
-              ) : null}
-            </>
-          ) : null}
-          {deleteErr ? (
-            <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral }}>{deleteErr}</div>
-          ) : null}
-        </div>
       </div>
       </AppShell>
 

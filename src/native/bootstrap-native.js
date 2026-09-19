@@ -61,7 +61,12 @@ export async function bootstrapNativeChrome() {
     /* simulateur / plugin absent */
   }
   try {
-    await Keyboard.setResizeMode({ mode: KeyboardResize.Native });
+    await Keyboard.setResizeMode({ mode: KeyboardResize.Body });
+  } catch {
+    /* ignore */
+  }
+  try {
+    await Keyboard.setAccessoryBarVisible({ isVisible: true });
   } catch {
     /* ignore */
   }

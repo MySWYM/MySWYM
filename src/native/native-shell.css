@@ -2,9 +2,15 @@ html.myswym-ios,
 html.myswym-ios body {
   overscroll-behavior-y: none;
   height: 100%;
+  min-height: 0;
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+}
+
+html.myswym-ios #root {
+  height: 100%;
+  min-height: 0;
 }
 
 html.myswym-ios .app-shell,
@@ -58,7 +64,7 @@ html.myswym-ios .myswym-native-onboarding img[alt="MySWYM"] {
 
 html.myswym-ios .myswym-native-guest .ms-screen-enter {
   min-height: 0 !important;
-  height: 100dvh;
+  height: 100%;
   overflow: hidden;
   background: transparent !important;
 }
@@ -75,21 +81,26 @@ html.myswym-ios .myswym-native-guest .ms-screen-enter {
 
 .native-auth-fit {
   box-sizing: border-box;
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 html.myswym-ios .myswym-native-guest.is-welcome,
 html.myswym-ios .myswym-native-guest.is-funnel {
-  min-height: 100dvh;
+  min-height: 100%;
+  height: 100%;
   background: var(--ms-blue, #006bfd);
 }
 
 .native-funnel-shell {
-  min-height: 100dvh;
+  min-height: 100%;
+  height: 100%;
   background: var(--ms-blue, #006bfd);
   color: #fff;
 }

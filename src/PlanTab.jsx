@@ -157,7 +157,7 @@ export default function PlanTab({
           </div>
           <p className="ms-type-body">
             {planLabel}
-            {currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
+            {isPremium && currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
           </p>
         </div>
         {(plans?.length > 0) && (
@@ -179,7 +179,7 @@ export default function PlanTab({
           />
         )}
 
-        {currentAndNext.map(({ week, i }) => (
+        {isPremium && currentAndNext.map(({ week, i }) => (
           <WeekCard
             key={i}
             week={week}
@@ -194,7 +194,7 @@ export default function PlanTab({
           />
         ))}
 
-        {pastWeeks.length > 0 && (
+        {isPremium && pastWeeks.length > 0 && (
           <div style={{ marginTop: 8, marginBottom: 12 }}>
             <button
               type="button"
@@ -224,6 +224,7 @@ export default function PlanTab({
           </div>
         )}
 
+        {isPremium && (
         <button
           type="button"
           onClick={() => setShowTools((v) => !v)}
@@ -235,8 +236,9 @@ export default function PlanTab({
         >
           {showTools ? "Masquer les réglages" : "Ajuster mon programme"}
         </button>
+        )}
 
-        {showTools && (
+        {isPremium && showTools && (
           <div style={{ marginBottom: 12 }}>
             {isPremium && (
               <CoachCard

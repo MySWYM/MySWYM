@@ -161,7 +161,6 @@ import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
-import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
 import WhatsNewSheet, {
   hasSeenWhatsNew,
   shouldShowWhatsNew,
@@ -3793,9 +3792,9 @@ const PremiumBanner = ({ onUpgrade, weeks = 0 }) => (
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>
         {weeks > 4 ? `Débloque tes ${weeks} semaines de coaching` : "Débloque ton coach personnel"}
       </div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Séances · allures · adaptation feedback · essai 7 jours</div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Séances · allures · adaptation feedback</div>
     </div>
-    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Essai</button>
+    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>S’abonner</button>
   </div>
 );
 
@@ -4796,7 +4795,9 @@ const ProgressionLoopView = ({
       )}
 
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
-        {multiSessionWeek ? (
+        {!isPremium ? (
+          <PremiumBanner onUpgrade={onUpgrade} weeks={plan?.totalRealWeeks || 1} />
+        ) : multiSessionWeek ? (
           <WeekCard
             week={week0}
             weekIndex={0}
@@ -4917,18 +4918,6 @@ const ProgressionLoopView = ({
           </div>
         )}
           </>
-        )}
-
-        {!isPremium && (
-          <div style={{
-            background: G.blueLight, borderRadius: 16, padding: "16px", marginBottom: 14,
-            border: `1px solid rgba(53,93,163,0.15)`,
-          }}>
-            <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
-              Ton essai est terminé. Abonne-toi pour reprendre ta séance et continuer avec ton coach.
-            </p>
-            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>S’abonner : dès {PRICING.monthlyCommit.label}/mois</Btn>
-          </div>
         )}
       </div>
     </LoopShell>
@@ -7552,6 +7541,7 @@ export default function App() {
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
+  const trialExpiredPromptedRef = useRef(false);
   const forceAuthRef = useRef(false);
   /** Empêche le bounce /app→onboarding pendant / juste après signOut. */
   const signingOutRef = useRef(false);
@@ -7781,8 +7771,15 @@ export default function App() {
       return;
     }
     if (isAuthPath(location.pathname)) {
-      // /inscription avec une session déjà ouverte : ne pas rester collé à ce compte.
+      // /inscription + vieux compte déjà ouvert : déconnecter pour un vrai nouveau signup.
+      // Compte tout juste créé : garder la session et entrer dans l’app (sinon relogin).
       if (user && location.pathname === "/inscription" && !signingOutRef.current) {
+        if (isFreshSignup(user)) {
+          forceAuthRef.current = false;
+          authOpenedFromUrlRef.current = false;
+          navigate("/app", { replace: true });
+          return;
+        }
         forceAuthRef.current = true;
         authOpenedFromUrlRef.current = true;
         setScreen("auth");
@@ -7860,6 +7857,17 @@ export default function App() {
     setShowUpgrade(false);
     setUpgradeSoftContext(null);
   };
+
+  useEffect(() => {
+    if (accessState.hasPremiumAccess) {
+      trialExpiredPromptedRef.current = false;
+      return;
+    }
+    if (!isFrozen || screen !== "app") return;
+    if (trialExpiredPromptedRef.current || showUpgrade || showPlanReady || showWhatsNew) return;
+    trialExpiredPromptedRef.current = true;
+    openUpgrade("trial_expired");
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState.hasPremiumAccess]);
 
   // Soft paywall après la 1ʳᵉ séance : attendre la fermeture des sheets feedback.
   useEffect(() => {
@@ -10782,32 +10790,6 @@ export default function App() {
 
   if (coldHold || screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
 
-  if (isFrozen) {
-    const freezePreview = plan?.weeks?.[0]?.sessions?.[0]
-      || plan?.history?.filter((s) => s)?.slice(-1)?.[0]
-      || null;
-    return (
-    <>
-      <style>{css}</style>
-      <TrialExpiredFreeze
-        onSubscribe={() => openUpgrade("trial_expired")}
-        onSignOut={handleSignOut}
-        preview={freezePreview}
-      />
-      {showUpgrade && (
-        <UpgradeModal
-          onClose={closeUpgrade}
-          softContext="trial_expired"
-          weeksBlocked={null}
-          planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
-          trialEligible={false}
-          canDismiss
-        />
-      )}
-    </>
-  );
-  }
-
   if (screen === "onboarding") return (
     <>
       <style>{css}</style>
@@ -11053,7 +11035,7 @@ export default function App() {
             weeksBlocked={null}
             planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
             trialEligible={!accessState.trialUsed}
-            canDismiss={upgradeSoftContext !== "trial_expired"}
+            canDismiss
           />
         )}
         {replaceConfirmOpen && (

@@ -24,7 +24,8 @@ const config: CapacitorConfig = {
       overlaysWebView: true,
     },
     Keyboard: {
-      resize: "native",
+      resize: "body",
+      autoBackdropColor: "auto",
     },
   },
 };

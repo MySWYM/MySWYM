@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Waves } from "lucide-react";
+import { Lock, Waves } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { AppTabShell, AppTopBar } from "./app-shell/index.js";
 import { HomeBadgesSection } from "./Dashboard.jsx";
@@ -13,6 +13,7 @@ import {
 import { buildWeekDayStrip } from "./lib/week-day-strip.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { playUiSound } from "./lib/ui-sounds.js";
+import { PRICING } from "./lib/pricing.js";
 
 function paceLabel(secs) {
   if (!secs || !Number.isFinite(Number(secs))) return "-";
@@ -180,6 +181,28 @@ export default function AnalyseTab({
       />
 
       <div className="app-shell" style={{ paddingTop: 4 }}>
+        {!isPremium ? (
+          <div className="ms-glass-card" style={{ padding: "22px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <Lock size={20} color={G.blue} />
+              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>Analyse Premium</span>
+            </div>
+            <p style={{ margin: "0 0 16px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
+              Volume, allures et badges : inclus dans Premium.
+            </p>
+            <button
+              type="button"
+              className="ms-pill-cta"
+              onClick={() => {
+                playUiSound("tap");
+                onUpgrade?.("analyse");
+              }}
+            >
+              S’abonner : dès {PRICING.monthlyCommit.label}/mois
+            </button>
+          </div>
+        ) : (
+          <>
         {weekDayStrip && (
           <div
             className="ms-week-strip"
@@ -412,6 +435,8 @@ export default function AnalyseTab({
               />
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </AppTabShell>

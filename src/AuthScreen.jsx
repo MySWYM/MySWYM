@@ -10,7 +10,7 @@ import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import { track } from "./lib/analytics.js";
 import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js";
 import { legalHref } from "./lib/legal-copy.js";
-import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
+import { hideNativeKeyboard, isNativeApp, isNativeIos, nativeApiOrigin } from "./lib/native-platform.js";
 import { markNativeQuizStarted } from "./lib/native-welcome.js";
 import {
   isAppleSignInCanceled,
@@ -57,6 +57,7 @@ export const PasswordInput = ({
   onChange,
   onEnter,
   autoComplete = "current-password",
+  enterKeyHint = "go",
 }) => {
   const [visible, setVisible] = useState(false);
   const inputId = id || "auth-password";
@@ -76,7 +77,7 @@ export const PasswordInput = ({
           onChange={onChange}
           onKeyDown={e => e.key === "Enter" && onEnter?.()}
           autoComplete={autoComplete}
-          enterKeyHint="go"
+          enterKeyHint={enterKeyHint}
           style={{ ...getAuthInpStyle(), paddingRight: 48 }}
         />
         <button
@@ -341,7 +342,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/app`,
+            emailRedirectTo: isNativeApp() ? `${nativeApiOrigin()}/app` : `${window.location.origin}/app`,
             data: {
               ...(referralCode ? { referred_by: referralCode } : {}),
               accepted_terms_at: new Date().toISOString(),
@@ -353,8 +354,22 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error(t("auth.exists"));
         track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || email}` });
+        let sessionUser = data.session?.user ?? null;
+        if (!sessionUser) {
+          const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError && !/email not confirmed/i.test(signInError.message || "")) {
+            throw signInError;
+          }
+          sessionUser = signedIn?.user ?? null;
+        }
+        if (sessionUser) {
+          onAuth(sessionUser);
+          return;
+        }
         setSuccess(referralCode ? t("auth.createdReferral") : t("auth.created"));
-        switchMode("password");
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/app`,
@@ -386,10 +401,52 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
 
   const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
   const native = isNativeApp();
+  const legalChecks = mode === "register" ? (
+    <div className="native-auth-legal" style={{ marginBottom: native ? 12 : 16 }}>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
+        <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>{t("auth.age")}</span>
+      </label>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
+        <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>
+          <Trans
+            i18nKey="auth.terms"
+            ns="onboarding"
+            components={{
+              cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
+              privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
+            }}
+          />
+        </span>
+      </label>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
+        <input type="checkbox" checked={acceptNewsletter} onChange={(e) => setAcceptNewsletter(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>{t("auth.newsletter")}</span>
+      </label>
+      {!native && (
+        <>
+          <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
+            {t("auth.trial")}
+          </p>
+          <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
+            {t("health.safety")}
+          </p>
+        </>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div
       className={native ? "native-auth-fit native-auth-funnel" : undefined}
+      onPointerDown={(e) => {
+        if (!native) return;
+        const t = e.target;
+        if (!(t instanceof Element)) return;
+        if (t.closest("input, textarea, select, button, a, label")) return;
+        hideNativeKeyboard();
+      }}
       style={{
         maxWidth: 440,
         margin: "0 auto",
@@ -457,6 +514,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         {error   && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.mint, fontSize: 13 }}>{success}</div>}
 
+        {native ? legalChecks : null}
+
         {(mode === "password" || mode === "register") && (
           <>
             <SocialAuthButtons
@@ -488,11 +547,18 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               type="email"
               autoComplete="email"
               inputMode="email"
-              enterKeyHint="next"
+              enterKeyHint={native && (mode === "register" || mode === "password") ? "next" : "go"}
               placeholder="exemple@email.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handle()}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                if (native && (mode === "register" || mode === "password")) {
+                  document.getElementById("auth-password")?.focus();
+                  return;
+                }
+                handle();
+              }}
               style={getAuthInpStyle()}
             />
           </div>
@@ -503,7 +569,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              onEnter={handle}
+              onEnter={native && mode === "register" ? hideNativeKeyboard : handle}
+              enterKeyHint={native && mode === "register" ? "done" : "go"}
               autoComplete={mode === "register" ? "new-password" : "current-password"}
             />
           )}
@@ -524,41 +591,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           </div>
         )}
 
-        {mode === "register" && (
-          <div style={{ marginBottom: native ? 10 : 16 }}>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{t("auth.age")}</span>
-            </label>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>
-                <Trans
-                  i18nKey="auth.terms"
-                  ns="onboarding"
-                  components={{
-                    cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
-                    privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
-                  }}
-                />
-              </span>
-            </label>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptNewsletter} onChange={(e) => setAcceptNewsletter(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{t("auth.newsletter")}</span>
-            </label>
-            {!native && (
-              <>
-                <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
-                  {t("auth.trial")}
-                </p>
-                <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
-                  {t("health.safety")}
-                </p>
-              </>
-            )}
-          </div>
-        )}
+        {!native ? legalChecks : null}
 
         <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
           {loading

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Award, Flame, Trophy, TrendingUp, Target,
+  Award, Flame, Trophy, TrendingUp, Lock,
 } from "lucide-react";
 import { FONT } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
@@ -129,9 +129,9 @@ export default function Dashboard({
                 return `${hello}, ${firstName}`;
               })()}
             </p>
-            <h1>{plan ? "Prêt à nager ?" : "Crée ton programme"}</h1>
+            <h1>{!isPremium && plan ? "Essai terminé" : plan ? "Prêt à nager ?" : "Crée ton programme"}</h1>
           </div>
-          {plan && stats.streak > 0 && (
+          {plan && isPremium && stats.streak > 0 && (
             <span className="ms-home-streak" title={`Série de ${stats.streak}`}>
               <Flame size={14} color="#D4A017" aria-hidden />
               {stats.streak}
@@ -141,7 +141,7 @@ export default function Dashboard({
 
         {trialBannerActive ? (
           <TrialCountdownBanner accessState={accessState} onUpgrade={onUpgrade} />
-        ) : plan && next?.resolved ? (
+        ) : isPremium && plan && next?.resolved ? (
           <div className="ms-habit-banner is-done" role="status">
             Séance validée
           </div>
@@ -169,6 +169,29 @@ export default function Dashboard({
           </div>
         )}
 
+        {plan && !isPremium ? (
+          <div className="ms-glass-card" style={{ padding: "22px 18px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <Lock size={20} color={G.blue} />
+              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>Séances en pause</span>
+            </div>
+            <p style={{ margin: "0 0 16px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
+              Ton essai est terminé. Abonne-toi pour retrouver tes séances, tes analyses et le mot du coach.
+            </p>
+            <button
+              type="button"
+              className="ms-pill-cta"
+              onClick={() => {
+                playUiSound("tap");
+                onUpgrade?.("trial_expired");
+              }}
+              style={{ fontFamily: FONT }}
+            >
+              S’abonner
+            </button>
+          </div>
+        ) : (
+          <>
         {preview && (
           <div style={{ marginBottom: 12 }}>
             <SessionHeroCard
@@ -201,30 +224,10 @@ export default function Dashboard({
             currentWeekIndex={coachWeek}
           />
         )}
-
-        {plan && !isPremium && (
-          <div className="ms-glass-card" style={{ padding: "18px 16px", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <Target size={16} color={G.blue} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>Message du coach</span>
-            </div>
-            <p style={{ margin: "0 0 14px", fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
-              Les conseils adaptés à ta progression sont inclus dans Premium.
-            </p>
-            <button
-              type="button"
-              className="ms-pill-cta"
-              onClick={() => {
-                playUiSound("tap");
-                onUpgrade?.("home_coach");
-              }}
-            >
-              Débloquer
-            </button>
-          </div>
+          </>
         )}
 
-        {!isLoop && planFinished && (
+        {!isLoop && isPremium && planFinished && (
           <div className="ms-glass-card" style={{ borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16 }}>
             {plan.isProgression
               ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
@@ -233,7 +236,7 @@ export default function Dashboard({
           </div>
         )}
 
-        {showAllureTip && (
+        {isPremium && showAllureTip && (
           <AllureUnlockSheet
             userId={user?.id}
             isPremium={isPremium}

@@ -71,6 +71,8 @@ export function getAccessState(user) {
     hasPremiumAccess,
     /** Matching PII (tél., ville, prénom) : abo payant seulement, pas l’essai. */
     canUseBuddies: hasPremiumAccess && status !== ACCESS_STATUS.TRIAL,
+    /** Abo payant encore couvert (Apple / Stripe). Pas l’essai 7j. */
+    canManageSubscription: hasPremiumAccess && status !== ACCESS_STATUS.TRIAL,
     isFrozen: Boolean(user) && !hasPremiumAccess,
     canGenerateProgram: hasPremiumAccess,
     canUpdateProgram: hasPremiumAccess,
@@ -126,8 +128,8 @@ export function isFreshSignup(user, nowMs = Date.now()) {
 }
 
 /**
- * Freeze « essai terminé » seulement quand le sync a tranché et que ce n’est
- * pas un compte tout neuf (JWT encore vide / essai 7j pas encore écrit).
+ * Prompt « essai terminé » (sheet repliable) seulement quand le sync a tranché
+ * et que ce n’est pas un compte tout neuf (JWT encore vide / essai 7j pas encore écrit).
  */
 export function shouldShowTrialFreeze(user, {
   accessSynced = false,

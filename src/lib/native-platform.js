@@ -159,3 +159,17 @@ export async function nativePluginRequest(url, init = {}) {
     };
   }
 }
+
+/** Ferme le clavier iOS (tap hors champ, Done, fin de saisie). */
+export function hideNativeKeyboard() {
+  try {
+    const el = typeof document !== "undefined" ? document.activeElement : null;
+    if (el && typeof el.blur === "function") el.blur();
+  } catch {
+    /* ignore */
+  }
+  if (!isNativeApp()) return;
+  void import("@capacitor/keyboard")
+    .then(({ Keyboard }) => Keyboard.hide())
+    .catch(() => {});
+}
