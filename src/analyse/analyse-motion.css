@@ -1,0 +1,104 @@
+/**
+ * Motion Analyse : anneau + barres, tokens soft mist uniquement.
+ */
+
+.ms-analyse-stats {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 22px;
+}
+
+.ms-analyse-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.ms-analyse-hero-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.ms-score-ring {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ms-score-ring-track {
+  stroke: color-mix(in srgb, var(--ms-blue) 12%, transparent);
+}
+
+.ms-score-ring svg {
+  display: block;
+}
+
+.ms-score-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ms-volume-chart {
+  margin-top: 8px;
+}
+
+.ms-volume-bars {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  height: 112px;
+}
+
+.ms-volume-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+}
+
+.ms-volume-bar {
+  width: 10px;
+  border-radius: var(--ms-pill-radius);
+  transform-origin: bottom center;
+}
+
+.ms-volume-bar.is-active {
+  width: 12px;
+}
+
+.ms-volume-labels {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ms-volume-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ms-type-caption);
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-volume-label.is-active {
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-volume-bar {
+    transform: none;
+  }
+}

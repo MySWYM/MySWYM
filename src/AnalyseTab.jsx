@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Lock, Waves } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { AppTabShell, AppTopBar } from "./app-shell/index.js";
@@ -14,6 +15,21 @@ import { buildWeekDayStrip } from "./lib/week-day-strip.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { PRICING } from "./lib/pricing.js";
+import { CountUp } from "./analyse/CountUp.jsx";
+import { ScoreRing } from "./analyse/ScoreRing.jsx";
+import { VolumeBars } from "./analyse/VolumeBars.jsx";
+import { periodCompletionRatio } from "./analyse/score-color.js";
+import "./analyse/analyse-motion.css";
+
+const EASE_OUT = [0.22, 1, 0.36, 1];
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE_OUT } },
+};
+const staggerStats = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
+};
 
 function paceLabel(secs) {
   if (!secs || !Number.isFinite(Number(secs))) return "-";
@@ -45,10 +61,11 @@ function SegTrack({ options, value, onChange, ariaLabel }) {
   );
 }
 
-function GlassStat({ label, value, hint }) {
+function GlassStat({ label, value, hint, numeric = false, format }) {
   return (
-    <div
+    <motion.div
       className="ms-glass-card"
+      variants={fadeUp}
       style={{
         flex: 1,
         minWidth: 0,
@@ -60,67 +77,13 @@ function GlassStat({ label, value, hint }) {
         className="ms-type-display"
         style={{ fontSize: 28 }}
       >
-        {value}
+        {numeric ? <CountUp value={value} format={format} /> : value}
       </div>
       <div className="ms-type-caption" style={{ marginTop: 6 }}>{label}</div>
       {hint ? (
         <div className="ms-type-caption" style={{ marginTop: 2, opacity: 0.85 }}>{hint}</div>
       ) : null}
-    </div>
-  );
-}
-
-function Sparkline({ bars }) {
-  if (!bars?.length) return null;
-  const max = Math.max(1, ...bars.map((bar) => bar.meters || 0));
-  const hasVolume = bars.some((bar) => bar.meters > 0);
-
-  return (
-    <div aria-hidden="true">
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 64 }}>
-        {bars.map((bar) => {
-          const pct = hasVolume
-            ? Math.max(bar.meters > 0 ? 12 : 5, Math.round((bar.meters / max) * 100))
-            : 8;
-          return (
-            <div
-              key={bar.key}
-              title={`${bar.label} · ${formatKm(bar.meters)}`}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                height: `${pct}%`,
-                borderRadius: 6,
-                background: bar.active
-                  ? "linear-gradient(180deg, #3d8fff, #006bfd)"
-                  : "rgba(0, 107, 253, 0.18)",
-                boxShadow: bar.active ? "0 6px 14px rgba(0, 107, 253, 0.25)" : "none",
-              }}
-            />
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
-        {bars.map((bar) => (
-          <div
-            key={`${bar.key}-lbl`}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 9,
-              fontWeight: bar.active ? 700 : 600,
-              color: bar.active ? G.blue : G.greyMid,
-              textAlign: "center",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {bar.label}
-          </div>
-        ))}
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -161,7 +124,9 @@ export default function AnalyseTab({
       planned: weekDayStrip.filter((d) => d.scheduled).length,
     };
   }, [weekDayStrip]);
-  const totalKmLabel = ((stats.totalMeters || 0) / 1000).toFixed(1);
+  const reducedMotion = useReducedMotion();
+  const completionRatio = periodCompletionRatio(periodStats);
+  const ringSublabel = periodStats?.isEmptyTarget ? "à nager" : "du volume";
 
   return (
     <AppTabShell
@@ -262,23 +227,32 @@ export default function AnalyseTab({
 
         {mainTab === "progress" && plan && (
           <>
-            <div style={{ display: "flex", gap: 8, marginBottom: 22, marginTop: 4 }}>
+            <motion.div
+              className="ms-analyse-stats"
+              variants={staggerStats}
+              initial={reducedMotion ? false : "hidden"}
+              animate="show"
+            >
               <GlassStat
                 label="Séances"
-                value={String(weekSessionStats.done)}
+                numeric
+                value={weekSessionStats.done}
                 hint={weekSessionStats.planned > 0 ? `/ ${weekSessionStats.planned}` : "cette semaine"}
               />
               <GlassStat
                 label="Série"
-                value={String(stats.streak || 0)}
+                numeric
+                value={stats.streak || 0}
                 hint={(stats.streak || 0) > 0 ? "en cours" : "à lancer"}
               />
               <GlassStat
                 label="Volume"
-                value={totalKmLabel}
+                numeric
+                value={(stats.totalMeters || 0) / 1000}
+                format={(n) => n.toFixed(1)}
                 hint="km au total"
               />
-            </div>
+            </motion.div>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h2 className="ms-type-section">
@@ -324,44 +298,46 @@ export default function AnalyseTab({
                   })}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
-                  <div>
-                    <div className="ms-type-label">{periodStats.title}</div>
-                    <div
-                      className="ms-type-display"
-                      style={{ fontSize: 36, marginTop: 4 }}
-                    >
-                      {periodStats.isEmptyTarget
-                        ? formatKm(periodStats.plannedMeters)
-                        : periodStats.kmLabel}
+                <div key={period}>
+                  <div className="ms-analyse-hero">
+                    <div className="ms-analyse-hero-copy">
+                      <div className="ms-type-label">{periodStats.title}</div>
+                      <div
+                        className="ms-type-display"
+                        style={{ fontSize: 36, marginTop: 4 }}
+                      >
+                        <CountUp
+                          value={
+                            periodStats.isEmptyTarget
+                              ? periodStats.plannedMeters
+                              : periodStats.doneMeters
+                          }
+                          format={(n) => formatKm(Math.round(n))}
+                        />
+                      </div>
+                      <div className="ms-type-caption" style={{ marginTop: 8 }}>
+                        {periodStats.showPrescribed
+                          ? `${periodStats.doneSessions}/${periodStats.plannedSessions} séances`
+                          : `${periodStats.doneSessions} séance${periodStats.doneSessions > 1 ? "s" : ""}`}
+                      </div>
+                      {periodStats.deltaLabel ? (
+                        <p
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: periodStats.deltaLabel.startsWith("+") ? G.mint : G.coral,
+                            margin: "10px 0 0",
+                          }}
+                        >
+                          {periodStats.deltaLabel}
+                        </p>
+                      ) : null}
                     </div>
+                    <ScoreRing ratio={completionRatio} sublabel={ringSublabel} />
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: G.blue, fontVariantNumeric: "tabular-nums", letterSpacing: "var(--ms-tracking-tight)" }}>
-                      {periodStats.showPrescribed
-                        ? `${periodStats.doneSessions}/${periodStats.plannedSessions}`
-                        : periodStats.doneSessions}
-                    </div>
-                    <div className="ms-type-caption">séances</div>
-                  </div>
+
+                  <VolumeBars bars={periodStats.sparkline} />
                 </div>
-
-                {periodStats.deltaLabel ? (
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: periodStats.deltaLabel.startsWith("+") ? G.mint : G.coral,
-                      margin: "0 0 14px",
-                    }}
-                  >
-                    {periodStats.deltaLabel}
-                  </p>
-                ) : (
-                  <div style={{ height: 10 }} />
-                )}
-
-                <Sparkline bars={periodStats.sparkline} />
               </div>
             )}
 
@@ -442,4 +418,3 @@ export default function AnalyseTab({
     </AppTabShell>
   );
 }
-
