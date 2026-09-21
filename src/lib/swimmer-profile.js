@@ -6,6 +6,7 @@
 
 import { impliedSwimStyleForLevel } from "./onboarding-level-gate.js";
 import { resolveInjuryFields } from "./health-data.js";
+import { normalizeCountry } from "./countries.js";
 
 export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "level",
@@ -15,7 +16,8 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "birthDay",
   "birthYear",
   "age", // dérivé de birthDay/birthMonth/birthYear (miroir legacy)
-  "gender", // homme | femme, optionnel (libellé UI : sexe)
+  "gender", // homme | femme | autre, optionnel (libellé UI : sexe)
+  "country", // ISO 3166-1 alpha-2, optionnel
   "weightKg",
   "heightCm",
   "equipment",
@@ -29,7 +31,13 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "injuryNote",
   "healthConsent",
   "healthConsentAt",
+  "injuryConsent",
+  "injuryConsentAt",
+  "heartRateConsent",
+  "heartRateConsentAt",
   "healthDeclaration",
+  "appleHealthConnected",
+  "appleHealthConnectedAt",
   "pace100",
   "pace50",
   "pace400",
@@ -84,11 +92,12 @@ export function computeAgeFromBirth(birthMonth, birthYear, now = new Date(), bir
 }
 
 /** Sexe déclaré (optionnel). Pas utilisé par le moteur de séances. */
-export const GENDER_IDS = Object.freeze(["homme", "femme"]);
+export const GENDER_IDS = Object.freeze(["homme", "femme", "autre"]);
 
 export const GENDER_OPTIONS = Object.freeze([
   { id: "homme", label: "Homme" },
   { id: "femme", label: "Femme" },
+  { id: "autre", label: "Autre" },
 ]);
 
 export function normalizeGender(value) {
@@ -100,6 +109,7 @@ export function normalizeGender(value) {
     .replace(/\p{M}/gu, "");
   if (s === "homme" || s === "male" || s === "man" || s === "h") return "homme";
   if (s === "femme" || s === "female" || s === "woman" || s === "f") return "femme";
+  if (s === "autre" || s === "other" || s === "non-binaire" || s === "nb") return "autre";
   return "";
 }
 
@@ -107,7 +117,17 @@ export function genderLabelFr(value) {
   const id = normalizeGender(value);
   if (id === "homme") return "Homme";
   if (id === "femme") return "Femme";
+  if (id === "autre") return "Autre";
   return "Non renseigné";
+}
+
+export function formatBirthDisplay(day, month, year) {
+  const d = Number(day);
+  const m = Number(month);
+  const y = Number(year);
+  if (!Number.isFinite(d) || d < 1 || !Number.isFinite(m) || m < 1 || m > 12) return "";
+  if (!Number.isFinite(y) || y < 1900) return "";
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
 }
 
 export function ageBandLabel(age) {
@@ -282,6 +302,9 @@ export function extractSwimmerProfile(source = {}) {
   const out = { ...withAge, ...resolveInjuryFields(withAge) };
   const genderRaw = withAge.gender ?? source.gender;
   if (genderRaw !== undefined) out.gender = normalizeGender(genderRaw);
+  if (raw.country !== undefined || source.country !== undefined) {
+    out.country = normalizeCountry(raw.country ?? source.country);
+  }
   return out;
 }
 
@@ -404,6 +427,7 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     birthYear: "",
     age: "",
     gender: "",
+    country: "",
     weightKg: "",
     heightCm: "",
     injuryStatus: null,
@@ -413,6 +437,10 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     injuryNote: "",
     healthConsent: false,
     healthConsentAt: null,
+    injuryConsent: false,
+    injuryConsentAt: null,
+    heartRateConsent: false,
+    heartRateConsentAt: null,
     healthDeclaration: false,
     swimStyle: null,
     preferredStroke: null,
@@ -442,8 +470,22 @@ export function hydrateSwimmerFromSources({ sportRowFields = {}, planProfile = {
   if (!Array.isArray(merged.equipment) && Array.isArray(fromSport.equipment)) {
     merged.equipment = fromSport.equipment;
   }
-  for (const key of ["gender", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm"]) {
-    if ((merged[key] == null || merged[key] === "") && fromSport[key] != null && fromSport[key] !== "") {
+  for (const key of ["gender", "country", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm", "appleHealthConnected", "appleHealthConnectedAt"]) {
+    if (fromSport[key] != null && fromSport[key] !== "") {
+      merged[key] = fromSport[key];
+    }
+  }
+  // Compte = source de vérité consentements santé (le blob plan a souvent healthConsent: false par défaut).
+  for (const key of [
+    "injuryConsent",
+    "injuryConsentAt",
+    "heartRateConsent",
+    "heartRateConsentAt",
+    "healthConsent",
+    "healthConsentAt",
+    "healthDeclaration",
+  ]) {
+    if (fromSport[key] !== undefined) {
       merged[key] = fromSport[key];
     }
   }

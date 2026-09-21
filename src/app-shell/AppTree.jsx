@@ -247,6 +247,10 @@ export default function AppTree() {
               <Route path="/login" element={<Navigate to="/connexion" replace />} />
               <Route path="/register" element={<Navigate to="/inscription" replace />} />
 
+              {isNativeApp() ? (
+                <Route path="*" element={<Navigate to="/app" replace />} />
+              ) : (
+                <>
               <Route path="/prototype/conversion" element={<ConversionFlow />} />
               <Route path="/prototype/session-pyramid" element={<SessionPyramidPreview />} />
 
@@ -270,6 +274,8 @@ export default function AppTree() {
               <Route path="/en/*" element={<LegacyEnRedirect />} />
               <Route path="/fr">{frMarketingRoutes()}</Route>
               {enMarketingRoutes()}
+                </>
+              )}
             </Routes>
             </NativeIosShell>
           </Suspense>

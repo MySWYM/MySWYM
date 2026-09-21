@@ -22,6 +22,7 @@ import { periodCompletionRatio } from "./analyse/score-color.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import IosPremiumBar from "./ui/IosPremiumBar.jsx";
 import HistoriqueTab from "./HistoriqueTab.jsx";
+import IosAnalyseHome from "./analyse/IosAnalyseHome.jsx";
 import "./analyse/analyse-motion.css";
 
 const EASE_OUT = [0.22, 1, 0.36, 1];
@@ -106,6 +107,7 @@ export default function AnalyseTab({
   onValidateSession,
   onShare = null,
   activePlanId = null,
+  accessState = null,
 }) {
   const { MonAllureCard, StravaSection } = getTabUi();
   const [mainTab, setMainTab] = useState("progress");
@@ -143,6 +145,24 @@ export default function AnalyseTab({
         { id: "volume", label: "Volume" },
         { id: "badges", label: "Badges" },
       ];
+
+  if (iosNav) {
+    return (
+      <IosAnalyseHome
+        plan={plan}
+        profile={profile}
+        user={user}
+        isPremium={isPremium}
+        onOpenMenu={onOpenMenu}
+        onTabChange={onTabChange}
+        onUpgrade={onUpgrade}
+        onPaceUpdate={onPaceUpdate}
+        onShare={onShare}
+        activePlanId={activePlanId}
+        accessState={accessState}
+      />
+    );
+  }
 
   return (
     <AppTabShell

@@ -4,12 +4,12 @@ import { useTranslation } from "react-i18next";
 import {
   Check, Pencil, Camera, Trash2, X, AlertTriangle, ChevronLeft,
   Volume2, CreditCard, LogOut, RotateCcw, ChevronRight, Mail, User,
-  Target, Waves, Package, HeartPulse, CalendarDays, Settings, Users,
+  Target, Waves, Package, HeartPulse, CalendarDays, Settings,
 } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { FONT_DISPLAY } from "./theme/brand.js";
 import { isNativeIos } from "./lib/native-platform.js";
-import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import { isIosSimpleNav, iosShowPremiumBar } from "./lib/ios-simple-nav.js";
 import IosPremiumBar from "./ui/IosPremiumBar.jsx";
 import { supabase } from "./supabase.js";
 import {
@@ -23,7 +23,10 @@ import {
   readCachedFirstName,
   writeCachedFirstName,
   resolveDisplayFirstName,
+  resolveDisplayLastName,
+  resolveDisplayFullName,
 } from "./lib/identity-cache.js";
+import "./profile/ios-profile.css";
 import {
   playUiSound,
   getUiSoundsEnabled,
@@ -32,13 +35,25 @@ import {
 import { PRICING } from "./lib/pricing.js";
 import { getAccessState } from "./lib/access.js";
 import { openAppleSubscriptionManagement } from "./lib/native-iap.js";
-import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING } from "./lib/legal-copy.js";
-import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import {
   ProfileHelpSettingsRows,
   ProfileSupportPanel,
   ProfileLegalPanel,
+  useFitOverflow,
 } from "./ProfileHelpPanels.jsx";
+import {
+  IosSettingsHome,
+  IosLanguagePanel,
+  IosPasswordPanel,
+  IosDataPanel,
+  IosStravaPanel,
+  IosAppleHealthPanel,
+  IosSubscriptionPanel,
+} from "./profile/IosSettings.jsx";
+import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING } from "./lib/legal-copy.js";
+import { requestAppleHealth } from "./lib/native-health.js";
+import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
+import { getTabUi } from "./tab-ui-registry.js";
 import ProfileSection from "./ui/ProfileSection.jsx";
 import FrequencyGauge from "./ui/FrequencyGauge.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
@@ -50,7 +65,8 @@ import {
   setNewsletterOptIn,
 } from "./lib/newsletter-opt-in.js";
 import {
-  HEALTH_CONSENT_CHECKBOX,
+  INJURY_CONSENT_CHECKBOX,
+  HEART_RATE_CONSENT_CHECKBOX,
   INJURY_ZONES,
   INJURY_SEVERITIES,
   formatInjurySummary,
@@ -58,20 +74,38 @@ import {
   toggleInjuryZone,
   setInjurySeverity,
   clearInjuries,
+  hasInjuryConsent,
+  hasHeartRateConsent,
 } from "./lib/health-data.js";
 import {
   BIRTH_MONTH_OPTIONS,
   GENDER_OPTIONS,
   computeAgeFromBirth,
   daysInBirthMonth,
+  formatBirthDisplay,
 } from "./lib/swimmer-profile.js";
+import { countryLabelFr } from "./lib/countries.js";
+import IosFloatField, { IosFloatButton } from "./profile/IosFloatField.jsx";
+import FlagCircle from "./profile/FlagCircle.jsx";
+import IosCountrySheet from "./profile/IosCountrySheet.jsx";
+import IosBirthWheelSheet from "./profile/IosBirthWheelSheet.jsx";
 import i18n from "./i18n/index.js";
 
 import {
-  CATEGORIES, POOLS, SWIM_STYLES,
+  CATEGORIES, POOLS, SWIM_STYLES, SUB_GOALS,
   EQUIPMENT_OPTS, eqLabel, hidesFourNagesChoice, findGoalById, levelsForPicker, findLevelById,
+  isProgressionGoal,
 } from "./lib/onboarding-catalog.jsx";
 import { impliedSwimStyleForLevel, isBeginnerBlockedForGoal } from "./lib/onboarding-level-gate.js";
+import {
+  familyIdFromProfile,
+  familyNeedsDate,
+  formatEventLine,
+  rhythmLine,
+  currentWeekLine,
+  isSameGoalPatch,
+} from "./lib/profile-goal.js";
+import IosGoalPickerSheet from "./profile/IosGoalPickerSheet.jsx";
 
 /** Icônes produit MySWYM (WebP fond transparent). */
 const EQUIPMENT_IMAGES = {
@@ -97,6 +131,38 @@ function snapshotNatation(profile) {
   };
 }
 
+function iosGoalCard(profile, plan) {
+  const familyId = familyIdFromProfile(profile);
+  const family = CATEGORIES.find((c) => c.id === familyId);
+  const goalMeta = findGoalById(profile?.goal);
+  const sub = (SUB_GOALS[familyId] || []).find((s) => s.id === profile?.goal);
+  const familyLabel = family?.label || goalMeta?.label || "Mon objectif";
+  let targetLabel = "";
+  if (sub) {
+    targetLabel = sub.dist ? `${sub.label} · ${sub.dist}` : sub.label;
+  } else if (goalMeta && !isProgressionGoal(profile?.goal)) {
+    targetLabel = goalMeta.dist ? `${goalMeta.label} · ${goalMeta.dist}` : goalMeta.label;
+  }
+  const dateLabel = familyNeedsDate(familyId) ? formatEventLine(profile?.eventDate) : "";
+  const weekLabel = currentWeekLine(plan);
+  const freqLabel = rhythmLine(profile);
+  return { familyLabel, targetLabel, dateLabel, freqLabel, weekLabel };
+}
+
+function snapshotBirth(profile) {
+  const nowY = new Date().getFullYear();
+  const birthYear = profile?.birthYear ?? (
+    profile?.age != null && profile.age !== "" && Number.isFinite(Number(profile.age))
+      ? nowY - Math.round(Number(profile.age))
+      : ""
+  );
+  return {
+    day: profile?.birthDay ?? "",
+    month: profile?.birthMonth ?? "",
+    year: birthYear,
+  };
+}
+
 function natationPatch(draft, baseline) {
   const patch = {};
   if (draft.level !== baseline.level) patch.level = draft.level;
@@ -107,7 +173,7 @@ function natationPatch(draft, baseline) {
 }
 
 export default function ProfileTab({
-  plan: _plan,
+  plan,
   profile,
   user,
   onUserUpdate,
@@ -125,8 +191,13 @@ export default function ProfileTab({
   referralSlot = null,
   onGoBuddies = null,
   showBuddies = false,
+  onHideDock = null,
+  onPaceUpdate = null,
+  onValidateSession = null,
+  onChangeGoal = null,
 }) {
   const { t: to } = useTranslation("onboarding");
+  const { StravaSection } = getTabUi();
   const access = getAccessState(user);
   const applePaid = access.billingProvider === "apple";
   const canManageSubscription = access.canManageSubscription;
@@ -145,6 +216,10 @@ export default function ProfileTab({
   );
   const [draftNatation, setDraftNatation] = useState(() => snapshotNatation(profile));
   const [natationConfirmOpen, setNatationConfirmOpen] = useState(false);
+  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
+  const [goalConfirmOpen, setGoalConfirmOpen] = useState(false);
+  const [pendingGoalPatch, setPendingGoalPatch] = useState(null);
+  const [goalBusy, setGoalBusy] = useState(false);
 
   useEffect(() => {
     setDraftEquipment(Array.isArray(profile?.equipment) ? [...profile.equipment] : []);
@@ -247,7 +322,17 @@ export default function ProfileTab({
   const [firstName, setFirstName] = useState(() => (
     user?.user_metadata?.firstname || readCachedFirstName(user?.id) || ""
   ));
+  const [lastName, setLastName] = useState(() => resolveDisplayLastName(user));
   const [nameInput, setNameInput] = useState(firstName);
+  const [lastNameInput, setLastNameInput] = useState(lastName);
+  const [draftGender, setDraftGender] = useState(() => profile?.gender || "");
+  const [draftCountry, setDraftCountry] = useState(() => profile?.country || "");
+  const [draftBirth, setDraftBirth] = useState(() => snapshotBirth(profile));
+  const [draftWeight, setDraftWeight] = useState(() => profile?.weightKg ?? "");
+  const [draftHeight, setDraftHeight] = useState(() => profile?.heightCm ?? "");
+  const [countrySheetOpen, setCountrySheetOpen] = useState(false);
+  const [birthWheelOpen, setBirthWheelOpen] = useState(false);
+  const [profileLane, setProfileLane] = useState("natation");
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
   const [newsletterOn, setNewsletterOn] = useState(() => isNewsletterOptedIn(user));
@@ -257,10 +342,58 @@ export default function ProfileTab({
   const [pwdBusy, setPwdBusy] = useState(false);
   const [pwdError, setPwdError] = useState(null);
   const [pwdOk, setPwdOk] = useState(false);
-  const [helpPanel, setHelpPanel] = useState(null); // "support" | "legal" | null
+  const [helpPanel, setHelpPanel] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const [healthBusy, setHealthBusy] = useState(false);
+  const [healthErr, setHealthErr] = useState(null);
+  const settingsBodyRef = useFitOverflow(settingsOpen && !helpPanel);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    onHideDock?.(isIosSimpleNav() && !!(
+      settingsOpen || helpPanel || editProfileOpen || goalPickerOpen || goalConfirmOpen
+      || natationDirty || equipmentDirty
+    ));
+    return () => onHideDock?.(false);
+  }, [settingsOpen, helpPanel, editProfileOpen, goalPickerOpen, goalConfirmOpen, natationDirty, equipmentDirty, onHideDock]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setStravaConnected(false);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data: rpcRows, error: rpcError } = await supabase.rpc("get_strava_connection_status");
+        if (cancelled) return;
+        if (!rpcError) {
+          const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+          setStravaConnected(row?.connected === true);
+          return;
+        }
+        const { data } = await supabase
+          .from("strava_tokens")
+          .select("athlete_data")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled) setStravaConnected(!!data);
+      } catch {
+        if (!cancelled) setStravaConnected(false);
+      }
+    };
+    load();
+    const refresh = () => { load(); };
+    window.addEventListener("myswym:strava-connected", refresh);
+    window.addEventListener("myswym:strava-status", refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("myswym:strava-connected", refresh);
+      window.removeEventListener("myswym:strava-status", refresh);
+    };
+  }, [user?.id, helpPanel]);
 
   // Resync depuis user_metadata quand l'objet user arrive ou change
   useEffect(() => {
@@ -269,10 +402,11 @@ export default function ProfileTab({
       const cached = readCachedFirstName(user.id);
       if (cached) setFirstName(cached);
     }
+    setLastName(resolveDisplayLastName(user));
     if (avatarBusy) return;
     const next = resolveAvatarUrl(user);
     setAvatarUrl(next);
-  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.avatar_url, avatarBusy]);
+  }, [user?.id, user?.user_metadata?.firstname, user?.user_metadata?.lastname, user?.user_metadata?.full_name, user?.user_metadata?.avatar_url, avatarBusy]);
 
   useEffect(() => {
     setNewsletterOn(isNewsletterOptedIn(user));
@@ -297,7 +431,56 @@ export default function ProfileTab({
     playUiSound("soft");
     const fallback = resolveDisplayFirstName(user);
     setNameInput(fallback);
+    setLastNameInput(resolveDisplayLastName(user));
+    setDraftGender(profile?.gender || "");
+    setDraftCountry(profile?.country || user?.user_metadata?.country || "");
+    setDraftBirth(snapshotBirth(profile));
+    setDraftWeight(profile?.weightKg ?? "");
+    setDraftHeight(profile?.heightCm ?? "");
     setEditProfileOpen(true);
+  };
+
+  const savePerson = () => {
+    const first = nameInput.trim();
+    const last = lastNameInput.trim();
+    if (first) {
+      writeCachedFirstName(user?.id, first);
+      setFirstName(first);
+    }
+    setLastName(last);
+    const fullName = [first || firstName, last].filter(Boolean).join(" ");
+    supabase.auth.updateUser({
+      data: {
+        ...(first ? { firstname: first } : {}),
+        lastname: last,
+        full_name: fullName,
+        country: draftCountry || "",
+      },
+    })
+      .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
+      .catch(() => {});
+    if (onSwimmerProfileChange) {
+      const day = draftBirth.day === "" ? "" : Number(draftBirth.day);
+      const month = draftBirth.month === "" ? "" : Number(draftBirth.month);
+      const year = draftBirth.year === "" ? "" : Number(draftBirth.year);
+      const age = computeAgeFromBirth(month, year, new Date(), day === "" ? undefined : day);
+      onSwimmerProfileChange({
+        gender: draftGender,
+        country: draftCountry || "",
+        birthDay: day,
+        birthMonth: month,
+        birthYear: year,
+        ...(age != null ? { age } : {}),
+        weightKg: draftWeight === "" ? "" : Number(draftWeight),
+        heightCm: draftHeight === "" ? "" : Number(draftHeight),
+      });
+    }
+    setEditProfileOpen(false);
+    setCountrySheetOpen(false);
+    setBirthWheelOpen(false);
+    playUiSound("success");
+    setMsg({ type: "ok", text: "Profil mis à jour." });
+    setTimeout(() => setMsg(null), 2500);
   };
 
   const openAccountSheet = () => {
@@ -373,18 +556,7 @@ export default function ProfileTab({
   };
 
   const saveName = () => {
-    const v = nameInput.trim();
-    if (v) {
-      writeCachedFirstName(user?.id, v);
-      setFirstName(v);
-      supabase.auth.updateUser({ data: { firstname: v } })
-        .then(({ data }) => { if (data?.user && onUserUpdate) onUserUpdate(data.user); })
-        .catch(() => {});
-    }
-    setEditProfileOpen(false);
-    playUiSound("success");
-    setMsg({ type: "ok", text: "Profil mis à jour." });
-    setTimeout(() => setMsg(null), 2500);
+    savePerson();
   };
 
   const handleAvatarChange = async (e) => {
@@ -436,12 +608,16 @@ export default function ProfileTab({
     }
   };
 
-  const displayName = firstName || resolveDisplayFirstName(user);
-  const initials = displayName.slice(0, 2).toUpperCase();
+  const fullName = [firstName || resolveDisplayFirstName(user), lastName].filter(Boolean).join(" ")
+    || resolveDisplayFullName(user);
+  const initials = fullName.slice(0, 2).toUpperCase();
+  const iosNav = isIosSimpleNav();
+  const iosCover = iosNav && (settingsOpen || helpPanel || editProfileOpen);
   const levelLabel = findLevelById(profile?.level)?.label || profile?.level || "Nageur";
   const goalLabel = findGoalById(profile?.goal)?.label
     || CATEGORIES.find(c => c.id === profile?.category)?.label
     || "Mon objectif";
+  const iosGoal = iosGoalCard(profile, plan);
   const freqN = Math.max(0, Math.min(7, Number(profile?.sessionsPerWeek) || 0));
   const programmeLabel = freqN > 0
     ? `${freqN} séance${freqN > 1 ? "s" : ""}`
@@ -469,25 +645,148 @@ export default function ProfileTab({
     }
   };
 
+  const patchDraftBirth = (nextDay, nextMonth, nextYear) => {
+    const d = nextDay === "" ? "" : Number(nextDay);
+    const m = nextMonth === "" ? "" : Number(nextMonth);
+    const y = nextYear === "" ? "" : Number(nextYear);
+    const maxD = daysInBirthMonth(m, y);
+    const clamped = d === "" ? "" : Math.min(Math.max(1, d), maxD);
+    setDraftBirth({ day: clamped, month: m, year: y });
+  };
+  const personDayOpts = [];
+  {
+    const dim = daysInBirthMonth(draftBirth.month, draftBirth.year);
+    for (let d = 1; d <= dim; d++) personDayOpts.push(d);
+  }
+  const nowYear = new Date().getFullYear();
+
   return (
-    <AppTabShell style={{
-      minHeight: "100dvh",
-      paddingBottom: profileDirty
-        ? (isIosSimpleNav()
-          ? "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 112px)"
-          : "calc(var(--safe-bottom) + 112px)")
-        : (isIosSimpleNav()
-          ? "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)"
-          : "calc(var(--safe-bottom) + 32px)"),
-    }}>
+    <AppTabShell
+      className={iosCover ? "ios-cover-lock" : undefined}
+      style={{
+        minHeight: "100dvh",
+        ...(iosCover ? { height: "100dvh", overflow: "hidden" } : {}),
+        paddingBottom: iosCover
+          ? 0
+          : profileDirty
+            ? "calc(var(--safe-bottom) + 112px)"
+            : (iosNav
+              ? "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)"
+              : "calc(var(--safe-bottom) + 32px)"),
+      }}
+    >
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
       {helpPanel === "support" ? (
         <ProfileSupportPanel onBack={() => setHelpPanel(null)} />
       ) : null}
       {helpPanel === "legal" ? (
         <ProfileLegalPanel onBack={() => setHelpPanel(null)} />
       ) : null}
+      {helpPanel === "language" ? (
+        <IosLanguagePanel onBack={() => setHelpPanel(null)} />
+      ) : null}
+      {helpPanel === "password" ? (
+        <IosPasswordPanel
+          user={user}
+          onBack={() => setHelpPanel(null)}
+          onMsg={setMsg}
+        />
+      ) : null}
+      {helpPanel === "data" ? (
+        <IosDataPanel
+          user={user}
+          profile={profile}
+          onBack={() => setHelpPanel(null)}
+          onMsg={setMsg}
+          newsletterOn={newsletterOn}
+          newsletterBusy={newsletterBusy}
+          onToggleNewsletter={toggleNewsletter}
+          onDeleteAccount={async () => {
+            setDeleteErr(null);
+            setDeleteBusy(true);
+            try {
+              await onDeleteAccount();
+            } catch (e) {
+              setDeleteErr(e?.message || "Suppression impossible.");
+              setDeleteBusy(false);
+            }
+          }}
+          deleteBusy={deleteBusy}
+          deleteErr={deleteErr}
+          deleteGate={deleteGate}
+          deleteWarning={deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
+        />
+      ) : null}
+      {helpPanel === "strava" ? (
+        <IosStravaPanel onBack={() => setHelpPanel(null)}>
+          <StravaSection
+            user={user}
+            plan={plan}
+            profile={profile}
+            currentPace100={profile?.pace100}
+            onPaceUpdate={onPaceUpdate}
+            onValidateSession={onValidateSession}
+            showProgramActions={false}
+            showDetails
+            embedded
+            isPremium={isPremium}
+            onUpgrade={onUpgrade}
+          />
+        </IosStravaPanel>
+      ) : null}
+      {helpPanel === "health" ? (
+        <IosAppleHealthPanel
+          connected={profile?.appleHealthConnected === true}
+          busy={healthBusy}
+          error={healthErr}
+          onBack={() => {
+            setHealthErr(null);
+            setHelpPanel(null);
+          }}
+          onConnect={async () => {
+            setHealthBusy(true);
+            setHealthErr(null);
+            try {
+              await requestAppleHealth();
+              onSwimmerProfileChange?.({
+                appleHealthConnected: true,
+                appleHealthConnectedAt: new Date().toISOString(),
+              });
+              playUiSound("success");
+            } catch (e) {
+              setHealthErr(e?.message || "Impossible de relier Apple Santé.");
+            } finally {
+              setHealthBusy(false);
+            }
+          }}
+          onDisconnect={() => {
+            onSwimmerProfileChange?.({
+              appleHealthConnected: false,
+              appleHealthConnectedAt: null,
+            });
+            playUiSound("soft");
+          }}
+        />
+      ) : null}
+      {helpPanel === "subscription" ? (
+        <IosSubscriptionPanel
+          onBack={() => setHelpPanel(null)}
+          canManageSubscription={canManageSubscription}
+          isPremium={isPremium}
+          applePaid={applePaid}
+          nativeIos={isNativeIos()}
+          access={access}
+          onUpgrade={onUpgrade}
+          onPortal={() => {
+            if (applePaid) void openAppleSubscriptionManagement();
+            else onPortal();
+          }}
+          onCancelSubscription={onCancelSubscription}
+          referralSlot={referralSlot}
+        />
+      ) : null}
       {settingsOpen && !helpPanel ? (
-        <div className="ms-profile-subpanel">
+        <div className="ms-profile-subpanel ios-lock-pane">
           <header className="ms-profile-subpanel-toolbar">
             <button
               type="button"
@@ -503,13 +802,34 @@ export default function ProfileTab({
             <h1>Paramètres</h1>
             <div style={{ width: 44 }} aria-hidden />
           </header>
-          <div className="ms-profile-subpanel-body">
+          <div ref={settingsBodyRef} className="ms-profile-subpanel-body">
           {msg && (
             <div style={{ background: msg.type === "ok" ? G.mintLight : G.coralLight, borderRadius: 12, padding: "10px 12px", marginBottom: 14, color: msg.type === "ok" ? G.mint : G.coral, fontSize: 13 }}>
               {msg.text}
             </div>
           )}
 
+          {isIosSimpleNav() ? (
+            <IosSettingsHome
+              user={user}
+              onRefreshStatus={onRefreshStatus}
+              stravaConnected={stravaConnected}
+              healthConnected={profile?.appleHealthConnected === true}
+              onOpenStrava={() => setHelpPanel("strava")}
+              onOpenHealth={() => {
+                setHealthErr(null);
+                setHelpPanel("health");
+              }}
+              onOpenSubscription={() => setHelpPanel("subscription")}
+              onOpenLanguage={() => setHelpPanel("language")}
+              onOpenPassword={() => setHelpPanel("password")}
+              onOpenData={() => setHelpPanel("data")}
+              onOpenHelp={() => setHelpPanel("support")}
+              onOpenLegal={() => setHelpPanel("legal")}
+              onSignOut={onSignOut}
+            />
+          ) : (
+          <>
           <div className="ms-profile-group-label">Compte</div>
           <div className="ms-profile-account-stack">
             <button type="button" className="ms-profile-account-row" onClick={openAccountSheet}>
@@ -557,6 +877,37 @@ export default function ProfileTab({
               onOpenLegal={() => setHelpPanel("legal")}
             />
           </div>
+
+          {isIosSimpleNav() ? (
+            <>
+              <div className="ms-profile-group-label">Connexions</div>
+              <div className="ms-profile-settings-list" style={{ marginBottom: 16 }}>
+                <div className="ms-glass-card" style={{ padding: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
+                      <Waves size={18} color={G.blue} />
+                    </span>
+                    <div>
+                      <div className="ms-profile-settings-label">Strava</div>
+                      <div className="ms-profile-settings-hint">Sync nage et allure</div>
+                    </div>
+                  </div>
+                  <StravaSection
+                    user={user}
+                    plan={plan}
+                    profile={profile}
+                    currentPace100={profile?.pace100}
+                    onPaceUpdate={onPaceUpdate}
+                    onValidateSession={onValidateSession}
+                    showProgramActions={false}
+                    showDetails={false}
+                    isPremium={isPremium}
+                    onUpgrade={onUpgrade}
+                  />
+                </div>
+              </div>
+            </>
+          ) : null}
 
           <div className="ms-profile-group-label">Abonnement</div>
           <div className="ms-profile-settings-list" style={{ marginBottom: 16 }}>
@@ -727,12 +1078,276 @@ export default function ProfileTab({
               <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral }}>{deleteErr}</div>
             ) : null}
           </div>
+          </>
+          )}
           </div>
         </div>
       ) : null}
-      <AppShell style={helpPanel || settingsOpen ? { display: "none" } : undefined}>
+      {iosNav && editProfileOpen && !helpPanel && !settingsOpen ? (
+        <div className="ms-profile-subpanel ios-lock-pane">
+          <header className="ms-profile-subpanel-toolbar">
+            <button
+              type="button"
+              className="ms-glass-icon-btn"
+              aria-label="Retour"
+              onClick={() => {
+                playUiSound("soft");
+                setCountrySheetOpen(false);
+                setBirthWheelOpen(false);
+                setEditProfileOpen(false);
+              }}
+            >
+              <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
+            </button>
+            <h1>Profil</h1>
+            <div style={{ width: 44 }} aria-hidden />
+          </header>
+          <div className="ms-profile-subpanel-body is-scrollable">
+            <div className="ios-person-photo">
+              <button
+                type="button"
+                className="ms-edit-profile-avatar"
+                onClick={() => {
+                  if (avatarBusy) return;
+                  playUiSound("soft");
+                  fileInputRef.current?.click();
+                }}
+                aria-label="Modifier la photo"
+                style={{ opacity: avatarBusy ? 0.7 : 1, cursor: avatarBusy ? "wait" : "pointer" }}
+              >
+                <span className="ms-edit-profile-avatar-media">
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt="" />
+                    : <span style={{ fontSize: 28, fontWeight: 800, color: G.blue }}>{initials}</span>}
+                </span>
+              </button>
+              <button
+                type="button"
+                className="ms-pill-cta ms-pill-cta-secondary"
+                style={{ marginTop: 12, minHeight: 40, width: "auto", padding: "0 16px" }}
+                onClick={() => {
+                  if (avatarBusy) return;
+                  playUiSound("soft");
+                  fileInputRef.current?.click();
+                }}
+              >
+                <Pencil size={14} style={{ marginRight: 8 }} />
+                Modifier la photo
+              </button>
+              {avatarUrl ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playUiSound("soft");
+                    handleAvatarRemove();
+                  }}
+                  style={{
+                    marginTop: 8, border: "none", background: "none", cursor: "pointer",
+                    fontSize: 13, fontWeight: 600, color: G.coral,
+                  }}
+                >
+                  Supprimer la photo
+                </button>
+              ) : null}
+            </div>
+            <div className="ios-person-fields">
+              <IosFloatField
+                label="Prénom"
+                value={nameInput}
+                onChange={setNameInput}
+                autoComplete="given-name"
+              />
+              <IosFloatField
+                label="Nom"
+                value={lastNameInput}
+                onChange={setLastNameInput}
+                autoComplete="family-name"
+              />
+              <IosFloatButton
+                label="Date de naissance"
+                value={formatBirthDisplay(draftBirth.day, draftBirth.month, draftBirth.year)}
+                onClick={() => setBirthWheelOpen(true)}
+              />
+              <IosFloatButton
+                label="Pays"
+                prefix={draftCountry ? <FlagCircle code={draftCountry} lazy={false} /> : null}
+                value={countryLabelFr(draftCountry)}
+                onClick={() => setCountrySheetOpen(true)}
+              />
+            </div>
+            <div className="ms-profile-label" style={{ marginTop: 18 }}>Genre</div>
+            <div className="ms-profile-choice-row">
+              {GENDER_OPTIONS.map((opt) => {
+                const active = draftGender === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setDraftGender(opt.id)}
+                    className={`ms-profile-choice is-fill${active ? " is-active" : ""}`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="ms-profile-metrics-grid" style={{ marginTop: 16 }}>
+              <IosFloatField
+                label="Poids (kg)"
+                value={draftWeight}
+                onChange={setDraftWeight}
+                type="number"
+                inputMode="numeric"
+              />
+              <IosFloatField
+                label="Taille (cm)"
+                value={draftHeight}
+                onChange={setDraftHeight}
+                type="number"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="ms-profile-label" style={{ marginTop: 18 }}>Blessure</div>
+            <div className="ms-profile-choice-row">
+              {[
+                { id: "aucune", label: "Aucune" },
+                { id: "oui", label: "Oui" },
+              ].map((o) => {
+                const active = profile?.injuryStatus === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => {
+                      if (o.id === "aucune") {
+                        onSwimmerProfileChange(clearInjuries());
+                      } else {
+                        onSwimmerProfileChange({ injuryStatus: "oui" });
+                      }
+                    }}
+                    className={`ms-profile-choice is-fill${active ? " is-active" : ""}`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            {profile?.injuryStatus === "oui" && (
+              <>
+                <div className="ms-profile-label">Zones</div>
+                <div className="ms-profile-choice-wrap">
+                  {INJURY_ZONES.map((z) => {
+                    const active = declaredInjuries.some((i) => i.zone === z.id);
+                    return (
+                      <button
+                        key={z.id}
+                        type="button"
+                        onClick={() => onSwimmerProfileChange(toggleInjuryZone(declaredInjuries, z.id))}
+                        className={`ms-profile-choice${active ? " is-active" : ""}`}
+                      >
+                        {z.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {declaredInjuries.map((item) => {
+                  const zoneLabel = INJURY_ZONES.find((z) => z.id === item.zone)?.label || item.zone;
+                  return (
+                    <div key={item.zone} style={{ marginBottom: 12 }}>
+                      <div className="ms-profile-label">
+                        Gravité · {zoneLabel}
+                      </div>
+                      <div className="ms-profile-choice-wrap">
+                        {INJURY_SEVERITIES.map((s) => {
+                          const active = item.severity === s.id;
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => onSwimmerProfileChange(setInjurySeverity(declaredInjuries, item.zone, s.id))}
+                              className={`ms-profile-choice${active ? " is-active" : ""}`}
+                            >
+                              {s.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={hasInjuryConsent(profile)}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  const at = v ? new Date().toISOString() : null;
+                  onSwimmerProfileChange({
+                    injuryConsent: v,
+                    injuryConsentAt: at,
+                  });
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
+                {INJURY_CONSENT_CHECKBOX}
+              </span>
+            </label>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={hasHeartRateConsent(profile)}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  const at = v ? new Date().toISOString() : null;
+                  onSwimmerProfileChange({
+                    heartRateConsent: v,
+                    heartRateConsentAt: at,
+                  });
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
+                {HEART_RATE_CONSENT_CHECKBOX}
+              </span>
+            </label>
+            <button
+              type="button"
+              className="ms-pill-cta"
+              style={{ width: "100%", minHeight: 52, marginTop: 20 }}
+              onClick={savePerson}
+              disabled={avatarBusy}
+            >
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <IosCountrySheet
+        open={iosNav && countrySheetOpen}
+        value={draftCountry}
+        onClose={() => setCountrySheetOpen(false)}
+        onPick={(code) => {
+          setDraftCountry(code);
+          setCountrySheetOpen(false);
+        }}
+      />
+      <IosBirthWheelSheet
+        open={iosNav && birthWheelOpen}
+        day={draftBirth.day}
+        month={draftBirth.month}
+        year={draftBirth.year}
+        onClose={() => setBirthWheelOpen(false)}
+        onConfirm={({ day, month, year }) => {
+          setDraftBirth({ day, month, year });
+          setBirthWheelOpen(false);
+        }}
+      />
+      <AppShell style={helpPanel || settingsOpen || (iosNav && editProfileOpen) ? { display: "none" } : undefined}>
       <header className="ms-profile-toolbar" style={{ position: "relative" }}>
-        {isIosSimpleNav() ? (
+        {iosNav ? (
           <div style={{ width: 44 }} aria-hidden />
         ) : (
         <button
@@ -748,6 +1363,7 @@ export default function ProfileTab({
           <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
         </button>
         )}
+        {iosNav ? null : (
         <h1 style={{
           margin: 0,
           fontSize: 18,
@@ -759,6 +1375,7 @@ export default function ProfileTab({
           transform: "translateX(-50%)",
           pointerEvents: "none",
         }}>Profil</h1>
+        )}
         <button
           type="button"
           className="ms-glass-icon-btn"
@@ -771,7 +1388,21 @@ export default function ProfileTab({
           <Settings size={18} color={G.ink} strokeWidth={2.25} />
         </button>
       </header>
+      {iosNav ? <h1 className="ios-profile-title">Profil</h1> : null}
 
+      {iosNav ? (
+        <button
+          type="button"
+          className="ms-profile-account-row ios-profile-identity"
+          onClick={openEditProfile}
+        >
+          <span className="ios-profile-identity-avatar">
+            {avatarUrl ? <img src={avatarUrl} alt="" /> : initials}
+          </span>
+          <span className="ios-profile-identity-name">{fullName}</span>
+          <ChevronRight size={18} color={G.greyMid} />
+        </button>
+      ) : (
       <div className="ms-profile-head">
         <button
           type="button"
@@ -789,8 +1420,7 @@ export default function ProfileTab({
             <Pencil size={12} color="#fff" strokeWidth={2.5} />
           </span>
         </button>
-        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-        <h1 className="ms-profile-head-name">{String(displayName).toUpperCase()}</h1>
+        <h1 className="ms-profile-head-name">{String(fullName).toUpperCase()}</h1>
         <p className="ms-profile-head-email">{user?.email || "Compte mySWYM"}</p>
         <div className="ms-profile-meta" role="group" aria-label="Objectif, niveau et programme">
           <div className="ms-profile-meta-item">
@@ -816,32 +1446,15 @@ export default function ProfileTab({
           </div>
         </div>
       </div>
+      )}
 
-      {isIosSimpleNav() && !isPremium ? (
+      {isIosSimpleNav() && iosShowPremiumBar(access) ? (
         <div style={{ padding: "0 0 16px" }}>
           <IosPremiumBar onUpgrade={onUpgrade} source="profile" />
         </div>
       ) : null}
 
-      {isIosSimpleNav() && showBuddies ? (
-        <button
-          type="button"
-          className="ms-profile-account-row"
-          onClick={() => {
-            playUiSound("soft");
-            onGoBuddies?.();
-          }}
-          style={{ marginBottom: 16 }}
-        >
-          <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
-            <Users size={18} color={G.mint} />
-          </span>
-          <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
-          <ChevronRight size={18} color={G.greyMid} />
-        </button>
-      ) : null}
-
-      {editProfileOpen && createPortal(
+      {!iosNav && editProfileOpen && createPortal(
         <div
           className="ms-edit-profile-overlay"
           role="presentation"
@@ -957,7 +1570,7 @@ export default function ProfileTab({
         )}
 
         <SoftMistSheet
-          open={accountSheetOpen}
+          open={!iosNav && accountSheetOpen}
           onClose={closeAccountSheet}
           title="Compte"
           subtitle={user?.email || "Ton adresse e-mail"}
@@ -1039,10 +1652,35 @@ export default function ProfileTab({
           </div>
         </SoftMistSheet>
 
-        <div className="ms-profile-group-label">Natation</div>
+        {iosNav ? (
+          <div className="ms-seg-track ios-profile-lanes" role="tablist">
+            {[
+              { id: "natation", label: "Natation" },
+              { id: "materiel", label: "Matériel" },
+              { id: "objectif", label: "Objectif" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={profileLane === tab.id}
+                className={`ms-seg-btn${profileLane === tab.id ? " is-active" : ""}`}
+                onClick={() => {
+                  playUiSound("soft");
+                  setProfileLane(tab.id);
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="ms-profile-group-label">Natation</div>
+        )}
 
         {onSwimmerProfileChange && (
           <>
+            {!iosNav ? (
             <ProfileSection id="profile-physique" title="Mon profil" summary="Âge, sexe, poids, taille" icon={User} defaultOpen={false}>
               {(() => {
                 const nowY = new Date().getFullYear();
@@ -1134,7 +1772,7 @@ export default function ProfileTab({
                       {to("physique.sexe")}
                     </div>
                     <div className="ms-profile-choice-wrap">
-                      {GENDER_OPTIONS.map((opt) => {
+                      {GENDER_OPTIONS.filter((opt) => opt.id !== "autre").map((opt) => {
                         const active = profile?.gender === opt.id;
                         const labelKey = opt.id === "homme" ? "physique.sexeHomme" : "physique.sexeFemme";
                         return (
@@ -1174,17 +1812,22 @@ export default function ProfileTab({
                 );
               })()}
             </ProfileSection>
+            ) : null}
 
+            {(!iosNav || profileLane === "natation") ? (
             <ProfileSection
               id="profile-natation"
               title="Ma natation"
               summary={`${Number(profile?.pool) === 50 ? "50 m" : "25 m"} · ${profile?.level || "niveau"} · ${profile?.sessionsPerWeek ? `${profile.sessionsPerWeek}×/sem` : "fréquence"}`}
               icon={Waves}
               defaultOpen
+              bare={iosNav}
             >
+              {!iosNav ? (
               <p className="ms-profile-hint">
                 Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
               </p>
+              ) : null}
               <div className="ms-profile-label">Niveau</div>
               <div className="ms-profile-choice-wrap">
                 {levelsForPicker(profile?.level).map((l) => {
@@ -1260,6 +1903,7 @@ export default function ProfileTab({
                 </>
               )}
             </ProfileSection>
+            ) : null}
             {natationConfirmOpen && createPortal(
               <ConfirmSheet
                 title="Modifier ton plan ?"
@@ -1293,7 +1937,38 @@ export default function ProfileTab({
           </>
         )}
 
-        {onEquipmentChange && (
+        {onEquipmentChange && (!iosNav || profileLane === "materiel") && (
+        iosNav ? (
+          <div className="ios-equip">
+            <p className="ios-equip-lead">
+              Indique le matériel que tu as au bassin. On l’intègre dans tes séances seulement quand c’est utile.
+            </p>
+            <div className="ios-equip-grid">
+              {EQUIPMENT_OPTS.map((o) => {
+                const active = draftEquipment.includes(o.id);
+                const imgSrc = EQUIPMENT_IMAGES[o.id];
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setDraftEquipment((prev) => (
+                      active ? prev.filter((x) => x !== o.id) : [...prev, o.id]
+                    ))}
+                    className={`ios-equip-item${active ? " is-active" : ""}`}
+                  >
+                    <span className="ios-equip-icon">
+                      {imgSrc ? (
+                        <img src={imgSrc} alt="" />
+                      ) : null}
+                    </span>
+                    <span className="ios-equip-name">{eqLabel(o.id)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
         <ProfileSection
           id="profile-equipment"
           title="Mon matériel"
@@ -1349,9 +2024,55 @@ export default function ProfileTab({
             Aucun matériel
           </button>
         </ProfileSection>
+        )
         )}
 
-        {onSwimmerProfileChange && (
+        {onSwimmerProfileChange && (!iosNav || profileLane === "objectif") && (
+          <>
+          {iosNav ? (
+            <div className="ms-glass-card" style={{ padding: "18px 16px", marginBottom: 16, borderRadius: 28 }}>
+              <div className="ios-profile-goal-head">
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div className="ms-profile-label">Objectif</div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: G.ink, letterSpacing: "-0.02em" }}>
+                    {iosGoal.familyLabel}
+                  </h2>
+                  {iosGoal.targetLabel ? (
+                    <p className="ios-profile-goal-meta">{iosGoal.targetLabel}</p>
+                  ) : null}
+                  {iosGoal.dateLabel ? (
+                    <p className="ios-profile-goal-meta">{iosGoal.dateLabel}</p>
+                  ) : null}
+                  {iosGoal.freqLabel ? (
+                    <p className="ios-profile-goal-meta">{iosGoal.freqLabel}</p>
+                  ) : null}
+                  {iosGoal.weekLabel ? (
+                    <p className="ios-profile-goal-meta">{iosGoal.weekLabel}</p>
+                  ) : null}
+                  {goalBusy ? (
+                    <p className="ios-profile-goal-meta">On adapte tes prochaines séances…</p>
+                  ) : null}
+                </div>
+                {onChangeGoal ? (
+                  <button
+                    type="button"
+                    className="ios-profile-goal-edit"
+                    aria-label="Modifier l'objectif"
+                    disabled={goalBusy}
+                    onClick={() => {
+                      if (!access.canUpdateProgram) {
+                        onUpgrade?.("trial_expired");
+                        return;
+                      }
+                      setGoalPickerOpen(true);
+                    }}
+                  >
+                    <Pencil size={16} strokeWidth={2.2} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : (
           <ProfileSection
             id="profile-health"
             title="Santé et blessures"
@@ -1439,33 +2160,91 @@ export default function ProfileTab({
             <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={!!profile?.healthConsent}
+                checked={hasInjuryConsent(profile)}
                 onChange={(e) => {
                   const v = e.target.checked;
+                  const at = v ? new Date().toISOString() : null;
                   onSwimmerProfileChange({
-                    healthConsent: v,
-                    healthConsentAt: v ? new Date().toISOString() : null,
+                    injuryConsent: v,
+                    injuryConsentAt: at,
                   });
                 }}
                 style={{ marginTop: 3 }}
               />
               <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
-                {HEALTH_CONSENT_CHECKBOX}
+                {INJURY_CONSENT_CHECKBOX}
+              </span>
+            </label>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={hasHeartRateConsent(profile)}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  const at = v ? new Date().toISOString() : null;
+                  onSwimmerProfileChange({
+                    heartRateConsent: v,
+                    heartRateConsentAt: at,
+                  });
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
+                {HEART_RATE_CONSENT_CHECKBOX}
               </span>
             </label>
           </ProfileSection>
+          )}
+          </>
         )}
       </div>
       </AppShell>
 
-      {profileDirty && (
+      {iosNav && onChangeGoal ? (
+        <IosGoalPickerSheet
+          open={goalPickerOpen}
+          profile={profile}
+          onClose={() => setGoalPickerOpen(false)}
+          onCommit={(patch) => {
+            setGoalPickerOpen(false);
+            if (isSameGoalPatch(profile, patch)) return;
+            setPendingGoalPatch(patch);
+            setGoalConfirmOpen(true);
+          }}
+        />
+      ) : null}
+      {goalConfirmOpen && pendingGoalPatch && createPortal(
+        <ConfirmSheet
+          title="Modifier ton objectif ?"
+          message="Tes prochaines séances s'adaptent à ce nouvel objectif. Les séances déjà validées sont conservées. Continuer ?"
+          confirmLabel="Oui, adapter mon plan"
+          cancelLabel="Annuler"
+          destructive={false}
+          icon={Target}
+          onCancel={() => {
+            setGoalConfirmOpen(false);
+            setPendingGoalPatch(null);
+          }}
+          onConfirm={() => {
+            const patch = pendingGoalPatch;
+            setGoalConfirmOpen(false);
+            setPendingGoalPatch(null);
+            if (!patch || !onChangeGoal) return;
+            setGoalBusy(true);
+            Promise.resolve(onChangeGoal(patch)).finally(() => setGoalBusy(false));
+          }}
+        />,
+        document.body,
+      )}
+
+      {profileDirty && !iosCover && (
         <div
           style={{
             position: "fixed",
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 90,
+            zIndex: 120,
             padding: "12px max(16px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right))",
             background: "rgba(247, 251, 255, 0.88)",
             backdropFilter: "blur(20px)",

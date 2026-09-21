@@ -7,7 +7,7 @@ import { Keyboard, KeyboardResize } from "@capacitor/keyboard";
 import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { supabase } from "../supabase.js";
-import { installNativeApiFetch, isNativeApp, isNativeIos } from "../lib/native-platform.js";
+import { installNativeApiFetch, isNativeApp, isNativeIos, ensureNativeAppLocation } from "../lib/native-platform.js";
 import { installNativeBillingBlock } from "../lib/native-billing.js";
 import { installNativeInAppLinks } from "../lib/native-links.js";
 import {
@@ -25,6 +25,7 @@ export function prepareNativeRuntime() {
   installNativeBillingBlock();
   installNativeOAuthReturn();
   installNativeInAppLinks();
+  ensureNativeAppLocation();
   const root = document.documentElement;
   root.classList.add("myswym-native");
   root.classList.remove("myswym-boot-public");

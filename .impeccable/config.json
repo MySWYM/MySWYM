@@ -159,6 +159,33 @@
         ],
         "createdAt": "2026-09-19T19:27:32.285Z",
         "reason": "Agent: incumbent App.css radii, not touched by iOS fluid-layout fix"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "src/BuddyMatching.jsx"
+        ],
+        "createdAt": "2026-09-21T13:28:13.865Z",
+        "reason": "Agent: incumbent BuddyMatching type (Space Grotesk on lock screen); iOS drill-in chrome only, no type redesign"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "src/BuddyMatching.jsx"
+        ],
+        "createdAt": "2026-09-21T13:28:13.896Z",
+        "reason": "Agent: incumbent BuddyMatching status/consent colors (#00897B, #F5B7B7, amber); iOS drill-in chrome only"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "src/lib/session-export.js"
+        ],
+        "createdAt": "2026-09-21T17:55:03.453Z",
+        "reason": "Print CSS A4 poolside: compact type ramp intentional, not app UI DESIGN.md"
       }
     ]
   },

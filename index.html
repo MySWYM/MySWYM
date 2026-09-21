@@ -43,10 +43,19 @@
         } catch (e) {}
         window.__MYSWYM_BOOT_AT = Date.now();
         try {
-          var path = location.pathname || "/";
-          var p = path.replace(/\/+$/, "") || "/";
           var native = location.protocol === "capacitor:" || location.protocol === "ionic:"
             || (location.hostname === "localhost" && window.webkit && window.webkit.messageHandlers);
+          if (native) {
+            var p0 = location.pathname || "/";
+            var keep = p0 === "/app" || p0.indexOf("/app/") === 0
+              || p0 === "/connexion" || p0 === "/inscription"
+              || p0 === "/login" || p0 === "/register";
+            if (!keep) {
+              try { history.replaceState(null, "", "/app" + (location.search || "") + (location.hash || "")); } catch (e) {}
+            }
+          }
+          var path = location.pathname || "/";
+          var p = path.replace(/\/+$/, "") || "/";
           var gif = native || p === "/app" || p.indexOf("/app/") === 0;
           if (!gif) document.documentElement.classList.add("myswym-boot-public");
           else document.documentElement.classList.remove("myswym-boot-public");

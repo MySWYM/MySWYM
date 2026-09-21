@@ -462,6 +462,35 @@ html.myswym-ios .trial-freeze-support .support-widget {
   bottom: calc(82px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Chatbox iOS : FAB au-dessus du dock, widget un peu plus haut / large */
+html.myswym-ios .support-fab {
+  display: flex;
+  z-index: 180;
+  right: 16px;
+  bottom: calc(var(--bottom-nav-h, 64px) + env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+html.myswym-ios .support-fab.support-fab--bare {
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+html.myswym-ios .support-widget {
+  display: flex;
+  z-index: 175;
+  left: 12px;
+  right: 12px;
+  width: auto;
+  max-width: none;
+  bottom: calc(var(--bottom-nav-h, 64px) + env(safe-area-inset-bottom, 0px) + 78px);
+  height: min(68dvh, calc(100dvh - var(--bottom-nav-h, 64px) - env(safe-area-inset-bottom, 0px) - 120px));
+  border-radius: 24px;
+}
+
+html.myswym-ios .support-widget.support-widget--bare {
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px) + 66px);
+  height: min(74dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 96px));
+}
+
 html.myswym-ios .ms-pill-cta-gold {
   background: #D4A017;
   color: #0F1B2D;
@@ -474,9 +503,4 @@ html.myswym-ios .ios-premium-bar {
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-
-html.myswym-ios .support-fab,
-html.myswym-ios .support-widget {
-  display: none;
 }

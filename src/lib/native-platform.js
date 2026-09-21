@@ -58,6 +58,30 @@ export function isNativeMarketingPath(pathname = "/") {
   return true;
 }
 
+/** URL in-app si le WebView a démarré sur une page site (`/` = landing). */
+export function nativeInAppStartUrl(pathname = "/", search = "", hash = "") {
+  if (!isNativeMarketingPath(pathname)) return "";
+  return `/app${search || ""}${hash || ""}`;
+}
+
+/**
+ * Capacitor charge index.html à `/`. Sans ça, React Router affiche la landing.
+ * À appeler avant le premier render.
+ */
+export function ensureNativeAppLocation(
+  loc = typeof window !== "undefined" ? window.location : null,
+  hist = typeof window !== "undefined" ? window.history : null,
+) {
+  const href = nativeInAppStartUrl(loc?.pathname, loc?.search, loc?.hash);
+  if (!href || typeof hist?.replaceState !== "function") return false;
+  try {
+    hist.replaceState(hist.state, "", href);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * @param {string} value
  * @param {string} [origin]

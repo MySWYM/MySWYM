@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Award, Flame, Trophy, TrendingUp, Lock,
+  Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight,
 } from "lucide-react";
 import { FONT } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
@@ -8,6 +8,8 @@ import SessionHeroCard from "./SessionHeroCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import AllureUnlockSheet from "./sheets/AllureUnlockSheet.jsx";
 import TrialCountdownBanner from "./ui/TrialCountdownBanner.jsx";
+import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
+import IosHomeSessionDeck from "./home/IosHomeSessionDeck.jsx";
 import CoachCard from "./CoachCard.jsx";
 import { track } from "./lib/analytics.js";
 import { resolveDisplayFirstName } from "./lib/identity-cache.js";
@@ -22,6 +24,7 @@ import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import { currentWeekSessionCards, sessionTypeAccent } from "./lib/home-week-sessions.js";
 
 export function HomeBadgesSection({ plan }) {
   const stats = computeStats(plan);
@@ -62,12 +65,16 @@ export default function Dashboard({
   isPremium = false, onRegenerateLoop, onUpgrade, onReset, onShare, onEditFeedback, onPaceUpdate, onValidateSession, onOpenMenu,
   activePlanId = null,
   accessState = null,
+  onGoBuddies = null,
 }) {
   const {
     AppTopBar,
   } = getTabUi();
   const stats = computeStats(plan);
   const isLoop = !!plan?.isSessionLoop;
+  const iosNav = isIosSimpleNav();
+  const weekCards = useMemo(() => currentWeekSessionCards(plan), [plan]);
+  const [openCard, setOpenCard] = useState(null);
   const [allureTipDismissed, setAllureTipDismissed] = useState(() => hasSeenAllureUnlockTip(user?.id));
   const next = findNextSession(plan);
   const preview = next?.session ? sessionCardModel(next.session) : null;
@@ -93,6 +100,15 @@ export default function Dashboard({
   }, [showAllureTip, isPremium, profile?.pace100, user?.id]);
 
   const firstName = resolveDisplayFirstName(user);
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const greetTitle = !isPremium && plan
+    ? "Essai terminé"
+    : !plan
+      ? "Crée ton programme"
+      : iosNav
+        ? `${hello}, ${firstName}`
+        : "Prêt à nager ?";
 
   const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
   const coachWeek = plan?.weeks?.length
@@ -102,7 +118,10 @@ export default function Dashboard({
   return (
     <div
       className="ms-home-immersive"
-      style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)", minHeight: "100dvh" }}
+      style={{
+        minHeight: "100dvh",
+        paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)",
+      }}
     >
       <div className="ms-home-immersive-bg ms-home-immersive-bg--mist" aria-hidden>
         <img src="/hero-pool.webp" alt="" width={1024} height={1024} decoding="async" />
@@ -123,16 +142,12 @@ export default function Dashboard({
 
         <div className="ms-home-greet">
           <div>
-            <p>
-              {(() => {
-                const h = new Date().getHours();
-                const hello = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-                return `${hello}, ${firstName}`;
-              })()}
-            </p>
-            <h1>{!isPremium && plan ? "Essai terminé" : plan ? "Prêt à nager ?" : "Crée ton programme"}</h1>
+            {iosNav && plan && isPremium ? null : (
+              <p>{hello}, {firstName}</p>
+            )}
+            <h1>{greetTitle}</h1>
           </div>
-          {plan && isPremium && stats.streak > 0 && (
+          {!iosNav && plan && isPremium && stats.streak > 0 && (
             <span className="ms-home-streak" title={`Série de ${stats.streak}`}>
               <Flame size={14} color="#D4A017" aria-hidden />
               {stats.streak}
@@ -142,7 +157,7 @@ export default function Dashboard({
 
         {trialBannerActive ? (
           <TrialCountdownBanner accessState={accessState} onUpgrade={onUpgrade} />
-        ) : isPremium && plan && next?.resolved ? (
+        ) : !iosNav && isPremium && plan && next?.resolved ? (
           <div className="ms-habit-banner is-done" role="status">
             Séance validée
           </div>
@@ -193,7 +208,28 @@ export default function Dashboard({
           </div>
         ) : (
           <>
-        {preview && (
+        {iosNav ? (
+          <>
+            <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
+            {typeof onGoBuddies === "function" ? (
+              <button
+                type="button"
+                className="ms-profile-account-row"
+                onClick={() => {
+                  playUiSound("soft");
+                  onGoBuddies();
+                }}
+                style={{ marginTop: 16 }}
+              >
+                <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
+                  <Users size={18} color={G.mint} />
+                </span>
+                <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
+                <ChevronRight size={18} color={G.greyMid} />
+              </button>
+            ) : null}
+          </>
+        ) : preview ? (
           <div style={{ marginBottom: 12 }}>
             <SessionHeroCard
               className="is-glass"
@@ -216,9 +252,9 @@ export default function Dashboard({
               </button>
             </SessionHeroCard>
           </div>
-        )}
+        ) : null}
 
-        {plan && isPremium && !isIosSimpleNav() && (
+        {plan && isPremium && !iosNav && (
           <CoachCard
             plan={plan}
             profile={profile}
@@ -228,7 +264,7 @@ export default function Dashboard({
           </>
         )}
 
-        {!isLoop && isPremium && planFinished && (
+        {!iosNav && !isLoop && isPremium && planFinished && (
           <div className="ms-glass-card" style={{ borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16 }}>
             {plan.isProgression
               ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
@@ -247,6 +283,27 @@ export default function Dashboard({
             onDismiss={() => setAllureTipDismissed(true)}
           />
         )}
+
+        {openCard ? (
+          <SessionPrepSheet
+            open
+            session={openCard.session}
+            colors={G}
+            accent={sessionTypeAccent(openCard.type, G)}
+            isPremium={isPremium}
+            profile={profile}
+            planId={activePlanId}
+            showStart={!openCard.resolved}
+            sheetTitle={openCard.title}
+            sheetSub={openCard.line || null}
+            onClose={() => setOpenCard(null)}
+            onUpgrade={() => onUpgrade?.("session_locked")}
+            onMark={openCard.resolved ? null : (status) => {
+              onValidateSession?.(openCard.weekIndex, openCard.sessionIndex, status);
+              setOpenCard(null);
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

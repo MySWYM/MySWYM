@@ -310,7 +310,7 @@ function LoutreAvatar({ height = 92 }) {
 /**
  * Widget support type Intercom : Accueil / Aide / Messages, chat persisté vers Arthur.
  */
-export default function SupportBubble({ aboveBottomNav = false, user = null }) {
+export default function SupportBubble({ aboveBottomNav = false, user = null, hideFab = false }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("home");
   const [view, setView] = useState("tabs");
@@ -604,6 +604,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
 
   return (
     <>
+      {!hideFab ? (
       <button
         type="button"
         aria-label={open ? "Fermer l’aide" : "Aide et support"}
@@ -619,6 +620,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
           <span aria-label="Nouveau message" className="support-fab-badge" />
         ) : null}
       </button>
+      ) : null}
 
       {open && (
         <div

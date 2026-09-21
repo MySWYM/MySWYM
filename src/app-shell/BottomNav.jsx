@@ -1,15 +1,16 @@
-import { Waves, ChartNoAxesCombined, User, Home, Calendar, History } from "lucide-react";
+import { Activity, CircleUser, Home, Calendar, History, ChartNoAxesCombined } from "lucide-react";
 import { G } from "../theme/palette.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { isIosSimpleNav } from "../lib/ios-simple-nav.js";
+import BrandLogo from "../BrandLogo.jsx";
 
 export default function BottomNav({ active, onChange, newBadge }) {
   const ios = isIosSimpleNav();
   const tabs = ios
     ? [
-        { id: "analyse", Icon: ChartNoAxesCombined, label: "Analyse" },
-        { id: "home", Icon: Waves, label: "Nager", center: true },
-        { id: "profile", Icon: User, label: "Profil" },
+        { id: "analyse", Icon: Activity, label: "Analyse" },
+        { id: "home", brand: true, label: "Nager", center: true },
+        { id: "profile", Icon: CircleUser, label: "Profil" },
       ]
     : [
         { id: "home", Icon: Home, label: "Accueil" },
@@ -19,7 +20,7 @@ export default function BottomNav({ active, onChange, newBadge }) {
       ];
   return (
     <div className="bottom-nav">
-      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: "8px 6px" }} aria-label="Navigation principale">
+      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: ios ? "10px 6px" : "8px 6px" }} aria-label="Navigation principale">
         {tabs.map((t) => {
           const isActive = active === t.id;
           const centerOn = t.center && isActive;
@@ -58,18 +59,24 @@ export default function BottomNav({ active, onChange, newBadge }) {
                   transition: "background 0.2s ease",
                 }}
               >
-                <t.Icon size={t.center ? 24 : 22} color={iconColor} strokeWidth={isActive ? 2.2 : 1.6} style={{ transition: "all 0.2s" }} />
+                {t.brand ? (
+                  <BrandLogo variant="mark" height={22} onDark={centerOn} alt="" />
+                ) : (
+                  <t.Icon size={22} color={iconColor} strokeWidth={isActive ? 2.2 : 1.6} style={{ transition: "all 0.2s" }} />
+                )}
                 {t.id === "analyse" && newBadge && (
                   <div style={{ position: "absolute", top: 2, right: 2, width: 8, height: 8, borderRadius: "50%", background: G.coral }} />
                 )}
               </span>
-              <span style={{
-                fontSize: 10,
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? G.blue : G.grey,
-              }}>
-                {t.label}
-              </span>
+              {ios ? null : (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? G.blue : G.grey,
+                }}>
+                  {t.label}
+                </span>
+              )}
             </button>
           );
         })}

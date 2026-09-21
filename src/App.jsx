@@ -73,6 +73,7 @@ import {
 } from "./lib/sports-engine/index.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
 import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress, planProgressScore, loopSessionNeedsAdvance } from "./lib/plan-progress-merge.js";
+import { buildGoalPatch } from "./lib/profile-goal.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -169,7 +170,7 @@ import WhatsNewSheet, {
 } from "./sheets/WhatsNewSheet.jsx";
 import { restoreAndSyncAppleIap, openAppleSubscriptionManagement } from "./lib/native-iap.js";
 import { openStripePortalUrl } from "./lib/native-billing.js";
-import { isNativeIos } from "./lib/native-platform.js";
+import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
 import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
@@ -186,13 +187,14 @@ import {
 import {
   INJURY_ZONES,
   INJURY_SEVERITIES,
-  HEALTH_CONSENT_TITLE,
-  HEALTH_CONSENT_BODY,
-  HEALTH_CONSENT_CHECKBOX,
+  HEART_RATE_CONSENT_TITLE,
+  HEART_RATE_CONSENT_BODY,
+  HEART_RATE_CONSENT_CHECKBOX,
   HEALTH_DECLARATION_LABEL,
   MEDICAL_WARNING_SHORT,
   formatInjurySummary,
-  hasHealthConsent,
+  hasInjuryConsent,
+  hasHeartRateConsent,
 } from "./lib/health-data.js";
 import { useTranslation } from "react-i18next";
 import {
@@ -2105,6 +2107,7 @@ const StravaSection = ({
   onBestPace,
   showProgramActions = true,
   showDetails = true,
+  embedded = false,
   isPremium = false,
   onUpgrade,
 }) => {
@@ -2126,7 +2129,7 @@ const StravaSection = ({
 
   // client_id est public (pas un secret), fallback hardcodé si l'env n'est pas chargé
   const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
-  const healthOk = localHealthConsent === true || hasHealthConsent(profile);
+  const healthOk = localHealthConsent === true || hasHeartRateConsent(profile);
 
   useEffect(() => {
     if (!user) return;
@@ -2179,11 +2182,8 @@ const StravaSection = ({
   };
 
   const connect = () => {
-    if (!healthOk) {
-      setHealthGateOpen(true);
-      setHealthGateChecked(false);
-      return;
-    }
+    // Strava (distance / allure) sans consentement FC.
+    // La FC n’est stockée que si heartRateConsent (case profil ou sheet ci-dessous).
     const redirectUri = encodeURIComponent(window.location.origin + "/app");
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
@@ -2197,13 +2197,23 @@ const StravaSection = ({
     setLocalHealthConsent(true);
     try {
       await supabase.auth.updateUser({
-        data: { health_consent: true, health_consent_at: at },
+        data: {
+          health_consent: true,
+          health_consent_at: at,
+          heart_rate_consent: true,
+          heart_rate_consent_at: at,
+        },
       });
       if (user?.id) {
+        const baseExtra = profile?.extra && typeof profile.extra === "object" ? profile.extra : {};
         await supabase.from("sport_profiles").upsert({
           user_id: user.id,
+          health_consent: true,
+          health_consent_at: at,
           extra: {
-            ...(profile?.extra && typeof profile.extra === "object" ? profile.extra : {}),
+            ...baseExtra,
+            heartRateConsent: true,
+            heartRateConsentAt: at,
             healthConsent: true,
             healthConsentAt: at,
           },
@@ -2212,6 +2222,10 @@ const StravaSection = ({
       }
     } catch { /* best effort */ }
     setHealthGateOpen(false);
+    if (connected) {
+      setMsg({ type: "ok", text: "FC activée. Synchronise pour l’importer." });
+      return;
+    }
     const redirectUri = encodeURIComponent(window.location.origin + "/app");
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
@@ -2267,6 +2281,7 @@ const StravaSection = ({
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setConnected(false); setAthlete(null); setActivities([]); setMsg(null);
+      window.dispatchEvent(new Event("myswym:strava-status"));
     } catch (e) {
       setMsg({ type: "err", text: e.message });
     } finally {
@@ -2321,7 +2336,10 @@ const StravaSection = ({
   // il sera remplacé par l'état réel dès que checkConnection() répond
 
   return (
-    <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+    <div style={embedded
+      ? { padding: 0, margin: 0 }
+      : { background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }
+    }>
 
       {/* ── En-tête ──────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -2352,6 +2370,33 @@ const StravaSection = ({
           </button>
         )}
       </div>
+
+      {connected && !healthOk && showDetails && (
+        <button
+          type="button"
+          onClick={() => {
+            setHealthGateOpen(true);
+            setHealthGateChecked(false);
+          }}
+          style={{
+            width: "100%",
+            marginBottom: 12,
+            padding: "11px 14px",
+            borderRadius: 12,
+            border: `1px solid ${G.greyLight}`,
+            background: G.surface,
+            color: G.ink,
+            fontSize: 13,
+            fontWeight: 600,
+            textAlign: "left",
+            cursor: "pointer",
+            fontFamily: FONT,
+            lineHeight: 1.35,
+          }}
+        >
+          Afficher la fréquence cardiaque dans MySWYM
+        </button>
+      )}
 
       {/* ── Message retour ───────────────────────────────────────── */}
       {msg && (
@@ -2597,15 +2642,15 @@ const StravaSection = ({
           <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
             <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 10 }}>
-              {HEALTH_CONSENT_TITLE}
+              {HEART_RATE_CONSENT_TITLE}
             </h3>
-            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEALTH_CONSENT_BODY}</p>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEART_RATE_CONSENT_BODY}</p>
             <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.ink, marginBottom: 16 }}>
               <input type="checkbox" checked={healthGateChecked} onChange={(e) => setHealthGateChecked(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{HEALTH_CONSENT_CHECKBOX}</span>
+              <span>{HEART_RATE_CONSENT_CHECKBOX}</span>
             </label>
             <Btn variant="blue" onClick={persistHealthConsentAndConnect} disabled={!healthGateChecked}>
-              Accepter et connecter Strava
+              {connected ? "Accepter" : "Accepter et connecter Strava"}
             </Btn>
             <button type="button" onClick={() => setHealthGateOpen(false)} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
               Annuler
@@ -4761,6 +4806,7 @@ const ProgressionLoopView = ({
             onTabChange={onTabChange}
             onUpgrade={onUpgrade}
             immersive
+            onBack={isIosSimpleNav() && onTabChange ? () => onTabChange("home") : undefined}
           />
         )}
         <div className="app-shell" style={{ paddingTop: 24 }}>
@@ -4782,6 +4828,7 @@ const ProgressionLoopView = ({
           onTabChange={onTabChange}
           onUpgrade={onUpgrade}
           immersive
+          onBack={isIosSimpleNav() && onTabChange ? () => onTabChange("home") : undefined}
         />
       )}
       {!embed && (
@@ -7499,6 +7546,7 @@ const BLANK_PROFILE = {
   birthYear: "",
   age: "",
   gender: "",
+  country: "",
   weightKg: "",
   heightCm: "",
   injuryStatus: null, // "aucune" | "oui"
@@ -7508,6 +7556,10 @@ const BLANK_PROFILE = {
   injuryNote: "", // legacy, plus collecté en free-text
   healthConsent: false,
   healthConsentAt: null,
+  injuryConsent: false,
+  injuryConsentAt: null,
+  heartRateConsent: false,
+  heartRateConsentAt: null,
   healthDeclaration: false,
   swimStyle: null, // "crawl" | "4_nages"
   preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
@@ -7572,6 +7624,7 @@ export default function App() {
   }, [coldHold]);
   const [activeTab, setActiveTab] = useState("home");
   const lastDockTabRef = useRef("home");
+  const [iosHideDock, setIosHideDock] = useState(false);
   /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
   const goTab = (tab) => {
     const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
@@ -7717,6 +7770,7 @@ export default function App() {
 
   useEffect(() => {
     if (activeTab !== "buddies") return;
+    if (isIosSimpleNav()) return;
     const n = plan ? computeStats(plan).totalSessions : 0;
     if (n < 1) setActiveTab("home");
   }, [activeTab, plan]);
@@ -7954,9 +8008,9 @@ export default function App() {
       navigate("/app", { replace: true });
       return;
     }
-    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion → landing
+    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion web → landing
     setScreen("onboarding");
-    navigate(openedFromUrl ? "/" : "/app", { replace: true });
+    navigate(openedFromUrl && !isNativeApp() ? "/" : "/app", { replace: true });
   };
 
   const handleAuthSuccess = (u) => {
@@ -10398,7 +10452,7 @@ export default function App() {
     if (!partial || typeof partial !== "object") return;
     const swimmerPartial = extractSwimmerProfile(partial);
     const nextPatch = { ...swimmerPartial };
-    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuries", "injuryNote", "healthConsent", "healthConsentAt", "healthDeclaration"]) {
+    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuries", "injuryNote", "healthConsent", "healthConsentAt", "injuryConsent", "injuryConsentAt", "heartRateConsent", "heartRateConsentAt", "healthDeclaration", "appleHealthConnected", "appleHealthConnectedAt"]) {
       if (partial[k] !== undefined) nextPatch[k] = partial[k];
     }
     const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...nextPatch };
@@ -10494,6 +10548,82 @@ export default function App() {
         track("generation_failed", {
           reason: String(err?.message || "exception").slice(0, 80),
           context: "update_program",
+        });
+      });
+  };
+
+  const handleChangeGoal = (patch) => {
+    if (!activePlanEntry) return Promise.resolve();
+    if (!canUpdateProgram) {
+      openUpgrade("trial_expired");
+      return Promise.resolve();
+    }
+    const newProfile = {
+      ...activePlanEntry.profile,
+      ...buildGoalPatch(patch),
+    };
+    const oldWeeks = activePlanEntry.plan?.weeks ?? [];
+    const taste = activePlanEntry.plan?.taste || tasteProfile;
+    const planIdToUpdate = activePlanId;
+    const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? Date.now();
+    plansSaveGenRef.current += 1;
+
+    return generatePlan({ ...newProfile, taste }, isPremium, originalStartDate, { skipDelay: true })
+      .then(async (newPlan) => {
+        const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+        const prevPlan = activePlanEntry.plan || {};
+        const planWithDate = {
+          ...newPlan,
+          taste,
+          weeks: mergedWeeks,
+          ...(originalStartDate ? { startDate: originalStartDate } : {}),
+          history: prevPlan.history,
+          freeSessionsUsed: prevPlan.freeSessionsUsed,
+          weekGenKey: prevPlan.weekGenKey,
+          weekGenCount: prevPlan.weekGenCount,
+          sessionCursor: prevPlan.isSessionLoop && newPlan.isSessionLoop
+            ? prevPlan.sessionCursor
+            : newPlan.sessionCursor,
+          loopBlocked: prevPlan.loopBlocked,
+          volumeAdj: prevPlan.volumeAdj,
+          _lastAdapt: prevPlan._lastAdapt,
+          _adaptSignals: prevPlan._adaptSignals,
+        };
+        const now = new Date().toISOString();
+        plansSaveGenRef.current += 1;
+
+        setPlans((prevPlans) => {
+          const nextPlans = prevPlans.map((e) =>
+            (e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate }),
+          );
+          if (user) {
+            try {
+              localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+              localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
+              localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+            } catch {}
+          }
+          return nextPlans;
+        });
+
+        if (user?.id) {
+          sportsPersistence.upsertSportProfile(user.id, newProfile).then(() => {});
+          plansSaveGenRef.current += 1;
+          try {
+            const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
+            }
+          } catch {}
+        }
+        showToast("Prochaines séances adaptées à ton objectif (semaines déjà faites conservées).", 5000);
+      })
+      .catch((err) => {
+        showToast("Impossible d'adapter les séances. Réessaie.", 6000);
+        track("generation_failed", {
+          reason: String(err?.message || "exception").slice(0, 80),
+          context: "change_goal",
         });
       });
   };
@@ -10864,7 +10994,7 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
@@ -10891,6 +11021,7 @@ export default function App() {
             onValidateSession={handleComplete}
             onShare={openShare}
             activePlanId={activePlanId}
+            accessState={accessState}
           />
         )}
         {activeTab === "history" && (
@@ -10926,16 +11057,32 @@ export default function App() {
             referralSlot={<ReferralShareCard />}
             onGoBuddies={() => goTab("buddies")}
             showBuddies={hasSwumNav}
+            onHideDock={setIosHideDock}
+            onPaceUpdate={handlePaceUpdate}
+            onValidateSession={handleComplete}
+            onChangeGoal={handleChangeGoal}
           />
         )}
         <Suspense fallback={null}>
-        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
+        {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
         </Suspense>
 
-        {!isIosSimpleNav() && (
-          <Suspense fallback={null}><SupportBubble aboveBottomNav={activeTab !== "profile"} user={user} /></Suspense>
-        )}
-        {(isIosSimpleNav() || activeTab !== "profile") && (
+        {(() => {
+          const iosNav = isIosSimpleNav();
+          const dockVisible = iosNav
+            ? activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock
+            : activeTab !== "profile";
+          return (
+            <Suspense fallback={null}>
+              <SupportBubble
+                aboveBottomNav={dockVisible}
+                hideFab={iosNav && !dockVisible}
+                user={user}
+              />
+            </Suspense>
+          );
+        })()}
+        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock) || (!isIosSimpleNav() && activeTab !== "profile")) && (
           <BottomNav
             active={isIosSimpleNav() ? iosDockActive(activeTab) : (activeTab === "buddies" ? "analyse" : activeTab)}
             onChange={goTab}
@@ -10982,7 +11129,7 @@ export default function App() {
               onSubmit={handleSessionFeedback}
               onSkip={closeSessionFeedbackSheet}
               isPremium={isPremium}
-              healthConsent={hasHealthConsent(activeProfile) || hasHealthConsent(user)}
+              healthConsent={hasInjuryConsent(activeProfile) || hasInjuryConsent(user)}
             />
           );
         })()}

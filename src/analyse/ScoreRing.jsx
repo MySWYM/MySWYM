@@ -9,6 +9,7 @@ export function ScoreRing({
   size = 128,
   stroke = 8,
   sublabel = "du volume",
+  center = null,
 }) {
   const reduced = useReducedMotion();
   const target = Math.min(1, Math.max(0, Number(ratio) || 0));
@@ -32,12 +33,13 @@ export function ScoreRing({
   const c = 2 * Math.PI * r;
   const color = scoreColor(progress);
   const pct = Math.round(progress * 100);
+  const main = center != null ? center : `${pct}%`;
 
   return (
     <div
       className="ms-score-ring"
       style={{ width: size, height: size }}
-      aria-label={`${pct} pour cent ${sublabel}`}
+      aria-label={center != null ? String(center) : `${pct} pour cent ${sublabel || ""}`.trim()}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
         <circle
@@ -63,10 +65,10 @@ export function ScoreRing({
         />
       </svg>
       <div className="ms-score-ring-label">
-        <span className="ms-type-display" style={{ fontSize: 28 }}>
-          {pct}%
+        <span className="ms-type-display" style={{ fontSize: center != null ? 18 : 28 }}>
+          {main}
         </span>
-        <span className="ms-type-caption">{sublabel}</span>
+        {sublabel ? <span className="ms-type-caption">{sublabel}</span> : null}
       </div>
     </div>
   );

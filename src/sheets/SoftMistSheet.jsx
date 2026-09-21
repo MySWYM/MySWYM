@@ -20,6 +20,7 @@ export default function SoftMistSheet({
   zIndex = null,
   dismissOnOverlay = true,
   fullscreenMobile = false,
+  footer = null,
 }) {
   /** Ignore le click/mouseup qui a ouvert le sheet (évite fermeture immédiate). */
   const ignoreDismissUntil = useRef(0);
@@ -112,6 +113,7 @@ export default function SoftMistSheet({
         <div className={`ms-soft-sheet-body ${bodyClassName}`.trim()}>
           {children}
         </div>
+        {footer ? <div className="ms-soft-sheet-footer">{footer}</div> : null}
       </div>
     </div>,
     document.body,

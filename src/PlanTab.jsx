@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ChevronLeft } from "lucide-react";
 import { supabase } from "./supabase.js";
 import { G } from "./theme/palette.js";
 import CoachCard from "./CoachCard.jsx";
@@ -7,11 +8,34 @@ import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { findGoalById } from "./lib/onboarding-catalog.jsx";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import { playUiSound } from "./lib/ui-sounds.js";
 
-const TAB_PAD = {
-  paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
+function IosDrillInBar({ title, onBack }) {
+  return (
+    <header className="ms-profile-subpanel-toolbar" style={{ position: "sticky", top: 0, zIndex: 50 }}>
+      <button
+        type="button"
+        className="ms-glass-icon-btn"
+        aria-label="Retour"
+        onClick={() => {
+          playUiSound("soft");
+          onBack();
+        }}
+      >
+        <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
+      </button>
+      <h1>{title}</h1>
+      <div style={{ width: 44 }} aria-hidden />
+    </header>
+  );
+}
+
+const tabPad = () => ({
+  paddingBottom: isIosSimpleNav()
+    ? "calc(var(--safe-bottom) + 28px)"
+    : "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
   minHeight: "100dvh",
-};
+});
 
 // ── PLAN TAB ──────────────────────────────────────────────────────────────
 export default function PlanTab({
@@ -54,23 +78,28 @@ export default function PlanTab({
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  const iosDrill = isIosSimpleNav() && typeof onTabChange === "function";
+  const goHome = () => onTabChange("home");
   const topBar = (planArg) => (
-    <AppTopBar
-      user={user}
-      onOpenMenu={onOpenMenu}
-      onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-      plan={planArg}
-      onTabChange={onTabChange}
-      onUpgrade={onUpgrade}
-      immersive
-      onBack={isIosSimpleNav() && onTabChange ? () => onTabChange("home") : undefined}
-    />
+    iosDrill ? (
+      <IosDrillInBar title="Programme" onBack={goHome} />
+    ) : (
+      <AppTopBar
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+        plan={planArg}
+        onTabChange={onTabChange}
+        onUpgrade={onUpgrade}
+        immersive
+      />
+    )
   );
 
   // Compte connecté sans plan (ou ajout d’un plan) → questionnaire dans le shell app
   if ((!plan || addingPlan) && onboardingProps) {
     return (
-      <AppTabShell style={TAB_PAD}>
+      <AppTabShell style={tabPad()}>
         {topBar(null)}
         <div className="app-shell" style={{ paddingTop: 16, paddingBottom: 24 }}>
           <div className="ms-glass-card" style={{ padding: "18px 16px", marginBottom: 16, borderRadius: 26 }}>
@@ -92,7 +121,7 @@ export default function PlanTab({
 
   if (!plan?.weeks) {
     return (
-      <AppTabShell style={TAB_PAD}>
+      <AppTabShell style={tabPad()}>
         {topBar(null)}
         <div className="app-shell" style={{ paddingTop: 32 }}>
           <p style={{ color: G.grey, fontSize: 14 }}>Aucun programme pour le moment.</p>
@@ -144,23 +173,32 @@ export default function PlanTab({
     : indexed.filter(({ i }) => i < currentWeekIndex).reverse();
 
   return (
-    <AppTabShell style={TAB_PAD}>
+    <AppTabShell style={tabPad()}>
       {topBar(plan)}
 
       <div className="app-shell" style={{ paddingTop: 14, paddingBottom: 8 }}>
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+          {iosDrill ? (
+            <p className="ms-type-body" style={{ margin: 0 }}>
+              {planLabel}
+              {isPremium && currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
+            </p>
+          ) : (
           <h1 className="ms-type-page">
             Programme
           </h1>
+          )}
             <span className="ms-chip" style={{ height: 28, fontSize: 11 }}>
               Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{plan.weeks.length}
             </span>
           </div>
+          {iosDrill ? null : (
           <p className="ms-type-body">
             {planLabel}
             {isPremium && currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
           </p>
+          )}
         </div>
         {(plans?.length > 0) && (
           <div style={{ marginBottom: 12 }}>

@@ -42,6 +42,9 @@ export default function AppTopBar({
   const headerRef = useRef(null);
   const probeRef = useRef(null);
   const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
+  const iosChrome = isIosSimpleNav();
+  const logoVariant = iosChrome ? "wordmark" : "mark";
+  const logoHeight = iosChrome ? 20 : 26;
 
   useEffect(() => {
     setSeenMap(readSeenNotifications(user));
@@ -195,6 +198,7 @@ export default function AppTopBar({
               }}
               className="ms-glass-icon-btn"
               aria-label="Retour"
+              style={{ position: "relative", zIndex: 5 }}
             >
               <ChevronLeft size={22} color={iconColor} strokeWidth={2.25} />
             </button>
@@ -220,6 +224,7 @@ export default function AppTopBar({
             top: "50%",
             transform: "translate(-50%, -50%)",
             lineHeight: 0,
+            pointerEvents: "none",
           }}
         >
           {onTabChange ? (
@@ -236,12 +241,13 @@ export default function AppTopBar({
                 cursor: "pointer",
                 borderRadius: 10,
                 lineHeight: 0,
+                pointerEvents: "auto",
               }}
             >
-              <BrandLogo variant="mark" height={26} alt="" />
+              <BrandLogo variant={logoVariant} height={logoHeight} alt="" />
             </button>
           ) : (
-            <BrandLogo variant="mark" height={26} alt="MySWYM" />
+            <BrandLogo variant={logoVariant} height={logoHeight} alt="MySWYM" />
           )}
         </div>
 

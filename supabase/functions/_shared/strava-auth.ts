@@ -9,6 +9,15 @@ export async function userHasHealthConsent(
   supabaseAdmin: ReturnType<typeof createClient>,
   user: { id: string; user_metadata?: Record<string, unknown> },
 ): Promise<boolean> {
+  // Alias historique : = consentement FC (Strava).
+  return userHasHeartRateConsent(supabaseAdmin, user);
+}
+
+export async function userHasHeartRateConsent(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  user: { id: string; user_metadata?: Record<string, unknown> },
+): Promise<boolean> {
+  if (user.user_metadata?.heart_rate_consent === true) return true;
   if (user.user_metadata?.health_consent === true) return true;
   const { data } = await supabaseAdmin
     .from("sport_profiles")
@@ -17,8 +26,12 @@ export async function userHasHealthConsent(
     .maybeSingle();
   if (data?.health_consent === true) return true;
   const extra = data?.extra;
-  if (extra && typeof extra === "object" && (extra as { healthConsent?: boolean }).healthConsent === true) {
-    return true;
+  if (extra && typeof extra === "object") {
+    const e = extra as {
+      heartRateConsent?: boolean;
+      healthConsent?: boolean;
+    };
+    if (e.heartRateConsent === true || e.healthConsent === true) return true;
   }
   return false;
 }

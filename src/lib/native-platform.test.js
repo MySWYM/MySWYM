@@ -3,9 +3,11 @@
  */
 import {
   DEFAULT_NATIVE_API_ORIGIN,
+  ensureNativeAppLocation,
   isNativeKeptPublicPath,
   isNativeMarketingHome,
   isNativeMarketingPath,
+  nativeInAppStartUrl,
   rewriteNativeApiInput,
   rewriteNativeApiUrl,
 } from "./native-platform.js";
@@ -68,6 +70,26 @@ assert(isNativeMarketingPath("/faq") === true, "faq is marketing");
 assert(isNativeKeptPublicPath("/contact") === false, "contact not kept in WebView");
 assert(isNativeKeptPublicPath("/cgu") === false, "cgu not kept in WebView");
 assert(isNativeKeptPublicPath("/tarifs") === false, "tarifs not kept");
+
+console.log("native-platform, iOS start path");
+assert(nativeInAppStartUrl("/") === "/app", "/ → /app");
+assert(nativeInAppStartUrl("/fr") === "/app", "/fr → /app");
+assert(nativeInAppStartUrl("/fr", "?ref=1", "#x") === "/app?ref=1#x", "keeps query+hash");
+assert(nativeInAppStartUrl("/app") === "", "/app stays");
+assert(nativeInAppStartUrl("/connexion") === "", "/connexion stays");
+assert(nativeInAppStartUrl("/inscription") === "", "/inscription stays");
+{
+  let href = "/";
+  const loc = { pathname: "/", search: "", hash: "" };
+  const hist = {
+    state: null,
+    replaceState(_s, _t, next) { href = next; },
+  };
+  assert(ensureNativeAppLocation(loc, hist) === true, "rewrites marketing boot");
+  assert(href === "/app", "history is /app");
+  loc.pathname = "/app";
+  assert(ensureNativeAppLocation(loc, hist) === false, "leaves /app");
+}
 
 console.log("native-platform, device language");
 assert(languageFromNavigator("fr-FR") === "fr", "fr-FR");
