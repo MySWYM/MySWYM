@@ -161,6 +161,26 @@ This binary is iPhone only.
 - Compte in-app : **oui**. Suppression du compte : **oui** (Réglages / profil).
 - IAP : abonnements auto-renouvelables mensuel + annuel déjà prévus côté StoreKit. Vérifier que les produits App Store Connect ont le même ID que le code : `app.myswym.ios.premium.monthly` et `app.myswym.ios.premium.annual`.
 
+## 9. Upload TestFlight (CLI / Organizer)
+
+Archive locale typique : `/tmp/myswym-tf/MySWYM.xcarchive`.
+
+Si `xcodebuild -exportArchive` affiche `Failed to Use Accounts` / `No Accounts` / `No signing certificate "iOS Distribution"` :
+
+1. **Xcode → Settings → Accounts**
+   - Ajoute / reconnecte ton Apple ID (session valide)
+   - Sélectionne le team **F6DRCXLFT7**
+   - **Manage Certificates… → + → Apple Distribution** (obligatoire pour TestFlight ; Development seul ne suffit pas)
+2. **HealthKit sur l’App ID** (sinon export : profil Store sans HealthKit)
+   - https://developer.apple.com/account/resources/identifiers/list
+   - Identifiant `app.myswym.ios` → Capabilities → **HealthKit** ON → Save
+   - Revenir dans Xcode : Signing & Capabilities du target App doit montrer HealthKit sans warning
+3. **Upload**
+   - Soit : `bash scripts/ios-testflight.sh`
+   - Soit : double-clic l’archive / Organizer → **Distribute App** → App Store Connect → Upload
+
+Ne pas utiliser un profil Development pour l’upload store.
+
 ## 8. Check photo de profil (USB, pas TestFlight)
 
 Après `npm run cap:sync` + Run sur l’iPhone : Profil → Changer la photo.
