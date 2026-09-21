@@ -19,6 +19,9 @@ import { CountUp } from "./analyse/CountUp.jsx";
 import { ScoreRing } from "./analyse/ScoreRing.jsx";
 import { VolumeBars } from "./analyse/VolumeBars.jsx";
 import { periodCompletionRatio } from "./analyse/score-color.js";
+import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import IosPremiumBar from "./ui/IosPremiumBar.jsx";
+import HistoriqueTab from "./HistoriqueTab.jsx";
 import "./analyse/analyse-motion.css";
 
 const EASE_OUT = [0.22, 1, 0.36, 1];
@@ -101,6 +104,8 @@ export default function AnalyseTab({
   onUpgrade,
   onPaceUpdate,
   onValidateSession,
+  onShare = null,
+  activePlanId = null,
 }) {
   const { MonAllureCard, StravaSection } = getTabUi();
   const [mainTab, setMainTab] = useState("progress");
@@ -127,6 +132,17 @@ export default function AnalyseTab({
   const reducedMotion = useReducedMotion();
   const completionRatio = periodCompletionRatio(periodStats);
   const ringSublabel = periodStats?.isEmptyTarget ? "à nager" : "du volume";
+  const iosNav = isIosSimpleNav();
+  const detailOptions = iosNav
+    ? [
+        { id: "volume", label: "Volume" },
+        { id: "badges", label: "Badges" },
+        { id: "history", label: "Historique" },
+      ]
+    : [
+        { id: "volume", label: "Volume" },
+        { id: "badges", label: "Badges" },
+      ];
 
   return (
     <AppTabShell
@@ -155,6 +171,9 @@ export default function AnalyseTab({
             <p style={{ margin: "0 0 16px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
               Volume, allures et badges : inclus dans Premium.
             </p>
+            {iosNav ? (
+              <IosPremiumBar onUpgrade={onUpgrade} source="analyse" />
+            ) : (
             <button
               type="button"
               className="ms-pill-cta"
@@ -165,6 +184,7 @@ export default function AnalyseTab({
             >
               S’abonner : dès {PRICING.monthlyCommit.label}/mois
             </button>
+            )}
           </div>
         ) : (
           <>
@@ -264,10 +284,7 @@ export default function AnalyseTab({
               ariaLabel="Détail progression"
               value={detailTab}
               onChange={setDetailTab}
-              options={[
-                { id: "volume", label: "Volume" },
-                { id: "badges", label: "Badges" },
-              ]}
+              options={detailOptions}
             />
 
             {detailTab === "volume" && periodStats && (
@@ -348,6 +365,20 @@ export default function AnalyseTab({
                 </div>
                 <HomeBadgesSection plan={plan} />
               </div>
+            )}
+
+            {detailTab === "history" && (
+              <HistoriqueTab
+                embedded
+                plan={plan}
+                profile={profile}
+                user={user}
+                isPremium={isPremium}
+                activePlanId={activePlanId}
+                onTabChange={onTabChange}
+                onUpgrade={onUpgrade}
+                onShare={onShare}
+              />
             )}
           </>
         )}

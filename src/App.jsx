@@ -170,6 +170,7 @@ import WhatsNewSheet, {
 import { restoreAndSyncAppleIap, openAppleSubscriptionManagement } from "./lib/native-iap.js";
 import { openStripePortalUrl } from "./lib/native-billing.js";
 import { isNativeIos } from "./lib/native-platform.js";
+import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -7573,14 +7574,15 @@ export default function App() {
   const lastDockTabRef = useRef("home");
   /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
   const goTab = (tab) => {
-    if (tab === activeTab) {
+    const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
+    if (next === activeTab) {
       scrollAppToTop();
       return;
     }
-    if (activeTab === "home" || activeTab === "plan" || activeTab === "analyse" || activeTab === "history") {
-      lastDockTabRef.current = activeTab;
+    if (activeTab === "home" || activeTab === "plan" || activeTab === "analyse" || activeTab === "history" || (isIosSimpleNav() && activeTab === "profile")) {
+      lastDockTabRef.current = activeTab === "plan" ? "home" : activeTab;
     }
-    setActiveTab(tab);
+    setActiveTab(next);
   };
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
@@ -10887,6 +10889,8 @@ export default function App() {
             onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
             onPaceUpdate={handlePaceUpdate}
             onValidateSession={handleComplete}
+            onShare={openShare}
+            activePlanId={activePlanId}
           />
         )}
         {activeTab === "history" && (
@@ -10920,20 +10924,25 @@ export default function App() {
             onSignOut={handleSignOut}
             onDeleteAccount={handleDeleteAccount}
             referralSlot={<ReferralShareCard />}
+            onGoBuddies={() => goTab("buddies")}
+            showBuddies={hasSwumNav}
           />
         )}
         <Suspense fallback={null}>
         {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
         </Suspense>
 
-        <Suspense fallback={null}><SupportBubble aboveBottomNav={activeTab !== "profile"} user={user} /></Suspense>
-        {activeTab !== "profile" && (
+        {!isIosSimpleNav() && (
+          <Suspense fallback={null}><SupportBubble aboveBottomNav={activeTab !== "profile"} user={user} /></Suspense>
+        )}
+        {(isIosSimpleNav() || activeTab !== "profile") && (
           <BottomNav
-            active={activeTab === "buddies" ? "analyse" : activeTab}
+            active={isIosSimpleNav() ? iosDockActive(activeTab) : (activeTab === "buddies" ? "analyse" : activeTab)}
             onChange={goTab}
             newBadge={newBadgeId !== null}
           />
         )}
+        {!isIosSimpleNav() && (
         <Suspense fallback={null}>
         <SettingsDrawer
           open={settingsOpen}
@@ -10953,6 +10962,7 @@ export default function App() {
           onModifyPlan={handleAddPlan}
         />
         </Suspense>
+        )}
 
         {cancelSurveyOpen && (
           <CancelSurveySheet

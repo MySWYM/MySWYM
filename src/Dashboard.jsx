@@ -21,6 +21,7 @@ import { ACCESS_STATUS } from "./lib/access.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { getTabUi } from "./tab-ui-registry.js";
+import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 
 export function HomeBadgesSection({ plan }) {
   const stats = computeStats(plan);
@@ -217,7 +218,7 @@ export default function Dashboard({
           </div>
         )}
 
-        {plan && isPremium && (
+        {plan && isPremium && !isIosSimpleNav() && (
           <CoachCard
             plan={plan}
             profile={profile}

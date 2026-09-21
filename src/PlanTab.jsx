@@ -6,6 +6,7 @@ import { AppTabShell } from "./app-shell/index.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { findGoalById } from "./lib/onboarding-catalog.jsx";
+import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 
 const TAB_PAD = {
   paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
@@ -62,6 +63,7 @@ export default function PlanTab({
       onTabChange={onTabChange}
       onUpgrade={onUpgrade}
       immersive
+      onBack={isIosSimpleNav() && onTabChange ? () => onTabChange("home") : undefined}
     />
   );
 

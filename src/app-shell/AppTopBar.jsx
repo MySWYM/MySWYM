@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, ChevronLeft } from "lucide-react";
+import { isIosSimpleNav } from "../lib/ios-simple-nav.js";
 import { G } from "../theme/palette.js";
 import BrandLogo from "../BrandLogo.jsx";
 import { resolveAvatarUrl } from "../lib/avatar.js";
@@ -26,6 +27,7 @@ export default function AppTopBar({
   onTabChange = null,
   onUpgrade = null,
   immersive = false,
+  onBack = null,
 }) {
   const avatarUrl = resolveAvatarUrl(user);
   const firstName = resolveDisplayFirstName(user);
@@ -95,6 +97,10 @@ export default function AppTopBar({
   };
 
   const iconColor = G.ink;
+  const iosNav = isIosSimpleNav();
+  const showMenu = !iosNav && !!onOpenMenu;
+  const showAvatar = !iosNav && !!onAvatarClick;
+  const showBell = !iosNav;
 
   useEffect(() => {
     if (!immersive) {
@@ -180,7 +186,19 @@ export default function AppTopBar({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-          {onOpenMenu ? (
+          {onBack ? (
+            <button
+              type="button"
+              onClick={() => {
+                playUiSound("soft");
+                onBack();
+              }}
+              className="ms-glass-icon-btn"
+              aria-label="Retour"
+            >
+              <ChevronLeft size={22} color={iconColor} strokeWidth={2.25} />
+            </button>
+          ) : showMenu ? (
             <button
               type="button"
               onClick={() => {
@@ -228,6 +246,7 @@ export default function AppTopBar({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {showBell ? (
           <button
             type="button"
             onClick={handleOpenNotifications}
@@ -260,7 +279,8 @@ export default function AppTopBar({
               </span>
             )}
           </button>
-          {onAvatarClick ? (
+          ) : null}
+          {showAvatar ? (
             <button
               type="button"
               onClick={() => {

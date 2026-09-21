@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import {
   Check, Pencil, Camera, Trash2, X, AlertTriangle, ChevronLeft,
   Volume2, CreditCard, LogOut, RotateCcw, ChevronRight, Mail, User,
-  Target, Waves, Package, HeartPulse, CalendarDays, Settings,
+  Target, Waves, Package, HeartPulse, CalendarDays, Settings, Users,
 } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { FONT_DISPLAY } from "./theme/brand.js";
 import { isNativeIos } from "./lib/native-platform.js";
+import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import IosPremiumBar from "./ui/IosPremiumBar.jsx";
 import { supabase } from "./supabase.js";
 import {
   resolveAvatarUrl,
@@ -121,6 +123,8 @@ export default function ProfileTab({
   onSignOut,
   onDeleteAccount,
   referralSlot = null,
+  onGoBuddies = null,
+  showBuddies = false,
 }) {
   const { t: to } = useTranslation("onboarding");
   const access = getAccessState(user);
@@ -469,8 +473,12 @@ export default function ProfileTab({
     <AppTabShell style={{
       minHeight: "100dvh",
       paddingBottom: profileDirty
-        ? "calc(var(--safe-bottom) + 112px)"
-        : "calc(var(--safe-bottom) + 32px)",
+        ? (isIosSimpleNav()
+          ? "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 112px)"
+          : "calc(var(--safe-bottom) + 112px)")
+        : (isIosSimpleNav()
+          ? "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)"
+          : "calc(var(--safe-bottom) + 32px)"),
     }}>
       {helpPanel === "support" ? (
         <ProfileSupportPanel onBack={() => setHelpPanel(null)} />
@@ -724,6 +732,9 @@ export default function ProfileTab({
       ) : null}
       <AppShell style={helpPanel || settingsOpen ? { display: "none" } : undefined}>
       <header className="ms-profile-toolbar" style={{ position: "relative" }}>
+        {isIosSimpleNav() ? (
+          <div style={{ width: 44 }} aria-hidden />
+        ) : (
         <button
           type="button"
           className="ms-glass-icon-btn"
@@ -736,6 +747,7 @@ export default function ProfileTab({
         >
           <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
         </button>
+        )}
         <h1 style={{
           margin: 0,
           fontSize: 18,
@@ -804,6 +816,30 @@ export default function ProfileTab({
           </div>
         </div>
       </div>
+
+      {isIosSimpleNav() && !isPremium ? (
+        <div style={{ padding: "0 0 16px" }}>
+          <IosPremiumBar onUpgrade={onUpgrade} source="profile" />
+        </div>
+      ) : null}
+
+      {isIosSimpleNav() && showBuddies ? (
+        <button
+          type="button"
+          className="ms-profile-account-row"
+          onClick={() => {
+            playUiSound("soft");
+            onGoBuddies?.();
+          }}
+          style={{ marginBottom: 16 }}
+        >
+          <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
+            <Users size={18} color={G.mint} />
+          </span>
+          <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
+          <ChevronRight size={18} color={G.greyMid} />
+        </button>
+      ) : null}
 
       {editProfileOpen && createPortal(
         <div
