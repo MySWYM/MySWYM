@@ -1,9 +1,17 @@
-import { isNativeIos } from "./native-platform.js";
+import { isNativeApp, isNativeIos } from "./native-platform.js";
 import { ACCESS_STATUS } from "./access.js";
 
-/** IA GOWOD : 3 onglets, chrome allégé, uniquement dans le wrapper iOS. */
+/**
+ * Chrome produit façon iPhone (3 onglets Analyse / Nager / Profil).
+ * - iOS Capacitor : oui
+ * - Navigateur web : oui (même DA, paiement Stripe)
+ * - Autre natif (Android plus tard) : non jusqu’à la DA Play
+ * Billing IAP reste derrière isNativeApp() / nativeBillingBlocked().
+ */
 export function isIosSimpleNav() {
-  return isNativeIos();
+  if (isNativeIos()) return true;
+  if (isNativeApp()) return false;
+  return true;
 }
 
 export function iosDockActive(tab) {

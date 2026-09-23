@@ -1,4 +1,5 @@
-import { iosDockActive, iosResolveTab, iosShowPremiumBar } from "./ios-simple-nav.js";
+import { isIosSimpleNav, iosDockActive, iosResolveTab, iosShowPremiumBar } from "./ios-simple-nav.js";
+import { setNativePlatformForTests } from "./native-platform.js";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -17,4 +18,9 @@ assert(iosResolveTab("plan") === "plan", "plan drill-in kept");
 assert(iosShowPremiumBar({ status: "trial", hasPremiumAccess: true }) === true, "trial shows gold bar");
 assert(iosShowPremiumBar({ status: "active", hasPremiumAccess: true }) === false, "paid hides gold bar");
 assert(iosShowPremiumBar({ status: "expired", hasPremiumAccess: false }) === true, "expired shows gold bar");
+
+setNativePlatformForTests(false);
+assert(isIosSimpleNav() === true, "web browser uses iPhone chrome");
+setNativePlatformForTests(null);
+
 console.log("ios-simple-nav ok");

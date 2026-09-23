@@ -193,7 +193,7 @@
     "loginTitle": "Log in",
     "registerTitle": "Create an account",
     "resetTitle": "Forgot password",
-    "loginLead": "Log in with Google or your email.",
+    "loginLead": "Log in with Apple, Google or your email.",
     "registerLead": "7-day trial, no card. Then your sessions pause.",
     "registerReferral": "Referral code {{code}} : 20% off your first Premium invoice.",
     "resetLead": "Enter your email and we’ll send a reset link.",

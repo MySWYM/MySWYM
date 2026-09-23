@@ -256,7 +256,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: nativeIos ? 8 : 10 }}>
-      {nativeIos && (
+      {nativeIos ? (
         <button
           type="button"
           className="native-funnel-social"
@@ -273,6 +273,23 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
         >
           <AppleMark />
           {busy === "apple" ? t("auth.connecting") : t("auth.apple")}
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={!!busy}
+          aria-disabled={disabled || !!busy}
+          onClick={() => startOAuth("apple")}
+          style={{
+            ...btnBase,
+            background: G.ink,
+            color: G.white,
+            border: `1.5px solid ${G.ink}`,
+            opacity: disabled ? 0.7 : 1,
+          }}
+        >
+          <AppleMark />
+          {busy === "apple" ? t("auth.redirecting") : t("auth.apple")}
         </button>
       )}
       <button
