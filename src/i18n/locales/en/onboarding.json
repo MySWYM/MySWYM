@@ -225,7 +225,8 @@
     "createdReferral": "Account created! Referral saved, check your email, then log in.",
     "resetSent": "Email sent! Check your inbox to reset your password.",
     "genericError": "Something went wrong.",
-    "socialOff": "This sign-in method isn’t enabled yet. Try email, or come back in a moment.",
+    "socialOff": "This sign-in method isn’t enabled on the server yet. Try email / password.",
+    "socialAppleConfig": "Apple sign-in isn’t configured correctly (Supabase). Try email / password.",
     "socialFail": "Social sign-in isn’t available."
   }
 }

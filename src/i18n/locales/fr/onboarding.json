@@ -225,7 +225,8 @@
     "createdReferral": "Compte créé ! Parrainage enregistré, vérifie ton email, puis connecte-toi.",
     "resetSent": "Email envoyé ! Vérifie ta boîte mail pour réinitialiser ton mot de passe.",
     "genericError": "Une erreur est survenue.",
-    "socialOff": "Cette connexion n’est pas encore activée. Réessaie avec email, ou reviens dans un instant.",
+    "socialOff": "Cette connexion n’est pas encore activée côté serveur. Réessaie avec e-mail / mot de passe.",
+    "socialAppleConfig": "Connexion Apple mal configurée (Supabase). Réessaie avec e-mail / mot de passe.",
     "socialFail": "Connexion sociale impossible."
   }
 }

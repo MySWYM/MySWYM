@@ -123,14 +123,22 @@ Le compte in-app exige **18 ans révolus** (case d’inscription). Ne pas forcer
 
 Sans ça, Apple ouvre un compte vide et refuse (Guideline 2.1).
 
-Créer **deux** comptes web (même backend que l’app), mot de passe à coller dans App Store Connect seulement, **pas** dans git.
+Créer **deux** comptes sur le backend **PROD** (`ssdygzqwvoqcyzbtbrbp`), mot de passe à coller dans App Store Connect seulement, **pas** dans git.
 
 1. **Essai** (moins de 7 jours avant la soumission)
    - Compte tout neuf, essai actif
    - Sert à voir l’onboarding et les séances pendant l’essai
-2. **Premium web** (Stripe, abonnement réel)
-   - Sert à voir le catalogue complet, l’adaptation, le paywall « déjà Premium »
+2. **Premium** (accès review forcé ou Stripe)
+   - E-mails listés dans le secret Supabase prod `REVIEW_PREMIUM_EMAILS` (ex. `review@myswym.app,admin@myswym.app`) : Premium 1 an via `sync-subscription` au login, sans carte
+   - Ou abonnement Stripe réel sur le même e-mail
    - Plus sûr que l’essai : la review Apple peut durer plus de 7 jours
+
+Secret (prod uniquement) :
+
+```bash
+supabase secrets set REVIEW_PREMIUM_EMAILS="review@myswym.app,admin@myswym.app" --project-ref ssdygzqwvoqcyzbtbrbp
+supabase functions deploy sync-subscription --project-ref ssdygzqwvoqcyzbtbrbp
+```
 
 Coller dans « Notes de révision » (anglais, les reviewers le lisent) :
 
@@ -180,6 +188,57 @@ Si `xcodebuild -exportArchive` affiche `Failed to Use Accounts` / `No Accounts` 
    - Soit : double-clic l’archive / Organizer → **Distribute App** → App Store Connect → Upload
 
 Ne pas utiliser un profil Development pour l’upload store.
+
+## 10. Auth iOS (Apple / Google) + Premium Stripe
+
+### Ne pas confondre les projets Supabase
+
+| Environnement | Ref | Fichier / usage |
+| --- | --- | --- |
+| **DEV** (local USB, staging web) | `ccsazffeyeybjnlvnppa` | `.env.local` · `npm run cap:sync` |
+| **PROD** (TestFlight, App Store, www) | `ssdygzqwvoqcyzbtbrbp` | `.env.ios-prod.local` · `scripts/ios-testflight.sh` · CI `supabase-deploy.yml` |
+
+Dashboard prod Google / Apple / Redirects :
+https://supabase.com/dashboard/project/ssdygzqwvoqcyzbtbrbp/auth/providers
+
+Dashboard **dev** (ne pas y configurer pour TestFlight) :
+https://supabase.com/dashboard/project/ccsazffeyeybjnlvnppa/auth/providers
+
+### Supabase Auth (PROD) → URL Configuration
+
+Redirect URLs (ajouter, ne pas remplacer les existants) :
+
+```
+myswym://auth/callback
+https://www.myswym.app/app
+https://staging.myswym.app/app
+```
+
+### Provider Apple (Auth → Providers → Apple) — projet PROD
+
+1. **Enabled** = ON
+2. **Client IDs** : `app.myswym.ios` (bundle) **et** le Services ID web s’il existe, séparés par une virgule
+3. **Secret Key** : JWT généré depuis une Key Apple (Sign in with Apple) : Team ID + Key ID + `.p8`. Sans Secret, le natif échoue avec « not enabled » / audience
+4. Sur [Identifiers](https://developer.apple.com/account/resources/identifiers/list) : App ID `app.myswym.ios` → **Sign in with Apple** ON
+
+### Provider Google — projet PROD
+
+1. **Enabled** = ON (même client web que le site)
+2. Redirect URLs doit inclure `myswym://auth/callback` (sonde : `node scripts/probe-google-oauth-ios.mjs`)
+3. L’app iOS ouvre **Capacitor Browser** (SFSafariViewController) puis revient via `myswym://auth/callback`
+4. Skip nonce : utile seulement pour Sign in with Google **natif** (ID token). Le flux iOS actuel = OAuth Safari sheet, pas besoin.
+
+### Premium Stripe déjà payé sur le web
+
+Après login e-mail (ou social sur le **même** user.id **prod**), `sync-subscription` rattache le customer Stripe via `metadata.supabase_user_id` ou e-mail confirmé + abo actif. Déployer sur **PROD** :
+
+```bash
+supabase functions deploy sync-subscription --project-ref ssdygzqwvoqcyzbtbrbp
+```
+
+TestFlight : toujours `bash scripts/ios-testflight.sh` (force `.env.ios-prod.local`). Ne pas `npm run cap:sync` seul avant archive store.
+
+Si Apple « Masquer mon e-mail » crée un **nouveau** compte, ce n’est pas le compte Stripe : se connecter avec e-mail / mot de passe du compte web.
 
 ## 8. Check photo de profil (USB, pas TestFlight)
 

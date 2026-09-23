@@ -22,6 +22,31 @@ export const BILLING_PROVIDER = {
 
 export type BillingProvider = typeof BILLING_PROVIDER[keyof typeof BILLING_PROVIDER];
 
+/** Premium forcé pour comptes App Review / démo (env REVIEW_PREMIUM_EMAILS). */
+export function buildReviewPremiumState(
+  userId: string,
+  current?: Partial<AccessStateRow> | null,
+  nowMs = Date.now(),
+): AccessStateRow {
+  const ends = new Date(nowMs);
+  ends.setUTCFullYear(ends.getUTCFullYear() + 1);
+  return {
+    user_id: userId,
+    access_status: ACCESS_STATUS.active,
+    trial_started_at: current?.trial_started_at ?? null,
+    trial_ends_at: current?.trial_ends_at ?? null,
+    trial_used: true,
+    subscription_started_at: current?.subscription_started_at ?? new Date(nowMs).toISOString(),
+    subscription_ends_at: ends.toISOString(),
+    cancel_at_period_end: false,
+    stripe_customer_id: current?.stripe_customer_id ?? null,
+    billing_provider: BILLING_PROVIDER.stripe,
+    apple_original_transaction_id: current?.apple_original_transaction_id ?? null,
+    apple_product_id: current?.apple_product_id ?? null,
+    apple_environment: current?.apple_environment ?? null,
+  } satisfies AccessStateRow;
+}
+
 export type AccessStateRow = {
   user_id: string;
   access_status: AccessStatus;

@@ -25,8 +25,22 @@ if ! echo "$IDENTITIES" | grep -qE "Apple Distribution|iPhone Distribution"; the
   exit 1
 fi
 
-echo "==> cap:sync"
-npm run cap:sync
+echo "==> cap:sync (backend PROD = .env.ios-prod.local)"
+if [[ ! -f "$ROOT/.env.ios-prod.local" ]]; then
+  echo "Manque .env.ios-prod.local (VITE_SUPABASE_URL prod ssdygz…)."
+  exit 1
+fi
+CAP_ENV_FILE=.env.ios-prod.local npm run cap:sync
+# Garde-fou : le bundle iOS ne doit pas pointer le backend DEV
+if rg -q "ccsazffeyeybjnlvnppa" "$ROOT/ios/App/App/public/assets" 2>/dev/null; then
+  echo "ERREUR : le dist iOS contient encore le ref DEV (ccsazff…). Abort."
+  exit 1
+fi
+if ! rg -q "ssdygzqwvoqcyzbtbrbp" "$ROOT/ios/App/App/public/assets" 2>/dev/null; then
+  echo "ERREUR : le dist iOS ne contient pas le ref PROD (ssdygz…). Abort."
+  exit 1
+fi
+echo "==> Backend PROD OK (ssdygz…)"
 
 MARKETING="$(/usr/libexec/PlistBuddy -c 'Print :objects:96A1E0012FE9A00100000001' "$ROOT/ios/App/App.xcodeproj/project.pbxproj" 2>/dev/null || true)"
 # Lit versions depuis le pbxproj

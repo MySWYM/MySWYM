@@ -17,8 +17,21 @@ import {
   signInWithAppleNative,
 } from "./lib/apple-auth.js";
 import { NATIVE_OAUTH_REDIRECT } from "./lib/native-oauth.js";
+import { openNativeOAuthUrl } from "./lib/native-links.js";
 import { usePageSeo } from "./lib/seo.js";
 import { NEWSLETTER_META_KEY, stashPendingNewsletterOptIn, clearPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
+
+function mapSocialAuthError(raw, t) {
+  const msg = String(raw || "");
+  if (/not enabled|Unsupported provider|provider is not enabled/i.test(msg)) {
+    return t("auth.socialOff");
+  }
+  if (/Unacceptable audience|invalid_grant|invalid jwt|JWT|audience/i.test(msg)) {
+    return t("auth.socialAppleConfig");
+  }
+  if (msg === "APPLE_NO_TOKEN") return t("auth.socialFail");
+  return msg || t("auth.socialFail");
+}
 
 export const getAuthInpStyle = () => {
   if (isNativeApp()) {
@@ -135,6 +148,23 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
   const [busy, setBusy] = useState(null);
   const nativeIos = isNativeIos();
 
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    const onDone = (ev) => {
+      const detail = ev?.detail || {};
+      setBusy(null);
+      if (detail.ok && detail.user) {
+        onAuth?.(detail.user);
+        return;
+      }
+      if (detail.ok === false && detail.error) {
+        onError?.(mapSocialAuthError(detail.error, t));
+      }
+    };
+    window.addEventListener("myswym:native-oauth-done", onDone);
+    return () => window.removeEventListener("myswym:native-oauth-done", onDone);
+  }, [onAuth, onError, t]);
+
   const startOAuth = async (provider) => {
     if (busy) return;
     if (disabled) {
@@ -163,20 +193,12 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
       if (error) throw error;
       if (isNativeApp()) {
         if (!data?.url) throw new Error(t("auth.socialFail"));
-        const { Browser } = await import("@capacitor/browser");
-        const handle = await Browser.addListener("browserFinished", () => {
-          setBusy(null);
-          void handle.remove();
-        });
-        await Browser.open({ url: data.url });
+        // Capacitor Browser (SFSafariViewController) → retour myswym://auth/callback
+        await openNativeOAuthUrl(data.url);
       }
     } catch (e) {
       setBusy(null);
-      const raw = e.message || "";
-      const friendly = /not enabled|Unsupported provider/i.test(raw)
-        ? t("auth.socialOff")
-        : (raw || t("auth.socialFail"));
-      onError?.(friendly);
+      onError?.(mapSocialAuthError(e.message, t));
     }
   };
 
@@ -220,11 +242,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
     } catch (e) {
       setBusy(null);
       if (isAppleSignInCanceled(e)) return;
-      const raw = e.message || "";
-      const friendly = /not enabled|Unsupported provider|provider is not enabled/i.test(raw)
-        ? t("auth.socialOff")
-        : (raw === "APPLE_NO_TOKEN" ? t("auth.socialFail") : (raw || t("auth.socialFail")));
-      onError?.(friendly);
+      onError?.(mapSocialAuthError(e.message, t));
     }
   };
 
@@ -325,9 +343,11 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
 
   const handle = async () => {
     setError(null); setSuccess(null); setLoading(true);
+    const mail = String(email || "").trim().toLowerCase();
+    const pass = String(password || "");
     try {
       if (mode === "password") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password: pass });
         if (error) throw error;
         onAuth(data.user);
       } else if (mode === "register") {
@@ -339,8 +359,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           await supabase.auth.signOut();
         }
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: mail,
+          password: pass,
           options: {
             emailRedirectTo: isNativeApp() ? `${nativeApiOrigin()}/app` : `${window.location.origin}/app`,
             data: {
@@ -353,12 +373,12 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         });
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error(t("auth.exists"));
-        track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || email}` });
+        track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || mail}` });
         let sessionUser = data.session?.user ?? null;
         if (!sessionUser) {
           const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+            email: mail,
+            password: pass,
           });
           if (signInError && !/email not confirmed/i.test(signInError.message || "")) {
             throw signInError;
@@ -371,7 +391,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         }
         setSuccess(referralCode ? t("auth.createdReferral") : t("auth.created"));
       } else if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(mail, {
           redirectTo: `${window.location.origin}/app`,
         });
         if (error) throw error;

@@ -44,6 +44,7 @@
     "test:buddy-otp": "node src/lib/buddy-otp-humanize.test.js",
     "test:native": "node src/lib/native-platform.test.js && node src/lib/apple-auth.test.js && node src/lib/native-oauth.test.js && node src/lib/native-billing.test.js && node src/lib/native-links.test.js && node src/lib/native-welcome.test.js && node src/lib/apple-iap-catalog.test.js",
     "cap:sync": "node scripts/cap-web-build.mjs && node scripts/patch-capacitor-keyboard.mjs && npx cap sync ios",
+    "cap:sync:ios-prod": "CAP_ENV_FILE=.env.ios-prod.local npm run cap:sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
     "cap:icon": "swift scripts/ios-app-icon.swift public/A_MySWYM_icone-app_bleue.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
     "test:e2e": "playwright test",

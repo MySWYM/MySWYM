@@ -47,6 +47,25 @@ export function openInSystemBrowser(url) {
   a.remove();
 }
 
+/**
+ * OAuth Google iOS : SFSafariViewController (Capacitor Browser).
+ * Mieux que target=_blank pour le retour myswym://auth/callback.
+ */
+export async function openNativeOAuthUrl(url) {
+  const href = String(url || "").trim();
+  if (!href) return;
+  if (!isNativeApp()) {
+    openInSystemBrowser(href);
+    return;
+  }
+  try {
+    const { Browser } = await import("@capacitor/browser");
+    await Browser.open({ url: href, presentationStyle: "fullscreen" });
+  } catch {
+    openInSystemBrowser(href);
+  }
+}
+
 export function installNativeInAppLinks() {
   if (typeof document === "undefined" || !isNativeApp()) return false;
   if (window.__myswymNativeLinks) return true;

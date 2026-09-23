@@ -1,6 +1,6 @@
 /**
  * OAuth Google (et autres) hors WebView iOS.
- * Google bloque l’OAuth dans WKWebView : on ouvre le navigateur système
+ * Google bloque l’OAuth dans WKWebView : on ouvre Safari système
  * puis on revient via myswym://auth/callback.
  */
 export const NATIVE_OAUTH_SCHEME = "myswym";
@@ -56,4 +56,14 @@ export async function completeNativeOAuthFromUrl(supabase, url) {
     return data;
   }
   throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
+}
+
+/** Notifie l’UI auth après retour Safari (cold start ou app déjà ouverte). */
+export function emitNativeOAuthCompleted(detail = {}) {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent("myswym:native-oauth-done", { detail }));
+  } catch {
+    /* ignore */
+  }
 }

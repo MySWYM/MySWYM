@@ -12,6 +12,7 @@ import { installNativeBillingBlock } from "../lib/native-billing.js";
 import { installNativeInAppLinks } from "../lib/native-links.js";
 import {
   completeNativeOAuthFromUrl,
+  emitNativeOAuthCompleted,
   isNativeOAuthCallback,
 } from "../lib/native-oauth.js";
 import "./native-shell.css";
@@ -34,22 +35,41 @@ export function prepareNativeRuntime() {
   return true;
 }
 
+async function handleNativeOAuthUrl(url) {
+  if (!isNativeOAuthCallback(url)) return false;
+  try {
+    const data = await completeNativeOAuthFromUrl(supabase, url);
+    emitNativeOAuthCompleted({ ok: true, user: data?.user ?? null });
+    return true;
+  } catch (err) {
+    if (import.meta.env?.DEV) console.warn("[native-oauth]", err);
+    emitNativeOAuthCompleted({
+      ok: false,
+      error: err?.message || String(err || "NATIVE_OAUTH_FAILED"),
+    });
+    return false;
+  } finally {
+    try {
+      await Browser.close();
+    } catch {
+      /* feuille déjà fermée / Safari système */
+    }
+  }
+}
+
 function installNativeOAuthReturn() {
   if (typeof window !== "undefined" && window.__myswymNativeOAuth) return;
   if (typeof window !== "undefined") window.__myswymNativeOAuth = true;
+
+  void App.getLaunchUrl()
+    .then((res) => {
+      const url = res?.url;
+      if (url) void handleNativeOAuthUrl(url);
+    })
+    .catch(() => {});
+
   void App.addListener("appUrlOpen", async ({ url }) => {
-    if (!isNativeOAuthCallback(url)) return;
-    try {
-      await completeNativeOAuthFromUrl(supabase, url);
-    } catch (err) {
-      if (import.meta.env?.DEV) console.warn("[native-oauth]", err);
-    } finally {
-      try {
-        await Browser.close();
-      } catch {
-        /* feuille déjà fermée */
-      }
-    }
+    await handleNativeOAuthUrl(url);
   });
 }
 

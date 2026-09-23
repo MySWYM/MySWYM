@@ -23,6 +23,28 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
   }, []);
+
+  // iOS / TF : récupère Premium Stripe (ou review) dès l’écran gelé, sans attendre un tap.
+  useEffect(() => {
+    if (!native) return undefined;
+    let cancelled = false;
+    (async () => {
+      setSyncing(true);
+      try {
+        const u = await syncSubscriptionFromStripe();
+        if (cancelled) return;
+        setUser(u);
+        if (u && getAccessState(u).hasPremiumAccess) {
+          window.location.reload();
+        }
+      } catch {
+        /* bouton Synchroniser reste dispo */
+      } finally {
+        if (!cancelled) setSyncing(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [native]);
   const heroPreview = preview
     ? {
         title: preview.title || "Séance",
