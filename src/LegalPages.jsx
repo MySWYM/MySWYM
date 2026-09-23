@@ -299,7 +299,8 @@ export function PolitiqueConfidentialitePage() {
 
       <H3>2.11 Données techniques</H3>
       <Ul items={[
-        "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=), session d’auth.",
+        "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=, rappels de séance), session d’auth.",
+        "Sur l’app iPhone : notifications locales planifiées sur l’appareil (rappels de séance, essai, badges). Aucun jeton push distant n’est envoyé à MySWYM dans cette version. Tu peux les désactiver dans Paramètres MySWYM ou Réglages iPhone.",
         "Polices : Geist et Space Grotesk auto-hébergées (pas de requête Google Fonts sur le site public).",
         "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
       ]} />

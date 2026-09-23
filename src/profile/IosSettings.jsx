@@ -4,7 +4,7 @@
 import { useState } from "react";
 import {
   Check, ChevronRight, Mail, RotateCcw, Globe, Lock, Shield, CircleHelp, Info,
-  FileText, LogOut, HeartPulse, CreditCard, Activity,
+  FileText, LogOut, HeartPulse, CreditCard, Activity, Bell,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
@@ -393,6 +393,9 @@ export function IosSettingsHome({
   onOpenHelp,
   onOpenLegal,
   onSignOut,
+  sessionRemindersOn = true,
+  sessionRemindersBusy = false,
+  onToggleSessionReminders = null,
 }) {
   const { i18n } = useTranslation();
   const lng = i18n.language?.startsWith("en") ? "en" : "fr";
@@ -422,6 +425,36 @@ export function IosSettingsHome({
           }}
         />
       </div>
+
+      {typeof onToggleSessionReminders === "function" ? (
+        <>
+          <div className="ms-profile-group-label">Notifications</div>
+          <div className="ms-profile-account-stack">
+            <div className="ms-profile-account-row is-static">
+              <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
+                <Bell size={18} color={G.blue} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="ms-profile-settings-label">Rappels de séance</div>
+                <div className="ms-profile-settings-hint">
+                  Le jour J, pas tous les jours. Série et essai inclus.
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={sessionRemindersOn}
+                aria-busy={sessionRemindersBusy}
+                className={`ms-menu-switch${sessionRemindersOn ? " is-on" : ""}`}
+                onClick={onToggleSessionReminders}
+                disabled={sessionRemindersBusy}
+              >
+                <span />
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
 
       <div className="ms-profile-group-label">Connecter</div>
       <div className="ms-profile-account-stack">

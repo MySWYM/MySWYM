@@ -41,6 +41,19 @@ import {
   shouldShowSessionReminderBanner,
   sessionReminderCopy,
 } from "./lib/session-reminder.js";
+import {
+  readSoftPaywallDay,
+  writeSoftPaywallDay,
+  shouldOfferTrialSoftPaywall,
+  shouldRepromptFreezeOnForeground,
+} from "./lib/soft-paywall-rules.js";
+import { syncLocalNotificationsFromState } from "./lib/sync-local-notifications.js";
+import {
+  hasAskedLocalNotificationPermission,
+  requestLocalNotificationPermission,
+  notifyBadgeEarned,
+  cancelMySwymLocalNotifications,
+} from "./lib/native-local-notifications.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
@@ -7594,7 +7607,10 @@ export default function App() {
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
+  const [sessionRemindersOn, setSessionRemindersOn] = useState(true);
+  const [sessionRemindersBusy, setSessionRemindersBusy] = useState(false);
   const trialExpiredPromptedRef = useRef(false);
+  const freezeBackgroundedAtRef = useRef(null);
   const forceAuthRef = useRef(false);
   /** Empêche le bounce /app→onboarding pendant / juste après signOut. */
   const signingOutRef = useRef(false);
@@ -7925,28 +7941,86 @@ export default function App() {
     openUpgrade("trial_expired");
   }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState.hasPremiumAccess]);
 
-  // Soft paywall après la 1ʳᵉ séance : attendre la fermeture des sheets feedback.
+  // Soft paywall essai (option C) + freeze reopen après 30 min arrière-plan.
+  useEffect(() => {
+    if (!isNativeIos() || typeof window === "undefined") return undefined;
+    let cancelled = false;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        freezeBackgroundedAtRef.current = Date.now();
+        return;
+      }
+      if (cancelled || screen !== "app" || showUpgrade || showPlanReady || showWhatsNew) return;
+      if (isFrozen && shouldRepromptFreezeOnForeground({
+        isFrozen: true,
+        backgroundedAtMs: freezeBackgroundedAtRef.current,
+      })) {
+        trialExpiredPromptedRef.current = false;
+        freezeBackgroundedAtRef.current = null;
+        trialExpiredPromptedRef.current = true;
+        openUpgrade("trial_expired");
+        return;
+      }
+      if (
+        shouldOfferTrialSoftPaywall({
+          accessState,
+          isPremium,
+          trigger: "app_open",
+          lastShownDayKey: readSoftPaywallDay(user?.id),
+        })
+      ) {
+        writeSoftPaywallDay(user?.id);
+        openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState, isPremium, user?.id]);
+
+  // Soft à l’ouverture app (J-3→J-1) quand on arrive déjà foreground.
+  useEffect(() => {
+    if (screen !== "app" || isPremium || isFrozen || showUpgrade || showPlanReady || showWhatsNew) return;
+    if (!user?.id) return;
+    if (!shouldOfferTrialSoftPaywall({
+      accessState,
+      isPremium,
+      trigger: "app_open",
+      lastShownDayKey: readSoftPaywallDay(user.id),
+    })) return;
+    writeSoftPaywallDay(user.id);
+    openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
+  }, [screen, user?.id, accessState.trialDaysLeft, accessState.status, isPremium, isFrozen]);
+
+  // Soft paywall après action à valeur (1ʳᵉ séance / etc.).
   useEffect(() => {
     if (!softPaywallPending || isPremium || showUpgrade) return;
     if (sessionFeedbackTarget !== null || feedbackWeek !== null) return;
     let cancelled = false;
     const t = setTimeout(() => {
       if (cancelled) return;
-      try {
-        if (localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) {
-          setSoftPaywallPending(false);
-          return;
-        }
-        localStorage.setItem(SOFT_PAYWALL_STORAGE_KEY, "1");
-      } catch { /* ignore */ }
       setSoftPaywallPending(false);
+      if (!shouldOfferTrialSoftPaywall({
+        accessState,
+        isPremium,
+        trigger: "value_action",
+        lastShownDayKey: readSoftPaywallDay(user?.id),
+      }) && localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) {
+        return;
+      }
+      try {
+        localStorage.setItem(SOFT_PAYWALL_STORAGE_KEY, "1");
+        writeSoftPaywallDay(user?.id);
+      } catch { /* ignore */ }
       openUpgrade("after_first_session");
     }, 1100);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
+  }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek, accessState, user?.id]);
 
   // Pop « Nouveautés » one-shot / compte (pas de reset plan / quiz).
   useEffect(() => {
@@ -9039,9 +9113,45 @@ export default function App() {
       unseenBadges.forEach((badgeId) => { nextSeen[`badge:${badgeId}`] = stamp; });
       writeSeenNotifications(user, nextSeen);
       setNewBadgeId(unseenBadges[0]);
+      const badgeMeta = BADGE_DEFS.find((b) => b.id === unseenBadges[0]);
+      if (badgeMeta && getSessionRemindersEnabled(user?.id)) {
+        void notifyBadgeEarned({
+          title: `Badge obtenu : ${badgeMeta.label}`,
+          body: badgeMeta.desc,
+        });
+      }
     }
     prevBadgesRef.current = current;
   }, [activePlanId, plan, user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setSessionRemindersOn(getSessionRemindersEnabled(user.id));
+  }, [user?.id, user?.user_metadata?.session_reminders]);
+
+  useEffect(() => {
+    if (screen !== "app" || !user?.id) return;
+    void syncLocalNotificationsFromState({ user, plan });
+  }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, sessionRemindersOn, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
+
+  const handleToggleSessionReminders = async () => {
+    if (!user?.id || sessionRemindersBusy) return;
+    const next = !sessionRemindersOn;
+    setSessionRemindersBusy(true);
+    setSessionRemindersOn(next);
+    setSessionRemindersEnabled(user.id, next);
+    try {
+      await persistSessionRemindersPreference(supabase, next);
+      if (next && isNativeIos()) {
+        await requestLocalNotificationPermission(user.id);
+        await syncLocalNotificationsFromState({ user, plan });
+      } else if (!next) {
+        await cancelMySwymLocalNotifications();
+      }
+    } finally {
+      setSessionRemindersBusy(false);
+    }
+  };
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
   const patchProfile = (partial) => setProfile(p => ({ ...p, ...partial }));
@@ -9107,9 +9217,17 @@ export default function App() {
 
   const dismissSessionCelebrate = () => {
     const pending = pendingFeedbackRef.current;
+    const wasFirst = sessionCelebrate?.first === true;
     pendingFeedbackRef.current = null;
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
+    if (wasFirst && isNativeIos() && user?.id && getSessionRemindersEnabled(user.id)) {
+      if (!hasAskedLocalNotificationPermission(user.id)) {
+        void requestLocalNotificationPermission(user.id).then(() => {
+          void syncLocalNotificationsFromState({ user, plan });
+        });
+      }
+    }
   };
 
   const dismissPlanReveal = () => {
@@ -11061,6 +11179,9 @@ export default function App() {
             onPaceUpdate={handlePaceUpdate}
             onValidateSession={handleComplete}
             onChangeGoal={handleChangeGoal}
+            sessionRemindersOn={sessionRemindersOn}
+            sessionRemindersBusy={sessionRemindersBusy}
+            onToggleSessionReminders={handleToggleSessionReminders}
           />
         )}
         <Suspense fallback={null}>

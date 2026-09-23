@@ -10,6 +10,8 @@ import {
   readSeenNotifications,
   writeSeenNotifications,
 } from "../lib/in-app-notifications.js";
+import { fetchMyBuddyConnections } from "../lib/buddy-connections.js";
+import { fetchSupportThread } from "../lib/support-api.js";
 import NotificationsSheet from "../sheets/NotificationsSheet.jsx";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { getAppScrollY } from "../lib/scroll-app.js";
@@ -17,6 +19,18 @@ import "./AppTopBar.css";
 
 const SCROLL_GLASS_ON = 12;
 const SCROLL_GLASS_OFF = 4;
+
+function supportSeenKey(userId) {
+  return `myswym_support_seen_${userId || "anon"}`;
+}
+
+function readSupportSeenId(userId) {
+  try {
+    return localStorage.getItem(supportSeenKey(userId)) || "";
+  } catch {
+    return "";
+  }
+}
 
 /** Barre haute Miracle : hamburger · picto MySWYM · notifs + avatar */
 export default function AppTopBar({
@@ -33,9 +47,18 @@ export default function AppTopBar({
   const firstName = resolveDisplayFirstName(user);
   const initials = firstName.slice(0, 2).toUpperCase();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [buddyConnections, setBuddyConnections] = useState([]);
+  const [supportConversations, setSupportConversations] = useState([]);
+  const [supportSeenAgentId, setSupportSeenAgentId] = useState(() => readSupportSeenId(user?.id));
   const notificationItems = useMemo(
-    () => buildInAppNotifications({ user, plan }),
-    [user, plan],
+    () => buildInAppNotifications({
+      user,
+      plan,
+      buddyConnections,
+      supportConversations,
+      supportSeenAgentId,
+    }),
+    [user, plan, buddyConnections, supportConversations, supportSeenAgentId],
   );
   const [seenMap, setSeenMap] = useState(() => readSeenNotifications(user));
   const [scrolled, setScrolled] = useState(false);
@@ -48,7 +71,41 @@ export default function AppTopBar({
 
   useEffect(() => {
     setSeenMap(readSeenNotifications(user));
+    setSupportSeenAgentId(readSupportSeenId(user?.id));
   }, [user?.id, user?.user_metadata?.notifications_seen]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setBuddyConnections([]);
+      setSupportConversations([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [buddyRes, supportJson] = await Promise.all([
+          fetchMyBuddyConnections(user.id).catch(() => ({ data: [] })),
+          fetchSupportThread().catch(() => null),
+        ]);
+        if (cancelled) return;
+        setBuddyConnections(Array.isArray(buddyRes?.data) ? buddyRes.data : []);
+        setSupportConversations(
+          Array.isArray(supportJson?.conversations) ? supportJson.conversations : [],
+        );
+      } catch {
+        if (!cancelled) {
+          setBuddyConnections([]);
+          setSupportConversations([]);
+        }
+      }
+    };
+    void load();
+    const t = window.setInterval(load, 45000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     const existing = readSeenNotifications(user);
@@ -71,6 +128,14 @@ export default function AppTopBar({
     items.forEach((item) => { next[item.id] = stamp; });
     writeSeenNotifications(user, next);
     setSeenMap(next);
+    const supportItem = items.find((i) => i.action === "support" || String(i.id).startsWith("support:"));
+    if (supportItem) {
+      const mid = String(supportItem.id).replace(/^support:/, "");
+      try {
+        localStorage.setItem(supportSeenKey(user?.id), mid);
+      } catch { /* ignore */ }
+      setSupportSeenAgentId(mid);
+    }
   };
 
   const handleOpenNotifications = () => {
@@ -90,7 +155,15 @@ export default function AppTopBar({
       else onAvatarClick?.();
       return;
     }
-    if (action === "buddies") onTabChange?.("buddies");
+    if (action === "buddies") {
+      onTabChange?.("buddies");
+      return;
+    }
+    if (action === "support") {
+      window.dispatchEvent(new CustomEvent("myswym:open-support", {
+        detail: { view: "chat", tab: "messages" },
+      }));
+    }
   };
 
   const handleLogoClick = () => {

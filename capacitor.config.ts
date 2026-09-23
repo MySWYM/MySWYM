@@ -27,6 +27,9 @@ const config: CapacitorConfig = {
       resize: "body",
       autoBackdropColor: "auto",
     },
+    LocalNotifications: {
+      sound: "default",
+    },
   },
 };
 
