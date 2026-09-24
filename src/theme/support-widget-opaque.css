@@ -1,0 +1,32 @@
+/**
+ * Chatbox support : fond opaque.
+ * Le soft mist glass (rgba + backdrop-filter) laissait lire le Profil derrière.
+ */
+
+.support-widget {
+  isolation: isolate;
+  background:
+    linear-gradient(
+      180deg,
+      var(--ms-mist-mid, #c5dffb) 0%,
+      var(--ms-mist-bot, #f4f8fc) 22%,
+      #ffffff 48%,
+      #ffffff 100%
+    ) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(15, 27, 45, 0.06) !important;
+}
+
+.support-widget-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(15, 27, 45, 0.06) !important;
+}
+
+.support-widget-body {
+  background: #ffffff !important;
+}
+
+.support-chat-list {
+  background: var(--ms-mist-bot, #f4f8fc) !important;
+}

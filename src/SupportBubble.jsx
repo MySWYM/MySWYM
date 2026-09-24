@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, CircleHelp, Home, MessageCircle, 
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
+import "./theme/support-widget-opaque.css";
 
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
