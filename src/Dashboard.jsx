@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight,
+  Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight, Calendar,
 } from "lucide-react";
 import { FONT } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
@@ -212,23 +212,40 @@ export default function Dashboard({
         {iosNav ? (
           <>
             <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
-            {typeof onGoBuddies === "function" ? (
-              <button
-                type="button"
-                className="ms-profile-account-row"
-                onClick={() => {
-                  playUiSound("soft");
-                  onGoBuddies();
-                }}
-                style={{ marginTop: 16 }}
-              >
-                <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
-                  <Users size={18} color={G.mint} />
-                </span>
-                <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
-                <ChevronRight size={18} color={G.greyMid} />
-              </button>
-            ) : null}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+              {typeof onTabChange === "function" ? (
+                <button
+                  type="button"
+                  className="ms-profile-account-row"
+                  onClick={() => {
+                    playUiSound("soft");
+                    onTabChange("plan");
+                  }}
+                >
+                  <span className="ms-profile-settings-icon" style={{ background: "rgba(0, 107, 253, 0.12)" }}>
+                    <Calendar size={18} color={G.blue} />
+                  </span>
+                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>Programme</span>
+                  <ChevronRight size={18} color={G.greyMid} />
+                </button>
+              ) : null}
+              {typeof onGoBuddies === "function" ? (
+                <button
+                  type="button"
+                  className="ms-profile-account-row"
+                  onClick={() => {
+                    playUiSound("soft");
+                    onGoBuddies();
+                  }}
+                >
+                  <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
+                    <Users size={18} color={G.mint} />
+                  </span>
+                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
+                  <ChevronRight size={18} color={G.greyMid} />
+                </button>
+              ) : null}
+            </div>
           </>
         ) : preview ? (
           <div style={{ marginBottom: 12 }}>

@@ -33,10 +33,18 @@
           var fr = path === "/fr" || path.indexOf("/fr/") === 0;
           var stored = "";
           try { stored = localStorage.getItem("i18nextLng") || ""; } catch (e) {}
-          var useFr = fr || stored.indexOf("fr") === 0;
+          var bare = path.replace(/^\/fr(?=\/|$)/, "") || "/";
+          var authFr =
+            bare === "/connexion" || bare === "/inscription" ||
+            bare === "/login" || bare === "/register" ||
+            bare === "/app" || bare.indexOf("/app/") === 0;
+          var useFr = fr || stored.indexOf("fr") === 0 || authFr;
           if (useFr) {
             document.documentElement.lang = "fr";
-            document.title = "MySWYM : Plan d'entraînement natation personnalisé";
+            if (bare === "/connexion" || bare === "/login") document.title = "Connexion | MySWYM";
+            else if (bare === "/inscription" || bare === "/register") document.title = "Inscription | MySWYM";
+            else if (bare === "/app" || bare.indexOf("/app/") === 0) document.title = "MySWYM";
+            else document.title = "MySWYM : Plan d'entraînement natation personnalisé";
           } else {
             document.documentElement.lang = "en";
           }
