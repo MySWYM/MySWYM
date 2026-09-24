@@ -232,11 +232,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
   };
 
   if (unavailable && !nativeIos) {
-    return (
-      <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 8px" }}>
-        {t("auth.socialOff")}
-      </p>
-    );
+    return null;
   }
 
   const startApple = async () => {
