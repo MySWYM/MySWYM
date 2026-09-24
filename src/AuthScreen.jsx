@@ -20,10 +20,11 @@ import { NATIVE_OAUTH_REDIRECT } from "./lib/native-oauth.js";
 import { openNativeOAuthUrl } from "./lib/native-links.js";
 import { usePageSeo } from "./lib/seo.js";
 import { NEWSLETTER_META_KEY, stashPendingNewsletterOptIn, clearPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
+import "./theme/auth-shell.css";
 
 function mapSocialAuthError(raw, t) {
   const msg = String(raw || "");
-  if (/not enabled|Unsupported provider|provider is not enabled/i.test(msg)) {
+  if (/not enabled|Unsupported provider|provider is not enabled|missing OAuth secret/i.test(msg)) {
     return t("auth.socialOff");
   }
   if (/Unacceptable audience|invalid_grant|invalid jwt|JWT|audience/i.test(msg)) {
@@ -64,6 +65,7 @@ export const getAuthInpStyle = () => {
 
 export const PasswordInput = ({
   id,
+  name,
   label,
   placeholder,
   value,
@@ -84,6 +86,7 @@ export const PasswordInput = ({
       <div style={{ position: "relative", width: "100%" }}>
         <input
           id={inputId}
+          name={name || "password"}
           type={visible ? "text" : "password"}
           placeholder={placeholder}
           value={value}
@@ -185,17 +188,38 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          skipBrowserRedirect: isNativeApp(),
+          // Toujours true : on peut sonder l’URL (secret manquant → 400 JSON) avant redirect.
+          skipBrowserRedirect: true,
           redirectTo: authOAuthRedirect(),
           queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
         },
       });
       if (error) throw error;
+      if (!data?.url) throw new Error(t("auth.socialFail"));
       if (isNativeApp()) {
-        if (!data?.url) throw new Error(t("auth.socialFail"));
         // Capacitor Browser (SFSafariViewController) → retour myswym://auth/callback
         await openNativeOAuthUrl(data.url);
+        return;
       }
+      // Web : détecte provider mal configuré (staging DEV sans secret) avant de quitter la page.
+      try {
+        const probe = await fetch(data.url, { method: "GET", redirect: "manual", credentials: "omit" });
+        const ctype = String(probe.headers.get("content-type") || "");
+        if (probe.status >= 400 || ctype.includes("application/json")) {
+          let detail = "";
+          try {
+            const body = await probe.json();
+            detail = body?.msg || body?.error_description || body?.error || "";
+          } catch { /* ignore */ }
+          throw new Error(detail || t("auth.socialOff"));
+        }
+      } catch (probeErr) {
+        if (probeErr && (probeErr.message || "").length && !/Failed to fetch|NetworkError|CORS/i.test(probeErr.message)) {
+          throw probeErr;
+        }
+        // CORS opaque : on laisse le redirect navigateur (comportement historique).
+      }
+      window.location.assign(data.url);
     } catch (e) {
       setBusy(null);
       onError?.(mapSocialAuthError(e.message, t));
@@ -489,8 +513,9 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         margin: "0 auto",
         padding: "0 20px",
         paddingTop: native ? undefined : showBrandHeader ? 64 : 96,
-        paddingBottom: native ? undefined : "calc(10.5rem + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: native ? undefined : "calc(14rem + env(safe-area-inset-bottom, 0px))",
       }}
+      className={native ? undefined : "ms-auth-web"}
     >
       {(showBrandHeader || onBack || (native && ((onStartQuiz && mode === "password") || mode === "register" || mode === "reset"))) && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: native ? 8 : 44 }}>
@@ -574,13 +599,20 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           </>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: native ? 8 : 12, marginBottom: mode === "password" ? 8 : native ? 8 : 16 }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handle();
+          }}
+          style={{ display: "flex", flexDirection: "column", gap: native ? 8 : 12, marginBottom: mode === "password" ? 8 : native ? 8 : 16 }}
+        >
           <div>
             <label htmlFor="auth-email" className="native-auth-label" style={{ display: "block", fontSize: 13, fontWeight: 600, color: native ? "#fff" : G.ink, marginBottom: 6 }}>
               {t("auth.email")}
             </label>
             <input
               id="auth-email"
+              name="email"
               type="email"
               autoComplete="email"
               inputMode="email"
@@ -588,20 +620,13 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               placeholder="exemple@email.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                if (native && (mode === "register" || mode === "password")) {
-                  document.getElementById("auth-password")?.focus();
-                  return;
-                }
-                handle();
-              }}
               style={getAuthInpStyle()}
             />
           </div>
           {(mode === "password" || mode === "register") && (
             <PasswordInput
               id="auth-password"
+              name="password"
               label={t("auth.password")}
               placeholder="••••••••"
               value={password}
@@ -611,30 +636,30 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               autoComplete={mode === "register" ? "new-password" : "current-password"}
             />
           )}
-        </div>
 
-        {mode === "password" && (
-          <div style={{ textAlign: "right", marginBottom: native ? 8 : 16 }}>
-            <button
-              type="button"
-              onClick={() => switchMode("reset")}
-              style={{
-                background: "none", border: "none", color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, fontSize: 13, cursor: "pointer",
-                minHeight: 44, padding: native ? "6px 4px" : "10px 4px", display: "inline-flex", alignItems: "center",
-              }}
-            >
-              {t("auth.forgot")}
-            </button>
-          </div>
-        )}
+          {mode === "password" && (
+            <div style={{ textAlign: "right", marginBottom: native ? 0 : 4 }}>
+              <button
+                type="button"
+                onClick={() => switchMode("reset")}
+                style={{
+                  background: "none", border: "none", color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, fontSize: 13, cursor: "pointer",
+                  minHeight: 44, padding: native ? "6px 4px" : "10px 4px", display: "inline-flex", alignItems: "center",
+                }}
+              >
+                {t("auth.forgot")}
+              </button>
+            </div>
+          )}
 
-        {!native ? legalChecks : null}
+          {!native ? legalChecks : null}
 
-        <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
-          {loading
-            ? (mode === "register" ? "Création…" : mode === "reset" ? "Envoi…" : "Connexion…")
-            : ctaMap[mode]}
-        </Btn>
+          <Btn type="submit" disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
+            {loading
+              ? (mode === "register" ? "Création…" : mode === "reset" ? "Envoi…" : "Connexion…")
+              : ctaMap[mode]}
+          </Btn>
+        </form>
         {(mode === "password" || mode === "register") && (!email || !password) && !loading && !native ? (
           <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 0 0", lineHeight: 1.4 }}>
             Renseigne email et mot de passe pour continuer.

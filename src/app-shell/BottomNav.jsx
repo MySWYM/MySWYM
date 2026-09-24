@@ -69,15 +69,15 @@ export default function BottomNav({ active, onChange, newBadge }) {
                   <div style={{ position: "absolute", top: 2, right: 2, width: 8, height: 8, borderRadius: "50%", background: G.coral }} />
                 )}
               </span>
-              {ios ? null : (
-                <span style={{
-                  fontSize: 10,
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? G.blue : G.grey,
-                }}>
-                  {t.label}
-                </span>
-              )}
+              <span style={{
+                fontSize: 10,
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? G.blue : G.grey,
+                lineHeight: 1.1,
+                marginTop: ios ? 2 : 0,
+              }}>
+                {t.label}
+              </span>
             </button>
           );
         })}

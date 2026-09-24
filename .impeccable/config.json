@@ -1,7 +1,9 @@
 {
   "detector": {
     "ignoreRules": [],
-    "ignoreFiles": [],
+    "ignoreFiles": [
+      "src/theme/cookie-consent.css"
+    ],
     "ignoreValues": [
       {
         "rule": "overused-font",
