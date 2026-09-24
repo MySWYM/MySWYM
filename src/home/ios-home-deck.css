@@ -21,10 +21,13 @@
 
 .ios-home-deck-card {
   position: relative;
-  flex: 0 0 min(82%, 360px);
-  height: min(48dvh, 440px);
-  min-height: 280px;
+  flex: 0 0 min(78%, 320px);
+  aspect-ratio: 3 / 4;
+  height: auto;
+  max-height: min(52dvh, 420px);
+  min-height: 240px;
   border: none;
+  outline: none;
   padding: 0;
   border-radius: var(--ms-card-radius, 28px);
   overflow: hidden;

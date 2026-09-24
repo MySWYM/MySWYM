@@ -392,6 +392,14 @@ const css = `
     padding-bottom: 0;
     overflow: hidden;
   }
+  .bottom-nav button {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav button:focus,
+  .bottom-nav button:focus-visible {
+    outline: none;
+  }
   .bottom-nav-inner {
     width: 100%;
     max-width: var(--app-max);

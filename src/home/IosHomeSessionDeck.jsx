@@ -68,7 +68,16 @@ export default function IosHomeSessionDeck({ cards, onOpen }) {
               onOpen?.(card);
             }}
           >
-            <img src={card.cover} alt="" decoding="async" />
+            <img
+              src={card.cover}
+              alt=""
+              decoding="async"
+              onError={(e) => {
+                if (e.currentTarget.dataset.fallback === "1") return;
+                e.currentTarget.dataset.fallback = "1";
+                e.currentTarget.src = "/hero-pool.webp";
+              }}
+            />
             <span className="ios-home-deck-scrim" aria-hidden />
             {card.resolved ? (
               <span className="ios-home-deck-done" aria-hidden>
