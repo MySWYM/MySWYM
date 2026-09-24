@@ -149,6 +149,7 @@ const authOAuthRedirect = () =>
 const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent = "login", newsletterOptIn = false }) => {
   const { t } = useTranslation("onboarding");
   const [busy, setBusy] = useState(null);
+  const [unavailable, setUnavailable] = useState(false);
   const nativeIos = isNativeIos();
 
   useEffect(() => {
@@ -169,7 +170,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
   }, [onAuth, onError, t]);
 
   const startOAuth = async (provider) => {
-    if (busy) return;
+    if (busy || unavailable) return;
     if (disabled) {
       onBlockedClick?.();
       return;
@@ -222,9 +223,21 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
       window.location.assign(data.url);
     } catch (e) {
       setBusy(null);
-      onError?.(mapSocialAuthError(e.message, t));
+      const mapped = mapSocialAuthError(e.message, t);
+      if (/pas encore activée|isn’t enabled|n’est pas encore activée/i.test(mapped) || /missing OAuth secret|Unsupported provider/i.test(String(e.message || ""))) {
+        setUnavailable(true);
+      }
+      onError?.(mapped);
     }
   };
+
+  if (unavailable && !nativeIos) {
+    return (
+      <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "0 0 8px" }}>
+        {t("auth.socialOff")}
+      </p>
+    );
+  }
 
   const startApple = async () => {
     if (busy) return;
