@@ -25,6 +25,7 @@ import { playUiSound } from "./lib/ui-sounds.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import { currentWeekSessionCards, sessionTypeAccent } from "./lib/home-week-sessions.js";
+import SessionExportBar from "./ui/SessionExportBar.jsx";
 
 export function HomeBadgesSection({ plan }) {
   const stats = computeStats(plan);
@@ -302,6 +303,16 @@ export default function Dashboard({
               onValidateSession?.(openCard.weekIndex, openCard.sessionIndex, status);
               setOpenCard(null);
             }}
+            exportBar={(
+              <div style={{ marginTop: 14 }}>
+                <SessionExportBar
+                  session={openCard.session}
+                  isPremium={isPremium}
+                  onUpgrade={onUpgrade}
+                  onShare={onShare}
+                />
+              </div>
+            )}
           />
         ) : null}
       </div>
