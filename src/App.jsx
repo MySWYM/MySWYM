@@ -163,6 +163,7 @@ import ProfileTab from "./ProfileTab.jsx";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import SessionExportBar from "./ui/SessionExportBar.jsx";
 import AuthScreen, { PasswordInput } from "./AuthScreen.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
@@ -3471,56 +3472,6 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
             Continuer
           </button>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const SessionExportBar = ({
-  session, isPremium, onUpgrade, onShare,
-}) => {
-  const [copied, setCopied] = useState(false);
-  const [invite, setInvite] = useState(null);
-
-  useEffect(() => {
-    if (!isPremium) return undefined;
-    let cancelled = false;
-    fetchReferralInvite().then((inv) => {
-      if (!cancelled) setInvite(inv);
-    });
-    return () => { cancelled = true; };
-  }, [isPremium]);
-
-  const runCopy = async (e) => {
-    e?.stopPropagation?.();
-    if (!isPremium) { onUpgrade?.("session_locked"); return; }
-    const pack = buildSessionSharePack(session, invite || {});
-    const ok = await copySessionText(session, pack.clipboardText);
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-  const runShareImage = (e) => {
-    e?.stopPropagation?.();
-    if (!isPremium) { onUpgrade?.("session_locked"); return; }
-    if (onShare) onShare(session);
-  };
-  const btn = {
-    flex: 1, minWidth: 110, padding: "10px 12px", borderRadius: 12,
-    fontSize: 12, fontWeight: 600, cursor: "pointer",
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-    border: `1px solid ${G.greyLight}`, background: G.surface, color: G.inkLight,
-  };
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button type="button" onClick={runCopy} style={{ ...btn, background: copied ? G.mint : G.surface, borderColor: copied ? G.mint : G.greyLight, color: copied ? G.white : G.inkLight }}>
-          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
-        </button>
-        <button type="button" onClick={runShareImage} style={btn}>
-          <Share2 size={13} /> Partager
-        </button>
       </div>
     </div>
   );
@@ -7811,11 +7762,23 @@ export default function App() {
   }, [screen]);
 
   useEffect(() => {
-    if (screen !== "onboarding") return undefined;
-    const prev = document.title;
-    document.title = "Créer mon plan | MySWYM";
-    return () => { document.title = prev; };
-  }, [screen]);
+    if (screen === "onboarding") {
+      const prev = document.title;
+      document.title = "Créer mon plan | MySWYM";
+      return () => { document.title = prev; };
+    }
+    if (screen === "auth") {
+      const prev = document.title;
+      const mode = AUTH_PATHS[location.pathname] || "password";
+      document.title = mode === "register"
+        ? "Inscription | MySWYM"
+        : mode === "reset"
+          ? "Mot de passe | MySWYM"
+          : "Connexion | MySWYM";
+      return () => { document.title = prev; };
+    }
+    return undefined;
+  }, [screen, location.pathname]);
 
   // Sprint C, jamais rester bloqué sur Loading / sync accès
   useEffect(() => {
@@ -7988,8 +7951,9 @@ export default function App() {
     };
   }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState, isPremium, user?.id]);
 
-  // Soft à l’ouverture app (J-3→J-1) quand on arrive déjà foreground.
+  // Soft à l’ouverture app (J-3→J-1) : iOS natif seulement (pas le web).
   useEffect(() => {
+    if (!isNativeIos()) return;
     if (screen !== "app" || isPremium || isFrozen || showUpgrade || showPlanReady || showWhatsNew) return;
     if (!user?.id) return;
     if (!shouldOfferTrialSoftPaywall({
@@ -10987,8 +10951,7 @@ export default function App() {
   if (isRecovery) return (
     <>
       <style>{css}</style>
-      <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg }}>
+      <div className="ms-auth-shell">
         <ResetPasswordScreen showBrandHeader={false} onDone={() => {
           setIsRecovery(false);
           // Recharge les données utilisateur après reset
@@ -10998,7 +10961,6 @@ export default function App() {
           });
         }} />
       </div>
-      <Footer />
     </>
   );
 
@@ -11007,8 +10969,7 @@ export default function App() {
   if (screen === "auth") return (
     <>
       <style>{css}</style>
-      <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg, color: G.ink }} className="ms-screen-enter">
+      <div className="ms-auth-shell ms-screen-enter">
         <AuthScreen
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
@@ -11018,7 +10979,6 @@ export default function App() {
           onBack={handleAuthBack}
         />
       </div>
-      <Footer />
     </>
   );
 
