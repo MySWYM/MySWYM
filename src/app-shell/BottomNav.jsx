@@ -41,7 +41,8 @@ export default function BottomNav({ active, onChange, newBadge }) {
               ].filter(Boolean).join(" ") || undefined}
               style={{
                 flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 2, background: "none", border: "none", cursor: "pointer",
+                gap: 2, background: "none", border: "none", outline: "none", cursor: "pointer",
+                WebkitTapHighlightColor: "transparent",
                 minHeight: 48, padding: "4px 2px", position: "relative",
               }}
             >
@@ -53,7 +54,7 @@ export default function BottomNav({ active, onChange, newBadge }) {
                   alignItems: "center",
                   justifyContent: "center",
                   width: t.center ? 48 : 44,
-                  height: t.center ? 40 : 36,
+                  height: t.center ? 48 : 36,
                   borderRadius: 999,
                   background: centerOn ? G.blue : isActive ? "rgba(0, 107, 253, 0.12)" : "transparent",
                   transition: "background 0.2s ease",
