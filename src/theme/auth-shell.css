@@ -1,0 +1,41 @@
+/**
+ * Shell auth web (soft mist), sans nav/footer marketing.
+ */
+.ms-auth-shell {
+  min-height: 100dvh;
+  color: var(--ms-ink, #0f1b2d);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -12%, rgba(126, 184, 245, 0.55), transparent 55%),
+    linear-gradient(180deg, #c5dffb 0%, #f4f8fc 42%, #ffffff 100%);
+}
+
+.ms-auth-shell .ms-auth-web {
+  padding-top: max(48px, calc(24px + env(safe-area-inset-top, 0px)));
+}
+
+@media (min-width: 640px) {
+  .ms-auth-shell .ms-auth-web {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 72px;
+  }
+}
+
+/* Bannière cookies compacte sur les routes auth (classe posée par CookieBanner) */
+.ms-cookie-banner--auth {
+  max-width: min(28rem, calc(100% - 1.5rem));
+  padding: 0.55rem 0.7rem;
+  font-size: var(--ms-type-caption, 0.75rem);
+  bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.ms-cookie-banner--auth .ms-cookie-banner-actions {
+  margin-top: 0.4rem;
+}
+
+.ms-cookie-banner--auth .ms-cookie-btn {
+  min-height: 40px;
+  font-size: var(--ms-type-caption, 0.75rem);
+  padding: 0.35rem 0.5rem;
+}

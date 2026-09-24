@@ -6,6 +6,7 @@ import {
   DELETE_BLOCK,
   DeleteAccountBlockedError,
   evaluateDeleteGate,
+  gateFromAppleAccess,
   gateFromUnverifiedAccess,
   paidAccessLooksLive,
   throwIfBlocked,
@@ -70,9 +71,16 @@ async function listSubscriptionsForCustomers(
 async function resolveDeleteGate(opts: {
   stripe: Stripe | null;
   user: AuthUser;
-  access: { access_status?: string | null; subscription_ends_at?: string | null } | null;
+  access: {
+    access_status?: string | null;
+    subscription_ends_at?: string | null;
+    billing_provider?: string | null;
+  } | null;
 }): Promise<DeleteGate> {
   const { stripe, user, access } = opts;
+  if (access?.billing_provider === "apple" && paidAccessLooksLive(access)) {
+    return gateFromAppleAccess(access.subscription_ends_at ?? null);
+  }
   if (!stripe) {
     if (paidAccessLooksLive(access)) return gateFromUnverifiedAccess();
     return evaluateDeleteGate([]);
@@ -145,7 +153,7 @@ Deno.serve(async (req) => {
 
     const { data: access } = await admin
       .from("user_access_state")
-      .select("access_status, subscription_ends_at")
+      .select("access_status, subscription_ends_at, billing_provider")
       .eq("user_id", uid)
       .maybeSingle();
 

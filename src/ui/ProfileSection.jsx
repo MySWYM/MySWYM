@@ -11,9 +11,22 @@ export default function ProfileSection({
   summary,
   icon: Icon = null,
   defaultOpen = false,
+  bare = false,
   children,
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  if (bare) {
+    return (
+      <div className="ms-profile-section is-open is-bare">
+        <div
+          id={id ? `${id}-panel` : undefined}
+          className="ms-profile-section-body"
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`ms-profile-section${open ? " is-open" : ""}`}>
       <button

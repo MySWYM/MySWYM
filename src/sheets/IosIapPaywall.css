@@ -1,0 +1,250 @@
+.ms-iap-paywall-overlay.ms-soft-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.ms-iap-paywall-overlay .ms-soft-sheet {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.ms-iap-paywall-overlay .ms-soft-sheet-head {
+  border-bottom: none;
+  background: transparent;
+}
+
+.ms-iap-paywall-overlay .ms-soft-sheet-body:has(.ms-iap-paywall) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ms-iap-paywall {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ms-iap-paywall-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ms-iap-paywall-dock {
+  flex-shrink: 0;
+  padding-top: 12px;
+  background: #FFFFFF;
+}
+
+.ms-iap-title {
+  margin: 0 0 10px;
+  color: #0F1B2D;
+  font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.ms-iap-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ms-iap-price-old {
+  color: #4A5D72;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.ms-iap-price {
+  color: #0F1B2D;
+  font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.ms-iap-price-period {
+  margin-left: 4px;
+  color: #4A5D72;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ms-iap-save {
+  margin: 8px 0 0;
+  color: #1FAE86;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.ms-iap-table {
+  margin: 16px 0 12px;
+  overflow: hidden;
+  background: #FFFFFF;
+  border: 1px solid rgba(15, 27, 45, 0.06);
+  border-radius: 18px;
+}
+
+.ms-iap-table-head,
+.ms-iap-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5rem 4.75rem;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.ms-iap-table-head {
+  background: #F4F8FC;
+  color: #4A5D72;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ms-iap-table-head .is-premium {
+  color: #006BFD;
+}
+
+.ms-iap-table-row + .ms-iap-table-row {
+  border-top: 1px solid rgba(15, 27, 45, 0.06);
+}
+
+.ms-iap-table-feature {
+  min-width: 0;
+  color: #0F1B2D;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.ms-iap-table-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.ms-iap-cell-no {
+  color: #4A5D72;
+  font-weight: 600;
+}
+
+.ms-iap-reassure {
+  margin: 0 0 16px;
+  color: #4A5D72;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.ms-iap-err {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #FDE8EA;
+  color: #E85A68;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.ms-iap-annual-cta {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  margin: 0;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 14px;
+  background: #D4A017;
+  color: #0F1B2D;
+  font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(212, 160, 23, 0.32);
+}
+
+.ms-iap-annual-cta span {
+  color: #006BFD;
+  font-weight: 700;
+}
+
+.ms-iap-annual-cta:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ms-iap-annual-cta:focus-visible {
+  outline: 2px solid #006BFD;
+  outline-offset: 3px;
+}
+
+.ms-iap-paywall-dock .ms-app-btn + .ms-iap-annual-cta,
+.ms-iap-paywall-dock .ms-iap-annual-cta + .ms-iap-alt {
+  margin-top: 10px;
+}
+
+.ms-iap-alt,
+.ms-iap-restore {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 10px;
+  border: none;
+  background: none;
+  color: #4A5D72;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ms-iap-alt {
+  color: #006BFD;
+}
+
+.ms-iap-restore:disabled,
+.ms-iap-alt:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ms-iap-alt:focus-visible,
+.ms-iap-restore:focus-visible {
+  outline: 2px solid #006BFD;
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+.ms-iap-legal {
+  margin: 12px 0 0;
+  color: #4A5D72;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.ms-iap-legal a {
+  color: #006BFD;
+  font-weight: 600;
+  text-decoration: none;
+}

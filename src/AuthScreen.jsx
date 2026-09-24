@@ -10,48 +10,90 @@ import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import { track } from "./lib/analytics.js";
 import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js";
 import { legalHref } from "./lib/legal-copy.js";
+import { hideNativeKeyboard, isNativeApp, isNativeIos, nativeApiOrigin } from "./lib/native-platform.js";
+import { markNativeQuizStarted } from "./lib/native-welcome.js";
+import {
+  isAppleSignInCanceled,
+  signInWithAppleNative,
+} from "./lib/apple-auth.js";
+import { NATIVE_OAUTH_REDIRECT } from "./lib/native-oauth.js";
+import { openNativeOAuthUrl } from "./lib/native-links.js";
 import { usePageSeo } from "./lib/seo.js";
+import { NEWSLETTER_META_KEY, stashPendingNewsletterOptIn, clearPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
+import "./theme/auth-shell.css";
 
-export const getAuthInpStyle = () => ({
-  width: "100%",
-  padding: "14px 16px",
-  borderRadius: 12,
-  border: `1.5px solid ${G.inkLight}`,
-  fontSize: 15,
-  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-  background: G.greyXLight,
-  color: G.ink,
-  outline: "none",
-  boxSizing: "border-box",
-});
+function mapSocialAuthError(raw, t) {
+  const msg = String(raw || "");
+  if (/not enabled|Unsupported provider|provider is not enabled|missing OAuth secret/i.test(msg)) {
+    return t("auth.socialOff");
+  }
+  if (/Unacceptable audience|invalid_grant|invalid jwt|JWT|audience/i.test(msg)) {
+    return t("auth.socialAppleConfig");
+  }
+  if (msg === "APPLE_NO_TOKEN") return t("auth.socialFail");
+  return msg || t("auth.socialFail");
+}
+
+export const getAuthInpStyle = () => {
+  if (isNativeApp()) {
+    return {
+      width: "100%",
+      padding: "14px 16px",
+      borderRadius: 14,
+      border: "1.5px solid rgba(255, 255, 255, 0.42)",
+      fontSize: 16,
+      fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
+      background: "rgba(255, 255, 255, 0.16)",
+      color: "#fff",
+      outline: "none",
+      boxSizing: "border-box",
+    };
+  }
+  return {
+    width: "100%",
+    padding: "14px 16px",
+    borderRadius: 12,
+    border: `1.5px solid ${G.inkLight}`,
+    fontSize: 15,
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
+    background: G.greyXLight,
+    color: G.ink,
+    outline: "none",
+    boxSizing: "border-box",
+  };
+};
 
 export const PasswordInput = ({
   id,
+  name,
   label,
   placeholder,
   value,
   onChange,
   onEnter,
   autoComplete = "current-password",
+  enterKeyHint = "go",
 }) => {
   const [visible, setVisible] = useState(false);
   const inputId = id || "auth-password";
   return (
     <div style={{ width: "100%" }}>
       {label ? (
-        <label htmlFor={inputId} style={{ display: "block", fontSize: 13, fontWeight: 600, color: G.ink, marginBottom: 6 }}>
+        <label htmlFor={inputId} className="native-auth-label" style={{ display: "block", fontSize: 13, fontWeight: 600, color: isNativeApp() ? "#fff" : G.ink, marginBottom: 6 }}>
           {label}
         </label>
       ) : null}
       <div style={{ position: "relative", width: "100%" }}>
         <input
           id={inputId}
+          name={name || "password"}
           type={visible ? "text" : "password"}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
           onKeyDown={e => e.key === "Enter" && onEnter?.()}
           autoComplete={autoComplete}
+          enterKeyHint={enterKeyHint}
           style={{ ...getAuthInpStyle(), paddingRight: 48 }}
         />
         <button
@@ -62,7 +104,7 @@ export const PasswordInput = ({
             position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
             background: "none", border: "none", padding: 4, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            color: G.greyMid, lineHeight: 0, minWidth: 44, minHeight: 44,
+            color: isNativeApp() ? "rgba(255, 255, 255, 0.78)" : G.greyMid, lineHeight: 0, minWidth: 44, minHeight: 44,
           }}
         >
           {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
@@ -92,14 +134,43 @@ const GoogleMark = () => (
   </svg>
 );
 
-const authOAuthRedirect = () => `${window.location.origin}/app`;
+const AppleMark = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      fill="currentColor"
+      d="M16.365 1.43c0 1.14-.43 2.2-1.2 3.01-.8.84-2.12 1.49-3.24 1.4-.13-1.1.4-2.25 1.18-3.08.85-.9 2.29-1.55 3.26-1.33zM20.76 17.37c-.55 1.28-.82 1.85-1.53 2.98-1 1.58-2.4 3.55-4.14 3.56-1.55.02-1.95-1.01-4.06-1-2.1.01-2.54 1.02-4.09 1-1.75-.02-3.09-1.79-4.09-3.37-2.79-4.4-3.08-9.56-1.36-12.3 1.22-1.94 3.15-3.07 4.96-3.07 1.85 0 3.01 1.01 4.54 1.01 1.49 0 2.4-1.02 4.55-1.02 1.62 0 3.33.88 4.54 2.4-3.99 2.19-3.34 7.89.68 9.81z"
+    />
+  </svg>
+);
 
-const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login" }) => {
+const authOAuthRedirect = () =>
+  isNativeApp() ? NATIVE_OAUTH_REDIRECT : `${window.location.origin}/app`;
+
+const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent = "login", newsletterOptIn = false }) => {
   const { t } = useTranslation("onboarding");
   const [busy, setBusy] = useState(null);
+  const [unavailable, setUnavailable] = useState(false);
+  const nativeIos = isNativeIos();
+
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    const onDone = (ev) => {
+      const detail = ev?.detail || {};
+      setBusy(null);
+      if (detail.ok && detail.user) {
+        onAuth?.(detail.user);
+        return;
+      }
+      if (detail.ok === false && detail.error) {
+        onError?.(mapSocialAuthError(detail.error, t));
+      }
+    };
+    window.addEventListener("myswym:native-oauth-done", onDone);
+    return () => window.removeEventListener("myswym:native-oauth-done", onDone);
+  }, [onAuth, onError, t]);
 
   const startOAuth = async (provider) => {
-    if (busy) return;
+    if (busy || unavailable) return;
     if (disabled) {
       onBlockedClick?.();
       return;
@@ -109,47 +180,162 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, intent = "login"
     try {
       try { sessionStorage.setItem("myswym_oauth_intent", intent); } catch { /* ignore */ }
       if (intent === "signup") {
+        stashPendingNewsletterOptIn(!!newsletterOptIn);
         const { data: existingSession } = await supabase.auth.getSession();
         if (existingSession?.session) await supabase.auth.signOut();
+      } else {
+        clearPendingNewsletterOptIn();
       }
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
+          // Toujours true : on peut sonder l’URL (secret manquant → 400 JSON) avant redirect.
+          skipBrowserRedirect: true,
           redirectTo: authOAuthRedirect(),
           queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
         },
       });
       if (error) throw error;
-      // Redirect en cours, on laisse busy actif
+      if (!data?.url) throw new Error(t("auth.socialFail"));
+      if (isNativeApp()) {
+        // Capacitor Browser (SFSafariViewController) → retour myswym://auth/callback
+        await openNativeOAuthUrl(data.url);
+        return;
+      }
+      // Web : détecte provider mal configuré (staging DEV sans secret) avant de quitter la page.
+      try {
+        const probe = await fetch(data.url, { method: "GET", redirect: "manual", credentials: "omit" });
+        const ctype = String(probe.headers.get("content-type") || "");
+        if (probe.status >= 400 || ctype.includes("application/json")) {
+          let detail = "";
+          try {
+            const body = await probe.json();
+            detail = body?.msg || body?.error_description || body?.error || "";
+          } catch { /* ignore */ }
+          throw new Error(detail || t("auth.socialOff"));
+        }
+      } catch (probeErr) {
+        if (probeErr && (probeErr.message || "").length && !/Failed to fetch|NetworkError|CORS/i.test(probeErr.message)) {
+          throw probeErr;
+        }
+        // CORS opaque : on laisse le redirect navigateur (comportement historique).
+      }
+      window.location.assign(data.url);
     } catch (e) {
       setBusy(null);
-      const raw = e.message || "";
-      const friendly = /not enabled|Unsupported provider/i.test(raw)
-        ? t("auth.socialOff")
-        : (raw || t("auth.socialFail"));
-      onError?.(friendly);
+      const mapped = mapSocialAuthError(e.message, t);
+      if (/pas encore activée|isn’t enabled|n’est pas encore activée/i.test(mapped) || /missing OAuth secret|Unsupported provider/i.test(String(e.message || ""))) {
+        setUnavailable(true);
+      }
+      onError?.(mapped);
+    }
+  };
+
+  if (unavailable && !nativeIos) {
+    return null;
+  }
+
+  const startApple = async () => {
+    if (busy) return;
+    if (disabled) {
+      onBlockedClick?.();
+      return;
+    }
+    setBusy("apple");
+    onError?.(null);
+    try {
+      try { sessionStorage.setItem("myswym_oauth_intent", intent); } catch { /* ignore */ }
+      if (intent === "signup") {
+        stashPendingNewsletterOptIn(!!newsletterOptIn);
+        const { data: existingSession } = await supabase.auth.getSession();
+        if (existingSession?.session) await supabase.auth.signOut();
+      } else {
+        clearPendingNewsletterOptIn();
+      }
+      const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
+      const extraMeta = intent === "signup"
+        ? {
+            confirmed_age_18: true,
+            accepted_terms_at: new Date().toISOString(),
+            [NEWSLETTER_META_KEY]: !!newsletterOptIn,
+            ...(getStoredReferralCode() ? { referred_by: getStoredReferralCode() } : {}),
+          }
+        : {};
+      const data = await signInWithAppleNative(
+        supabase,
+        (opts) => SignInWithApple.authorize(opts),
+        extraMeta,
+      );
+      const user = data?.user;
+      if (!user) throw new Error(t("auth.socialFail"));
+      if (intent === "signup") {
+        track("signup_completed", { source: "apple" }, { onceKey: `signup_completed:${user.id}` });
+      }
+      onAuth?.(user);
+    } catch (e) {
+      setBusy(null);
+      if (isAppleSignInCanceled(e)) return;
+      onError?.(mapSocialAuthError(e.message, t));
     }
   };
 
   const btnBase = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-    width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 15, fontWeight: 600,
+    width: "100%", padding: nativeIos ? "11px 16px" : "13px 16px",
+    borderRadius: nativeIos ? 999 : 12, fontSize: 15, fontWeight: 600,
     fontFamily: FONT, cursor: busy ? "not-allowed" : "pointer",
     opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: nativeIos ? 8 : 10 }}>
+      {nativeIos ? (
+        <button
+          type="button"
+          className="native-funnel-social"
+          disabled={!!busy}
+          aria-disabled={disabled || !!busy}
+          onClick={startApple}
+          style={{
+            ...btnBase,
+            background: "rgba(255, 255, 255, 0.16)",
+            color: "#fff",
+            border: "1.5px solid rgba(255, 255, 255, 0.42)",
+            opacity: disabled ? 0.7 : 1,
+          }}
+        >
+          <AppleMark />
+          {busy === "apple" ? t("auth.connecting") : t("auth.apple")}
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={!!busy}
+          aria-disabled={disabled || !!busy}
+          onClick={() => startOAuth("apple")}
+          style={{
+            ...btnBase,
+            background: G.ink,
+            color: G.white,
+            border: `1.5px solid ${G.ink}`,
+            opacity: disabled ? 0.7 : 1,
+          }}
+        >
+          <AppleMark />
+          {busy === "apple" ? t("auth.redirecting") : t("auth.apple")}
+        </button>
+      )}
       <button
         type="button"
+        className={nativeIos ? "native-funnel-social" : undefined}
         disabled={!!busy}
         aria-disabled={disabled || !!busy}
         onClick={() => startOAuth("google")}
         style={{
           ...btnBase,
-          background: G.surface,
+          background: nativeIos ? "rgba(255, 255, 255, 0.92)" : G.surface,
           color: G.ink,
-          border: `1.5px solid ${G.greyLight}`,
+          border: nativeIos ? "1.5px solid rgba(255, 255, 255, 0.95)" : `1.5px solid ${G.greyLight}`,
           opacity: disabled ? 0.7 : 1,
         }}
       >
@@ -195,6 +381,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
   const [success, setSuccess] = useState(null);    // pour les autres flows (reset, register confirm)
   const [acceptAge, setAcceptAge] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptNewsletter, setAcceptNewsletter] = useState(false);
   const referralCode = getStoredReferralCode();
 
   const switchMode = (m) => {
@@ -206,9 +393,11 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
 
   const handle = async () => {
     setError(null); setSuccess(null); setLoading(true);
+    const mail = String(email || "").trim().toLowerCase();
+    const pass = String(password || "");
     try {
       if (mode === "password") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password: pass });
         if (error) throw error;
         onAuth(data.user);
       } else if (mode === "register") {
@@ -220,24 +409,39 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           await supabase.auth.signOut();
         }
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: mail,
+          password: pass,
           options: {
-            emailRedirectTo: `${window.location.origin}/app`,
+            emailRedirectTo: isNativeApp() ? `${nativeApiOrigin()}/app` : `${window.location.origin}/app`,
             data: {
               ...(referralCode ? { referred_by: referralCode } : {}),
               accepted_terms_at: new Date().toISOString(),
               confirmed_age_18: true,
+              [NEWSLETTER_META_KEY]: !!acceptNewsletter,
             },
           },
         });
         if (error) throw error;
         if (data.user && !data.user.identities?.length) throw new Error(t("auth.exists"));
-        track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || email}` });
+        track("signup_completed", {}, { onceKey: `signup_completed:${data.user?.id || mail}` });
+        let sessionUser = data.session?.user ?? null;
+        if (!sessionUser) {
+          const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({
+            email: mail,
+            password: pass,
+          });
+          if (signInError && !/email not confirmed/i.test(signInError.message || "")) {
+            throw signInError;
+          }
+          sessionUser = signedIn?.user ?? null;
+        }
+        if (sessionUser) {
+          onAuth(sessionUser);
+          return;
+        }
         setSuccess(referralCode ? t("auth.createdReferral") : t("auth.created"));
-        switchMode("password");
       } else if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(mail, {
           redirectTo: `${window.location.origin}/app`,
         });
         if (error) throw error;
@@ -266,17 +470,89 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
   };
 
   const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
+  const native = isNativeApp();
+  const legalChecks = mode === "register" ? (
+    <div className="native-auth-legal" style={{ marginBottom: native ? 12 : 16 }}>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
+        <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>{t("auth.age")}</span>
+      </label>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
+        <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>
+          <Trans
+            i18nKey="auth.terms"
+            ns="onboarding"
+            components={{
+              cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
+              privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
+            }}
+          />
+        </span>
+      </label>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
+        <input type="checkbox" checked={acceptNewsletter} onChange={(e) => setAcceptNewsletter(e.target.checked)} style={{ marginTop: 2 }} />
+        <span>{t("auth.newsletter")}</span>
+      </label>
+      {!native && (
+        <>
+          <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
+            {t("auth.trial")}
+          </p>
+          <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
+            {t("health.safety")}
+          </p>
+        </>
+      )}
+    </div>
+  ) : null;
 
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}>
-      {(showBrandHeader || onBack) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 44 }}>
-          {showBrandHeader ? (
+    <div
+      className={native ? "native-auth-fit native-auth-funnel" : undefined}
+      onPointerDown={(e) => {
+        if (!native) return;
+        const t = e.target;
+        if (!(t instanceof Element)) return;
+        if (t.closest("input, textarea, select, button, a, label")) return;
+        hideNativeKeyboard();
+      }}
+      style={{
+        maxWidth: 440,
+        margin: "0 auto",
+        padding: "0 20px",
+        paddingTop: native ? undefined : showBrandHeader ? 64 : 96,
+        paddingBottom: native ? undefined : "calc(14rem + env(safe-area-inset-bottom, 0px))",
+      }}
+      className={native ? undefined : "ms-auth-web"}
+    >
+      {(showBrandHeader || onBack || (native && ((onStartQuiz && mode === "password") || mode === "register" || mode === "reset"))) && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: native ? 8 : 44 }}>
+          {showBrandHeader && !native ? (
             <div style={{ display: "flex", alignItems: "center" }}>
               <BrandLogo variant="wordmark" height={24} />
             </div>
           ) : <div />}
-          {onBack && (
+          {native && onStartQuiz && mode === "password" ? (
+            <button
+              type="button"
+              className="ms-glass-icon-btn native-guest-chip"
+              onClick={() => {
+                markNativeQuizStarted();
+                onStartQuiz();
+              }}
+            >
+              {t("auth.createAccount")}
+            </button>
+          ) : native && (mode === "register" || mode === "reset") ? (
+            <button
+              type="button"
+              className="ms-glass-icon-btn native-guest-chip"
+              onClick={() => switchMode("password")}
+            >
+              {t("auth.loginCta")}
+            </button>
+          ) : onBack ? (
             <button
               type="button"
               onClick={onBack}
@@ -295,130 +571,118 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
             >
               {t("common.back")}
             </button>
-          )}
+          ) : null}
         </div>
       )}
       <div className="fade-up">
-        <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: native ? FONT : FONT_DISPLAY, fontSize: native ? 28 : 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: native ? "#fff" : G.ink, marginBottom: 8, lineHeight: 1.1 }}>
           {titleMap[mode]}
         </h1>
-        <p style={{ color: G.grey, fontSize: 15, marginBottom: 28, lineHeight: 1.5 }}>
+        <p style={{ color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, fontSize: native ? 14 : 15, marginBottom: native ? 12 : 28, lineHeight: 1.4 }}>
           {subtitleMap[mode]}
         </p>
 
         {error   && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.mint, fontSize: 13 }}>{success}</div>}
 
+        {native ? legalChecks : null}
+
         {(mode === "password" || mode === "register") && (
           <>
             <SocialAuthButtons
               disabled={loading || registerBlocked}
               intent={mode === "register" ? "signup" : "login"}
+              newsletterOptIn={acceptNewsletter}
+              onAuth={onAuth}
               onError={(msg) => { setSuccess(null); setError(msg); }}
               onBlockedClick={registerBlocked ? () => {
                 setSuccess(null);
-                setError(t("auth.googleBlocked"));
+                setError(t(isNativeIos() ? "auth.socialBlocked" : "auth.googleBlocked"));
               } : undefined}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-              <div style={{ flex: 1, height: 1, background: G.greyLight }} />
-              <span style={{ fontSize: 12, color: G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t("common.or")}</span>
-              <div style={{ flex: 1, height: 1, background: G.greyLight }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: native ? "8px 0" : "18px 0" }}>
+              <div style={{ flex: 1, height: 1, background: native ? "rgba(255, 255, 255, 0.28)" : G.greyLight }} />
+              <span style={{ fontSize: 12, color: native ? "rgba(255, 255, 255, 0.72)" : G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t("common.or")}</span>
+              <div style={{ flex: 1, height: 1, background: native ? "rgba(255, 255, 255, 0.28)" : G.greyLight }} />
             </div>
           </>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: mode === "password" ? 8 : 16 }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handle();
+          }}
+          style={{ display: "flex", flexDirection: "column", gap: native ? 8 : 12, marginBottom: mode === "password" ? 8 : native ? 8 : 16 }}
+        >
           <div>
-            <label htmlFor="auth-email" style={{ display: "block", fontSize: 13, fontWeight: 600, color: G.ink, marginBottom: 6 }}>
+            <label htmlFor="auth-email" className="native-auth-label" style={{ display: "block", fontSize: 13, fontWeight: 600, color: native ? "#fff" : G.ink, marginBottom: 6 }}>
               {t("auth.email")}
             </label>
             <input
               id="auth-email"
+              name="email"
               type="email"
               autoComplete="email"
+              inputMode="email"
+              enterKeyHint={native && (mode === "register" || mode === "password") ? "next" : "go"}
               placeholder="exemple@email.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handle()}
               style={getAuthInpStyle()}
             />
           </div>
           {(mode === "password" || mode === "register") && (
             <PasswordInput
               id="auth-password"
+              name="password"
               label={t("auth.password")}
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              onEnter={handle}
+              onEnter={native && mode === "register" ? hideNativeKeyboard : handle}
+              enterKeyHint={native && mode === "register" ? "done" : "go"}
               autoComplete={mode === "register" ? "new-password" : "current-password"}
             />
           )}
-        </div>
 
-        {mode === "password" && (
-          <div style={{ textAlign: "right", marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={() => switchMode("reset")}
-              style={{
-                background: "none", border: "none", color: G.grey, fontSize: 13, cursor: "pointer",
-                minHeight: 44, padding: "10px 4px", display: "inline-flex", alignItems: "center",
-              }}
-            >
-              {t("auth.forgot")}
-            </button>
-          </div>
-        )}
+          {mode === "password" && (
+            <div style={{ textAlign: "right", marginBottom: native ? 0 : 4 }}>
+              <button
+                type="button"
+                onClick={() => switchMode("reset")}
+                style={{
+                  background: "none", border: "none", color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, fontSize: 13, cursor: "pointer",
+                  minHeight: 44, padding: native ? "6px 4px" : "10px 4px", display: "inline-flex", alignItems: "center",
+                }}
+              >
+                {t("auth.forgot")}
+              </button>
+            </div>
+          )}
 
-        {mode === "register" && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{t("auth.age")}</span>
-            </label>
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.grey, cursor: "pointer" }}>
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>
-                <Trans
-                  i18nKey="auth.terms"
-                  ns="onboarding"
-                  components={{
-                    cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }} />,
-                    privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }} />,
-                  }}
-                />
-              </span>
-            </label>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "10px 0 0", lineHeight: 1.4 }}>
-              {t("auth.trial")}
-            </p>
-            <p style={{ fontSize: 11, color: G.greyMid, margin: "6px 0 0", lineHeight: 1.4 }}>
-              {t("health.safety")}
-            </p>
-          </div>
-        )}
+          {!native ? legalChecks : null}
 
-        <Btn onClick={handle} disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
-          {loading
-            ? (mode === "register" ? "Création…" : mode === "reset" ? "Envoi…" : "Connexion…")
-            : ctaMap[mode]}
-        </Btn>
-        {(mode === "password" || mode === "register") && (!email || !password) && !loading ? (
+          <Btn type="submit" disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
+            {loading
+              ? (mode === "register" ? "Création…" : mode === "reset" ? "Envoi…" : "Connexion…")
+              : ctaMap[mode]}
+          </Btn>
+        </form>
+        {(mode === "password" || mode === "register") && (!email || !password) && !loading && !native ? (
           <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 0 0", lineHeight: 1.4 }}>
             Renseigne email et mot de passe pour continuer.
           </p>
         ) : null}
-        {registerBlocked && !loading ? (
+        {registerBlocked && !loading && !native ? (
           <p style={{ fontSize: 12, color: G.greyMid, margin: "8px 0 0", lineHeight: 1.4 }}>
             {t("auth.needChecks")}
           </p>
         ) : null}
 
-        {/* Toggles secondaires */}
-        <div style={{ marginTop: 18, textAlign: "center", fontSize: 14, color: G.grey }}>
-          {mode === "password" && (
+        {/* Toggles secondaires. iOS : chips en haut, pas de 2e CTA en bas. */}
+        <div style={{ marginTop: native ? 8 : 18, textAlign: "center", fontSize: 14, color: G.grey }}>
+          {mode === "password" && !native && (
             <button
               type="button"
               onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))}
@@ -430,7 +694,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               {t("auth.createAccount")}
             </button>
           )}
-          {mode === "register" && (
+          {mode === "register" && !native && (
             <button
               type="button"
               onClick={() => switchMode("password")}
@@ -442,7 +706,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               {t("auth.hasAccount")}
             </button>
           )}
-          {mode === "reset" && (
+          {mode === "reset" && !native && (
             <button
               type="button"
               onClick={() => switchMode("password")}

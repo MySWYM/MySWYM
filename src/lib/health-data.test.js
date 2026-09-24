@@ -7,10 +7,13 @@ import {
   normalizeInjuries,
   injuryMirrorsFromList,
   resolveInjuryFields,
+  resolveConsentFields,
   toggleInjuryZone,
   setInjurySeverity,
   clearInjuries,
   formatInjurySummary,
+  hasInjuryConsent,
+  hasHeartRateConsent,
   DEFAULT_INJURY_SEVERITY,
 } from "./health-data.js";
 import { extractSwimmerProfile, hydrateSwimmerFromSources } from "./swimmer-profile.js";
@@ -187,6 +190,50 @@ import { buildSportProfile } from "./sports-engine/types.js";
   assert.equal(sport.injuryStatus, "oui");
   assert.equal(sport.hasPainConstraint, true);
   assert.equal("injuries" in sport, false);
+}
+
+{
+  const legacy = resolveConsentFields({ healthConsent: true, healthConsentAt: "2026-01-01T00:00:00.000Z" });
+  assert.equal(legacy.injuryConsent, true);
+  assert.equal(legacy.heartRateConsent, true);
+
+  const split = resolveConsentFields({
+    injuryConsent: true,
+    injuryConsentAt: "2026-02-01T00:00:00.000Z",
+    heartRateConsent: false,
+  });
+  assert.equal(split.injuryConsent, true);
+  assert.equal(split.heartRateConsent, false);
+  assert.equal(split.healthConsent, true);
+
+  assert.equal(hasInjuryConsent({ injuryConsent: true }), true);
+  assert.equal(hasHeartRateConsent({ injuryConsent: true }), false);
+  assert.equal(hasHeartRateConsent({ heartRateConsent: true }), true);
+  assert.equal(hasHeartRateConsent({ healthConsent: true }), true);
+}
+
+{
+  const row = sportProfileToRow("u-consent", {
+    level: "sportif",
+    sessionsPerWeek: 3,
+    pool: 25,
+    heartRateConsent: true,
+    heartRateConsentAt: "2026-09-21T10:00:00.000Z",
+    injuryConsent: false,
+  });
+  assert.equal(row.health_consent, true);
+  assert.equal(row.extra.heartRateConsent, true);
+  assert.equal(row.extra.injuryConsent, false);
+  const fields = rowToSportProfileFields(row);
+  assert.equal(fields.heartRateConsent, true);
+  assert.equal(fields.injuryConsent, false);
+
+  const hydrated = hydrateSwimmerFromSources({
+    sportRowFields: fields,
+    planProfile: { healthConsent: false, heartRateConsent: false, injuryConsent: false },
+  });
+  assert.equal(hydrated.heartRateConsent, true, "sport_profiles gagne sur le blob plan");
+  assert.equal(hydrated.injuryConsent, false);
 }
 
 console.log("health-data.test.js PASS");

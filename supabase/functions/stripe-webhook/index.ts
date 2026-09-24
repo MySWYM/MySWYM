@@ -7,6 +7,7 @@ import {
   getAccessState,
   isoFromUnixSeconds,
   persistAccessState,
+  isLiveAppleEntitlement,
   stripEntitlementFromUserMeta,
   type AccessStateRow,
   type AuthUser,
@@ -279,26 +280,31 @@ Deno.serve(async (req) => {
       if (user) {
         let nextState: AccessStateRow | null = null;
         let planLabel = "Premium";
+        let currentState: AccessStateRow | null = null;
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
           planLabel = planLabelFromSubscription(sub);
-          const currentState = await getAccessState(supabaseAdmin, userId);
+          currentState = await getAccessState(supabaseAdmin, userId);
           nextState = buildSubscriptionState(userId, currentState, customerId ?? null, sub);
         }
 
         if (nextState) {
-          await persistAccessState(supabaseAdmin, user as AuthUser, nextState);
-          await supabaseAdmin.from("conversion_events").insert({
-            user_id: user.id,
-            event_name: "payment_succeeded",
-            path: "/stripe-webhook",
-            properties: {
-              source: "stripe_webhook",
-              subscription_status: nextState.access_status,
-              subscription_ends_at: nextState.subscription_ends_at,
-            },
-            created_at: new Date().toISOString(),
-          });
+          if (isLiveAppleEntitlement(currentState)) {
+            console.warn("[stripe-webhook] skip checkout overwrite, apple entitlement live", userId);
+          } else {
+            await persistAccessState(supabaseAdmin, user as AuthUser, nextState);
+            await supabaseAdmin.from("conversion_events").insert({
+              user_id: user.id,
+              event_name: "payment_succeeded",
+              path: "/stripe-webhook",
+              properties: {
+                source: "stripe_webhook",
+                subscription_status: nextState.access_status,
+                subscription_ends_at: nextState.subscription_ends_at,
+              },
+              created_at: new Date().toISOString(),
+            });
+          }
         } else {
           // Checkout subscription sans subscriptionId = anomalie : ne jamais
           // écrire premium "à vie" (subscription_end: null + status active).
@@ -370,8 +376,12 @@ Deno.serve(async (req) => {
     const user = await findUserByCustomerId(customerId);
     if (user) {
       const currentState = await getAccessState(supabaseAdmin, user.id);
-      const nextState = buildSubscriptionState(user.id, currentState, customerId ?? null, sub as Stripe.Subscription);
-      await persistAccessState(supabaseAdmin, user, nextState);
+      if (isLiveAppleEntitlement(currentState)) {
+        console.warn("[stripe-webhook] skip sub update, apple entitlement live", user.id);
+      } else {
+        const nextState = buildSubscriptionState(user.id, currentState, customerId ?? null, sub as Stripe.Subscription);
+        await persistAccessState(supabaseAdmin, user, nextState);
+      }
 
       // Fin d'essai → active : créditer le parrain (paiement réel après trial).
       const prevStatus = (event.data as { previous_attributes?: { status?: string } })
@@ -419,12 +429,16 @@ Deno.serve(async (req) => {
     const user = await findUserByCustomerId(customerId);
     if (user) {
       const currentState = await getAccessState(supabaseAdmin, user.id);
-      const nextState = buildExpiredState(user.id, {
-        ...currentState,
-        stripe_customer_id: customerId ?? currentState?.stripe_customer_id ?? null,
-        subscription_ends_at: isoFromUnixSeconds(sub?.current_period_end ?? null),
-      });
-      await persistAccessState(supabaseAdmin, user, nextState);
+      if (isLiveAppleEntitlement(currentState)) {
+        console.warn("[stripe-webhook] skip sub deleted, apple entitlement live", user.id);
+      } else {
+        const nextState = buildExpiredState(user.id, {
+          ...currentState,
+          stripe_customer_id: customerId ?? currentState?.stripe_customer_id ?? null,
+          subscription_ends_at: isoFromUnixSeconds(sub?.current_period_end ?? null),
+        });
+        await persistAccessState(supabaseAdmin, user, nextState);
+      }
 
       // Si annulation immédiate (pas déjà passée par cancel_at_period_end)
       if (user.email && !sub?.cancel_at_period_end) {

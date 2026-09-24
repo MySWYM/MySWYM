@@ -6,7 +6,7 @@ const BLOCKED_PROPS = new Set([
   "email", "name", "firstname", "lastname", "full_name", "address", "phone",
   "comment", "notes", "note", "injuryNote", "injury_note", "injuryStatus", "injury_status",
   "injuryZone", "injury_zone", "injurySeverity", "injury_severity", "injuries", "injury_zones", "has_injury",
-  "healthConsent", "health_consent", "pain", "heart_rate", "heartrate", "average_heartrate",
+  "healthConsent", "health_consent", "injuryConsent", "injury_consent", "heartRateConsent", "heart_rate_consent", "pain", "heart_rate", "heartrate", "average_heartrate",
   "hr", "bpm", "age", "birthMonth", "birthDay", "birthYear", "birth_month", "birth_day", "birth_year",
   "gender", "sexe", "sex", "details", "blocks",
   "rationale", "devExplain", "_engineHistory", "capacityDimensions", "password", "token",

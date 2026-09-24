@@ -1,12 +1,14 @@
 import { useEffect, useId, useState } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import {
   DEFAULT_COOKIE_PREFS,
   readConsent,
   writeConsent,
 } from "./lib/cookie-consent.js";
+import { isNativeApp } from "./lib/native-platform.js";
 import {
   CookieCategories,
   CookiePreferenceActions,
@@ -23,13 +25,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/lp-tabs.jsx";
 import "./theme/cookie-consent.css";
 
+const AUTH_PATH_RE = /^\/(fr\/)?(connexion|inscription|mot-de-passe|reset)(\/|$)/i;
+
 export default function CookieBanner() {
   const { t } = useTranslation("common");
+  const location = useLocation();
   const titleId = useId();
   const [banner, setBanner] = useState(false);
   const [manager, setManager] = useState(false);
   const [tab, setTab] = useState("categories");
   const [prefs, setPrefs] = useState(DEFAULT_COOKIE_PREFS);
+  const authRoute = AUTH_PATH_RE.test(location.pathname || "");
 
   useEffect(() => {
     const syncBanner = () => setBanner(!readConsent());
@@ -58,10 +64,16 @@ export default function CookieBanner() {
     setTab("categories");
   };
 
+  if (isNativeApp()) return null;
+
   return (
     <>
       {banner && !manager ? (
-        <div className="ms-cookie-banner" role="dialog" aria-label={t("cookies.bannerAria")}>
+        <div
+          className={authRoute ? "ms-cookie-banner ms-cookie-banner--auth" : "ms-cookie-banner"}
+          role="dialog"
+          aria-label={t("cookies.bannerAria")}
+        >
           <p>
             {t("cookies.bannerShort")}{" "}
             <LocalizedLink className="ms-cookie-inline-link" to={{ pathname: "/politique-cookies", hash: "#parametrage-cookies" }}>{t("cookies.learnMore")}</LocalizedLink>

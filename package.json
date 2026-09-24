@@ -42,6 +42,11 @@
     "test:swim-banks": "node src/lib/swim-banks/swim-banks.test.js && node src/lib/swim-banks/canonical-drills.test.js",
     "test:composer:all": "node src/lib/swim-banks/swim-banks.test.js && node src/lib/swim-banks/canonical-drills.test.js && node src/lib/sports-engine/session-composer.test.js && node src/lib/sports-engine/session-composer-regulier.test.js && node src/lib/sports-engine/session-composer-sportif.test.js && node src/lib/sports-engine/race-quality.test.js && node src/lib/sports-engine/performance-strategy.test.js && node src/lib/sports-engine/taper-load.test.js && node src/lib/sports-engine/feedback-loop.test.js && node src/lib/sports-engine/orchestration.test.js && node src/lib/sports-engine/composer-quality-gate.test.js && node src/lib/sports-engine/equipment-onboarding.test.js && node src/lib/sports-engine/readiness.test.js && node src/lib/sports-engine/technique-from-bank.test.js && node src/lib/sports-engine/corps-from-bank.test.js && node src/lib/sports-engine/session-labels.test.js && node src/lib/sports-engine/coach-restitution.test.js && node src/lib/sports-engine/four-nages-mix.test.js",
     "test:buddy-otp": "node src/lib/buddy-otp-humanize.test.js",
+    "test:native": "node src/lib/native-platform.test.js && node src/lib/apple-auth.test.js && node src/lib/native-oauth.test.js && node src/lib/native-billing.test.js && node src/lib/native-links.test.js && node src/lib/native-welcome.test.js && node src/lib/apple-iap-catalog.test.js",
+    "cap:sync": "node scripts/cap-web-build.mjs && node scripts/patch-capacitor-keyboard.mjs && npx cap sync ios",
+    "cap:sync:ios-prod": "CAP_ENV_FILE=.env.ios-prod.local npm run cap:sync",
+    "cap:ios": "npm run cap:sync && npx cap open ios",
+    "cap:icon": "swift scripts/ios-app-icon.swift public/A_MySWYM_icone-app_bleue.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
     "test:e2e": "playwright test",
     "test:e2e:staging": "BASE_URL=https://staging.myswym.app playwright test",
     "email": "email dev --dir api/_lib/emails",
@@ -50,6 +55,15 @@
     "email:republish": "node --env-file=.env.local scripts/republish-resend-templates.mjs"
   },
   "dependencies": {
+    "@capacitor-community/apple-sign-in": "^7.1.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@fontsource/geist": "^5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
     "@react-email/components": "^1.0.12",
@@ -70,6 +84,7 @@
     "resend": "^6.18.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.3",

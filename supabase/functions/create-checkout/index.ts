@@ -2,6 +2,7 @@ import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { commitmentMetadataForCheckout } from "../_shared/stripe-commitment.ts";
 import { corsHeaders, FALLBACK_ORIGIN, isAllowedOrigin } from "../_shared/cors.ts";
+import { getAccessState, isLiveAppleEntitlement } from "../_shared/access-state.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -206,6 +207,18 @@ Deno.serve(async (req) => {
     );
     const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);
     const sourceUser = adminUser ?? user;
+
+    const accessState = await getAccessState(supabaseAdmin, user.id);
+    if (isLiveAppleEntitlement(accessState)) {
+      return new Response(JSON.stringify({
+        error: "Tu as déjà un abonnement App Store actif. Gère-le depuis l’iPhone (Réglages → Apple ID → Abonnements).",
+        alreadySubscribed: true,
+        billingProvider: "apple",
+      }), {
+        status: 409,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
 
     const body = await req.json();
     const { priceId, referralCode } = body as { priceId?: string; referralCode?: string };

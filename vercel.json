@@ -176,6 +176,6 @@
     { "source": "/api/natation-sheet", "destination": "/api/contact?kind=natation-sheet" },
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
-    { "source": "/((?!api|assets|favicon).*)", "destination": "/index.html" }
+    { "source": "/((?!api|assets|favicon|session-covers|.*\\.(?:png|jpe?g|webp|svg|ico|txt|xml|json|webmanifest)$).*)", "destination": "/index.html" }
   ]
 }

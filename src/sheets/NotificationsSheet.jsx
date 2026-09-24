@@ -8,6 +8,7 @@ import {
 
 /** Action produit associée au type de notif. */
 export function notificationActionFor(item) {
+  if (item?.action === "support") return "support";
   switch (item?.type) {
     case "billing":
     case "security":

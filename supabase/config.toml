@@ -92,3 +92,15 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/marketing-event/deno.json"
 entrypoint = "./functions/marketing-event/index.ts"
+
+[functions.apple-iap-sync]
+enabled = true
+verify_jwt = true
+import_map = "./functions/apple-iap-sync/deno.json"
+entrypoint = "./functions/apple-iap-sync/index.ts"
+
+[functions.apple-iap-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/apple-iap-webhook/deno.json"
+entrypoint = "./functions/apple-iap-webhook/index.ts"

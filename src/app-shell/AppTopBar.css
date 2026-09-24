@@ -1,0 +1,45 @@
+.ms-app-topbar-scroll-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 1px;
+  width: 1px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.ms-app-topbar.is-immersive {
+  transition:
+    background-color 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.ms-app-topbar.is-immersive.is-scrolled {
+  background: var(--ms-glass-bg-elevated) !important;
+  backdrop-filter: blur(var(--ms-glass-blur)) saturate(var(--ms-glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--ms-glass-blur)) saturate(var(--ms-glass-saturate)) !important;
+  border-bottom: 1px solid var(--ms-glass-border-soft) !important;
+  box-shadow: var(--ms-glass-shadow) !important;
+}
+
+.ms-app-topbar.is-immersive.is-scrolled::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 16px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ms-mist-mid) 55%, transparent) 0%,
+    transparent 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-app-topbar.is-immersive {
+    transition: none;
+  }
+}

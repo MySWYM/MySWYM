@@ -3,9 +3,10 @@ import { createPortal } from "react-dom";
 import {
   MapPin, MessageCircle, Search, Waves,
   Shield, Loader2, UserPlus, EyeOff, Flag, Ban, PhoneOff, Link2,
-  AlertTriangle, CheckCircle2, X, Lock, SlidersHorizontal,
+  AlertTriangle, CheckCircle2, X, Lock, SlidersHorizontal, ChevronLeft,
 } from "lucide-react";
 import { AppTabShell, AppTopBar, AppStatusScreen } from "./app-shell/index.js";
+import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import { trackEvent, trackUiError } from "./lib/analytics.js";
 import { humanizeBuddyOtpError } from "./lib/buddy-otp-messages.js";
 import { playUiSound } from "./lib/ui-sounds.js";
@@ -287,10 +288,45 @@ function BuddyTopBar({ user, onOpenMenu, onTabChange, onUpgrade }) {
   );
 }
 
+function IosBuddyBar({ onBack }) {
+  return (
+    <header className="ms-profile-subpanel-toolbar" style={{ position: "sticky", top: 0, zIndex: 50 }}>
+      <button
+        type="button"
+        className="ms-glass-icon-btn"
+        aria-label="Retour"
+        onClick={() => {
+          playUiSound("soft");
+          onBack();
+        }}
+      >
+        <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
+      </button>
+      <h1>Binômes</h1>
+      <div style={{ width: 44 }} aria-hidden />
+    </header>
+  );
+}
+
+function BuddyChrome({ user, onOpenMenu, onTabChange, onUpgrade }) {
+  if (isIosSimpleNav() && typeof onTabChange === "function") {
+    return <IosBuddyBar onBack={() => onTabChange("home")} />;
+  }
+  return (
+    <BuddyTopBar user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} onUpgrade={onUpgrade} />
+  );
+}
+
+function buddyShellPad(extra = 24) {
+  return isIosSimpleNav()
+    ? "calc(var(--safe-bottom) + 28px)"
+    : `calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + ${extra}px)`;
+}
+
 function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
   return (
-    <AppTabShell style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 32px)" }}>
-      <BuddyTopBar user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} onUpgrade={onUpgrade} />
+    <AppTabShell style={{ paddingBottom: buddyShellPad(32) }}>
+      <BuddyChrome user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} onUpgrade={onUpgrade} />
       <div className="app-shell" style={{ paddingTop: 24 }}>
         <div className="ms-glass-card" style={{
           borderRadius: 20,
@@ -829,12 +865,14 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
   );
 
   return (
-    <AppTabShell style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)" }}>
-      <BuddyTopBar user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} onUpgrade={onUpgrade} />
+    <AppTabShell style={{ paddingBottom: buddyShellPad(24) }}>
+      <BuddyChrome user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} onUpgrade={onUpgrade} />
 
       <div className="app-shell" style={{ paddingTop: 20 }}>
         <div className="ms-glass-card" style={{ marginBottom: 16, padding: "18px 16px 14px", borderRadius: 26 }}>
-          <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 800, color: G.ink, letterSpacing: "-0.03em" }}>Binômes</h1>
+          {isIosSimpleNav() ? null : (
+            <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 800, color: G.ink, letterSpacing: "-0.03em" }}>Binômes</h1>
+          )}
           <p style={{ margin: "0 0 14px", fontSize: 13, color: G.grey }}>Après accord mutuel</p>
 
           <div className="ms-seg-track">

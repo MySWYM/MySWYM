@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, CircleHelp, Home, MessageCircle, 
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
+import "./theme/support-widget-opaque.css";
 
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
@@ -41,7 +42,7 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour te désabonner : dans l’app, ouvre Profil → « Gérer mon abonnement ». Sur Stripe, annule si l’offre le permet. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : déjà payé, pas de remboursement au prorata, suppression bloquée jusqu’à la fin de l’année. Mensuel 9,99€ sans engagement : tu peux supprimer le compte, ça arrête l’abo tout de suite.",
+      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : déjà payé, pas de remboursement au prorata, suppression bloquée jusqu’à la fin de l’année. Mensuel 9,99€ sans engagement : tu peux supprimer le compte, ça arrête l’abo tout de suite.",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -310,7 +311,7 @@ function LoutreAvatar({ height = 92 }) {
 /**
  * Widget support type Intercom : Accueil / Aide / Messages, chat persisté vers Arthur.
  */
-export default function SupportBubble({ aboveBottomNav = false, user = null }) {
+export default function SupportBubble({ aboveBottomNav = false, user = null, hideFab = false }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("home");
   const [view, setView] = useState("tabs");
@@ -337,6 +338,12 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
     const openFromEvent = (e) => {
       const detail = e?.detail || {};
       setOpen(true);
+      setError("");
+      if (detail.view === "chat") {
+        setTab("messages");
+        setView("chat");
+        return;
+      }
       if (detail.tab === "messages" || detail.tab === "help" || detail.tab === "home") {
         setTab(detail.tab);
         setView("tabs");
@@ -598,6 +605,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
 
   return (
     <>
+      {!hideFab ? (
       <button
         type="button"
         aria-label={open ? "Fermer l’aide" : "Aide et support"}
@@ -613,6 +621,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null }) {
           <span aria-label="Nouveau message" className="support-fab-badge" />
         ) : null}
       </button>
+      ) : null}
 
       {open && (
         <div

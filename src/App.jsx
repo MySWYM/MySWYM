@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
+import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import {
   track,
@@ -41,11 +41,27 @@ import {
   shouldShowSessionReminderBanner,
   sessionReminderCopy,
 } from "./lib/session-reminder.js";
+import {
+  readSoftPaywallDay,
+  writeSoftPaywallDay,
+  shouldOfferTrialSoftPaywall,
+  shouldRepromptFreezeOnForeground,
+} from "./lib/soft-paywall-rules.js";
+import { syncLocalNotificationsFromState } from "./lib/sync-local-notifications.js";
+import {
+  hasAskedLocalNotificationPermission,
+  requestLocalNotificationPermission,
+  notifyBadgeEarned,
+  cancelMySwymLocalNotifications,
+} from "./lib/native-local-notifications.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
 import Btn from "./ui/Btn.jsx";
 import WeekStatRing from "./ui/WeekStatRing.jsx";
+import FrequencyGauge from "./ui/FrequencyGauge.jsx";
+import "./theme/onboarding-date.css";
+import { flushPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
 import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel, sessionWhyLine } from "./lib/plan-reveal.js";
 import { bootElapsedMs, isBootWarm, remainingColdBootMs } from "./lib/boot-warm.js";
 import {
@@ -70,6 +86,7 @@ import {
 } from "./lib/sports-engine/index.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
 import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress, planProgressScore, loopSessionNeedsAdvance } from "./lib/plan-progress-merge.js";
+import { buildGoalPatch } from "./lib/profile-goal.js";
 import {
   blankTaste,
   normalizeTaste,
@@ -146,6 +163,7 @@ import ProfileTab from "./ProfileTab.jsx";
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import SessionExportBar from "./ui/SessionExportBar.jsx";
 import AuthScreen, { PasswordInput } from "./AuthScreen.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
@@ -158,13 +176,16 @@ import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
-import TrialExpiredFreeze from "./sheets/TrialExpiredFreeze.jsx";
 import WhatsNewSheet, {
   hasSeenWhatsNew,
   shouldShowWhatsNew,
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
+import { restoreAndSyncAppleIap, openAppleSubscriptionManagement } from "./lib/native-iap.js";
+import { openStripePortalUrl } from "./lib/native-billing.js";
+import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
+import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
 import { resolveReferralCode } from "./lib/referral.js";
 import {
   resolveAvatarUrl,
@@ -180,13 +201,14 @@ import {
 import {
   INJURY_ZONES,
   INJURY_SEVERITIES,
-  HEALTH_CONSENT_TITLE,
-  HEALTH_CONSENT_BODY,
-  HEALTH_CONSENT_CHECKBOX,
+  HEART_RATE_CONSENT_TITLE,
+  HEART_RATE_CONSENT_BODY,
+  HEART_RATE_CONSENT_CHECKBOX,
   HEALTH_DECLARATION_LABEL,
   MEDICAL_WARNING_SHORT,
   formatInjurySummary,
-  hasHealthConsent,
+  hasInjuryConsent,
+  hasHeartRateConsent,
 } from "./lib/health-data.js";
 import { useTranslation } from "react-i18next";
 import {
@@ -194,6 +216,7 @@ import {
   Ruler, Clock, Zap, Check, Lock, Trophy, Target,
   ChevronDown, ChevronUp, LogOut, Activity, User,
   Droplets, TrendingUp, Timer, RotateCcw, ArrowRight, Gauge, Settings, Shield, Plus, BookOpen, X, Copy, CheckCheck,
+  ChevronLeft,
   Bell, CreditCard, Link2, ChevronRight, Eye,
   Camera, Trash2, Users, ExternalLink, Info, Pencil, Share2,
 } from "lucide-react";
@@ -337,10 +360,12 @@ const css = `
   .app-shell {
     width: 100%;
     max-width: var(--app-max);
+    min-width: 0;
     margin-left: auto;
     margin-right: auto;
     padding-left: var(--app-pad-x);
     padding-right: var(--app-pad-x);
+    box-sizing: border-box;
   }
   .app-shell--flush {
     padding-left: 0;
@@ -355,7 +380,7 @@ const css = `
     left: 50%;
     right: auto;
     z-index: 100;
-    width: min(var(--app-max), calc(100vw - 40px));
+    width: min(var(--app-max), calc(100% - 40px));
     max-width: 380px;
     transform: translateX(-50%);
     bottom: max(var(--nav-lift), env(safe-area-inset-bottom, 0px));
@@ -368,6 +393,14 @@ const css = `
     padding-bottom: 0;
     overflow: hidden;
   }
+  .bottom-nav button {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav button:focus,
+  .bottom-nav button:focus-visible {
+    outline: none;
+  }
   .bottom-nav-inner {
     width: 100%;
     max-width: var(--app-max);
@@ -377,14 +410,14 @@ const css = `
   .app-toast {
     position: fixed;
     z-index: 300;
-    left: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
-    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    left: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab {
     position: fixed;
     z-index: 170;
-    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px);
   }
   .support-fab--bare {
@@ -393,9 +426,9 @@ const css = `
   .support-widget {
     position: fixed;
     z-index: 160;
-    right: max(16px, calc((100vw - var(--app-max)) / 2 + 16px));
+    right: max(16px, calc((100% - var(--app-max)) / 2 + 16px));
     bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 16px + 66px);
-    width: min(380px, calc(100vw - 32px));
+    width: min(380px, calc(100% - 32px));
     height: min(560px, calc(100dvh - var(--bottom-nav-h) - var(--safe-bottom) - var(--nav-lift) - 108px));
   }
   .support-widget--bare {
@@ -477,7 +510,7 @@ const css = `
       box-shadow: 0 24px 64px rgba(25,28,30,0.22);
     }
     .bottom-nav {
-      width: min(var(--app-max), calc(100vw - 32px));
+      width: min(var(--app-max), calc(100% - 32px));
       bottom: var(--nav-lift);
       border-color: rgba(255, 255, 255, 0.9);
       box-shadow: 0 12px 40px rgba(15, 60, 120, 0.14);
@@ -1044,9 +1077,18 @@ const onboardingTitleStyle = () => ({
 });
 
 const Progress = ({ step, total }) => (
-  <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
+  <div
+    className="ms-onboard-progress"
+    role="progressbar"
+    aria-valuenow={step}
+    aria-valuemin={1}
+    aria-valuemax={total}
+  >
     {Array.from({ length: total }).map((_, i) => (
-      <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < step ? G.blue : G.greyLight, transition: "background 0.3s" }} />
+      <div
+        key={i}
+        className={`ms-onboard-progress-seg${i < step ? " is-on" : ""}`}
+      />
     ))}
   </div>
 );
@@ -2087,6 +2129,7 @@ const StravaSection = ({
   onBestPace,
   showProgramActions = true,
   showDetails = true,
+  embedded = false,
   isPremium = false,
   onUpgrade,
 }) => {
@@ -2108,7 +2151,7 @@ const StravaSection = ({
 
   // client_id est public (pas un secret), fallback hardcodé si l'env n'est pas chargé
   const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
-  const healthOk = localHealthConsent === true || hasHealthConsent(profile);
+  const healthOk = localHealthConsent === true || hasHeartRateConsent(profile);
 
   useEffect(() => {
     if (!user) return;
@@ -2161,11 +2204,8 @@ const StravaSection = ({
   };
 
   const connect = () => {
-    if (!healthOk) {
-      setHealthGateOpen(true);
-      setHealthGateChecked(false);
-      return;
-    }
+    // Strava (distance / allure) sans consentement FC.
+    // La FC n’est stockée que si heartRateConsent (case profil ou sheet ci-dessous).
     const redirectUri = encodeURIComponent(window.location.origin + "/app");
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
@@ -2179,13 +2219,23 @@ const StravaSection = ({
     setLocalHealthConsent(true);
     try {
       await supabase.auth.updateUser({
-        data: { health_consent: true, health_consent_at: at },
+        data: {
+          health_consent: true,
+          health_consent_at: at,
+          heart_rate_consent: true,
+          heart_rate_consent_at: at,
+        },
       });
       if (user?.id) {
+        const baseExtra = profile?.extra && typeof profile.extra === "object" ? profile.extra : {};
         await supabase.from("sport_profiles").upsert({
           user_id: user.id,
+          health_consent: true,
+          health_consent_at: at,
           extra: {
-            ...(profile?.extra && typeof profile.extra === "object" ? profile.extra : {}),
+            ...baseExtra,
+            heartRateConsent: true,
+            heartRateConsentAt: at,
             healthConsent: true,
             healthConsentAt: at,
           },
@@ -2194,6 +2244,10 @@ const StravaSection = ({
       }
     } catch { /* best effort */ }
     setHealthGateOpen(false);
+    if (connected) {
+      setMsg({ type: "ok", text: "FC activée. Synchronise pour l’importer." });
+      return;
+    }
     const redirectUri = encodeURIComponent(window.location.origin + "/app");
     window.location.href =
       `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
@@ -2249,6 +2303,7 @@ const StravaSection = ({
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setConnected(false); setAthlete(null); setActivities([]); setMsg(null);
+      window.dispatchEvent(new Event("myswym:strava-status"));
     } catch (e) {
       setMsg({ type: "err", text: e.message });
     } finally {
@@ -2303,7 +2358,10 @@ const StravaSection = ({
   // il sera remplacé par l'état réel dès que checkConnection() répond
 
   return (
-    <div style={{ background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+    <div style={embedded
+      ? { padding: 0, margin: 0 }
+      : { background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }
+    }>
 
       {/* ── En-tête ──────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -2334,6 +2392,33 @@ const StravaSection = ({
           </button>
         )}
       </div>
+
+      {connected && !healthOk && showDetails && (
+        <button
+          type="button"
+          onClick={() => {
+            setHealthGateOpen(true);
+            setHealthGateChecked(false);
+          }}
+          style={{
+            width: "100%",
+            marginBottom: 12,
+            padding: "11px 14px",
+            borderRadius: 12,
+            border: `1px solid ${G.greyLight}`,
+            background: G.surface,
+            color: G.ink,
+            fontSize: 13,
+            fontWeight: 600,
+            textAlign: "left",
+            cursor: "pointer",
+            fontFamily: FONT,
+            lineHeight: 1.35,
+          }}
+        >
+          Afficher la fréquence cardiaque dans MySWYM
+        </button>
+      )}
 
       {/* ── Message retour ───────────────────────────────────────── */}
       {msg && (
@@ -2579,15 +2664,15 @@ const StravaSection = ({
           <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
             <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 10 }}>
-              {HEALTH_CONSENT_TITLE}
+              {HEART_RATE_CONSENT_TITLE}
             </h3>
-            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEALTH_CONSENT_BODY}</p>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEART_RATE_CONSENT_BODY}</p>
             <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.ink, marginBottom: 16 }}>
               <input type="checkbox" checked={healthGateChecked} onChange={(e) => setHealthGateChecked(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{HEALTH_CONSENT_CHECKBOX}</span>
+              <span>{HEART_RATE_CONSENT_CHECKBOX}</span>
             </label>
             <Btn variant="blue" onClick={persistHealthConsentAndConnect} disabled={!healthGateChecked}>
-              Accepter et connecter Strava
+              {connected ? "Accepter" : "Accepter et connecter Strava"}
             </Btn>
             <button type="button" onClick={() => setHealthGateOpen(false)} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
               Annuler
@@ -2766,23 +2851,6 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 };
 
 
-const dateSelectStyle = {
-  flex: 1,
-  minWidth: 0,
-  padding: "12px 14px",
-  borderRadius: 12,
-  border: `1.5px solid ${G.greyLight}`,
-  background: G.greyXLight,
-  fontSize: 15,
-  fontWeight: 600,
-  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-  color: G.ink,
-  cursor: "pointer",
-  outline: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-};
-
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   const { t, i18n } = useTranslation("onboarding");
   const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
@@ -2807,9 +2875,6 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   }, [value]);
 
   const weeks = weeksUntil(value);
-  const years = [];
-  for (let y = minD.getFullYear(); y <= maxYear; y++) years.push(y);
-
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDow = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
   const calendarCells = [];
@@ -2829,125 +2894,74 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   };
 
   const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
   };
 
   const canPrevMonth = viewYear > minD.getFullYear() || (viewYear === minD.getFullYear() && viewMonth > minD.getMonth());
-  const maxMonth = new Date(maxYear, 11, 31);
   const canNextMonth = viewYear < maxYear || (viewYear === maxYear && viewMonth < 11);
 
-  const dayOptions = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(viewYear, viewMonth, d);
-    date.setHours(0, 0, 0, 0);
-    if (date >= minD && date <= maxMonth) dayOptions.push(d);
-  }
+  const isDaySelected = (day) =>
+    !!selected
+    && selected.getFullYear() === viewYear
+    && selected.getMonth() === viewMonth
+    && selected.getDate() === day;
 
-  const selectedDay = selected && selected.getFullYear() === viewYear && selected.getMonth() === viewMonth
-    ? selected.getDate()
+  const selectedLabel = selected
+    ? selected.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long" })
     : "";
 
-  const isDaySelected = (day) =>
-    !!selected &&
-    selected.getFullYear() === viewYear &&
-    selected.getMonth() === viewMonth &&
-    selected.getDate() === day;
-
   return (
-    <div className="fade-up">
-      <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", marginBottom: 20 }}>{t("date.kicker")}</p>
-      <h2 style={{ ...onboardingTitleStyle(), fontSize: 32, marginBottom: 10 }}>{t("date.title")}</h2>
-      <p style={{ color: G.grey, fontSize: 16, marginBottom: 36 }}>{t("date.lead")}</p>
-      <div style={{ background: G.surface, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1.5px solid ${err ? "#FF4757" : weeks ? G.blue : G.greyLight}`, transition: "border-color 0.2s" }}>
-        <label style={{ fontSize: 11, color: G.grey, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 12 }}>{t("date.label")}</label>
+    <div className="ms-date-step fade-up">
+      <h2 className="ms-type-page ms-date-step-title">{t("date.title")}</h2>
+      <p className="ms-date-step-lead">{t("date.lead")}</p>
 
-        {value && !err && (
-          <div style={{ fontSize: 15, fontWeight: 600, color: G.blue, marginBottom: 14, textTransform: "capitalize" }}>
-            {parseISODate(value)?.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <select
-            value={viewMonth}
-            onChange={e => setViewMonth(Number(e.target.value))}
-            style={dateSelectStyle}
-            aria-label={t("date.month")}
-          >
-            {monthNames.map((name, i) => {
-              const monthStart = new Date(viewYear, i, 1);
-              const monthEnd = new Date(viewYear, i + 1, 0);
-              monthEnd.setHours(23, 59, 59, 999);
-              if (monthEnd < minD || monthStart > maxMonth) return null;
-              return <option key={name} value={i}>{name}</option>;
-            })}
-          </select>
-          <select
-            value={viewYear}
-            onChange={e => setViewYear(Number(e.target.value))}
-            style={{ ...dateSelectStyle, flex: "0 0 96px" }}
-            aria-label={t("date.year")}
-          >
-            {years.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      <div className={`ms-date-cal${err ? " is-error" : ""}${weeks && !err ? " is-ready" : ""}`}>
+        <div className="ms-date-cal-nav">
           <button
             type="button"
+            className="ms-date-cal-nav-btn"
             onClick={prevMonth}
             disabled={!canPrevMonth}
             aria-label={t("date.prevMonth")}
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canPrevMonth ? "pointer" : "not-allowed", opacity: canPrevMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
-          >‹</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: G.inkLight }}>{monthNames[viewMonth]} {viewYear}</span>
+          >
+            <ChevronLeft size={20} strokeWidth={2.25} />
+          </button>
+          <p className="ms-date-cal-month">{monthNames[viewMonth]} {viewYear}</p>
           <button
             type="button"
+            className="ms-date-cal-nav-btn"
             onClick={nextMonth}
             disabled={!canNextMonth}
             aria-label={t("date.nextMonth")}
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${G.greyLight}`, background: G.surface, color: G.ink, cursor: canNextMonth ? "pointer" : "not-allowed", opacity: canNextMonth ? 1 : 0.35, fontSize: 18, lineHeight: 1 }}
-          >›</button>
+          >
+            <ChevronRight size={20} strokeWidth={2.25} />
+          </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 14 }}>
-          {(Array.isArray(weekdayNames) ? weekdayNames : WEEKDAYS_FR).map(w => (
-            <div key={w} style={{ fontSize: 11, fontWeight: 700, color: G.grey, textAlign: "center", padding: "4px 0" }}>{w}</div>
+        <div className="ms-date-cal-weekdays" aria-hidden>
+          {(Array.isArray(weekdayNames) ? weekdayNames : WEEKDAYS_FR).map((w) => (
+            <span key={w}>{w}</span>
           ))}
+        </div>
+        <div className="ms-date-cal-grid">
           {calendarCells.map((day, i) => {
-            if (!day) return <div key={`e-${i}`} />;
+            if (!day) return <span key={`e-${i}`} className="ms-date-cal-empty" />;
             const disabled = new Date(viewYear, viewMonth, day) < minD;
             const isSel = isDaySelected(day);
-            const isToday = (() => {
-              const now = new Date(); now.setHours(0, 0, 0, 0);
-              const d = new Date(viewYear, viewMonth, day);
-              return d.getTime() === now.getTime();
-            })();
             return (
               <button
                 key={`d-${day}-${i}`}
                 type="button"
+                className={`ms-date-cal-day${isSel ? " is-on" : ""}`}
                 disabled={disabled}
                 onClick={() => pickDate(day)}
                 aria-label={`${day} ${monthNames[viewMonth]} ${viewYear}`}
                 aria-pressed={isSel}
-                style={{
-                  aspectRatio: "1",
-                  border: "none",
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: isSel ? 700 : 500,
-                  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
-                  cursor: disabled ? "not-allowed" : "pointer",
-                  background: isSel ? G.blue : isToday ? G.blueLight : "transparent",
-                  color: isSel ? G.white : disabled ? G.greyMid : G.ink,
-                  opacity: disabled ? 0.35 : 1,
-                }}
               >
                 {day}
               </button>
@@ -2955,40 +2969,21 @@ const Step2_Date = ({ value, onChange, onNext, onBack }) => {
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: G.grey, flexShrink: 0 }}>{t("date.day")}</span>
-          <select
-            value={selectedDay}
-            onChange={e => { const d = Number(e.target.value); if (d) pickDate(d); }}
-            style={{ ...dateSelectStyle, flex: 1 }}
-            aria-label={t("date.day")}
-          >
-            <option value="">{t("date.pickDay")}</option>
-            {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </div>
+        {err ? (
+          <p className="ms-date-cal-msg is-error" role="alert">{err}</p>
+        ) : weeks ? (
+          <p className="ms-date-cal-msg">
+            <span className="ms-date-cal-picked">{selectedLabel}</span>
+            {" · "}
+            {t("date.weeks", { count: weeks })}
+          </p>
+        ) : (
+          <p className="ms-date-cal-msg is-placeholder">{t("date.pickHint")}</p>
+        )}
       </div>
-      {err && <div style={{ fontSize: 13, color: "#FF4757", marginBottom: 12, paddingLeft: 4 }}>{err}</div>}
-      {weeks && !err && (
-        <div style={{
-          background: G.blueLight,
-          borderRadius: 14,
-          padding: "16px 20px",
-          marginBottom: 28,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          border: `1px solid ${G.greyLight}`,
-        }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t("date.weeks", { count: weeks })}</div>
-            <div style={{ fontSize: 12, color: G.grey, marginTop: 2 }}>{t("date.weeksHint")}</div>
-          </div>
-          <Calendar size={20} color={G.blue} />
-        </div>
-      )}
+
       <Btn onClick={onNext} disabled={!value}>{t("common.generate")}</Btn>
-      <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "14px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
+      <button type="button" className="ms-date-step-back" onClick={onBack}>{t("common.back")}</button>
     </div>
   );
 };
@@ -3112,41 +3107,24 @@ function PaceInput({ label, hint, placeholder, value, onChange, maxLen = 3, minS
   );
 }
 
-const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false, total = 6, isPremium, onUpgrade }) => {
+const Step4_Frequency = ({ value, onChange, onNext, onBack, isLast = false }) => {
   const { t } = useTranslation("onboarding");
+  const fallback = 2;
+
+  useEffect(() => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 1 || n > 5) onChange(fallback);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
   <div className="fade-up">
     <h2 style={onboardingTitleStyle()}>{t("frequency.title")}</h2>
     <p style={{ fontSize: 14, color: G.grey, marginBottom: 20, lineHeight: 1.45 }}>
       {t("frequency.lead")}
     </p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
-      {FREQUENCIES.map(f => {
-        const locked = false;
-        const isActive = value === f.id;
-        return (
-          <button key={f.id} onClick={() => onChange(f.id)} style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "18px 20px", borderRadius: 16,
-            border: `2px solid ${isActive ? G.blue : locked ? G.greyLight : G.greyLight}`,
-            background: isActive ? G.blue : locked ? G.greyXLight : G.surface,
-            cursor: "pointer", transition: "all 0.2s",
-            boxShadow: isActive ? "0 4px 16px rgba(0,87,255,0.2)" : "0 2px 8px rgba(0,0,0,0.04)",
-            opacity: locked ? 0.8 : 1,
-          }}>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? G.white : locked ? G.greyMid : G.ink }}>{t("frequency.n", { count: f.id })}</div>
-            </div>
-            {isActive && !locked && <Check size={16} color={G.white} />}
-            {locked && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, background: G.gold + "22", borderRadius: 100, padding: "4px 10px" }}>
-                <Lock size={11} color={G.gold} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: G.gold }}>Premium</span>
-              </div>
-            )}
-          </button>
-        );
-      })}
+    <div style={{ marginBottom: 24 }}>
+      <FrequencyGauge value={value} onChange={onChange} fallback={fallback} />
     </div>
     <Btn variant="blue" onClick={onNext} disabled={!value}>{isLast ? t("common.generate") : t("common.continue")}</Btn>
     <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 14 }}>{t("common.back")}</button>
@@ -3499,56 +3477,6 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
   );
 };
 
-const SessionExportBar = ({
-  session, isPremium, onUpgrade, onShare,
-}) => {
-  const [copied, setCopied] = useState(false);
-  const [invite, setInvite] = useState(null);
-
-  useEffect(() => {
-    if (!isPremium) return undefined;
-    let cancelled = false;
-    fetchReferralInvite().then((inv) => {
-      if (!cancelled) setInvite(inv);
-    });
-    return () => { cancelled = true; };
-  }, [isPremium]);
-
-  const runCopy = async (e) => {
-    e?.stopPropagation?.();
-    if (!isPremium) { onUpgrade?.("session_locked"); return; }
-    const pack = buildSessionSharePack(session, invite || {});
-    const ok = await copySessionText(session, pack.clipboardText);
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-  const runShareImage = (e) => {
-    e?.stopPropagation?.();
-    if (!isPremium) { onUpgrade?.("session_locked"); return; }
-    if (onShare) onShare(session);
-  };
-  const btn = {
-    flex: 1, minWidth: 110, padding: "10px 12px", borderRadius: 12,
-    fontSize: 12, fontWeight: 600, cursor: "pointer",
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-    border: `1px solid ${G.greyLight}`, background: G.surface, color: G.inkLight,
-  };
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button type="button" onClick={runCopy} style={{ ...btn, background: copied ? G.mint : G.surface, borderColor: copied ? G.mint : G.greyLight, color: copied ? G.white : G.inkLight }}>
-          {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
-        </button>
-        <button type="button" onClick={runShareImage} style={btn}>
-          <Share2 size={13} /> Partager
-        </button>
-      </div>
-    </div>
-  );
-};
-
 const WeekProjectionCard = ({ plan, profile, onOpenPlan }) => {
   const proj = buildWeekProjection(plan, profile);
   if (!proj?.sessions?.length) return null;
@@ -3882,9 +3810,9 @@ const PremiumBanner = ({ onUpgrade, weeks = 0 }) => (
       <div style={{ fontSize: 13, fontWeight: 700, color: G.white }}>
         {weeks > 4 ? `Débloque tes ${weeks} semaines de coaching` : "Débloque ton coach personnel"}
       </div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Séances · allures · adaptation feedback · essai 7 jours</div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>Séances · allures · adaptation feedback</div>
     </div>
-    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>Essai</button>
+    <button type="button" onClick={onUpgrade} style={{ background: G.surface, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: G.blue, cursor: "pointer", flexShrink: 0 }}>S’abonner</button>
   </div>
 );
 
@@ -4850,6 +4778,7 @@ const ProgressionLoopView = ({
             onTabChange={onTabChange}
             onUpgrade={onUpgrade}
             immersive
+            onBack={isIosSimpleNav() && onTabChange ? () => onTabChange("home") : undefined}
           />
         )}
         <div className="app-shell" style={{ paddingTop: 24 }}>
@@ -4871,6 +4800,7 @@ const ProgressionLoopView = ({
           onTabChange={onTabChange}
           onUpgrade={onUpgrade}
           immersive
+          onBack={isIosSimpleNav() && onTabChange ? () => onTabChange("home") : undefined}
         />
       )}
       {!embed && (
@@ -4885,7 +4815,9 @@ const ProgressionLoopView = ({
       )}
 
       <div className="app-shell" style={{ paddingTop: embed ? 0 : 16 }}>
-        {multiSessionWeek ? (
+        {!isPremium ? (
+          <PremiumBanner onUpgrade={onUpgrade} weeks={plan?.totalRealWeeks || 1} />
+        ) : multiSessionWeek ? (
           <WeekCard
             week={week0}
             weekIndex={0}
@@ -5006,18 +4938,6 @@ const ProgressionLoopView = ({
           </div>
         )}
           </>
-        )}
-
-        {!isPremium && (
-          <div style={{
-            background: G.blueLight, borderRadius: 16, padding: "16px", marginBottom: 14,
-            border: `1px solid rgba(53,93,163,0.15)`,
-          }}>
-            <p style={{ fontSize: 13, color: G.ink, lineHeight: 1.5, margin: "0 0 12px" }}>
-              Ton essai est terminé. Abonne-toi pour reprendre ta séance et continuer avec ton coach.
-            </p>
-            <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%" }}>S’abonner : dès {PRICING.monthlyCommit.label}/mois</Btn>
-          </div>
         )}
       </div>
     </LoopShell>
@@ -7598,6 +7518,7 @@ const BLANK_PROFILE = {
   birthYear: "",
   age: "",
   gender: "",
+  country: "",
   weightKg: "",
   heightCm: "",
   injuryStatus: null, // "aucune" | "oui"
@@ -7607,6 +7528,10 @@ const BLANK_PROFILE = {
   injuryNote: "", // legacy, plus collecté en free-text
   healthConsent: false,
   healthConsentAt: null,
+  injuryConsent: false,
+  injuryConsentAt: null,
+  heartRateConsent: false,
+  heartRateConsentAt: null,
   healthDeclaration: false,
   swimStyle: null, // "crawl" | "4_nages"
   preferredStroke: null, // "papillon" | "dos" | "brasse" | "crawl"
@@ -7641,6 +7566,10 @@ export default function App() {
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
+  const [sessionRemindersOn, setSessionRemindersOn] = useState(true);
+  const [sessionRemindersBusy, setSessionRemindersBusy] = useState(false);
+  const trialExpiredPromptedRef = useRef(false);
+  const freezeBackgroundedAtRef = useRef(null);
   const forceAuthRef = useRef(false);
   /** Empêche le bounce /app→onboarding pendant / juste après signOut. */
   const signingOutRef = useRef(false);
@@ -7670,16 +7599,18 @@ export default function App() {
   }, [coldHold]);
   const [activeTab, setActiveTab] = useState("home");
   const lastDockTabRef = useRef("home");
+  const [iosHideDock, setIosHideDock] = useState(false);
   /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
   const goTab = (tab) => {
-    if (tab === activeTab) {
+    const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
+    if (next === activeTab) {
       scrollAppToTop();
       return;
     }
-    if (activeTab === "home" || activeTab === "plan" || activeTab === "analyse" || activeTab === "history") {
-      lastDockTabRef.current = activeTab;
+    if (activeTab === "home" || activeTab === "plan" || activeTab === "analyse" || activeTab === "history" || (isIosSimpleNav() && activeTab === "profile")) {
+      lastDockTabRef.current = activeTab === "plan" ? "home" : activeTab;
     }
-    setActiveTab(tab);
+    setActiveTab(next);
   };
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
@@ -7814,6 +7745,7 @@ export default function App() {
 
   useEffect(() => {
     if (activeTab !== "buddies") return;
+    if (isIosSimpleNav()) return;
     const n = plan ? computeStats(plan).totalSessions : 0;
     if (n < 1) setActiveTab("home");
   }, [activeTab, plan]);
@@ -7830,11 +7762,23 @@ export default function App() {
   }, [screen]);
 
   useEffect(() => {
-    if (screen !== "onboarding") return undefined;
-    const prev = document.title;
-    document.title = "Créer mon plan | MySWYM";
-    return () => { document.title = prev; };
-  }, [screen]);
+    if (screen === "onboarding") {
+      const prev = document.title;
+      document.title = "Créer mon plan | MySWYM";
+      return () => { document.title = prev; };
+    }
+    if (screen === "auth") {
+      const prev = document.title;
+      const mode = AUTH_PATHS[location.pathname] || "password";
+      document.title = mode === "register"
+        ? "Inscription | MySWYM"
+        : mode === "reset"
+          ? "Mot de passe | MySWYM"
+          : "Connexion | MySWYM";
+      return () => { document.title = prev; };
+    }
+    return undefined;
+  }, [screen, location.pathname]);
 
   // Sprint C, jamais rester bloqué sur Loading / sync accès
   useEffect(() => {
@@ -7870,8 +7814,15 @@ export default function App() {
       return;
     }
     if (isAuthPath(location.pathname)) {
-      // /inscription avec une session déjà ouverte : ne pas rester collé à ce compte.
+      // /inscription + vieux compte déjà ouvert : déconnecter pour un vrai nouveau signup.
+      // Compte tout juste créé : garder la session et entrer dans l’app (sinon relogin).
       if (user && location.pathname === "/inscription" && !signingOutRef.current) {
+        if (isFreshSignup(user)) {
+          forceAuthRef.current = false;
+          authOpenedFromUrlRef.current = false;
+          navigate("/app", { replace: true });
+          return;
+        }
         forceAuthRef.current = true;
         authOpenedFromUrlRef.current = true;
         setScreen("auth");
@@ -7950,28 +7901,98 @@ export default function App() {
     setUpgradeSoftContext(null);
   };
 
-  // Soft paywall après la 1ʳᵉ séance : attendre la fermeture des sheets feedback.
+  useEffect(() => {
+    if (accessState.hasPremiumAccess) {
+      trialExpiredPromptedRef.current = false;
+      return;
+    }
+    if (!isFrozen || screen !== "app") return;
+    if (trialExpiredPromptedRef.current || showUpgrade || showPlanReady || showWhatsNew) return;
+    trialExpiredPromptedRef.current = true;
+    openUpgrade("trial_expired");
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState.hasPremiumAccess]);
+
+  // Soft paywall essai (option C) + freeze reopen après 30 min arrière-plan.
+  useEffect(() => {
+    if (!isNativeIos() || typeof window === "undefined") return undefined;
+    let cancelled = false;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        freezeBackgroundedAtRef.current = Date.now();
+        return;
+      }
+      if (cancelled || screen !== "app" || showUpgrade || showPlanReady || showWhatsNew) return;
+      if (isFrozen && shouldRepromptFreezeOnForeground({
+        isFrozen: true,
+        backgroundedAtMs: freezeBackgroundedAtRef.current,
+      })) {
+        trialExpiredPromptedRef.current = false;
+        freezeBackgroundedAtRef.current = null;
+        trialExpiredPromptedRef.current = true;
+        openUpgrade("trial_expired");
+        return;
+      }
+      if (
+        shouldOfferTrialSoftPaywall({
+          accessState,
+          isPremium,
+          trigger: "app_open",
+          lastShownDayKey: readSoftPaywallDay(user?.id),
+        })
+      ) {
+        writeSoftPaywallDay(user?.id);
+        openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState, isPremium, user?.id]);
+
+  // Soft à l’ouverture app (J-3→J-1) : iOS natif seulement (pas le web).
+  useEffect(() => {
+    if (!isNativeIos()) return;
+    if (screen !== "app" || isPremium || isFrozen || showUpgrade || showPlanReady || showWhatsNew) return;
+    if (!user?.id) return;
+    if (!shouldOfferTrialSoftPaywall({
+      accessState,
+      isPremium,
+      trigger: "app_open",
+      lastShownDayKey: readSoftPaywallDay(user.id),
+    })) return;
+    writeSoftPaywallDay(user.id);
+    openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
+  }, [screen, user?.id, accessState.trialDaysLeft, accessState.status, isPremium, isFrozen]);
+
+  // Soft paywall après action à valeur (1ʳᵉ séance / etc.).
   useEffect(() => {
     if (!softPaywallPending || isPremium || showUpgrade) return;
     if (sessionFeedbackTarget !== null || feedbackWeek !== null) return;
     let cancelled = false;
     const t = setTimeout(() => {
       if (cancelled) return;
-      try {
-        if (localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) {
-          setSoftPaywallPending(false);
-          return;
-        }
-        localStorage.setItem(SOFT_PAYWALL_STORAGE_KEY, "1");
-      } catch { /* ignore */ }
       setSoftPaywallPending(false);
+      if (!shouldOfferTrialSoftPaywall({
+        accessState,
+        isPremium,
+        trigger: "value_action",
+        lastShownDayKey: readSoftPaywallDay(user?.id),
+      }) && localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) {
+        return;
+      }
+      try {
+        localStorage.setItem(SOFT_PAYWALL_STORAGE_KEY, "1");
+        writeSoftPaywallDay(user?.id);
+      } catch { /* ignore */ }
       openUpgrade("after_first_session");
     }, 1100);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek]);
+  }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek, accessState, user?.id]);
 
   // Pop « Nouveautés » one-shot / compte (pas de reset plan / quiz).
   useEffect(() => {
@@ -8033,9 +8054,9 @@ export default function App() {
       navigate("/app", { replace: true });
       return;
     }
-    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion → landing
+    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion web → landing
     setScreen("onboarding");
-    navigate(openedFromUrl ? "/" : "/app", { replace: true });
+    navigate(openedFromUrl && !isNativeApp() ? "/" : "/app", { replace: true });
   };
 
   const handleAuthSuccess = (u) => {
@@ -8044,6 +8065,7 @@ export default function App() {
     if (isSignup) {
       track("signup_completed", {}, { onceKey: `signup_completed:${u?.id || "anon"}` });
     }
+    void flushPendingNewsletterOptIn();
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
@@ -8251,6 +8273,7 @@ export default function App() {
         }
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (!droppingSessionForRegister && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          void flushPendingNewsletterOptIn();
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)
@@ -9062,9 +9085,45 @@ export default function App() {
       unseenBadges.forEach((badgeId) => { nextSeen[`badge:${badgeId}`] = stamp; });
       writeSeenNotifications(user, nextSeen);
       setNewBadgeId(unseenBadges[0]);
+      const badgeMeta = BADGE_DEFS.find((b) => b.id === unseenBadges[0]);
+      if (badgeMeta && getSessionRemindersEnabled(user?.id)) {
+        void notifyBadgeEarned({
+          title: `Badge obtenu : ${badgeMeta.label}`,
+          body: badgeMeta.desc,
+        });
+      }
     }
     prevBadgesRef.current = current;
   }, [activePlanId, plan, user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setSessionRemindersOn(getSessionRemindersEnabled(user.id));
+  }, [user?.id, user?.user_metadata?.session_reminders]);
+
+  useEffect(() => {
+    if (screen !== "app" || !user?.id) return;
+    void syncLocalNotificationsFromState({ user, plan });
+  }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, sessionRemindersOn, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
+
+  const handleToggleSessionReminders = async () => {
+    if (!user?.id || sessionRemindersBusy) return;
+    const next = !sessionRemindersOn;
+    setSessionRemindersBusy(true);
+    setSessionRemindersOn(next);
+    setSessionRemindersEnabled(user.id, next);
+    try {
+      await persistSessionRemindersPreference(supabase, next);
+      if (next && isNativeIos()) {
+        await requestLocalNotificationPermission(user.id);
+        await syncLocalNotificationsFromState({ user, plan });
+      } else if (!next) {
+        await cancelMySwymLocalNotifications();
+      }
+    } finally {
+      setSessionRemindersBusy(false);
+    }
+  };
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
   const patchProfile = (partial) => setProfile(p => ({ ...p, ...partial }));
@@ -9130,9 +9189,17 @@ export default function App() {
 
   const dismissSessionCelebrate = () => {
     const pending = pendingFeedbackRef.current;
+    const wasFirst = sessionCelebrate?.first === true;
     pendingFeedbackRef.current = null;
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
+    if (wasFirst && isNativeIos() && user?.id && getSessionRemindersEnabled(user.id)) {
+      if (!hasAskedLocalNotificationPermission(user.id)) {
+        void requestLocalNotificationPermission(user.id).then(() => {
+          void syncLocalNotificationsFromState({ user, plan });
+        });
+      }
+    }
   };
 
   const dismissPlanReveal = () => {
@@ -10475,7 +10542,7 @@ export default function App() {
     if (!partial || typeof partial !== "object") return;
     const swimmerPartial = extractSwimmerProfile(partial);
     const nextPatch = { ...swimmerPartial };
-    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuries", "injuryNote", "healthConsent", "healthConsentAt", "healthDeclaration"]) {
+    for (const k of ["injuryStatus", "injuryZone", "injurySeverity", "injuries", "injuryNote", "healthConsent", "healthConsentAt", "injuryConsent", "injuryConsentAt", "heartRateConsent", "heartRateConsentAt", "healthDeclaration", "appleHealthConnected", "appleHealthConnectedAt"]) {
       if (partial[k] !== undefined) nextPatch[k] = partial[k];
     }
     const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...nextPatch };
@@ -10571,6 +10638,82 @@ export default function App() {
         track("generation_failed", {
           reason: String(err?.message || "exception").slice(0, 80),
           context: "update_program",
+        });
+      });
+  };
+
+  const handleChangeGoal = (patch) => {
+    if (!activePlanEntry) return Promise.resolve();
+    if (!canUpdateProgram) {
+      openUpgrade("trial_expired");
+      return Promise.resolve();
+    }
+    const newProfile = {
+      ...activePlanEntry.profile,
+      ...buildGoalPatch(patch),
+    };
+    const oldWeeks = activePlanEntry.plan?.weeks ?? [];
+    const taste = activePlanEntry.plan?.taste || tasteProfile;
+    const planIdToUpdate = activePlanId;
+    const originalStartDate = activePlanEntry.plan?.startDate ?? activePlanEntry.startDate ?? Date.now();
+    plansSaveGenRef.current += 1;
+
+    return generatePlan({ ...newProfile, taste }, isPremium, originalStartDate, { skipDelay: true })
+      .then(async (newPlan) => {
+        const mergedWeeks = mergePreservingProgress(oldWeeks, newPlan.weeks);
+        const prevPlan = activePlanEntry.plan || {};
+        const planWithDate = {
+          ...newPlan,
+          taste,
+          weeks: mergedWeeks,
+          ...(originalStartDate ? { startDate: originalStartDate } : {}),
+          history: prevPlan.history,
+          freeSessionsUsed: prevPlan.freeSessionsUsed,
+          weekGenKey: prevPlan.weekGenKey,
+          weekGenCount: prevPlan.weekGenCount,
+          sessionCursor: prevPlan.isSessionLoop && newPlan.isSessionLoop
+            ? prevPlan.sessionCursor
+            : newPlan.sessionCursor,
+          loopBlocked: prevPlan.loopBlocked,
+          volumeAdj: prevPlan.volumeAdj,
+          _lastAdapt: prevPlan._lastAdapt,
+          _adaptSignals: prevPlan._adaptSignals,
+        };
+        const now = new Date().toISOString();
+        plansSaveGenRef.current += 1;
+
+        setPlans((prevPlans) => {
+          const nextPlans = prevPlans.map((e) =>
+            (e.id !== planIdToUpdate ? e : { ...e, profile: newProfile, plan: planWithDate }),
+          );
+          if (user) {
+            try {
+              localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(nextPlans));
+              localStorage.setItem(`myswym_active_${user.id}`, planIdToUpdate);
+              localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+            } catch {}
+          }
+          return nextPlans;
+        });
+
+        if (user?.id) {
+          sportsPersistence.upsertSportProfile(user.id, newProfile).then(() => {});
+          plansSaveGenRef.current += 1;
+          try {
+            const raw = localStorage.getItem(`myswym_plans_${user.id}`);
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              await persistAccountPlans(user.id, parsed, planIdToUpdate, deletedPlanIdsRef.current, planHistory);
+            }
+          } catch {}
+        }
+        showToast("Prochaines séances adaptées à ton objectif (semaines déjà faites conservées).", 5000);
+      })
+      .catch((err) => {
+        showToast("Impossible d'adapter les séances. Réessaie.", 6000);
+        track("generation_failed", {
+          reason: String(err?.message || "exception").slice(0, 80),
+          context: "change_goal",
         });
       });
   };
@@ -10717,9 +10860,17 @@ export default function App() {
   };
 
   const handleRefreshStatus = async () => {
-    showToast("Synchronisation avec Stripe…");
+    showToast("Synchronisation…");
     try {
-      const u = await syncSubscriptionFromStripe();
+      let u = null;
+      if (isLiveStripeBilling(user)) {
+        u = await syncSubscriptionFromStripe();
+      } else {
+        const appleUser = await restoreAndSyncAppleIap();
+        u = (appleUser && checkIsPremium(appleUser))
+          ? appleUser
+          : await syncSubscriptionFromStripe();
+      }
       if (u) {
         setUser(u);
         const premium = checkIsPremium(u);
@@ -10732,7 +10883,27 @@ export default function App() {
     }
   };
 
-  const handlePortal = async () => {
+  const handlePortal = () => {
+    if (getAccessState(user).billingProvider === "apple") {
+      if (isNativeIos()) {
+        void openAppleSubscriptionManagement();
+        return;
+      }
+      showToast("Abonnement App Store : gère-le sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
+      return;
+    }
+    proceedToStripePortal(null);
+  };
+
+  const handleCancelSubscription = () => {
+    if (getAccessState(user).billingProvider === "apple") {
+      if (isNativeIos()) {
+        void openAppleSubscriptionManagement();
+        return;
+      }
+      showToast("Abonnement App Store : résilie sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
+      return;
+    }
     setCancelSurveyOpen(true);
   };
 
@@ -10741,7 +10912,7 @@ export default function App() {
     if (cancelReason) {
       trackEvent("cancel_survey", { reason: cancelReason }, { essential: true });
     }
-    showToast("Redirection vers Stripe…");
+    showToast(isNativeIos() ? "Ouverture du navigateur…" : "Redirection vers Stripe…");
     try {
       const { data: refreshData } = await supabase.auth.refreshSession();
       const session = refreshData?.session;
@@ -10754,7 +10925,10 @@ export default function App() {
         body: JSON.stringify({ origin: window.location.origin, cancelReason }),
       });
       const json = await res.json();
-      if (json.url) { window.location.href = json.url; return; }
+      if (json.url) {
+        await openStripePortalUrl(json.url);
+        return;
+      }
       showToast(json.error || "Impossible d'ouvrir le portail Stripe.");
     } catch (e) {
       showToast("Erreur réseau. Réessaie.");
@@ -10777,8 +10951,7 @@ export default function App() {
   if (isRecovery) return (
     <>
       <style>{css}</style>
-      <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg }}>
+      <div className="ms-auth-shell">
         <ResetPasswordScreen showBrandHeader={false} onDone={() => {
           setIsRecovery(false);
           // Recharge les données utilisateur après reset
@@ -10788,7 +10961,6 @@ export default function App() {
           });
         }} />
       </div>
-      <Footer />
     </>
   );
 
@@ -10797,8 +10969,7 @@ export default function App() {
   if (screen === "auth") return (
     <>
       <style>{css}</style>
-      <PublicNav />
-      <div style={{ minHeight: "100vh", background: G.bg, color: G.ink }} className="ms-screen-enter">
+      <div className="ms-auth-shell ms-screen-enter">
         <AuthScreen
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
@@ -10808,7 +10979,6 @@ export default function App() {
           onBack={handleAuthBack}
         />
       </div>
-      <Footer />
     </>
   );
 
@@ -10837,32 +11007,6 @@ export default function App() {
   );
 
   if (coldHold || screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
-
-  if (isFrozen) {
-    const freezePreview = plan?.weeks?.[0]?.sessions?.[0]
-      || plan?.history?.filter((s) => s)?.slice(-1)?.[0]
-      || null;
-    return (
-    <>
-      <style>{css}</style>
-      <TrialExpiredFreeze
-        onSubscribe={() => openUpgrade("trial_expired")}
-        onSignOut={handleSignOut}
-        preview={freezePreview}
-      />
-      {showUpgrade && (
-        <UpgradeModal
-          onClose={closeUpgrade}
-          softContext="trial_expired"
-          weeksBlocked={null}
-          planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
-          trialEligible={false}
-          canDismiss
-        />
-      )}
-    </>
-  );
-  }
 
   if (screen === "onboarding") return (
     <>
@@ -10936,7 +11080,7 @@ export default function App() {
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
@@ -10961,6 +11105,9 @@ export default function App() {
             onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
             onPaceUpdate={handlePaceUpdate}
             onValidateSession={handleComplete}
+            onShare={openShare}
+            activePlanId={activePlanId}
+            accessState={accessState}
           />
         )}
         {activeTab === "history" && (
@@ -10989,24 +11136,49 @@ export default function App() {
             isPremium={isPremium}
             onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
             onPortal={handlePortal}
+            onCancelSubscription={handleCancelSubscription}
             onRefreshStatus={handleRefreshStatus}
             onSignOut={handleSignOut}
             onDeleteAccount={handleDeleteAccount}
             referralSlot={<ReferralShareCard />}
+            onGoBuddies={() => goTab("buddies")}
+            showBuddies={hasSwumNav}
+            onHideDock={setIosHideDock}
+            onPaceUpdate={handlePaceUpdate}
+            onValidateSession={handleComplete}
+            onChangeGoal={handleChangeGoal}
+            sessionRemindersOn={sessionRemindersOn}
+            sessionRemindersBusy={sessionRemindersBusy}
+            onToggleSessionReminders={handleToggleSessionReminders}
           />
         )}
         <Suspense fallback={null}>
-        {activeTab === "buddies" && hasSwumNav && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
+        {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
         </Suspense>
 
-        <Suspense fallback={null}><SupportBubble aboveBottomNav={activeTab !== "profile"} user={user} /></Suspense>
-        {activeTab !== "profile" && (
+        {(() => {
+          const iosNav = isIosSimpleNav();
+          const dockVisible = iosNav
+            ? activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock
+            : activeTab !== "profile";
+          return (
+            <Suspense fallback={null}>
+              <SupportBubble
+                aboveBottomNav={dockVisible}
+                hideFab={iosNav && !dockVisible}
+                user={user}
+              />
+            </Suspense>
+          );
+        })()}
+        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock) || (!isIosSimpleNav() && activeTab !== "profile")) && (
           <BottomNav
-            active={activeTab === "buddies" ? "analyse" : activeTab}
+            active={isIosSimpleNav() ? iosDockActive(activeTab) : (activeTab === "buddies" ? "analyse" : activeTab)}
             onChange={goTab}
             newBadge={newBadgeId !== null}
           />
         )}
+        {!isIosSimpleNav() && (
         <Suspense fallback={null}>
         <SettingsDrawer
           open={settingsOpen}
@@ -11026,6 +11198,7 @@ export default function App() {
           onModifyPlan={handleAddPlan}
         />
         </Suspense>
+        )}
 
         {cancelSurveyOpen && (
           <CancelSurveySheet
@@ -11045,7 +11218,7 @@ export default function App() {
               onSubmit={handleSessionFeedback}
               onSkip={closeSessionFeedbackSheet}
               isPremium={isPremium}
-              healthConsent={hasHealthConsent(activeProfile) || hasHealthConsent(user)}
+              healthConsent={hasInjuryConsent(activeProfile) || hasInjuryConsent(user)}
             />
           );
         })()}
@@ -11108,7 +11281,7 @@ export default function App() {
             weeksBlocked={null}
             planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
             trialEligible={!accessState.trialUsed}
-            canDismiss={upgradeSoftContext !== "trial_expired"}
+            canDismiss
           />
         )}
         {replaceConfirmOpen && (

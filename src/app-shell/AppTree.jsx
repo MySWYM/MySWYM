@@ -18,6 +18,11 @@ import VersionGate from "../VersionGate.jsx";
 import { RouteFallback, RoutedErrorBoundary } from "./RoutedBoot.jsx";
 import { LocaleSync } from "../i18n/locale-routing.jsx";
 import { localeFromPathname, withLocalePrefix } from "../i18n/locale-path.js";
+import { isNativeApp, isNativeMarketingPath } from "../lib/native-platform.js";
+import { markNativeQuizStarted, nativeGuestSurface, nativeQuizStarted, NATIVE_QUIZ_EVENT } from "../lib/native-welcome.js";
+import { useAuthSession } from "../lib/use-auth-session.js";
+import NativeGuestShell, { NativeOnboardingFrame } from "../native/NativeGuestShell.jsx";
+import NativeWelcomeFork from "../native/NativeWelcomeFork.jsx";
 
 const App = lazy(() => import("../App.jsx"));
 const ConversionFlow = lazy(() => import("../conversion/ConversionFlow.tsx").then((m) => ({ default: m.ConversionFlow })));
@@ -147,9 +152,65 @@ function LegacyQueryRedirects() {
   return null;
 }
 
+function NativeStartRedirect() {
+  const { pathname, search, hash } = useLocation();
+  if (!isNativeApp() || !isNativeMarketingPath(pathname)) return null;
+  return <Navigate to={{ pathname: "/app", search, hash }} replace />;
+}
+
+function NativeIosShell({ children }) {
+  const { pathname } = useLocation();
+  const { isLoggedIn, loading } = useAuthSession();
+  const [quizOpen, setQuizOpen] = useState(() => nativeQuizStarted());
+  useEffect(() => {
+    const sync = () => setQuizOpen(nativeQuizStarted());
+    window.addEventListener(NATIVE_QUIZ_EVENT, sync);
+    return () => window.removeEventListener(NATIVE_QUIZ_EVENT, sync);
+  }, []);
+  if (!isNativeApp()) return children;
+
+  const surface = nativeGuestSurface({
+    pathname,
+    loading,
+    isLoggedIn,
+    quizStarted: quizOpen,
+  });
+  if (surface === "auth") {
+    return (
+      <div className="myswym-native-guest is-funnel">
+        <NativeGuestShell funnel showHeader={false}>{children}</NativeGuestShell>
+      </div>
+    );
+  }
+  if (surface === "welcome") {
+    return (
+      <div className="myswym-native-guest is-welcome">
+        <NativeWelcomeFork
+          onCreate={() => {
+            markNativeQuizStarted();
+            setQuizOpen(true);
+          }}
+        />
+      </div>
+    );
+  }
+  if (surface === "onboarding") {
+    return (
+      <NativeOnboardingFrame>
+        <div className="myswym-native-onboarding">{children}</div>
+      </NativeOnboardingFrame>
+    );
+  }
+  return children;
+}
+
 function ConsentedSpeedInsights() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
+    if (isNativeApp()) {
+      setOk(false);
+      return;
+    }
     const sync = () => {
       try {
         setOk(hasPerformanceConsent());
@@ -173,9 +234,11 @@ export default function AppTree() {
     <VersionGate>
       <BrowserRouter>
         <RoutedErrorBoundary>
+          <NativeStartRedirect />
           <LocaleSync />
           <LegacyQueryRedirects />
           <Suspense fallback={<RouteFallback />}>
+            <NativeIosShell>
             <Routes>
               <Route path="/app" element={<App />} />
               <Route path="/app/*" element={<App />} />
@@ -184,6 +247,10 @@ export default function AppTree() {
               <Route path="/login" element={<Navigate to="/connexion" replace />} />
               <Route path="/register" element={<Navigate to="/inscription" replace />} />
 
+              {isNativeApp() ? (
+                <Route path="*" element={<Navigate to="/app" replace />} />
+              ) : (
+                <>
               <Route path="/prototype/conversion" element={<ConversionFlow />} />
               <Route path="/prototype/session-pyramid" element={<SessionPyramidPreview />} />
 
@@ -207,7 +274,10 @@ export default function AppTree() {
               <Route path="/en/*" element={<LegacyEnRedirect />} />
               <Route path="/fr">{frMarketingRoutes()}</Route>
               {enMarketingRoutes()}
+                </>
+              )}
             </Routes>
+            </NativeIosShell>
           </Suspense>
           <CookieBanner />
           <ConsentedSpeedInsights />

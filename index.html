@@ -33,20 +33,40 @@
           var fr = path === "/fr" || path.indexOf("/fr/") === 0;
           var stored = "";
           try { stored = localStorage.getItem("i18nextLng") || ""; } catch (e) {}
-          var useFr = fr || stored.indexOf("fr") === 0;
+          var bare = path.replace(/^\/fr(?=\/|$)/, "") || "/";
+          var authFr =
+            bare === "/connexion" || bare === "/inscription" ||
+            bare === "/login" || bare === "/register" ||
+            bare === "/app" || bare.indexOf("/app/") === 0;
+          var useFr = fr || stored.indexOf("fr") === 0 || authFr;
           if (useFr) {
             document.documentElement.lang = "fr";
-            document.title = "MySWYM : Plan d'entraînement natation personnalisé";
+            if (bare === "/connexion" || bare === "/login") document.title = "Connexion | MySWYM";
+            else if (bare === "/inscription" || bare === "/register") document.title = "Inscription | MySWYM";
+            else if (bare === "/app" || bare.indexOf("/app/") === 0) document.title = "MySWYM";
+            else document.title = "MySWYM : Plan d'entraînement natation personnalisé";
           } else {
             document.documentElement.lang = "en";
           }
         } catch (e) {}
         window.__MYSWYM_BOOT_AT = Date.now();
         try {
+          var native = location.protocol === "capacitor:" || location.protocol === "ionic:"
+            || (location.hostname === "localhost" && window.webkit && window.webkit.messageHandlers);
+          if (native) {
+            var p0 = location.pathname || "/";
+            var keep = p0 === "/app" || p0.indexOf("/app/") === 0
+              || p0 === "/connexion" || p0 === "/inscription"
+              || p0 === "/login" || p0 === "/register";
+            if (!keep) {
+              try { history.replaceState(null, "", "/app" + (location.search || "") + (location.hash || "")); } catch (e) {}
+            }
+          }
           var path = location.pathname || "/";
           var p = path.replace(/\/+$/, "") || "/";
-          var gif = p === "/app" || p.indexOf("/app/") === 0;
+          var gif = native || p === "/app" || p.indexOf("/app/") === 0;
           if (!gif) document.documentElement.classList.add("myswym-boot-public");
+          else document.documentElement.classList.remove("myswym-boot-public");
           var warm = sessionStorage.getItem("myswym-boot-warm") === "1";
           if (!warm) {
             for (var i = 0; i < localStorage.length; i++) {

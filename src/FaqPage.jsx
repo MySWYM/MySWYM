@@ -8,6 +8,7 @@ import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
 import { usePageSeo, breadcrumbJsonLd, faqPageJsonLd } from "./lib/seo.js";
 import { BRAND, FONT, FONT_DISPLAY } from "./theme/brand.js";
+import { isNativeApp } from "./lib/native-platform.js";
 import "./theme/public.css";
 
 const C = { ...BRAND };
@@ -40,8 +41,8 @@ export default function FaqPage() {
   return (
     <div className="ms-root" style={{ minHeight: "100vh", background: C.bg, fontFamily: FONT, color: C.ink }}>
       <PublicNav />
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "96px 20px 64px" }}>
-         <Breadcrumb items={crumbs} />
+      <main style={{ maxWidth: 720, margin: "0 auto", padding: isNativeApp() ? "16px 20px 64px" : "96px 20px 64px" }}>
+         {!isNativeApp() && <Breadcrumb items={crumbs} />}
         <p style={{ color: C.primary, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", margin: "0 0 12px" }}>
           {t("faq.label")}
         </p>
@@ -97,8 +98,8 @@ export default function FaqPage() {
           </LocalizedLink>
         </p>
       </main>
-      <Footer />
-      <StickyCta />
+      {!isNativeApp() && <Footer />}
+      {!isNativeApp() && <StickyCta />}
     </div>
   );
 }

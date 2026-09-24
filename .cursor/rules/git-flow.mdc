@@ -14,6 +14,8 @@ alwaysApply: true
 | **3. Staging** | `staging.myswym.app` | Recette. Merge **après validation**. Arthur teste. |
 | **4. Main** | Production | **L’agent ne merge jamais vers `main`.** Arthur merge `staging` → `main`. |
 
+iOS (Xcode) a le même ordre : **local USB** → **TestFlight** (= staging) → **App Store** (= prod). Détail : `.cursor/rules/ios-flow.mdc`.
+
 `feat/…` `fix/…` : un sujet par branche. Jamais depuis `main`, `staging`, ou une vieille branche agent.
 
 ## Déroulé

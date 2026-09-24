@@ -1,0 +1,52 @@
+---
+description: Couches iOS MySWYM — Xcode USB d’abord, TestFlight = staging, « pousse sur iOS » = App Store.
+alwaysApply: true
+---
+
+# iOS flow MySWYM
+
+Miroir du git-flow web. L’app iPhone n’est **pas** `staging.myswym.app`.
+
+## Couches (dans cet ordre)
+
+| Couche | Tu dis | Rôle |
+| --- | --- | --- |
+| **1. Local** | Rien de spécial, on corrige | Code + `npm run cap:sync` + Xcode **Run** (⌘R) sur l’iPhone USB-C. Pas Apple, pas TestFlight. |
+| **2. TestFlight** | **Push TestFlight** | Archive + upload App Store Connect. Recette « vraie app », comme staging web. |
+| **3. App Store** | **Pousse sur iOS** | Soumission review Apple. Comme `main`. |
+
+## Local (défaut)
+
+1. iPhone branché, mode Développeur.
+2. `npm run cap:sync` après un changement web/JS (sans ça, Xcode joue l’ancien `dist`).
+3. Ouvrir `ios/App/App.xcodeproj`. Destination : **l’iPhone**, pas « Any iOS Device », pas le simulateur (sauf layout).
+4. **Product → Run**.
+
+Ne pas archiver. Ne pas uploader. Tant qu’Arthur n’a pas dit TestFlight ou « pousse sur iOS ».
+
+## TestFlight (= staging iOS)
+
+Seulement si Arthur dit **push TestFlight** (ou équivalent explicite : « envoie TestFlight », « upload TestFlight »).
+
+- Destination archive : **Any iOS Device**
+- Incrémenter `CURRENT_PROJECT_VERSION` si besoin
+- `xcodebuild archive` puis `exportArchive` (`ios/ExportOptions.plist`, `destination: upload`)
+
+Attendre le processing Apple (souvent 5-15 min). Ce n’est pas une boucle de debug.
+
+## App Store (= prod iOS)
+
+Seulement si Arthur dit **pousse sur iOS**.
+
+- Soumettre la build TestFlight validée à la review
+- **L’agent ne soumet pas tout seul** une review store. Comme il ne merge pas `main`.
+
+## Interdit
+
+- Upload TestFlight ou soumission store « pour vérifier un fix »
+- Confondre TestFlight et `staging.myswym.app` (le wrapper iOS parle encore à `https://www.myswym.app` pour `/api`)
+- Brancher / merger iOS hors git-flow (`feat/…` depuis le `develop` local)
+
+## Liens site dans l’app
+
+Pages publiques myswym.app (landing, blog, FAQ, légal, avis, tarifs) : **navigateur du téléphone** (Safari / Chrome / Brave), pas le WebView MySWYM. Produit nageur (`/app`, auth, chat) : dans l’app.

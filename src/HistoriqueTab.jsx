@@ -65,6 +65,7 @@ export default function HistoriqueTab({
   onTabChange,
   onUpgrade,
   onShare,
+  embedded = false,
 }) {
   const { getTypeMeta } = getTabUi();
   const [selected, setSelected] = useState(null);
@@ -85,24 +86,9 @@ export default function HistoriqueTab({
     } catch { /* ignore */ }
   };
 
-  return (
-    <AppTabShell
-      style={{
-        paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
-        minHeight: "100dvh",
-      }}
-    >
-      <AppTopBar
-        user={user}
-        onOpenMenu={onOpenMenu}
-        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
-        plan={plan}
-        onTabChange={onTabChange}
-        onUpgrade={onUpgrade}
-        immersive
-      />
-
-      <div className="app-shell" style={{ paddingTop: 8 }}>
+  const body = (
+      <div className="app-shell" style={{ paddingTop: embedded ? 0 : 8 }}>
+        {!embedded && (
         <div style={{ marginBottom: 18 }}>
           <p className="ms-type-label" style={{ marginBottom: 4 }}>
             Tes séances
@@ -111,6 +97,7 @@ export default function HistoriqueTab({
             Historique
           </h1>
         </div>
+        )}
 
         {!plan ? (
           <div className="ms-glass-card" style={{ padding: "22px 18px", textAlign: "center" }}>
@@ -278,7 +265,9 @@ export default function HistoriqueTab({
           </>
         )}
       </div>
+  );
 
+  const sheet = (
       <HistorySessionSheet
         open={!!selected}
         session={selected?.session}
@@ -295,6 +284,35 @@ export default function HistoriqueTab({
         onUpgrade={onUpgrade}
         onShare={onShare}
       />
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {body}
+        {sheet}
+      </>
+    );
+  }
+
+  return (
+    <AppTabShell
+      style={{
+        paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
+        minHeight: "100dvh",
+      }}
+    >
+      <AppTopBar
+        user={user}
+        onOpenMenu={onOpenMenu}
+        onAvatarClick={onTabChange ? () => onTabChange("profile") : undefined}
+        plan={plan}
+        onTabChange={onTabChange}
+        onUpgrade={onUpgrade}
+        immersive
+      />
+      {body}
+      {sheet}
     </AppTabShell>
   );
 }
