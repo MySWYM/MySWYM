@@ -4,12 +4,15 @@
  * Liste dense (lisible en un écran) + pastilles ⓘ.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Printer } from "lucide-react";
+import { Check, Copy, Printer, Share2, Watch } from "lucide-react";
 import { buildWorkoutView } from "../lib/workout-display.js";
 import { openSessionPrint } from "../lib/session-export.js";
+import { downloadWatchExport } from "../lib/watch-export.js";
+import { track } from "../lib/analytics.js";
 import { formatLoopSessionTitle } from "../lib/swim-plan-bridge.js";
 import { buildSessionProvenance } from "../lib/session-provenance.js";
 import { setSupportSessionRef } from "../lib/support-context.js";
+import { isNativeIos } from "../lib/native-platform.js";
 import WorkoutExerciseCard from "./WorkoutExerciseCard.jsx";
 import DrillInfoSheet from "./DrillInfoSheet.jsx";
 
@@ -64,7 +67,9 @@ export default function WorkoutPrepView({
   const view = useMemo(() => buildWorkoutView(session), [session]);
   const [drill, setDrill] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
   const locked = !isPremium || lockedPreview;
+  const nativeIos = isNativeIos();
 
   const provenance = useMemo(
     () => buildSessionProvenance(session, { loopOrdinal: loopCursor, profile, planId }),
@@ -286,17 +291,63 @@ export default function WorkoutPrepView({
         type="button"
         className="ms-workout-secondary"
         style={{ marginTop: 18 }}
-        onClick={() => {
+        onClick={async () => {
           if (locked) {
             onUpgrade?.();
             return;
           }
-          openSessionPrint(session);
+          try {
+            const result = await openSessionPrint(session);
+            if (result?.ok && !result.aborted) {
+              track("session_print", {
+                shared: Boolean(result.shared),
+                printed: Boolean(result.printed),
+                nativeIos,
+              });
+            }
+          } catch {
+            /* share / impression refusés */
+          }
         }}
-        aria-label="Imprimer la fiche de séance"
+        aria-label={nativeIos ? "Partager ou imprimer la fiche de séance" : "Imprimer la fiche de séance"}
       >
-        <Printer size={16} color="currentColor" />
-        Imprimer la fiche
+        {nativeIos ? (
+          <Share2 size={16} color="currentColor" />
+        ) : (
+          <Printer size={16} color="currentColor" />
+        )}
+        {nativeIos ? "Partager / Imprimer" : "Imprimer la fiche"}
+      </button>
+
+      <button
+        type="button"
+        className="ms-workout-secondary"
+        disabled={watchBusy}
+        onClick={async () => {
+          if (locked) {
+            onUpgrade?.("session_locked");
+            return;
+          }
+          if (watchBusy) return;
+          setWatchBusy(true);
+          try {
+            const result = await downloadWatchExport(session, {
+              profile,
+              isPremium: true,
+            });
+            if (result.ok) {
+              track("watch_export_downloaded", { format: "fit", garmin: true });
+            }
+          } catch {
+            /* share / téléchargement refusé par le navigateur */
+          } finally {
+            setWatchBusy(false);
+          }
+        }}
+        aria-label="Envoyer la séance à la montre Garmin"
+      >
+        <Watch size={16} color="currentColor" />
+        {watchBusy ? "Préparation du fichier…" : "Envoyer à la montre"}
       </button>
 
       {drill && (

@@ -1,6 +1,7 @@
 /**
  * Export séance, texte (Strava / WhatsApp) et impression bord de bassin.
  * Impression = fiche compacte (vise 1 page A4).
+ * Sur Capacitor iOS : Share sheet (window.print est un no-op en WKWebView).
  */
 import { buildWorkoutView } from "./workout-display.js";
 import { humanizeArthurDisplayTerms } from "./sports-engine/session-labels.js";
@@ -8,6 +9,7 @@ import {
   fourNagesDisplayCue,
   parseRepMetersFromVolumeLabel,
 } from "./natation-sheet/parse.js";
+import { isNativeIos } from "./native-platform.js";
 
 const SECTION_ORDER = ["warm", "main", "cool"];
 
@@ -199,8 +201,29 @@ export function formatSessionPlainText(session, opts = {}) {
   return [...head, ...body].join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-/** HTML impression compacte (vise 1 page A4). */
-export function buildSessionPrintHtml(session) {
+/** Nom de fichier pour Share / téléchargement. */
+export function sessionPrintFilename(session, now = new Date()) {
+  const view = buildWorkoutView(session || {});
+  const raw = String(view.header?.title || "seance")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `myswym-${raw || "seance"}-${y}${m}${d}.html`;
+}
+
+/**
+ * HTML impression compacte (vise 1 page A4).
+ * @param {object} session
+ * @param {{ autoPrint?: boolean }} [opts] autoPrint=false pour Share iOS (pas de window.print).
+ */
+export function buildSessionPrintHtml(session, opts = {}) {
+  const autoPrint = opts.autoPrint !== false;
   const view = buildWorkoutView(session || {});
   const title = escapeHtml(nageurText(view.header?.title || "Séance"));
   const meta = [
@@ -226,8 +249,7 @@ export function buildSessionPrintHtml(session) {
     : "";
   const banner = session?.sheetWeekRole;
   const bannerHtml = banner?.banner
-    ? `<div class="banner">${escapeHtml(banner.label || "")}${banner.label ? " · " : ""}${escapeHtml(nageurText(banner.banner))}</div>`
-    : "";
+    ? `<div class="banner">${escapeHtml(banner.label || "")}${banner.label ? " · " : ""}${escapeHtml(nageurText(banner.banner))}</div>`    : "";
 
   const sectionsHtml = (view.sections || []).map((section) => {
     if (!section?.exercises?.length) return "";
@@ -423,7 +445,7 @@ export function buildSessionPrintHtml(session) {
   ${gearHtml}
   ${sectionsHtml || "<p>Détail de séance indisponible.</p>"}
   <div class="foot">myswym.app</div>
-  <script>
+  ${autoPrint ? `<script>
     window.addEventListener("load", () => {
       const imgs = Array.from(document.images || []);
       Promise.all(imgs.map((img) => (
@@ -432,7 +454,7 @@ export function buildSessionPrintHtml(session) {
           : new Promise((resolve) => { img.onload = img.onerror = resolve; })
       ))).then(() => { try { window.print(); } catch (e) {} });
     });
-  </script>
+  </script>` : ""}
 </body>
 </html>`;
 }
@@ -468,11 +490,64 @@ function printViaHiddenIframe(html) {
 }
 
 /**
- * Ouvre le dialogue d’impression (imprimante ou PDF).
- * Pas de `noopener` sur window.open : le handle serait null.
+ * Share sheet iOS (AirPrint / Fichiers / Messages).
+ * window.print() ne marche pas dans le WKWebView Capacitor.
+ * @returns {Promise<{ ok: boolean, shared?: boolean, aborted?: boolean, reason?: string }>}
  */
-export function openSessionPrint(session) {
-  if (typeof window === "undefined" || !session) return false;
+export async function shareSessionPrint(session) {
+  if (typeof window === "undefined" || !session) {
+    return { ok: false, reason: "unavailable" };
+  }
+  const filename = sessionPrintFilename(session);
+  const html = buildSessionPrintHtml(session, { autoPrint: false });
+  const title = "Séance MySWYM";
+  const shareText = "Fiche bord de bassin : ouvre le fichier, puis Imprimer.";
+
+  try {
+    const htmlFile = new File([html], filename, { type: "text/html" });
+    if (navigator.canShare?.({ files: [htmlFile] })) {
+      await navigator.share({ files: [htmlFile], title, text: shareText });
+      return { ok: true, shared: true };
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      return { ok: true, shared: false, aborted: true };
+    }
+  }
+
+  try {
+    const plain = formatSessionPlainText(session);
+    const txtName = filename.replace(/\.html$/i, ".txt");
+    const txtFile = new File([plain], txtName, { type: "text/plain" });
+    if (navigator.canShare?.({ files: [txtFile] })) {
+      await navigator.share({ files: [txtFile], title, text: shareText });
+      return { ok: true, shared: true };
+    }
+    if (navigator.share) {
+      await navigator.share({ title, text: plain });
+      return { ok: true, shared: true };
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      return { ok: true, shared: false, aborted: true };
+    }
+  }
+
+  return { ok: false, reason: "share_unavailable" };
+}
+
+/**
+ * Impression web (dialogue) ou Share sheet sur Capacitor iOS.
+ * Pas de `noopener` sur window.open : le handle serait null.
+ * @returns {Promise<{ ok: boolean, shared?: boolean, printed?: boolean, aborted?: boolean, reason?: string }>}
+ */
+export async function openSessionPrint(session) {
+  if (typeof window === "undefined" || !session) {
+    return { ok: false, reason: "unavailable" };
+  }
+  if (isNativeIos()) {
+    return shareSessionPrint(session);
+  }
   const html = buildSessionPrintHtml(session);
   let w = null;
   try {
@@ -486,12 +561,13 @@ export function openSessionPrint(session) {
       w.document.open();
       w.document.write(html);
       w.document.close();
-      return true;
+      return { ok: true, printed: true };
     } catch {
       try { w.close(); } catch { /* ignore */ }
     }
   }
-  return printViaHiddenIframe(html);
+  const viaIframe = printViaHiddenIframe(html);
+  return viaIframe ? { ok: true, printed: true } : { ok: false, reason: "print_blocked" };
 }
 
 /**

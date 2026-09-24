@@ -2,7 +2,7 @@
  * Tests export séance + projection semaine.
  * Usage: node src/lib/session-export.test.js
  */
-import { formatSessionPlainText, buildSessionPrintHtml } from "./session-export.js";
+import { formatSessionPlainText, buildSessionPrintHtml, sessionPrintFilename } from "./session-export.js";
 import { buildWeekProjection } from "./week-projection.js";
 
 function assert(cond, msg) {
@@ -43,6 +43,14 @@ assert(!/\bZ3\b/.test(html), "pas de Z3");
 assert(html.includes("soutenu"), "zone → soutenu");
 assert(html.includes("CRAWL") || html.includes("crawl"), "nage comme l’app");
 assert(html.includes("D1") || html.includes("D1'"), "départ D comme l’app");
+assert(html.includes("window.print"), "autoPrint défaut");
+
+const htmlShare = buildSessionPrintHtml(sample, { autoPrint: false });
+assert(!htmlShare.includes("window.print"), "pas d’auto-print pour Share iOS");
+
+const fname = sessionPrintFilename(sample, new Date("2026-09-21T12:00:00Z"));
+assert(fname.startsWith("myswym-seuil-progressif-"), `filename slug: ${fname}`);
+assert(fname.endsWith(".html"), "filename .html");
 
 const structured = {
   title: "Pyramide vitesse",

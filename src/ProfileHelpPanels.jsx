@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, CircleHelp, Mail, Bug, ExternalLink, Info, Globe, Star } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { legalHref } from "./lib/legal-copy.js";
@@ -45,12 +46,36 @@ function LinkedinMark({ size = 18, color = "currentColor" }) {
 }
 
 export function openSupportChat(tab = "messages") {
-  window.dispatchEvent(new CustomEvent("myswym:open-support", { detail: { tab } }));
+  const view = tab === "chat" ? "chat" : "tabs";
+  const resolvedTab = tab === "chat" ? "messages" : tab;
+  window.dispatchEvent(new CustomEvent("myswym:open-support", { detail: { tab: resolvedTab, view } }));
 }
 
-function PanelShell({ title, onBack, children }) {
+export function useFitOverflow(active = true) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!active) return;
+    const el = ref.current;
+    if (!el) return;
+    const sync = () => {
+      el.classList.toggle("is-scrollable", el.scrollHeight > el.clientHeight + 2);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    window.addEventListener("resize", sync);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", sync);
+    };
+  }, [active]);
+  return ref;
+}
+
+export function PanelShell({ title, onBack, children }) {
+  const bodyRef = useFitOverflow();
   return (
-    <div className="ms-profile-subpanel">
+    <div className="ms-profile-subpanel ios-lock-pane">
       <header className="ms-profile-subpanel-toolbar">
         <button
           type="button"
@@ -66,7 +91,7 @@ function PanelShell({ title, onBack, children }) {
         <h1>{title}</h1>
         <div style={{ width: 44 }} aria-hidden />
       </header>
-      <div className="ms-profile-subpanel-body">{children}</div>
+      <div ref={bodyRef} className="ms-profile-subpanel-body">{children}</div>
     </div>
   );
 }
@@ -147,10 +172,7 @@ export function ProfileSupportPanel({ onBack }) {
           icon={Bug}
           title="Signaler un bug"
           subtitle="Aide-nous à améliorer l’app"
-          onClick={() => {
-            onBack();
-            openSupportChat("messages");
-          }}
+          onClick={() => openSupportChat("chat")}
         />
         <HelpRow
           icon={Star}

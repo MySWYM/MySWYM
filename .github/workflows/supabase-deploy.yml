@@ -52,6 +52,8 @@ jobs:
           supabase functions deploy marketing-cron
           supabase functions deploy marketing-event
           supabase functions deploy reactivate-nonpayers
+          supabase functions deploy apple-iap-sync
+          supabase functions deploy apple-iap-webhook
 
       - name: Skip notice (secrets missing)
         if: env.SUPABASE_ACCESS_TOKEN == ''

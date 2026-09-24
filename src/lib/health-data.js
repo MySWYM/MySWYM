@@ -31,6 +31,7 @@ export const DEFAULT_INJURY_SEVERITY = "mild";
 
 export const HEALTH_CONSENT_TITLE = "Données de santé (optionnel)";
 
+/** @deprecated Prefer INJURY_CONSENT_* / HEART_RATE_CONSENT_* */
 export const HEALTH_CONSENT_BODY =
   "Pour adapter tes séances et limiter le risque de blessure, MySWYM peut traiter des données de santé au sens du RGPD : " +
   "fréquence cardiaque par séance (ex. via Strava) et historique de blessures / gênes que tu déclares. " +
@@ -38,8 +39,28 @@ export const HEALTH_CONSENT_BODY =
   "Tu peux retirer ton consentement à tout moment (Paramètres ou contact@myswym.app). " +
   "Ces données ne sont pas envoyées aux outils d’analytics tiers.";
 
+/** @deprecated Prefer INJURY_CONSENT_CHECKBOX / HEART_RATE_CONSENT_CHECKBOX */
 export const HEALTH_CONSENT_CHECKBOX =
   "J’accepte explicitement que MySWYM traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.";
+
+export const INJURY_CONSENT_TITLE = "Blessures / gênes (optionnel)";
+
+export const INJURY_CONSENT_BODY =
+  "Si tu déclares une blessure ou une gêne, MySWYM peut adapter l’intensité de tes prochaines séances. " +
+  "Base légale : consentement explicite (art. 9.2.a RGPD). Tu peux laisser « Aucune » et refuser.";
+
+export const INJURY_CONSENT_CHECKBOX =
+  "J’accepte que MySWYM traite mes déclarations de blessure / gêne pour adapter mes séances. Je peux refuser.";
+
+export const HEART_RATE_CONSENT_TITLE = "Fréquence cardiaque (optionnel)";
+
+export const HEART_RATE_CONSENT_BODY =
+  "Pour afficher la FC dans l’analyse MySWYM (import Strava), MySWYM doit stocker ta fréquence cardiaque par séance. " +
+  "Sans ce consentement, Strava reste connecté (distance, allure) mais la cardio reste masquée. " +
+  "Base légale : consentement explicite (art. 9.2.a RGPD). Tu peux refuser.";
+
+export const HEART_RATE_CONSENT_CHECKBOX =
+  "J’accepte que MySWYM stocke ma fréquence cardiaque (ex. via Strava) pour l’afficher dans mon analyse. Je peux refuser.";
 
 export const HEALTH_DECLARATION_LABEL =
   "Je certifie sur l’honneur l’exactitude des informations de santé que je fournis.";
@@ -200,9 +221,59 @@ export function formatInjurySummary(profile = {}) {
 }
 
 export function hasHealthConsent(profileOrUser) {
+  return hasInjuryConsent(profileOrUser) || hasHeartRateConsent(profileOrUser);
+}
+
+/** Consentement déclarations blessure / gêne (feedback douleur, zones). */
+export function hasInjuryConsent(profileOrUser) {
   if (!profileOrUser) return false;
+  if (profileOrUser.injuryConsent === true) return true;
+  if (profileOrUser.user_metadata?.injury_consent === true) return true;
+  if (profileOrUser.extra?.injuryConsent === true) return true;
+  // Legacy : ancienne case unique
   if (profileOrUser.healthConsent === true) return true;
   if (profileOrUser.user_metadata?.health_consent === true) return true;
   if (profileOrUser.extra?.healthConsent === true) return true;
   return false;
+}
+
+/** Consentement stockage / affichage FC (Strava). */
+export function hasHeartRateConsent(profileOrUser) {
+  if (!profileOrUser) return false;
+  if (profileOrUser.heartRateConsent === true) return true;
+  if (profileOrUser.user_metadata?.heart_rate_consent === true) return true;
+  if (profileOrUser.extra?.heartRateConsent === true) return true;
+  // Legacy : ancienne case unique
+  if (profileOrUser.healthConsent === true) return true;
+  if (profileOrUser.user_metadata?.health_consent === true) return true;
+  if (profileOrUser.extra?.healthConsent === true) return true;
+  return false;
+}
+
+/**
+ * Normalise les 2 consentements + miroir legacy healthConsent.
+ * @param {{ injuryConsent?: boolean, heartRateConsent?: boolean, healthConsent?: boolean, injuryConsentAt?: string|null, heartRateConsentAt?: string|null, healthConsentAt?: string|null }} src
+ * @param {string} [nowIso]
+ */
+export function resolveConsentFields(src = {}, nowIso = new Date().toISOString()) {
+  const legacy = src.healthConsent === true;
+  const injuryConsent = src.injuryConsent === true || (src.injuryConsent == null && legacy);
+  const heartRateConsent = src.heartRateConsent === true || (src.heartRateConsent == null && legacy);
+  const injuryConsentAt = injuryConsent
+    ? (src.injuryConsentAt || src.healthConsentAt || nowIso)
+    : null;
+  const heartRateConsentAt = heartRateConsent
+    ? (src.heartRateConsentAt || src.healthConsentAt || nowIso)
+    : null;
+  const any = injuryConsent || heartRateConsent;
+  return {
+    injuryConsent,
+    injuryConsentAt,
+    heartRateConsent,
+    heartRateConsentAt,
+    healthConsent: any,
+    healthConsentAt: any
+      ? (src.healthConsentAt || injuryConsentAt || heartRateConsentAt || nowIso)
+      : null,
+  };
 }

@@ -2,6 +2,7 @@ import { useEffect, forwardRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { setAppLanguage } from "./index.js";
+import { isNativeApp } from "../lib/native-platform.js";
 import {
   isAppPath,
   localeFromPathname,
@@ -20,6 +21,7 @@ export function useActiveLocale() {
 export function LocaleSync() {
   const { pathname } = useLocation();
   useEffect(() => {
+    if (isNativeApp()) return;
     if (isAppPath(pathname)) return;
     const next = localeFromPathname(pathname);
     setAppLanguage(next);

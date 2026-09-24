@@ -1,7 +1,10 @@
 import { bootStatusLabel } from "../lib/boot-warm.js";
+import { isNativeApp } from "../lib/native-platform.js";
+import Loading from "./Loading.jsx";
 
-/** Chargement marketing : wordmark + barre. Styles dans index.html. */
+/** Chargement marketing : wordmark + barre. Styles dans index.html. iOS : GIF bleu. */
 export default function PublicLoading() {
+  if (isNativeApp()) return <Loading />;
   return (
     <div
       className="myswym-boot myswym-boot--public"

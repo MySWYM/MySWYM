@@ -27,6 +27,16 @@ export function isAppGifPath(pathname = "/") {
   return p === "/app" || p.startsWith("/app/");
 }
 
+/** iOS : toujours le GIF bleu. Web : GIF seulement sur /app. */
+export function shouldUseAppGifLoader(pathname = "/") {
+  try {
+    if (typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.()) return true;
+  } catch {
+    /* ignore */
+  }
+  return isAppGifPath(pathname);
+}
+
 export function bootStatusLabel() {
   if (typeof document !== "undefined" && String(document.documentElement.lang || "").startsWith("fr")) {
     return "Chargement";

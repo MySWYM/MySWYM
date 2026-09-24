@@ -25,7 +25,19 @@ export const CARDLESS_TRIAL_NOTE =
   "7 jours d’essai offerts à la création du compte, sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement.";
 
 export const CHECKOUT_RENEWAL_NOTICE =
-  "Abonnement à reconduction tacite. Tu peux résilier à tout moment via « Gérer mon abonnement » (portail Stripe) ; l’accès reste actif jusqu’à la fin de la période déjà payée.";
+  "Abonnement à reconduction tacite. Tu peux changer d’offre via « Modifier mon abonnement », ou résilier via « Résilier » (portail Stripe). L’accès reste actif jusqu’à la fin de la période déjà payée.";
+
+export const IOS_IAP_RENEWAL_NOTICE =
+  "Abonnement App Store à reconduction tacite. 6,99 €/mois sans engagement ou 59,99 €/an. Paiement via ton Apple ID (carte ou Apple Pay). Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID).";
+
+export const IOS_IAP_MONTHLY_REASSURE =
+  "Sans engagement. Annule à tout moment dans Réglages Apple. L’accès reste actif jusqu’à la fin du mois déjà payé.";
+
+export const IOS_IAP_ANNUAL_REASSURE =
+  "59,99 € pour 12 mois, reconduction tacite. Résilier dans Réglages Apple coupe le prochain cycle. La période déjà payée n’est pas remboursée au prorata par MySWYM.";
+
+export const IOS_IAP_LEGAL_PREFIX =
+  "Abonnement App Store à reconduction tacite (6,99 €/mois ou 59,99 €/an). Paiement via ton Apple ID. Résiliation : Réglages → Apple ID → Abonnements. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID). En continuant, tu acceptes les";
 
 export const CHECKOUT_WITHDRAWAL_LABEL =
   "Je demande l’accès immédiat à Premium et reconnais que, dès l’ouverture de l’accès, je perds mon droit de rétractation de 14 jours pour le service numérique pleinement exécuté (art. L221-28 du Code de la consommation), dans la mesure permise par la loi.";

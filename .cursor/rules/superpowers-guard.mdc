@@ -10,7 +10,7 @@ Si le plugin Superpowers (ou un skill `superpowers:*`) est disponible, ces règl
 ## Priorité (ordre décroissant)
 
 1. Instructions explicites d’Arthur dans le chat
-2. Rules MySWYM (`.cursor/rules/*` : git-flow, typo-fr, natation, myswym-agent)
+2. Rules MySWYM (`.cursor/rules/*` : git-flow, ios-flow, typo-fr, natation, myswym-agent)
 3. Skill projet `.cursor/skills/myswym-superpowers`
 4. Skills Superpowers **allowlistés** ci-dessous
 5. Comportement agent / Superpowers par défaut
@@ -32,7 +32,7 @@ Le skill projet `myswym-superpowers` adapte ces flux au git flow et à la natati
 ## Interdit / freiné (danger pour MySWYM)
 
 - **using-git-worktrees** : ne pas créer de worktrees. Brancher depuis le `develop` **local** selon `git-flow.mdc`.
-- **finishing-a-development-branch** : ne pas merger vers `main` ; ne pas inventer un flow merge/discard. Suivre git-flow (staging, Arthur merge `main`).
+- **finishing-a-development-branch** : ne pas merger vers `main` ; ne pas inventer un flow merge/discard. Suivre git-flow (staging, Arthur merge `main`). iOS : pas de TestFlight ni d’App Store sans les phrases d’Arthur (`ios-flow.mdc`).
 - **test-driven-development obligatoire** : pas de TDD forcé sur Soft Sheet 01–13, catalogues natation, ou copy coach. TDD OK seulement si Arthur le demande ou sur du code testable isolé (utils, parsers, API).
 - **subagent-driven-development** autonome : pas d’exécution multi-heures sans checkpoints Arthur. Pas de balayage large de `src/App.jsx` / plans utilisateur.
 - **Regen de plans / séances** : Superpowers ne justifie jamais une régénération silencieuse de semaines d’un plan existant.

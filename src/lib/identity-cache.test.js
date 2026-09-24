@@ -7,6 +7,8 @@ import {
   readCachedFirstName,
   writeCachedFirstName,
   resolveDisplayFirstName,
+  resolveDisplayLastName,
+  resolveDisplayFullName,
   clearIdentityLocalCache,
 } from "./identity-cache.js";
 import {
@@ -49,5 +51,23 @@ assert.equal(readCachedFirstName("u-new"), "");
 assert.equal(readCachedAvatar("u-new"), null);
 assert.equal(store.get("myswym_firstname"), undefined, "logout : global prénom vidé");
 assert.equal(store.get("myswym_avatar"), undefined, "logout : global photo vidé");
+
+assert.equal(
+  resolveDisplayLastName({ user_metadata: { lastname: "Noel" } }),
+  "Noel",
+  "nom depuis lastname",
+);
+assert.equal(
+  resolveDisplayFullName({
+    user_metadata: { firstname: "Arthur", lastname: "Noel" },
+  }),
+  "Arthur Noel",
+  "prénom + nom",
+);
+assert.equal(
+  resolveDisplayFullName({ user_metadata: { full_name: "Ada Lovelace" } }),
+  "Ada Lovelace",
+  "full_name si pas de first/last",
+);
 
 console.log("identity-cache.test.js ok");

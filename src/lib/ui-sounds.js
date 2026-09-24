@@ -1,12 +1,16 @@
 /**
- * Sons UI soft (esthétique type ElevenLabs UI : ronds, chauds, courts).
+ * Clics UI type touche (court, mat, peu de hauteur).
  * Synthèse Web Audio, pas d’asset externe. Muteable + prefers-reduced-motion.
+ * iOS : pas de mute in-app, le bouton sonnerie / vibreur coupe (AVAudioSession ambient).
  */
+
+import { isNativeIos } from "./native-platform.js";
 
 const STORAGE_KEY = "myswym_ui_sounds";
 
 let audioCtx = null;
 let unlocked = false;
+let noiseBuf = null;
 
 function prefersReducedMotion() {
   try {
@@ -17,6 +21,7 @@ function prefersReducedMotion() {
 }
 
 export function getUiSoundsEnabled() {
+  if (isNativeIos()) return true;
   try {
     const v = localStorage.getItem(STORAGE_KEY);
     if (v === null) return true;
@@ -40,6 +45,15 @@ function getCtx() {
   return audioCtx;
 }
 
+function getNoise(ctx) {
+  if (noiseBuf && noiseBuf.sampleRate === ctx.sampleRate) return noiseBuf;
+  const n = Math.floor(ctx.sampleRate * 0.05);
+  noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const data = noiseBuf.getChannelData(0);
+  for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
+  return noiseBuf;
+}
+
 /** Débloque l’AudioContext au premier geste (iOS). */
 export function unlockUiSounds() {
   const ctx = getCtx();
@@ -50,32 +64,55 @@ export function unlockUiSounds() {
   unlocked = true;
 }
 
-function tone(ctx, {
-  freq = 440,
-  type = "sine",
+/** Bruit filtré, le « clic » de touche. */
+function noiseClick(ctx, {
   start = 0,
-  dur = 0.08,
-  gain = 0.08,
-  freqEnd = null,
-}) {
+  dur = 0.018,
+  gain = 0.016,
+  freq = 1900,
+  q = 1.8,
+} = {}) {
+  const src = ctx.createBufferSource();
+  src.buffer = getNoise(ctx);
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = freq;
+  bp.Q.value = q;
+  const hp = ctx.createBiquadFilter();
+  hp.type = "highpass";
+  hp.frequency.value = 700;
+  const g = ctx.createGain();
+  const t = ctx.currentTime + start;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(bp);
+  bp.connect(hp);
+  hp.connect(g);
+  g.connect(ctx.destination);
+  src.start(t);
+  src.stop(t + dur + 0.008);
+}
+
+/** Micro tick aigu, presque inaudible seul. */
+function tick(ctx, {
+  start = 0,
+  freq = 2400,
+  dur = 0.011,
+  gain = 0.007,
+} = {}) {
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = 2800;
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-  if (freqEnd != null) {
-    osc.frequency.exponentialRampToValueAtTime(Math.max(40, freqEnd), ctx.currentTime + start + dur);
-  }
-  g.gain.setValueAtTime(0.0001, ctx.currentTime + start);
-  g.gain.exponentialRampToValueAtTime(gain, ctx.currentTime + start + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
-  osc.connect(filter);
-  filter.connect(g);
+  const t = ctx.currentTime + start;
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.0015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g);
   g.connect(ctx.destination);
-  osc.start(ctx.currentTime + start);
-  osc.stop(ctx.currentTime + start + dur + 0.02);
+  osc.start(t);
+  osc.stop(t + dur + 0.006);
 }
 
 /**
@@ -92,20 +129,19 @@ export function playUiSound(kind = "tap") {
 
   try {
     if (kind === "nav") {
-      tone(ctx, { freq: 520, type: "triangle", dur: 0.055, gain: 0.045, freqEnd: 380 });
+      noiseClick(ctx, { dur: 0.016, gain: 0.013, freq: 1450, q: 1.4 });
       return;
     }
     if (kind === "success") {
-      tone(ctx, { freq: 420, type: "sine", dur: 0.09, gain: 0.06, freqEnd: 520 });
-      tone(ctx, { freq: 620, type: "triangle", start: 0.07, dur: 0.14, gain: 0.05, freqEnd: 780 });
+      noiseClick(ctx, { dur: 0.016, gain: 0.014, freq: 2100, q: 1.6 });
+      tick(ctx, { start: 0.016, freq: 2650, dur: 0.014, gain: 0.008 });
       return;
     }
     if (kind === "soft") {
-      tone(ctx, { freq: 360, type: "sine", dur: 0.07, gain: 0.035, freqEnd: 300 });
+      noiseClick(ctx, { dur: 0.014, gain: 0.01, freq: 1200, q: 1.2 });
       return;
     }
-    // tap (CTA / boutons principaux)
-    tone(ctx, { freq: 480, type: "sine", dur: 0.06, gain: 0.055, freqEnd: 340 });
-    tone(ctx, { freq: 720, type: "triangle", start: 0.008, dur: 0.045, gain: 0.028, freqEnd: 500 });
+    noiseClick(ctx, { dur: 0.018, gain: 0.016, freq: 1900, q: 1.8 });
+    tick(ctx, { freq: 2550, dur: 0.01, gain: 0.006 });
   } catch { /* ignore */ }
 }

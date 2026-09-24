@@ -57,6 +57,8 @@ const ALLOWED_PROPS = new Set([
   "sheetN",
   "error_kind",
   "pathname",
+  "format",
+  "garmin",
 ]);
 
 /** Props jamais envoyées (défense en profondeur), inclut données de santé art. 9. */
@@ -84,6 +86,10 @@ const BLOCKED_PROPS = new Set([
   "has_injury",
   "healthConsent",
   "health_consent",
+  "injuryConsent",
+  "injury_consent",
+  "heartRateConsent",
+  "heart_rate_consent",
   "pain",
   "heart_rate",
   "heartrate",

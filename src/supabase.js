@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { isNativeApp } from "./lib/native-platform.js";
 
 const FALLBACK_URL = "https://unavailable.supabase.co";
 const FALLBACK_KEY = "public-anon-key";
@@ -19,13 +20,23 @@ function makeClient() {
         "[MySWYM] VITE_SUPABASE_* absent, [SENSITIVE], ou URL invalide au build. " +
           "Sur Vercel, les variables client ne doivent pas être Sensitive.",
       );
-      return createClient(FALLBACK_URL, FALLBACK_KEY);
+      return createClient(FALLBACK_URL, FALLBACK_KEY, nativeAuthOptions());
     }
-    return createClient(rawUrl, rawKey);
+    return createClient(rawUrl, rawKey, nativeAuthOptions());
   } catch (err) {
     console.error("[MySWYM] createClient a échoué", err);
-    return createClient(FALLBACK_URL, FALLBACK_KEY);
+    return createClient(FALLBACK_URL, FALLBACK_KEY, nativeAuthOptions());
   }
+}
+
+function nativeAuthOptions() {
+  if (!isNativeApp()) return undefined;
+  return {
+    auth: {
+      flowType: "pkce",
+      detectSessionInUrl: false,
+    },
+  };
 }
 
 export const supabase = makeClient();

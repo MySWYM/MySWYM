@@ -1,6 +1,12 @@
 import { supabase } from "../supabase.js";
+import { isNativeApp, nativePluginRequest } from "./native-platform.js";
 
 const PATH = "/api/contact?kind=app-support";
+
+async function supportFetch(url, init) {
+  if (isNativeApp()) return nativePluginRequest(url, init);
+  return fetch(url, init);
+}
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
@@ -85,7 +91,7 @@ export async function fetchSupportThread(conversationId) {
   const url = conversationId
     ? `${PATH}&conversationId=${encodeURIComponent(conversationId)}`
     : PATH;
-  const res = await fetch(url, { headers, cache: "no-store" });
+  const res = await supportFetch(url, { headers, cache: "no-store" });
   const json = await res.json().catch(() => ({}));
   const dbSnap = await loadHistoryFromDb(conversationId).catch(() => null);
   if (!res.ok) {
@@ -104,7 +110,7 @@ export async function fetchSupportThread(conversationId) {
 export async function sendSupportLive(message, priorMessages, context) {
   const headers = await authHeaders();
   if (!headers) return { ok: false, error: "auth", conversation: null, messages: [] };
-  const res = await fetch(PATH, {
+  const res = await supportFetch(PATH, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -123,7 +129,7 @@ export async function sendSupportLive(message, priorMessages, context) {
 export async function closeSupportLive(conversationId) {
   const headers = await authHeaders();
   if (!headers) return { ok: false, error: "auth", conversation: null, messages: [] };
-  const res = await fetch(PATH, {
+  const res = await supportFetch(PATH, {
     method: "POST",
     headers,
     body: JSON.stringify({

@@ -1,5 +1,6 @@
 import PublicNav from "./PublicNav.jsx";
 import Footer from "./Footer.jsx";
+import { isNativeApp } from "./lib/native-platform.js";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import CookiePreferencesPanel from "./marketing/CookiePreferences.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
@@ -25,6 +26,17 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
   });
   return (
     <div className="ms-root">
+      {isNativeApp() ? (
+        <main className="ms-legal-main">
+          <div className="ms-legal-wrap">
+            <h1 className="ms-legal-h1">{title}</h1>
+            <p className="ms-legal-lead">{subtitle}</p>
+            <div className="ms-legal-card">{children}</div>
+            {after ? <div className="ms-legal-after">{after}</div> : null}
+          </div>
+        </main>
+      ) : (
+        <>
       <PublicNav />
       <main className="ms-legal-main">
         <div className="ms-legal-wrap">
@@ -39,6 +51,8 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
         </div>
       </main>
       <Footer />
+        </>
+      )}
     </div>
   );
 }
@@ -285,7 +299,8 @@ export function PolitiqueConfidentialitePage() {
 
       <H3>2.11 Données techniques</H3>
       <Ul items={[
-        "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=), session d’auth.",
+        "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=, rappels de séance), session d’auth.",
+        "Sur l’app iPhone : notifications locales planifiées sur l’appareil (rappels de séance, essai, badges). Aucun jeton push distant n’est envoyé à MySWYM dans cette version. Tu peux les désactiver dans Paramètres MySWYM ou Réglages iPhone.",
         "Polices : Geist et Space Grotesk auto-hébergées (pas de requête Google Fonts sur le site public).",
         "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
       ]} />
@@ -584,8 +599,9 @@ export function CgvPage() {
       <Ul items={[
         "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est interrompu (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
         "Mensuel sans engagement : 9,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai. En souscrivant, tu t’engages pour 12 mois, facturés chaque mois. Pendant ces 12 mois : aucun remboursement des mensualités, et la suppression du compte est refusée tant que l’engagement n’est pas terminé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Même règle que sur la page Tarifs.",
+        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai. En souscrivant, tu t’engages pour 12 mois, facturés chaque mois. Pendant ces 12 mois : aucun remboursement des mensualités, et la suppression du compte est refusée tant que l’engagement n’est pas terminé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Même règle que sur la page Tarifs. Cette offre n’est pas vendue dans l’app iPhone.",
         "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). La suppression du compte est refusée jusqu’à la fin de la période déjà payée ; tu peux couper le renouvellement via le portail Stripe.",
+        "App iPhone (App Store) : mensuel sans engagement 6,99 € TTC / mois, ou annuel 59,99 € TTC / an. Paiement et résiliation via Apple. L’essai 7 jours sans carte MySWYM reste le même qu’on s’inscrive sur le site ou dans l’app.",
         "Offre biennale héritée (24 mois) : Price ID Stripe legacy uniquement (plus commercialisée sur Tarifs). Conservée pour d’éventuels abonnés historiques. Les droits légaux du consommateur restent applicables.",
       ]} />
       <P>
@@ -597,17 +613,19 @@ export function CgvPage() {
 
       <H>4. Commande et paiement</H>
       <Ul items={[
-        "Le paiement est traité exclusivement par Stripe (carte bancaire).",
-        "Avant redirection vers Stripe Checkout, l’application présente le prix, la périodicité, le renouvellement automatique et les liens CGU/CGV.",
+        "Sur le site web, le paiement est traité par Stripe (carte bancaire).",
+        "Sur l’app iPhone, l’abonnement nageur est vendu via l’App Store (In-App Purchase). Apple encaisse le paiement (carte liée à l’Apple ID ou Apple Pay). MySWYM ne collecte pas tes données de carte dans l’app.",
+        "Avant redirection vers Stripe Checkout, l’application web présente le prix, la périodicité, le renouvellement automatique et les liens CGU/CGV.",
+        "Avant un achat App Store, l’app iPhone présente le prix, la périodicité et les liens CGU/CGV. La feuille Apple confirme le paiement.",
         "La validation du paiement vaut commande. L’essai sans carte ne constitue pas une commande payante.",
-        "Un e-mail / reçu Stripe confirme la transaction ; un e-mail de confirmation d’abonnement peut également être envoyé par MySWYM.",
+        "Un e-mail / reçu Stripe confirme une transaction web ; Apple envoie le reçu App Store pour un achat iPhone. Un e-mail de confirmation d’abonnement peut également être envoyé par MySWYM.",
       ]} />
 
       <H>5. Exécution et accès</H>
       <P>
         L’essai de 7 jours est ouvert dès la première connexion après création du compte, sans carte.
         L’accès Premium payant est ouvert dès validation du paiement (sous réserve du bon
-        fonctionnement des webhooks Stripe). En cas de retard technique, contactez <Mail to={supportEmail} />.
+        fonctionnement des webhooks Stripe ou des notifications App Store). En cas de retard technique, contactez <Mail to={supportEmail} />.
       </P>
 
       <H>6. Renouvellement et résiliation</H>
@@ -616,8 +634,9 @@ export function CgvPage() {
         "Mensuel sans engagement : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
         "Mensuel avec engagement 12 mois : les prélèvements continuent jusqu’à la fin des 12 mois. La suppression du compte est refusée tant que l’engagement n’est pas terminé, hors cas légaux. Le portail Stripe n’offre pas d’annulation pendant cette période.",
         "Annuel / biennal (legacy) : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période. La suppression du compte est refusée jusqu’à la fin de la période déjà payée.",
-        "Résiliation (hors engagement 12 mois en cours) : depuis Profil → Paramètres → « Gérer mon abonnement » (portail Stripe), ou via les outils Stripe Customer Portal.",
-        "La suppression du compte n’est possible que sans abonnement Stripe vivant (essai, accès en pause, ou après la fin de période). Un mensuel sans engagement est arrêté immédiatement si la suppression est acceptée. Un engagement 12 mois ou un annuel / prépayé en cours bloque la suppression.",
+        "Résiliation (hors engagement 12 mois en cours) : depuis Profil → Paramètres → « Résilier » (portail Stripe), ou via les outils Stripe Customer Portal. Pour changer d’offre sans partir : « Modifier mon abonnement ».",
+        "App iPhone : reconduction tacite via l’App Store. Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. La suppression du compte MySWYM est refusée tant que l’abonnement App Store est encore en cours. Un abonnement App Store se gère sur l’iPhone, pas via le portail Stripe du site.",
+        "La suppression du compte n’est possible que sans abonnement Stripe vivant (essai, accès en pause, ou après la fin de période) et sans abonnement App Store encore couvert. Un mensuel sans engagement Stripe est arrêté immédiatement si la suppression est acceptée. Un engagement 12 mois, un annuel / prépayé Stripe, ou un abo Apple en cours bloque la suppression.",
       ]} />
 
       <H>7. Droit de rétractation (14 jours)</H>
@@ -632,10 +651,15 @@ export function CgvPage() {
         le droit de rétractation peut ne plus s’appliquer dans les conditions de l’article L221-28 du Code de la consommation.
       </P>
       <P>
-        Ce consentement est recueilli dans l’application <Strong>avant</Strong> la redirection vers Stripe Checkout.
+        Ce consentement est recueilli dans l’application web <Strong>avant</Strong> la redirection vers Stripe Checkout.
         À défaut de renonciation valable, ou si les conditions légales ne sont pas réunies, le droit de rétractation
         demeure. Pour l’exercer lorsqu’il est encore ouvert : écrivez à <Mail to={email} /> en indiquant votre e-mail de compte.
         Un formulaire type peut être demandé au support (modèle libre accepté).
+      </P>
+      <P>
+        Pour un abonnement souscrit dans l’app iPhone (App Store), le paiement est traité par Apple.
+        Les demandes de rétractation ou de remboursement pendant le délai légal se font auprès d’Apple
+        (Réglages → Apple ID, ou reportaproblem.apple.com). MySWYM ne peut pas annuler un prélèvement App Store à ta place.
       </P>
 
       <H>8. Remboursements</H>
@@ -645,6 +669,7 @@ export function CgvPage() {
         "Mensuel avec engagement 12 mois : aucun remboursement des mensualités pendant l’engagement, hors cas légaux.",
         "Annuel / biennal (legacy) : pas de remboursement au prorata une fois facturé, hors cas légaux.",
         "Cas légaux : rétractation ouverte, défaut de conformité, indisponibilité substantielle imputable à MySWYM, ou autre droit impératif.",
+        "App Store : remboursements et rétractation via Apple, selon les conditions Apple. MySWYM ne reverse pas un paiement App Store au prorata.",
       ]} />
 
       <H>9. Échec de paiement</H>

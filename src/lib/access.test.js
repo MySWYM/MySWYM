@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getAccessState, ACCESS_STATUS, isAccessMetadataPending, shouldShowTrialFreeze, isFreshSignup } from "./access.js";
+import { getAccessState, ACCESS_STATUS, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./access.js";
 
 function userWith(meta) {
   return { app_metadata: meta };
@@ -150,6 +150,7 @@ const nowSec = Math.floor(Date.now() / 1000);
   }));
   assert.equal(trial.hasPremiumAccess, true);
   assert.equal(trial.canUseBuddies, false, "trial must not access buddy PII matching");
+  assert.equal(trial.canManageSubscription, false, "essai : pas Modifier / Résilier");
 }
 
 {
@@ -159,6 +160,7 @@ const nowSec = Math.floor(Date.now() / 1000);
     subscription_end: nowSec + 86400,
   }));
   assert.equal(paying.canUseBuddies, true);
+  assert.equal(paying.canManageSubscription, true, "abo payant : gestion App Store / Stripe");
 }
 
 {
@@ -169,6 +171,7 @@ const nowSec = Math.floor(Date.now() / 1000);
     cancel_at_period_end: true,
   }));
   assert.equal(canceled.canUseBuddies, true, "paid period remaining keeps buddies");
+  assert.equal(canceled.canManageSubscription, true, "période payée restante : encore gérable");
 }
 
 {
@@ -177,6 +180,7 @@ const nowSec = Math.floor(Date.now() / 1000);
     subscription_status: ACCESS_STATUS.EXPIRED,
   }));
   assert.equal(expired.canUseBuddies, false);
+  assert.equal(expired.canManageSubscription, false);
 }
 
 {
@@ -196,6 +200,8 @@ const nowSec = Math.floor(Date.now() / 1000);
     false,
     "compte neuf : pas de freeze même si metadata stale expired",
   );
+  // /inscription ne doit pas signOut un compte qui vient d’être créé.
+  assert.equal(isFreshSignup({ created_at: new Date().toISOString() }), true, "signup just now stays logged in");
 }
 
 {
@@ -220,6 +226,46 @@ const nowSec = Math.floor(Date.now() / 1000);
   const emptyMeta = { created_at: new Date().toISOString(), app_metadata: {} };
   assert.equal(isAccessMetadataPending(emptyMeta), true);
   assert.equal(shouldShowTrialFreeze(emptyMeta, { accessSynced: true }), false);
+}
+
+{
+  const stripePaid = userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.ACTIVE,
+    subscription_end: nowSec + 86400,
+    billing_provider: "stripe",
+    stripe_customer_id: "cus_1",
+  });
+  assert.equal(isLiveStripeBilling(stripePaid), true);
+}
+
+{
+  const stripeLegacy = userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.ACTIVE,
+    subscription_end: nowSec + 86400,
+    stripe_customer_id: "cus_1",
+  });
+  assert.equal(isLiveStripeBilling(stripeLegacy), true, "customer id + paid access");
+}
+
+{
+  const trial = userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.TRIAL,
+    trial_ends_at: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(isLiveStripeBilling(trial), false, "essai 7j peut passer à l’App Store");
+}
+
+{
+  const applePaid = userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.ACTIVE,
+    subscription_end: nowSec + 86400,
+    billing_provider: "apple",
+  });
+  assert.equal(isLiveStripeBilling(applePaid), false);
 }
 
 console.log("access.test.js OK");

@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import {
   ACCESS_STATUS,
   RETRIAL_UNTIL_ISO,
+  buildSubscriptionStateFromApple,
   buildTrialState,
   hasConsumedValidTrialWindow,
   hasEntitlement,
+  isLiveAppleEntitlement,
+  isLiveStripeEntitlement,
   isRetrialCampaignActive,
   resolveAccessWithoutStripeSub,
   shouldGrantCardlessTrial,
@@ -174,6 +177,93 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
   });
   assert.equal(stillFrozen.access_status, ACCESS_STATUS.expired);
   assert.equal(hasEntitlement(stillFrozen), false);
+}
+
+{
+  const nowMs = Date.now();
+  const appleLive = {
+    user_id: userId,
+    access_status: ACCESS_STATUS.active,
+    trial_started_at: iso(nowMs - 20 * 86400000),
+    trial_ends_at: iso(nowMs - 13 * 86400000),
+    trial_used: true,
+    subscription_started_at: iso(nowMs - 86400000),
+    subscription_ends_at: iso(nowMs + 20 * 86400000),
+    cancel_at_period_end: false,
+    stripe_customer_id: null,
+    billing_provider: "apple",
+    apple_original_transaction_id: "1000000123",
+    apple_product_id: "app.myswym.ios.premium.monthly",
+    apple_environment: "Sandbox",
+  };
+  assert.equal(isLiveAppleEntitlement(appleLive), true);
+  const kept = resolveAccessWithoutStripeSub(userId, appleLive, null, { nowMs: untilMs + 1 });
+  assert.equal(kept.billing_provider, "apple");
+  assert.equal(kept.apple_original_transaction_id, "1000000123");
+  assert.ok(hasEntitlement(kept), "sync Stripe ne gèle pas un abo Apple vivant");
+}
+
+{
+  const nowMs = Date.now();
+  const mapped = buildSubscriptionStateFromApple(userId, null, {
+    productId: "app.myswym.ios.premium.annual",
+    originalTransactionId: "2002",
+    expiresDate: nowMs + 30 * 86400000,
+    purchaseDate: nowMs,
+    environment: "Production",
+  }, { nowMs });
+  assert.equal(mapped.access_status, ACCESS_STATUS.active);
+  assert.equal(mapped.billing_provider, "apple");
+  assert.equal(mapped.apple_product_id, "app.myswym.ios.premium.annual");
+  assert.ok(hasEntitlement(mapped));
+}
+
+{
+  const nowMs = Date.now();
+  const refunded = buildSubscriptionStateFromApple(userId, null, {
+    productId: "app.myswym.ios.premium.monthly",
+    originalTransactionId: "2003",
+    expiresDate: nowMs + 20 * 86400000,
+    purchaseDate: nowMs,
+    revocationDate: nowMs,
+    environment: "Production",
+  }, { nowMs });
+  assert.equal(refunded.access_status, ACCESS_STATUS.expired);
+  assert.equal(hasEntitlement(refunded), false);
+}
+
+{
+  const nowMs = Date.now();
+  const stripeLive = {
+    user_id: userId,
+    access_status: ACCESS_STATUS.active,
+    trial_started_at: iso(nowMs - 20 * 86400000),
+    trial_ends_at: iso(nowMs - 13 * 86400000),
+    trial_used: true,
+    subscription_started_at: iso(nowMs - 86400000),
+    subscription_ends_at: iso(nowMs + 20 * 86400000),
+    cancel_at_period_end: false,
+    stripe_customer_id: "cus_live",
+    billing_provider: "stripe",
+    apple_original_transaction_id: null,
+    apple_product_id: null,
+    apple_environment: null,
+  };
+  assert.equal(isLiveStripeEntitlement(stripeLive), true);
+  assert.equal(isLiveAppleEntitlement(stripeLive), false);
+
+  const stripeLegacy = { ...stripeLive, billing_provider: null };
+  assert.equal(isLiveStripeEntitlement(stripeLegacy), true, "customer id + paid access = Stripe live");
+
+  const trial = buildTrialState(userId);
+  assert.equal(isLiveStripeEntitlement(trial), false, "essai 7j n’est pas un abo Stripe");
+
+  const expiredStripe = {
+    ...stripeLive,
+    access_status: ACCESS_STATUS.expired,
+    subscription_ends_at: iso(nowMs - 1000),
+  };
+  assert.equal(isLiveStripeEntitlement(expiredStripe), false);
 }
 
 console.log("access-policy.test.ts OK");

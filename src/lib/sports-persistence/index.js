@@ -5,7 +5,8 @@
  */
 
 import { computeAgeFromBirth, normalizeGender } from "../swimmer-profile.js";
-import { resolveInjuryFields } from "../health-data.js";
+import { normalizeCountry } from "../countries.js";
+import { resolveInjuryFields, resolveConsentFields } from "../health-data.js";
 import { GENERATOR_VERSION } from "../sports-engine/generator-version.js";
 
 /** Distance d'entraînement (jamais la course). Aligné week-orchestration. */
@@ -167,6 +168,7 @@ export function sportProfileToRow(userId, profile = {}) {
   const gender = normalizeGender(profile.gender) || null;
 
   const injury = resolveInjuryFields(profile);
+  const consent = resolveConsentFields(profile);
 
   return {
     user_id: userId,
@@ -186,9 +188,10 @@ export function sportProfileToRow(userId, profile = {}) {
     injury_zone: injury.injuryZone ?? profile.injuryZone ?? null,
     injury_severity: injury.injurySeverity ?? profile.injurySeverity ?? null,
     injury_note: null, // free-text désactivé (minimisation art. 9)
-    health_consent: profile.healthConsent === true,
-    health_consent_at: profile.healthConsent === true
-      ? (profile.healthConsentAt || new Date().toISOString())
+    // Colonne historique = consentement FC (Strava) ; blessure vit dans extra.
+    health_consent: consent.heartRateConsent === true,
+    health_consent_at: consent.heartRateConsent === true
+      ? (consent.heartRateConsentAt || new Date().toISOString())
       : null,
     pace100: profile.pace100 ?? null,
     readiness_profile: profile.readinessProfile ?? null,
@@ -201,6 +204,7 @@ export function sportProfileToRow(userId, profile = {}) {
       birthYear,
       age,
       gender,
+      country: normalizeCountry(profile.country) || null,
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
       swimStyle: profile.swimStyle || null,
@@ -209,10 +213,12 @@ export function sportProfileToRow(userId, profile = {}) {
       injuries: Array.isArray(injury.injuries)
         ? injury.injuries
         : (Array.isArray(profile.injuries) ? profile.injuries : []),
-      healthConsent: profile.healthConsent === true,
-      healthConsentAt: profile.healthConsent === true
-        ? (profile.healthConsentAt || new Date().toISOString())
-        : null,
+      injuryConsent: consent.injuryConsent === true,
+      injuryConsentAt: consent.injuryConsent === true ? consent.injuryConsentAt : null,
+      heartRateConsent: consent.heartRateConsent === true,
+      heartRateConsentAt: consent.heartRateConsent === true ? consent.heartRateConsentAt : null,
+      healthConsent: consent.healthConsent === true,
+      healthConsentAt: consent.healthConsent === true ? consent.healthConsentAt : null,
       healthDeclaration: profile.healthDeclaration === true,
       targetSessionDistance:
         Number(profile.targetSessionDistance) > 0 ? Number(profile.targetSessionDistance) : null,
@@ -222,6 +228,10 @@ export function sportProfileToRow(userId, profile = {}) {
           ? profile.trainingWishMeta
           : null,
       preferredStroke: profile.preferredStroke || null,
+      appleHealthConnected: profile.appleHealthConnected === true,
+      appleHealthConnectedAt: profile.appleHealthConnected === true
+        ? (profile.appleHealthConnectedAt || new Date().toISOString())
+        : null,
     },
     updated_at: new Date().toISOString(),
   };
@@ -266,7 +276,8 @@ export function rowToSportProfileFields(row) {
       ? Math.round(birthYear)
       : null,
     age: age != null && Number.isFinite(Number(age)) ? Number(age) : (extra.age ?? null),
-    gender: normalizeGender(row.gender ?? extra.gender) || "",
+    gender: normalizeGender(extra.gender) || normalizeGender(row.gender) || "",
+    country: normalizeCountry(extra.country) || "",
     raceTarget: row.race_target,
     injuryStatus: row.injury_status,
     injuryZone: row.injury_zone || extra.injuryZone || null,
@@ -278,8 +289,16 @@ export function rowToSportProfileFields(row) {
       injuries: extra.injuries,
     }),
     injuryNote: null,
-    healthConsent: row.health_consent === true || extra.healthConsent === true,
-    healthConsentAt: row.health_consent_at || extra.healthConsentAt || null,
+    ...resolveConsentFields({
+      injuryConsent: extra.injuryConsent,
+      injuryConsentAt: extra.injuryConsentAt,
+      heartRateConsent: extra.heartRateConsent !== undefined
+        ? extra.heartRateConsent === true
+        : (row.health_consent === true ? true : undefined),
+      heartRateConsentAt: extra.heartRateConsentAt || row.health_consent_at || null,
+      healthConsent: row.health_consent === true || extra.healthConsent === true,
+      healthConsentAt: row.health_consent_at || extra.healthConsentAt || null,
+    }),
     healthDeclaration: extra.healthDeclaration === true,
     pace100: row.pace100,
     readinessProfile: row.readiness_profile ?? null,
@@ -288,6 +307,8 @@ export function rowToSportProfileFields(row) {
     category: extra.category ?? null,
     eventDate: extra.eventDate ?? null,
     trainingFocus: extra.trainingFocus ?? null,
+    appleHealthConnected: extra.appleHealthConnected === true,
+    appleHealthConnectedAt: extra.appleHealthConnectedAt || null,
   };
 }
 

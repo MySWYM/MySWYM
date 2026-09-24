@@ -41,6 +41,25 @@ export function resolveDisplayFirstName(user, fallback = "Nageur") {
   return fallback;
 }
 
+export function resolveDisplayLastName(user) {
+  const last = String(user?.user_metadata?.lastname || "").trim();
+  if (last) return last;
+  const full = String(user?.user_metadata?.full_name || "").trim();
+  const parts = full.split(/\s+/).filter(Boolean);
+  if (parts.length > 1) return parts.slice(1).join(" ");
+  return "";
+}
+
+export function resolveDisplayFullName(user, fallback = "Nageur") {
+  const first = resolveDisplayFirstName(user, "");
+  const last = resolveDisplayLastName(user);
+  if (first && last) return `${first} ${last}`;
+  const full = String(user?.user_metadata?.full_name || "").trim();
+  if (full) return full;
+  if (first) return first;
+  return fallback;
+}
+
 /** Vide le cache du compte + les clés globales héritées. */
 export function clearIdentityLocalCache(userId) {
   try {

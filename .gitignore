@@ -33,3 +33,12 @@ exports/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Capacitor / Xcode (copies générées, userdata)
+ios/App/Pods/
+ios/App/App/public/
+ios/App/public/
+ios/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+ios/build/

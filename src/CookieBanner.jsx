@@ -7,6 +7,7 @@ import {
   readConsent,
   writeConsent,
 } from "./lib/cookie-consent.js";
+import { isNativeApp } from "./lib/native-platform.js";
 import {
   CookieCategories,
   CookiePreferenceActions,
@@ -57,6 +58,8 @@ export default function CookieBanner() {
     setManager(false);
     setTab("categories");
   };
+
+  if (isNativeApp()) return null;
 
   return (
     <>

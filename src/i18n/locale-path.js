@@ -56,6 +56,29 @@ export function isAppPath(pathname = "/") {
   return APP_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }
 
+const LEGAL_BARE = new Set([
+  "/mentions-legales",
+  "/politique-confidentialite",
+  "/politique-cookies",
+  "/cgu",
+  "/cgv",
+  "/legal-notice",
+  "/privacy",
+  "/cookies",
+  "/terms",
+  "/terms-of-sale",
+]);
+
+export function isLegalPath(pathname = "/") {
+  return LEGAL_BARE.has(stripLocalePrefix(pathname));
+}
+
+/** fr-* → fr, le reste → en (locale iPhone / navigateur). */
+export function languageFromNavigator(language) {
+  const n = String(language || "").toLowerCase();
+  return n.startsWith("fr") ? "fr" : "en";
+}
+
 /** Pages marketing (header/footer) : oui. App / auth : non. */
 export function shouldLocalizePath(pathname = "/") {
   if (!pathname || pathname.startsWith("http") || pathname.startsWith("mailto:")) return false;

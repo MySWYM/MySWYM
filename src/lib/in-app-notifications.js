@@ -162,10 +162,68 @@ export const buildBadgeNotifications = (plan) => {
     }));
 };
 
-export const buildInAppNotifications = ({ user, plan }) => {
+/** Demandes / acceptations binômes pour la cloche. */
+export const buildBuddyNotifications = (connections = [], userId = null, nowMs = Date.now()) => {
+  if (!userId || !Array.isArray(connections)) return [];
+  const weekAgo = nowMs - 7 * DAY_MS;
+  const items = [];
+  connections.forEach((c) => {
+    if (!c?.id) return;
+    const peer = c.peer_display_name || "Un nageur";
+    const updated = parseNotificationTime(c.updated_at || c.created_at, Date.now());
+    if (c.status === "pending" && c.recipient_id === userId) {
+      items.push({
+        id: `buddy-request:${c.id}`,
+        type: "buddy",
+        title: "Demande de binôme",
+        body: `${peer} veut nager avec toi.`,
+        createdAt: updated,
+      });
+    } else if (c.status === "accepted" && updated >= weekAgo) {
+      items.push({
+        id: `buddy-accepted:${c.id}`,
+        type: "buddy",
+        title: "Binôme accepté",
+        body: `Tu es en relation avec ${peer}.`,
+        createdAt: updated,
+      });
+    }
+  });
+  return items;
+};
+
+/** Réponse Arthur / support non lue. */
+export const buildSupportNotifications = (conversations = [], seenAgentMessageId = "") => {
+  if (!Array.isArray(conversations)) return [];
+  const withAgent = conversations.find((c) => c?.last_role === "agent" && c?.last_message_id);
+  if (!withAgent) return [];
+  if (seenAgentMessageId && seenAgentMessageId === withAgent.last_message_id) return [];
+  const preview = String(withAgent.last_body || "").trim().slice(0, 120);
+  return [{
+    id: `support:${withAgent.last_message_id}`,
+    type: "update",
+    title: "Nouvelle réponse MySWYM",
+    body: preview || "Arthur t’a répondu dans le chat.",
+    createdAt: parseNotificationTime(withAgent.updated_at || withAgent.created_at, Date.now()),
+    action: "support",
+  }];
+};
+
+export const buildInAppNotifications = ({
+  user,
+  plan,
+  buddyConnections = [],
+  supportConversations = [],
+  supportSeenAgentId = "",
+} = {}) => {
   const accessState = getAccessState(user);
   const byId = new Map();
-  [...buildAccessNotifications(user, accessState), ...buildBadgeNotifications(plan)].forEach((item) => {
+  [
+    ...buildAccessNotifications(user, accessState),
+    ...buildBadgeNotifications(plan),
+    ...buildBuddyNotifications(buddyConnections, user?.id),
+    ...buildSupportNotifications(supportConversations, supportSeenAgentId),
+  ].forEach((item) => {
     if (!item?.id) return;
     byId.set(item.id, item);
   });

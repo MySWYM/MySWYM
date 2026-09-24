@@ -1,0 +1,202 @@
+/* Questionnaire : jauge d’étapes + calendrier date (soft mist) */
+.ms-onboard-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.ms-onboard-progress-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 27, 45, 0.08);
+  transition: background 0.25s ease;
+}
+
+.ms-onboard-progress-seg.is-on {
+  background: var(--ms-blue);
+}
+
+.ms-date-step {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ms-date-step-title {
+  margin: 0 0 6px;
+}
+
+.ms-date-step-lead {
+  margin: 0 0 14px;
+  font-size: var(--ms-type-body);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--ms-ink-soft);
+}
+
+.ms-date-cal {
+  margin-bottom: 14px;
+  padding: 12px 12px 10px;
+  border-radius: var(--ms-card-radius);
+  background: var(--ms-glass-bg, rgba(255, 255, 255, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 32px rgba(0, 107, 253, 0.12);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+}
+
+.ms-date-cal.is-ready {
+  box-shadow:
+    0 10px 32px rgba(0, 107, 253, 0.12),
+    0 0 0 1px rgba(0, 107, 253, 0.18);
+}
+
+.ms-date-cal.is-error {
+  box-shadow:
+    0 10px 32px rgba(0, 107, 253, 0.08),
+    0 0 0 1px rgba(232, 90, 104, 0.35);
+}
+
+.ms-date-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ms-date-cal-month {
+  margin: 0;
+  font-size: var(--ms-type-section);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ms-ink);
+  text-align: center;
+}
+
+.ms-date-cal-nav-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ms-ink);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ms-date-cal-nav-btn:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.ms-date-cal-nav-btn:focus-visible,
+.ms-date-cal-day:focus-visible {
+  outline: 2px solid var(--ms-blue);
+  outline-offset: 2px;
+}
+
+.ms-date-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 4px;
+}
+
+.ms-date-cal-weekdays span {
+  text-align: center;
+  font-size: var(--ms-type-caption, 0.75rem);
+  font-weight: 600;
+  color: var(--ms-ink-soft);
+  padding: 4px 0;
+}
+
+.ms-date-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 40px;
+  gap: 2px;
+}
+
+.ms-date-cal-empty {
+  display: block;
+}
+
+.ms-date-cal-day {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ms-ink);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-date-cal-day:disabled {
+  color: var(--ms-ink-soft);
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.ms-date-cal-day.is-on {
+  background: var(--ms-blue);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 107, 253, 0.28);
+}
+
+.ms-date-cal-msg {
+  margin: 10px 4px 2px;
+  text-align: center;
+  font-size: var(--ms-type-label, 0.8125rem);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ms-ink-soft);
+}
+
+.ms-date-cal-picked {
+  color: var(--ms-blue);
+  font-weight: 600;
+}
+
+.ms-date-cal-msg.is-error {
+  color: var(--ms-coral, #e85a68);
+}
+
+.ms-date-step-back {
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: var(--ms-ink-soft);
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-onboard-progress {
+  margin-bottom: 10px;
+  margin-right: 108px;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-date-cal-grid {
+  grid-auto-rows: 36px;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-date-cal-day {
+  height: 36px;
+}
+
+html.myswym-ios .myswym-native-onboarding .ms-date-cal-nav-btn {
+  width: 40px;
+  height: 40px;
+}

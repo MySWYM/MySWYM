@@ -11,6 +11,7 @@ import { LocalizedLink, useActiveLocale } from "./i18n/locale-routing.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/lp-accordion.jsx";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
+import { isNativeApp, nativePluginRequest } from "./lib/native-platform.js";
 import "./theme/public.css";
 
 const CONTACT_EMAIL = LEGAL_ENTITY.email;
@@ -59,11 +60,17 @@ export default function ContactPage() {
       company,
     };
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = isNativeApp()
+        ? await nativePluginRequest("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         throw new Error(data.error || t("contactPage.sendError"));
@@ -73,7 +80,9 @@ export default function ContactPage() {
       setEmail("");
       setSubject("");
       setMessage("");
-      navigate(withLocalePrefix("/merci", locale), { replace: true });
+      if (!isNativeApp()) {
+        navigate(withLocalePrefix("/merci", locale), { replace: true });
+      }
     } catch (err) {
       setStatus("error");
       setErrorMsg(err?.message || t("contactPage.sendError"));
@@ -87,7 +96,7 @@ export default function ContactPage() {
       <PublicNav />
       <main className="ms-contact">
         <div className="ms-contact-wrap">
-           <Breadcrumb items={crumbs} />
+           {!isNativeApp() && <Breadcrumb items={crumbs} />}
           <div className="ms-contact-grid">
             <section>
               <p className="ms-pricing-kicker">{t("contactPage.eyebrow")}</p>
@@ -192,6 +201,11 @@ export default function ContactPage() {
                     {errorMsg}
                   </p>
                 )}
+                {status === "ok" && (
+                  <p className="ms-contact-direct" role="status">
+                    Message envoyé. On te répond par e-mail.
+                  </p>
+                )}
 
                 <p className="ms-contact-privacy">{t("contactPage.privacy")}</p>
 
@@ -204,7 +218,7 @@ export default function ContactPage() {
         </div>
       </main>
       <Footer />
-      <StickyCta />
+      {!isNativeApp() && <StickyCta />}
     </div>
   );
 }

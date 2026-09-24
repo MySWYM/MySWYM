@@ -75,6 +75,20 @@ function phases(n, pattern) {
     extra: { ...row.extra, gender: "homme" },
   });
   assert(fromExtra.gender === "homme", "K1g extra fallback");
+  const extraWins = rowToSportProfileFields({
+    ...row,
+    gender: "femme",
+    extra: { ...row.extra, gender: "homme" },
+  });
+  assert(extraWins.gender === "homme", "K1g extra wins over stale column");
+  const autreRow = sportProfileToRow("u-g2", {
+    level: "sportif",
+    sessionsPerWeek: 3,
+    pool: 25,
+    gender: "autre",
+  });
+  assert(autreRow.gender === "autre", "K1g autre column");
+  assert(rowToSportProfileFields(autreRow).gender === "autre", "K1g autre round-trip");
   console.log("K1g PASS");
 }
 
@@ -91,6 +105,25 @@ function phases(n, pattern) {
   assert(fields.birthMonth === 1 && fields.birthYear === 2000, "K1b birth fields");
   assert(fields.age === row.age, "K1b age mirror");
   console.log("K1b PASS");
+}
+
+{
+  const row = sportProfileToRow("u-health", {
+    level: "sportif",
+    sessionsPerWeek: 3,
+    pool: 25,
+    appleHealthConnected: true,
+    appleHealthConnectedAt: "2026-09-21T12:00:00.000Z",
+  });
+  assert(row.extra.appleHealthConnected === true, "health extra");
+  const fields = rowToSportProfileFields(row);
+  assert(fields.appleHealthConnected === true, "health round-trip");
+  const off = rowToSportProfileFields({
+    ...row,
+    extra: { ...row.extra, appleHealthConnected: false },
+  });
+  assert(off.appleHealthConnected === false, "health off");
+  console.log("K1h PASS");
 }
 
 // ── K2 planned session row ──

@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import AppErrorBoundary from "../AppErrorBoundary.jsx";
-import { isAppGifPath } from "../lib/boot-warm.js";
+import { shouldUseAppGifLoader } from "../lib/boot-warm.js";
 import Loading from "./Loading.jsx";
 import PublicLoading from "./PublicLoading.jsx";
 
@@ -10,5 +10,5 @@ export function RoutedErrorBoundary({ children }) {
 }
 
 export function RouteFallback() {
-  return isAppGifPath(window.location.pathname) ? <Loading /> : <PublicLoading />;
+  return shouldUseAppGifLoader(window.location.pathname) ? <Loading /> : <PublicLoading />;
 }
