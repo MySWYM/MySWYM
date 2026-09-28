@@ -1,7 +1,85 @@
 /**
  * Chatbox support : fond opaque.
  * Le soft mist glass (rgba + backdrop-filter) laissait lire le Profil derrière.
+ * variant page = plein écran soft mist (chrome iPhone).
  */
+
+.support-page {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+  background:
+    linear-gradient(
+      180deg,
+      var(--ms-mist-mid, #c5dffb) 0%,
+      var(--ms-mist-bot, #f4f8fc) 18%,
+      #ffffff 42%,
+      #ffffff 100%
+    );
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+}
+
+.support-page .support-widget-head {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(15, 27, 45, 0.06) !important;
+  padding-top: 8px;
+  padding-bottom: 10px;
+}
+
+.support-page .support-widget-body {
+  background: transparent !important;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.support-page .support-chat-list--page {
+  background: transparent !important;
+  padding: 16px 16px 12px;
+  gap: 12px;
+}
+
+.support-page .support-composer {
+  background: #ffffff;
+  border-top: 1px solid rgba(15, 27, 45, 0.06);
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+}
+
+.support-page .support-nav {
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid rgba(15, 27, 45, 0.06);
+  padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+}
+
+.support-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.support-msg-row--user {
+  justify-content: flex-end;
+}
+
+.support-msg-row--bot,
+.support-msg-row--agent {
+  justify-content: flex-start;
+}
+
+.support-msg-row--system {
+  justify-content: center;
+}
+
+.support-msg-row .support-bubble {
+  max-width: min(88%, 34rem);
+}
 
 .support-widget {
   isolation: isolate;

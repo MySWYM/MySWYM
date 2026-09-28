@@ -152,6 +152,16 @@ export function ProfileSupportPanel({ onBack }) {
 
   return (
     <PanelShell title="Support" onBack={onBack}>
+      <div className="ms-profile-group-label">Messages</div>
+      <div className="ms-profile-account-stack">
+        <HelpRow
+          icon={Mail}
+          title="Écrire à Arthur"
+          subtitle="FAQ + messages avec le coach"
+          onClick={() => openSupportChat("chat")}
+        />
+      </div>
+
       <div className="ms-profile-group-label">Obtenir de l’aide</div>
       <div className="ms-profile-account-stack">
         <HelpRow
@@ -159,13 +169,6 @@ export function ProfileSupportPanel({ onBack }) {
           title="Centre d’aide"
           subtitle="FAQ et articles"
           href={faqHref}
-          external
-        />
-        <HelpRow
-          icon={Mail}
-          title="Contacter le support"
-          subtitle="Écrire à l’équipe MySWYM"
-          href={withLocalePrefix("/contact", locale)}
           external
         />
         <HelpRow
@@ -293,7 +296,7 @@ export function ProfileHelpSettingsRows({ onOpenSupport, onOpenLegal }) {
         <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.12)" }}>
           <CircleHelp size={18} color={G.blue} />
         </span>
-        <span className="ms-profile-settings-label" style={{ flex: 1 }}>Support</span>
+        <span className="ms-profile-settings-label" style={{ flex: 1 }}>Messages</span>
         <ChevronRight size={18} color={G.greyMid} />
       </button>
       <button

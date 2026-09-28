@@ -310,11 +310,19 @@ function LoutreAvatar({ height = 92 }) {
 
 /**
  * Widget support type Intercom : Accueil / Aide / Messages, chat persisté vers Arthur.
+ * variant="page" : plein écran (chrome iPhone), sans FAB.
  */
-export default function SupportBubble({ aboveBottomNav = false, user = null, hideFab = false }) {
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState("home");
-  const [view, setView] = useState("tabs");
+export default function SupportBubble({
+  aboveBottomNav = false,
+  user = null,
+  hideFab = false,
+  variant = "fab",
+  onClosePage = null,
+}) {
+  const isPage = variant === "page";
+  const [open, setOpen] = useState(isPage);
+  const [tab, setTab] = useState(isPage ? "messages" : "home");
+  const [view, setView] = useState(isPage ? "chat" : "tabs");
   const [faqMessages, setFaqMessages] = useState([WELCOME]);
   const [thread, setThread] = useState({ conversation: null, messages: [] });
   const [conversations, setConversations] = useState([]);
@@ -442,6 +450,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null, hid
     setOpen(false);
     clearTimeout(typingTimer.current);
     setTyping(false);
+    if (isPage) onClosePage?.();
   };
 
   const openPanel = () => {
@@ -605,7 +614,7 @@ export default function SupportBubble({ aboveBottomNav = false, user = null, hid
 
   return (
     <>
-      {!hideFab ? (
+      {!hideFab && !isPage ? (
       <button
         type="button"
         aria-label={open ? "Fermer l’aide" : "Aide et support"}
@@ -627,31 +636,41 @@ export default function SupportBubble({ aboveBottomNav = false, user = null, hid
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Aide MySWYM"
-          className={aboveBottomNav ? "support-widget" : "support-widget support-widget--bare"}
+          aria-label="Messages MySWYM"
+          className={
+            isPage
+              ? "support-page"
+              : aboveBottomNav
+                ? "support-widget"
+                : "support-widget support-widget--bare"
+          }
           style={{ fontFamily: FONT }}
         >
           {view === "chat" ? (
             <>
               <div className="support-widget-head">
-                <button type="button" aria-label="Retour" onClick={backToTabs} className="support-icon-btn">
+                <button type="button" aria-label="Retour" onClick={isPage ? close : backToTabs} className="support-icon-btn">
                   <ArrowLeft size={18} color="currentColor" />
                 </button>
-                <ArthurAvatar size={34} radius={12} />
+                <ArthurAvatar size={isPage ? 40 : 34} radius={999} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="support-widget-title" style={{ fontSize: 15 }}>
+                  <div className="support-widget-title" style={{ fontSize: isPage ? 17 : 15 }}>
                     Arthur
                   </div>
                   <div className="support-widget-subtitle">
-                    L’équipe peut aussi aider
+                    Support MySWYM
                   </div>
                 </div>
-                <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
-                  <X size={18} color="currentColor" />
-                </button>
+                {!isPage ? (
+                  <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
+                    <X size={18} color="currentColor" />
+                  </button>
+                ) : (
+                  <div style={{ width: 40 }} aria-hidden />
+                )}
               </div>
 
-              <div ref={listRef} className="support-chat-list">
+              <div ref={listRef} className={`support-chat-list${isPage ? " support-chat-list--page" : ""}`}>
                 {messages.map((msg, i) => {
                   const label = roleLabel(msg.role);
                   const kind =
@@ -662,13 +681,19 @@ export default function SupportBubble({ aboveBottomNav = false, user = null, hid
                         : msg.role === "agent"
                           ? "agent"
                           : "bot";
+                  const showArthur = kind === "bot" || kind === "agent";
                   return (
                     <div
                       key={msg.id || `${msg.role}-${i}`}
-                      className={`support-bubble support-bubble--${kind}`}
+                      className={`support-msg-row support-msg-row--${kind}`}
                     >
-                      {label ? <div className="support-bubble-label">{label}</div> : null}
+                      {showArthur && isPage ? (
+                        <ArthurAvatar size={28} radius={999} />
+                      ) : null}
+                      <div className={`support-bubble support-bubble--${kind}`}>
+                      {label && !isPage ? <div className="support-bubble-label">{label}</div> : null}
                       {msg.text}
+                      </div>
                     </div>
                   );
                 })}
@@ -741,12 +766,21 @@ export default function SupportBubble({ aboveBottomNav = false, user = null, hid
           ) : (
             <>
               <div className="support-widget-head support-widget-head--tabs">
-                <h3 className="support-widget-title">
-                  {tab === "home" ? "Accueil" : tab === "help" ? "Aide" : "Messages"}
+                {isPage ? (
+                  <button type="button" aria-label="Retour" onClick={close} className="support-icon-btn">
+                    <ArrowLeft size={18} color="currentColor" />
+                  </button>
+                ) : null}
+                <h3 className="support-widget-title" style={{ flex: 1 }}>
+                  {tab === "home" ? "Support" : tab === "help" ? "Aide" : "Messages"}
                 </h3>
-                <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
-                  <X size={18} color="currentColor" />
-                </button>
+                {!isPage ? (
+                  <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
+                    <X size={18} color="currentColor" />
+                  </button>
+                ) : (
+                  <div style={{ width: 40 }} aria-hidden />
+                )}
               </div>
 
               <div className="support-widget-body">
