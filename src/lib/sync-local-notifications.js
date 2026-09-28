@@ -4,11 +4,11 @@
 import { findNextSession } from "./plan-reveal.js";
 import { computeStats } from "./plan-stats.js";
 import { getAccessState } from "./access.js";
+import { buildLocalNotificationPlan } from "./session-reminder.js";
 import {
-  buildLocalNotificationPlan,
-  getSessionRemindersEnabled,
-} from "./session-reminder.js";
-import { rescheduleMySwymLocalNotifications } from "./native-local-notifications.js";
+  getLocalNotificationPermission,
+  rescheduleMySwymLocalNotifications,
+} from "./native-local-notifications.js";
 import { isNativeIos } from "./native-platform.js";
 
 function lastCompletedIso(plan) {
@@ -34,7 +34,8 @@ function lastCompletedIso(plan) {
 
 export async function syncLocalNotificationsFromState({ user, plan } = {}) {
   if (!isNativeIos() || !user?.id) return { scheduled: 0 };
-  const enabled = getSessionRemindersEnabled(user.id);
+  const perm = await getLocalNotificationPermission();
+  const enabled = perm === "granted";
   const access = getAccessState(user);
   const next = findNextSession(plan);
   const stats = computeStats(plan);

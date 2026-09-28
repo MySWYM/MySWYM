@@ -5,31 +5,21 @@ import { ACCESS_STATUS } from "./access.js";
 import { NOTIF_IDS } from "./native-local-notifications.js";
 import { sessionReminderCopy } from "./session-reminder-copy.js";
 
-const PREF_KEY = "myswym_session_reminders";
-
 export { sessionReminderCopy } from "./session-reminder-copy.js";
 
-export function getSessionRemindersEnabled(userId) {
-  try {
-    const v = localStorage.getItem(`${PREF_KEY}_${userId || "anon"}`);
-    if (v === "0") return false;
-    if (v === "1") return true;
-  } catch { /* ignore */ }
+/**
+ * Préférence in-app retirée : le choix est Réglages iPhone → Notifications.
+ * Toujours true côté app ; le plugin no-op si permission iOS refusée.
+ */
+export function getSessionRemindersEnabled(_userId) {
   return true;
 }
 
-export function setSessionRemindersEnabled(userId, enabled) {
-  try {
-    localStorage.setItem(`${PREF_KEY}_${userId || "anon"}`, enabled ? "1" : "0");
-  } catch { /* ignore */ }
-}
+/** @deprecated no-op (contrôle système iOS) */
+export function setSessionRemindersEnabled(_userId, _enabled) {}
 
-export async function persistSessionRemindersPreference(supabase, enabled) {
-  if (!supabase?.auth?.updateUser) return;
-  try {
-    await supabase.auth.updateUser({ data: { session_reminders: !!enabled } });
-  } catch { /* ignore */ }
-}
+/** @deprecated no-op (contrôle système iOS) */
+export async function persistSessionRemindersPreference(_supabase, _enabled) {}
 
 export function shouldShowSessionReminderBanner({
   enabled = true,

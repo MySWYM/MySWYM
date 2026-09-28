@@ -195,9 +195,6 @@ export default function ProfileTab({
   onPaceUpdate = null,
   onValidateSession = null,
   onChangeGoal = null,
-  sessionRemindersOn = true,
-  sessionRemindersBusy = false,
-  onToggleSessionReminders = null,
 }) {
   const { t: to } = useTranslation("onboarding");
   const { StravaSection } = getTabUi();
@@ -830,9 +827,6 @@ export default function ProfileTab({
               onOpenHelp={() => setHelpPanel("support")}
               onOpenLegal={() => setHelpPanel("legal")}
               onSignOut={onSignOut}
-              sessionRemindersOn={sessionRemindersOn}
-              sessionRemindersBusy={sessionRemindersBusy}
-              onToggleSessionReminders={onToggleSessionReminders}
             />
           ) : (
           <>

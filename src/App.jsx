@@ -35,13 +35,6 @@ import AnalyseTab from "./AnalyseTab.jsx";
 import HistoriqueTab from "./HistoriqueTab.jsx";
 import { registerTabUi } from "./tab-ui-registry.js";
 import {
-  getSessionRemindersEnabled,
-  setSessionRemindersEnabled,
-  persistSessionRemindersPreference,
-  shouldShowSessionReminderBanner,
-  sessionReminderCopy,
-} from "./lib/session-reminder.js";
-import {
   readSoftPaywallDay,
   writeSoftPaywallDay,
   shouldOfferTrialSoftPaywall,
@@ -49,10 +42,8 @@ import {
 } from "./lib/soft-paywall-rules.js";
 import { syncLocalNotificationsFromState } from "./lib/sync-local-notifications.js";
 import {
-  hasAskedLocalNotificationPermission,
-  requestLocalNotificationPermission,
+  ensureIosNotificationPermission,
   notifyBadgeEarned,
-  cancelMySwymLocalNotifications,
 } from "./lib/native-local-notifications.js";
 import { registerNativePush } from "./lib/native-push.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
@@ -7567,8 +7558,6 @@ export default function App() {
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
-  const [sessionRemindersOn, setSessionRemindersOn] = useState(true);
-  const [sessionRemindersBusy, setSessionRemindersBusy] = useState(false);
   const trialExpiredPromptedRef = useRef(false);
   const freezeBackgroundedAtRef = useRef(null);
   const forceAuthRef = useRef(false);
@@ -9102,7 +9091,7 @@ export default function App() {
       writeSeenNotifications(user, nextSeen);
       setNewBadgeId(unseenBadges[0]);
       const badgeMeta = BADGE_DEFS.find((b) => b.id === unseenBadges[0]);
-      if (badgeMeta && getSessionRemindersEnabled(user?.id)) {
+      if (badgeMeta) {
         void notifyBadgeEarned({
           title: `Badge obtenu : ${badgeMeta.label}`,
           body: badgeMeta.desc,
@@ -9113,34 +9102,15 @@ export default function App() {
   }, [activePlanId, plan, user]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    setSessionRemindersOn(getSessionRemindersEnabled(user.id));
-  }, [user?.id, user?.user_metadata?.session_reminders]);
-
-  useEffect(() => {
-    if (screen !== "app" || !user?.id) return;
-    void syncLocalNotificationsFromState({ user, plan });
-  }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, sessionRemindersOn, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
-
-  const handleToggleSessionReminders = async () => {
-    if (!user?.id || sessionRemindersBusy) return;
-    const next = !sessionRemindersOn;
-    setSessionRemindersBusy(true);
-    setSessionRemindersOn(next);
-    setSessionRemindersEnabled(user.id, next);
-    try {
-      await persistSessionRemindersPreference(supabase, next);
-      if (next && isNativeIos()) {
-        await requestLocalNotificationPermission(user.id);
-        await syncLocalNotificationsFromState({ user, plan });
+    if (screen !== "app" || !user?.id || !isNativeIos()) return;
+    void (async () => {
+      const perm = await ensureIosNotificationPermission(user.id);
+      if (perm === "granted") {
         void registerNativePush();
-      } else if (!next) {
-        await cancelMySwymLocalNotifications();
+        void syncLocalNotificationsFromState({ user, plan });
       }
-    } finally {
-      setSessionRemindersBusy(false);
-    }
-  };
+    })();
+  }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
   const patchProfile = (partial) => setProfile(p => ({ ...p, ...partial }));
@@ -9210,12 +9180,13 @@ export default function App() {
     pendingFeedbackRef.current = null;
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
-    if (wasFirst && isNativeIos() && user?.id && getSessionRemindersEnabled(user.id)) {
-      if (!hasAskedLocalNotificationPermission(user.id)) {
-        void requestLocalNotificationPermission(user.id).then(() => {
+    if (wasFirst && isNativeIos() && user?.id) {
+      void ensureIosNotificationPermission(user.id).then((perm) => {
+        if (perm === "granted") {
+          void registerNativePush();
           void syncLocalNotificationsFromState({ user, plan });
-        });
-      }
+        }
+      });
     }
   };
 
@@ -11164,9 +11135,6 @@ export default function App() {
             onPaceUpdate={handlePaceUpdate}
             onValidateSession={handleComplete}
             onChangeGoal={handleChangeGoal}
-            sessionRemindersOn={sessionRemindersOn}
-            sessionRemindersBusy={sessionRemindersBusy}
-            onToggleSessionReminders={handleToggleSessionReminders}
           />
         )}
         <Suspense fallback={null}>

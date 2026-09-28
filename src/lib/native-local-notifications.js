@@ -1,5 +1,6 @@
 /**
  * Bridge Capacitor Local Notifications (iOS). No-op sur le web.
+ * L’autorisation système (Réglages → Notifications) est la source de vérité.
  */
 import { isNativeIos } from "./native-platform.js";
 
@@ -14,6 +15,7 @@ export const NOTIF_IDS = {
 
 const ALL_IDS = Object.values(NOTIF_IDS);
 const PERMISSION_ASKED_KEY = "myswym_local_notif_asked";
+let ensureInFlight = null;
 
 export function permissionAskedKey(userId) {
   return `${PERMISSION_ASKED_KEY}_${userId || "anon"}`;
@@ -54,16 +56,52 @@ export async function getLocalNotificationPermission() {
   }
 }
 
-export async function requestLocalNotificationPermission(userId) {
-  markLocalNotificationPermissionAsked(userId);
-  const plugin = await getPlugin();
-  if (!plugin) return "denied";
+/**
+ * Demande l’autorisation iOS si pas encore tranchée.
+ * Après Autoriser ou Refuser, MySWYM apparaît dans Réglages → Notifications.
+ * @returns {Promise<"granted"|"denied"|"prompt">}
+ */
+export async function ensureIosNotificationPermission(userId) {
+  if (!isNativeIos()) return "denied";
+  if (ensureInFlight) return ensureInFlight;
+
+  ensureInFlight = (async () => {
+    const plugin = await getPlugin();
+    if (!plugin) return "denied";
+
+    let status = "prompt";
+    try {
+      const { display } = await plugin.checkPermissions();
+      status = display || "prompt";
+    } catch {
+      status = "prompt";
+    }
+
+    if (status === "granted" || status === "denied") {
+      markLocalNotificationPermissionAsked(userId);
+      return status;
+    }
+
+    try {
+      const { display } = await plugin.requestPermissions();
+      const next = display || "denied";
+      markLocalNotificationPermissionAsked(userId);
+      return next;
+    } catch {
+      return "denied";
+    }
+  })();
+
   try {
-    const { display } = await plugin.requestPermissions();
-    return display || "denied";
-  } catch {
-    return "denied";
+    return await ensureInFlight;
+  } finally {
+    ensureInFlight = null;
   }
+}
+
+/** @deprecated Prefer ensureIosNotificationPermission */
+export async function requestLocalNotificationPermission(userId) {
+  return ensureIosNotificationPermission(userId);
 }
 
 export async function cancelMySwymLocalNotifications() {

@@ -1,10 +1,12 @@
 /**
  * Push APNs (Capacitor) : enregistrement jeton + invoke buddy/support.
  * No-op hors iOS natif.
+ * La permission alertes passe d’abord par LocalNotifications (Réglages iOS).
  */
 import { supabase } from "../supabase.js";
 import { isNativeIos, nativeApiOrigin } from "./native-platform.js";
 import { buddyConnectionId } from "./buddy-connection-id.js";
+import { ensureIosNotificationPermission } from "./native-local-notifications.js";
 
 export { buddyConnectionId };
 
@@ -83,12 +85,19 @@ export async function registerNativePush() {
     if (!PushNotifications) return { ok: false, reason: "no_plugin" };
 
     try {
+      const local = await ensureIosNotificationPermission();
+      if (local !== "granted") {
+        return { ok: false, reason: "denied" };
+      }
       await ensureListeners(PushNotifications);
       let perm = await PushNotifications.checkPermissions();
-      if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") {
-        perm = await PushNotifications.requestPermissions();
+      const receive = perm?.receive;
+      if (receive !== "granted") {
+        if (receive === "prompt" || receive === "prompt-with-rationale" || !receive) {
+          perm = await PushNotifications.requestPermissions();
+        }
       }
-      if (perm.receive !== "granted") {
+      if (perm?.receive !== "granted") {
         return { ok: false, reason: "denied" };
       }
       await PushNotifications.register();

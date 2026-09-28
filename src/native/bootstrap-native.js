@@ -16,6 +16,7 @@ import {
   isNativeOAuthCallback,
 } from "../lib/native-oauth.js";
 import { registerNativePush } from "../lib/native-push.js";
+import { ensureIosNotificationPermission } from "../lib/native-local-notifications.js";
 import "./native-shell.css";
 
 export { isNativeApp, isNativeIos };
@@ -98,6 +99,12 @@ export async function bootstrapNativeChrome() {
     /* ignore */
   }
   if (isNativeIos()) {
-    void registerNativePush();
+    // Laisse le bridge Capacitor prêt, puis force le popup système
+    // (sinon MySWYM n’apparaît pas dans Réglages → Notifications).
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 600));
+      await ensureIosNotificationPermission();
+      void registerNativePush();
+    })();
   }
 }
