@@ -11165,7 +11165,7 @@ export default function App() {
             <Suspense fallback={null}>
               <SupportBubble
                 aboveBottomNav={dockVisible}
-                hideFab={iosNav && !dockVisible}
+                hideFab={iosNav && (!dockVisible || activeTab === "analyse")}
                 user={user}
               />
             </Suspense>

@@ -403,6 +403,20 @@ export default function IosAnalyseHome({
               </FadeIn>
             ) : null}
 
+            <FadeIn index={nextStep()} reduced={reduced}>
+              <button
+                type="button"
+                className="ms-profile-account-row ios-analyse-history-cta"
+                onClick={() => {
+                  playUiSound("soft");
+                  openPanel("history");
+                }}
+              >
+                <span className="ios-analyse-row-label" style={{ flex: 1 }}>Historique des séances</span>
+                <ChevronRight size={18} color={G.greyMid} aria-hidden />
+              </button>
+            </FadeIn>
+
             <FadeIn index={nextStep()} reduced={reduced} className="ios-analyse-list">
               <MetricRow
                 label="Série"
@@ -434,11 +448,6 @@ export default function IosAnalyseHome({
                 value={nextBadge?.homeValue || "voir"}
                 progress={nextBadge?.ratio ?? null}
                 onClick={() => openPanel("badges")}
-              />
-              <MetricRow
-                label="Historique"
-                value="voir"
-                onClick={() => openPanel("history")}
               />
             </FadeIn>
           </>
