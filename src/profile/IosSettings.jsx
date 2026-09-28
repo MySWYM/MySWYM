@@ -2,9 +2,10 @@
  * Paramètres iOS : IA type GOWOD, DA soft mist.
  */
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Check, ChevronRight, Mail, RotateCcw, Globe, Lock, Shield, CircleHelp, Info,
-  FileText, LogOut, HeartPulse, CreditCard, Activity,
+  FileText, LogOut, HeartPulse, CreditCard, Activity, AlertTriangle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
@@ -18,7 +19,13 @@ import {
   downloadAccountExport,
   hasEmailPasswordProvider,
 } from "../lib/account-export.js";
+import {
+  ACCOUNT_DELETE_BLOCKED_TITLE,
+  ACCOUNT_DELETE_BLOCKED_MESSAGE,
+} from "../lib/legal-copy.js";
 import { PanelShell } from "../ProfileHelpPanels.jsx";
+import TimedUndoAction from "../ui/TimedUndoAction.jsx";
+import ConfirmSheet from "../sheets/ConfirmSheet.jsx";
 import FlagCircle from "./FlagCircle.jsx";
 
 const LANGS = [
@@ -264,6 +271,7 @@ export function IosDataPanel({
 }) {
   const [exportBusy, setExportBusy] = useState(false);
   const [exportNote, setExportNote] = useState(null);
+  const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
 
   const exportData = async () => {
     setExportBusy(true);
@@ -341,40 +349,44 @@ export function IosDataPanel({
       <p className="ios-settings-warn">Cette action est irréversible.</p>
       {user && onDeleteAccount ? (
         <>
-          <button
-            type="button"
-            className="ios-settings-danger"
-            disabled={deleteBusy || !deleteGate?.allowed}
-            onClick={async () => {
-              if (!deleteGate?.allowed) return;
-              const ok = window.confirm(
-                `${deleteWarning}\n\nConfirmer la suppression définitive du compte ?`,
-              );
-              if (!ok) return;
-              playUiSound("soft");
-              await onDeleteAccount();
-            }}
-          >
-            {deleteBusy ? "Suppression…" : "Supprimer mon compte"}
-          </button>
-          {!deleteGate?.allowed && deleteGate?.message ? (
-            <p className="ios-settings-alert is-err">
-              {deleteGate.message}
-              {deleteGate.endsAt ? (
-                <>
-                  {" "}
-                  Fin : {new Date(deleteGate.endsAt).toLocaleDateString("fr-FR", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}.
-                </>
-              ) : null}
-            </p>
+          {deleteGate?.allowed ? (
+            deleteWarning ? (
+              <p className="ios-settings-copy" style={{ marginBottom: 8 }}>
+                {deleteWarning}
+              </p>
+            ) : null
           ) : null}
+          <div style={{ margin: "8px 0 12px" }}>
+            <TimedUndoAction
+              disabled={deleteBusy || deleteGate?.code === "pending"}
+              busy={deleteBusy}
+              blocked={deleteGate?.code !== "pending" && !deleteGate?.allowed}
+              onBlocked={() => {
+                playUiSound("soft");
+                setDeleteBlockedOpen(true);
+              }}
+              onCommit={() => {
+                playUiSound("soft");
+                return onDeleteAccount();
+              }}
+            />
+          </div>
           {deleteErr ? <p className="ios-settings-alert is-err">{deleteErr}</p> : null}
         </>
       ) : null}
+      {deleteBlockedOpen && createPortal(
+        <ConfirmSheet
+          title={ACCOUNT_DELETE_BLOCKED_TITLE}
+          message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
+          confirmLabel="Compris"
+          cancelLabel={null}
+          destructive={false}
+          icon={AlertTriangle}
+          onConfirm={() => setDeleteBlockedOpen(false)}
+          onCancel={() => setDeleteBlockedOpen(false)}
+        />,
+        document.body,
+      )}
     </PanelShell>
   );
 }
