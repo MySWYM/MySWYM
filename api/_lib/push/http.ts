@@ -1,11 +1,10 @@
 /**
- * POST /api/push/notify
- * - buddy_request / buddy_accepted : JWT nageur + connectionId
- * - support_reply : secret interne + userId (Telegram → nageur)
+ * HTTP push APNs (monté dans api/contact.ts, pas de 13e fonction Hobby).
+ * Routes : POST /api/push/notify (rewrite) ou ?kind=push-notify
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { pushToUser } from "../_lib/push/notify-user.js";
+import { pushToUser } from "./notify-user.js";
 
 function supabaseAnon() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -19,6 +18,29 @@ function supabaseAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+function queryKind(req: VercelRequest): string {
+  const q = req.query?.kind;
+  return Array.isArray(q) ? q[0] || "" : String(q || "");
+}
+
+function requestPath(req: VercelRequest): string {
+  try {
+    return new URL(req.url || "/", "http://localhost").pathname;
+  } catch {
+    return String(req.url || "").split("?")[0];
+  }
+}
+
+export function isPushNotifyRequest(
+  req: VercelRequest,
+  body: Record<string, unknown>,
+): boolean {
+  const path = requestPath(req);
+  if (path === "/api/push/notify" || path.endsWith("/api/push/notify")) return true;
+  const kind = queryKind(req) || String(body.kind || "");
+  return kind === "push-notify" || kind === "push_notify";
+}
+
 async function userFromAuth(req: VercelRequest) {
   const auth = String(req.headers.authorization || "");
   const token = auth.replace(/^Bearer\s+/i, "").trim();
@@ -28,11 +50,14 @@ async function userFromAuth(req: VercelRequest) {
   return data.user;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handlePushNotifyHttp(
+  req: VercelRequest,
+  res: VercelResponse,
+  body: Record<string, unknown>,
+) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ ok: false, error: "method" });
 
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
   const event = String(body.event || "");
 
   try {
@@ -77,7 +102,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: true, ...result });
       }
 
-      // buddy_accepted : le destinataire accepte → notifie le demandeur
       if (conn.recipient_id !== user.id && conn.requester_id !== user.id) {
         return res.status(403).json({ ok: false, error: "forbidden" });
       }
