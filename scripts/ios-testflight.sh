@@ -70,7 +70,6 @@ xcodebuild \
   -allowProvisioningUpdates \
   archive \
   CODE_SIGN_STYLE=Automatic \
-  CODE_SIGN_IDENTITY="Apple Distribution" \
   DEVELOPMENT_TEAM="$TEAM_ID"
 
 echo "==> Export + upload App Store Connect"
