@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight, Calendar,
+  Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight,
 } from "lucide-react";
 import { FONT } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
@@ -212,24 +212,8 @@ export default function Dashboard({
         {iosNav ? (
           <>
             <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-              {typeof onTabChange === "function" ? (
-                <button
-                  type="button"
-                  className="ms-profile-account-row"
-                  onClick={() => {
-                    playUiSound("soft");
-                    onTabChange("plan");
-                  }}
-                >
-                  <span className="ms-profile-settings-icon" style={{ background: "rgba(0, 107, 253, 0.12)" }}>
-                    <Calendar size={18} color={G.blue} />
-                  </span>
-                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>Programme</span>
-                  <ChevronRight size={18} color={G.greyMid} />
-                </button>
-              ) : null}
-              {typeof onGoBuddies === "function" ? (
+            {typeof onGoBuddies === "function" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
                 <button
                   type="button"
                   className="ms-profile-account-row"
@@ -244,8 +228,8 @@ export default function Dashboard({
                   <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
                   <ChevronRight size={18} color={G.greyMid} />
                 </button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </>
         ) : preview ? (
           <div style={{ marginBottom: 12 }}>

@@ -1,7 +1,157 @@
 /**
  * Chatbox support : fond opaque.
  * Le soft mist glass (rgba + backdrop-filter) laissait lire le Profil derrière.
+ * variant page = plein écran soft mist (chrome iPhone).
  */
+
+.support-page {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+  background:
+    linear-gradient(
+      180deg,
+      var(--ms-mist-mid, #c5dffb) 0%,
+      var(--ms-mist-bot, #f4f8fc) 18%,
+      #ffffff 42%,
+      #ffffff 100%
+    );
+  padding-top: env(safe-area-inset-top, 0px);
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+  /* padding-bottom : safe-area ou hauteur clavier (JS) */
+  box-sizing: border-box;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.support-page.is-keyboard-open .support-composer {
+  padding-bottom: 10px;
+}
+
+.support-page .support-widget-head {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(15, 27, 45, 0.06) !important;
+  padding-top: 8px;
+  padding-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.support-page .support-widget-body {
+  background: transparent !important;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.support-page .support-chat-list--page {
+  background: transparent !important;
+  padding: 16px 16px 12px;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.support-page .support-composer {
+  background: #ffffff;
+  border-top: 1px solid rgba(15, 27, 45, 0.06);
+  padding: 10px 12px max(12px, env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.support-page .support-composer-input {
+  font-size: 16px; /* évite le zoom iOS qui casse le layout */
+  min-height: 48px;
+}
+
+.support-page .support-nav {
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid rgba(15, 27, 45, 0.06);
+  padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+}
+
+.support-page.is-keyboard-open .support-nav {
+  display: none;
+}
+
+.support-page .support-inbox {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 12px 16px 20px;
+  box-sizing: border-box;
+}
+
+.support-page .support-inbox-lead {
+  margin: 0 0 14px;
+  font-size: 15px; /* ms-type-body */
+  line-height: 1.45;
+  color: #6b7c8f;
+  font-weight: 500;
+}
+
+.support-page .support-inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.support-page .support-card--inbox {
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  text-align: left;
+}
+
+.support-page .support-inbox-status {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px; /* ms-type-caption */
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #006bfd;
+}
+
+.support-page .support-inbox-cta {
+  margin-top: auto;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.support-page .support-inbox-cta .support-ask-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.support-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.support-msg-row--user {
+  justify-content: flex-end;
+}
+
+.support-msg-row--bot,
+.support-msg-row--agent {
+  justify-content: flex-start;
+}
+
+.support-msg-row--system {
+  justify-content: center;
+}
+
+.support-msg-row .support-bubble {
+  max-width: min(88%, 34rem);
+}
 
 .support-widget {
   isolation: isolate;

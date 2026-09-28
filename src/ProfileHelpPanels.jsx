@@ -46,9 +46,13 @@ function LinkedinMark({ size = 18, color = "currentColor" }) {
 }
 
 export function openSupportChat(tab = "messages") {
-  const view = tab === "chat" ? "chat" : "tabs";
-  const resolvedTab = tab === "chat" ? "messages" : tab;
-  window.dispatchEvent(new CustomEvent("myswym:open-support", { detail: { tab: resolvedTab, view } }));
+  // Inbox messages ; l’Aide in-app n’existe plus (FAQ = lien /faq).
+  const resolvedTab = tab === "chat" || tab === "help" ? "messages" : tab;
+  window.dispatchEvent(
+    new CustomEvent("myswym:open-support", {
+      detail: { tab: resolvedTab, view: "tabs" },
+    }),
+  );
 }
 
 export function useFitOverflow(active = true) {
@@ -152,6 +156,16 @@ export function ProfileSupportPanel({ onBack }) {
 
   return (
     <PanelShell title="Support" onBack={onBack}>
+      <div className="ms-profile-group-label">Messages</div>
+      <div className="ms-profile-account-stack">
+        <HelpRow
+          icon={Mail}
+          title="Écrire à Arthur"
+          subtitle="Messages avec le coach"
+          onClick={() => openSupportChat("messages")}
+        />
+      </div>
+
       <div className="ms-profile-group-label">Obtenir de l’aide</div>
       <div className="ms-profile-account-stack">
         <HelpRow
@@ -162,17 +176,10 @@ export function ProfileSupportPanel({ onBack }) {
           external
         />
         <HelpRow
-          icon={Mail}
-          title="Contacter le support"
-          subtitle="Écrire à l’équipe MySWYM"
-          href={withLocalePrefix("/contact", locale)}
-          external
-        />
-        <HelpRow
           icon={Bug}
           title="Signaler un bug"
           subtitle="Aide-nous à améliorer l’app"
-          onClick={() => openSupportChat("chat")}
+          onClick={() => openSupportChat("messages")}
         />
         <HelpRow
           icon={Star}
@@ -293,7 +300,7 @@ export function ProfileHelpSettingsRows({ onOpenSupport, onOpenLegal }) {
         <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.12)" }}>
           <CircleHelp size={18} color={G.blue} />
         </span>
-        <span className="ms-profile-settings-label" style={{ flex: 1 }}>Support</span>
+        <span className="ms-profile-settings-label" style={{ flex: 1 }}>Messages</span>
         <ChevronRight size={18} color={G.greyMid} />
       </button>
       <button

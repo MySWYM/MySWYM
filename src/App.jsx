@@ -7590,6 +7590,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const lastDockTabRef = useRef("home");
   const [iosHideDock, setIosHideDock] = useState(false);
+  const [supportPageOpen, setSupportPageOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isIosSimpleNav()) return undefined;
+    const onOpen = () => setSupportPageOpen(true);
+    window.addEventListener("myswym:open-support", onOpen);
+    return () => window.removeEventListener("myswym:open-support", onOpen);
+  }, []);
   /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
   const goTab = (tab) => {
     const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
@@ -11144,19 +11152,29 @@ export default function App() {
         {(() => {
           const iosNav = isIosSimpleNav();
           const dockVisible = iosNav
-            ? activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock
+            ? activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock && !supportPageOpen
             : activeTab !== "profile";
           return (
             <Suspense fallback={null}>
-              <SupportBubble
-                aboveBottomNav={dockVisible}
-                hideFab={iosNav && !dockVisible}
-                user={user}
-              />
+              {iosNav ? (
+                supportPageOpen ? (
+                  <SupportBubble
+                    variant="page"
+                    hideFab
+                    user={user}
+                    onClosePage={() => setSupportPageOpen(false)}
+                  />
+                ) : null
+              ) : (
+                <SupportBubble
+                  aboveBottomNav={dockVisible}
+                  user={user}
+                />
+              )}
             </Suspense>
           );
         })()}
-        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock) || (!isIosSimpleNav() && activeTab !== "profile")) && (
+        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock && !supportPageOpen) || (!isIosSimpleNav() && activeTab !== "profile")) && (
           <BottomNav
             active={isIosSimpleNav() ? iosDockActive(activeTab) : (activeTab === "buddies" ? "analyse" : activeTab)}
             onChange={goTab}
