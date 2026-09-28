@@ -54,6 +54,12 @@ export const ACCOUNT_DELETE_WARNING =
 export const ACCOUNT_DELETE_FLEX_WARNING =
   "La suppression est définitive : profil, plans et données associées seront effacés. Ton abonnement sans engagement sera arrêté tout de suite, plus de prélèvement. Tu perds les jours déjà payés ce mois-ci.";
 
+/** Sheet quand la suppression est bloquée (abo engagement / annuel / Apple). */
+export const ACCOUNT_DELETE_BLOCKED_TITLE = "Suppression impossible";
+
+export const ACCOUNT_DELETE_BLOCKED_MESSAGE =
+  "Tu as un abonnement en cours. Annule-le d’abord, puis réessaie de supprimer ton compte.";
+
 /** @deprecated use HEALTH_CONSENT_* from health-data.js */
 export const INJURY_HEALTH_NOTICE =
   "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. MySWYM n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";

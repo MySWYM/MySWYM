@@ -50,7 +50,7 @@ import {
   IosAppleHealthPanel,
   IosSubscriptionPanel,
 } from "./profile/IosSettings.jsx";
-import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING } from "./lib/legal-copy.js";
+import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING, ACCOUNT_DELETE_BLOCKED_TITLE, ACCOUNT_DELETE_BLOCKED_MESSAGE } from "./lib/legal-copy.js";
 import { requestAppleHealth } from "./lib/native-health.js";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { getTabUi } from "./tab-ui-registry.js";
@@ -58,6 +58,7 @@ import ProfileSection from "./ui/ProfileSection.jsx";
 import FrequencyGauge from "./ui/FrequencyGauge.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import SoftMistSheet from "./sheets/SoftMistSheet.jsx";
+import TimedUndoAction from "./ui/TimedUndoAction.jsx";
 import { PasswordInput } from "./AuthScreen.jsx";
 import { AppShell, AppTabShell } from "./app-shell/index.js";
 import {
@@ -207,6 +208,7 @@ export default function ProfileTab({
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
+  const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
   const [deleteGate, setDeleteGate] = useState({
     allowed: false,
     code: "pending",
@@ -1030,22 +1032,24 @@ export default function ProfileTab({
               <ChevronRight size={18} color={G.coral} />
             </button>
             {user && onDeleteAccount ? (
-              <>
-                <button
-                  type="button"
-                  disabled={deleteBusy || !deleteGate.allowed}
-                  className="ms-profile-account-row"
-                  style={!deleteGate.allowed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
-                  onClick={async () => {
-                    if (!deleteGate.allowed) return;
-                    setDeleteErr(null);
-                    const warning = deleteGate.willCancelSubscription
+              <div style={{ padding: "12px 8px 8px" }}>
+                {deleteGate.allowed ? (
+                  <p style={{ margin: "0 0 12px", fontSize: 12, color: G.grey, lineHeight: 1.45 }}>
+                    {deleteGate.willCancelSubscription
                       ? ACCOUNT_DELETE_FLEX_WARNING
-                      : ACCOUNT_DELETE_WARNING;
-                    const ok = window.confirm(
-                      `${warning}\n\nConfirmer la suppression définitive du compte ?`,
-                    );
-                    if (!ok) return;
+                      : ACCOUNT_DELETE_WARNING}
+                  </p>
+                ) : null}
+                <TimedUndoAction
+                  disabled={deleteBusy || deleteGate.code === "pending"}
+                  busy={deleteBusy}
+                  blocked={deleteGate.code !== "pending" && !deleteGate.allowed}
+                  onBlocked={() => {
+                    playUiSound("soft");
+                    setDeleteBlockedOpen(true);
+                  }}
+                  onCommit={async () => {
+                    setDeleteErr(null);
                     setDeleteBusy(true);
                     try {
                       await onDeleteAccount();
@@ -1054,31 +1058,8 @@ export default function ProfileTab({
                       setDeleteBusy(false);
                     }
                   }}
-                >
-                  <span className="ms-profile-settings-icon" style={{ background: "rgba(232,90,104,0.12)" }}>
-                    <Trash2 size={18} color={G.coral} />
-                  </span>
-                  <span className="ms-profile-settings-label" style={{ flex: 1, color: G.coral }}>
-                    {deleteBusy ? "Suppression…" : "Supprimer mon compte"}
-                  </span>
-                  <ChevronRight size={18} color={G.coral} />
-                </button>
-                {!deleteGate.allowed && deleteGate.message ? (
-                  <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral, lineHeight: 1.45 }}>
-                    {deleteGate.message}
-                    {deleteGate.endsAt ? (
-                      <>
-                        {" "}
-                        Fin : {new Date(deleteGate.endsAt).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}.
-                      </>
-                    ) : null}
-                  </div>
-                ) : null}
-              </>
+                />
+              </div>
             ) : null}
             {deleteErr ? (
               <div style={{ padding: "0 4px 4px", fontSize: 12, color: G.coral }}>{deleteErr}</div>
@@ -2239,6 +2220,19 @@ export default function ProfileTab({
             setGoalBusy(true);
             Promise.resolve(onChangeGoal(patch)).finally(() => setGoalBusy(false));
           }}
+        />,
+        document.body,
+      )}
+      {deleteBlockedOpen && createPortal(
+        <ConfirmSheet
+          title={ACCOUNT_DELETE_BLOCKED_TITLE}
+          message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
+          confirmLabel="Compris"
+          cancelLabel={null}
+          destructive={false}
+          icon={AlertTriangle}
+          onConfirm={() => setDeleteBlockedOpen(false)}
+          onCancel={() => setDeleteBlockedOpen(false)}
         />,
         document.body,
       )}

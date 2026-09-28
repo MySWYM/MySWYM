@@ -71,24 +71,26 @@ export default function ConfirmSheet({
           >
             {confirmLabel}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              width: "100%",
-              padding: "14px 16px",
-              borderRadius: 12,
-              border: `1.5px solid ${G.greyLight}`,
-              background: G.surface,
-              color: G.ink,
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: "pointer",
-              minHeight: 48,
-            }}
-          >
-            {cancelLabel}
-          </button>
+          {cancelLabel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                width: "100%",
+                padding: "14px 16px",
+                borderRadius: 12,
+                border: `1.5px solid ${G.greyLight}`,
+                background: G.surface,
+                color: G.ink,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+                minHeight: 48,
+              }}
+            >
+              {cancelLabel}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
