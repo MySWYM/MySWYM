@@ -265,7 +265,7 @@ export default function IosAnalyseHome({
   const nextStep = () => step++;
 
   return (
-    <AppTabShell className="ios-analyse-home is-fit" style={shellPadFit}>
+    <AppTabShell className="ios-analyse-home" style={shellPad}>
       <AppTopBar
         user={user}
         onOpenMenu={onOpenMenu}
@@ -455,12 +455,6 @@ export default function IosAnalyseHome({
 }
 
 const shellPad = {
-  paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
+  paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 88px)",
   minHeight: "100dvh",
-};
-
-const shellPadFit = {
-  paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 12px)",
-  height: "100dvh",
-  overflow: "hidden",
 };

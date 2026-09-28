@@ -229,12 +229,6 @@ button.ios-analyse-row {
   margin: 0 0 10px;
 }
 
-.ios-analyse-home.is-fit {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-}
-
 .ios-analyse-week {
   display: flex;
   justify-content: space-between;
