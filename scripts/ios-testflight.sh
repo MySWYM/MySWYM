@@ -31,21 +31,21 @@ if [[ ! -f "$ROOT/.env.ios-prod.local" ]]; then
   exit 1
 fi
 CAP_ENV_FILE=.env.ios-prod.local npm run cap:sync
-# Garde-fou : le bundle iOS ne doit pas pointer le backend DEV
-if rg -q "ccsazffeyeybjnlvnppa" "$ROOT/ios/App/App/public/assets" 2>/dev/null; then
+# Garde-fou : grep (pas rg) pour marcher dans Terminal Mac sans ripgrep.
+ASSETS="$ROOT/ios/App/App/public/assets"
+if grep -Rql "ccsazffeyeybjnlvnppa" "$ASSETS" 2>/dev/null; then
   echo "ERREUR : le dist iOS contient encore le ref DEV (ccsazff…). Abort."
   exit 1
 fi
-if ! rg -q "ssdygzqwvoqcyzbtbrbp" "$ROOT/ios/App/App/public/assets" 2>/dev/null; then
+if ! grep -Rql "ssdygzqwvoqcyzbtbrbp" "$ASSETS" 2>/dev/null; then
   echo "ERREUR : le dist iOS ne contient pas le ref PROD (ssdygz…). Abort."
   exit 1
 fi
 echo "==> Backend PROD OK (ssdygz…)"
 
-MARKETING="$(/usr/libexec/PlistBuddy -c 'Print :objects:96A1E0012FE9A00100000001' "$ROOT/ios/App/App.xcodeproj/project.pbxproj" 2>/dev/null || true)"
 # Lit versions depuis le pbxproj
-MV="$(rg -N "MARKETING_VERSION = " "$ROOT/ios/App/App.xcodeproj/project.pbxproj" | head -1 | sed -E 's/.*= ([0-9.]+);/\1/')"
-BV="$(rg -N "CURRENT_PROJECT_VERSION = " "$ROOT/ios/App/App.xcodeproj/project.pbxproj" | head -1 | sed -E 's/.*= ([0-9]+);/\1/')"
+MV="$(grep -E "MARKETING_VERSION = " "$ROOT/ios/App/App.xcodeproj/project.pbxproj" | head -1 | sed -E 's/.*= ([0-9.]+);/\1/')"
+BV="$(grep -E "CURRENT_PROJECT_VERSION = " "$ROOT/ios/App/App.xcodeproj/project.pbxproj" | head -1 | sed -E 's/.*= ([0-9]+);/\1/')"
 echo "==> Version ${MV:-?} (${BV:-?})"
 
 echo "==> Archive Release (Any iOS Device)"
