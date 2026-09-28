@@ -161,7 +161,7 @@ export default function AppTopBar({
     }
     if (action === "support") {
       window.dispatchEvent(new CustomEvent("myswym:open-support", {
-        detail: { view: "chat", tab: "messages" },
+        detail: { tab: "messages" },
       }));
     }
   };

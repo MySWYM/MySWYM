@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronRight, CircleHelp, Home, MessageCircle, Send, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Home, MessageCircle, Send, X } from "lucide-react";
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
@@ -189,17 +189,6 @@ function matchFaq(text) {
   return bestScore > 0 ? best.answer : FALLBACK;
 }
 
-const HELP_ARTICLES = [
-  { title: "Essai, prix et abonnement", q: "prix abonnement" },
-  { title: "Annuler ou se désabonner", q: "se désabonner" },
-  { title: "Comment ça marche ?", q: "comment ça marche" },
-  { title: "Zones Z1 à Z4", q: "zones z1 z2" },
-  { title: "Allures et T100", q: "allure t100" },
-  { title: "D… ou R… ?", q: "départ chronométré repos" },
-  { title: "Godilles", q: "godilles" },
-  { title: "Changer d’objectif", q: "changer objectif onboarding" },
-].map((a) => ({ title: a.title, answer: matchFaq(a.q) }));
-
 const WELCOME = {
   role: "bot",
   text: "Salut ! Tu parles à l’assistance MySWYM. Je peux t’aider sur le produit et la natation. Tu peux demander l’équipe à tout moment, Arthur te répond ici.",
@@ -321,8 +310,9 @@ export default function SupportBubble({
 }) {
   const isPage = variant === "page";
   const [open, setOpen] = useState(isPage);
+  /** Page iOS : inbox messages d’abord, puis un fil (drill-in). */
   const [tab, setTab] = useState(isPage ? "messages" : "home");
-  const [view, setView] = useState(isPage ? "chat" : "tabs");
+  const [view, setView] = useState("tabs");
   const [faqMessages, setFaqMessages] = useState([WELCOME]);
   const [thread, setThread] = useState({ conversation: null, messages: [] });
   const [conversations, setConversations] = useState([]);
@@ -333,8 +323,9 @@ export default function SupportBubble({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [unread, setUnread] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(null);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const listRef = useRef(null);
+  const composerInputRef = useRef(null);
   const typingTimer = useRef(null);
   const activeIdRef = useRef(null);
   const startFreshRef = useRef(false);
@@ -347,19 +338,96 @@ export default function SupportBubble({
       const detail = e?.detail || {};
       setOpen(true);
       setError("");
+      // Page plein écran : rester sur l’inbox sauf demande explicite d’un nouveau fil.
+      if (isPage) {
+        if (detail.view === "chat" && detail.forceChat === true) {
+          setTab("messages");
+          setView("chat");
+          return;
+        }
+        setTab(detail.tab === "home" ? "home" : "messages");
+        setView("tabs");
+        return;
+      }
       if (detail.view === "chat") {
         setTab("messages");
         setView("chat");
         return;
       }
-      if (detail.tab === "messages" || detail.tab === "help" || detail.tab === "home") {
+      if (detail.tab === "messages" || detail.tab === "home") {
         setTab(detail.tab);
         setView("tabs");
       }
     };
     window.addEventListener("myswym:open-support", openFromEvent);
     return () => window.removeEventListener("myswym:open-support", openFromEvent);
-  }, []);
+  }, [isPage]);
+
+  /** Page plein écran : remonter le composer au-dessus du clavier iOS. */
+  useEffect(() => {
+    if (!isPage || !open) {
+      setKeyboardInset(0);
+      return undefined;
+    }
+
+    let cancelled = false;
+    let showHandle = null;
+    let hideHandle = null;
+    let restored = false;
+
+    const applyInset = (px) => {
+      if (cancelled) return;
+      setKeyboardInset(Math.max(0, Math.round(px || 0)));
+      requestAnimationFrame(() => {
+        const el = listRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+    };
+
+    const onVv = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      applyInset(covered > 80 ? covered : 0);
+    };
+
+    const setup = async () => {
+      try {
+        const { Keyboard, KeyboardResize } = await import("@capacitor/keyboard");
+        await Keyboard.setResizeMode({ mode: KeyboardResize.None });
+        await Keyboard.setAccessoryBarVisible({ isVisible: false });
+        showHandle = await Keyboard.addListener("keyboardWillShow", (info) => {
+          applyInset(info?.keyboardHeight || 0);
+        });
+        hideHandle = await Keyboard.addListener("keyboardWillHide", () => {
+          applyInset(0);
+        });
+      } catch {
+        window.visualViewport?.addEventListener("resize", onVv);
+        window.visualViewport?.addEventListener("scroll", onVv);
+        onVv();
+      }
+    };
+
+    void setup();
+
+    return () => {
+      cancelled = true;
+      setKeyboardInset(0);
+      try { showHandle?.remove?.(); } catch { /* ignore */ }
+      try { hideHandle?.remove?.(); } catch { /* ignore */ }
+      window.visualViewport?.removeEventListener("resize", onVv);
+      window.visualViewport?.removeEventListener("scroll", onVv);
+      if (restored) return;
+      restored = true;
+      void import("@capacitor/keyboard")
+        .then(async ({ Keyboard, KeyboardResize }) => {
+          await Keyboard.setResizeMode({ mode: KeyboardResize.Body });
+          await Keyboard.setAccessoryBarVisible({ isVisible: true });
+        })
+        .catch(() => {});
+    };
+  }, [isPage, open]);
 
   const conversation = thread.conversation;
   const liveOpen = conversation?.status === "open";
@@ -428,6 +496,15 @@ export default function SupportBubble({
     }, 20000);
     return () => window.clearInterval(interval);
   }, [userId, open]);
+
+  useEffect(() => {
+    if (!userId || !open || view !== "tabs") return undefined;
+    refreshThread({ markSeen: false });
+    const interval = window.setInterval(() => {
+      refreshThread({ markSeen: false });
+    }, 12000);
+    return () => window.clearInterval(interval);
+  }, [userId, open, view]);
 
   useEffect(() => {
     if (!open || view !== "chat" || startFresh) return undefined;
@@ -502,6 +579,7 @@ export default function SupportBubble({
     setTab("messages");
     setForceLive(false);
     setError("");
+    refreshThread({ markSeen: false });
   };
 
   const escalate = async (text, prior) => {
@@ -579,7 +657,11 @@ export default function SupportBubble({
     } else setError(json.error || "Impossible de clôturer.");
   };
 
-  const askQuestion = () => {
+  const askQuestion = ({ preferFresh = false } = {}) => {
+    if (preferFresh) {
+      openChat({ fresh: true });
+      return;
+    }
     if (openConversation) openHistory(openConversation);
     else openChat({ fresh: true });
   };
@@ -605,8 +687,8 @@ export default function SupportBubble({
     );
   };
 
-  const AskButton = ({ label = "Poser une question" }) => (
-    <button type="button" onClick={askQuestion} className="support-ask-btn">
+  const AskButton = ({ label = "Poser une question", preferFresh = false }) => (
+    <button type="button" onClick={() => askQuestion({ preferFresh })} className="support-ask-btn">
       {label}
       <MessageCircle size={16} color="#fff" />
     </button>
@@ -639,17 +721,27 @@ export default function SupportBubble({
           aria-label="Messages MySWYM"
           className={
             isPage
-              ? "support-page"
+              ? `support-page${keyboardInset > 0 ? " is-keyboard-open" : ""}`
               : aboveBottomNav
                 ? "support-widget"
                 : "support-widget support-widget--bare"
           }
-          style={{ fontFamily: FONT }}
+          style={{
+            fontFamily: FONT,
+            ...(isPage
+              ? {
+                  paddingBottom:
+                    keyboardInset > 0
+                      ? keyboardInset
+                      : "env(safe-area-inset-bottom, 0px)",
+                }
+              : null),
+          }}
         >
           {view === "chat" ? (
             <>
               <div className="support-widget-head">
-                <button type="button" aria-label="Retour" onClick={isPage ? close : backToTabs} className="support-icon-btn">
+                <button type="button" aria-label="Retour" onClick={backToTabs} className="support-icon-btn">
                   <ArrowLeft size={18} color="currentColor" />
                 </button>
                 <ArthurAvatar size={isPage ? 40 : 34} radius={999} />
@@ -721,11 +813,25 @@ export default function SupportBubble({
                     className="support-composer-row"
                   >
                     <input
+                      ref={composerInputRef}
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Poser une question…"
-                      aria-label="Poser une question"
+                      onFocus={() => {
+                        requestAnimationFrame(() => {
+                          composerInputRef.current?.scrollIntoView({
+                            block: "nearest",
+                            behavior: "smooth",
+                          });
+                          const el = listRef.current;
+                          if (el) el.scrollTop = el.scrollHeight;
+                        });
+                      }}
+                      placeholder="Écrire un message…"
+                      aria-label="Écrire un message"
+                      enterKeyHint="send"
+                      autoComplete="off"
+                      autoCorrect="on"
                       disabled={busy}
                       className="support-composer-input"
                     />
@@ -772,7 +878,7 @@ export default function SupportBubble({
                   </button>
                 ) : null}
                 <h3 className="support-widget-title" style={{ flex: 1 }}>
-                  {tab === "home" ? "Support" : tab === "help" ? "Aide" : "Messages"}
+                  {tab === "home" ? "Support" : "Messages"}
                 </h3>
                 {!isPage ? (
                   <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
@@ -817,54 +923,20 @@ export default function SupportBubble({
                   </div>
                 )}
 
-                {tab === "help" && (
-                  <div style={{ padding: "4px 0 16px" }}>
-                    {HELP_ARTICLES.map((article, i) => {
-                      const openArticle = helpOpen === i;
-                      return (
-                        <div key={article.title} className="support-help-item">
-                          <button
-                            type="button"
-                            onClick={() => setHelpOpen(openArticle ? null : i)}
-                            className="support-help-trigger"
-                          >
-                            {article.title}
-                            <ChevronRight
-                              size={16}
-                              color={MUTED}
-                              style={{
-                                transform: openArticle ? "rotate(90deg)" : "none",
-                                transition: "transform 150ms ease",
-                                flexShrink: 0,
-                              }}
-                            />
-                          </button>
-                          {openArticle ? (
-                            <p className="support-help-answer">{article.answer}</p>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                    <div style={{ padding: "18px 16px 4px", textAlign: "center" }}>
-                      <p style={{ margin: "0 0 10px", fontSize: 13, color: MUTED }}>
-                        Tu ne trouves pas ? Écris-nous.
-                      </p>
-                      <AskButton />
-                    </div>
-                  </div>
-                )}
-
                 {tab === "messages" && (
-                  <div
-                    style={{
+                  <div className={isPage ? "support-inbox" : undefined} style={isPage ? undefined : {
                       minHeight: "100%",
                       display: "flex",
                       flexDirection: "column",
                       padding: "12px 16px 18px",
-                    }}
-                  >
+                    }}>
+                    {isPage ? (
+                      <p className="support-inbox-lead">
+                        Tes échanges avec Arthur. Ouvre une conversation ou démarre-en une nouvelle.
+                      </p>
+                    ) : null}
                     {hasHistory ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div className={isPage ? "support-inbox-list" : undefined} style={isPage ? undefined : { display: "flex", flexDirection: "column", gap: 8 }}>
                         {history.map((conv) => {
                           const preview = conv.last_body || (conv.id === conversation?.id ? lastPreview(thread.messages) : "");
                           const isOpen = conv.status === "open";
@@ -873,23 +945,25 @@ export default function SupportBubble({
                               key={conv.id}
                               type="button"
                               onClick={() => openHistory(conv)}
-                              className="support-card"
-                              style={{ marginBottom: 0, minHeight: 72 }}
+                              className={`support-card${isPage ? " support-card--inbox" : ""}`}
+                              style={{ marginBottom: 0, minHeight: isPage ? 76 : 72 }}
                             >
+                              <ArthurAvatar size={isPage ? 44 : 34} radius={999} />
                               <span style={{ minWidth: 0, flex: 1 }}>
                                 <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
                                   <span className="support-card-title">
+                                    {isPage ? "Arthur" : formatConvWhen(conv.updated_at)}
+                                  </span>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: MUTED, flexShrink: 0 }}>
                                     {formatConvWhen(conv.updated_at)}
                                   </span>
-                                  {isOpen ? (
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: BLUE, flexShrink: 0 }}>
-                                      Ouverte
-                                    </span>
-                                  ) : null}
                                 </span>
                                 <span className="support-card-meta" style={{ fontSize: 13 }}>
                                   {preview || (isOpen ? "Conversation en cours" : "Conversation clôturée")}
                                 </span>
+                                {isOpen ? (
+                                  <span className="support-inbox-status">Ouverte</span>
+                                ) : null}
                               </span>
                               {unread && isOpen ? (
                                 <span
@@ -914,23 +988,35 @@ export default function SupportBubble({
                         <MessageCircle size={36} color="#9aa8b6" />
                         <div className="support-empty-title">Aucun message</div>
                         <p className="support-empty-text">
-                          Les messages de l’équipe s’affichent ici
+                          Écris à Arthur : questions produit, séance, ou un souci technique.
                         </p>
-                        <AskButton />
                       </div>
                     )}
-                    {hasHistory && !openConversation ? (
-                      <div style={{ marginTop: "auto", paddingTop: 18, textAlign: "center" }}>
-                        <AskButton />
-                      </div>
-                    ) : null}
+                    <div
+                      className={isPage ? "support-inbox-cta" : undefined}
+                      style={
+                        isPage
+                          ? undefined
+                          : {
+                              marginTop: hasHistory && !openConversation ? "auto" : undefined,
+                              paddingTop: 18,
+                              textAlign: "center",
+                            }
+                      }
+                    >
+                      {isPage || !hasHistory || (hasHistory && !openConversation) ? (
+                        <AskButton
+                          label={isPage ? "Nouvelle conversation" : "Poser une question"}
+                          preferFresh={isPage}
+                        />
+                      ) : null}
+                    </div>
                   </div>
                 )}
               </div>
 
               <nav aria-label="Support" className="support-nav">
                 {tabBtn("home", "Accueil", Home)}
-                {tabBtn("help", "Aide", CircleHelp)}
                 {tabBtn("messages", "Messages", MessageCircle)}
               </nav>
             </>

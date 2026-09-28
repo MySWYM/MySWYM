@@ -46,9 +46,13 @@ function LinkedinMark({ size = 18, color = "currentColor" }) {
 }
 
 export function openSupportChat(tab = "messages") {
-  const view = tab === "chat" ? "chat" : "tabs";
-  const resolvedTab = tab === "chat" ? "messages" : tab;
-  window.dispatchEvent(new CustomEvent("myswym:open-support", { detail: { tab: resolvedTab, view } }));
+  // Inbox messages ; l’Aide in-app n’existe plus (FAQ = lien /faq).
+  const resolvedTab = tab === "chat" || tab === "help" ? "messages" : tab;
+  window.dispatchEvent(
+    new CustomEvent("myswym:open-support", {
+      detail: { tab: resolvedTab, view: "tabs" },
+    }),
+  );
 }
 
 export function useFitOverflow(active = true) {
@@ -157,8 +161,8 @@ export function ProfileSupportPanel({ onBack }) {
         <HelpRow
           icon={Mail}
           title="Écrire à Arthur"
-          subtitle="FAQ + messages avec le coach"
-          onClick={() => openSupportChat("chat")}
+          subtitle="Messages avec le coach"
+          onClick={() => openSupportChat("messages")}
         />
       </div>
 
@@ -175,7 +179,7 @@ export function ProfileSupportPanel({ onBack }) {
           icon={Bug}
           title="Signaler un bug"
           subtitle="Aide-nous à améliorer l’app"
-          onClick={() => openSupportChat("chat")}
+          onClick={() => openSupportChat("messages")}
         />
         <HelpRow
           icon={Star}
