@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Undo2 } from "lucide-react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
-import useMeasure from "react-use-measure";
-import { G } from "../theme/palette.js";
 
 /**
- * Bouton danger avec compte à rebours + annulation.
- * À 0 → appelle onCommit (suppression réelle). Nouveau tap pendant le décompte = annuler.
+ * CTA danger pleine largeur (style ms-pill-cta).
+ * Tap → compte à rebours + Annuler. À 0 → onCommit.
+ * blocked → onBlocked (pas de décompte).
  */
 export default function TimedUndoAction({
   initialSeconds = 10,
@@ -15,7 +14,6 @@ export default function TimedUndoAction({
   busyLabel = "Suppression…",
   disabled = false,
   busy = false,
-  /** Si true : le tap n’arme pas le décompte, appelle onBlocked. */
   blocked = false,
   onBlocked,
   onCommit,
@@ -25,7 +23,6 @@ export default function TimedUndoAction({
   const reduced = useReducedMotion();
   const [isDeleting, setIsDeleting] = useState(false);
   const [countDown, setCountDown] = useState(initialSeconds);
-  const [ref, bounds] = useMeasure({ offsetSize: true });
   const committedRef = useRef(false);
 
   useEffect(() => {
@@ -74,139 +71,106 @@ export default function TimedUndoAction({
     });
   };
 
-  const label = busy ? busyLabel : isDeleting ? undoLabel : deleteLabel;
+  const armed = isDeleting && !busy;
+  const label = busy ? busyLabel : armed ? undoLabel : deleteLabel;
   const ariaLabel = busy
     ? busyLabel
-    : isDeleting
+    : armed
       ? `${undoLabel}, ${countDown} s restantes`
       : deleteLabel;
 
   const spring = reduced
     ? { duration: 0 }
-    : { type: "spring", stiffness: 250, damping: 22 };
+    : { type: "spring", stiffness: 280, damping: 24 };
 
   return (
-    <div className={`flex w-full items-center justify-center ${className}`.trim()}>
-      <MotionConfig transition={spring}>
-        <motion.button
-          type="button"
-          disabled={disabled || busy}
-          aria-label={ariaLabel}
-          aria-busy={busy || undefined}
-          className="relative flex cursor-pointer items-center justify-start overflow-hidden rounded-full transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-50"
-          style={{
-            background: isDeleting || busy ? "rgba(232, 90, 104, 0.14)" : G.coral,
-            border: "none",
-            font: "inherit",
-            padding: 0,
-            maxWidth: "100%",
-          }}
-          animate={{
-            width: bounds.width > 0 ? bounds.width : "auto",
-          }}
-          onClick={handleClick}
-        >
-          <div
-            ref={ref}
-            className={`flex items-center justify-center gap-2 ${
-              isDeleting && !busy ? "px-3 py-2.5" : "px-6 py-3"
-            }`}
-          >
-            <AnimatePresence mode="popLayout">
-              {isDeleting && !busy && (
-                <motion.div
-                  className="rounded-full p-2"
-                  style={{ background: G.coral }}
-                  initial={reduced ? false : { opacity: 0, filter: "blur(2px)" }}
-                  animate={{ opacity: 1, filter: "blur(0px)" }}
-                  exit={reduced ? undefined : { opacity: 0, filter: "blur(2px)" }}
-                >
-                  {icon ?? <Undo2 className="size-5" style={{ color: "#fff" }} />}
-                </motion.div>
-              )}
-            </AnimatePresence>
+    <MotionConfig transition={spring}>
+      <motion.button
+        type="button"
+        disabled={disabled || busy}
+        aria-label={ariaLabel}
+        aria-busy={busy || undefined}
+        className={`ms-timed-undo${armed || busy ? " is-armed" : ""}${className ? ` ${className}` : ""}`}
+        onClick={handleClick}
+        whileTap={disabled || busy ? undefined : { scale: 0.985 }}
+      >
+        <span className="ms-timed-undo-inner">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {armed ? (
+              <motion.span
+                key="undo-icon"
+                className="ms-timed-undo-chip"
+                initial={reduced ? false : { opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={reduced ? undefined : { opacity: 0, scale: 0.85 }}
+                aria-hidden
+              >
+                {icon ?? <Undo2 size={18} strokeWidth={2.4} color="#fff" />}
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
 
-            <div className="flex items-center justify-center gap-2">
-              {reduced || busy ? (
-                <span
-                  className="z-10 text-base font-semibold"
-                  style={{ color: isDeleting || busy ? G.coral : "#fff" }}
-                >
-                  {label}
-                </span>
-              ) : (
-                <AnimatedText
-                  text={label}
-                  className="z-10 text-base font-semibold"
-                  style={{ color: isDeleting ? G.coral : "#fff" }}
-                />
-              )}
-            </div>
+          <span className="ms-timed-undo-label">
+            {reduced || busy ? (
+              label
+            ) : (
+              <AnimatedText text={label} />
+            )}
+          </span>
 
-            <AnimatePresence mode="popLayout">
-              {isDeleting && !busy && (
-                <motion.div
-                  className="flex items-center justify-center rounded-full px-3 py-1 tabular-nums"
-                  style={{ background: G.coral, color: "#fff" }}
-                  initial={reduced ? false : { opacity: 0, filter: "blur(2px)" }}
-                  animate={{ opacity: 1, filter: "blur(0px)" }}
-                  exit={reduced ? undefined : { opacity: 0, filter: "blur(2px)" }}
-                >
-                  <AnimatePresence mode="popLayout">
-                    <motion.span
-                      key={countDown}
-                      className="text-base font-semibold"
-                      initial={
-                        reduced
-                          ? false
-                          : { opacity: 0, y: -20, filter: "blur(2px)", scale: 0.5 }
-                      }
-                      animate={{ opacity: 1, y: 0, filter: "blur(0px)", scale: 1 }}
-                      exit={
-                        reduced
-                          ? undefined
-                          : { opacity: 0, y: 20, filter: "blur(2px)", scale: 0.5 }
-                      }
-                      transition={
-                        reduced
-                          ? { duration: 0 }
-                          : { type: "spring", stiffness: 240, damping: 20, mass: 1 }
-                      }
-                    >
-                      {countDown}
-                    </motion.span>
-                  </AnimatePresence>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.button>
-      </MotionConfig>
-    </div>
+          <AnimatePresence mode="popLayout" initial={false}>
+            {armed ? (
+              <motion.span
+                key="countdown"
+                className="ms-timed-undo-chip ms-timed-undo-count"
+                initial={reduced ? false : { opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={reduced ? undefined : { opacity: 0, scale: 0.85 }}
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={countDown}
+                    initial={reduced ? false : { opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reduced ? undefined : { opacity: 0, y: 10 }}
+                    transition={
+                      reduced
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 320, damping: 22 }
+                    }
+                  >
+                    {countDown}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
+        </span>
+      </motion.button>
+    </MotionConfig>
   );
 }
 
-function AnimatedText({ text, className, style, delayStep = 0.014 }) {
+function AnimatedText({ text, delayStep = 0.012 }) {
   const chars = text.split("");
 
   return (
-    <span className={className} style={{ ...style, display: "inline-flex" }}>
+    <span style={{ display: "inline-flex" }}>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={text}
-          style={{ display: "inline-flex", willChange: "transform" }}
+          style={{ display: "inline-flex" }}
         >
           {chars.map((char, i) => (
             <motion.span
               key={`${text}-${i}`}
-              initial={{ y: 10, opacity: 0, scale: 0.5, filter: "blur(2px)" }}
-              animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ y: -10, opacity: 0, scale: 0.5, filter: "blur(2px)" }}
+              initial={{ y: 8, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -8, opacity: 0 }}
               transition={{
                 type: "spring",
-                stiffness: 240,
-                damping: 16,
-                mass: 1.2,
+                stiffness: 320,
+                damping: 22,
                 delay: i * delayStep,
               }}
               style={{

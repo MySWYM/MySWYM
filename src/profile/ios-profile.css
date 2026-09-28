@@ -670,3 +670,79 @@ html.myswym-ios .ios-cover-lock {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* TimedUndo delete CTA : même silhouette que .ms-pill-cta, variante coral */
+.ms-timed-undo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--ms-cta-h, 52px);
+  margin: 0;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--ms-pill-radius, 18px);
+  background: var(--ms-coral, #e85a68);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(232, 90, 104, 0.28);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, filter 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ms-timed-undo:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.ms-timed-undo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ms-timed-undo.is-armed {
+  background: rgba(232, 90, 104, 0.12);
+  color: var(--ms-coral, #e85a68);
+  box-shadow: none;
+  border: 1.5px solid rgba(232, 90, 104, 0.28);
+}
+
+.ms-timed-undo-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: inherit;
+  padding: 12px 0;
+}
+
+.ms-timed-undo-label {
+  z-index: 1;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ms-timed-undo-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  background: var(--ms-coral, #e85a68);
+  color: #fff;
+}
+
+.ms-timed-undo-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 15px;
+}
