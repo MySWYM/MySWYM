@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import UserNotifications
 import Capacitor
 
 /// Sons UI : catégorie ambient, le bouton sonnerie / vibreur coupe le son.
@@ -37,7 +38,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         MySWYMAudio.useAmbientSession()
+        // Demande système hors WebView Capacitor (sinon pas de ligne Réglages → Notifications).
+        Self.requestNotificationAuthorizationIfNeeded()
         return true
+    }
+
+    /// Popup iOS Autoriser / Refuser. Après réponse, MySWYM apparaît dans Réglages → Notifications.
+    private static func requestNotificationAuthorizationIfNeeded() {
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            guard settings.authorizationStatus == .notDetermined else {
+                if settings.authorizationStatus == .authorized
+                    || settings.authorizationStatus == .provisional
+                    || settings.authorizationStatus == .ephemeral {
+                    DispatchQueue.main.async {
+                        UIApplication.shared.registerForRemoteNotifications()
+                    }
+                }
+                return
+            }
+            DispatchQueue.main.async {
+                center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+                    guard granted else { return }
+                    DispatchQueue.main.async {
+                        UIApplication.shared.registerForRemoteNotifications()
+                    }
+                }
+            }
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
