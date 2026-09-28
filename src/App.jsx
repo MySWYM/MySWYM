@@ -54,6 +54,7 @@ import {
   notifyBadgeEarned,
   cancelMySwymLocalNotifications,
 } from "./lib/native-local-notifications.js";
+import { registerNativePush } from "./lib/native-push.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
@@ -7966,6 +7967,20 @@ export default function App() {
     openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
   }, [screen, user?.id, accessState.trialDaysLeft, accessState.status, isPremium, isFrozen]);
 
+  // Deep link push APNs → onglet (binômes).
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onOpenTab = (ev) => {
+      const tab = String(ev?.detail?.tab || "").trim();
+      if (!tab) return;
+      setScreen("app");
+      const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
+      setActiveTab(next);
+    };
+    window.addEventListener("myswym:open-tab", onOpenTab);
+    return () => window.removeEventListener("myswym:open-tab", onOpenTab);
+  }, []);
+
   // Soft paywall après action à valeur (1ʳᵉ séance / etc.).
   useEffect(() => {
     if (!softPaywallPending || isPremium || showUpgrade) return;
@@ -8274,6 +8289,7 @@ export default function App() {
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (!droppingSessionForRegister && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
           void flushPendingNewsletterOptIn();
+          if (isNativeIos()) void registerNativePush();
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)
@@ -9117,6 +9133,7 @@ export default function App() {
       if (next && isNativeIos()) {
         await requestLocalNotificationPermission(user.id);
         await syncLocalNotificationsFromState({ user, plan });
+        void registerNativePush();
       } else if (!next) {
         await cancelMySwymLocalNotifications();
       }

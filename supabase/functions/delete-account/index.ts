@@ -191,6 +191,7 @@ Deno.serve(async (req) => {
       "buddy_profiles",
       "buddy_moderation",
       "user_access_state",
+      "device_push_tokens",
     ];
     for (const table of tables) {
       try {

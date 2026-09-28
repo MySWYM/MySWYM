@@ -15,6 +15,7 @@ import {
   emitNativeOAuthCompleted,
   isNativeOAuthCallback,
 } from "../lib/native-oauth.js";
+import { registerNativePush } from "../lib/native-push.js";
 import "./native-shell.css";
 
 export { isNativeApp, isNativeIos };
@@ -95,5 +96,8 @@ export async function bootstrapNativeChrome() {
     await SplashScreen.hide();
   } catch {
     /* ignore */
+  }
+  if (isNativeIos()) {
+    void registerNativePush();
   }
 }

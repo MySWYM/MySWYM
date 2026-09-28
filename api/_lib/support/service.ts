@@ -639,5 +639,28 @@ export async function handleOperatorInbound(input: {
     return { ok: true, action: "duplicate" };
   }
   await touchConversation(admin, conversation.id);
+
+  // Push APNs hors app (best-effort, ne bloque pas Telegram).
+  const secret = (process.env.INTERNAL_EMAIL_SECRET || "").trim();
+  if (secret && conversation.user_id) {
+    const base = (
+      process.env.APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
+      || "https://www.myswym.app"
+    ).replace(/\/$/, "");
+    void fetch(`${base}/api/push/notify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-myswym-email-secret": secret,
+      },
+      body: JSON.stringify({
+        event: "support_reply",
+        userId: conversation.user_id,
+        body: cmd.text,
+      }),
+    }).catch(() => {});
+  }
+
   return { ok: true, action: "replied" };
 }
