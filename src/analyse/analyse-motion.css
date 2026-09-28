@@ -214,6 +214,14 @@ button.ios-analyse-row {
   font-variant-numeric: tabular-nums;
 }
 
+.ios-analyse-history-cta {
+  width: 100%;
+  min-height: 48px;
+  margin: 0 0 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
 .ios-analyse-streak {
   display: flex;
   align-items: center;
@@ -227,12 +235,6 @@ button.ios-analyse-row {
 
 .ios-analyse-home .ms-type-page {
   margin: 0 0 10px;
-}
-
-.ios-analyse-home.is-fit {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
 }
 
 .ios-analyse-week {
