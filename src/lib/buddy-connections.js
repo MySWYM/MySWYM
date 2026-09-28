@@ -72,6 +72,13 @@ export async function requestBuddyConnection({
   });
 
   if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  try {
+    const { notifyBuddyPushEvent, buddyConnectionId } = await import("./native-push.js");
+    const connectionId = buddyConnectionId(data);
+    if (connectionId) {
+      void notifyBuddyPushEvent({ event: "buddy_request", connectionId });
+    }
+  } catch { /* push best-effort */ }
   return { data, error: null };
 }
 
@@ -106,6 +113,13 @@ export async function respondBuddyConnection({
 
   if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
   if (!data) return { data: null, error: { message: "Demande introuvable ou déjà traitée." } };
+  if (accept) {
+    try {
+      const { notifyBuddyPushEvent, buddyConnectionId } = await import("./native-push.js");
+      const id = buddyConnectionId(data) || connectionId;
+      if (id) void notifyBuddyPushEvent({ event: "buddy_accepted", connectionId: id });
+    } catch { /* push best-effort */ }
+  }
   return { data, error: null };
 }
 
