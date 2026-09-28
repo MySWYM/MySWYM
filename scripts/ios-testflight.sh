@@ -25,6 +25,16 @@ if ! echo "$IDENTITIES" | grep -qE "Apple Distribution|iPhone Distribution"; the
   exit 1
 fi
 
+echo "==> Préflight node_modules Capacitor Push"
+if [[ ! -d "$ROOT/node_modules/@capacitor/push-notifications" ]]; then
+  echo "Manque @capacitor/push-notifications (Vite plante sinon). npm install…"
+  npm install
+fi
+if [[ ! -d "$ROOT/node_modules/@capacitor/push-notifications" ]]; then
+  echo "ERREUR : @capacitor/push-notifications absent après npm install. Abort."
+  exit 1
+fi
+
 echo "==> cap:sync (backend PROD = .env.ios-prod.local)"
 if [[ ! -f "$ROOT/.env.ios-prod.local" ]]; then
   echo "Manque .env.ios-prod.local (VITE_SUPABASE_URL prod ssdygz…)."
@@ -60,6 +70,7 @@ xcodebuild \
   -allowProvisioningUpdates \
   archive \
   CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY="Apple Distribution" \
   DEVELOPMENT_TEAM="$TEAM_ID"
 
 echo "==> Export + upload App Store Connect"
