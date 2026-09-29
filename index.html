@@ -67,6 +67,10 @@
           var gif = native || p === "/app" || p.indexOf("/app/") === 0;
           if (!gif) document.documentElement.classList.add("myswym-boot-public");
           else document.documentElement.classList.remove("myswym-boot-public");
+          if (gif) document.documentElement.classList.add("myswym-boot-screen");
+          else document.documentElement.classList.remove("myswym-boot-screen");
+          var theme = document.querySelector('meta[name="theme-color"]');
+          if (theme) theme.setAttribute("content", gif ? "#006bfd" : "#9ec8f5");
           var warm = sessionStorage.getItem("myswym-boot-warm") === "1";
           if (!warm) {
             for (var i = 0; i < localStorage.length; i++) {
@@ -85,6 +89,11 @@
         background: #f7fafc;
         --myswym-accent: #006bfd;
         --myswym-ink: #0f1b2d;
+      }
+      html.myswym-boot-screen,
+      html.myswym-boot-screen body,
+      html.myswym-boot-screen #root {
+        background: #006bfd;
       }
       .myswym-boot {
         position: fixed;
@@ -162,8 +171,25 @@
       }
       .myswym-boot--app .myswym-boot-wordmark,
       .myswym-boot-wordmark--app {
-        margin-top: 4px;
-        height: 22px;
+        margin-top: 0;
+        height: 36px;
+        max-width: min(168px, 46vw);
+      }
+      .myswym-boot-spin {
+        position: fixed;
+        left: 50%;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+        width: 28px;
+        height: 28px;
+        margin-left: -14px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, rgba(255, 255, 255, 0) 0deg, rgba(255, 255, 255, 0) 48deg, #fff 300deg);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+        animation: myswym-boot-spin 0.8s linear infinite;
+      }
+      @keyframes myswym-boot-spin {
+        to { transform: rotate(360deg); }
       }
       .myswym-boot-public-ui {
         display: none;
@@ -190,6 +216,7 @@
           transform: scaleX(0.4);
           opacity: 1;
         }
+        .myswym-boot-spin { animation: none; }
       }
     </style>
   </head>
@@ -198,11 +225,8 @@
       <div class="myswym-boot" role="status" aria-live="polite" aria-busy="true" aria-label="Chargement">
         <div class="myswym-boot-inner">
           <div class="myswym-boot-app">
-            <div class="myswym-boot-stage" aria-hidden="true">
-              <img class="myswym-boot-gif" src="/chargement-application-natation.gif" alt="" width="200" height="200" />
-              <img class="myswym-boot-still" src="/boot-mark-still.png" alt="" width="200" height="200" />
-            </div>
-            <img class="myswym-boot-wordmark myswym-boot-wordmark--app" src="/logo-myswym-banner-blanc.png" alt="" height="22" width="95" />
+            <img class="myswym-boot-wordmark myswym-boot-wordmark--app" src="/logo-myswym-banner-blanc.png" alt="" height="36" width="155" />
+            <div class="myswym-boot-spin" aria-hidden="true"></div>
           </div>
           <div class="myswym-boot-public-ui">
             <img class="myswym-boot-wordmark" src="/logo-myswym-on-light.png" alt="" height="24" width="103" />
