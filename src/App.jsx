@@ -1175,16 +1175,13 @@ function appendPaceHistory(profile, { pace100, week, source = "manual" }) {
   return { ...profile, paceHistory: hist };
 }
 
-/** Bloc unique : T50 / T100 / T400 + zones utiles + projection 2/5 ans. */
-const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPremium, onSave, onUpgrade }) => {
+/** Saisie T50 / T100 / T400. Affichée dans Profil, section Natation. */
+const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, onSave, onUpgrade }) => {
   const [val100, setVal100] = useState(pace100 || null);
   const [val50, setVal50] = useState(pace50 || null);
   const [val400, setVal400] = useState(pace400 || null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
-  const [horizonYears, setHorizonYears] = useState(2);
-  const isDiscovery = profile?.level === "découverte" || profile?.level === "beginner";
 
   useEffect(() => {
     setVal100(pace100 || null);
@@ -1193,14 +1190,11 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
     setSaved(false);
   }, [pace100, pace50, pace400]);
 
-  const activePace = val100 || pace100 || null;
   const hasChange =
     val100 !== (pace100 || null)
     || val50 !== (pace50 || null)
     || val400 !== (pace400 || null);
   const canSave = isPremium && hasChange && !saving;
-  const zoneMult = appZoneMultForT100(activePace);
-  const fmtZone = (s) => `${Math.floor(s / 60)}'${String(Math.round(s % 60)).padStart(2, "0")}"`;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -1217,8 +1211,115 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
     }
   };
 
-  // Courbe 2/5 ans
-  const startPace = pace100 || activePace;
+  const lockedPaceBtn = (placeholder, aria) => (
+    <button
+      type="button"
+      onClick={onUpgrade}
+      aria-label={aria}
+      className="ms-profile-field"
+      style={{
+        display: "block", width: "100%", boxSizing: "border-box",
+        padding: "14px 12px", fontSize: 22, fontWeight: 700,
+        textAlign: "center", letterSpacing: "0.04em",
+        color: G.greyMid, cursor: "pointer",
+      }}
+    >
+      {placeholder}
+    </button>
+  );
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <div className="ms-profile-label">Meilleur temps 50 m</div>
+          {isPremium ? (
+            <PaceInput
+              placeholder="0:42"
+              value={val50}
+              onChange={(v) => { setVal50(v); setSaved(false); }}
+              maxLen={3}
+              minSec={18}
+              maxSec={150}
+            />
+          ) : lockedPaceBtn("0:42", "Débloquer le temps au 50 m avec Premium")}
+        </div>
+        <div>
+          <div className="ms-profile-label">Meilleur temps 100 m</div>
+          {isPremium ? (
+            <PaceInput
+              placeholder="1:45"
+              value={val100}
+              onChange={(v) => { setVal100(v); setSaved(false); }}
+              maxLen={3}
+              minSec={45}
+              maxSec={5 * 60}
+            />
+          ) : lockedPaceBtn("1:45", "Débloquer le temps au 100 m avec Premium")}
+        </div>
+        <div>
+          <div className="ms-profile-label">Meilleur temps 400 m</div>
+          {isPremium ? (
+            <PaceInput
+              placeholder="7:30"
+              value={val400}
+              onChange={(v) => { setVal400(v); setSaved(false); }}
+              maxLen={4}
+              minSec={200}
+              maxSec={20 * 60}
+            />
+          ) : lockedPaceBtn("7:30", "Débloquer le temps au 400 m avec Premium")}
+        </div>
+      </div>
+      {isPremium ? (
+        <>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            style={{
+              width: "100%", padding: "12px", borderRadius: 14, border: "none",
+              minHeight: 44, marginTop: 4,
+              cursor: canSave ? "pointer" : "not-allowed",
+              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
+              color: saved || canSave ? G.white : G.greyMid,
+              fontWeight: 700, fontSize: 15,
+            }}
+          >
+            {saved ? "Enregistré" : saving ? "Enregistrement…" : "Enregistrer les temps"}
+          </button>
+          {saved && (
+            <p className="ms-profile-hint" style={{ textAlign: "center" }}>
+              Temps enregistrés. Le 100 m adapte tes prochaines séances.
+            </p>
+          )}
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          style={{
+            width: "100%", padding: "12px", borderRadius: 14, border: "none",
+            minHeight: 44, marginTop: 4, cursor: "pointer",
+            background: G.blue, color: G.white, fontWeight: 700, fontSize: 15,
+          }}
+        >
+          Débloquer avec Premium
+        </button>
+      )}
+    </div>
+  );
+};
+
+/** Zones et projection. La saisie des temps est dans Profil, Natation. */
+const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPremium }) => {
+  const [horizonYears, setHorizonYears] = useState(2);
+  const isDiscovery = profile?.level === "découverte" || profile?.level === "beginner";
+  const activePace = pace100 || null;
+  const zoneMult = appZoneMultForT100(activePace);
+  const fmtZone = (s) => `${Math.floor(s / 60)}'${String(Math.round(s % 60)).padStart(2, "0")}"`;
+
+  const startPace = pace100 || null;
   const showEvolution = !isDiscovery && isPremium && !!startPace;
   const paceAt2 = startPace ? projectedPaceAtYears(startPace, 2) : null;
   const paceAt5 = startPace ? projectedPaceAtYears(startPace, 5) : null;
@@ -1240,25 +1341,11 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
     evolSvg = { SVG_W, SVG_H, xOf, yOf, projPts, startPace, endPace, gainSec, gainPct, paceAt2, paceAt5 };
   }
 
-  const lockedPaceBtn = (placeholder, aria) => (
-    <button
-      type="button"
-      onClick={onUpgrade}
-      aria-label={aria}
-      style={{
-        display: "block", width: "100%", boxSizing: "border-box",
-        padding: "14px 12px", fontSize: 22,
-        fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
-        textAlign: "center", letterSpacing: "0.06em",
-        border: `2px solid ${G.greyLight}`,
-        borderRadius: 14, outline: "none",
-        background: G.greyXLight, color: G.greyMid,
-        cursor: "pointer", opacity: 0.9,
-      }}
-    >
-      {placeholder}
-    </button>
-  );
+  const savedLine = [
+    pace50 ? `${secToDisplay(pace50)} /50 m` : null,
+    pace100 ? `${secToDisplay(pace100)} /100 m` : null,
+    pace400 ? `${secToDisplay(pace400)} /400 m` : null,
+  ].filter(Boolean).join(" · ");
 
   return (
     <div className="fade-up" style={{
@@ -1275,138 +1362,12 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
           <span style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>
             Mon allure
           </span>
-          <button
-            type="button"
-            onClick={() => setInfoOpen((o) => !o)}
-            aria-expanded={infoOpen}
-            aria-label={infoOpen ? "Masquer l’aide allures" : "Pourquoi et comment renseigner les temps"}
-            style={{
-              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-              border: `1px solid ${G.blueMid}55`,
-              background: infoOpen ? G.blueLight : "transparent",
-              color: G.blue,
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", padding: 0,
-            }}
-          >
-            <Info size={13} strokeWidth={2.4} />
-          </button>
         </div>
         {!isPremium && <Lock size={14} color={G.greyMid} aria-hidden />}
       </div>
-
-      {infoOpen && (
-        <div style={{
-          marginBottom: 12, padding: "12px 14px", borderRadius: 12,
-          background: G.blueLight, border: `1px solid ${G.blueMid}33`,
-          fontSize: 13, color: G.inkLight, lineHeight: 1.5,
-        }}>
-          <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: G.ink }}>Pourquoi&nbsp;?</strong>{" "}
-            Le 100&nbsp;m (T100) calibre zones et séances. Les 50 et 400&nbsp;m aident à mieux te situer (on les branchera ensuite).
-          </p>
-          <p style={{ margin: 0 }}>
-            <strong style={{ color: G.ink }}>Comment&nbsp;?</strong>{" "}
-            Crawl, départ dans l’eau, note ton meilleur temps sur chaque distance.
-          </p>
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 12 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Meilleur temps 50 m
-          </div>
-          {isPremium ? (
-            <PaceInput
-              placeholder="0:42"
-              value={val50}
-              onChange={(v) => { setVal50(v); setSaved(false); }}
-              maxLen={3}
-              minSec={18}
-              maxSec={150}
-            />
-          ) : lockedPaceBtn("0:42", "Débloquer le temps au 50 m avec Premium")}
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Meilleur temps 100 m
-          </div>
-          {isPremium ? (
-            <PaceInput
-              placeholder="1:45"
-              value={val100}
-              onChange={(v) => { setVal100(v); setSaved(false); }}
-              maxLen={3}
-              minSec={45}
-              maxSec={5 * 60}
-            />
-          ) : lockedPaceBtn("1:45", "Débloquer le temps au 100 m avec Premium")}
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Meilleur temps 400 m
-          </div>
-          {isPremium ? (
-            <PaceInput
-              placeholder="7:30"
-              value={val400}
-              onChange={(v) => { setVal400(v); setSaved(false); }}
-              maxLen={4}
-              minSec={200}
-              maxSec={20 * 60}
-            />
-          ) : lockedPaceBtn("7:30", "Débloquer le temps au 400 m avec Premium")}
-        </div>
-      </div>
-
-      {isPremium ? (
-        <>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            style={{
-              width: "100%", padding: "12px", borderRadius: 14, border: "none",
-              minHeight: 44,
-              cursor: canSave ? "pointer" : "not-allowed",
-              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
-              color: saved || canSave ? G.white : G.greyMid,
-              fontWeight: 700, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              marginBottom: activePace ? 14 : 0,
-            }}
-          >
-            {saved ? <><Check size={16} /> Enregistré</> : saving ? "Enregistrement…" : "Enregistrer"}
-          </button>
-          {saved && (
-            <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: G.mint, textAlign: "center" }}>
-              Temps enregistrés. Le T100 adapte tes prochaines séances.
-            </p>
-          )}
-          {!saved && pace100 && !hasChange && (
-            <p style={{ margin: "0 0 12px", fontSize: 12, color: G.grey, textAlign: "center" }}>
-              Actif : {secToDisplay(pace100)} /100&nbsp;m
-              {pace50 ? ` · ${secToDisplay(pace50)} /50 m` : ""}
-              {pace400 ? ` · ${secToDisplay(pace400)} /400 m` : ""}
-            </p>
-          )}
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={onUpgrade}
-          style={{
-            width: "100%", padding: "12px", borderRadius: 14, border: "none",
-            minHeight: 44, cursor: "pointer", marginBottom: 4,
-            background: G.blue, color: G.white, fontWeight: 700, fontSize: 15,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-        >
-          <Lock size={14} color={G.white} />
-          Débloquer avec Premium
-        </button>
-      )}
+      <p style={{ margin: "0 0 12px", fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
+        {savedLine || "Tes temps se règlent dans Profil, Natation."}
+      </p>
 
       {isPremium && activePace && (
         <div style={{ marginBottom: showEvolution ? 16 : 0 }}>
@@ -5048,6 +5009,7 @@ function registerAppTabUi() {
     UpdateProgramCard,
     WeekCard,
     MonAllureCard,
+    PaceTimesEditor,
     StravaSection,
     GOALS,
     CATEGORIES,
