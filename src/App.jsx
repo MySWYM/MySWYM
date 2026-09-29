@@ -216,6 +216,7 @@ import {
   copySessionText,
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
+import { copyStoryStickerPng, createStoryStickerCanvas } from "./lib/session-story-sticker.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
@@ -3291,6 +3292,8 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const canvasBadge = badgeMeta ? { label: badgeMeta.label, color: badgeMeta.color } : null;
   const [invite, setInvite] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [stickerUrl, setStickerUrl] = useState("");
+  const [stickerState, setStickerState] = useState("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -3299,6 +3302,23 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const canvas = createStoryStickerCanvas(session);
+    setStickerUrl(canvas ? canvas.toDataURL("image/png") : "");
+    setStickerState("idle");
+  }, [session]);
+
+  const handleCopySticker = async () => {
+    const canvas = createStoryStickerCanvas(session);
+    if (!canvas) return;
+    try {
+      const result = await copyStoryStickerPng(canvas);
+      setStickerState(result === "saved" ? "saved" : "copied");
+    } catch {
+      setStickerState("failed");
+    }
+  };
 
   const pack = buildSessionSharePack(session, invite || {}, {
     badgeLabel: badgeMeta?.label || null,
@@ -3357,6 +3377,44 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           </div>
         </div>
         <div className="ms-soft-sheet-body">
+        {stickerUrl && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{
+              borderRadius: 20,
+              padding: "22px 12px",
+              marginBottom: 10,
+              background: "linear-gradient(180deg, #0B3A6E 0%, #06243F 100%)",
+              display: "flex",
+              justifyContent: "center",
+            }}>
+              <img src={stickerUrl} alt="" style={{ width: "min(240px, 78%)", height: "auto" }} />
+            </div>
+            <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45, margin: "0 0 10px" }}>
+              Sans fond. Colle-le sur ta photo, puis tag @myswym.app.
+            </p>
+            <Btn onClick={handleCopySticker} variant="blue" style={{ width: "100%" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Copy size={14} />
+                {stickerState === "copied" ? "Sticker copié" : stickerState === "saved" ? "Image enregistrée" : "Copier le sticker"}
+              </span>
+            </Btn>
+            {stickerState === "copied" && (
+              <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
+                Ouvre Instagram, nouvelle story, colle.
+              </p>
+            )}
+            {stickerState === "saved" && (
+              <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
+                Ajoute l'image dans ta story.
+              </p>
+            )}
+            {stickerState === "failed" && (
+              <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
+                Copie impossible. Réessaie.
+              </p>
+            )}
+          </div>
+        )}
         <div style={{ background: `linear-gradient(145deg, #06101F 0%, #0033A0 100%)`, borderRadius: 20, padding: 24, marginBottom: 16, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -40, right: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(0,87,253,0.35)" }} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
