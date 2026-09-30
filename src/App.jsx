@@ -174,7 +174,13 @@ import WhatsNewSheet, {
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
-import { restoreAndSyncAppleIap, openAppleSubscriptionManagement } from "./lib/native-iap.js";
+import { restoreAndSyncAppleIap, openAppleSubscriptionManagement, requestAppStoreReview } from "./lib/native-iap.js";
+import {
+  countFinishedSessions,
+  hasAskedAppStoreReview,
+  markAppStoreReviewAsked,
+  shouldRequestAppStoreReview,
+} from "./lib/app-store-review.js";
 import { openStripePortalUrl } from "./lib/native-billing.js";
 import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
 import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
@@ -216,6 +222,7 @@ import {
   copySessionText,
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
+import { copyStoryStickerPng, createStoryStickerCanvas, matchStravaSwim } from "./lib/session-story-sticker.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
@@ -1174,16 +1181,13 @@ function appendPaceHistory(profile, { pace100, week, source = "manual" }) {
   return { ...profile, paceHistory: hist };
 }
 
-/** Bloc unique : T50 / T100 / T400 + zones utiles + projection 2/5 ans. */
-const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPremium, onSave, onUpgrade }) => {
+/** Saisie T50 / T100 / T400. Affichée dans Profil, section Natation. */
+const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, onSave, onUpgrade }) => {
   const [val100, setVal100] = useState(pace100 || null);
   const [val50, setVal50] = useState(pace50 || null);
   const [val400, setVal400] = useState(pace400 || null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
-  const [horizonYears, setHorizonYears] = useState(2);
-  const isDiscovery = profile?.level === "découverte" || profile?.level === "beginner";
 
   useEffect(() => {
     setVal100(pace100 || null);
@@ -1192,14 +1196,11 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
     setSaved(false);
   }, [pace100, pace50, pace400]);
 
-  const activePace = val100 || pace100 || null;
   const hasChange =
     val100 !== (pace100 || null)
     || val50 !== (pace50 || null)
     || val400 !== (pace400 || null);
   const canSave = isPremium && hasChange && !saving;
-  const zoneMult = appZoneMultForT100(activePace);
-  const fmtZone = (s) => `${Math.floor(s / 60)}'${String(Math.round(s % 60)).padStart(2, "0")}"`;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -1216,8 +1217,115 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
     }
   };
 
-  // Courbe 2/5 ans
-  const startPace = pace100 || activePace;
+  const lockedPaceBtn = (placeholder, aria) => (
+    <button
+      type="button"
+      onClick={onUpgrade}
+      aria-label={aria}
+      className="ms-profile-field"
+      style={{
+        display: "block", width: "100%", boxSizing: "border-box",
+        padding: "14px 12px", fontSize: 22, fontWeight: 700,
+        textAlign: "center", letterSpacing: "0.04em",
+        color: G.greyMid, cursor: "pointer",
+      }}
+    >
+      {placeholder}
+    </button>
+  );
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <div className="ms-profile-label">Meilleur temps 50 m</div>
+          {isPremium ? (
+            <PaceInput
+              placeholder="0:42"
+              value={val50}
+              onChange={(v) => { setVal50(v); setSaved(false); }}
+              maxLen={3}
+              minSec={18}
+              maxSec={150}
+            />
+          ) : lockedPaceBtn("0:42", "Débloquer le temps au 50 m avec Premium")}
+        </div>
+        <div>
+          <div className="ms-profile-label">Meilleur temps 100 m</div>
+          {isPremium ? (
+            <PaceInput
+              placeholder="1:45"
+              value={val100}
+              onChange={(v) => { setVal100(v); setSaved(false); }}
+              maxLen={3}
+              minSec={45}
+              maxSec={5 * 60}
+            />
+          ) : lockedPaceBtn("1:45", "Débloquer le temps au 100 m avec Premium")}
+        </div>
+        <div>
+          <div className="ms-profile-label">Meilleur temps 400 m</div>
+          {isPremium ? (
+            <PaceInput
+              placeholder="7:30"
+              value={val400}
+              onChange={(v) => { setVal400(v); setSaved(false); }}
+              maxLen={4}
+              minSec={200}
+              maxSec={20 * 60}
+            />
+          ) : lockedPaceBtn("7:30", "Débloquer le temps au 400 m avec Premium")}
+        </div>
+      </div>
+      {isPremium ? (
+        <>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            style={{
+              width: "100%", padding: "12px", borderRadius: 14, border: "none",
+              minHeight: 44, marginTop: 4,
+              cursor: canSave ? "pointer" : "not-allowed",
+              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
+              color: saved || canSave ? G.white : G.greyMid,
+              fontWeight: 700, fontSize: 15,
+            }}
+          >
+            {saved ? "Enregistré" : saving ? "Enregistrement…" : "Enregistrer les temps"}
+          </button>
+          {saved && (
+            <p className="ms-profile-hint" style={{ textAlign: "center" }}>
+              Temps enregistrés. Le 100 m adapte tes prochaines séances.
+            </p>
+          )}
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          style={{
+            width: "100%", padding: "12px", borderRadius: 14, border: "none",
+            minHeight: 44, marginTop: 4, cursor: "pointer",
+            background: G.blue, color: G.white, fontWeight: 700, fontSize: 15,
+          }}
+        >
+          Débloquer avec Premium
+        </button>
+      )}
+    </div>
+  );
+};
+
+/** Zones et projection. La saisie des temps est dans Profil, Natation. */
+const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPremium }) => {
+  const [horizonYears, setHorizonYears] = useState(2);
+  const isDiscovery = profile?.level === "découverte" || profile?.level === "beginner";
+  const activePace = pace100 || null;
+  const zoneMult = appZoneMultForT100(activePace);
+  const fmtZone = (s) => `${Math.floor(s / 60)}'${String(Math.round(s % 60)).padStart(2, "0")}"`;
+
+  const startPace = pace100 || null;
   const showEvolution = !isDiscovery && isPremium && !!startPace;
   const paceAt2 = startPace ? projectedPaceAtYears(startPace, 2) : null;
   const paceAt5 = startPace ? projectedPaceAtYears(startPace, 5) : null;
@@ -1239,25 +1347,11 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
     evolSvg = { SVG_W, SVG_H, xOf, yOf, projPts, startPace, endPace, gainSec, gainPct, paceAt2, paceAt5 };
   }
 
-  const lockedPaceBtn = (placeholder, aria) => (
-    <button
-      type="button"
-      onClick={onUpgrade}
-      aria-label={aria}
-      style={{
-        display: "block", width: "100%", boxSizing: "border-box",
-        padding: "14px 12px", fontSize: 22,
-        fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontWeight: 700,
-        textAlign: "center", letterSpacing: "0.06em",
-        border: `2px solid ${G.greyLight}`,
-        borderRadius: 14, outline: "none",
-        background: G.greyXLight, color: G.greyMid,
-        cursor: "pointer", opacity: 0.9,
-      }}
-    >
-      {placeholder}
-    </button>
-  );
+  const savedLine = [
+    pace50 ? `${secToDisplay(pace50)} /50 m` : null,
+    pace100 ? `${secToDisplay(pace100)} /100 m` : null,
+    pace400 ? `${secToDisplay(pace400)} /400 m` : null,
+  ].filter(Boolean).join(" · ");
 
   return (
     <div className="fade-up" style={{
@@ -1274,138 +1368,12 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
           <span style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>
             Mon allure
           </span>
-          <button
-            type="button"
-            onClick={() => setInfoOpen((o) => !o)}
-            aria-expanded={infoOpen}
-            aria-label={infoOpen ? "Masquer l’aide allures" : "Pourquoi et comment renseigner les temps"}
-            style={{
-              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-              border: `1px solid ${G.blueMid}55`,
-              background: infoOpen ? G.blueLight : "transparent",
-              color: G.blue,
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", padding: 0,
-            }}
-          >
-            <Info size={13} strokeWidth={2.4} />
-          </button>
         </div>
         {!isPremium && <Lock size={14} color={G.greyMid} aria-hidden />}
       </div>
-
-      {infoOpen && (
-        <div style={{
-          marginBottom: 12, padding: "12px 14px", borderRadius: 12,
-          background: G.blueLight, border: `1px solid ${G.blueMid}33`,
-          fontSize: 13, color: G.inkLight, lineHeight: 1.5,
-        }}>
-          <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: G.ink }}>Pourquoi&nbsp;?</strong>{" "}
-            Le 100&nbsp;m (T100) calibre zones et séances. Les 50 et 400&nbsp;m aident à mieux te situer (on les branchera ensuite).
-          </p>
-          <p style={{ margin: 0 }}>
-            <strong style={{ color: G.ink }}>Comment&nbsp;?</strong>{" "}
-            Crawl, départ dans l’eau, note ton meilleur temps sur chaque distance.
-          </p>
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 12 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Meilleur temps 50 m
-          </div>
-          {isPremium ? (
-            <PaceInput
-              placeholder="0:42"
-              value={val50}
-              onChange={(v) => { setVal50(v); setSaved(false); }}
-              maxLen={3}
-              minSec={18}
-              maxSec={150}
-            />
-          ) : lockedPaceBtn("0:42", "Débloquer le temps au 50 m avec Premium")}
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Meilleur temps 100 m
-          </div>
-          {isPremium ? (
-            <PaceInput
-              placeholder="1:45"
-              value={val100}
-              onChange={(v) => { setVal100(v); setSaved(false); }}
-              maxLen={3}
-              minSec={45}
-              maxSec={5 * 60}
-            />
-          ) : lockedPaceBtn("1:45", "Débloquer le temps au 100 m avec Premium")}
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Meilleur temps 400 m
-          </div>
-          {isPremium ? (
-            <PaceInput
-              placeholder="7:30"
-              value={val400}
-              onChange={(v) => { setVal400(v); setSaved(false); }}
-              maxLen={4}
-              minSec={200}
-              maxSec={20 * 60}
-            />
-          ) : lockedPaceBtn("7:30", "Débloquer le temps au 400 m avec Premium")}
-        </div>
-      </div>
-
-      {isPremium ? (
-        <>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            style={{
-              width: "100%", padding: "12px", borderRadius: 14, border: "none",
-              minHeight: 44,
-              cursor: canSave ? "pointer" : "not-allowed",
-              background: saved ? G.mint : canSave ? G.blue : G.greyLight,
-              color: saved || canSave ? G.white : G.greyMid,
-              fontWeight: 700, fontSize: 15,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              marginBottom: activePace ? 14 : 0,
-            }}
-          >
-            {saved ? <><Check size={16} /> Enregistré</> : saving ? "Enregistrement…" : "Enregistrer"}
-          </button>
-          {saved && (
-            <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: G.mint, textAlign: "center" }}>
-              Temps enregistrés. Le T100 adapte tes prochaines séances.
-            </p>
-          )}
-          {!saved && pace100 && !hasChange && (
-            <p style={{ margin: "0 0 12px", fontSize: 12, color: G.grey, textAlign: "center" }}>
-              Actif : {secToDisplay(pace100)} /100&nbsp;m
-              {pace50 ? ` · ${secToDisplay(pace50)} /50 m` : ""}
-              {pace400 ? ` · ${secToDisplay(pace400)} /400 m` : ""}
-            </p>
-          )}
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={onUpgrade}
-          style={{
-            width: "100%", padding: "12px", borderRadius: 14, border: "none",
-            minHeight: 44, cursor: "pointer", marginBottom: 4,
-            background: G.blue, color: G.white, fontWeight: 700, fontSize: 15,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-        >
-          <Lock size={14} color={G.white} />
-          Débloquer avec Premium
-        </button>
-      )}
+      <p style={{ margin: "0 0 12px", fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
+        {savedLine || "Tes temps se règlent dans Profil, Natation."}
+      </p>
 
       {isPremium && activePace && (
         <div style={{ marginBottom: showEvolution ? 16 : 0 }}>
@@ -3291,6 +3259,9 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const canvasBadge = badgeMeta ? { label: badgeMeta.label, color: badgeMeta.color } : null;
   const [invite, setInvite] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [stickerUrl, setStickerUrl] = useState("");
+  const [stickerState, setStickerState] = useState("idle");
+  const [stravaSwim, setStravaSwim] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -3299,6 +3270,44 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const since = new Date();
+    since.setDate(since.getDate() - 2);
+    const from = since.toISOString().slice(0, 10);
+    supabase
+      .from("strava_activities")
+      .select("activity_type, distance, duration, pace, activity_date, raw_data")
+      .in("activity_type", ["Swim", "OpenWaterSwim"])
+      .gte("activity_date", from)
+      .order("activity_date", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (!cancelled) setStravaSwim(matchStravaSwim(data || [], session));
+      })
+      .catch(() => {
+        if (!cancelled) setStravaSwim(null);
+      });
+    return () => { cancelled = true; };
+  }, [session]);
+
+  useEffect(() => {
+    const canvas = createStoryStickerCanvas(session, stravaSwim);
+    setStickerUrl(canvas ? canvas.toDataURL("image/png") : "");
+    setStickerState("idle");
+  }, [session, stravaSwim]);
+
+  const handleCopySticker = async () => {
+    const canvas = createStoryStickerCanvas(session, stravaSwim);
+    if (!canvas) return;
+    try {
+      const result = await copyStoryStickerPng(canvas);
+      setStickerState(result === "saved" ? "saved" : "copied");
+    } catch {
+      setStickerState("failed");
+    }
+  };
 
   const pack = buildSessionSharePack(session, invite || {}, {
     badgeLabel: badgeMeta?.label || null,
@@ -3357,6 +3366,44 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           </div>
         </div>
         <div className="ms-soft-sheet-body">
+        {stickerUrl && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{
+              borderRadius: 20,
+              padding: "22px 12px",
+              marginBottom: 10,
+              background: "linear-gradient(180deg, #0B3A6E 0%, #06243F 100%)",
+              display: "flex",
+              justifyContent: "center",
+            }}>
+              <img src={stickerUrl} alt="" style={{ width: "min(240px, 78%)", height: "auto" }} />
+            </div>
+            <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45, margin: "0 0 10px" }}>
+              Sans fond. Colle-le sur ta photo, puis tag @myswym.app.
+            </p>
+            <Btn onClick={handleCopySticker} variant="blue" style={{ width: "100%" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Copy size={14} />
+                {stickerState === "copied" ? "Sticker copié" : stickerState === "saved" ? "Image enregistrée" : "Copier le sticker"}
+              </span>
+            </Btn>
+            {stickerState === "copied" && (
+              <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
+                Ouvre Instagram, nouvelle story, colle.
+              </p>
+            )}
+            {stickerState === "saved" && (
+              <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
+                Ajoute l'image dans ta story.
+              </p>
+            )}
+            {stickerState === "failed" && (
+              <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
+                Copie impossible. Réessaie.
+              </p>
+            )}
+          </div>
+        )}
         <div style={{ background: `linear-gradient(145deg, #06101F 0%, #0033A0 100%)`, borderRadius: 20, padding: 24, marginBottom: 16, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -40, right: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(0,87,253,0.35)" }} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
@@ -4990,6 +5037,7 @@ function registerAppTabUi() {
     UpdateProgramCard,
     WeekCard,
     MonAllureCard,
+    PaceTimesEditor,
     StravaSection,
     GOALS,
     CATEGORIES,
@@ -9820,6 +9868,7 @@ export default function App() {
       const archived = {
         ...cur,
         completed: resolvedStatus === "done",
+        completedAt: resolvedStatus === "done" ? (cur.completedAt || new Date().toISOString()) : null,
         skipped: resolvedStatus === "done" ? null : (resolvedStatus === "missed" ? "missed" : "not_done"),
       };
 
@@ -9902,8 +9951,8 @@ export default function App() {
         weeks: entry.plan.weeks.map((w, wi) => wi !== weekIndex ? w : {
           ...w, sessions: w.sessions.map((s, si) => {
             if (si !== sessionIndex) return s;
-            if (resolvedStatus === "reset") return { ...s, completed: false, skipped: null, feedback: null };
-            if (resolvedStatus === "done") return { ...s, completed: true, skipped: null };
+            if (resolvedStatus === "reset") return { ...s, completed: false, skipped: null, feedback: null, completedAt: null };
+            if (resolvedStatus === "done") return { ...s, completed: true, skipped: null, completedAt: s.completedAt || new Date().toISOString() };
             if (resolvedStatus === "missed") return { ...s, completed: false, skipped: "missed" };
             if (resolvedStatus === "not_done") return { ...s, completed: false, skipped: "not_done" };
             return { ...s, completed: true, skipped: null };
@@ -9975,15 +10024,36 @@ export default function App() {
     }, 700);
   };
 
+  const maybeRequestAppStoreReview = ({ rating = null, hasPain = false, planSnapshot = plan } = {}) => {
+    if (!shouldRequestAppStoreReview({
+      isNative: isNativeIos(),
+      alreadyAsked: hasAskedAppStoreReview(),
+      completedCount: countFinishedSessions(planSnapshot),
+      rating,
+      hasPain,
+    })) return;
+    void requestAppStoreReview().then((shown) => {
+      if (shown) markAppStoreReviewAsked();
+    });
+  };
+
   const closeSessionFeedbackSheet = () => {
     const target = sessionFeedbackTarget;
     setSessionFeedbackTarget(null);
     scrollAppToTop();
+    const session = target?.archived
+      || plan?.weeks?.[target?.weekIndex]?.sessions?.[target?.sessionIndex];
+    const freshComplete = Boolean(target) && !session?.feedback;
     if (target?.loopMode && target.archived) {
       void finishLoopSessionAndAdvance(target.archived, target.sessionIndex ?? 0);
+      if (freshComplete) maybeRequestAppStoreReview();
       return;
     }
-    if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
+    if (target?.promptWeekAfter) {
+      maybePromptWeekFeedback(target.weekIndex);
+      return;
+    }
+    if (freshComplete) maybeRequestAppStoreReview();
   };
 
   const persistTaste = (nextTaste, userId = user?.id) => {
@@ -10084,6 +10154,7 @@ export default function App() {
         }).then(() => {});
       }
       if (shouldNudge) showToast("Prochaines séances adaptées à tes goûts.", 4000);
+      if (isFirstFeedback) maybeRequestAppStoreReview({ rating, hasPain: hasPainTag });
       return;
     }
 
@@ -10253,7 +10324,11 @@ export default function App() {
     }
 
     setSessionFeedbackTarget(null);
-    if (promptWeekAfter) maybePromptWeekFeedback(weekIndex);
+    if (promptWeekAfter) {
+      maybePromptWeekFeedback(weekIndex);
+      return;
+    }
+    if (isFirstFeedback) maybeRequestAppStoreReview({ rating, hasPain: hasPainTag });
   };
 
   const handleEditSessionFeedback = (weekIndex, sessionIndex) => {

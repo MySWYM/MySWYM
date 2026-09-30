@@ -6,6 +6,7 @@ class MySWYMBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(AppleIapPlugin())
         bridge?.registerPluginInstance(AppleHealthPlugin())
+        bridge?.registerPluginInstance(StoryStickerPlugin())
         disableWebViewBounce()
     }
 

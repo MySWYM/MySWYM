@@ -198,7 +198,7 @@ export default function ProfileTab({
   onChangeGoal = null,
 }) {
   const { t: to } = useTranslation("onboarding");
-  const { StravaSection } = getTabUi();
+  const { StravaSection, PaceTimesEditor } = getTabUi();
   const access = getAccessState(user);
   const applePaid = access.billingProvider === "apple";
   const canManageSubscription = access.canManageSubscription;
@@ -1883,6 +1883,20 @@ export default function ProfileTab({
                   </div>
                 </>
               )}
+              <div className="ms-profile-label">Temps</div>
+              <p className="ms-profile-hint">
+                Crawl, départ dans l'eau. Le 100 m calibre tes séances. Les 50 m et 400 m affinent ta place.
+              </p>
+              {PaceTimesEditor ? (
+                <PaceTimesEditor
+                  pace100={profile?.pace100}
+                  pace50={profile?.pace50}
+                  pace400={profile?.pace400}
+                  isPremium={isPremium}
+                  onSave={onPaceUpdate}
+                  onUpgrade={onUpgrade}
+                />
+              ) : null}
             </ProfileSection>
             ) : null}
             {natationConfirmOpen && createPortal(
