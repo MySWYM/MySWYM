@@ -182,7 +182,13 @@ import WhatsNewSheet, {
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
-import { restoreAndSyncAppleIap, openAppleSubscriptionManagement } from "./lib/native-iap.js";
+import { restoreAndSyncAppleIap, openAppleSubscriptionManagement, requestAppStoreReview } from "./lib/native-iap.js";
+import {
+  countFinishedSessions,
+  hasAskedAppStoreReview,
+  markAppStoreReviewAsked,
+  shouldRequestAppStoreReview,
+} from "./lib/app-store-review.js";
 import { openStripePortalUrl } from "./lib/native-billing.js";
 import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
 import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
@@ -9979,15 +9985,36 @@ export default function App() {
     }, 700);
   };
 
+  const maybeRequestAppStoreReview = ({ rating = null, hasPain = false, planSnapshot = plan } = {}) => {
+    if (!shouldRequestAppStoreReview({
+      isNative: isNativeIos(),
+      alreadyAsked: hasAskedAppStoreReview(),
+      completedCount: countFinishedSessions(planSnapshot),
+      rating,
+      hasPain,
+    })) return;
+    void requestAppStoreReview().then((shown) => {
+      if (shown) markAppStoreReviewAsked();
+    });
+  };
+
   const closeSessionFeedbackSheet = () => {
     const target = sessionFeedbackTarget;
     setSessionFeedbackTarget(null);
     scrollAppToTop();
+    const session = target?.archived
+      || plan?.weeks?.[target?.weekIndex]?.sessions?.[target?.sessionIndex];
+    const freshComplete = Boolean(target) && !session?.feedback;
     if (target?.loopMode && target.archived) {
       void finishLoopSessionAndAdvance(target.archived, target.sessionIndex ?? 0);
+      if (freshComplete) maybeRequestAppStoreReview();
       return;
     }
-    if (target?.promptWeekAfter) maybePromptWeekFeedback(target.weekIndex);
+    if (target?.promptWeekAfter) {
+      maybePromptWeekFeedback(target.weekIndex);
+      return;
+    }
+    if (freshComplete) maybeRequestAppStoreReview();
   };
 
   const persistTaste = (nextTaste, userId = user?.id) => {
@@ -10088,6 +10115,7 @@ export default function App() {
         }).then(() => {});
       }
       if (shouldNudge) showToast("Prochaines séances adaptées à tes goûts.", 4000);
+      if (isFirstFeedback) maybeRequestAppStoreReview({ rating, hasPain: hasPainTag });
       return;
     }
 
@@ -10257,7 +10285,11 @@ export default function App() {
     }
 
     setSessionFeedbackTarget(null);
-    if (promptWeekAfter) maybePromptWeekFeedback(weekIndex);
+    if (promptWeekAfter) {
+      maybePromptWeekFeedback(weekIndex);
+      return;
+    }
+    if (isFirstFeedback) maybeRequestAppStoreReview({ rating, hasPain: hasPainTag });
   };
 
   const handleEditSessionFeedback = (weekIndex, sessionIndex) => {

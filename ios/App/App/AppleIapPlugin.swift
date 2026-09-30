@@ -11,6 +11,7 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "manageSubscriptions", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
     ]
 
     private static let defaultProductIds = [
@@ -124,6 +125,18 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
             } catch {
                 call.reject(error.localizedDescription)
             }
+        }
+    }
+
+    /// Feuille système Apple. L’OS décide si elle s’affiche.
+    @objc func requestReview(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let scene = self.bridge?.webView?.window?.windowScene else {
+                call.reject("Fenêtre iOS introuvable")
+                return
+            }
+            SKStoreReviewController.requestReview(in: scene)
+            call.resolve()
         }
     }
 }

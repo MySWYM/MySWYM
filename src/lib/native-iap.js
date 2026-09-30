@@ -74,3 +74,14 @@ export async function openAppleSubscriptionManagement() {
   if (!isNativeApp()) return;
   await AppleIap.manageSubscriptions();
 }
+
+/** Feuille d’avis App Store. Apple peut ne rien afficher. */
+export async function requestAppStoreReview() {
+  if (!isNativeApp()) return false;
+  try {
+    await AppleIap.requestReview();
+    return true;
+  } catch {
+    return false;
+  }
+}
