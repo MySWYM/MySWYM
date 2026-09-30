@@ -94,6 +94,9 @@ export async function handlePushNotifyHttp(
         if (conn.requester_id !== user.id) {
           return res.status(403).json({ ok: false, error: "forbidden" });
         }
+        if (conn.status !== "pending") {
+          return res.status(400).json({ ok: false, error: "not_pending" });
+        }
         const result = await pushToUser(conn.recipient_id, {
           title: "Demande de binôme",
           body: "Un nageur veut nager avec toi.",

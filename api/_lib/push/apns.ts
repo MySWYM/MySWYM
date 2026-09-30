@@ -1,6 +1,7 @@
 /**
  * APNs HTTP/2 (AuthKey .p8).
  * Env : APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID, APNS_P8, APNS_PRODUCTION=1|0
+ * Sans APNS_PRODUCTION, Vercel production parle à api.push.apple.com (jetons TestFlight).
  */
 import { createSign } from "node:crypto";
 
@@ -46,7 +47,7 @@ function readConfig(): ApnsConfig | null {
     teamId: process.env.APNS_TEAM_ID!.trim(),
     bundleId: (process.env.APNS_BUNDLE_ID || "app.myswym.ios").trim(),
     p8,
-    production: (process.env.APNS_PRODUCTION || "0").trim() === "1",
+    production: (process.env.APNS_PRODUCTION ?? (process.env.VERCEL_ENV === "production" ? "1" : "0")).trim() === "1",
   };
 }
 
