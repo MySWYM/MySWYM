@@ -829,6 +829,20 @@ export default function ProfileTab({
               onOpenHelp={() => setHelpPanel("support")}
               onOpenLegal={() => setHelpPanel("legal")}
               onSignOut={onSignOut}
+              onDeleteAccount={async () => {
+                setDeleteErr(null);
+                setDeleteBusy(true);
+                try {
+                  await onDeleteAccount();
+                } catch (e) {
+                  setDeleteErr(e?.message || "Suppression impossible.");
+                  setDeleteBusy(false);
+                }
+              }}
+              deleteBusy={deleteBusy}
+              deleteErr={deleteErr}
+              deleteGate={deleteGate}
+              deleteWarning={deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
             />
           ) : (
           <>

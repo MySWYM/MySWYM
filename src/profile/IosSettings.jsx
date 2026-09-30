@@ -405,12 +405,18 @@ export function IosSettingsHome({
   onOpenHelp,
   onOpenLegal,
   onSignOut,
+  onDeleteAccount,
+  deleteBusy = false,
+  deleteErr = null,
+  deleteGate = null,
+  deleteWarning = "",
 }) {
   const { i18n } = useTranslation();
   const lng = i18n.language?.startsWith("en") ? "en" : "fr";
   const langName = LANGS.find((l) => l.id === lng)?.name || "Français";
   const faqHref = withLocalePrefix("/faq", lng);
   const [restoreBusy, setRestoreBusy] = useState(false);
+  const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
 
   return (
     <>
@@ -444,13 +450,15 @@ export function IosSettingsHome({
           trailing={<StatusCheck on={!!stravaConnected} />}
           onClick={onOpenStrava}
         />
-        <SettingsRow
-          icon={HeartPulse}
-          title="Apple Santé"
-          chevron={false}
-          trailing={<StatusCheck on={!!healthConnected} />}
-          onClick={onOpenHealth}
-        />
+        {isNativeApp() ? (
+          <SettingsRow
+            icon={HeartPulse}
+            title="Apple Santé"
+            chevron={false}
+            trailing={<StatusCheck on={!!healthConnected} />}
+            onClick={onOpenHealth}
+          />
+        ) : null}
       </div>
 
       <div className="ms-profile-group-label">Abonnement</div>
@@ -467,6 +475,46 @@ export function IosSettingsHome({
         <SettingsRow icon={Info} title="Aide" onClick={onOpenHelp} />
         <SettingsRow icon={FileText} title="Politiques" onClick={onOpenLegal} />
       </div>
+
+      {user && onDeleteAccount ? (
+        <>
+          <p className="ios-settings-warn">La suppression du compte est irréversible.</p>
+          {deleteGate?.allowed && deleteWarning ? (
+            <p className="ios-settings-copy" style={{ marginBottom: 8 }}>
+              {deleteWarning}
+            </p>
+          ) : null}
+          <div style={{ margin: "8px 0 12px" }}>
+            <TimedUndoAction
+              disabled={deleteBusy || deleteGate?.code === "pending"}
+              busy={deleteBusy}
+              blocked={deleteGate?.code !== "pending" && !deleteGate?.allowed}
+              onBlocked={() => {
+                playUiSound("soft");
+                setDeleteBlockedOpen(true);
+              }}
+              onCommit={() => {
+                playUiSound("soft");
+                return onDeleteAccount();
+              }}
+            />
+          </div>
+          {deleteErr ? <p className="ios-settings-alert is-err">{deleteErr}</p> : null}
+        </>
+      ) : null}
+      {deleteBlockedOpen && createPortal(
+        <ConfirmSheet
+          title={ACCOUNT_DELETE_BLOCKED_TITLE}
+          message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
+          confirmLabel="Compris"
+          cancelLabel={null}
+          destructive={false}
+          icon={AlertTriangle}
+          onConfirm={() => setDeleteBlockedOpen(false)}
+          onCancel={() => setDeleteBlockedOpen(false)}
+        />,
+        document.body,
+      )}
 
       <button
         type="button"
