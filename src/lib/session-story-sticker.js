@@ -1,5 +1,6 @@
 /**
- * Sticker story transparent : distance, durée, allure, logo.
+ * Sticker story transparent : distance prévue, ou distance et allure
+ * d'une nage Strava du même jour. Pas de durée inventée.
  * Le PNG n'a pas de fond, pour être collé sur une photo Instagram.
  */
 
@@ -23,16 +24,6 @@ export function parseDistanceMeters(distance) {
   return null;
 }
 
-export function durationMinutes(duration) {
-  if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) return duration;
-  const text = String(duration || "").trim();
-  const hours = text.match(/(\d+)\s*h(?:\s*(\d+))?/i);
-  if (hours) return parseInt(hours[1], 10) * 60 + (hours[2] ? parseInt(hours[2], 10) : 0);
-  const mins = text.match(/(\d+)\s*min/i);
-  if (mins) return parseInt(mins[1], 10);
-  return null;
-}
-
 export function formatStoryDistance(distance) {
   const meters = parseDistanceMeters(distance);
   if (meters == null) {
@@ -42,44 +33,92 @@ export function formatStoryDistance(distance) {
   return `${meters.toLocaleString("fr-FR")} m`;
 }
 
-export function formatStoryDuration(duration) {
-  const mins = durationMinutes(duration);
-  if (mins == null) {
-    const text = String(duration || "").trim();
-    return text || null;
-  }
-  if (mins < 60) return `${mins} min`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m ? `${h} h ${m}` : `${h} h`;
-}
+const SWIM_TYPES = new Set(["Swim", "OpenWaterSwim"]);
 
-export function formatStoryPace(session) {
-  const meters = parseDistanceMeters(session?.distance);
-  const mins = durationMinutes(session?.duration);
-  if (meters == null || meters < 100 || mins == null) return null;
-  const secPer100 = (mins * 60) / (meters / 100);
-  if (secPer100 < 40 || secPer100 > 300) return null;
-  const total = Math.round(secPer100);
+export function formatPaceSeconds(sec) {
+  const n = Number(sec);
+  if (!Number.isFinite(n) || n < 40 || n > 300) return null;
+  const total = Math.round(n);
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${m}:${String(s).padStart(2, "0")} /100 m`;
 }
 
-export function storyStickerLines(session) {
-  const distance = formatStoryDistance(session?.distance);
-  const duration = formatStoryDuration(session?.duration);
-  const pace = formatStoryPace(session);
-  return [
-    distance ? { label: "Distance", value: distance } : null,
-    duration ? { label: "Durée", value: duration } : null,
-    pace ? { label: "Allure", value: pace } : null,
-  ].filter(Boolean);
+function parseInstant(value) {
+  if (!value) return null;
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const t = Date.parse(text);
+  return Number.isFinite(t) ? t : null;
 }
 
-export function createStoryStickerCanvas(session) {
+function localDayKey(ms) {
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function activityStartMs(activity) {
+  const raw = activity?.raw_data || {};
+  return parseInstant(raw.start_date_local) || parseInstant(raw.start_date) || null;
+}
+
+export function activityPaceSeconds(activity) {
+  const stored = Number(activity?.pace);
+  if (Number.isFinite(stored) && stored > 0) return stored;
+  const dist = Number(activity?.distance);
+  const time = Number(activity?.duration);
+  if (!dist || !time) return null;
+  return Math.round((time / dist) * 100);
+}
+
+/** Instant de la séance : validation, sinon maintenant. */
+export function sessionShareInstant(session, now = new Date()) {
+  return (
+    parseInstant(session?.completedAt)
+    || parseInstant(session?.completed_at)
+    || parseInstant(session?.feedback?.at)
+    || now.getTime()
+  );
+}
+
+/**
+ * Nage Strava du même jour, la plus proche de l'heure de la séance.
+ * @param {object[]} activities
+ */
+export function matchStravaSwim(activities, session, now = new Date()) {
+  const at = sessionShareInstant(session, now);
+  const day = localDayKey(at);
+  const candidates = (activities || []).filter((activity) => {
+    if (!SWIM_TYPES.has(activity?.activity_type)) return false;
+    const start = activityStartMs(activity);
+    if (start == null || localDayKey(start) !== day) return false;
+    const meters = Number(activity.distance);
+    return Number.isFinite(meters) && meters >= 100;
+  });
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => Math.abs(activityStartMs(a) - at) - Math.abs(activityStartMs(b) - at));
+  return candidates[0];
+}
+
+export function storyStickerLines(session, activity = null) {
+  if (activity) {
+    const distance = formatStoryDistance(activity.distance);
+    const pace = formatPaceSeconds(activityPaceSeconds(activity));
+    return [
+      distance ? { label: "Distance", value: distance } : null,
+      pace ? { label: "Allure", value: pace } : null,
+    ].filter(Boolean);
+  }
+  const distance = formatStoryDistance(session?.distance);
+  return distance ? [{ label: "Distance", value: distance }] : [];
+}
+
+export function createStoryStickerCanvas(session, activity = null) {
   if (typeof document === "undefined") return null;
-  const lines = storyStickerLines(session);
+  const lines = storyStickerLines(session, activity);
   if (!lines.length) return null;
 
   const W = 900;

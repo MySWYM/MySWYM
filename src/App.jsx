@@ -216,7 +216,7 @@ import {
   copySessionText,
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
-import { copyStoryStickerPng, createStoryStickerCanvas } from "./lib/session-story-sticker.js";
+import { copyStoryStickerPng, createStoryStickerCanvas, matchStravaSwim } from "./lib/session-story-sticker.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
@@ -3255,6 +3255,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const [copied, setCopied] = useState(false);
   const [stickerUrl, setStickerUrl] = useState("");
   const [stickerState, setStickerState] = useState("idle");
+  const [stravaSwim, setStravaSwim] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -3265,13 +3266,34 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   }, []);
 
   useEffect(() => {
-    const canvas = createStoryStickerCanvas(session);
-    setStickerUrl(canvas ? canvas.toDataURL("image/png") : "");
-    setStickerState("idle");
+    let cancelled = false;
+    const since = new Date();
+    since.setDate(since.getDate() - 2);
+    const from = since.toISOString().slice(0, 10);
+    supabase
+      .from("strava_activities")
+      .select("activity_type, distance, duration, pace, activity_date, raw_data")
+      .in("activity_type", ["Swim", "OpenWaterSwim"])
+      .gte("activity_date", from)
+      .order("activity_date", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (!cancelled) setStravaSwim(matchStravaSwim(data || [], session));
+      })
+      .catch(() => {
+        if (!cancelled) setStravaSwim(null);
+      });
+    return () => { cancelled = true; };
   }, [session]);
 
+  useEffect(() => {
+    const canvas = createStoryStickerCanvas(session, stravaSwim);
+    setStickerUrl(canvas ? canvas.toDataURL("image/png") : "");
+    setStickerState("idle");
+  }, [session, stravaSwim]);
+
   const handleCopySticker = async () => {
-    const canvas = createStoryStickerCanvas(session);
+    const canvas = createStoryStickerCanvas(session, stravaSwim);
     if (!canvas) return;
     try {
       const result = await copyStoryStickerPng(canvas);
@@ -9840,6 +9862,7 @@ export default function App() {
       const archived = {
         ...cur,
         completed: resolvedStatus === "done",
+        completedAt: resolvedStatus === "done" ? (cur.completedAt || new Date().toISOString()) : null,
         skipped: resolvedStatus === "done" ? null : (resolvedStatus === "missed" ? "missed" : "not_done"),
       };
 
@@ -9922,8 +9945,8 @@ export default function App() {
         weeks: entry.plan.weeks.map((w, wi) => wi !== weekIndex ? w : {
           ...w, sessions: w.sessions.map((s, si) => {
             if (si !== sessionIndex) return s;
-            if (resolvedStatus === "reset") return { ...s, completed: false, skipped: null, feedback: null };
-            if (resolvedStatus === "done") return { ...s, completed: true, skipped: null };
+            if (resolvedStatus === "reset") return { ...s, completed: false, skipped: null, feedback: null, completedAt: null };
+            if (resolvedStatus === "done") return { ...s, completed: true, skipped: null, completedAt: s.completedAt || new Date().toISOString() };
             if (resolvedStatus === "missed") return { ...s, completed: false, skipped: "missed" };
             if (resolvedStatus === "not_done") return { ...s, completed: false, skipped: "not_done" };
             return { ...s, completed: true, skipped: null };
