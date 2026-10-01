@@ -1,8 +1,11 @@
 /**
  * Push APNs (Capacitor) : enregistrement jeton + invoke buddy/support.
  * No-op hors iOS natif.
- * La permission alertes passe d’abord par LocalNotifications (Réglages iOS).
+ *
+ * Le « token » = adresse Apple de cet iPhone. Sans ligne dans device_push_tokens,
+ * le serveur ne peut pas envoyer bannière / pastille.
  */
+import { registerPlugin } from "@capacitor/core";
 import { supabase } from "../supabase.js";
 import { isNativeIos, nativeApiOrigin } from "./native-platform.js";
 import { buddyConnectionId } from "./buddy-connection-id.js";
@@ -11,10 +14,15 @@ import { ensureIosNotificationPermission } from "./native-local-notifications.js
 export { buddyConnectionId };
 
 const BUNDLE_ID = "app.myswym.ios";
+const AppBadge = registerPlugin("AppBadge");
 let listenersReady = false;
 let registerInFlight = null;
 /** Jeton reçu avant session auth (boot AppDelegate). */
 let pendingToken = null;
+
+function normalizeToken(token) {
+  return String(token || "").replace(/\s+/g, "").toLowerCase();
+}
 
 async function getPushPlugin() {
   if (!isNativeIos()) return null;
@@ -26,9 +34,67 @@ async function getPushPlugin() {
   }
 }
 
+async function readCachedNativeToken() {
+  if (!isNativeIos()) return null;
+  try {
+    await AppBadge.replayApnsToken?.();
+  } catch { /* ignore */ }
+  try {
+    const res = await AppBadge.getApnsToken();
+    const t = normalizeToken(res?.token);
+    return t.length >= 64 ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Upsert via API (service role serveur) : ne dépend pas du RLS client. */
+async function upsertTokenViaApi(token) {
+  const clean = normalizeToken(token);
+  if (!clean || clean.length < 64) return { ok: false, reason: "bad_token" };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    pendingToken = clean;
+    return { ok: false, reason: "no_session" };
+  }
+  try {
+    const origin = nativeApiOrigin();
+    const res = await fetch(`${origin}/api/push/notify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        event: "register_token",
+        token: clean,
+        appBundle: BUNDLE_ID,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok) {
+      console.warn("[push] register_token api", res.status, json?.error);
+      pendingToken = clean;
+      return { ok: false, reason: json?.error || `http_${res.status}` };
+    }
+    pendingToken = null;
+    return { ok: true };
+  } catch (e) {
+    console.warn("[push] register_token fetch", e);
+    pendingToken = clean;
+    return { ok: false, reason: e?.message || "fetch_failed" };
+  }
+}
+
 async function upsertDeviceToken(token) {
-  const clean = String(token || "").replace(/\s+/g, "");
-  if (!clean || clean.length < 32) return { ok: false, reason: "bad_token" };
+  const clean = normalizeToken(token);
+  if (!clean || clean.length < 64) return { ok: false, reason: "bad_token" };
+
+  // 1) API serveur (fiable)
+  const viaApi = await upsertTokenViaApi(clean);
+  if (viaApi.ok) return viaApi;
+
+  // 2) Fallback direct Supabase (RLS user)
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user?.id) {
     pendingToken = clean;
@@ -56,7 +122,10 @@ async function upsertDeviceToken(token) {
 
 /** Si un jeton était en attente (boot avant login), l’écrit maintenant. */
 export async function flushPendingPushToken() {
-  if (!isNativeIos() || !pendingToken) return { ok: false, reason: "none" };
+  if (!isNativeIos()) return { ok: false, reason: "none" };
+  const cached = await readCachedNativeToken();
+  if (cached) pendingToken = cached;
+  if (!pendingToken) return { ok: false, reason: "none" };
   return upsertDeviceToken(pendingToken);
 }
 
@@ -88,7 +157,6 @@ async function ensureListeners(PushNotifications) {
     dispatchFromPushData(ev?.notification?.data);
   });
   await PushNotifications.addListener("pushNotificationReceived", () => {
-    /* foreground : pastille + cloche in-app ; pas de double toast */
     void import("./native-app-badge.js").then((m) => m.clearAppIconBadge()).catch(() => {});
   });
 }
@@ -121,9 +189,18 @@ export async function registerNativePush() {
         return { ok: false, reason: "denied" };
       }
       await PushNotifications.register();
-      // iOS peut renvoyer le jeton en différé ; 2e register après pause.
-      await new Promise((r) => setTimeout(r, 1500));
-      await PushNotifications.register();
+      // Rejoue le cache natif (jeton souvent arrivé au boot avant les listeners JS).
+      try { await AppBadge.replayApnsToken(); } catch { /* ignore */ }
+
+      for (const waitMs of [0, 800, 2000, 4000]) {
+        if (waitMs) await new Promise((r) => setTimeout(r, waitMs));
+        const cached = await readCachedNativeToken();
+        if (cached) {
+          const saved = await upsertDeviceToken(cached);
+          if (saved.ok) return { ok: true, via: "cache" };
+        }
+        await PushNotifications.register();
+      }
       await flushPendingPushToken();
       return { ok: true };
     } catch (e) {

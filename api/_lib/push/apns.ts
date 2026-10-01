@@ -80,7 +80,7 @@ export async function sendApnsToDevice(
 ): Promise<{ ok: boolean; status?: number; reason?: string }> {
   const cfg = readConfig();
   if (!cfg) return { ok: false, reason: "apns_not_configured" };
-  const token = String(deviceToken || "").replace(/\s+/g, "");
+  const token = String(deviceToken || "").replace(/\s+/g, "").toLowerCase();
   if (!token || token.length < 64) return { ok: false, reason: "bad_token" };
 
   const host = cfg.production ? "api.push.apple.com" : "api.sandbox.push.apple.com";

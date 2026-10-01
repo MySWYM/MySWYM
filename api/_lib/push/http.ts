@@ -45,9 +45,23 @@ async function userFromAuth(req: VercelRequest) {
   const auth = String(req.headers.authorization || "");
   const token = auth.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
-  const { data, error } = await supabaseAnon().auth.getUser(token);
-  if (error || !data?.user) return null;
-  return data.user;
+  // Prefer service role (présent en prod) ; fallback anon.
+  try {
+    const admin = supabaseAdmin();
+    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    if (url && key) {
+      const { data, error } = await admin.auth.getUser(token);
+      if (!error && data?.user) return data.user;
+    }
+  } catch { /* fall through */ }
+  try {
+    const { data, error } = await supabaseAnon().auth.getUser(token);
+    if (error || !data?.user) return null;
+    return data.user;
+  } catch {
+    return null;
+  }
 }
 
 export async function handlePushNotifyHttp(
@@ -75,6 +89,39 @@ export async function handlePushNotifyHttp(
         data: { kind: "support", path: "/app" },
       });
       return res.status(200).json({ ok: true, ...result });
+    }
+
+    if (event === "register_token") {
+      const user = await userFromAuth(req);
+      if (!user) return res.status(401).json({ ok: false, error: "unauthorized" });
+      const token = String(body.token || "").replace(/\s+/g, "").toLowerCase();
+      if (!token || token.length < 64) {
+        return res.status(400).json({ ok: false, error: "bad_token" });
+      }
+      const admin = supabaseAdmin();
+      const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+      if (!url || !key) {
+        console.error("[api/push/notify] register_token no_admin");
+        return res.status(500).json({ ok: false, error: "no_admin" });
+      }
+      const now = new Date().toISOString();
+      const { error } = await admin.from("device_push_tokens").upsert(
+        {
+          user_id: user.id,
+          token,
+          platform: "ios",
+          app_bundle: String(body.appBundle || "app.myswym.ios"),
+          updated_at: now,
+        },
+        { onConflict: "user_id,token" },
+      );
+      if (error) {
+        console.error("[api/push/notify] register_token", error.message);
+        return res.status(500).json({ ok: false, error: error.message || "upsert" });
+      }
+      console.log("[api/push/notify] register_token ok", { userId: user.id, tokenLen: token.length });
+      return res.status(200).json({ ok: true });
     }
 
     if (event === "buddy_request" || event === "buddy_accepted") {

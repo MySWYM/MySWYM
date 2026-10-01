@@ -36,6 +36,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    /// Dernier jeton APNs (hex lowercase). Le plugin JS peut le relire si le listener a raté le boot.
+    private static var lastDeviceToken: Data?
+    static var cachedApnsTokenHex: String? {
+        guard let data = lastDeviceToken else { return nil }
+        return data.map { String(format: "%02x", $0) }.joined()
+    }
+
+    @discardableResult
+    static func replayCachedApnsToken() -> Bool {
+        guard let data = lastDeviceToken else { return false }
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: data)
+        return true
+    }
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         MySWYMAudio.useAmbientSession()
         // Demande système hors WebView Capacitor (sinon pas de ligne Réglages → Notifications).
@@ -70,33 +84,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     /// Transmet le jeton APNs au plugin Capacitor. Sans ça, device_push_tokens reste vide.
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Self.lastDeviceToken = deviceToken
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+        print("[MySWYM] APNs registration failed:", error.localizedDescription)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         MySWYMAudio.useAmbientSession()
+        // Re-enregistre + rejoue le cache : le JS a pu rater le 1er event au boot.
+        UIApplication.shared.registerForRemoteNotifications()
+        Self.replayCachedApnsToken()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
     func application(_ application: UIApplication,
