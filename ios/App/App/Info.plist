@@ -43,6 +43,8 @@
 	<string>MySWYM accède à tes photos pour choisir ta photo de profil.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>MySWYM lit tes séances de natation et ta fréquence cardiaque dans Apple Santé, pour afficher tes stats. Rien n’est écrit dans Santé.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>MySWYM n’écrit rien dans Apple Santé. L’app lit seulement tes séances de natation et ta fréquence cardiaque.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
