@@ -45,7 +45,7 @@ import {
   ensureIosNotificationPermission,
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
-import { registerNativePush } from "./lib/native-push.js";
+import { registerNativePush, flushPendingPushToken } from "./lib/native-push.js";
 import { clearAppIconBadge } from "./lib/native-app-badge.js";
 import {
   markCheckoutAbandoned,
@@ -8343,7 +8343,10 @@ export default function App() {
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (!droppingSessionForRegister && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
           void flushPendingNewsletterOptIn();
-          if (isNativeIos()) void registerNativePush();
+          if (isNativeIos()) {
+            void flushPendingPushToken();
+            void registerNativePush();
+          }
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)

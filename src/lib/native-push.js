@@ -13,6 +13,8 @@ export { buddyConnectionId };
 const BUNDLE_ID = "app.myswym.ios";
 let listenersReady = false;
 let registerInFlight = null;
+/** Jeton reçu avant session auth (boot AppDelegate). */
+let pendingToken = null;
 
 async function getPushPlugin() {
   if (!isNativeIos()) return null;
@@ -26,11 +28,14 @@ async function getPushPlugin() {
 
 async function upsertDeviceToken(token) {
   const clean = String(token || "").replace(/\s+/g, "");
-  if (!clean || clean.length < 32) return;
+  if (!clean || clean.length < 32) return { ok: false, reason: "bad_token" };
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) return;
+  if (!session?.user?.id) {
+    pendingToken = clean;
+    return { ok: false, reason: "no_session" };
+  }
   const now = new Date().toISOString();
-  await supabase.from("device_push_tokens").upsert(
+  const { error } = await supabase.from("device_push_tokens").upsert(
     {
       user_id: session.user.id,
       token: clean,
@@ -40,6 +45,19 @@ async function upsertDeviceToken(token) {
     },
     { onConflict: "user_id,token" },
   );
+  if (error) {
+    console.warn("[push] upsert device_push_tokens", error.message || error);
+    pendingToken = clean;
+    return { ok: false, reason: error.message || "upsert_failed" };
+  }
+  pendingToken = null;
+  return { ok: true };
+}
+
+/** Si un jeton était en attente (boot avant login), l’écrit maintenant. */
+export async function flushPendingPushToken() {
+  if (!isNativeIos() || !pendingToken) return { ok: false, reason: "none" };
+  return upsertDeviceToken(pendingToken);
 }
 
 function dispatchFromPushData(raw) {
@@ -63,7 +81,7 @@ async function ensureListeners(PushNotifications) {
     void upsertDeviceToken(ev?.value);
   });
   await PushNotifications.addListener("registrationError", (err) => {
-    if (import.meta.env?.DEV) console.warn("[push] registrationError", err);
+    console.warn("[push] registrationError", err);
   });
   await PushNotifications.addListener("pushNotificationActionPerformed", (ev) => {
     void import("./native-app-badge.js").then((m) => m.clearAppIconBadge()).catch(() => {});
@@ -103,9 +121,13 @@ export async function registerNativePush() {
         return { ok: false, reason: "denied" };
       }
       await PushNotifications.register();
+      // iOS peut renvoyer le jeton en différé ; 2e register après pause.
+      await new Promise((r) => setTimeout(r, 1500));
+      await PushNotifications.register();
+      await flushPendingPushToken();
       return { ok: true };
     } catch (e) {
-      if (import.meta.env?.DEV) console.warn("[push] register", e);
+      console.warn("[push] register", e);
       return { ok: false, reason: e?.message || "register_failed" };
     } finally {
       registerInFlight = null;

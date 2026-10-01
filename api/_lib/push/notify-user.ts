@@ -18,7 +18,13 @@ export async function pushToUser(
   if (!userId) return { sent: 0, skipped: "no_user", pruned: 0 };
   if (!isApnsConfigured()) return { sent: 0, skipped: "apns_not_configured", pruned: 0 };
   const admin = adminClient();
-  if (!admin) return { sent: 0, skipped: "no_admin", pruned: 0 };
+  if (!admin) {
+    console.error("[push] no_admin", {
+      hasUrl: Boolean(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
+      hasService: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    });
+    return { sent: 0, skipped: "no_admin", pruned: 0 };
+  }
 
   const { data: rows, error } = await admin
     .from("device_push_tokens")
