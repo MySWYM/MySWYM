@@ -569,6 +569,8 @@ html.myswym-ios .ios-cover-lock {
 }
 
 .ios-settings-choice-label {
+  flex: 1;
+  min-width: 0;
   font-size: var(--ms-type-body, 0.9375rem);
   font-weight: 650;
 }

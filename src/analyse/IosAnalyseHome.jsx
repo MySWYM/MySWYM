@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { G } from "../theme/palette.js";
@@ -13,14 +14,13 @@ import { CountUp } from "./CountUp.jsx";
 import IosBadgesPanel from "./IosBadgesPanel.jsx";
 import { resolveAvatarUrl } from "../lib/avatar.js";
 import { resolveDisplayFullName } from "../lib/identity-cache.js";
-import { formatMemberSince } from "../lib/member-since.js";
+import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
 import { iosShowPremiumBar } from "../lib/ios-simple-nav.js";
 import { fetchWeeklyRank } from "../lib/weekly-rank-api.js";
 import { rankCenterLabel, rankRingRatio } from "../lib/weekly-rank.js";
 import { nextLadderBadge } from "../lib/badge-progress.js";
 import { getTabUi } from "../tab-ui-registry.js";
 import { playUiSound } from "../lib/ui-sounds.js";
-import { PRICING } from "../lib/pricing.js";
 import "./analyse-motion.css";
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -44,12 +44,13 @@ function paceLabel(secs) {
 }
 
 function DrillBar({ title, onBack }) {
+  const { t } = useTranslation("app");
   return (
     <header className="ms-profile-subpanel-toolbar" style={{ position: "sticky", top: 0, zIndex: 50 }}>
       <button
         type="button"
         className="ms-glass-icon-btn"
-        aria-label="Retour"
+        aria-label={t("analyse.back")}
         onClick={() => {
           playUiSound("soft");
           onBack();
@@ -145,7 +146,18 @@ export default function IosAnalyseHome({
   const avatarUrl = resolveAvatarUrl(user);
   const name = displayFullName(user);
   const initials = name.slice(0, 2).toUpperCase();
-  const memberLine = formatMemberSince(user?.created_at);
+  const { t, i18n } = useTranslation("app");
+  const memberDate = (() => {
+    const d = new Date(user?.created_at || "");
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString(intlLocaleFor(normalizeAppLanguage(i18n.language)), {
+      month: "long",
+      year: "numeric",
+    });
+  })();
+  const memberLine = memberDate
+    ? t("analyse.memberSince", { date: memberDate })
+    : t("analyse.member");
   const showGold = iosShowPremiumBar(accessState);
   const rankHasScore = Boolean(rank?.hasScore);
   const rankCenter =
@@ -174,7 +186,7 @@ export default function IosAnalyseHome({
   if (panel === "history") {
     return (
       <AppTabShell className="ios-analyse-home" style={shellPad}>
-        <DrillBar title="Historique" onBack={() => setPanel(null)} />
+        <DrillBar title={t("nav.history")} onBack={() => setPanel(null)} />
         <div className="app-shell" style={{ paddingTop: 8 }}>
           <HistoriqueTab
             embedded
@@ -195,7 +207,7 @@ export default function IosAnalyseHome({
   if (panel === "badges") {
     return (
       <AppTabShell className="ios-analyse-home" style={shellPad}>
-        <DrillBar title="Badges" onBack={() => setPanel(null)} />
+        <DrillBar title={t("analyse.badges")} onBack={() => setPanel(null)} />
         <div className="app-shell" style={{ paddingTop: 8 }}>
           <IosBadgesPanel stats={stats} user={user} />
         </div>
@@ -206,7 +218,7 @@ export default function IosAnalyseHome({
   if (panel === "rank") {
     return (
       <AppTabShell className="ios-analyse-home" style={shellPad}>
-        <DrillBar title="Rang" onBack={() => setPanel(null)} />
+        <DrillBar title={t("analyse.rank")} onBack={() => setPanel(null)} />
         <div className="app-shell" style={{ paddingTop: 8 }}>
           {!rank ? (
             <div className="ms-glass-card" style={{ padding: 16 }}>
@@ -231,7 +243,7 @@ export default function IosAnalyseHome({
                 value={formatKm(rank.meters)}
               />
               <MetricRow
-                label="Allure"
+                label={t("analyse.pace")}
                 value={`${paceLabel(rank.pace100)} (${formatMul(rank.paceBonus)})`}
                 onClick={() => openPanel("pace")}
               />
@@ -245,7 +257,7 @@ export default function IosAnalyseHome({
   if (panel === "pace") {
     return (
       <AppTabShell className="ios-analyse-home" style={shellPad}>
-        <DrillBar title="Allure" onBack={() => setPanel(null)} />
+        <DrillBar title={t("analyse.pace")} onBack={() => setPanel(null)} />
         <div className="app-shell" style={{ paddingTop: 8 }}>
           <MonAllureCard
             profile={profile}
@@ -278,7 +290,7 @@ export default function IosAnalyseHome({
 
       <div className="app-shell" style={{ paddingTop: 2 }}>
         <FadeIn index={nextStep()} reduced={reduced}>
-          <h1 className="ms-type-page">Tableau de bord</h1>
+          <h1 className="ms-type-page">{t("analyse.title")}</h1>
         </FadeIn>
 
         <FadeIn index={nextStep()} reduced={reduced}>
@@ -313,7 +325,7 @@ export default function IosAnalyseHome({
           <FadeIn index={nextStep()} reduced={reduced}>
             <div className="ms-glass-card" style={{ padding: "14px 14px", marginBottom: 10 }}>
               <p style={{ margin: 0, fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
-                Ton essai est terminé. Abonne-toi pour retrouver tes séances, tes analyses et le mot du coach.
+                {t("analyse.trialEnded")}
               </p>
             </div>
           </FadeIn>
@@ -321,7 +333,7 @@ export default function IosAnalyseHome({
           <FadeIn index={nextStep()} reduced={reduced}>
             <div className="ms-glass-card" style={{ padding: "14px 14px", marginBottom: 10 }}>
               <p style={{ margin: "0 0 12px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
-                Crée ton programme pour voir tes volumes et ta semaine.
+                {t("analyse.createPlanLead")}
               </p>
               <button
                 type="button"
@@ -331,7 +343,7 @@ export default function IosAnalyseHome({
                   onTabChange?.("plan");
                 }}
               >
-                Créer mon programme
+                {t("analyse.createPlan")}
               </button>
             </div>
           </FadeIn>
@@ -339,7 +351,7 @@ export default function IosAnalyseHome({
           <>
             <FadeIn index={nextStep()} reduced={reduced} className="ios-analyse-grid">
               <div className="ms-glass-card ios-analyse-metric">
-                <div className="ms-type-label">Séances</div>
+                <div className="ms-type-label">{t("analyse.sessions")}</div>
                 <div className="ms-type-display" style={{ fontSize: 24, marginTop: 4 }}>
                   <CountUp value={weekSessionStats.done} duration={0.9} delay={0.12} />
                   {weekSessionStats.planned > 0 ? (
@@ -348,14 +360,14 @@ export default function IosAnalyseHome({
                     </span>
                   ) : null}
                 </div>
-                <div className="ms-type-caption" style={{ marginTop: 4 }}>cette semaine</div>
+                <div className="ms-type-caption" style={{ marginTop: 4 }}>{t("analyse.thisWeek")}</div>
               </div>
               <button
                 type="button"
                 className="ms-glass-card ios-analyse-metric ios-analyse-metric-ring ios-analyse-rank"
                 onClick={() => openPanel("rank")}
               >
-                <div className="ms-type-label">Rang</div>
+                <div className="ms-type-label">{t("analyse.rank")}</div>
                 <ScoreRing
                   ratio={rankHasScore ? rankRingRatio(rank.topPercent) : 0}
                   size={84}
@@ -371,7 +383,7 @@ export default function IosAnalyseHome({
                 <div
                   className="ios-analyse-week"
                   role="list"
-                  aria-label="Cette semaine"
+                  aria-label={t("analyse.thisWeekAria")}
                 >
                   {weekDayStrip.map((day, i) => (
                     <motion.div
@@ -391,7 +403,7 @@ export default function IosAnalyseHome({
                         ease: EASE,
                       }}
                     >
-                      <span className="ios-analyse-week-label">{day.label}</span>
+                      <span className="ios-analyse-week-label">{t(`day.${{ Lun: "mon", Mar: "tue", Mer: "wed", Jeu: "thu", Ven: "fri", Sam: "sat", Dim: "sun" }[day.label] || "mon"}`, { defaultValue: day.label })}</span>
                       <span className="ios-analyse-week-num">{day.dateNum}</span>
                       <span
                         className={`ios-analyse-week-dot${day.done ? " is-on" : ""}${day.scheduled && !day.done ? " is-planned" : ""}`}
@@ -412,23 +424,23 @@ export default function IosAnalyseHome({
                   openPanel("history");
                 }}
               >
-                <span className="ios-analyse-row-label" style={{ flex: 1 }}>Historique des séances</span>
+                <span className="ios-analyse-row-label" style={{ flex: 1 }}>{t("analyse.history")}</span>
                 <ChevronRight size={18} color={G.greyMid} aria-hidden />
               </button>
             </FadeIn>
 
             <FadeIn index={nextStep()} reduced={reduced} className="ios-analyse-list">
               <MetricRow
-                label="Série"
+                label={t("analyse.streak")}
                 value={currentStreak > 0 ? (
                   <span className="ios-analyse-streak-val">
                     <Flame size={14} color="#D4A017" aria-hidden />
                     <CountUp value={currentStreak} duration={0.75} delay={0.18} />
                   </span>
-                ) : "à lancer"}
+                ) : t("analyse.streakStart")}
               />
               <MetricRow
-                label="Distance totale"
+                label={t("analyse.distance")}
                 value={(
                   <CountUp
                     value={stats.totalMeters || 0}
@@ -439,13 +451,13 @@ export default function IosAnalyseHome({
                 )}
               />
               <MetricRow
-                label="Allure T100"
+                label={t("analyse.pace")}
                 value={paceLabel(profile?.pace100)}
                 onClick={() => openPanel("pace")}
               />
               <MetricRow
-                label="Badges"
-                value={nextBadge?.homeValue || "voir"}
+                label={t("analyse.badges")}
+                value={nextBadge?.homeValue || t("analyse.see")}
                 progress={nextBadge?.ratio ?? null}
                 onClick={() => openPanel("badges")}
               />
@@ -453,11 +465,6 @@ export default function IosAnalyseHome({
           </>
         )}
 
-        {!isPremium ? (
-          <p className="ms-type-caption" style={{ textAlign: "center", marginTop: 8 }}>
-            Dès {PRICING.monthlyCommit.label}/mois
-          </p>
-        ) : null}
       </div>
     </AppTabShell>
   );

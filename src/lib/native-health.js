@@ -27,3 +27,17 @@ export async function requestAppleHealth() {
   }
   return true;
 }
+
+/** Séances natation + dernière FC réellement lues dans Santé. */
+export async function readAppleHealthSummary() {
+  if (!isNativeIos()) {
+    return { swimCount: 0, latestHeartRate: null, latestWorkoutAt: null };
+  }
+  const result = await AppleHealth.fetchSummary();
+  const bpm = Number(result?.latestHeartRate);
+  return {
+    swimCount: Number(result?.swimCount) || 0,
+    latestHeartRate: Number.isFinite(bpm) && bpm > 0 ? bpm : null,
+    latestWorkoutAt: result?.latestWorkoutAt || null,
+  };
+}

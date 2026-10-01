@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Språk",
+    "title": "Gränssnittets språk",
+    "hint": "Landningssida, navigering och onboarding-quiz. Resten av appen översätts löpande.",
+    "selectTitle": "Välj språk",
+    "confirm": "Bekräfta",
+    "panelTitle": "Språk",
+    "panelLead": "Välj ditt språk",
+    "confirmTitle": "Byta språk?",
+    "confirmMessage": "Appen byter till {{language}}.",
+    "confirmAction": "Byt språk",
+    "cancel": "Avbryt"
+  },
+  "appearance": {
+    "section": "Utseende",
+    "dark": "Mörk bakgrund",
+    "light": "Ljus bakgrund",
+    "darkHint": "Nattläge, mindre bländning",
+    "lightHint": "Dagläge, vit bakgrund",
+    "switchToLight": "Byt till ljus bakgrund",
+    "switchToDark": "Byt till mörk bakgrund"
+  },
+  "account": {
+    "section": "Konto"
+  }
+}

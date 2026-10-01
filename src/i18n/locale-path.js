@@ -1,3 +1,5 @@
+import { normalizeAppLanguage } from "./languages.js";
+
 /** EN à la racine (`/pricing`). FR sous `/fr` (`/fr/tarifs`). */
 export const FR_PREFIX = "/fr";
 export const LEGACY_EN_PREFIX = "/en";
@@ -73,10 +75,9 @@ export function isLegalPath(pathname = "/") {
   return LEGAL_BARE.has(stripLocalePrefix(pathname));
 }
 
-/** fr-* → fr, le reste → en (locale iPhone / navigateur). */
+/** Tag navigateur / iPhone → langue supportée (sinon en). */
 export function languageFromNavigator(language) {
-  const n = String(language || "").toLowerCase();
-  return n.startsWith("fr") ? "fr" : "en";
+  return normalizeAppLanguage(language);
 }
 
 /** Pages marketing (header/footer) : oui. App / auth : non. */

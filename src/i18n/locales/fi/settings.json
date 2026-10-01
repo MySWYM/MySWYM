@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Kieli",
+    "title": "Käyttöliittymän kieli",
+    "hint": "Etusivu, navigointi ja aloituskysely. Muuta appia käännetään vähitellen.",
+    "selectTitle": "Valitse kieli",
+    "confirm": "Vahvista",
+    "panelTitle": "Kielet",
+    "panelLead": "Valitse sun kieli",
+    "confirmTitle": "Vaihdetaanko kieli?",
+    "confirmMessage": "Appi vaihtuu kieleen {{language}}.",
+    "confirmAction": "Vaihda kieli",
+    "cancel": "Peruuta"
+  },
+  "appearance": {
+    "section": "Ulkoasu",
+    "dark": "Tumma tausta",
+    "light": "Vaalea tausta",
+    "darkHint": "Yötila, vähemmän häikäisyä",
+    "lightHint": "Päivätila, valkoinen tausta",
+    "switchToLight": "Vaihda vaaleaan taustaan",
+    "switchToDark": "Vaihda tummaan taustaan"
+  },
+  "account": {
+    "section": "Tili"
+  }
+}

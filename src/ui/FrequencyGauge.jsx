@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { FREQUENCIES } from "../lib/onboarding-catalog.jsx";
 
 /**
@@ -7,8 +8,10 @@ export default function FrequencyGauge({
   value,
   onChange,
   fallback = 1,
-  "aria-label": ariaLabel = "Séances par semaine",
+  "aria-label": ariaLabel,
 }) {
+  const { t } = useTranslation("app");
+  const label = ariaLabel || t("profile.frequency");
   const freqIds = FREQUENCIES.map((f) => f.id);
   const minF = freqIds[0] ?? 1;
   const maxF = freqIds[freqIds.length - 1] ?? 5;
@@ -22,10 +25,10 @@ export default function FrequencyGauge({
     <div className="ms-freq-gauge">
       <div className="ms-freq-gauge-value">
         {current}
-        <span className="ms-freq-gauge-unit">× / semaine</span>
+        <span className="ms-freq-gauge-unit">{t("profile.perWeek")}</span>
       </div>
       {meta?.desc ? (
-        <div className="ms-freq-gauge-desc">{meta.desc}</div>
+        <div className="ms-freq-gauge-desc">{t(`profile.freq${current}`, { defaultValue: meta.desc })}</div>
       ) : null}
       <div className="ms-freq-gauge-track-wrap">
         <div className="ms-freq-gauge-track" aria-hidden />
@@ -42,7 +45,7 @@ export default function FrequencyGauge({
           step={1}
           value={current}
           onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={ariaLabel}
+          aria-label={label}
           aria-valuemin={minF}
           aria-valuemax={maxF}
           aria-valuenow={current}

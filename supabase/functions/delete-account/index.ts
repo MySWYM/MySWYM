@@ -89,7 +89,6 @@ async function resolveDeleteGate(opts: {
   try {
     const customerIds = await collectCustomerIds(stripe, user);
     if (customerIds.length === 0) {
-      if (paidAccessLooksLive(access)) return gateFromUnverifiedAccess();
       return evaluateDeleteGate([]);
     }
     const subs = await listSubscriptionsForCustomers(stripe, customerIds);

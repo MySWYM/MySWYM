@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "言語",
+    "title": "表示言語",
+    "hint": "ランディング、ナビ、オンボーディングの質問。アプリの残りは順に翻訳する。",
+    "selectTitle": "言語を選ぶ",
+    "confirm": "確定",
+    "panelTitle": "言語",
+    "panelLead": "言語を選ぶ",
+    "confirmTitle": "言語を変える？",
+    "confirmMessage": "アプリは{{language}}になる。",
+    "confirmAction": "言語を変える",
+    "cancel": "キャンセル"
+  },
+  "appearance": {
+    "section": "表示",
+    "dark": "暗い背景",
+    "light": "明るい背景",
+    "darkHint": "ナイトモード。まぶしさを抑える",
+    "lightHint": "デイモード。白い背景",
+    "switchToLight": "明るい背景にする",
+    "switchToDark": "暗い背景にする"
+  },
+  "account": {
+    "section": "アカウント"
+  }
+}

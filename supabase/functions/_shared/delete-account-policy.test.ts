@@ -4,8 +4,8 @@
  */
 import assert from "node:assert/strict";
 import {
-  DELETE_BLOCK,
   evaluateDeleteGate,
+  gateFromAppleAccess,
   isFlexCancelable,
   isPrepaidSubscription,
   paidAccessLooksLive,
@@ -48,15 +48,13 @@ const annualSub = {
 assert.equal(evaluateDeleteGate([], now).allowed, true);
 assert.equal(evaluateDeleteGate([{ ...flexSub, status: "canceled" }], now).allowed, true);
 
-const blockedCommit = evaluateDeleteGate([commitSub], now);
-assert.equal(blockedCommit.allowed, false);
-assert.equal(blockedCommit.code, "commitment");
-assert.equal(blockedCommit.message, DELETE_BLOCK.commitment);
+const commitGate = evaluateDeleteGate([commitSub], now);
+assert.equal(commitGate.allowed, true);
+assert.deepEqual(commitGate.cancelIds, ["sub_commit"]);
 
-const blockedAnnual = evaluateDeleteGate([annualSub], now);
-assert.equal(blockedAnnual.allowed, false);
-assert.equal(blockedAnnual.code, "prepaid");
-assert.equal(blockedAnnual.message, DELETE_BLOCK.prepaid);
+const annualGate = evaluateDeleteGate([annualSub], now);
+assert.equal(annualGate.allowed, true);
+assert.deepEqual(annualGate.cancelIds, ["sub_annual"]);
 
 const yearOnly = {
   id: "sub_year",
@@ -64,7 +62,8 @@ const yearOnly = {
   items: { data: [{ price: { id: "price_unknown_year", recurring: { interval: "year" } } }] },
 };
 assert.equal(isPrepaidSubscription(yearOnly), true);
-assert.equal(evaluateDeleteGate([yearOnly], now).allowed, false);
+assert.equal(evaluateDeleteGate([yearOnly], now).allowed, true);
+assert.deepEqual(evaluateDeleteGate([yearOnly], now).cancelIds, ["sub_year"]);
 
 const flexGate = evaluateDeleteGate([flexSub], now);
 assert.equal(flexGate.allowed, true);
@@ -72,8 +71,8 @@ assert.deepEqual(flexGate.cancelIds, ["sub_flex"]);
 assert.equal(flexGate.willCancelSubscription, true);
 
 const mixed = evaluateDeleteGate([flexSub, commitSub], now);
-assert.equal(mixed.allowed, false);
-assert.equal(mixed.code, "commitment");
+assert.equal(mixed.allowed, true);
+assert.deepEqual(mixed.cancelIds, ["sub_flex", "sub_commit"]);
 
 const incomplete = {
   id: "sub_inc",
@@ -88,8 +87,8 @@ const unknownLive = {
   status: "active",
   items: { data: [{ price: { id: "price_mystery" } }] },
 };
-assert.equal(evaluateDeleteGate([unknownLive], now).allowed, false);
-assert.equal(evaluateDeleteGate([unknownLive], now).code, "unverified");
+assert.equal(evaluateDeleteGate([unknownLive], now).allowed, true);
+assert.deepEqual(evaluateDeleteGate([unknownLive], now).cancelIds, ["sub_weird"]);
 
 const expiredCommit = {
   ...commitSub,
@@ -112,6 +111,13 @@ assert.equal(
 );
 
 const pausedCommit = { ...commitSub, status: "paused" };
-assert.equal(evaluateDeleteGate([pausedCommit], now).allowed, false);
+assert.equal(evaluateDeleteGate([pausedCommit], now).allowed, true);
+assert.deepEqual(evaluateDeleteGate([pausedCommit], now).cancelIds, ["sub_commit"]);
+
+const appleGate = gateFromAppleAccess("2026-12-01T00:00:00.000Z");
+assert.equal(appleGate.allowed, true);
+assert.equal(appleGate.appleKeepsBilling, true);
+assert.equal(appleGate.willCancelSubscription, false);
+assert.equal(appleGate.endsAt, "2026-12-01T00:00:00.000Z");
 
 console.log("delete-account-policy.test.ts OK");

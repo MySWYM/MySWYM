@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Lingua",
+    "title": "Lingua dell'interfaccia",
+    "hint": "Pagina iniziale, navigazione e questionario. Il resto dell'app si traduce man mano.",
+    "selectTitle": "Scegli la lingua",
+    "confirm": "Conferma",
+    "panelTitle": "Lingue",
+    "panelLead": "Scegli la tua lingua",
+    "confirmTitle": "Cambiare lingua?",
+    "confirmMessage": "L'app passerà a {{language}}.",
+    "confirmAction": "Cambia lingua",
+    "cancel": "Annulla"
+  },
+  "appearance": {
+    "section": "Aspetto",
+    "dark": "Sfondo scuro",
+    "light": "Sfondo chiaro",
+    "darkHint": "Modalità notte, meno abbagliamento",
+    "lightHint": "Modalità giorno, sfondo bianco",
+    "switchToLight": "Passa allo sfondo chiaro",
+    "switchToDark": "Passa allo sfondo scuro"
+  },
+  "account": {
+    "section": "Account"
+  }
+}

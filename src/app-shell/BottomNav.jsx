@@ -3,24 +3,26 @@ import { G } from "../theme/palette.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { isIosSimpleNav } from "../lib/ios-simple-nav.js";
 import BrandLogo from "../BrandLogo.jsx";
+import { useTranslation } from "react-i18next";
 
 export default function BottomNav({ active, onChange, newBadge }) {
+  const { t } = useTranslation("app");
   const ios = isIosSimpleNav();
   const tabs = ios
     ? [
-        { id: "analyse", Icon: Activity, label: "Analyse" },
-        { id: "home", brand: true, label: "Nager", center: true },
-        { id: "profile", Icon: CircleUser, label: "Profil" },
+        { id: "analyse", Icon: Activity, label: t("nav.analyse") },
+        { id: "home", brand: true, label: t("nav.swim"), center: true },
+        { id: "profile", Icon: CircleUser, label: t("nav.profile") },
       ]
     : [
-        { id: "home", Icon: Home, label: "Accueil" },
-        { id: "plan", Icon: Calendar, label: "Programme" },
-        { id: "analyse", Icon: ChartNoAxesCombined, label: "Analyse" },
-        { id: "history", Icon: History, label: "Historique" },
+        { id: "home", Icon: Home, label: t("nav.home") },
+        { id: "plan", Icon: Calendar, label: t("nav.plan") },
+        { id: "analyse", Icon: ChartNoAxesCombined, label: t("nav.analyse") },
+        { id: "history", Icon: History, label: t("nav.history") },
       ];
   return (
     <div className="bottom-nav">
-      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: ios ? "10px 6px" : "8px 6px" }} aria-label="Navigation principale">
+      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: ios ? "10px 6px" : "8px 6px" }} aria-label={t("nav.main")}>
         {tabs.map((t) => {
           const isActive = active === t.id;
           const centerOn = t.center && isActive;

@@ -2,6 +2,7 @@ import { supabase } from "../supabase.js";
 import { requirePaidBuddies } from "./buddy-access.js";
 import { sortBuddiesForViewer } from "./buddy-match-rank.js";
 import { humanizeBuddyOtpError } from "./buddy-otp-messages.js";
+import { findObjectionable, UGC_BLOCKED_MESSAGE } from "./ugc-filter.js";
 
 export const BUDDY_GOAL_CATEGORIES = [
   { id: "eau_libre", label: "Eau libre" },
@@ -311,6 +312,12 @@ function stripPhoneFromBuddy(row) {
 }
 
 export async function upsertBuddyProfile(userId, form) {
+  const objectionable = findObjectionable(
+    [form?.display_name, form?.city, form?.bio].filter(Boolean).join(" "),
+  );
+  if (objectionable) {
+    return { data: null, error: { message: UGC_BLOCKED_MESSAGE } };
+  }
   const gate = await requirePaidBuddies();
   if (!gate.ok) return { data: null, error: gate.error };
 

@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Taal",
+    "title": "Taal van de interface",
+    "hint": "Landing, navigatie en onboarding-quiz. De rest van de app wordt stap voor stap vertaald.",
+    "selectTitle": "Taal kiezen",
+    "confirm": "Bevestigen",
+    "panelTitle": "Talen",
+    "panelLead": "Kies je taal",
+    "confirmTitle": "Taal wijzigen?",
+    "confirmMessage": "De app schakelt over naar {{language}}.",
+    "confirmAction": "Taal wijzigen",
+    "cancel": "Annuleren"
+  },
+  "appearance": {
+    "section": "Weergave",
+    "dark": "Donkere achtergrond",
+    "light": "Lichte achtergrond",
+    "darkHint": "Nachtmodus, minder schittering",
+    "lightHint": "Dagmodus, witte achtergrond",
+    "switchToLight": "Naar lichte achtergrond",
+    "switchToDark": "Naar donkere achtergrond"
+  },
+  "account": {
+    "section": "Account"
+  }
+}

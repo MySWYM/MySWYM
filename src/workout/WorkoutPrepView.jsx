@@ -14,6 +14,7 @@ import { buildSessionProvenance } from "../lib/session-provenance.js";
 import { setSupportSessionRef } from "../lib/support-context.js";
 import { isNativeIos } from "../lib/native-platform.js";
 import WorkoutExerciseCard from "./WorkoutExerciseCard.jsx";
+import { useSessionText } from "../i18n/useSessionText.js";
 import DrillInfoSheet from "./DrillInfoSheet.jsx";
 
 const EQUIPMENT_LABELS = {
@@ -65,6 +66,7 @@ export default function WorkoutPrepView({
   showProvenance = true,
 }) {
   const view = useMemo(() => buildWorkoutView(session), [session]);
+  const tSwim = useSessionText();
   const [drill, setDrill] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
@@ -103,7 +105,7 @@ export default function WorkoutPrepView({
   ].filter(Boolean);
 
   const equipmentLabel = (header.equipment || [])
-    .map((id) => EQUIPMENT_LABELS[id] || id)
+    .map((id) => tSwim(EQUIPMENT_LABELS[id] || id))
     .join(" · ");
 
   return (
@@ -200,12 +202,12 @@ export default function WorkoutPrepView({
           return (
             <section
               key={section.id}
-              aria-label={section.label}
+              aria-label={tSwim(section.label)}
               className={`ms-workout-phase is-${tone.id}`}
             >
               <header className="ms-workout-phase-head">
                 <div className="ms-workout-phase-label">
-                  {section.label}
+                  {tSwim(section.label)}
                 </div>
                 {section.metersLabel && (
                   <div className="ms-workout-phase-meters">

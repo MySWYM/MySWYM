@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Sprog",
+    "title": "Grænsefladens sprog",
+    "hint": "Landingsside, navigation og onboarding-quiz. Resten af appen oversættes løbende.",
+    "selectTitle": "Vælg sprog",
+    "confirm": "Bekræft",
+    "panelTitle": "Sprog",
+    "panelLead": "Vælg dit sprog",
+    "confirmTitle": "Skift sprog?",
+    "confirmMessage": "Appen skifter til {{language}}.",
+    "confirmAction": "Skift sprog",
+    "cancel": "Annuller"
+  },
+  "appearance": {
+    "section": "Udseende",
+    "dark": "Mørk baggrund",
+    "light": "Lys baggrund",
+    "darkHint": "Nattilstand, mindre blænding",
+    "lightHint": "Dagtilstand, hvid baggrund",
+    "switchToLight": "Skift til lys baggrund",
+    "switchToDark": "Skift til mørk baggrund"
+  },
+  "account": {
+    "section": "Konto"
+  }
+}

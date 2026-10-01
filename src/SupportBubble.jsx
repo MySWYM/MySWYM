@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronRight, Home, MessageCircle, Send, X } from "lucide-react";
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
+import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
+import { isNativeIos } from "./lib/native-platform.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
 import "./theme/support-widget-opaque.css";
@@ -19,6 +21,8 @@ const FAQ_RULES = [
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
       `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
+    iosAnswer:
+      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement. Sur iPhone : ${APPLE_IAP_SUMMARY_FR}, paiement via l’App Store.`,
   },
   {
     keys: [
@@ -42,7 +46,9 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : déjà payé, pas de remboursement au prorata, suppression bloquée jusqu’à la fin de l’année. Mensuel 9,99€ sans engagement : tu peux supprimer le compte, ça arrête l’abo tout de suite.",
+      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Supprimer le compte depuis Profil arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée.",
+    iosAnswer:
+      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Essai 7 jours sans carte : rien à résilier. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
   },
   {
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
@@ -67,7 +73,9 @@ const FAQ_RULES = [
   {
     keys: ["compte", "connexion", "mot de passe", "inscription", "supprimer"],
     answer:
-      "Connexion et inscription via /connexion et /inscription. Pour supprimer ton compte : Profil → « Supprimer mon compte ». Si tu as un engagement 12 mois ou un annuel en cours, le bouton est bloqué : tu gardes le compte tant que tu paies. Mensuel 9,99€ : supprimer arrête l’abo tout de suite. Un souci ? Écris ici.",
+      "Connexion et inscription via /connexion et /inscription. Pour supprimer ton compte : Profil → « Supprimer mon compte ». Si un abonnement Stripe est encore actif, il est arrêté au moment de la suppression, sans remboursement de la période déjà payée. Un souci ? Écris ici.",
+    iosAnswer:
+      "Connexion et inscription dans l’app. Pour supprimer ton compte : Profil, Paramètres, Supprimer mon compte. Un abonnement App Store se résilie à part : Réglages, Apple ID, Abonnements. Un souci ? Écris ici.",
   },
 
   // ── Natation / méthode ───────────────────────────────────
@@ -186,7 +194,9 @@ function matchFaq(text) {
       best = rule;
     }
   }
-  return bestScore > 0 ? best.answer : FALLBACK;
+  if (bestScore <= 0 || !best) return FALLBACK;
+  if (isNativeIos() && best.iosAnswer) return best.iosAnswer;
+  return best.answer;
 }
 
 const WELCOME = {

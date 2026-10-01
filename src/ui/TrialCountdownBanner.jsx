@@ -1,14 +1,17 @@
 import { Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import { FONT } from "../theme/brand.js";
 import { ACCESS_STATUS } from "../lib/access.js";
 import { PRICING } from "../lib/pricing.js";
+import { isNativeApp } from "../lib/native-platform.js";
+import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
 
-function formatTrialEndDate(iso) {
+function formatTrialEndDate(iso, locale) {
   if (!iso) return null;
   const ms = Date.parse(iso);
   if (!Number.isFinite(ms)) return null;
-  return new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return new Date(ms).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 /**
@@ -19,42 +22,49 @@ export default function TrialCountdownBanner({
   accessState = null,
   onUpgrade,
 }) {
+  const { t, i18n } = useTranslation("app");
   if (!accessState || accessState.status !== ACCESS_STATUS.TRIAL) return null;
   const days = Number(accessState.trialDaysLeft) || 0;
   if (days <= 0) return null;
 
   const urgent = days <= 2;
   const hot = days <= 3;
-  const endLabel = formatTrialEndDate(accessState.trialEndsAt);
-  const priceFrom = PRICING.monthlyCommit.label;
+  const locale = intlLocaleFor(normalizeAppLanguage(i18n.language));
+  const endLabel = formatTrialEndDate(accessState.trialEndsAt, locale);
+  const native = isNativeApp();
+  const priceFrom = native ? "" : PRICING.monthlyCommit.label;
 
   let title;
   let body;
   let cta;
   if (days === 1) {
-    title = "Dernier jour pour tout garder";
-    body = "Demain, tes séances passent en pause. Garde ton plan, tes allures et ton coach, dès aujourd’hui.";
-    cta = "Garder mon programme";
+    title = t("trial.lastDay");
+    body = t("trial.lastDayBody");
+    cta = t("trial.keepPlan");
   } else if (days === 2) {
-    title = "Plus que 2 jours d’entraînement guidé";
-    body = endLabel
-      ? `Le ${endLabel}, l’essai s’arrête. Continue sans perdre ta progression, dès ${priceFrom}/mois.`
-      : `L’essai s’arrête bientôt. Continue sans perdre ta progression, dès ${priceFrom}/mois.`;
-    cta = "Continuer Premium";
+    title = t("trial.twoDays");
+    body = native
+      ? (endLabel ? t("trial.twoDaysPlain", { date: endLabel }) : t("trial.swimPlain"))
+      : (endLabel
+        ? t("trial.twoDaysBody", { date: endLabel, price: priceFrom })
+        : t("trial.twoDaysSoon", { price: priceFrom }));
+    cta = t("trial.continue");
   } else if (days === 3) {
-    title = "3 jours pour verrouiller ton rythme";
+    title = t("trial.threeDays");
     body = endLabel
-      ? `Jusqu’au ${endLabel} : ton coach et tes séances restent avec toi. Ensuite, pause sans abonnement.`
-      : "Ton coach et tes séances restent avec toi. Ensuite, pause sans abonnement.";
-    cta = "Rester Premium";
+      ? t("trial.threeDaysBody", { date: endLabel })
+      : t("trial.threeDaysPlain");
+    cta = t("trial.stay");
   } else {
     title = days >= 6
-      ? "Ton essai Premium vient de démarrer"
-      : `Encore ${days} jours d’essai Premium`;
-    body = endLabel
-      ? `Profite à fond jusqu’au ${endLabel}. Quand tu es prêt, garde tout dès ${priceFrom}/mois.`
-      : `Nage avec ton plan et tes allures. Garde tout ensuite dès ${priceFrom}/mois.`;
-    cta = "Voir les offres";
+      ? t("trial.justStarted")
+      : t("trial.daysLeft", { count: days });
+    body = native
+      ? (endLabel ? t("trial.enjoyPlain", { date: endLabel }) : t("trial.swimPlain"))
+      : (endLabel
+        ? t("trial.enjoyUntil", { date: endLabel, price: priceFrom })
+        : t("trial.swimThen", { price: priceFrom }));
+    cta = t("trial.seeOffers");
   }
 
   return (

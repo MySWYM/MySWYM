@@ -4,7 +4,13 @@
     "title": "Interface language",
     "hint": "Landing, navigation and onboarding quiz. The rest of the app is translated progressively.",
     "selectTitle": "Select Language",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "panelTitle": "Languages",
+    "panelLead": "Choose your language",
+    "confirmTitle": "Change language?",
+    "confirmMessage": "The app will switch to {{language}}.",
+    "confirmAction": "Change language",
+    "cancel": "Cancel"
   },
   "appearance": {
     "section": "Appearance",

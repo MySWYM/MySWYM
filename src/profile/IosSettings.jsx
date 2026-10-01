@@ -1,16 +1,18 @@
 /**
  * Paramètres iOS : IA type GOWOD, DA soft mist.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  Check, ChevronRight, Mail, RotateCcw, Globe, Lock, Shield, CircleHelp, Info,
-  FileText, LogOut, HeartPulse, CreditCard, Activity, AlertTriangle,
+  Check, ChevronRight, Mail, RotateCcw, Lock, Shield, CircleHelp, Info, Languages,
+  FileText, LogOut, HeartPulse, CreditCard, Activity, AlertTriangle, Bell,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { setAppLanguage } from "../i18n/index.js";
+import { APP_LANGUAGES, normalizeAppLanguage } from "../i18n/languages.js";
+import FlagMark from "../i18n/FlagMark.jsx";
 import { withLocalePrefix } from "../i18n/locale-path.js";
 import { supabase } from "../supabase.js";
 import { isNativeApp, nativeApiOrigin } from "../lib/native-platform.js";
@@ -26,12 +28,6 @@ import {
 import { PanelShell } from "../ProfileHelpPanels.jsx";
 import TimedUndoAction from "../ui/TimedUndoAction.jsx";
 import ConfirmSheet from "../sheets/ConfirmSheet.jsx";
-import FlagCircle from "./FlagCircle.jsx";
-
-const LANGS = [
-  { id: "en", name: "English" },
-  { id: "fr", name: "Français" },
-];
 
 function StatusCheck({ on }) {
   return (
@@ -41,11 +37,15 @@ function StatusCheck({ on }) {
   );
 }
 
-function SettingsRow({ icon: Icon, title, value, hint, onClick, href, external, chevron, trailing }) {
+function SettingsRow({ icon: Icon, mark, title, value, hint, onClick, href, external, chevron, trailing }) {
   const showChevron = chevron ?? Boolean(onClick || href);
   const inner = (
     <>
-      {Icon ? (
+      {mark ? (
+        <span className="ms-profile-settings-icon" style={{ background: "transparent" }}>
+          {mark}
+        </span>
+      ) : Icon ? (
         <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
           <Icon size={18} color={G.blue} />
         </span>
@@ -93,14 +93,16 @@ function SettingsRow({ icon: Icon, title, value, hint, onClick, href, external, 
 }
 
 export function IosLanguagePanel({ onBack }) {
-  const { i18n } = useTranslation();
-  const lng = i18n.language?.startsWith("en") ? "en" : "fr";
+  const { t, i18n } = useTranslation("settings");
+  const lng = normalizeAppLanguage(i18n.language);
+  const [pendingId, setPendingId] = useState(null);
+  const pending = APP_LANGUAGES.find((l) => l.id === pendingId) || null;
 
   return (
-    <PanelShell title="Langues" onBack={onBack}>
-      <p className="ios-settings-lead">Change ta langue</p>
+    <PanelShell title={t("language.panelTitle")} onBack={onBack}>
+      <p className="ios-settings-lead">{t("language.panelLead")}</p>
       <div className="ios-settings-choice-list">
-        {LANGS.map((opt) => {
+        {APP_LANGUAGES.map((opt) => {
           const active = lng === opt.id;
           return (
             <button
@@ -109,15 +111,36 @@ export function IosLanguagePanel({ onBack }) {
               className={`ios-settings-choice${active ? " is-active" : ""}`}
               onClick={() => {
                 playUiSound("soft");
-                if (opt.id !== lng) setAppLanguage(opt.id);
+                if (opt.id !== lng) setPendingId(opt.id);
               }}
             >
-              <FlagCircle code={opt.id === "en" ? "GB" : "FR"} size={28} lazy={false} />
+              <FlagMark code={opt.flag} size={28} className="ios-flag-circle" />
               <span className="ios-settings-choice-label">{opt.name}</span>
+              {active ? <StatusCheck on /> : null}
             </button>
           );
         })}
       </div>
+      {pending && createPortal(
+        <ConfirmSheet
+          title={t("language.confirmTitle")}
+          message={t("language.confirmMessage", { language: pending.name })}
+          confirmLabel={t("language.confirmAction")}
+          cancelLabel={t("language.cancel")}
+          destructive={false}
+          icon={Languages}
+          onConfirm={() => {
+            playUiSound("tap");
+            setAppLanguage(pending.id);
+            setPendingId(null);
+          }}
+          onCancel={() => {
+            playUiSound("soft");
+            setPendingId(null);
+          }}
+        />,
+        document.body,
+      )}
     </PanelShell>
   );
 }
@@ -411,12 +434,27 @@ export function IosSettingsHome({
   deleteGate = null,
   deleteWarning = "",
 }) {
-  const { i18n } = useTranslation();
-  const lng = i18n.language?.startsWith("en") ? "en" : "fr";
-  const langName = LANGS.find((l) => l.id === lng)?.name || "Français";
+  const { t, i18n } = useTranslation("settings");
+  const { t: ta } = useTranslation("app");
+  const lng = normalizeAppLanguage(i18n.language);
+  const lang = APP_LANGUAGES.find((l) => l.id === lng);
   const faqHref = withLocalePrefix("/faq", lng);
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifOn, setNotifOn] = useState(false);
+  const [notifMsg, setNotifMsg] = useState("");
+
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    let cancelled = false;
+    import("../lib/native-push.js").then(({ notificationsSwitchOn }) => (
+      notificationsSwitchOn().then((on) => {
+        if (!cancelled) setNotifOn(on);
+      })
+    )).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <>
@@ -427,7 +465,7 @@ export function IosSettingsHome({
       <div className="ms-profile-account-stack">
         <SettingsRow
           icon={RotateCcw}
-          title={restoreBusy ? "Restauration…" : "Restaurer les achats"}
+          title={restoreBusy ? ta("settings.restoring") : ta("settings.restore")}
           chevron={false}
           onClick={async () => {
             if (restoreBusy) return;
@@ -441,7 +479,7 @@ export function IosSettingsHome({
         />
       </div>
 
-      <div className="ms-profile-group-label">Connecter</div>
+      <div className="ms-profile-group-label">{ta("settings.connect")}</div>
       <div className="ms-profile-account-stack">
         <SettingsRow
           icon={Activity}
@@ -451,29 +489,77 @@ export function IosSettingsHome({
           onClick={onOpenStrava}
         />
         {isNativeApp() ? (
-          <SettingsRow
-            icon={HeartPulse}
-            title="Apple Santé"
-            chevron={false}
-            trailing={<StatusCheck on={!!healthConnected} />}
-            onClick={onOpenHealth}
-          />
+          <>
+            <SettingsRow
+              icon={HeartPulse}
+              title={ta("settings.health")}
+              chevron={false}
+              trailing={<StatusCheck on={!!healthConnected} />}
+              onClick={onOpenHealth}
+            />
+            <SettingsRow
+              icon={Bell}
+              title={ta("settings.notifications")}
+              hint={ta("settings.notificationsHint")}
+              chevron={false}
+              trailing={(
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label={ta("settings.notifications")}
+                  aria-checked={notifOn}
+                  aria-busy={notifBusy}
+                  className={`ms-menu-switch${notifOn ? " is-on" : ""}`}
+                  disabled={notifBusy}
+                  onClick={async () => {
+                    if (notifBusy) return;
+                    const next = !notifOn;
+                    setNotifBusy(true);
+                    setNotifMsg("");
+                    try {
+                      const mod = await import("../lib/native-push.js");
+                      const res = next
+                        ? await mod.enableNativeNotifications()
+                        : await mod.disableNativeNotifications();
+                      setNotifOn(res?.enabled === true);
+                      if (next && !res?.ok) {
+                        setNotifMsg(ta("settings.notificationsDenied"));
+                      }
+                    } catch {
+                      setNotifOn(false);
+                      setNotifMsg(ta("settings.notificationsDenied"));
+                    } finally {
+                      setNotifBusy(false);
+                    }
+                  }}
+                >
+                  <span />
+                </button>
+              )}
+            />
+          </>
         ) : null}
+        {notifMsg ? <p className="ios-settings-copy">{notifMsg}</p> : null}
       </div>
 
-      <div className="ms-profile-group-label">Abonnement</div>
+      <div className="ms-profile-group-label">{ta("settings.subscription")}</div>
       <div className="ms-profile-account-stack">
-        <SettingsRow icon={CreditCard} title="Abonnement" onClick={onOpenSubscription} />
+        <SettingsRow icon={CreditCard} title={ta("settings.subscription")} onClick={onOpenSubscription} />
       </div>
 
-      <div className="ms-profile-group-label">Gestion du compte</div>
+      <div className="ms-profile-group-label">{ta("settings.account")}</div>
       <div className="ms-profile-account-stack">
-        <SettingsRow icon={Globe} title="Langue" value={langName} onClick={onOpenLanguage} />
-        <SettingsRow icon={Lock} title="Changer le mot de passe" onClick={onOpenPassword} />
-        <SettingsRow icon={Shield} title="Mes données personnelles" onClick={onOpenData} />
+        <SettingsRow
+          mark={<FlagMark code={lang?.flag || "FR"} size={28} className="ios-flag-circle" />}
+          title={t("language.section")}
+          value={lang?.name || "Français"}
+          onClick={onOpenLanguage}
+        />
+        <SettingsRow icon={Lock} title={ta("settings.password")} onClick={onOpenPassword} />
+        <SettingsRow icon={Shield} title={ta("settings.data")} onClick={onOpenData} />
         <SettingsRow icon={CircleHelp} title="FAQ" href={faqHref} external />
-        <SettingsRow icon={Info} title="Aide" onClick={onOpenHelp} />
-        <SettingsRow icon={FileText} title="Politiques" onClick={onOpenLegal} />
+        <SettingsRow icon={Info} title={ta("settings.help")} onClick={onOpenHelp} />
+        <SettingsRow icon={FileText} title={ta("settings.policies")} onClick={onOpenLegal} />
       </div>
 
       {user && onDeleteAccount ? (
@@ -525,7 +611,7 @@ export function IosSettingsHome({
         }}
       >
         <LogOut size={18} strokeWidth={2.2} />
-        Déconnexion
+        {ta("settings.signOut")}
       </button>
     </>
   );
@@ -543,28 +629,38 @@ export function IosAppleHealthPanel({
   connected,
   busy,
   error,
+  summary = null,
   onConnect,
   onDisconnect,
   onBack,
 }) {
+  const { t } = useTranslation("app");
+  const swimCount = Number(summary?.swimCount) || 0;
+  const bpm = summary?.latestHeartRate;
+  const countLine = swimCount > 1
+    ? t("settings.healthCountPlural", { count: swimCount })
+    : t("settings.healthCount", { count: swimCount });
   return (
-    <PanelShell title="Apple Santé" onBack={onBack}>
+    <PanelShell title={t("settings.health")} onBack={onBack}>
       <p className="ios-settings-copy">
-        Relie Apple Santé pour importer tes séances de natation et ta fréquence cardiaque.
+        {t("settings.healthLead")}
       </p>
       <p className="ios-settings-copy">
-        Tu peux retirer l’accès à tout moment dans Réglages iPhone, Santé, Sources.
+        {t("settings.healthRevoke")}
       </p>
       {connected ? (
         <>
-          <p className="ios-settings-alert is-ok">Connecté</p>
+          <p className="ios-settings-alert is-ok">
+            {swimCount > 0 ? countLine : t("settings.healthEmpty")}
+            {bpm ? ` · ${t("settings.healthBpm", { bpm })}` : ""}
+          </p>
           <button
             type="button"
             className="ios-settings-danger"
             onClick={onDisconnect}
             disabled={busy}
           >
-            Déconnecter
+            {t("settings.disconnect")}
           </button>
         </>
       ) : (
@@ -574,7 +670,7 @@ export function IosAppleHealthPanel({
           onClick={onConnect}
           disabled={busy}
         >
-          {busy ? "…" : "Connecter Apple Santé"}
+          {busy ? "…" : t("settings.healthConnect")}
         </button>
       )}
       {error ? <p className="ios-settings-alert is-err">{error}</p> : null}
@@ -625,6 +721,10 @@ export function IosSubscriptionPanel({
                 Résilier
               </button>
             </>
+          ) : nativeIos ? (
+            <p className="ios-settings-copy">
+              Cet abonnement a été souscrit sur le site. L’app iPhone ne le modifie pas et n’ouvre pas de paiement web.
+            </p>
           ) : applePaid ? (
             <p className="ios-settings-copy">
               Abonnement App Store. Gère-le sur l’iPhone : Réglages, Apple ID, Abonnements.

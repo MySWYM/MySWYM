@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
+import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
 import {
   track,
   trackEvent,
@@ -42,10 +43,10 @@ import {
 } from "./lib/soft-paywall-rules.js";
 import { syncLocalNotificationsFromState } from "./lib/sync-local-notifications.js";
 import {
-  ensureIosNotificationPermission,
+  getLocalNotificationPermission,
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
-import { registerNativePush, flushPendingPushToken } from "./lib/native-push.js";
+import { registerNativePush, flushPendingPushToken, pushNotificationsWanted } from "./lib/native-push.js";
 import { clearAppIconBadge } from "./lib/native-app-badge.js";
 import {
   markCheckoutAbandoned,
@@ -164,6 +165,8 @@ import SessionExportBar from "./ui/SessionExportBar.jsx";
 import AuthScreen, { PasswordInput } from "./AuthScreen.jsx";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
+import { intlLocaleFor } from "./i18n/languages.js";
+import { useSessionText } from "./i18n/useSessionText.js";
 import i18n, { getStoredLanguage } from "./i18n/index.js";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import FeedbackModal from "./sheets/FeedbackModal.jsx";
@@ -2818,7 +2821,7 @@ const Step2_SubGoal = ({ category, onSelect, onBack }) => {
 
 const Step2_Date = ({ value, onChange, onNext, onBack }) => {
   const { t, i18n } = useTranslation("onboarding");
-  const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
+  const dateLocale = intlLocaleFor(i18n.language);
   const monthNames = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => t(`months.${n}`));
   const weekdayNames = t("weekdays", { returnObjects: true });
   const minD = eventMinDate();
@@ -3682,8 +3685,12 @@ const FREE_TIER_LINES = [
 const countCompletedSessions = (p) =>
   (p?.weeks || []).reduce((n, w) => n + (w.sessions || []).filter((s) => s.completed).length, 0);
 
-const PREMIUM_TIER_LINES = [
-  `Essai 7 jours sans carte, puis ${PRICING_SUMMARY_FR}`,
+function premiumPriceSummary() {
+  return isNativeIos() ? APPLE_IAP_SUMMARY_FR : PRICING_SUMMARY_FR;
+}
+
+const PREMIUM_TIER_LINES = () => [
+  `Essai 7 jours sans carte, puis ${premiumPriceSummary()}`,
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
@@ -3703,8 +3710,8 @@ const PlanTierComparison = ({ compact = false }) => (
     </div>
     <div style={{ border: `2px solid ${G.blue}`, borderRadius: 14, padding: compact ? "10px 8px" : "12px 10px", background: G.blueLight }}>
       <div style={{ fontSize: 10, fontWeight: 800, color: G.blue, letterSpacing: "0.08em", marginBottom: 8 }}>PREMIUM</div>
-      {PREMIUM_TIER_LINES.map((line, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < PREMIUM_TIER_LINES.length - 1 ? 6 : 0 }}>
+      {PREMIUM_TIER_LINES().map((line, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: i < PREMIUM_TIER_LINES().length - 1 ? 6 : 0 }}>
           <Check size={11} color={G.blue} style={{ flexShrink: 0, marginTop: 2 }} />
           <span style={{ fontSize: compact ? 10 : 11, color: G.ink, fontWeight: 600, lineHeight: 1.4 }}>{line}</span>
         </div>
@@ -3838,7 +3845,7 @@ const PremiumTeaser = ({ onUpgrade }) => (
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: G.ink, marginBottom: 2 }}>Ton coach a préparé tes séances</div>
-        <div style={{ fontSize: 13, color: G.grey }}>Essai 7 jours · adaptation + allures · puis {PRICING_SUMMARY_FR}</div>
+        <div style={{ fontSize: 13, color: G.grey }}>Essai 7 jours · adaptation + allures · puis {premiumPriceSummary()}</div>
       </div>
       <button type="button" onClick={onUpgrade} style={{ background: G.blue, border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, color: G.white, cursor: "pointer", flexShrink: 0 }}>
         Essai
@@ -4001,18 +4008,19 @@ const RestPill = ({ value }) => {
 };
 
 const RichText = ({ text }) => {
+  const tSwim = useSessionText();
   if (!text) return null;
   const parts = [];
   let last = 0;
   let match;
   DEPART_INLINE_RE.lastIndex = 0;
   while ((match = DEPART_INLINE_RE.exec(text)) !== null) {
-    if (match.index > last) parts.push({ type: "text", val: text.slice(last, match.index) });
+    if (match.index > last) parts.push({ type: "text", val: tSwim(text.slice(last, match.index)) });
     parts.push({ type: "depart", val: `D${match[1]}` });
     last = match.index + match[0].length;
   }
-  if (last < text.length) parts.push({ type: "text", val: text.slice(last) });
-  if (!parts.length) return <span>{text}</span>;
+  if (last < text.length) parts.push({ type: "text", val: tSwim(text.slice(last)) });
+  if (!parts.length) return <span>{tSwim(text)}</span>;
   return (
     <>
       {parts.map((p, i) =>
@@ -4734,7 +4742,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
             Limite atteinte
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
-            Pour générer de nouvelles séances, abonne-toi à Premium : {PRICING_SUMMARY_FR}.
+            Pour générer de nouvelles séances, abonne-toi à Premium : {premiumPriceSummary()}.
           </p>
         </>
       ) : (
@@ -4743,7 +4751,7 @@ const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
             Continue avec Premium
           </h2>
           <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
-            Pour de nouvelles séances personnalisées : {PRICING_SUMMARY_FR}.
+            Pour de nouvelles séances personnalisées : {premiumPriceSummary()}.
           </p>
           <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
             {[
@@ -9170,15 +9178,20 @@ export default function App() {
   }, [activePlanId, plan, user]);
 
   useEffect(() => {
-    if (screen !== "app" || !user?.id || !isNativeIos()) return;
-    void clearAppIconBadge();
-    void (async () => {
-      const perm = await ensureIosNotificationPermission(user.id);
-      if (perm === "granted") {
-        void registerNativePush();
-        void syncLocalNotificationsFromState({ user, plan });
-      }
-    })();
+    if (screen !== "app" || !user?.id || !isNativeIos()) return undefined;
+    const sync = () => {
+      void clearAppIconBadge();
+      void (async () => {
+        const perm = await getLocalNotificationPermission();
+        if (perm === "granted" && pushNotificationsWanted()) {
+          void registerNativePush();
+          void syncLocalNotificationsFromState({ user, plan });
+        }
+      })();
+    };
+    sync();
+    window.addEventListener("myswym:push-pref", sync);
+    return () => window.removeEventListener("myswym:push-pref", sync);
   }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
 
   useEffect(() => {
@@ -9286,7 +9299,7 @@ export default function App() {
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
     if (wasFirst && isNativeIos() && user?.id) {
-      void ensureIosNotificationPermission(user.id).then((perm) => {
+      void getLocalNotificationPermission().then((perm) => {
         if (perm === "granted") {
           void registerNativePush();
           void syncLocalNotificationsFromState({ user, plan });

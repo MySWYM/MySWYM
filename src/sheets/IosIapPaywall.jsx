@@ -1,26 +1,20 @@
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import Btn from "../ui/Btn.jsx";
 import {
-  APPLE_IAP_ANNUAL_CTA_FR,
-  APPLE_IAP_ANNUAL_SAVE_FR,
   APPLE_IAP_ANNUAL_SAVE_PCT,
   APPLE_IAP_MONTHLY_YEAR_EQUIV,
 } from "../lib/apple-iap-catalog.js";
-import { LEGAL_LINKS, IOS_IAP_ANNUAL_REASSURE, IOS_IAP_LEGAL_PREFIX, IOS_IAP_MONTHLY_REASSURE } from "../lib/legal-copy.js";
+import { LEGAL_LINKS } from "../lib/legal-copy.js";
 import { LocalizedLink } from "../i18n/locale-routing.jsx";
 import "./IosIapPaywall.css";
 
-const COMPARE = [
-  { id: "sessions", label: "Séances complètes du plan" },
-  { id: "pace", label: "Allures à la seconde (T100)" },
-  { id: "adapt", label: "Adaptation coach après feedback" },
-  { id: "event", label: "Plan jusqu’à ton événement" },
-];
+const COMPARE_IDS = ["sessions", "pace", "adapt", "event"];
 
-function Cell({ ok }) {
+function Cell({ ok, noLabel }) {
   if (ok) return <Check size={18} color={G.blue} strokeWidth={2.5} aria-hidden />;
-  return <span className="ms-iap-cell-no" aria-label="Non">-</span>;
+  return <span className="ms-iap-cell-no" aria-label={noLabel}>-</span>;
 }
 
 export default function IosIapPaywall({
@@ -33,15 +27,16 @@ export default function IosIapPaywall({
   onSubscribe,
   onRestore,
 }) {
+  const { t } = useTranslation("app");
   const isAnnual = period === "annual";
   const heroPrice = isAnnual ? annualPrice : monthlyPrice;
-  const heroPeriod = isAnnual ? "/ an" : "/ mois";
+  const heroPeriod = isAnnual ? t("paywall.perYear") : t("paywall.perMonth");
 
   return (
     <div className="ms-iap-paywall">
       <div className="ms-iap-paywall-main">
         <h3 className="ms-iap-title">
-          {isAnnual ? "Premium annuel" : "Premium mensuel"}
+          {isAnnual ? t("paywall.annual") : t("paywall.monthly")}
         </h3>
         <div className="ms-iap-price-row">
           {isAnnual ? (
@@ -52,25 +47,25 @@ export default function IosIapPaywall({
             <span className="ms-iap-price-period">{heroPeriod}</span>
           </span>
         </div>
-        {isAnnual ? <p className="ms-iap-save">{APPLE_IAP_ANNUAL_SAVE_FR}</p> : null}
+        {isAnnual ? <p className="ms-iap-save">{t("paywall.save")}</p> : null}
 
-        <div className="ms-iap-table" role="table" aria-label="Essai et Premium">
+        <div className="ms-iap-table" role="table" aria-label={t("paywall.tableAria")}>
           <div className="ms-iap-table-head" role="row">
             <span role="columnheader" className="ms-iap-table-feature" />
-            <span role="columnheader">Essai</span>
-            <span role="columnheader" className="is-premium">Premium</span>
+            <span role="columnheader">{t("paywall.afterTrial")}</span>
+            <span role="columnheader" className="is-premium">{t("paywall.premiumCol")}</span>
           </div>
-          {COMPARE.map((row) => (
-            <div key={row.id} className="ms-iap-table-row" role="row">
-              <span role="cell" className="ms-iap-table-feature">{row.label}</span>
-              <span role="cell" className="ms-iap-table-cell"><Cell ok={false} /></span>
-              <span role="cell" className="ms-iap-table-cell"><Cell ok /></span>
+          {COMPARE_IDS.map((id) => (
+            <div key={id} className="ms-iap-table-row" role="row">
+              <span role="cell" className="ms-iap-table-feature">{t(`paywall.${id}`)}</span>
+              <span role="cell" className="ms-iap-table-cell"><Cell ok={false} noLabel={t("profile.no")} /></span>
+              <span role="cell" className="ms-iap-table-cell"><Cell ok noLabel={t("profile.no")} /></span>
             </div>
           ))}
         </div>
 
         <p className="ms-iap-reassure">
-          {isAnnual ? IOS_IAP_ANNUAL_REASSURE : IOS_IAP_MONTHLY_REASSURE}
+          {isAnnual ? t("paywall.annualReassure") : t("paywall.monthlyReassure")}
         </p>
       </div>
 
@@ -84,16 +79,16 @@ export default function IosIapPaywall({
             disabled={loading}
             onClick={onSubscribe}
           >
-            {loading ? "Achat…" : (
+            {loading ? t("paywall.buying") : (
               <>
-                S’abonner à l’annuel et économiser{" "}
+                {t("paywall.subscribeAnnual")}{" "}
                 <span>{APPLE_IAP_ANNUAL_SAVE_PCT}</span>
               </>
             )}
           </button>
         ) : (
           <Btn variant="primary" onClick={onSubscribe} disabled={loading} style={{ width: "100%" }}>
-            {loading ? "Achat…" : `S’abonner : ${monthlyPrice} / mois`}
+            {loading ? t("paywall.buying") : t("paywall.subscribeMonthly", { price: monthlyPrice })}
           </Btn>
         )}
 
@@ -104,7 +99,7 @@ export default function IosIapPaywall({
             disabled={loading}
             onClick={() => onPeriodChange("monthly_flex")}
           >
-            Non merci, je préfère le tarif mensuel : {monthlyPrice}
+            {t("paywall.preferMonthly", { price: monthlyPrice })}
           </button>
         ) : (
           <button
@@ -113,7 +108,7 @@ export default function IosIapPaywall({
             disabled={loading}
             onClick={() => onPeriodChange("annual")}
           >
-            {APPLE_IAP_ANNUAL_CTA_FR}{" "}
+            {t("paywall.subscribeAnnual")}{" "}
             <span>{APPLE_IAP_ANNUAL_SAVE_PCT}</span>
           </button>
         )}
@@ -124,16 +119,16 @@ export default function IosIapPaywall({
           disabled={loading}
           onClick={onRestore}
         >
-          J’ai déjà Premium, restaurer
+          {t("paywall.restore")}
         </button>
 
         <p className="ms-iap-legal">
-          {IOS_IAP_LEGAL_PREFIX}{" "}
-          <LocalizedLink to={LEGAL_LINKS.cgv} target="_blank" rel="noopener noreferrer">CGV</LocalizedLink>
-          {", les "}
-          <LocalizedLink to={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer">CGU</LocalizedLink>
-          {" et la "}
-          <LocalizedLink to={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer">politique de confidentialité</LocalizedLink>
+          {t("paywall.legal", { monthly: monthlyPrice, annual: annualPrice })}{" "}
+          <LocalizedLink to={LEGAL_LINKS.cgv} target="_blank" rel="noopener noreferrer">{t("paywall.cgv")}</LocalizedLink>
+          {t("paywall.andThe")}
+          <LocalizedLink to={LEGAL_LINKS.cgu} target="_blank" rel="noopener noreferrer">{t("paywall.cgu")}</LocalizedLink>
+          {t("paywall.andPrivacy")}
+          <LocalizedLink to={LEGAL_LINKS.privacy} target="_blank" rel="noopener noreferrer">{t("paywall.privacy")}</LocalizedLink>
           .
         </p>
       </div>

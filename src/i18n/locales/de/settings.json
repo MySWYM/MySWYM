@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Sprache",
+    "title": "Sprache der Oberfläche",
+    "hint": "Landing, Navigation und Onboarding-Quiz. Der Rest der App wird nach und nach übersetzt.",
+    "selectTitle": "Sprache wählen",
+    "confirm": "Bestätigen",
+    "panelTitle": "Sprachen",
+    "panelLead": "Wähle deine Sprache",
+    "confirmTitle": "Sprache ändern?",
+    "confirmMessage": "Die App wechselt zu {{language}}.",
+    "confirmAction": "Sprache ändern",
+    "cancel": "Abbrechen"
+  },
+  "appearance": {
+    "section": "Darstellung",
+    "dark": "Dunkler Hintergrund",
+    "light": "Heller Hintergrund",
+    "darkHint": "Nachtmodus, weniger Blendung",
+    "lightHint": "Tagmodus, weißer Hintergrund",
+    "switchToLight": "Zu hellem Hintergrund wechseln",
+    "switchToDark": "Zu dunklem Hintergrund wechseln"
+  },
+  "account": {
+    "section": "Konto"
+  }
+}
