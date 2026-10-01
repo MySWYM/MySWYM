@@ -657,6 +657,8 @@ export async function handleOperatorInbound(input: {
         sent: pushResult.sent,
         skipped: pushResult.skipped,
         pruned: pushResult.pruned,
+        reason: pushResult.reason,
+        host: pushResult.host,
         hasUrl: Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
         hasService: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
         apns: Boolean(process.env.APNS_KEY_ID && process.env.APNS_TEAM_ID && (process.env.APNS_P8 || process.env.APNS_P8_BASE64)),
@@ -665,7 +667,10 @@ export async function handleOperatorInbound(input: {
       if (pushResult.sent > 0) {
         pushNote = ` · push iOS ok (${pushResult.sent})`;
       } else {
-        pushNote = ` · push iOS KO: ${pushResult.skipped || "all_failed"}`;
+        const detail = pushResult.reason
+          ? `${pushResult.skipped || "all_failed"}/${pushResult.reason}`
+          : (pushResult.skipped || "all_failed");
+        pushNote = ` · push iOS KO: ${detail}`;
       }
     } catch (e) {
       console.error("[support] push failed", e instanceof Error ? e.message : e);

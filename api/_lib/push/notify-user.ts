@@ -2,7 +2,7 @@
  * Envoi push aux jetons d’un user (service role).
  */
 import { createClient } from "@supabase/supabase-js";
-import { isApnsConfigured, sendApnsToDevice, type PushPayload } from "./apns.js";
+import { apnsHostLabel, isApnsConfigured, sendApnsToDevice, type PushPayload } from "./apns.js";
 
 function adminClient() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -14,7 +14,7 @@ function adminClient() {
 export async function pushToUser(
   userId: string,
   payload: PushPayload,
-): Promise<{ sent: number; skipped: string; pruned: number }> {
+): Promise<{ sent: number; skipped: string; pruned: number; reason?: string; host?: string }> {
   if (!userId) return { sent: 0, skipped: "no_user", pruned: 0 };
   if (!isApnsConfigured()) return { sent: 0, skipped: "apns_not_configured", pruned: 0 };
   const admin = adminClient();
@@ -38,12 +38,22 @@ export async function pushToUser(
 
   let sent = 0;
   const pruneIds: string[] = [];
+  let lastReason = "";
+  let lastHost = apnsHostLabel();
   for (const row of rows) {
     const result = await sendApnsToDevice(row.token, payload);
+    if (result.host) lastHost = result.host;
     if (result.ok) {
       sent += 1;
       continue;
     }
+    lastReason = String(result.reason || `http_${result.status || "?"}`);
+    console.error("[push] apns fail", {
+      status: result.status,
+      reason: lastReason,
+      host: result.host,
+      tokenTail: String(row.token || "").slice(-6),
+    });
     if (result.status === 410 || result.reason === "BadDeviceToken" || result.reason === "Unregistered") {
       pruneIds.push(row.id);
     }
@@ -51,5 +61,12 @@ export async function pushToUser(
   if (pruneIds.length) {
     await admin.from("device_push_tokens").delete().in("id", pruneIds);
   }
-  return { sent, skipped: sent ? "" : "all_failed", pruned: pruneIds.length };
+  if (sent) return { sent, skipped: "", pruned: pruneIds.length, host: lastHost };
+  return {
+    sent: 0,
+    skipped: "all_failed",
+    pruned: pruneIds.length,
+    reason: lastReason || "unknown",
+    host: lastHost,
+  };
 }
