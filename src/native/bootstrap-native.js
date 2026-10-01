@@ -105,6 +105,13 @@ export async function bootstrapNativeChrome() {
       await new Promise((r) => setTimeout(r, 600));
       await ensureIosNotificationPermission();
       void registerNativePush();
+      try {
+        const { clearAppIconBadge } = await import("../lib/native-app-badge.js");
+        void clearAppIconBadge();
+        void App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) void clearAppIconBadge();
+        });
+      } catch { /* ignore */ }
     })();
   }
 }

@@ -65,6 +65,44 @@ export function runSessionReminderSmoke() {
   });
   ok(trial.some((n) => n.id === NOTIF_IDS.TRIAL_J1 || n.id === NOTIF_IDS.TRIAL_J2), "trial notifs");
 
+  const abandon = buildLocalNotificationPlan({
+    enabled: true,
+    hasPremiumAccess: false,
+    accessStatus: ACCESS_STATUS.EXPIRED,
+    checkoutAbandonedAt: "2026-09-23T08:00:00.000Z",
+    nowMs: now,
+  });
+  ok(abandon.some((n) => n.id === NOTIF_IDS.CHECKOUT_ABANDON), "checkout abandon");
+  ok(abandon.every((n) => n.badge === 1), "badge on commercial");
+
+  const inactive = buildLocalNotificationPlan({
+    enabled: true,
+    hasPremiumAccess: true,
+    accessStatus: ACCESS_STATUS.ACTIVE,
+    hasPlan: true,
+    nextResolved: true,
+    lastCompletedAt: "2026-09-10T12:00:00.000Z",
+    nowMs: now,
+  });
+  ok(inactive.some((n) => n.id === NOTIF_IDS.COMEBACK), "comeback j+3");
+  ok(inactive.some((n) => n.id === NOTIF_IDS.COMEBACK_LONG), "comeback j+7");
+
+  const review = buildLocalNotificationPlan({
+    enabled: true,
+    hasPremiumAccess: true,
+    accessStatus: ACCESS_STATUS.ACTIVE,
+    reviewEligible: true,
+    reviewAlreadyAsked: false,
+    nowMs: now,
+  });
+  ok(review.some((n) => n.id === NOTIF_IDS.REVIEW_ASK), "review ask");
+  ok(!buildLocalNotificationPlan({
+    enabled: true,
+    reviewEligible: true,
+    reviewAlreadyAsked: true,
+    nowMs: now,
+  }).some((n) => n.id === NOTIF_IDS.REVIEW_ASK), "review already asked");
+
   const off = buildLocalNotificationPlan({ enabled: false, hasPlan: true, nowMs: now });
   ok(off.length === 0, "disabled empty");
 

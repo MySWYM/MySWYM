@@ -1,5 +1,5 @@
 /**
- * Rappels séance : préférence + planification des notifs locales (pures).
+ * Rappels séance + relances commercial : préférence + planification (pures).
  */
 import { ACCESS_STATUS } from "./access.js";
 import { NOTIF_IDS } from "./native-local-notifications.js";
@@ -49,8 +49,19 @@ function startOfDay(ms) {
   return d;
 }
 
+/** Prochaine fenetre utile : au moins +minMs, sinon le lendemain a `hour`. */
+export function nextCommercialAt(nowMs, { minMs = 2 * 3600_000, hour = 10 } = {}) {
+  const soon = new Date(nowMs + minMs);
+  const sameDay = atHourOnDay(new Date(nowMs), hour);
+  if (sameDay.getTime() > soon.getTime()) return sameDay;
+  const nextMorning = atHourOnDay(addDays(new Date(nowMs), 1), hour);
+  if (nextMorning.getTime() > soon.getTime()) return nextMorning;
+  return soon;
+}
+
 /**
- * Construit la liste des notifs locales à planifier (one-shot).
+ * Construit la liste des notifs locales a planifier (one-shot).
+ * Chaque item pose la pastille (badge) cote plugin.
  */
 export function buildLocalNotificationPlan({
   enabled = true,
@@ -62,6 +73,9 @@ export function buildLocalNotificationPlan({
   nextResolved = false,
   currentStreak = 0,
   lastCompletedAt = null,
+  checkoutAbandonedAt = null,
+  reviewEligible = false,
+  reviewAlreadyAsked = false,
   nowMs = Date.now(),
   sessionHour = 18,
   streakHour = 20,
@@ -82,6 +96,7 @@ export function buildLocalNotificationPlan({
       title: copy.title,
       body: copy.body,
       at: sessionAt,
+      badge: 1,
       extra: { kind: "session_reminder" },
     });
 
@@ -95,6 +110,7 @@ export function buildLocalNotificationPlan({
         title: `Ta série de ${currentStreak} jours`,
         body: "Encore une séance aujourd’hui pour la garder. Tu es si près.",
         at: streakAt,
+        badge: 1,
         extra: { kind: "streak_protect" },
       });
     }
@@ -116,7 +132,23 @@ export function buildLocalNotificationPlan({
           title: "On reprend ensemble ?",
           body: "Quelques jours sans nage : ta semaine t’attend, sans jugement.",
           at: comebackAt,
+          badge: 1,
           extra: { kind: "comeback" },
+        });
+      }
+
+      let longAt = atHourOnDay(addDays(startOfDay(last), 7), 11);
+      if (longAt.getTime() <= nowMs + 60_000 && nowMs - last >= 7 * 86400000) {
+        longAt = nextCommercialAt(nowMs, { minMs: 3600_000, hour: 11 });
+      }
+      if (longAt.getTime() > nowMs + 60_000) {
+        items.push({
+          id: NOTIF_IDS.COMEBACK_LONG,
+          title: "Ton plan t’attend",
+          body: "Ça fait une semaine : une séance courte suffit pour reprendre le rythme.",
+          at: longAt,
+          badge: 1,
+          extra: { kind: "comeback_long" },
         });
       }
     }
@@ -133,6 +165,7 @@ export function buildLocalNotificationPlan({
           title: "Plus que 2 jours d’essai",
           body: "Sans abonnement, tes séances se mettent en pause. Garde ton plan sur l’App Store.",
           at: j2,
+          badge: 1,
           extra: { kind: "soft_premium" },
         });
       }
@@ -142,9 +175,44 @@ export function buildLocalNotificationPlan({
           title: "Dernier jour d’essai",
           body: "Demain tes séances passent en pause. Abonne-toi pour tout garder.",
           at: j1,
+          badge: 1,
           extra: { kind: "soft_premium" },
         });
       }
+    }
+  }
+
+  if (!hasPremiumAccess && checkoutAbandonedAt) {
+    const abandonedMs = Date.parse(checkoutAbandonedAt);
+    if (Number.isFinite(abandonedMs)) {
+      const at = nextCommercialAt(Math.max(abandonedMs, nowMs), {
+        minMs: 2 * 3600_000,
+        hour: 10,
+      });
+      if (at.getTime() > nowMs + 60_000) {
+        items.push({
+          id: NOTIF_IDS.CHECKOUT_ABANDON,
+          title: "Ton essai t’attend",
+          body: "Tu as quitté le paiement : réactive Premium quand tu veux, sans pression.",
+          at,
+          badge: 1,
+          extra: { kind: "checkout_abandon" },
+        });
+      }
+    }
+  }
+
+  if (reviewEligible && !reviewAlreadyAsked) {
+    const at = nextCommercialAt(nowMs, { minMs: 24 * 3600_000, hour: 11 });
+    if (at.getTime() > nowMs + 60_000) {
+      items.push({
+        id: NOTIF_IDS.REVIEW_ASK,
+        title: "Un avis aide MySWYM",
+        body: "Si l’app te convient, un mot sur l’App Store aide d’autres nageurs à nous trouver.",
+        at,
+        badge: 1,
+        extra: { kind: "review_ask" },
+      });
     }
   }
 

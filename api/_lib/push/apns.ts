@@ -8,6 +8,8 @@ import { createSign } from "node:crypto";
 export type PushPayload = {
   title: string;
   body: string;
+  /** Pastille rouge sur l’icône. Défaut 1. */
+  badge?: number;
   data?: Record<string, string>;
 };
 
@@ -84,6 +86,8 @@ export async function sendApnsToDevice(
   const host = cfg.production ? "api.push.apple.com" : "api.sandbox.push.apple.com";
   const url = `https://${host}/3/device/${token}`;
   const jwt = createApnsJwt(cfg);
+  const badgeRaw = payload.badge;
+  const badge = Number.isFinite(badgeRaw) ? Math.max(0, Math.floor(Number(badgeRaw))) : 1;
   const body = {
     aps: {
       alert: {
@@ -91,6 +95,7 @@ export async function sendApnsToDevice(
         body: String(payload.body || "").slice(0, 180),
       },
       sound: "default",
+      badge,
     },
     ...(payload.data || {}),
   };

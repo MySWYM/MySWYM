@@ -1,6 +1,7 @@
 /**
  * Bridge Capacitor Local Notifications (iOS). No-op sur le web.
  * L’autorisation système (Réglages → Notifications) est la source de vérité.
+ * Chaque notif pose la pastille rouge (badge: 1) sur l’icône.
  */
 import { isNativeIos } from "./native-platform.js";
 
@@ -11,11 +12,15 @@ export const NOTIF_IDS = {
   TRIAL_J2: 1004,
   TRIAL_J1: 1005,
   BADGE: 1006,
+  CHECKOUT_ABANDON: 1007,
+  COMEBACK_LONG: 1008,
+  REVIEW_ASK: 1009,
 };
 
 const ALL_IDS = Object.values(NOTIF_IDS);
 const PERMISSION_ASKED_KEY = "myswym_local_notif_asked";
 let ensureInFlight = null;
+let actionListenersReady = false;
 
 export function permissionAskedKey(userId) {
   return `${PERMISSION_ASKED_KEY}_${userId || "anon"}`;
@@ -43,6 +48,44 @@ async function getPlugin() {
   } catch {
     return null;
   }
+}
+
+function dispatchFromLocalExtra(extra) {
+  const data = extra && typeof extra === "object" ? extra : {};
+  const kind = String(data.kind || "").toLowerCase();
+  if (kind === "buddy") {
+    window.dispatchEvent(new CustomEvent("myswym:open-tab", { detail: { tab: "buddies" } }));
+    return;
+  }
+  if (kind === "support") {
+    window.dispatchEvent(new CustomEvent("myswym:open-support", {
+      detail: { tab: "messages", view: "thread" },
+    }));
+    return;
+  }
+  if (kind === "soft_premium" || kind === "checkout_abandon") {
+    window.dispatchEvent(new CustomEvent("myswym:open-upgrade", {
+      detail: { reason: "trial_required" },
+    }));
+    return;
+  }
+  if (kind === "review_ask") {
+    window.dispatchEvent(new CustomEvent("myswym:open-app-store-review"));
+    return;
+  }
+  if (kind === "session_reminder" || kind === "streak_protect" || kind === "comeback" || kind === "comeback_long") {
+    window.dispatchEvent(new CustomEvent("myswym:open-tab", { detail: { tab: "plan" } }));
+  }
+}
+
+async function ensureActionListeners(plugin) {
+  if (actionListenersReady || !plugin) return;
+  actionListenersReady = true;
+  try {
+    await plugin.addListener("localNotificationActionPerformed", (ev) => {
+      dispatchFromLocalExtra(ev?.notification?.extra);
+    });
+  } catch { /* ignore */ }
 }
 
 export async function getLocalNotificationPermission() {
@@ -113,11 +156,12 @@ export async function cancelMySwymLocalNotifications() {
 }
 
 /**
- * @param {Array<{ id: number, title: string, body: string, at: Date, extra?: object }>} items
+ * @param {Array<{ id: number, title: string, body: string, at: Date, extra?: object, badge?: number }>} items
  */
 export async function scheduleLocalNotifications(items = []) {
   const plugin = await getPlugin();
   if (!plugin) return { scheduled: 0 };
+  await ensureActionListeners(plugin);
   const now = Date.now();
   const notifications = (items || [])
     .filter((n) => n?.id && n?.title && n?.body && n?.at instanceof Date)
@@ -129,6 +173,7 @@ export async function scheduleLocalNotifications(items = []) {
       schedule: { at: n.at, allowWhileIdle: true },
       extra: n.extra || { myswym: true },
       sound: "default",
+      badge: Number.isFinite(n.badge) ? Math.max(0, Math.floor(n.badge)) : 1,
     }));
   if (!notifications.length) return { scheduled: 0 };
   try {
@@ -145,6 +190,7 @@ export async function notifyBadgeEarned({ title, body }) {
   if (!plugin || !title || !body) return;
   const perm = await getLocalNotificationPermission();
   if (perm !== "granted") return;
+  await ensureActionListeners(plugin);
   const at = new Date(Date.now() + 6000);
   try {
     await plugin.schedule({
@@ -155,6 +201,7 @@ export async function notifyBadgeEarned({ title, body }) {
         schedule: { at, allowWhileIdle: true },
         extra: { kind: "badge" },
         sound: "default",
+        badge: 1,
       }],
     });
   } catch { /* ignore */ }

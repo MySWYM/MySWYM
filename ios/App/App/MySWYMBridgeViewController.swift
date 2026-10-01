@@ -7,6 +7,7 @@ class MySWYMBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(AppleIapPlugin())
         bridge?.registerPluginInstance(AppleHealthPlugin())
         bridge?.registerPluginInstance(StoryStickerPlugin())
+        bridge?.registerPluginInstance(AppBadgePlugin())
         disableWebViewBounce()
     }
 

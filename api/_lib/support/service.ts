@@ -23,6 +23,7 @@ import {
 } from "./telegram.js";
 import type { TelegramInbound } from "./parse.js";
 import { attachLastMessages } from "./preview.js";
+import { pushToUser } from "../push/notify-user.js";
 
 const HOLD_MESSAGE =
   "L’équipe a bien reçu ton message. Arthur te répond ici dès qu’il peut.";
@@ -641,24 +642,13 @@ export async function handleOperatorInbound(input: {
   await touchConversation(admin, conversation.id);
 
   // Push APNs hors app (best-effort, ne bloque pas Telegram).
-  const secret = (process.env.INTERNAL_EMAIL_SECRET || "").trim();
-  if (secret && conversation.user_id) {
-    const base = (
-      process.env.APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
-      || "https://www.myswym.app"
-    ).replace(/\/$/, "");
-    void fetch(`${base}/api/push/notify`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-myswym-email-secret": secret,
-      },
-      body: JSON.stringify({
-        event: "support_reply",
-        userId: conversation.user_id,
-        body: cmd.text,
-      }),
+  if (conversation.user_id) {
+    const preview = String(cmd.text || "").trim().slice(0, 120);
+    void pushToUser(conversation.user_id, {
+      title: "Nouvelle réponse MySWYM",
+      body: preview || "Arthur t’a répondu dans le chat.",
+      badge: 1,
+      data: { kind: "support", path: "/app" },
     }).catch(() => {});
   }
 

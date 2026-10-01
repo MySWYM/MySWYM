@@ -10,6 +10,12 @@ import {
   rescheduleMySwymLocalNotifications,
 } from "./native-local-notifications.js";
 import { isNativeIos } from "./native-platform.js";
+import { readCheckoutAbandonedAt } from "./checkout-abandon-notif.js";
+import {
+  APP_STORE_REVIEW_MIN_SESSIONS,
+  countFinishedSessions,
+  hasAskedAppStoreReview,
+} from "./app-store-review.js";
 
 function lastCompletedIso(plan) {
   if (!plan) return null;
@@ -39,6 +45,7 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
   const access = getAccessState(user);
   const next = findNextSession(plan);
   const stats = computeStats(plan);
+  const finished = countFinishedSessions(plan);
   const planned = buildLocalNotificationPlan({
     enabled,
     hasPremiumAccess: access.hasPremiumAccess,
@@ -49,6 +56,9 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
     nextResolved: !next || next.resolved === true,
     currentStreak: stats.currentStreak || stats.streak || 0,
     lastCompletedAt: lastCompletedIso(plan),
+    checkoutAbandonedAt: access.hasPremiumAccess ? null : readCheckoutAbandonedAt(user.id),
+    reviewEligible: finished >= APP_STORE_REVIEW_MIN_SESSIONS,
+    reviewAlreadyAsked: hasAskedAppStoreReview(),
   });
   return rescheduleMySwymLocalNotifications(planned);
 }

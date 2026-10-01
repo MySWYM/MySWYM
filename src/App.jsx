@@ -46,6 +46,11 @@ import {
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
 import { registerNativePush } from "./lib/native-push.js";
+import { clearAppIconBadge } from "./lib/native-app-badge.js";
+import {
+  markCheckoutAbandoned,
+  clearCheckoutAbandoned,
+} from "./lib/checkout-abandon-notif.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 import SessionCompleteView from "./SessionCompleteView.jsx";
 import ProfileNudgeCard from "./ProfileNudgeCard.jsx";
@@ -8187,6 +8192,10 @@ export default function App() {
       // Sortie définitive du tunnel paiement, plus de pending / plus de re-checkout auto
       clearPendingOnboarding();
       checkoutAbandonedRef.current = true;
+      void supabase.auth.getSession().then(({ data }) => {
+        const uid = data?.session?.user?.id;
+        if (uid) markCheckoutAbandoned(uid);
+      });
       setAuthLoading(false);
       showToast("Pas de souci, tu peux activer l’essai quand tu veux.", 8000);
       // Aperçu déjà généré → sheet. Sinon questionnaire + modal (jamais Loading bloqué).
@@ -9159,6 +9168,7 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "app" || !user?.id || !isNativeIos()) return;
+    void clearAppIconBadge();
     void (async () => {
       const perm = await ensureIosNotificationPermission(user.id);
       if (perm === "granted") {
@@ -9167,6 +9177,42 @@ export default function App() {
       }
     })();
   }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
+
+  useEffect(() => {
+    if (!isNativeIos()) return undefined;
+    let remove = null;
+    void import("@capacitor/app").then(({ App }) => {
+      void App.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) void clearAppIconBadge();
+      }).then((handle) => {
+        remove = handle;
+      });
+    }).catch(() => {});
+    return () => {
+      try { remove?.remove?.(); } catch { /* ignore */ }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isNativeIos()) return undefined;
+    const onUpgrade = () => openUpgrade("trial_required");
+    const onReview = () => {
+      void requestAppStoreReview().then((shown) => {
+        if (shown) markAppStoreReviewAsked();
+      });
+    };
+    window.addEventListener("myswym:open-upgrade", onUpgrade);
+    window.addEventListener("myswym:open-app-store-review", onReview);
+    return () => {
+      window.removeEventListener("myswym:open-upgrade", onUpgrade);
+      window.removeEventListener("myswym:open-app-store-review", onReview);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    if (accessState.hasPremiumAccess) clearCheckoutAbandoned(user.id);
+  }, [user?.id, accessState.hasPremiumAccess]);
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
   const patchProfile = (partial) => setProfile(p => ({ ...p, ...partial }));

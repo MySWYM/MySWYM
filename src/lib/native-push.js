@@ -66,10 +66,12 @@ async function ensureListeners(PushNotifications) {
     if (import.meta.env?.DEV) console.warn("[push] registrationError", err);
   });
   await PushNotifications.addListener("pushNotificationActionPerformed", (ev) => {
+    void import("./native-app-badge.js").then((m) => m.clearAppIconBadge()).catch(() => {});
     dispatchFromPushData(ev?.notification?.data);
   });
   await PushNotifications.addListener("pushNotificationReceived", () => {
-    /* foreground : la cloche in-app suffit ; pas de double toast */
+    /* foreground : pastille + cloche in-app ; pas de double toast */
+    void import("./native-app-badge.js").then((m) => m.clearAppIconBadge()).catch(() => {});
   });
 }
 
