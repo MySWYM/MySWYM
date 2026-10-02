@@ -36,8 +36,8 @@ export const APPLE_IAP_SUMMARY_FR =
 
 /** 12 × 6,99 €, pour montrer que l’annuel est moins cher. */
 export const APPLE_IAP_MONTHLY_YEAR_EQUIV = "83,88 €";
-export const APPLE_IAP_ANNUAL_SAVE_PCT = "30 %";
-export const APPLE_IAP_ANNUAL_SAVE_FR = "30 % moins cher que 12 mois au mensuel";
+export const APPLE_IAP_ANNUAL_SAVE_PCT = "28 %";
+export const APPLE_IAP_ANNUAL_SAVE_FR = "28 % moins cher que 12 mois au mensuel";
 export const APPLE_IAP_ANNUAL_CTA_FR = "Passer à l’abonnement annuel et économiser";
 
 export function appleProductFromId(productId) {

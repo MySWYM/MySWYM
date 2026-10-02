@@ -95,6 +95,11 @@ console.log("native-platform, device language");
 assert(languageFromNavigator("fr-FR") === "fr", "fr-FR");
 assert(languageFromNavigator("fr") === "fr", "fr");
 assert(languageFromNavigator("en-US") === "en", "en-US");
-assert(languageFromNavigator("de-DE") === "en", "other → en");
+assert(languageFromNavigator("de-DE") === "de", "de-DE");
+assert(languageFromNavigator("pt-BR") === "pt-BR", "pt-BR");
+assert(languageFromNavigator("pt-PT") === "pt", "pt-PT");
+assert(languageFromNavigator("ja-JP") === "ja", "ja-JP");
+assert(languageFromNavigator("no") === "nb", "no → nb");
+assert(languageFromNavigator("zh-CN") === "en", "other → en");
 
 console.log("native-platform ok");

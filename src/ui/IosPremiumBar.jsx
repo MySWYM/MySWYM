@@ -1,8 +1,10 @@
 import { Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { playUiSound } from "../lib/ui-sounds.js";
 
 /** CTA Premium iOS, même barre sur Analyse / Profil / Accueil. */
 export default function IosPremiumBar({ onUpgrade, source = "ios_bar" }) {
+  const { t } = useTranslation("app");
   return (
     <button
       type="button"
@@ -13,7 +15,7 @@ export default function IosPremiumBar({ onUpgrade, source = "ios_bar" }) {
       }}
     >
       <Star size={16} strokeWidth={2.25} aria-hidden />
-      Devenir Premium
+      {t("premium.cta")}
     </button>
   );
 }

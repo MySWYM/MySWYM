@@ -34,5 +34,5 @@ assert(!isAppleIapCancel({ message: "réseau" }), "network is not cancel");
 assert(displayPriceForProduct({ displayPrice: "6,99 €" }, "x") === "6,99 €", "store price");
 assert(displayPriceForProduct(null, APPLE_IAP_MONTHLY_ID) === "6,99€", "fallback monthly");
 assert(APPLE_IAP_MONTHLY_YEAR_EQUIV === "83,88 €", "12 × 6,99");
-assert(APPLE_IAP_ANNUAL_SAVE_FR.includes("30 %"), "annual cheaper than monthly");
+assert(APPLE_IAP_ANNUAL_SAVE_FR.includes("28 %"), "annual cheaper than monthly");
 console.log("apple-iap-catalog ok");

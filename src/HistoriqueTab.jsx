@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, X, ChevronRight, History, Waves } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { AppTabShell, AppTopBar } from "./app-shell/index.js";
@@ -9,6 +10,7 @@ import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { PRICING } from "./lib/pricing.js";
+import { isNativeApp } from "./lib/native-platform.js";
 
 /** Liste unifiée : historique boucle + séances Soft résolues. */
 export function buildHistoryItems(plan) {
@@ -67,6 +69,7 @@ export default function HistoriqueTab({
   onShare,
   embedded = false,
 }) {
+  const { t } = useTranslation("app");
   const { getTypeMeta } = getTabUi();
   const [selected, setSelected] = useState(null);
   const [copiedRef, setCopiedRef] = useState(null);
@@ -91,10 +94,10 @@ export default function HistoriqueTab({
         {!embedded && (
         <div style={{ marginBottom: 18 }}>
           <p className="ms-type-label" style={{ marginBottom: 4 }}>
-            Tes séances
+            {t("history.kicker")}
           </p>
           <h1 className="ms-type-page">
-            Historique
+            {t("nav.history")}
           </h1>
         </div>
         )}
@@ -102,7 +105,7 @@ export default function HistoriqueTab({
         {!plan ? (
           <div className="ms-glass-card" style={{ padding: "22px 18px", textAlign: "center" }}>
             <p style={{ margin: "0 0 16px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
-              Crée ton programme pour enregistrer tes séances ici.
+              {t("history.empty")}
             </p>
             <button
               type="button"
@@ -112,17 +115,17 @@ export default function HistoriqueTab({
                 onTabChange?.("plan");
               }}
             >
-              Créer mon programme
+              {t("analyse.createPlan")}
             </button>
           </div>
         ) : !isPremium ? (
           <div className="ms-glass-card" style={{ padding: "22px 18px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <History size={20} color={G.blue} />
-              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>Historique Premium</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t("history.premium")}</span>
             </div>
             <p style={{ margin: "0 0 16px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
-              Relis tes séances terminées, copie les références support, et suis ta progression.
+              {t("history.premiumLead")}
             </p>
             <button
               type="button"
@@ -132,7 +135,7 @@ export default function HistoriqueTab({
                 onUpgrade?.("history");
               }}
             >
-              S’abonner : dès {PRICING.monthlyCommit.label}/mois
+              {isNativeApp() ? t("home.subscribe") : t("analyse.fromPrice", { price: PRICING.monthlyCommit.label })}
             </button>
           </div>
         ) : (
@@ -145,7 +148,7 @@ export default function HistoriqueTab({
                 >
                   {items.length}
                 </div>
-                <div className="ms-type-caption" style={{ marginTop: 4 }}>Séances</div>
+                <div className="ms-type-caption" style={{ marginTop: 4 }}>{t("analyse.sessions")}</div>
               </div>
               <div className="ms-glass-card" style={{ flex: 1, padding: "14px 12px", textAlign: "center" }}>
                 <div

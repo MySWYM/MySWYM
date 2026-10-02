@@ -303,9 +303,9 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
           onClick={startApple}
           style={{
             ...btnBase,
-            background: "rgba(255, 255, 255, 0.16)",
+            background: "#0F1B2D",
             color: "#fff",
-            border: "1.5px solid rgba(255, 255, 255, 0.42)",
+            border: "none",
             opacity: disabled ? 0.7 : 1,
           }}
         >
@@ -486,9 +486,11 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
     reset:    t("auth.resetCta"),
   };
 
-  const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
   const native = isNativeApp();
-  const legalChecks = mode === "register" ? (
+  const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
+  const socialNeedsConsent = mode === "register" || (native && mode === "password");
+  const socialBlocked = socialNeedsConsent && (!acceptAge || !acceptTerms);
+  const legalChecks = socialNeedsConsent ? (
     <div className="native-auth-legal" style={{ marginBottom: native ? 12 : 16 }}>
       <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
         <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
@@ -602,17 +604,15 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         {error   && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.mint, fontSize: 13 }}>{success}</div>}
 
-        {native ? legalChecks : null}
-
         {(mode === "password" || mode === "register") && (
           <>
             <SocialAuthButtons
-              disabled={loading || registerBlocked}
+              disabled={loading || socialBlocked}
               intent={mode === "register" ? "signup" : "login"}
               newsletterOptIn={acceptNewsletter}
               onAuth={onAuth}
               onError={(msg) => { setSuccess(null); setError(msg); }}
-              onBlockedClick={registerBlocked ? () => {
+              onBlockedClick={socialBlocked ? () => {
                 setSuccess(null);
                 setError(t(isNativeIos() ? "auth.socialBlocked" : "auth.googleBlocked"));
               } : undefined}
@@ -678,7 +678,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
             </div>
           )}
 
-          {!native ? legalChecks : null}
+          {legalChecks}
 
           <Btn type="submit" disabled={loading || !email || ((mode === "password" || mode === "register") && !password) || registerBlocked} variant="blue">
             {loading

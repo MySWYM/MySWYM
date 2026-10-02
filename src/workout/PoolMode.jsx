@@ -8,6 +8,7 @@ import { X, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { buildWorkoutView, metersBeforeIndex, metersThroughIndex } from "../lib/workout-display.js";
 import PyramidBlockViz from "../PyramidBlockViz.jsx";
 import DrillInfoSheet from "./DrillInfoSheet.jsx";
+import { useSessionText } from "../i18n/useSessionText.js";
 
 function storageKey(sessionKey) {
   return `myswym_pool_mode_${sessionKey || "anon"}`;
@@ -54,6 +55,7 @@ export default function PoolMode({
     return Math.min(saved, Math.max(0, total - 1));
   });
   const [drill, setDrill] = useState(null);
+  const tSwim = useSessionText();
 
   useEffect(() => {
     writeProgress(sessionKey, index);
@@ -174,13 +176,13 @@ export default function PoolMode({
         justifyContent: "center",
       }}>
         {ex.section === "warm" && (
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#0097A7", marginBottom: 12 }}>
-            Échauffement
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: G.water, marginBottom: 12 }}>
+            {tSwim("Échauffement")}
           </div>
         )}
         {ex.section === "cool" && (
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#00897B", marginBottom: 12 }}>
-            Retour au calme
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: G.mint, marginBottom: 12 }}>
+            {tSwim("Retour au calme")}
           </div>
         )}
 
@@ -192,7 +194,7 @@ export default function PoolMode({
           color: G.ink,
           marginBottom: 8,
         }}>
-          {volume}
+          {tSwim(volume)}
         </div>
         {stroke && (
           <div style={{
@@ -202,13 +204,13 @@ export default function PoolMode({
             letterSpacing: "-0.02em",
             marginBottom: 16,
           }}>
-            {stroke}
+            {tSwim(stroke)}
           </div>
         )}
 
         {ex.cue && (
           <div style={{ fontSize: 18, fontWeight: 600, color: G.inkLight, lineHeight: 1.35, marginBottom: 16 }}>
-            {ex.cue.charAt(0).toUpperCase() + ex.cue.slice(1)}
+            {tSwim(ex.cue.charAt(0).toUpperCase() + ex.cue.slice(1))}
           </div>
         )}
 
@@ -219,8 +221,8 @@ export default function PoolMode({
                 fontSize: 17, fontWeight: 700, color: G.ink, lineHeight: 1.3,
                 padding: "12px 14px", borderRadius: 14, background: G.surface, border: `1px solid ${G.greyLight}`,
               }}>
-                {c.headline?.volume || c.main}
-                {c.headline?.stroke ? ` · ${c.headline.stroke}` : ""}
+                {tSwim(c.headline?.volume || c.main)}
+                {c.headline?.stroke ? ` · ${tSwim(c.headline.stroke)}` : ""}
                 {c.headline?.rest ? `, ${c.headline.rest}` : ""}
               </div>
             ))}

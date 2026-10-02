@@ -4,38 +4,15 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronRight, X } from "lucide-react";
 import { setAppLanguage } from "./index.js";
+import { APP_LANGUAGES, normalizeAppLanguage } from "./languages.js";
+import FlagMark from "./FlagMark.jsx";
 import { isAppPath, stripLocalePrefix, withLocalePrefix } from "./locale-path.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 
-const OPTIONS = [
-  { id: "fr", code: "FR", name: "Français" },
-  { id: "en", code: "EN", name: "English" },
+const NAV_OPTIONS = [
+  { id: "fr", code: "FR", name: "Français", flag: "FR" },
+  { id: "en", code: "EN", name: "English", flag: "GB" },
 ];
-
-function FlagCircle({ locale, size = 22 }) {
-  if (locale === "en") {
-    return (
-      <span className="ms-lang-flag" style={{ width: size, height: size }} aria-hidden>
-        <svg viewBox="0 0 60 30" preserveAspectRatio="xMidYMid slice">
-          <rect width="60" height="30" fill="#012169" />
-          <path d="M0 0 L60 30 M60 0 L0 30" stroke="#fff" strokeWidth="6" />
-          <path d="M0 0 L60 30 M60 0 L0 30" stroke="#C8102E" strokeWidth="2.5" />
-          <path d="M30 0 V30 M0 15 H60" stroke="#fff" strokeWidth="10" />
-          <path d="M30 0 V30 M0 15 H60" stroke="#C8102E" strokeWidth="6" />
-        </svg>
-      </span>
-    );
-  }
-  return (
-    <span className="ms-lang-flag" style={{ width: size, height: size }} aria-hidden>
-      <svg viewBox="0 0 3 2" preserveAspectRatio="xMidYMid slice">
-        <rect width="1" height="2" fill="#002395" />
-        <rect x="1" width="1" height="2" fill="#fff" />
-        <rect x="2" width="1" height="2" fill="#ED2939" />
-      </svg>
-    </span>
-  );
-}
 
 /**
  * Sélecteur de langue.
@@ -46,8 +23,11 @@ export default function LanguageSwitcher({ variant = "nav" }) {
   const { t, i18n } = useTranslation("common");
   const { t: ts } = useTranslation("settings");
   const location = useLocation();
-  const lng = i18n.language?.startsWith("en") ? "en" : "fr";
-  const current = OPTIONS.find((o) => o.id === lng) || OPTIONS[0];
+  const options = variant === "settings" ? APP_LANGUAGES : NAV_OPTIONS;
+  const lng = variant === "settings"
+    ? normalizeAppLanguage(i18n.language)
+    : (String(i18n.language || "").toLowerCase().startsWith("en") ? "en" : "fr");
+  const current = options.find((o) => o.id === lng) || options[0];
   const marketing = !isAppPath(location.pathname);
   const bare = stripLocalePrefix(location.pathname);
   const menuId = useId();
@@ -122,7 +102,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
           aria-expanded={open}
         >
           <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
-            <FlagCircle locale={current.id} size={22} />
+            <FlagMark code={current.flag} size={22} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="ms-profile-settings-label">{ts("language.title")}</div>
@@ -164,7 +144,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
                   </div>
 
                   <div className="ms-lang-sheet-list" role="listbox" aria-label={ts("language.selectTitle")}>
-                    {OPTIONS.map((opt) => {
+                    {options.map((opt) => {
                       const selected = draft === opt.id;
                       return (
                         <button
@@ -178,7 +158,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
                             setDraft(opt.id);
                           }}
                         >
-                          <FlagCircle locale={opt.id} size={28} />
+                          <FlagMark code={opt.flag} size={28} />
                           <span className="ms-lang-sheet-option-label">{opt.name}</span>
                           {selected ? (
                             <Check size={18} color="#006bfd" strokeWidth={2.5} aria-hidden />
@@ -190,8 +170,13 @@ export default function LanguageSwitcher({ variant = "nav" }) {
                     })}
                   </div>
 
+                  {draft !== lng ? (
+                    <p style={{ margin: "4px 0 12px", textAlign: "center", color: "#4A5D72", fontSize: 14, lineHeight: 1.45 }}>
+                      {ts("language.confirmMessage", { language: options.find((o) => o.id === draft)?.name || "" })}
+                    </p>
+                  ) : null}
                   <button type="button" className="ms-pill-cta ms-lang-sheet-confirm" onClick={confirm}>
-                    {ts("language.confirm")}
+                    {draft !== lng ? ts("language.confirmAction") : ts("language.confirm")}
                   </button>
                 </div>
               </div>,
@@ -218,17 +203,17 @@ export default function LanguageSwitcher({ variant = "nav" }) {
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
       >
-        <FlagCircle locale={current.id} />
+        <FlagMark code={current.flag} />
         <span>{current.code}</span>
       </button>
       {open && (
         <div className="ms-lang-menu" id={menuId} role="listbox" aria-label={t("lang.label")}>
-          {OPTIONS.map((opt) => {
+          {options.map((opt) => {
             const selected = lng === opt.id;
             const className = `ms-lang-option${selected ? " is-active" : ""}`;
             const inner = (
               <>
-                <FlagCircle locale={opt.id} />
+                <FlagMark code={opt.flag} />
                 <span>{opt.name}</span>
               </>
             );

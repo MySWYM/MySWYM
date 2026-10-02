@@ -50,8 +50,8 @@ import {
   IosAppleHealthPanel,
   IosSubscriptionPanel,
 } from "./profile/IosSettings.jsx";
-import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING, ACCOUNT_DELETE_BLOCKED_TITLE, ACCOUNT_DELETE_BLOCKED_MESSAGE } from "./lib/legal-copy.js";
-import { requestAppleHealth } from "./lib/native-health.js";
+import { ACCOUNT_DELETE_WARNING, ACCOUNT_DELETE_FLEX_WARNING, ACCOUNT_DELETE_APPLE_WARNING, ACCOUNT_DELETE_BLOCKED_TITLE, ACCOUNT_DELETE_BLOCKED_MESSAGE } from "./lib/legal-copy.js";
+import { requestAppleHealth, readAppleHealthSummary } from "./lib/native-health.js";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { getTabUi } from "./tab-ui-registry.js";
 import ProfileSection from "./ui/ProfileSection.jsx";
@@ -198,6 +198,7 @@ export default function ProfileTab({
   onChangeGoal = null,
 }) {
   const { t: to } = useTranslation("onboarding");
+  const { t: ta } = useTranslation("app");
   const { StravaSection, PaceTimesEditor } = getTabUi();
   const access = getAccessState(user);
   const applePaid = access.billingProvider === "apple";
@@ -206,11 +207,13 @@ export default function ProfileTab({
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
   const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
+  const [healthSummary, setHealthSummary] = useState(null);
   const [deleteGate, setDeleteGate] = useState({
     allowed: false,
     code: "pending",
     message: "Vérification de l’abonnement…",
     willCancelSubscription: false,
+    appleKeepsBilling: false,
   });
   const [soundsOn, setSoundsOn] = useState(() => getUiSoundsEnabled());
   const [draftEquipment, setDraftEquipment] = useState(() =>
@@ -239,6 +242,7 @@ export default function ProfileTab({
       code: "pending",
       message: "Vérification de l’abonnement…",
       willCancelSubscription: false,
+      appleKeepsBilling: false,
     });
     (async () => {
       const { data } = await supabase.auth.getSession();
@@ -250,12 +254,14 @@ export default function ProfileTab({
         code: "unverified",
         message: "Impossible de vérifier l’abonnement. Le compte n’a pas été supprimé.",
         willCancelSubscription: false,
+        appleKeepsBilling: false,
       };
       const freeFallback = {
         allowed: true,
         code: "ok",
         message: null,
         willCancelSubscription: false,
+        appleKeepsBilling: false,
       };
       if (!token) {
         if (!cancelled) {
@@ -264,6 +270,7 @@ export default function ProfileTab({
             code: "unverified",
             message: "Reconnecte-toi pour vérifier si le compte peut être supprimé.",
             willCancelSubscription: false,
+            appleKeepsBilling: false,
           });
         }
         return;
@@ -291,6 +298,7 @@ export default function ProfileTab({
           code: json.code || (json.allowed ? "ok" : "unverified"),
           message: json.message || null,
           willCancelSubscription: json.willCancelSubscription === true,
+          appleKeepsBilling: json.appleKeepsBilling === true,
           endsAt: json.endsAt || null,
         });
       } catch {
@@ -345,6 +353,17 @@ export default function ProfileTab({
   const [pwdError, setPwdError] = useState(null);
   const [pwdOk, setPwdOk] = useState(false);
   const [helpPanel, setHelpPanel] = useState(null);
+
+  useEffect(() => {
+    if (helpPanel !== "health" || profile?.appleHealthConnected !== true) return undefined;
+    let cancelled = false;
+    readAppleHealthSummary()
+      .then((summary) => {
+        if (!cancelled) setHealthSummary(summary);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [helpPanel, profile?.appleHealthConnected]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [stravaConnected, setStravaConnected] = useState(false);
   const [healthBusy, setHealthBusy] = useState(false);
@@ -615,15 +634,20 @@ export default function ProfileTab({
   const initials = fullName.slice(0, 2).toUpperCase();
   const iosNav = isIosSimpleNav();
   const iosCover = iosNav && (settingsOpen || helpPanel || editProfileOpen);
-  const levelLabel = findLevelById(profile?.level)?.label || profile?.level || "Nageur";
+  const levelId = profile?.level;
+  const levelLabel = levelId
+    ? to(`level.${levelId}.label`, { defaultValue: findLevelById(levelId)?.label || levelId })
+    : ta("profile.swimmer");
   const goalLabel = findGoalById(profile?.goal)?.label
     || CATEGORIES.find(c => c.id === profile?.category)?.label
-    || "Mon objectif";
+    || ta("profile.myGoal");
   const iosGoal = iosGoalCard(profile, plan);
   const freqN = Math.max(0, Math.min(7, Number(profile?.sessionsPerWeek) || 0));
-  const programmeLabel = freqN > 0
-    ? `${freqN} séance${freqN > 1 ? "s" : ""}`
-    : "À définir";
+  const programmeLabel = freqN > 1
+    ? ta("profile.sessionsMany", { count: freqN })
+    : freqN === 1
+      ? ta("profile.sessionsOne", { count: freqN })
+      : ta("profile.toSet");
 
   const profileDirty = natationDirty || equipmentDirty;
   const declaredInjuries = injuriesForUi(profile);
@@ -716,7 +740,7 @@ export default function ProfileTab({
           deleteBusy={deleteBusy}
           deleteErr={deleteErr}
           deleteGate={deleteGate}
-          deleteWarning={deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
+          deleteWarning={deleteGate.appleKeepsBilling ? ACCOUNT_DELETE_APPLE_WARNING : deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
         />
       ) : null}
       {helpPanel === "strava" ? (
@@ -741,6 +765,7 @@ export default function ProfileTab({
           connected={profile?.appleHealthConnected === true}
           busy={healthBusy}
           error={healthErr}
+          summary={healthSummary}
           onBack={() => {
             setHealthErr(null);
             setHelpPanel(null);
@@ -750,6 +775,8 @@ export default function ProfileTab({
             setHealthErr(null);
             try {
               await requestAppleHealth();
+              const summary = await readAppleHealthSummary();
+              setHealthSummary(summary);
               onSwimmerProfileChange?.({
                 appleHealthConnected: true,
                 appleHealthConnectedAt: new Date().toISOString(),
@@ -762,6 +789,7 @@ export default function ProfileTab({
             }
           }}
           onDisconnect={() => {
+            setHealthSummary(null);
             onSwimmerProfileChange?.({
               appleHealthConnected: false,
               appleHealthConnectedAt: null,
@@ -801,7 +829,7 @@ export default function ProfileTab({
             >
               <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
             </button>
-            <h1>Paramètres</h1>
+            <h1>{ta("profile.settings")}</h1>
             <div style={{ width: 44 }} aria-hidden />
           </header>
           <div ref={settingsBodyRef} className="ms-profile-subpanel-body">
@@ -842,7 +870,7 @@ export default function ProfileTab({
               deleteBusy={deleteBusy}
               deleteErr={deleteErr}
               deleteGate={deleteGate}
-              deleteWarning={deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
+              deleteWarning={deleteGate.appleKeepsBilling ? ACCOUNT_DELETE_APPLE_WARNING : deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
             />
           ) : (
           <>
@@ -1043,9 +1071,11 @@ export default function ProfileTab({
               <div style={{ padding: "12px 8px 8px" }}>
                 {deleteGate.allowed ? (
                   <p style={{ margin: "0 0 12px", fontSize: 12, color: G.grey, lineHeight: 1.45 }}>
-                    {deleteGate.willCancelSubscription
-                      ? ACCOUNT_DELETE_FLEX_WARNING
-                      : ACCOUNT_DELETE_WARNING}
+                    {deleteGate.appleKeepsBilling
+                      ? ACCOUNT_DELETE_APPLE_WARNING
+                      : deleteGate.willCancelSubscription
+                        ? ACCOUNT_DELETE_FLEX_WARNING
+                        : ACCOUNT_DELETE_WARNING}
                   </p>
                 ) : null}
                 <TimedUndoAction
@@ -1094,7 +1124,7 @@ export default function ProfileTab({
             >
               <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
             </button>
-            <h1>Profil</h1>
+            <h1>{ta("profile.title")}</h1>
             <div style={{ width: 44 }} aria-hidden />
           </header>
           <div className="ms-profile-subpanel-body is-scrollable">
@@ -1369,12 +1399,12 @@ export default function ProfileTab({
           left: "50%",
           transform: "translateX(-50%)",
           pointerEvents: "none",
-        }}>Profil</h1>
+        }}>{ta("profile.title")}</h1>
         )}
         <button
           type="button"
           className="ms-glass-icon-btn"
-          aria-label="Paramètres"
+          aria-label={ta("profile.settings")}
           onClick={() => {
             playUiSound("soft");
             setSettingsOpen(true);
@@ -1383,7 +1413,7 @@ export default function ProfileTab({
           <Settings size={18} color={G.ink} strokeWidth={2.25} />
         </button>
       </header>
-      {iosNav ? <h1 className="ios-profile-title">Profil</h1> : null}
+      {iosNav ? <h1 className="ios-profile-title">{ta("profile.title")}</h1> : null}
 
       {iosNav ? (
         <button
@@ -1416,24 +1446,24 @@ export default function ProfileTab({
           </span>
         </button>
         <h1 className="ms-profile-head-name">{String(fullName).toUpperCase()}</h1>
-        <p className="ms-profile-head-email">{user?.email || "Compte mySWYM"}</p>
-        <div className="ms-profile-meta" role="group" aria-label="Objectif, niveau et programme">
+        <p className="ms-profile-head-email">{user?.email || ta("profile.accountFallback")}</p>
+        <div className="ms-profile-meta" role="group" aria-label={ta("profile.metaAria")}>
           <div className="ms-profile-meta-item">
-            <span className="ms-profile-meta-kicker">Objectif</span>
+            <span className="ms-profile-meta-kicker">{ta("profile.goal")}</span>
             <span className="ms-profile-meta-pill is-goal">
               <Target size={13} strokeWidth={2.5} aria-hidden />
               <span>{goalLabel}</span>
             </span>
           </div>
           <div className="ms-profile-meta-item">
-            <span className="ms-profile-meta-kicker">Niveau</span>
+            <span className="ms-profile-meta-kicker">{ta("profile.level")}</span>
             <span className="ms-profile-meta-pill is-level">
               <Waves size={13} strokeWidth={2.5} aria-hidden />
               <span>{levelLabel}</span>
             </span>
           </div>
           <div className="ms-profile-meta-item">
-            <span className="ms-profile-meta-kicker">Programme</span>
+            <span className="ms-profile-meta-kicker">{ta("nav.plan")}</span>
             <span className="ms-profile-meta-pill is-programme">
               <CalendarDays size={13} strokeWidth={2.5} aria-hidden />
               <span>{programmeLabel}</span>
@@ -1650,9 +1680,9 @@ export default function ProfileTab({
         {iosNav ? (
           <div className="ms-seg-track ios-profile-lanes" role="tablist">
             {[
-              { id: "natation", label: "Natation" },
-              { id: "materiel", label: "Matériel" },
-              { id: "objectif", label: "Objectif" },
+              { id: "natation", label: ta("profile.swim") },
+              { id: "materiel", label: ta("profile.gear") },
+              { id: "objectif", label: ta("profile.goal") },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1812,7 +1842,7 @@ export default function ProfileTab({
             {(!iosNav || profileLane === "natation") ? (
             <ProfileSection
               id="profile-natation"
-              title="Ma natation"
+              title={ta("profile.mySwim")}
               summary={`${Number(profile?.pool) === 50 ? "50 m" : "25 m"} · ${profile?.level || "niveau"} · ${profile?.sessionsPerWeek ? `${profile.sessionsPerWeek}×/sem` : "fréquence"}`}
               icon={Waves}
               defaultOpen
@@ -1823,7 +1853,7 @@ export default function ProfileTab({
                 Bassin et matériel calent les éducatifs. Le plan a été généré en 25 m, sans matériel, tant que tu ne changes rien ici.
               </p>
               ) : null}
-              <div className="ms-profile-label">Niveau</div>
+              <div className="ms-profile-label">{ta("profile.level")}</div>
               <div className="ms-profile-choice-wrap">
                 {levelsForPicker(profile?.level).map((l) => {
                   const active = draftNatation.level === l.id;
@@ -1844,7 +1874,7 @@ export default function ProfileTab({
                       }}
                       className={`ms-profile-choice${active ? " is-active" : ""}`}
                     >
-                      {l.label}
+                      {to(`level.${l.id}.label`, { defaultValue: l.label })}
                     </button>
                   );
                 })}
@@ -1854,7 +1884,7 @@ export default function ProfileTab({
                   {to("level.beginnerBlocked")}
                 </p>
               ) : null}
-              <div className="ms-profile-label">Bassin</div>
+              <div className="ms-profile-label">{ta("profile.pool")}</div>
               <div className="ms-profile-choice-row">
                 {POOLS.map((p) => {
                   const active = Number(draftNatation.pool) === p.id;
@@ -1870,7 +1900,7 @@ export default function ProfileTab({
                   );
                 })}
               </div>
-              <div className="ms-profile-label">Fréquence</div>
+              <div className="ms-profile-label">{ta("profile.frequency")}</div>
               <FrequencyGauge
                 value={draftNatation.sessionsPerWeek}
                 onChange={(next) => setDraftNatation((prev) => ({ ...prev, sessionsPerWeek: next }))}
@@ -1878,7 +1908,7 @@ export default function ProfileTab({
               {!hidesFourNagesChoice({ ...profile, ...draftNatation }) && (
                 <>
                   <div className="ms-profile-label">
-                    Sais-tu nager du 4 nages ?
+                    {ta("profile.fourStrokes")}
                   </div>
                   <div className="ms-profile-choice-row">
                     {SWIM_STYLES.map((s) => {
@@ -1890,16 +1920,16 @@ export default function ProfileTab({
                           onClick={() => setDraftNatation((prev) => ({ ...prev, swimStyle: s.id }))}
                           className={`ms-profile-choice is-fill${active ? " is-active" : ""}`}
                         >
-                          {s.label}
+                          {s.id === "4_nages" ? ta("profile.yes") : ta("profile.no")}
                         </button>
                       );
                     })}
                   </div>
                 </>
               )}
-              <div className="ms-profile-label">Temps</div>
+              <div className="ms-profile-label">{ta("profile.times")}</div>
               <p className="ms-profile-hint">
-                Crawl, départ dans l'eau. Le 100 m calibre tes séances. Les 50 m et 400 m affinent ta place.
+                {ta("profile.timesHint")}
               </p>
               {PaceTimesEditor ? (
                 <PaceTimesEditor
@@ -1915,10 +1945,10 @@ export default function ProfileTab({
             ) : null}
             {natationConfirmOpen && createPortal(
               <ConfirmSheet
-                title="Modifier ton plan ?"
-                message="Ces réglages (niveau, bassin, fréquence, nage) adaptent tes prochaines séances. Les séances déjà validées sont conservées. Continuer ?"
-                confirmLabel="Oui, adapter mon plan"
-                cancelLabel="Annuler"
+                title={ta("profile.confirmTitle")}
+                message={ta("profile.confirmMessage")}
+                confirmLabel={ta("profile.confirmYes")}
+                cancelLabel={ta("profile.cancel")}
                 destructive={false}
                 icon={AlertTriangle}
                 onCancel={() => setNatationConfirmOpen(false)}
@@ -1935,8 +1965,8 @@ export default function ProfileTab({
                   setMsg({
                     type: "ok",
                     text: alsoEquip
-                      ? "Profil et matériel enregistrés, prochaines séances adaptées (déjà faites conservées)."
-                      : "Profil enregistré, prochaines séances adaptées (déjà faites conservées).",
+                      ? ta("profile.savedBoth")
+                      : ta("profile.saved"),
                   });
                   setTimeout(() => setMsg(null), 4000);
                 }}
@@ -1950,7 +1980,7 @@ export default function ProfileTab({
         iosNav ? (
           <div className="ios-equip">
             <p className="ios-equip-lead">
-              Indique le matériel que tu as au bassin. On l’intègre dans tes séances seulement quand c’est utile.
+              {ta("profile.gearLead")}
             </p>
             <div className="ios-equip-grid">
               {EQUIPMENT_OPTS.map((o) => {
@@ -1980,15 +2010,15 @@ export default function ProfileTab({
         ) : (
         <ProfileSection
           id="profile-equipment"
-          title="Mon matériel"
+          title={ta("profile.myGear")}
           summary={Array.isArray(profile?.equipment) && profile.equipment.length > 0
             ? profile.equipment.map((id) => eqLabel(id)).join(" · ")
-            : "Aucun matériel"}
+            : ta("profile.gearNone")}
           icon={Package}
           defaultOpen={false}
         >
           <p className="ms-profile-hint">
-            Coche ce que tu as au bord du bassin. On l’utilise seulement quand c’est utile, jamais de matos que tu n’as pas.
+            {ta("profile.gearHint")}
           </p>
           <div className="ms-equip-grid">
             {EQUIPMENT_OPTS.map((o) => {
@@ -2030,7 +2060,7 @@ export default function ProfileTab({
             disabled={draftEquipment.length === 0}
             className={`ms-equip-none${draftEquipment.length === 0 ? " is-active" : ""}`}
           >
-            Aucun matériel
+            {ta("profile.gearNone")}
           </button>
         </ProfileSection>
         )
@@ -2042,7 +2072,7 @@ export default function ProfileTab({
             <div className="ms-glass-card" style={{ padding: "18px 16px", marginBottom: 16, borderRadius: 28 }}>
               <div className="ios-profile-goal-head">
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="ms-profile-label">Objectif</div>
+                  <div className="ms-profile-label">{ta("profile.goal")}</div>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: G.ink, letterSpacing: "-0.02em" }}>
                     {iosGoal.familyLabel}
                   </h2>

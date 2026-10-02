@@ -1,13 +1,9 @@
 /**
- * Suppression de compte × Stripe : fail-closed.
- * Tant qu’un abonnement vivant existe (engagement, annuel, ou mensuel
- * non encore arrêté), on n’efface pas Auth.
+ * Suppression de compte : toujours possible depuis l’app (App Store 5.1.1).
+ * Un abo Stripe vivant est annulé avant l’effacement.
+ * Un abo App Store n’est pas annulé ici : l’utilisateur le résilie dans Réglages.
  */
-import {
-  commitmentEndsAtMs,
-  isCommitmentInForce,
-  isCommitSubscription,
-} from "./stripe-commitment.ts";
+import { isCommitmentInForce } from "./stripe-commitment.ts";
 
 function envPrice(name: string): string {
   try {
@@ -45,20 +41,17 @@ export const LIVE_SUB_STATUSES = new Set([
 /** Paiement pas allé au bout : on peut (et on doit) les nettoyer. */
 const CLEANUP_STATUSES = new Set(["incomplete"]);
 
+export const DELETE_APPLE_NOTICE =
+  "Ton abonnement App Store continue jusqu’à ce que tu le résilies : Réglages, Apple ID, Abonnements. Supprimer le compte MySWYM ne l’arrête pas.";
+
 export const DELETE_BLOCK = {
-  commitment:
-    "Tu as un engagement 12 mois en cours. Tu ne peux pas supprimer le compte tant que cet abonnement n’est pas terminé. Écris à support@myswym.app pour un cas légal (rétractation, etc.).",
-  prepaid:
-    "Tu as un abonnement annuel (ou prépayé) encore en cours. Tu ne peux pas supprimer le compte tant que la période déjà payée n’est pas terminée. Pour éviter un renouvellement, ouvre « Gérer mon abonnement ». Cas légal : support@myswym.app.",
   unverified:
     "Impossible de vérifier ton abonnement Stripe. Le compte n’a pas été supprimé. Réessaie plus tard ou écris à support@myswym.app.",
-  apple:
-    "Tu as un abonnement App Store encore en cours. Résilie-le d’abord sur l’iPhone (Réglages → Apple ID → Abonnements), puis réessaie. Cas légal : support@myswym.app.",
   cancelFailed:
     "Impossible d’arrêter l’abonnement Stripe. Le compte n’a pas été supprimé, pour éviter un prélèvement orphelin. Réessaie ou écris à support@myswym.app.",
 } as const;
 
-export type DeleteGateCode = "ok" | "commitment" | "prepaid" | "unverified" | "apple";
+export type DeleteGateCode = "ok" | "unverified";
 
 export type SubLike = {
   id: string;
@@ -85,6 +78,7 @@ export type DeleteGate =
     endsAt: string | null;
     cancelIds: string[];
     willCancelSubscription: boolean;
+    appleKeepsBilling: boolean;
   }
   | {
     allowed: false;
@@ -93,6 +87,7 @@ export type DeleteGate =
     endsAt: string | null;
     cancelIds: string[];
     willCancelSubscription: false;
+    appleKeepsBilling: false;
   };
 
 export class DeleteAccountBlockedError extends Error {
@@ -148,28 +143,18 @@ export function isFlexCancelable(sub: SubLike, nowMs = Date.now()): boolean {
   return intervalOf(sub) === "month";
 }
 
-function isoFromUnixSeconds(sec: number | null | undefined): string | null {
-  const n = Number(sec);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return new Date(n * 1000).toISOString();
-}
-
-function endsAtIso(sub: SubLike, kind: "commitment" | "prepaid"): string | null {
-  if (kind === "commitment") {
-    const ms = commitmentEndsAtMs(sub);
-    if (ms != null && Number.isFinite(ms)) return new Date(ms).toISOString();
-  }
-  return isoFromUnixSeconds(sub.current_period_end);
-}
-
-function allow(cancelIds: string[]): DeleteGate {
+function allow(
+  cancelIds: string[],
+  extra: { message?: string | null; endsAt?: string | null; appleKeepsBilling?: boolean } = {},
+): DeleteGate {
   return {
     allowed: true,
     code: "ok",
-    message: null,
-    endsAt: null,
+    message: extra.message ?? null,
+    endsAt: extra.endsAt ?? null,
     cancelIds,
     willCancelSubscription: cancelIds.length > 0,
+    appleKeepsBilling: extra.appleKeepsBilling === true,
   };
 }
 
@@ -185,42 +170,28 @@ function block(
     endsAt,
     cancelIds: [],
     willCancelSubscription: false,
+    appleKeepsBilling: false,
   };
 }
 
 /**
- * Décide si on peut supprimer, et quels abos mensuels sans engagement
- * doivent être cancel Stripe *avant* deleteUser.
+ * Tout abo Stripe vivant est annulé, puis le compte peut être effacé.
+ * nowMs reste dans la signature pour les appels existants.
  */
 export function evaluateDeleteGate(subs: SubLike[], nowMs = Date.now()): DeleteGate {
+  void nowMs;
   const relevant = subs.filter((s) => {
     const status = String(s.status || "");
     return isLiveSubscriptionStatus(status) || CLEANUP_STATUSES.has(status);
   });
   if (relevant.length === 0) return allow([]);
 
-  const commit = relevant.find((s) => {
-    if (isCommitmentInForce(s, nowMs)) return true;
-    if (!isCommitSubscription(s) || !isLiveSubscriptionStatus(s.status)) return false;
-    const ends = commitmentEndsAtMs(s);
-    return ends == null || nowMs < ends;
-  });
-  if (commit) {
-    return block("commitment", DELETE_BLOCK.commitment, endsAtIso(commit, "commitment"));
-  }
-
-  const prepaid = relevant.find((s) => isLiveSubscriptionStatus(s.status) && isPrepaidSubscription(s));
-  if (prepaid) {
-    return block("prepaid", DELETE_BLOCK.prepaid, endsAtIso(prepaid, "prepaid"));
-  }
-
   const cancelIds: string[] = [];
   for (const sub of relevant) {
-    if (isFlexCancelable(sub, nowMs)) {
+    const status = String(sub.status || "");
+    if (CLEANUP_STATUSES.has(status) || isLiveSubscriptionStatus(status)) {
       cancelIds.push(sub.id);
-      continue;
     }
-    return block("unverified", DELETE_BLOCK.unverified, null);
   }
   return allow(cancelIds);
 }
@@ -244,7 +215,11 @@ export function gateFromUnverifiedAccess(): DeleteGate {
 }
 
 export function gateFromAppleAccess(endsAt: string | null = null): DeleteGate {
-  return block("apple", DELETE_BLOCK.apple, endsAt);
+  return allow([], {
+    message: DELETE_APPLE_NOTICE,
+    endsAt,
+    appleKeepsBilling: true,
+  });
 }
 
 export function throwIfBlocked(gate: DeleteGate): asserts gate is Extract<DeleteGate, { allowed: true }> {

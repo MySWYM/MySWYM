@@ -14,6 +14,7 @@ import {
 } from "../lib/workout-display.js";
 import { fourNagesDisplayCue } from "../lib/natation-sheet/parse.js";
 import SoftMistSheet from "../sheets/SoftMistSheet.jsx";
+import { useSessionText } from "../i18n/useSessionText.js";
 
 const ALLURE_TIPS = {
   souple: {
@@ -323,6 +324,7 @@ function TipSheetShell({ eyebrow, title, onClose, children }) {
 }
 
 function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
+  const tSwim = useSessionText();
   const tip = ALLURE_TIPS[tipKey];
   if (!tip) return null;
 
@@ -335,16 +337,16 @@ function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
     );
 
     return (
-      <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose}>
+      <TipSheetShell eyebrow={tSwim("Allure")} title={tSwim(tip.title)} onClose={onClose}>
         <p className="ms-tip-lead">
-          Sur cette série, enchaîne les allures dans cet ordre.
+          {tSwim("Sur cette série, enchaîne les allures dans cet ordre.")}
         </p>
         <ul className="ms-tip-list">
           {steps.map((st, i) => {
             const key = keys[i];
             const tipRow = key ? ALLURE_TIPS[key] : null;
-            const label = tipRow?.label || capitalizeAllureLabel(st.allure);
-            const blurb = (key && ALLURE_LIST_BLURB[key]) || tipRow?.body || "";
+            const label = tSwim(tipRow?.label || capitalizeAllureLabel(st.allure));
+            const blurb = tSwim((key && ALLURE_LIST_BLURB[key]) || tipRow?.body || "");
             const countPrefix =
               isRepStyle && Number(st.n) >= 1 ? `${st.n}× ` : "";
             return (
@@ -359,9 +361,9 @@ function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
         </ul>
         {showLentSouple ? (
           <div className="ms-tip-block">
-            <div className="ms-tip-block-label">Lent ≠ souple</div>
+            <div className="ms-tip-block-label">{tSwim("Lent")} ≠ {tSwim("souple")}</div>
             <div className="ms-tip-block-text" style={{ fontSize: 13, fontWeight: 600, color: "var(--ms-ink-soft)" }}>
-              Lent = allure lente contrôlée ; souple = récupération relâchée. Ce n’est pas la même chose.
+              {tSwim("Lent")} = {tSwim("allure lente contrôlée")} ; {tSwim("souple")} = {tSwim("récupération relâchée")}.
             </div>
           </div>
         ) : null}
@@ -370,16 +372,17 @@ function AllureTipSheet({ tipKey, onClose, colors: G, enchainement }) {
   }
 
   return (
-    <TipSheetShell eyebrow="Allure" title={tip.title} onClose={onClose}>
-      <p className="ms-tip-lead">{tip.body}</p>
+    <TipSheetShell eyebrow={tSwim("Allure")} title={tSwim(tip.title)} onClose={onClose}>
+      <p className="ms-tip-lead">{tSwim(tip.body)}</p>
     </TipSheetShell>
   );
 }
 
 function DepartTipSheet({ label, seconds, onClose }) {
-  const human = formatDepartHuman(seconds);
+  const tSwim = useSessionText();
+  const human = tSwim(formatDepartHuman(seconds));
   return (
-    <TipSheetShell eyebrow="Départ à la montre" title={label || "D…"} onClose={onClose}>
+    <TipSheetShell eyebrow={tSwim("Départ à la montre")} title={label || "D…"} onClose={onClose}>
       <p className="ms-tip-lead">
         Tu repars toutes les {human}. Regarde l’horloge de bassin : tu pars quand une aiguille est sur un repère, et tu repars quand elle revient au même endroit
         {paceClockBodySuffix(seconds)}.
@@ -395,9 +398,10 @@ function DepartTipSheet({ label, seconds, onClose }) {
 }
 
 function AllurePaceTipSheet({ label, low, high, onClose }) {
+  const tSwim = useSessionText();
   const range = low && high ? `${low}, ${high}` : (label || "").replace(/^@/, "");
   return (
-    <TipSheetShell eyebrow="Allure cible" title={label || "@…"} onClose={onClose}>
+    <TipSheetShell eyebrow={tSwim("Allure cible")} title={label || "@…"} onClose={onClose}>
       <p className="ms-tip-lead">
         Tu vises la fourchette {range} sur la distance indiquée (temps au chrono pour la rep, ou ramené au 100 m).
       </p>
@@ -414,9 +418,10 @@ function AllurePaceTipSheet({ label, low, high, onClose }) {
 }
 
 function RestTipSheet({ label, seconds, onClose }) {
-  const human = formatRestHuman(seconds);
+  const tSwim = useSessionText();
+  const human = tSwim(formatRestHuman(seconds));
   return (
-    <TipSheetShell eyebrow="Récupération" title={label || "R…"} onClose={onClose}>
+    <TipSheetShell eyebrow={tSwim("Récupération")} title={label || "R…"} onClose={onClose}>
       <p className="ms-tip-lead">
         Tu t’arrêtes {human} entre les reps (ou à la fin de la série). Le chrono de pause commence quand tu arrives au mur.
       </p>
@@ -446,8 +451,9 @@ function chipToneStyles(tone, G) {
 }
 
 function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName, dense = false }) {
+  const tSwim = useSessionText();
   const tip = tipKey ? ALLURE_TIPS[tipKey] : null;
-  const resolvedLabel = label || tip?.label;
+  const resolvedLabel = tSwim(label || tip?.label);
   if (!resolvedLabel) return null;
   const { bg, color } = chipToneStyles(tip?.tone || tone, G);
   return (
@@ -492,6 +498,7 @@ export default function WorkoutExerciseCard({
   const [departOpen, setDepartOpen] = useState(false);
   const [allurePaceOpen, setAllurePaceOpen] = useState(false);
   const [restOpen, setRestOpen] = useState(false);
+  const tSwim = useSessionText();
   if (!exercise) return null;
 
   const dense = nested || compact;
@@ -520,6 +527,9 @@ export default function WorkoutExerciseCard({
   const allurePaceHigh = exercise.allurePaceHigh || null;
   const restChip = exercise.restChip || null;
   const restSeconds = exercise.restSeconds || 30;
+  const strokeShown = stroke ? tSwim(stroke) : null;
+  const mainShown = volume || tSwim(exercise.main);
+  const cueShown = tSwim(cueText);
 
   const chips = (
     <>
@@ -659,14 +669,14 @@ export default function WorkoutExerciseCard({
                   letterSpacing: "-0.01em",
                 }}
               >
-                {volume || exercise.main}
-                {stroke ? (
+                {mainShown}
+                {strokeShown ? (
                   <span style={{ color: accent?.color || G.blue, fontWeight: 800 }}>
-                    {" · "}{stroke}
+                    {" · "}{strokeShown}
                   </span>
                 ) : null}
               </div>
-              {cueText && (volume || exercise.main) ? (
+              {cueShown && (volume || exercise.main) ? (
                 <div
                   style={{
                     fontSize: 12,
@@ -676,7 +686,7 @@ export default function WorkoutExerciseCard({
                     fontWeight: 600,
                   }}
                 >
-                  {cueText}
+                  {cueShown}
                 </div>
               ) : null}
               {(exercise.restLabel && !restChip && !departLabel) || drills.length > 0 || exercise.kind === "warm" ? (
@@ -778,10 +788,10 @@ export default function WorkoutExerciseCard({
           gap: 8,
         }}>
           <span>
-            {volume || exercise.main}
-            {stroke ? (
+            {mainShown}
+            {strokeShown ? (
               <span style={{ color: accent?.color || G.blue, fontWeight: 800 }}>
-                {" · "}{stroke}
+                {" · "}{strokeShown}
               </span>
             ) : null}
           </span>
@@ -790,12 +800,12 @@ export default function WorkoutExerciseCard({
 
         {cueText && volume && (
           <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35, fontWeight: 600 }}>
-            {cueText}
+            {cueShown}
           </div>
         )}
         {!volume && exercise.main && cueText && (
           <div style={{ fontSize: 13, color: G.inkLight, marginTop: 4, lineHeight: 1.35 }}>
-            {cueText}
+            {cueShown}
           </div>
         )}
 

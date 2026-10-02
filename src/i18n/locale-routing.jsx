@@ -9,12 +9,13 @@ import {
   shouldLocalizePath,
   withLocalePrefix,
 } from "./locale-path.js";
+import { normalizeAppLanguage } from "./languages.js";
 
 export function useActiveLocale() {
   const { pathname } = useLocation();
   const { i18n: i18nHook } = useTranslation();
   if (!isAppPath(pathname)) return localeFromPathname(pathname);
-  return i18nHook.language?.startsWith("en") ? "en" : "fr";
+  return normalizeAppLanguage(i18nHook.language);
 }
 
 /** Sur les pages marketing, `/fr` impose le français ; le reste est l’anglais. */

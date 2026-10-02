@@ -10,6 +10,7 @@ import {
   parseRepMetersFromVolumeLabel,
 } from "./natation-sheet/parse.js";
 import { isNativeIos } from "./native-platform.js";
+import { translateSessionText } from "../i18n/session-terms.js";
 
 const SECTION_ORDER = ["warm", "main", "cool"];
 
@@ -50,7 +51,7 @@ function nageurText(value) {
   out = out.replace(/\bZ2\b/gi, "confortable");
   out = out.replace(/\bZ3\b/gi, "soutenu");
   out = out.replace(/\bZ4\b/gi, "rapide");
-  return out;
+  return translateSessionText(out);
 }
 
 function capitalizeCue(cue) {
@@ -144,7 +145,7 @@ function formatPrintDrillLines(ex) {
 }
 
 function formatPrintChips(ex) {
-  const chips = printAllureKeys(ex).map((k) => ALLURE_PRINT_LABEL[k]);
+  const chips = printAllureKeys(ex).map((k) => translateSessionText(ALLURE_PRINT_LABEL[k]));
   if (ex.restChip && !ex.departLabel) chips.push(ex.restChip);
   if (ex.departLabel) chips.push(ex.departLabel);
   if (ex.allurePaceLabel) chips.push(ex.allurePaceLabel);
@@ -173,7 +174,7 @@ export function formatSessionPlainText(session, opts = {}) {
     const section = (view.sections || []).find((s) => s.id === sid);
     if (!section?.exercises?.length) continue;
     const meters = section.metersLabel ? ` · ${section.metersLabel}` : "";
-    body.push(`▸ ${section.label}${meters}`);
+    body.push(`▸ ${translateSessionText(section.label)}${meters}`);
     for (const ex of section.exercises) {
       const line = formatPrintHeadline(ex);
       if (line) body.push(`  ${line}`);
@@ -236,13 +237,13 @@ export function buildSessionPrintHtml(session, opts = {}) {
     .join(" · ");
 
   const equipmentLabel = (view.header?.equipment || [])
-    .map((id) => EQUIPMENT_LABELS[id] || id)
+    .map((id) => translateSessionText(EQUIPMENT_LABELS[id] || id))
     .filter(Boolean)
     .join(" · ");
   const gearBits = [];
-  if (equipmentLabel) gearBits.push(`Matériel · ${escapeHtml(equipmentLabel)}`);
+  if (equipmentLabel) gearBits.push(`${escapeHtml(translateSessionText("Matériel"))} · ${escapeHtml(equipmentLabel)}`);
   if (view.header?.intensityCue) {
-    gearBits.push(`Objectif · ${escapeHtml(nageurText(capitalizeCue(view.header.intensityCue)))}`);
+    gearBits.push(`${escapeHtml(translateSessionText("Objectif"))} · ${escapeHtml(nageurText(capitalizeCue(view.header.intensityCue)))}`);
   }
   const gearHtml = gearBits.length
     ? `<div class="gear">${gearBits.join(" · ")}</div>`
@@ -277,7 +278,7 @@ export function buildSessionPrintHtml(session, opts = {}) {
         return `<li><span class="n">${n}</span><div class="body"><div class="ex">${headline}${chipTxt}</div>${extras}</div></li>`;
       })
       .join("");
-    return `<section class="${phaseClass}"><h2>${escapeHtml(section.label)}${meters}</h2><ol>${items}</ol></section>`;
+    return `<section class="${phaseClass}"><h2>${escapeHtml(translateSessionText(section.label))}${meters}</h2><ol>${items}</ol></section>`;
   }).join("");
 
   const origin =

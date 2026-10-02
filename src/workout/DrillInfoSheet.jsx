@@ -6,10 +6,12 @@
  */
 import { Play } from "lucide-react";
 import SoftMistSheet from "../sheets/SoftMistSheet.jsx";
+import { useSessionText } from "../i18n/useSessionText.js";
 
 const IM_STROKE_LABELS = ["Papillon", "Dos", "Brasse", "Crawl"];
 
 function SingleDrillBody({ educatif }) {
+  const tSwim = useSessionText();
   const hasVideo = !!(educatif.videoUrl && String(educatif.videoUrl).trim());
   const hasThumb = !!(educatif.thumbUrl && String(educatif.thumbUrl).trim());
 
@@ -53,16 +55,16 @@ function SingleDrillBody({ educatif }) {
       ) : null}
 
       <div className="ms-tip-block">
-        <div className="ms-tip-block-label">Consigne</div>
-        <div className="ms-tip-block-text">{educatif.cue}</div>
+        <div className="ms-tip-block-label">{tSwim("Consigne")}</div>
+        <div className="ms-tip-block-text">{tSwim(educatif.cue)}</div>
       </div>
 
       {Array.isArray(educatif.mistakes) && educatif.mistakes.length > 0 && (
         <div>
-          <div className="ms-tip-block-label" style={{ marginBottom: 8 }}>À éviter</div>
+          <div className="ms-tip-block-label" style={{ marginBottom: 8 }}>{tSwim("À éviter")}</div>
           <ul className="ms-tip-list">
             {educatif.mistakes.map((m) => (
-              <li key={m} className="ms-tip-list-item">{m}</li>
+              <li key={m} className="ms-tip-list-item">{tSwim(m)}</li>
             ))}
           </ul>
         </div>
@@ -72,6 +74,7 @@ function SingleDrillBody({ educatif }) {
 }
 
 function MultiDrillBody({ educatifs, layout, strokeHint }) {
+  const tSwim = useSessionText();
   const fourNages = layout === "four-nages";
   const sameStrokeLabel = !fourNages
     ? formatStrokeHint(strokeHint) || "Crawl"
@@ -83,22 +86,22 @@ function MultiDrillBody({ educatifs, layout, strokeHint }) {
         const stroke = fourNages ? IM_STROKE_LABELS[i] || null : sameStrokeLabel;
         return (
           <div key={edu.id || edu.name || i} className="ms-drill-card">
-            {stroke ? <div className="ms-drill-stroke">{stroke}</div> : null}
+            {stroke ? <div className="ms-drill-stroke">{tSwim(stroke)}</div> : null}
             <div style={{ fontSize: 17, fontWeight: 800, color: "var(--ms-ink)", lineHeight: 1.2, marginBottom: 8 }}>
-              {edu.name}
+              {tSwim(edu.name)}
             </div>
             {edu.cue ? (
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ms-ink-soft)", lineHeight: 1.4 }}>
-                {edu.cue}
+                {tSwim(edu.cue)}
               </div>
             ) : edu.objective ? (
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ms-ink-soft)", lineHeight: 1.4 }}>
-                {edu.objective}
+                {tSwim(edu.objective)}
               </div>
             ) : null}
             {edu.equipment ? (
               <div style={{ fontSize: 12, color: "var(--ms-ink-soft)", marginTop: 8, lineHeight: 1.35 }}>
-                Matériel optionnel · {edu.equipment}
+                {tSwim("Matériel optionnel")} · {tSwim(edu.equipment)}
               </div>
             ) : null}
           </div>
@@ -127,6 +130,7 @@ function formatStrokeHint(raw) {
  * @param {{ educatif?: object, educatifs?: object[], layout?: 'four-nages'|'same-stroke', strokeHint?: string|null, onClose: () => void }} props
  */
 export default function DrillInfoSheet({ educatif, educatifs, layout, strokeHint, onClose }) {
+  const tSwim = useSessionText();
   const list =
     Array.isArray(educatifs) && educatifs.length
       ? educatifs
@@ -162,8 +166,8 @@ export default function DrillInfoSheet({ educatif, educatifs, layout, strokeHint
 
   return (
     <SoftMistSheet
-      eyebrow={eyebrow}
-      title={title}
+      eyebrow={tSwim(eyebrow)}
+      title={tSwim(title)}
       onClose={onClose}
       lockScroll={false}
       zIndex={560}

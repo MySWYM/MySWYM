@@ -50,7 +50,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_pricing",
       title: "Tarifs Premium",
       content:
-        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement, ${MYSWYM_PRODUCT.monthlyCommit}/mois avec engagement 12 mois, ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Après l’essai, tes séances se mettent en pause. Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}`,
+        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis sur le site ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement, ${MYSWYM_PRODUCT.monthlyCommit}/mois avec engagement 12 mois, ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Sur iPhone, le paiement passe par l’App Store : 6,99 €/mois ou 59,99 €/an. Après l’essai, tes séances se mettent en pause.`,
       tags: ["prix", "tarif", "abonnement", "premium", "essai", "mensuel", "annuel"],
       intent_hints: ["subscription", "myswym_question"],
       priority: 100,
@@ -59,7 +59,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Pour te désabonner : Profil → « Gérer mon abonnement » (portail Stripe) → Annuler l’abonnement si l’offre le permet. Tu restes Premium jusqu’à la fin de la période déjà payée. Essai 7 jours sans carte : rien à résilier. Offre 4,99€/mois : engagement 12 mois, pas d’annulation ni de suppression de compte avant la fin (hors cas légaux). Annuel 52,99€ : pas de remboursement au prorata, suppression bloquée jusqu’à la fin de la période payée. Mensuel 9,99€ : supprimer le compte arrête l’abonnement tout de suite.",
+        "Sur le site : Profil, Modifier mon abonnement, puis le portail Stripe. Supprimer le compte arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée. Sur iPhone : Réglages, Apple ID, Abonnements. Supprimer le compte MySWYM n’arrête pas un abonnement App Store. Essai 7 jours sans carte : rien à résilier.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,

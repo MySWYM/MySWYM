@@ -52,7 +52,10 @@ export const ACCOUNT_DELETE_WARNING =
   "La suppression est définitive : profil, plans et données associées seront effacés dans la mesure techniquement possible.";
 
 export const ACCOUNT_DELETE_FLEX_WARNING =
-  "La suppression est définitive : profil, plans et données associées seront effacés. Ton abonnement sans engagement sera arrêté tout de suite, plus de prélèvement. Tu perds les jours déjà payés ce mois-ci.";
+  "La suppression est définitive : profil, plans et données associées seront effacés. L’abonnement Stripe encore actif est arrêté tout de suite, sans remboursement de la période déjà payée.";
+
+export const ACCOUNT_DELETE_APPLE_WARNING =
+  "La suppression est définitive : profil, plans et données associées seront effacés. Ton abonnement App Store ne s’arrête pas tout seul. Résilie-le dans Réglages, Apple ID, Abonnements, sinon Apple continue de prélever.";
 
 /** Sheet quand la suppression est bloquée (abo engagement / annuel / Apple). */
 export const ACCOUNT_DELETE_BLOCKED_TITLE = "Suppression impossible";

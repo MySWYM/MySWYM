@@ -57,6 +57,9 @@ Sur l’iPhone : 6,99 €/mois sans engagement, ou 59,99 €/an. Paiement et ré
 MySWYM n’est pas un dispositif médical et ne pose aucun diagnostic. Entraîne-toi selon ta forme. Eau libre : ne nage jamais seul.
 
 Compte réservé aux personnes de 18 ans révolus.
+
+Conditions d’utilisation : https://www.myswym.app/cgu
+Politique de confidentialité : https://www.myswym.app/politique-confidentialite
 ```
 
 Nouveautés (v1.0) :
@@ -149,15 +152,19 @@ Demo accounts (same backend as the iPhone app):
 Email: [ESSAI]
 Password: [À COLLER ICI]
 
-2) Premium (web Stripe subscription, full plans)
+2) Premium (review access on this account, not a web checkout)
 Email: [PREMIUM]
 Password: [À COLLER ICI]
 
-Sign in: open the app → Connexion (or /connexion).
+Sign in: open the app → Connexion (or /connexion). On iPhone, tick “18 or older” and the terms before Sign in with Apple or Google.
 
-Subscriptions: 6.99 EUR/month or 59.99 EUR/year via In-App Purchase. The 7-day trial is MySWYM’s own trial (no Apple ID card). After trial, workouts pause until a subscription.
+Subscriptions: 6.99 EUR/month or 59.99 EUR/year via In-App Purchase only. The 7-day trial is MySWYM’s own trial (no Apple ID card). After trial, workouts pause until a subscription. There is no Stripe checkout in the iOS app.
 
-Health data is optional (injury / heart rate) and is not a medical device. Skip health consent if you prefer. Buddy matching is optional.
+Account deletion: Profile → Settings → Supprimer mon compte. Deleting the MySWYM account does not cancel an App Store subscription (Settings → Apple ID → Subscriptions).
+
+Notifications are optional: Profile → Settings → Notifications (switch).
+
+Health: optional. Apple Health reads swimming workouts and heart rate only. It does not write health data. Skip it if you prefer. Buddy matching is optional.
 
 This binary is iPhone only.
 ```

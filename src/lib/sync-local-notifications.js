@@ -10,6 +10,7 @@ import {
   rescheduleMySwymLocalNotifications,
 } from "./native-local-notifications.js";
 import { isNativeIos } from "./native-platform.js";
+import { pushNotificationsWanted } from "./native-push.js";
 import { readCheckoutAbandonedAt } from "./checkout-abandon-notif.js";
 import {
   APP_STORE_REVIEW_MIN_SESSIONS,
@@ -41,7 +42,7 @@ function lastCompletedIso(plan) {
 export async function syncLocalNotificationsFromState({ user, plan } = {}) {
   if (!isNativeIos() || !user?.id) return { scheduled: 0 };
   const perm = await getLocalNotificationPermission();
-  const enabled = perm === "granted";
+  const enabled = perm === "granted" && pushNotificationsWanted();
   const access = getAccessState(user);
   const next = findNextSession(plan);
   const stats = computeStats(plan);

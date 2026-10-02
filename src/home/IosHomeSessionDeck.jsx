@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useSessionText } from "../i18n/useSessionText.js";
 import { Check } from "lucide-react";
 import { G } from "../theme/palette.js";
 import { playUiSound } from "../lib/ui-sounds.js";
@@ -13,6 +15,8 @@ function scrollCardIntoView(root, index, behavior = "auto") {
 }
 
 export default function IosHomeSessionDeck({ cards, onOpen }) {
+  const { t } = useTranslation("app");
+  const tSwim = useSessionText();
   const scrollerRef = useRef(null);
   const dragRef = useRef({ x: 0, moved: false });
   const [active, setActive] = useState(() => initialWeekCardIndex(cards));
@@ -55,7 +59,7 @@ export default function IosHomeSessionDeck({ cards, onOpen }) {
             key={card.key}
             type="button"
             className={`ios-home-deck-card${card.resolved ? " is-done" : ""}`}
-            aria-label={card.line ? `${card.title}, ${card.line}` : card.title}
+            aria-label={card.line ? `${tSwim(card.title)}, ${tSwim(card.line)}` : tSwim(card.title)}
             onPointerDown={(e) => {
               dragRef.current = { x: e.clientX, moved: false };
             }}
@@ -85,14 +89,14 @@ export default function IosHomeSessionDeck({ cards, onOpen }) {
               </span>
             ) : null}
             <span className="ios-home-deck-copy">
-              <span className="ios-home-deck-title">{card.title}</span>
-              {card.line ? <span className="ios-home-deck-line">{card.line}</span> : null}
+              <span className="ios-home-deck-title">{tSwim(card.title)}</span>
+              {card.line ? <span className="ios-home-deck-line">{tSwim(card.line)}</span> : null}
             </span>
           </button>
         ))}
       </div>
       {cards.length > 1 ? (
-        <div className="ios-home-deck-dots" role="tablist" aria-label="Séances de la semaine">
+        <div className="ios-home-deck-dots" role="tablist" aria-label={t("home.weekAria")}>
           {cards.map((card, i) => (
             <button
               key={card.key}
@@ -100,7 +104,7 @@ export default function IosHomeSessionDeck({ cards, onOpen }) {
               role="tab"
               aria-selected={i === active}
               className={`ios-home-deck-dot${i === active ? " is-on" : ""}`}
-              aria-label={card.title}
+              aria-label={tSwim(card.title)}
               onClick={() => {
                 playUiSound("soft");
                 scrollCardIntoView(scrollerRef.current, i, "smooth");

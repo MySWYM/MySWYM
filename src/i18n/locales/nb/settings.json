@@ -1,0 +1,27 @@
+{
+  "language": {
+    "section": "Språk",
+    "title": "Språk i grensesnittet",
+    "hint": "Forside, navigasjon og oppstartsspørsmål. Resten av appen oversettes etter hvert.",
+    "selectTitle": "Velg språk",
+    "confirm": "Bekreft",
+    "panelTitle": "Språk",
+    "panelLead": "Velg språket ditt",
+    "confirmTitle": "Bytte språk?",
+    "confirmMessage": "Appen bytter til {{language}}.",
+    "confirmAction": "Bytt språk",
+    "cancel": "Avbryt"
+  },
+  "appearance": {
+    "section": "Utseende",
+    "dark": "Mørk bakgrunn",
+    "light": "Lys bakgrunn",
+    "darkHint": "Nattmodus, mindre blending",
+    "lightHint": "Dagmodus, hvit bakgrunn",
+    "switchToLight": "Bytt til lys bakgrunn",
+    "switchToDark": "Bytt til mørk bakgrunn"
+  },
+  "account": {
+    "section": "Konto"
+  }
+}

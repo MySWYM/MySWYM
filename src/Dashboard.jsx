@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import { currentWeekSessionCards, sessionTypeAccent } from "./lib/home-week-sess
 import SessionExportBar from "./ui/SessionExportBar.jsx";
 
 export function HomeBadgesSection({ plan }) {
+  const { t } = useTranslation("app");
   const stats = computeStats(plan);
   const earnedIds = new Set(checkBadges(stats));
   return (
@@ -53,7 +55,7 @@ export function HomeBadgesSection({ plan }) {
       </div>
       {earnedIds.size === 0 ? (
         <p style={{ fontSize: 12, color: G.grey, margin: "12px 0 0", lineHeight: 1.45 }}>
-          Complète des séances pour débloquer les badges grisés.
+          {t("home.badgesEmpty")}
         </p>
       ) : null}
     </div>
@@ -68,6 +70,7 @@ export default function Dashboard({
   accessState = null,
   onGoBuddies = null,
 }) {
+  const { t } = useTranslation("app");
   const {
     AppTopBar,
   } = getTabUi();
@@ -102,14 +105,14 @@ export default function Dashboard({
 
   const firstName = resolveDisplayFirstName(user);
   const hour = new Date().getHours();
-  const hello = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const hello = hour < 12 ? t("home.morning") : hour < 18 ? t("home.afternoon") : t("home.evening");
   const greetTitle = !isPremium && plan
-    ? "Essai terminé"
+    ? t("home.trialDone")
     : !plan
-      ? "Crée ton programme"
+      ? t("home.create")
       : iosNav
         ? `${hello}, ${firstName}`
-        : "Prêt à nager ?";
+        : t("home.ready");
 
   const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
   const coachWeek = plan?.weeks?.length
@@ -149,7 +152,7 @@ export default function Dashboard({
             <h1>{greetTitle}</h1>
           </div>
           {!iosNav && plan && isPremium && stats.streak > 0 && (
-            <span className="ms-home-streak" title={`Série de ${stats.streak}`}>
+            <span className="ms-home-streak" title={t("home.streakTitle", { count: stats.streak })}>
               <Flame size={14} color="#D4A017" aria-hidden />
               {stats.streak}
             </span>
@@ -160,17 +163,17 @@ export default function Dashboard({
           <TrialCountdownBanner accessState={accessState} onUpgrade={onUpgrade} />
         ) : !iosNav && isPremium && plan && next?.resolved ? (
           <div className="ms-habit-banner is-done" role="status">
-            Séance validée
+            {t("home.validated")}
           </div>
         ) : null}
 
         {!plan && (
           <div className="ms-glass-card" style={{ padding: "22px 18px", marginBottom: 16 }}>
             <h2 className="ms-type-section" style={{ marginBottom: 8 }}>
-              Ton plan t’attend
+              {t("home.planWaits")}
             </h2>
             <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 18px" }}>
-              Quelques questions, puis ta séance du jour.
+              {t("home.fewQuestions")}
             </p>
             <button
               type="button"
@@ -181,7 +184,7 @@ export default function Dashboard({
               }}
               style={{ fontFamily: FONT }}
             >
-              Commencer
+              {t("home.start")}
             </button>
           </div>
         )}
@@ -190,10 +193,10 @@ export default function Dashboard({
           <div className="ms-glass-card" style={{ padding: "22px 18px", marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <Lock size={20} color={G.blue} />
-              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>Séances en pause</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: G.ink }}>{t("home.paused")}</span>
             </div>
             <p style={{ margin: "0 0 16px", fontSize: 14, color: G.grey, lineHeight: 1.45 }}>
-              Ton essai est terminé. Abonne-toi pour retrouver tes séances, tes analyses et le mot du coach.
+              {t("analyse.trialEnded")}
             </p>
             <button
               type="button"
@@ -204,7 +207,7 @@ export default function Dashboard({
               }}
               style={{ fontFamily: FONT }}
             >
-              S’abonner
+              {t("home.subscribe")}
             </button>
           </div>
         ) : (
@@ -225,7 +228,7 @@ export default function Dashboard({
                   <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
                     <Users size={18} color={G.mint} />
                   </span>
-                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>Binômes</span>
+                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>{t("home.buddies")}</span>
                   <ChevronRight size={18} color={G.greyMid} />
                 </button>
               </div>
@@ -235,10 +238,10 @@ export default function Dashboard({
           <div style={{ marginBottom: 12 }}>
             <SessionHeroCard
               className="is-glass"
-              kicker="Programme du jour"
+              kicker={t("home.todayKicker")}
               preview={{
                 ...preview,
-                title: next.resolved ? "Séance faite" : (preview.title || "Séance du jour"),
+                title: next.resolved ? t("home.sessionDone") : (preview.title || t("home.sessionToday")),
               }}
             >
               <button
@@ -270,7 +273,7 @@ export default function Dashboard({
           <div className="ms-glass-card" style={{ borderRadius: 24, padding: "20px 16px", textAlign: "center", marginBottom: 16 }}>
             {plan.isProgression
               ? <><TrendingUp size={36} color={G.blue} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 6 }}>Cycle terminé</h2><p style={{ color: G.grey, fontSize: 13, marginBottom: 14 }}>Tu as nagé <strong style={{ color: G.ink }}>{(stats.totalMeters / 1000).toFixed(1)} km</strong> en {plan.weeks.length} semaines.</p><Btn variant="blue" onClick={onSignOut}>Nouveau cycle</Btn></>
-              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Programme complété</h2><p style={{ color: G.grey, fontSize: 13 }}>Ton plan est terminé.</p></>
+              : <><Trophy size={36} color={G.gold} style={{ margin: "0 auto 8px" }} /><h2 style={{ fontSize: 20, fontWeight: 700, color: G.ink, marginBottom: 4 }}>{t("home.planDone")}</h2><p style={{ color: G.grey, fontSize: 13 }}>{t("home.planDoneBody")}</p></>
             }
           </div>
         )}

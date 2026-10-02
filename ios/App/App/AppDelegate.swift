@@ -52,32 +52,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         MySWYMAudio.useAmbientSession()
-        // Demande système hors WebView Capacitor (sinon pas de ligne Réglages → Notifications).
-        Self.requestNotificationAuthorizationIfNeeded()
+        // Pas de popup au boot (refus massif). Si déjà autorisé, enregistre le jeton APNs.
+        Self.registerForRemoteNotificationsIfAuthorized()
         return true
     }
 
-    /// Popup iOS Autoriser / Refuser. Après réponse, MySWYM apparaît dans Réglages → Notifications.
-    private static func requestNotificationAuthorizationIfNeeded() {
+    /// Enregistre APNs seulement si l’utilisateur a déjà Autorisé (Réglages ou après 1re séance).
+    private static func registerForRemoteNotificationsIfAuthorized() {
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
-            guard settings.authorizationStatus == .notDetermined else {
-                if settings.authorizationStatus == .authorized
-                    || settings.authorizationStatus == .provisional
-                    || settings.authorizationStatus == .ephemeral {
-                    DispatchQueue.main.async {
-                        UIApplication.shared.registerForRemoteNotifications()
-                    }
-                }
-                return
-            }
+            let ok = settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional
+                || settings.authorizationStatus == .ephemeral
+            guard ok else { return }
             DispatchQueue.main.async {
-                center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-                    guard granted else { return }
-                    DispatchQueue.main.async {
-                        UIApplication.shared.registerForRemoteNotifications()
-                    }
-                }
+                UIApplication.shared.registerForRemoteNotifications()
             }
         }
     }
@@ -104,8 +93,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         MySWYMAudio.useAmbientSession()
-        // Re-enregistre + rejoue le cache : le JS a pu rater le 1er event au boot.
-        UIApplication.shared.registerForRemoteNotifications()
+        // Rejoue le cache seulement si déjà autorisé (pas de popup ici).
+        Self.registerForRemoteNotificationsIfAuthorized()
         Self.replayCachedApnsToken()
     }
 

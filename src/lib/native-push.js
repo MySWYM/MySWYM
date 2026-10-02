@@ -8,12 +8,28 @@
 import { registerPlugin } from "@capacitor/core";
 import { supabase } from "../supabase.js";
 import { isNativeIos, nativeApiOrigin } from "./native-platform.js";
+import { ensureIosNotificationPermission, getLocalNotificationPermission } from "./native-local-notifications.js";
 import { buddyConnectionId } from "./buddy-connection-id.js";
-import { ensureIosNotificationPermission } from "./native-local-notifications.js";
 
 export { buddyConnectionId };
 
 const BUNDLE_ID = "app.myswym.ios";
+const PUSH_PREF_KEY = "myswym_push_enabled";
+
+/** false seulement si l’utilisateur a coupé le switch. */
+export function pushNotificationsWanted() {
+  try {
+    return localStorage.getItem(PUSH_PREF_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function writePushPref(on) {
+  try {
+    localStorage.setItem(PUSH_PREF_KEY, on ? "1" : "0");
+  } catch { /* ignore */ }
+}
 const AppBadge = registerPlugin("AppBadge");
 let listenersReady = false;
 let registerInFlight = null;
@@ -164,8 +180,50 @@ async function ensureListeners(PushNotifications) {
 /**
  * Demande permission + enregistre le device auprès d’APNs, upsert le jeton.
  */
-export async function registerNativePush() {
+export async function notificationsSwitchOn() {
+  if (!pushNotificationsWanted()) return false;
+  const perm = await getLocalNotificationPermission();
+  return perm === "granted";
+}
+
+/** Retire ce téléphone de la liste d’envoi (push global + rappels locaux). */
+export async function disableNativeNotifications() {
+  writePushPref(false);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
+    if (uid) {
+      await supabase.from("device_push_tokens").delete().eq("user_id", uid);
+    }
+  } catch (e) {
+    console.warn("[push] disable", e);
+  }
+  try {
+    const { cancelMySwymLocalNotifications } = await import("./native-local-notifications.js");
+    await cancelMySwymLocalNotifications();
+  } catch { /* ignore */ }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("myswym:push-pref"));
+  }
+  return { ok: true, enabled: false };
+}
+
+export async function enableNativeNotifications() {
+  writePushPref(true);
+  const res = await registerNativePush({ request: true });
+  if (!res?.ok) {
+    writePushPref(false);
+    return { ok: false, enabled: false, reason: res?.reason };
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("myswym:push-pref"));
+  }
+  return { ok: true, enabled: true };
+}
+
+export async function registerNativePush({ request = false } = {}) {
   if (!isNativeIos()) return { ok: false, reason: "not_ios" };
+  if (!request && !pushNotificationsWanted()) return { ok: false, reason: "opt_out" };
   if (registerInFlight) return registerInFlight;
 
   registerInFlight = (async () => {
@@ -173,14 +231,17 @@ export async function registerNativePush() {
     if (!PushNotifications) return { ok: false, reason: "no_plugin" };
 
     try {
-      const local = await ensureIosNotificationPermission();
+      const local = request
+        ? await ensureIosNotificationPermission()
+        : await getLocalNotificationPermission();
       if (local !== "granted") {
-        return { ok: false, reason: "denied" };
+        return { ok: false, reason: local === "prompt" ? "not_asked" : "denied" };
       }
       await ensureListeners(PushNotifications);
       let perm = await PushNotifications.checkPermissions();
       const receive = perm?.receive;
       if (receive !== "granted") {
+        if (!request) return { ok: false, reason: "not_asked" };
         if (receive === "prompt" || receive === "prompt-with-rationale" || !receive) {
           perm = await PushNotifications.requestPermissions();
         }
