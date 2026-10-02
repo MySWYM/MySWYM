@@ -9299,11 +9299,9 @@ export default function App() {
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
     if (wasFirst && isNativeIos() && user?.id) {
-      void getLocalNotificationPermission().then((perm) => {
-        if (perm === "granted") {
-          void registerNativePush();
-          void syncLocalNotificationsFromState({ user, plan });
-        }
+      // 1re séance terminée : seul moment où on demande le popup système.
+      void registerNativePush({ request: true }).then((res) => {
+        if (res?.ok) void syncLocalNotificationsFromState({ user, plan });
       });
     }
   };
