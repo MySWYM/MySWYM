@@ -13,10 +13,19 @@
   "welcome": {
     "title": "Ta séance natation clé en main",
     "lead": "Ton plan sur-mesure pour nager avec plaisir et progresser à chaque entraînement.",
-    "continue": "Créer son compte",
+    "continue": "Commencer",
     "legal": "En continuant, tu acceptes nos <cgu>Conditions d’utilisation</cgu> et notre <privacy>Politique de confidentialité</privacy>.",
     "hasAccount": "Déjà un compte ?",
     "signIn": "Se connecter"
+  },
+  "saveAccount": {
+    "eyebrow": "Ta séance",
+    "title": "Garde cette séance",
+    "lead": "Crée ton compte pour la retrouver sur tous tes appareils. Ton essai 7 jours a déjà commencé.",
+    "apple": "Continuer avec Apple",
+    "email": "Continuer avec un e-mail",
+    "later": "Plus tard",
+    "error": "Impossible de créer le compte. Réessaie."
   },
   "months": {
     "1": "Janvier",

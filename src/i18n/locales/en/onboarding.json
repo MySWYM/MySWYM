@@ -13,10 +13,19 @@
   "welcome": {
     "title": "Your swim session, ready to go",
     "lead": "A plan made for you, so you enjoy the water and progress every session.",
-    "continue": "Create an account",
+    "continue": "Get started",
     "legal": "By continuing, you accept our <cgu>Terms of use</cgu> and our <privacy>Privacy policy</privacy>.",
     "hasAccount": "Already have an account?",
     "signIn": "Sign in"
+  },
+  "saveAccount": {
+    "eyebrow": "Your session",
+    "title": "Keep this session",
+    "lead": "Create your account to keep it on every device. Your 7-day trial has already started.",
+    "apple": "Continue with Apple",
+    "email": "Continue with email",
+    "later": "Later",
+    "error": "Couldn’t create the account. Try again."
   },
   "months": {
     "1": "January",

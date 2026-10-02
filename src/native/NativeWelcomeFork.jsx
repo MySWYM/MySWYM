@@ -7,7 +7,7 @@ import BrandLogo from "../BrandLogo.jsx";
 
 /**
  * Premier écran iOS : plein bleu, picto blanc, CTAs verre.
- * « Créer son compte » lance le questionnaire, pas l’inscription directe.
+ * « Commencer » lance le questionnaire + compte anonyme en arrière-plan.
  */
 export default function NativeWelcomeFork({ onCreate }) {
   const { t } = useTranslation("onboarding");

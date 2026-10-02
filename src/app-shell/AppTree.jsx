@@ -20,6 +20,8 @@ import { LocaleSync } from "../i18n/locale-routing.jsx";
 import { localeFromPathname, withLocalePrefix } from "../i18n/locale-path.js";
 import { isNativeApp, isNativeMarketingPath } from "../lib/native-platform.js";
 import { markNativeQuizStarted, nativeGuestSurface, nativeQuizStarted, NATIVE_QUIZ_EVENT } from "../lib/native-welcome.js";
+import { ensureAnonymousSession } from "../lib/anonymous-auth.js";
+import { supabase } from "../supabase.js";
 import { useAuthSession } from "../lib/use-auth-session.js";
 import NativeGuestShell, { NativeOnboardingFrame } from "../native/NativeGuestShell.jsx";
 import NativeWelcomeFork from "../native/NativeWelcomeFork.jsx";
@@ -189,6 +191,9 @@ function NativeIosShell({ children }) {
           onCreate={() => {
             markNativeQuizStarted();
             setQuizOpen(true);
+            void ensureAnonymousSession(supabase).catch((err) => {
+              if (import.meta.env.DEV) console.warn("[anon] signInAnonymously", err?.message || err);
+            });
           }}
         />
       </div>

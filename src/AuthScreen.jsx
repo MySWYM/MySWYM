@@ -9,6 +9,7 @@ import BrandLogo from "./BrandLogo.jsx";
 import { useActiveLocale } from "./i18n/locale-routing.jsx";
 import { track } from "./lib/analytics.js";
 import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js";
+import { convertAnonymousWithEmail, isAnonymousUser } from "./lib/anonymous-auth.js";
 import { legalHref } from "./lib/legal-copy.js";
 import { hideNativeKeyboard, isNativeApp, isNativeIos, nativeApiOrigin } from "./lib/native-platform.js";
 import { markNativeQuizStarted } from "./lib/native-welcome.js";
@@ -182,7 +183,9 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
       if (intent === "signup") {
         stashPendingNewsletterOptIn(!!newsletterOptIn);
         const { data: existingSession } = await supabase.auth.getSession();
-        if (existingSession?.session) await supabase.auth.signOut();
+        if (existingSession?.session && !isAnonymousUser(existingSession.session.user)) {
+          await supabase.auth.signOut();
+        }
       } else {
         clearPendingNewsletterOptIn();
       }
@@ -248,7 +251,9 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
       if (intent === "signup") {
         stashPendingNewsletterOptIn(!!newsletterOptIn);
         const { data: existingSession } = await supabase.auth.getSession();
-        if (existingSession?.session) await supabase.auth.signOut();
+        if (existingSession?.session && !isAnonymousUser(existingSession.session.user)) {
+          await supabase.auth.signOut();
+        }
       } else {
         clearPendingNewsletterOptIn();
       }
@@ -405,6 +410,23 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           throw new Error(t("auth.needChecks"));
         }
         const { data: existingSession } = await supabase.auth.getSession();
+        const existingUser = existingSession?.session?.user;
+        const meta = {
+          ...(referralCode ? { referred_by: referralCode } : {}),
+          accepted_terms_at: new Date().toISOString(),
+          confirmed_age_18: true,
+          [NEWSLETTER_META_KEY]: !!acceptNewsletter,
+        };
+        if (isAnonymousUser(existingUser)) {
+          const converted = await convertAnonymousWithEmail(supabase, {
+            email: mail,
+            password: pass,
+            data: meta,
+          });
+          track("signup_completed", { source: "email_convert" }, { onceKey: `signup_completed:${converted?.id || mail}` });
+          onAuth(converted);
+          return;
+        }
         if (existingSession?.session) {
           await supabase.auth.signOut();
         }
@@ -413,12 +435,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           password: pass,
           options: {
             emailRedirectTo: isNativeApp() ? `${nativeApiOrigin()}/app` : `${window.location.origin}/app`,
-            data: {
-              ...(referralCode ? { referred_by: referralCode } : {}),
-              accepted_terms_at: new Date().toISOString(),
-              confirmed_age_18: true,
-              [NEWSLETTER_META_KEY]: !!acceptNewsletter,
-            },
+            data: meta,
           },
         });
         if (error) throw error;
