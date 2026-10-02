@@ -46,7 +46,7 @@ html.myswym-ios .myswym-native-onboarding [style*="padding-top: 64px"] {
 
 html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] {
   padding-top: 8px !important;
-  padding-bottom: 24px !important;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] > div:first-child {
@@ -58,14 +58,24 @@ html.myswym-ios .myswym-native-onboarding img[alt="MySWYM"] {
 }
 
 .native-onboarding-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding-top: 8px;
-  padding-bottom: 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 html.myswym-ios .myswym-native-guest .ms-screen-enter {
+  flex: 1 1 auto;
   min-height: 0 !important;
-  height: 100%;
+  height: auto;
+  max-height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: transparent !important;
 }
 
@@ -81,8 +91,11 @@ html.myswym-ios .myswym-native-guest .ms-screen-enter {
 
 .native-auth-fit {
   box-sizing: border-box;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   max-height: 100%;
+  width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -95,12 +108,18 @@ html.myswym-ios .myswym-native-guest.is-welcome,
 html.myswym-ios .myswym-native-guest.is-funnel {
   min-height: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
   background: var(--ms-blue, #006bfd);
 }
 
 .native-funnel-shell {
-  min-height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--ms-blue, #006bfd);
   color: #fff;
 }
@@ -442,7 +461,13 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
 
 html.myswym-ios .myswym-native-guest .ms-contact,
 html.myswym-ios .myswym-native-guest .ms-legal-main {
-  padding: 8px 20px 48px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 20px calc(48px + env(safe-area-inset-bottom, 0px));
 }
 
 html.myswym-ios .trial-freeze-support .support-fab,

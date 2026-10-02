@@ -528,7 +528,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
 
   return (
     <div
-      className={native ? "native-auth-fit native-auth-funnel" : undefined}
+      className={native ? "native-auth-fit native-auth-funnel" : "ms-auth-web"}
       onPointerDown={(e) => {
         if (!native) return;
         const t = e.target;
@@ -543,7 +543,6 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         paddingTop: native ? undefined : showBrandHeader ? 64 : 96,
         paddingBottom: native ? undefined : "calc(14rem + env(safe-area-inset-bottom, 0px))",
       }}
-      className={native ? undefined : "ms-auth-web"}
     >
       {(showBrandHeader || onBack || (native && ((onStartQuiz && mode === "password") || mode === "register" || mode === "reset"))) && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: native ? 8 : 44 }}>
