@@ -11,9 +11,15 @@ export type AuthUser = {
   id: string;
   email?: string;
   created_at?: string;
+  is_anonymous?: boolean;
   user_metadata?: Record<string, unknown>;
   app_metadata?: Record<string, unknown>;
 };
+
+/** Compte anonyme : pas d’essai 7j tant que email / Apple / Google n’est pas lié. */
+export function isAnonymousAuthUser(user?: AuthUser | null) {
+  return user?.is_anonymous === true;
+}
 
 export const BILLING_PROVIDER = {
   stripe: "stripe",

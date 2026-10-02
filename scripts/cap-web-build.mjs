@@ -11,7 +11,7 @@ import { spawn } from "node:child_process";
 const envFile = process.env.CAP_ENV_FILE || ".env.local";
 const env = { ...process.env };
 for (const key of Object.keys(env)) {
-  if (key.startsWith("VITE_") && env[key] === "[SENSITIVE]") delete env[key];
+  if (key.startsWith("VITE_")) delete env[key];
 }
 
 try {

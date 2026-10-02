@@ -166,7 +166,8 @@ Deno.serve(async (req) => {
     const grantOpts = { userCreatedAt: sourceUser.created_at ?? null };
     let nextState: AccessStateRow;
 
-    // Comptes review Apple / démo : toujours Premium (priorité après Apple IAP live)
+    // Comptes review Apple / démo : toujours Premium (priorité après Apple IAP live).
+    // Anonyme : même essai 7j (même user.id à la conversion email/Apple).
     if (isReviewPremiumUser(sourceUser) && !isLiveAppleEntitlement(currentState)) {
       nextState = buildReviewPremiumState(user.id, {
         ...(currentState ?? {}),

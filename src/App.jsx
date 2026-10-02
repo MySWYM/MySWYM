@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./lib/access.js";
+import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup, isAnonymousUser } from "./lib/access.js";
+import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import {
   track,
@@ -46,6 +47,7 @@ import {
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
 import { registerNativePush, flushPendingPushToken } from "./lib/native-push.js";
+import { startStravaOAuth, stravaRedirectUri } from "./lib/native-strava.js";
 import { clearAppIconBadge } from "./lib/native-app-badge.js";
 import {
   markCheckoutAbandoned,
@@ -169,6 +171,7 @@ import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import FeedbackModal from "./sheets/FeedbackModal.jsx";
 import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
+import SaveAccountSheet from "./sheets/SaveAccountSheet.jsx";
 import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
@@ -2171,11 +2174,8 @@ const StravaSection = ({
   const connect = () => {
     // Strava (distance / allure) sans consentement FC.
     // La FC n’est stockée que si heartRateConsent (case profil ou sheet ci-dessous).
-    const redirectUri = encodeURIComponent(window.location.origin + "/app");
-    window.location.href =
-      `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
-      `&response_type=code&redirect_uri=${redirectUri}` +
-      `&approval_prompt=auto&scope=activity%3Aread_all&state=strava_connect`;
+    // iOS : Safari puis myswym://localhost, jamais le site ni capacitor://.
+    void startStravaOAuth(clientId);
   };
 
   const persistHealthConsentAndConnect = async () => {
@@ -2213,11 +2213,7 @@ const StravaSection = ({
       setMsg({ type: "ok", text: "FC activée. Synchronise pour l’importer." });
       return;
     }
-    const redirectUri = encodeURIComponent(window.location.origin + "/app");
-    window.location.href =
-      `https://www.strava.com/oauth/authorize?client_id=${clientId}` +
-      `&response_type=code&redirect_uri=${redirectUri}` +
-      `&approval_prompt=auto&scope=activity%3Aread_all&state=strava_connect`;
+    void startStravaOAuth(clientId);
   };
 
   const sync = async () => {
@@ -7603,6 +7599,7 @@ export default function App() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [showPlanReady, setShowPlanReady] = useState(false);
+  const [showSaveAccount, setShowSaveAccount] = useState(false);
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [whatsNewLoading, setWhatsNewLoading] = useState(false);
@@ -7619,6 +7616,7 @@ export default function App() {
   const checkoutAbandonedRef = useRef(false);
   const welcomeEmailInFlightRef = useRef(null);
   const planRevealPaywallRef = useRef(false);
+  const planRevealSaveAccountRef = useRef(false);
   const pendingFeedbackRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -7868,6 +7866,13 @@ export default function App() {
       // /inscription + vieux compte déjà ouvert : déconnecter pour un vrai nouveau signup.
       // Compte tout juste créé : garder la session et entrer dans l’app (sinon relogin).
       if (user && location.pathname === "/inscription" && !signingOutRef.current) {
+        // Anonyme : garder la session pour convertir (même user.id / plan).
+        if (isAnonymousUser(user)) {
+          forceAuthRef.current = true;
+          authOpenedFromUrlRef.current = true;
+          setScreen("auth");
+          return;
+        }
         if (isFreshSignup(user)) {
           forceAuthRef.current = false;
           authOpenedFromUrlRef.current = false;
@@ -7958,10 +7963,10 @@ export default function App() {
       return;
     }
     if (!isFrozen || screen !== "app") return;
-    if (trialExpiredPromptedRef.current || showUpgrade || showPlanReady || showWhatsNew) return;
+    if (trialExpiredPromptedRef.current || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
     trialExpiredPromptedRef.current = true;
     openUpgrade("trial_expired");
-  }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState.hasPremiumAccess]);
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, accessState.hasPremiumAccess]);
 
   // Soft paywall essai (option C) + freeze reopen après 30 min arrière-plan.
   useEffect(() => {
@@ -7972,7 +7977,7 @@ export default function App() {
         freezeBackgroundedAtRef.current = Date.now();
         return;
       }
-      if (cancelled || screen !== "app" || showUpgrade || showPlanReady || showWhatsNew) return;
+      if (cancelled || screen !== "app" || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
       if (isFrozen && shouldRepromptFreezeOnForeground({
         isFrozen: true,
         backgroundedAtMs: freezeBackgroundedAtRef.current,
@@ -8000,12 +8005,12 @@ export default function App() {
       cancelled = true;
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [isFrozen, screen, showUpgrade, showPlanReady, showWhatsNew, accessState, isPremium, user?.id]);
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, accessState, isPremium, user?.id]);
 
   // Soft à l’ouverture app (J-3→J-1) : iOS natif seulement (pas le web).
   useEffect(() => {
     if (!isNativeIos()) return;
-    if (screen !== "app" || isPremium || isFrozen || showUpgrade || showPlanReady || showWhatsNew) return;
+    if (screen !== "app" || isPremium || isFrozen || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
     if (!user?.id) return;
     if (!shouldOfferTrialSoftPaywall({
       accessState,
@@ -8071,7 +8076,7 @@ export default function App() {
       }
       return;
     }
-    if (showUpgrade || showPlanReady || softPaywallPending) return;
+    if (showUpgrade || showPlanReady || showSaveAccount || softPaywallPending) return;
     if (sessionCelebrate || sessionFeedbackTarget !== null || feedbackWeek !== null) return;
     if (loopPaywall || replaceConfirmOpen || deletePlanId) return;
     const t = setTimeout(() => setShowWhatsNew(true), 600);
@@ -8083,6 +8088,7 @@ export default function App() {
     showWhatsNew,
     showUpgrade,
     showPlanReady,
+    showSaveAccount,
     softPaywallPending,
     sessionCelebrate,
     sessionFeedbackTarget,
@@ -8240,7 +8246,7 @@ export default function App() {
             },
             body: JSON.stringify({
               code,
-              redirect_uri: `${window.location.origin}/app`,
+              redirect_uri: stravaRedirectUri(),
             }),
           }
         );
@@ -8263,6 +8269,26 @@ export default function App() {
     // Petit délai pour laisser onAuthStateChange s'initialiser si nécessaire
     const t = setTimeout(handle, 400);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const onNative = (e) => {
+      const detail = e?.detail;
+      if (!detail || typeof detail.ok !== "boolean") return;
+      if (detail.ok) {
+        const syncNote = detail.syncError
+          ? " · sync manuelle depuis Profil si besoin"
+          : detail.synced
+            ? ` · ${detail.synced} activité(s) importée(s)`
+            : "";
+        showToast(`Strava connecté${detail.athlete ? `, Bonjour ${detail.athlete}` : ""}${syncNote}`, 8000);
+        setActiveTab("home");
+        return;
+      }
+      showToast(`Erreur Strava : ${detail.error || "connexion impossible"}`, 8000);
+    };
+    window.addEventListener("myswym:strava-connected", onNative);
+    return () => window.removeEventListener("myswym:strava-connected", onNative);
   }, []);
 
   // Régénère le plan actif quand le premium est débloqué et que le plan était tronqué
@@ -9302,43 +9328,84 @@ export default function App() {
       setScreen("firstSwimTip");
       return;
     }
+    const saveAccount = planRevealSaveAccountRef.current;
     const paywall = planRevealPaywallRef.current;
+    planRevealSaveAccountRef.current = false;
     planRevealPaywallRef.current = false;
     setScreen("app");
     setActiveTab("home");
-    if (paywall) setShowPlanReady(true);
+    if (saveAccount) setShowSaveAccount(true);
+    else if (paywall) setShowPlanReady(true);
   };
 
   const dismissFirstSwimTip = () => {
+    const saveAccount = planRevealSaveAccountRef.current;
     const paywall = planRevealPaywallRef.current;
+    planRevealSaveAccountRef.current = false;
     planRevealPaywallRef.current = false;
     setScreen("app");
     setActiveTab("home");
-    if (paywall) setShowPlanReady(true);
+    if (saveAccount) setShowSaveAccount(true);
+    else if (paywall) setShowPlanReady(true);
   };
 
   const handleGenerate = async (overrideProfile = null) => {
     const sourceProfile = overrideProfile && typeof overrideProfile === "object" && overrideProfile.nativeEvent == null
       ? overrideProfile
       : profile;
-    if (!user) {
-      stashPendingOnboarding({ profile: sourceProfile, addingPlan, tasteProfile });
-      trackEvent("signup_started", { source: "plan_generation_gate" }, { essential: true });
-      track("signup_started", { source: "plan_generation_gate" }, { onceKey: "signup_started:plan_generation_gate" });
-      openAuth("register");
-      return;
+    let liveUser = user;
+    if (!liveUser) {
+      try {
+        liveUser = await ensureAnonymousSession(supabase);
+        userRef.current = liveUser;
+        setUser(liveUser);
+      } catch (err) {
+        const msg = String(err?.message || err || "");
+        console.warn("[anon] ensureAnonymousSession failed:", msg);
+        // Sans Anonymous activé côté Supabase, on ne peut pas générer sans compte.
+        if (/anonymous sign-ins are disabled/i.test(msg)) {
+          showToast("Compte invité indisponible. Active Anonymous dans Supabase, ou crée un compte.", 8000);
+        }
+        stashPendingOnboarding({ profile: sourceProfile, addingPlan, tasteProfile });
+        trackEvent("signup_started", { source: "plan_generation_gate" }, { essential: true });
+        track("signup_started", { source: "plan_generation_gate" }, { onceKey: "signup_started:plan_generation_gate" });
+        openAuth("register");
+        return;
+      }
+    } else {
+      userRef.current = liveUser;
     }
+    // Essai 7j (y compris anonyme) avant génération, pour débloquer les features.
+    try {
+      const synced = await syncAccessRef.current(liveUser);
+      if (synced) {
+        liveUser = synced;
+        userRef.current = synced;
+        setUser(synced);
+        setIsPremium(checkIsPremium(synced));
+      }
+    } catch {
+      /* continue : aperçu possible même si sync lent */
+    }
+    setAccessSynced(true);
     clearOnboardingPrefill();
     // Remplacement d’un plan existant = Premium (1er plan = aperçu OK)
-    if (addingPlan && plans.length > 0 && !canGenerateProgram) {
+    const liveAccess = getAccessState(liveUser);
+    if (addingPlan && plans.length > 0 && !liveAccess.canGenerateProgram) {
+      if (isAnonymousUser(liveUser)) {
+        setShowSaveAccount(true);
+        return;
+      }
       openUpgrade("trial_required");
       return;
     }
-    // Option B : aperçu d’abord, Stripe ensuite (évite boucle questionnaire si abandon)
-    const openPaywallAfter = !canGenerateProgram;
+    // Anonyme : nudge « Garde cette séance » après reveal (essai déjà ouvert).
+    const openSaveAccountAfter = isAnonymousUser(liveUser);
+    const openPaywallAfter = !openSaveAccountAfter && !liveAccess.canGenerateProgram;
     await generatePlanFromProfile(sourceProfile, {
       taste: tasteProfile,
       openPaywallAfter,
+      openSaveAccountAfter,
     });
   };
 
@@ -9387,10 +9454,11 @@ export default function App() {
     }
   };
 
-  const generatePlanFromProfile = async (sourceProfile, { taste = null, openPaywallAfter = false } = {}) => {
+  const generatePlanFromProfile = async (sourceProfile, { taste = null, openPaywallAfter = false, openSaveAccountAfter = false } = {}) => {
     planGenerationInFlightRef.current = true;
     const showReveal = shouldShowPlanReveal({ addingPlan });
-    planRevealPaywallRef.current = !!(showReveal && openPaywallAfter);
+    planRevealSaveAccountRef.current = !!(showReveal && openSaveAccountAfter);
+    planRevealPaywallRef.current = !!(showReveal && openPaywallAfter && !openSaveAccountAfter);
     if (showReveal) {
       showCoachBuildingScreen();
     } else {
@@ -9495,22 +9563,23 @@ export default function App() {
       setAddingPlan(false);
       plansHydratedRef.current = true;
       // Persistance immédiate compte (cross-device) avant Stripe / reload
-      if (user?.id) {
+      const persistUserId = userRef.current?.id || user?.id;
+      if (persistUserId) {
         try {
           const now = new Date().toISOString();
-          localStorage.setItem(`myswym_plans_${user.id}`, JSON.stringify(replaced.plans));
-          localStorage.setItem(`myswym_active_${user.id}`, replaced.activeId || id);
-          localStorage.setItem(`myswym_plan_history_${user.id}`, JSON.stringify(replaced.history));
-          localStorage.setItem(`myswym_plans_updated_${user.id}`, now);
+          localStorage.setItem(`myswym_plans_${persistUserId}`, JSON.stringify(replaced.plans));
+          localStorage.setItem(`myswym_active_${persistUserId}`, replaced.activeId || id);
+          localStorage.setItem(`myswym_plan_history_${persistUserId}`, JSON.stringify(replaced.history));
+          localStorage.setItem(`myswym_plans_updated_${persistUserId}`, now);
           const { plans: synced, active, history, error } = await persistAccountPlans(
-            user.id, replaced.plans, replaced.activeId, deletedPlanIdsRef.current, replaced.history
+            persistUserId, replaced.plans, replaced.activeId, deletedPlanIdsRef.current, replaced.history
           );
           if (error && import.meta.env.DEV) console.warn("[plans] create persist failed", error.message);
           // Étape K, faits sportifs (profil nageur + séances planifiées + race target)
-          sportsPersistence.upsertSportProfile(user.id, entryProfile).then(() => {});
-          sportsPersistence.upsertPlannedSessionsFromPlan(user.id, id, entry.plan).then(() => {});
+          sportsPersistence.upsertSportProfile(persistUserId, entryProfile).then(() => {});
+          sportsPersistence.upsertPlannedSessionsFromPlan(persistUserId, id, entry.plan).then(() => {});
           if (entryProfile.raceTarget?.distance) {
-            sportsPersistence.upsertRaceTarget(user.id, entryProfile.raceTarget).then(() => {});
+            sportsPersistence.upsertRaceTarget(persistUserId, entryProfile.raceTarget).then(() => {});
           }
           if (Array.isArray(history)) setPlanHistory(history);
           if (synced?.length) {
@@ -9534,12 +9603,14 @@ export default function App() {
         setScreen("planReveal");
       } else {
         setScreen("app");
-        if (openPaywallAfter) setShowPlanReady(true);
+        if (openSaveAccountAfter) setShowSaveAccount(true);
+        else if (openPaywallAfter) setShowPlanReady(true);
       }
     } catch {
       planRevealActiveRef.current = false;
       setPlanReveal(null);
       planRevealPaywallRef.current = false;
+      planRevealSaveAccountRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
       track("generation_failed", { reason: "exception", context: "generate_plan" });
       const retryStep = sourceProfile.category === "progression" ? 3 : 5;
@@ -11173,7 +11244,19 @@ export default function App() {
     <>
       <style>{css}</style>
       <div className="myswym-app">
-        {/* Compte sans plan : nudge inscription (l’essai 7j sans carte démarre au compte). */}
+        {/* Anonyme avec plan : nudge conversion (essai déjà ouvert, plan conservé). */}
+        {isAnonymousUser(user) && plans.length > 0 && (
+          <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
+            <span style={{ flex: 1, lineHeight: 1.3 }}>
+              Sauvegarde ton plan : crée ton compte pour le retrouver partout
+            </span>
+            <button onClick={() => setShowSaveAccount(true)} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              Créer mon compte
+            </button>
+            </div>
+          </div>
+        )}
         {!user && plans.length > 0 && (
           <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
@@ -11395,7 +11478,25 @@ export default function App() {
             onDismiss={() => setShowPlanReady(false)}
           />
         )}
-        {showWhatsNew && !showPlanReady && !showUpgrade && (
+        {showSaveAccount && (
+          <SaveAccountSheet
+            open={showSaveAccount}
+            onDismiss={() => setShowSaveAccount(false)}
+            onConverted={(u) => {
+              setShowSaveAccount(false);
+              if (u) {
+                setUser(u);
+                void syncAccessRef.current(u);
+              }
+            }}
+            onEmail={() => {
+              setShowSaveAccount(false);
+              authOpenedFromUrlRef.current = false;
+              openAuth("register");
+            }}
+          />
+        )}
+        {showWhatsNew && !showPlanReady && !showSaveAccount && !showUpgrade && (
           <WhatsNewSheet
             loading={whatsNewLoading}
             onContinue={() => { void handleWhatsNewContinue(); }}

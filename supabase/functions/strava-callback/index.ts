@@ -2,8 +2,21 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, FALLBACK_ORIGIN, isAllowedOrigin } from "../_shared/cors.ts";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
+const IOS_STRAVA_REDIRECT = "myswym://localhost/strava/callback";
+
+function isIosStravaRedirect(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "myswym:"
+      && url.hostname === "localhost"
+      && url.pathname.replace(/\/$/, "") === "/strava/callback";
+  } catch {
+    return false;
+  }
+}
 
 function resolveRedirectUri(reqOrigin: string | null, bodyRedirect?: string) {
+  if (bodyRedirect && isIosStravaRedirect(bodyRedirect)) return IOS_STRAVA_REDIRECT;
   if (bodyRedirect && typeof bodyRedirect === "string") {
     try {
       const origin = new URL(bodyRedirect).origin;

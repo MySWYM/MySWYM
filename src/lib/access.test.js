@@ -268,4 +268,31 @@ const nowSec = Math.floor(Date.now() / 1000);
   assert.equal(isLiveStripeBilling(applePaid), false);
 }
 
+{
+  const anon = { id: "a1", is_anonymous: true, created_at: new Date().toISOString(), app_metadata: {} };
+  assert.equal(isAccessMetadataPending(anon), true, "anonymous waits for trial sync like signup");
+  assert.equal(isFreshSignup(anon), true, "anonymous gets fresh signup grace");
+  assert.equal(
+    shouldShowTrialFreeze(anon, { accessSynced: true }),
+    false,
+    "anonymous fresh signup no freeze yet",
+  );
+}
+
+{
+  const anonTrial = {
+    id: "a2",
+    is_anonymous: true,
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    app_metadata: {
+      subscription: "premium",
+      subscription_status: ACCESS_STATUS.TRIAL,
+      trial_used: true,
+      trial_ends_at: new Date(Date.now() + 6 * 86400000).toISOString(),
+    },
+  };
+  assert.equal(getAccessState(anonTrial).hasPremiumAccess, true, "anonymous on trial is premium");
+  assert.equal(shouldShowTrialFreeze(anonTrial, { accessSynced: true }), false, "trial anon not frozen");
+}
+
 console.log("access.test.js OK");

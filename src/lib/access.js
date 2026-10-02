@@ -1,9 +1,13 @@
+import { isAnonymousUser } from "./anonymous-auth.js";
+
 export const ACCESS_STATUS = {
   TRIAL: "trial",
   ACTIVE: "active",
   CANCELED: "canceled",
   EXPIRED: "expired",
 };
+
+export { isAnonymousUser };
 
 const ENTITLED_STATUSES = new Set([
   ACCESS_STATUS.TRIAL,

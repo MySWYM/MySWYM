@@ -15,6 +15,12 @@ import {
   emitNativeOAuthCompleted,
   isNativeOAuthCallback,
 } from "../lib/native-oauth.js";
+import {
+  closeNativeStravaBrowser,
+  completeNativeStravaFromUrl,
+  emitNativeStravaCompleted,
+  isNativeStravaCallback,
+} from "../lib/native-strava.js";
 import { registerNativePush } from "../lib/native-push.js";
 import { ensureIosNotificationPermission } from "../lib/native-local-notifications.js";
 import "./native-shell.css";
@@ -59,6 +65,33 @@ async function handleNativeOAuthUrl(url) {
   }
 }
 
+async function handleNativeStravaUrl(url) {
+  if (!isNativeStravaCallback(url)) return false;
+  try {
+    const json = await completeNativeStravaFromUrl(supabase, url);
+    emitNativeStravaCompleted({
+      ok: true,
+      athlete: json?.athlete ?? null,
+      synced: json?.initial_sync?.synced ?? 0,
+      syncError: json?.initial_sync?.error ?? null,
+    });
+    return true;
+  } catch (err) {
+    emitNativeStravaCompleted({
+      ok: false,
+      error: err?.message || "Erreur Strava",
+    });
+    return false;
+  } finally {
+    await closeNativeStravaBrowser();
+  }
+}
+
+async function handleNativeReturnUrl(url) {
+  if (await handleNativeStravaUrl(url)) return;
+  await handleNativeOAuthUrl(url);
+}
+
 function installNativeOAuthReturn() {
   if (typeof window !== "undefined" && window.__myswymNativeOAuth) return;
   if (typeof window !== "undefined") window.__myswymNativeOAuth = true;
@@ -66,12 +99,12 @@ function installNativeOAuthReturn() {
   void App.getLaunchUrl()
     .then((res) => {
       const url = res?.url;
-      if (url) void handleNativeOAuthUrl(url);
+      if (url) void handleNativeReturnUrl(url);
     })
     .catch(() => {});
 
   void App.addListener("appUrlOpen", async ({ url }) => {
-    await handleNativeOAuthUrl(url);
+    await handleNativeReturnUrl(url);
   });
 }
 

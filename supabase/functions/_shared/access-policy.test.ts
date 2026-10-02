@@ -6,6 +6,7 @@ import {
   buildTrialState,
   hasConsumedValidTrialWindow,
   hasEntitlement,
+  isAnonymousAuthUser,
   isLiveAppleEntitlement,
   isLiveStripeEntitlement,
   isRetrialCampaignActive,
@@ -264,6 +265,12 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
     subscription_ends_at: iso(nowMs - 1000),
   };
   assert.equal(isLiveStripeEntitlement(expiredStripe), false);
+}
+
+{
+  assert.equal(isAnonymousAuthUser({ id: "a", is_anonymous: true }), true);
+  assert.equal(isAnonymousAuthUser({ id: "a", email: "x@y.z" }), false);
+  assert.equal(isAnonymousAuthUser(null), false);
 }
 
 console.log("access-policy.test.ts OK");
