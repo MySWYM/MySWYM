@@ -4,12 +4,15 @@
 export default function AppStatusScreen({
   title,
   body,
+  note = null,
   primaryLabel,
   onPrimary,
   secondaryLabel = null,
   onSecondary = null,
   tertiaryLabel = null,
   onTertiary = null,
+  linkLabel = null,
+  linkHref = null,
   primaryDisabled = false,
   primaryBusyLabel = null,
   meta = null,
@@ -40,6 +43,11 @@ export default function AppStatusScreen({
           {title}
         </h1>
         {body ? <p className="ms-status-body">{body}</p> : null}
+        {note ? (
+          <p className="ms-status-body" style={{ marginTop: 8, fontWeight: 600 }}>
+            {note}
+          </p>
+        ) : null}
         {primaryLabel && onPrimary ? (
           <button
             type="button"
@@ -68,6 +76,11 @@ export default function AppStatusScreen({
           >
             {tertiaryLabel}
           </button>
+        ) : null}
+        {linkLabel && linkHref ? (
+          <a className="ms-status-secondary" href={linkHref}>
+            {linkLabel}
+          </a>
         ) : null}
         {meta ? <p className="ms-status-meta">{meta}</p> : null}
       </div>

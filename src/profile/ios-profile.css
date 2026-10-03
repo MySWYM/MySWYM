@@ -498,6 +498,19 @@
   box-sizing: border-box;
 }
 
+html.myswym-ios .ios-cover-lock {
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+/* Avec bandeau conversion : remplir la zone sous le bandeau, pas 100dvh. */
+.myswym-app:has(> .ms-convert-banner) .ios-lock-pane,
+.myswym-app:has(> .ms-convert-banner) .ios-cover-lock {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+}
+
 .ios-lock-pane .ms-profile-subpanel-toolbar {
   flex-shrink: 0;
 }

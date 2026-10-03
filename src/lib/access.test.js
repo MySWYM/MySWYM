@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
-import { getAccessState, ACCESS_STATUS, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./access.js";
+import {
+  getAccessState,
+  ACCESS_STATUS,
+  isAccessMetadataPending,
+  isLiveStripeBilling,
+  shouldShowTrialFreeze,
+  isFreshSignup,
+  shouldAwaitCardlessTrial,
+  hasUnlockedPremiumAccess,
+} from "./access.js";
 
 function userWith(meta) {
   return { app_metadata: meta };
@@ -277,6 +286,8 @@ const nowSec = Math.floor(Date.now() / 1000);
     false,
     "anonymous fresh signup no freeze yet",
   );
+  assert.equal(shouldAwaitCardlessTrial(anon), true, "anonymous awaits 7j before lock");
+  assert.equal(hasUnlockedPremiumAccess(anon), true, "anonymous unlocked while awaiting trial");
 }
 
 {

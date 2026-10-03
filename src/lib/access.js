@@ -132,6 +132,22 @@ export function isFreshSignup(user, nowMs = Date.now()) {
 }
 
 /**
+ * Après onboarding / 1er plan : l’essai 7j sans carte doit encore s’écrire
+ * (JWT vide ou compte tout neuf). Ne pas payer ni verrouiller les séances.
+ */
+export function shouldAwaitCardlessTrial(user, nowMs = Date.now()) {
+  if (!user) return false;
+  if (getAccessState(user).hasPremiumAccess) return false;
+  return isAccessMetadataPending(user) || isFreshSignup(user, nowMs);
+}
+
+/** Accès produit : essai / abo live, ou attente du grant 7j post-inscription. */
+export function hasUnlockedPremiumAccess(user, nowMs = Date.now()) {
+  if (!user) return false;
+  return getAccessState(user).hasPremiumAccess || shouldAwaitCardlessTrial(user, nowMs);
+}
+
+/**
  * Prompt « essai terminé » (sheet repliable) seulement quand le sync a tranché
  * et que ce n’est pas un compte tout neuf (JWT encore vide / essai 7j pas encore écrit).
  */

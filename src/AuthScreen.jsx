@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation, Trans } from "react-i18next";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, X } from "lucide-react";
 import { supabase } from "./supabase.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
@@ -363,6 +363,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
 const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode = "password", showBrandHeader = true }) => {
   const locale = useActiveLocale();
   const { t } = useTranslation("onboarding");
+  const { t: tc } = useTranslation("common");
   // mode :
   //   "password", login classique avec mot de passe
   //   "register", création de compte avec mot de passe
@@ -501,27 +502,65 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
   // CGU / âge / newsletter : uniquement à la création de compte, jamais au login.
   const socialNeedsConsent = mode === "register";
   const socialBlocked = socialNeedsConsent && (!acceptAge || !acceptTerms);
+  const stopLegalLinkToggle = (event) => {
+    // Évite que le tap sur CGU / privacy coche/décoche la case parente.
+    event.stopPropagation();
+  };
   const legalChecks = socialNeedsConsent ? (
-    <div className="native-auth-legal" style={{ marginBottom: native ? 12 : 16 }}>
-      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
-        <input type="checkbox" checked={acceptAge} onChange={(e) => setAcceptAge(e.target.checked)} style={{ marginTop: 2 }} />
+    <div
+      className={`native-auth-legal${native ? " is-native" : ""}`}
+      style={{ marginBottom: native ? 12 : 16, color: native ? undefined : G.grey }}
+    >
+      <label htmlFor="auth-check-age" className="native-auth-check">
+        <input
+          id="auth-check-age"
+          type="checkbox"
+          checked={acceptAge}
+          onChange={(e) => setAcceptAge(e.target.checked)}
+        />
         <span>{t("auth.age")}</span>
       </label>
-      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
-        <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} style={{ marginTop: 2 }} />
+      <label htmlFor="auth-check-terms" className="native-auth-check">
+        <input
+          id="auth-check-terms"
+          type="checkbox"
+          checked={acceptTerms}
+          onChange={(e) => setAcceptTerms(e.target.checked)}
+        />
         <span>
           <Trans
             i18nKey="auth.terms"
             ns="onboarding"
             components={{
-              cgu: <a href={legalHref("cgu", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
-              privacy: <a href={legalHref("privacy", locale)} target="_blank" rel="noopener noreferrer" style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }} />,
+              cgu: (
+                <a
+                  href={legalHref("cgu", locale)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={stopLegalLinkToggle}
+                  style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }}
+                />
+              ),
+              privacy: (
+                <a
+                  href={legalHref("privacy", locale)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={stopLegalLinkToggle}
+                  style={{ color: native ? "#fff" : G.blue, fontWeight: 700, textDecoration: native ? "underline" : "none" }}
+                />
+              ),
             }}
           />
         </span>
       </label>
-      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: native ? 6 : 10, fontSize: 12, lineHeight: 1.35, color: native ? "rgba(255, 255, 255, 0.88)" : G.grey, cursor: "pointer" }}>
-        <input type="checkbox" checked={acceptNewsletter} onChange={(e) => setAcceptNewsletter(e.target.checked)} style={{ marginTop: 2 }} />
+      <label htmlFor="auth-check-newsletter" className="native-auth-check">
+        <input
+          id="auth-check-newsletter"
+          type="checkbox"
+          checked={acceptNewsletter}
+          onChange={(e) => setAcceptNewsletter(e.target.checked)}
+        />
         <span>{t("auth.newsletter")}</span>
       </label>
       {!native && (
@@ -555,54 +594,75 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
         paddingBottom: native ? undefined : "calc(14rem + env(safe-area-inset-bottom, 0px))",
       }}
     >
-      {(showBrandHeader || onBack || (native && ((onStartQuiz && mode === "password") || mode === "register" || mode === "reset"))) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: native ? 8 : 44 }}>
-          {showBrandHeader && !native ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <BrandLogo variant="wordmark" height={24} />
-            </div>
-          ) : <div />}
-          {native && onStartQuiz && mode === "password" ? (
-            <button
-              type="button"
-              className="ms-glass-icon-btn native-guest-chip"
-              onClick={() => {
-                markNativeQuizStarted();
-                onStartQuiz();
-              }}
-            >
-              {t("auth.createAccount")}
-            </button>
-          ) : native && (mode === "register" || mode === "reset") ? (
-            <button
-              type="button"
-              className="ms-glass-icon-btn native-guest-chip"
-              onClick={() => switchMode("password")}
-            >
-              {t("auth.loginCta")}
-            </button>
-          ) : onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              aria-label={t("common.back")}
-              style={{
-                background: "none",
-                border: `1px solid ${G.greyLight}`,
-                borderRadius: 10,
-                padding: "10px 14px",
-                minHeight: 44,
-                fontSize: 13,
-                fontWeight: 600,
-                color: G.grey,
-                cursor: "pointer",
-              }}
-            >
-              {t("common.back")}
-            </button>
-          ) : null}
-        </div>
-      )}
+      {(() => {
+        const showCreateChip = native && onStartQuiz && mode === "password";
+        const showLoginChip = native && (mode === "register" || mode === "reset");
+        const showNativeDismiss = native && typeof onBack === "function";
+        const showWebBack = !native && typeof onBack === "function";
+        if (!(showBrandHeader || showNativeDismiss || showWebBack || showCreateChip || showLoginChip)) return null;
+        return (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: native ? 8 : 44 }}>
+            {showNativeDismiss ? (
+              <button
+                type="button"
+                className="ms-glass-icon-btn native-auth-close"
+                onClick={onBack}
+                aria-label={tc("close")}
+              >
+                <X size={22} strokeWidth={2.25} aria-hidden />
+              </button>
+            ) : showBrandHeader && !native ? (
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <BrandLogo variant="wordmark" height={24} />
+              </div>
+            ) : showWebBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label={tc("close")}
+                style={{
+                  background: "none",
+                  border: `1px solid ${G.greyLight}`,
+                  borderRadius: 10,
+                  width: 44,
+                  height: 44,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: G.grey,
+                  cursor: "pointer",
+                }}
+              >
+                <X size={22} strokeWidth={2.25} aria-hidden />
+              </button>
+            ) : (
+              <div />
+            )}
+            {showCreateChip ? (
+              <button
+                type="button"
+                className="ms-glass-icon-btn native-guest-chip"
+                onClick={() => {
+                  markNativeQuizStarted();
+                  onStartQuiz();
+                }}
+              >
+                {t("auth.createAccount")}
+              </button>
+            ) : showLoginChip ? (
+              <button
+                type="button"
+                className="ms-glass-icon-btn native-guest-chip"
+                onClick={() => switchMode("password")}
+              >
+                {t("auth.loginCta")}
+              </button>
+            ) : (
+              <div style={{ width: 44 }} aria-hidden />
+            )}
+          </div>
+        );
+      })()}
       <div className="fade-up">
         <h1 style={{ fontFamily: native ? FONT : FONT_DISPLAY, fontSize: native ? 28 : 32, fontWeight: 700, letterSpacing: "-0.03em", textTransform: "none", color: native ? "#fff" : G.ink, marginBottom: 8, lineHeight: 1.1 }}>
           {titleMap[mode]}

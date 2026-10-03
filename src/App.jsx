@@ -2,8 +2,24 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup, isAnonymousUser } from "./lib/access.js";
+import {
+  ACCESS_STATUS,
+  getAccessState,
+  isAccessMetadataPending,
+  isLiveStripeBilling,
+  shouldShowTrialFreeze,
+  isFreshSignup,
+  isAnonymousUser,
+  shouldAwaitCardlessTrial,
+  hasUnlockedPremiumAccess,
+} from "./lib/access.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
+import {
+  clearSaveAccountSnooze,
+  isSaveAccountSnoozed,
+  releaseSaveAccountSnoozeOnResume,
+  snoozeSaveAccountPrompt,
+} from "./lib/save-account-prompt.js";
 import {
   markNativeQuizStarted,
   clearNativeQuizStarted,
@@ -485,10 +501,101 @@ const css = `
       radial-gradient(ellipse 90% 55% at 50% -15%, rgba(126, 184, 245, 0.45), transparent 55%),
       var(--myswym-bg);
   }
+  /* Bandeau conversion : le shell flex garde le bas de page accessible. */
+  .myswym-app:has(> .ms-convert-banner) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .myswym-app:has(> .ms-convert-banner) > .ms-convert-banner {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+  }
+  .myswym-app:has(> .ms-convert-banner) > .myswym-app-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  /* Paramètres / panneaux plein écran : un seul scroll interne, pas de page coupée. */
+  .myswym-app:has(> .ms-convert-banner):has(.ios-cover-lock) > .myswym-app-main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .myswym-app:has(> .ms-convert-banner):has(.ios-cover-lock) > .myswym-app-main > .ms-app-immersive {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+  }
+  .myswym-app:has(> .ms-convert-banner) .ios-cover-lock,
+  .myswym-app:has(> .ms-convert-banner) .ios-lock-pane {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+  }
+  .myswym-app:has(> .ms-convert-banner) .ms-profile-subpanel-toolbar {
+    padding-top: 8px;
+  }
   .sticky-app-bar {
     position: sticky;
     top: 0;
     z-index: 40;
+  }
+  /* Bandeau conversion : full-bleed + safe-area (pas sous la status bar). */
+  .ms-convert-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: ${G.blue};
+    color: ${G.white};
+    padding: 10px 0;
+    padding-top: calc(10px + var(--safe-top, env(safe-area-inset-top, 0px)));
+  }
+  .ms-convert-banner--soft {
+    background: ${G.blueLight};
+    color: ${G.blue};
+    border-bottom: 1px solid ${G.greyLight};
+  }
+  .ms-convert-banner-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ms-convert-banner-text {
+    flex: 1;
+    line-height: 1.3;
+    min-width: 0;
+  }
+  .ms-convert-banner-cta {
+    flex-shrink: 0;
+    background: ${G.white};
+    color: ${G.blue};
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ms-convert-banner-cta--inverse {
+    background: ${G.blue};
+    color: ${G.white};
+    padding: 7px 12px;
+    font-size: 12px;
   }
 
   /* Tablette : même UX téléphone, colonne centrée + nav flottante */
@@ -613,6 +720,8 @@ const getPlanSecondaryLabel = (entry) => {
 // Premium = app_metadata uniquement (écrit par service role / Stripe).
 // user_metadata est falsifiable par le client → jamais utilisé pour l'accès.
 const checkIsPremium = (user) => getAccessState(user).hasPremiumAccess;
+/** Premium live ou attente essai 7j (ne pas verrouiller avant le grant). */
+const checkPremiumUnlocked = (user) => hasUnlockedPremiumAccess(user);
 
 const syncSubscriptionFromStripe = async () => {
   const { data: refreshData } = await supabase.auth.refreshSession();
@@ -7772,13 +7881,20 @@ export default function App() {
         if (next) {
           userRef.current = next;
           setUser(next);
-          setIsPremium(checkIsPremium(next));
+          setIsPremium(checkPremiumUnlocked(next));
         }
-        setAccessSynced(true);
+        // Ne pas « sync OK » tant que l’essai 7j peut encore arriver (évite le gel précoce).
+        if (!next || checkIsPremium(next) || !shouldAwaitCardlessTrial(next)) {
+          setAccessSynced(true);
+        }
         return next;
       } catch {
-        setAccessSynced(true);
-        return fallbackUser;
+        const fallback = fallbackUser;
+        if (fallback) setIsPremium(checkPremiumUnlocked(fallback));
+        if (!fallback || checkIsPremium(fallback) || !shouldAwaitCardlessTrial(fallback)) {
+          setAccessSynced(true);
+        }
+        return fallback;
       } finally {
         accessSyncInFlightRef.current = null;
       }
@@ -7790,18 +7906,19 @@ export default function App() {
 
   // Valeurs dérivées du plan actif
   const accessState = getAccessState(user);
+  const awaitCardlessTrial = shouldAwaitCardlessTrial(user);
   const waitingForAccess = Boolean(
     user
     && !accessSynced
     && !accessState.hasPremiumAccess
-    && (isAccessMetadataPending(user) || isFreshSignup(user))
+    && awaitCardlessTrial
   );
   const isFrozen = shouldShowTrialFreeze(user, {
     accessSynced,
     generatingPlan: planGenerationInFlightRef.current || screen === "planReveal" || screen === "loading",
     revealActive: Boolean(planRevealActiveRef.current) || screen === "planReveal",
   });
-  const canGenerateProgram = !!user && accessState.canGenerateProgram;
+  const canGenerateProgram = !!user && (accessState.canGenerateProgram || awaitCardlessTrial);
   const canUpdateProgram = !!user && accessState.canUpdateProgram;
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
   const plan            = activePlanEntry?.plan    ?? null;
@@ -7855,14 +7972,42 @@ export default function App() {
     return () => clearTimeout(t);
   }, [screen]);
 
+  // Essai 7j en cours d’écriture : retenter le sync, ne pas verrouiller les séances.
   useEffect(() => {
     if (!waitingForAccess) return undefined;
-    const t = setTimeout(() => {
+    let cancelled = false;
+    const retry = () => {
+      if (cancelled || !userRef.current) return;
+      void syncAccessRef.current(userRef.current);
+    };
+    const t1 = setTimeout(retry, 700);
+    const t2 = setTimeout(retry, 2200);
+    const t3 = setTimeout(retry, 5000);
+    const tGiveUp = setTimeout(() => {
+      if (cancelled) return;
       setAccessSynced(true);
-      showToast("Connexion lente, tu peux continuer.", 5000);
+      setIsPremium(checkPremiumUnlocked(userRef.current));
+      showToast("Essai en cours d’activation, tu peux continuer.", 5000);
     }, 12000);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(tGiveUp);
+    };
   }, [waitingForAccess]);
+
+  useEffect(() => {
+    if (!user) return;
+    setIsPremium(checkPremiumUnlocked(user));
+  }, [
+    user?.id,
+    user?.app_metadata?.subscription_status,
+    user?.app_metadata?.trial_ends_at,
+    user?.app_metadata?.trial_used,
+    user?.created_at,
+  ]);
 
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
@@ -7888,6 +8033,8 @@ export default function App() {
           setScreen("auth");
           return;
         }
+        // Compte réel tout neuf : pas de page inscription (déjà connecté).
+        // Ne jamais appliquer ça aux anonymes (déjà gérés au-dessus).
         if (isFreshSignup(user)) {
           forceAuthRef.current = false;
           authOpenedFromUrlRef.current = false;
@@ -7956,8 +8103,94 @@ export default function App() {
 
   const openAuth = (mode = "password") => {
     forceAuthRef.current = true;
+    setScreen("auth");
     navigate(mode === "register" ? "/inscription" : "/connexion");
   };
+
+  /** Sheet « Créer mon compte » → inscription (anonyme → convert, même user.id). */
+  const openCreateAccountFromSheet = () => {
+    snoozeSaveAccountPrompt(user?.id);
+    setShowSaveAccount(false);
+    authOpenedFromUrlRef.current = false;
+    openAuth("register");
+  };
+
+  const dismissSaveAccountSheet = () => {
+    snoozeSaveAccountPrompt(user?.id);
+    setShowSaveAccount(false);
+  };
+
+  /** Anonyme avec plan : bottom sheet en relance fréquente (snooze court + retour app). */
+  useEffect(() => {
+    if (screen !== "app") return undefined;
+    if (!isAnonymousUser(user) || plans.length === 0) return undefined;
+    if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
+    if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return undefined;
+    if (isSaveAccountSnoozed(user.id)) return undefined;
+    const t = window.setTimeout(() => {
+      if (isSaveAccountSnoozed(user.id)) return;
+      if (planRevealActiveRef.current || planGenerationInFlightRef.current) return;
+      setShowSaveAccount(true);
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [
+    screen,
+    user?.id,
+    plans.length,
+    showUpgrade,
+    showPlanReady,
+    showSaveAccount,
+    showWhatsNew,
+    isFrozen,
+    sessionCelebrate,
+  ]);
+
+  /** Relance à la sortie d’arrière-plan (≥ 20 min) + après une séance célébrée. */
+  useEffect(() => {
+    if (typeof window === "undefined" || !isAnonymousUser(user) || plans.length === 0) return undefined;
+    const bgAt = { current: 0 };
+    const tryShow = () => {
+      if (screen !== "app") return;
+      if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return;
+      if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return;
+      if (isSaveAccountSnoozed(user.id)) return;
+      setShowSaveAccount(true);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        bgAt.current = Date.now();
+        return;
+      }
+      if (releaseSaveAccountSnoozeOnResume(user.id, bgAt.current)) {
+        window.setTimeout(tryShow, 500);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [
+    user?.id,
+    plans.length,
+    screen,
+    showUpgrade,
+    showPlanReady,
+    showSaveAccount,
+    showWhatsNew,
+    isFrozen,
+    sessionCelebrate,
+  ]);
+
+  const prevSessionCelebrateRef = useRef(sessionCelebrate);
+  useEffect(() => {
+    const wasOpen = !!prevSessionCelebrateRef.current;
+    prevSessionCelebrateRef.current = sessionCelebrate;
+    if (!wasOpen || sessionCelebrate) return undefined;
+    if (!isAnonymousUser(user) || plans.length === 0) return undefined;
+    if (screen !== "app" || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
+    // Après une séance : relance même si snooze court (priorité conversion).
+    clearSaveAccountSnooze(user.id);
+    const t = window.setTimeout(() => setShowSaveAccount(true), 700);
+    return () => window.clearTimeout(t);
+  }, [sessionCelebrate, user?.id, plans.length, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
 
   const openUpgrade = (softContext = null) => {
     trackEvent("paywall_shown", {
@@ -8141,8 +8374,14 @@ export default function App() {
     forceAuthRef.current = false;
     const openedFromUrl = authOpenedFromUrlRef.current;
     authOpenedFromUrlRef.current = false;
-    if (plans.length > 0) {
-      setScreen("app");
+    // Déjà dans l’app (plan ou anonyme) : fermer auth → revenir à l’app, pas bloqué.
+    if (plans.length > 0 || isAnonymousUser(user)) {
+      if (plans.length === 0 && isAnonymousUser(user) && nativeQuizStarted()) {
+        setScreen("onboarding");
+      } else {
+        setScreen("app");
+        if (plans.length === 0) setActiveTab("plan");
+      }
       navigate("/app", { replace: true });
       return;
     }
@@ -8369,30 +8608,32 @@ export default function App() {
       }
       const u = session?.user ?? null;
       setUser(u);
-      setIsPremium(checkIsPremium(u));
+      setIsPremium(checkPremiumUnlocked(u));
       if (u) {
-        setAccessSynced(!isAccessMetadataPending(u));
-        const droppingSessionForRegister = locationRef.current.pathname === "/inscription"
-          && event === "INITIAL_SESSION";
-        // /connexion + anonyme : rester sur Connexion (login compte réel).
-        // /connexion + compte réel → /app. /inscription : voir route effect.
-        const stayOnLoginAsAnonymous = locationRef.current.pathname === "/connexion"
-          && isAnonymousUser(u);
+        setAccessSynced(!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u));
+        const onInscription = locationRef.current.pathname === "/inscription";
+        const onConnexion = locationRef.current.pathname === "/connexion";
+        const droppingSessionForRegister = onInscription && event === "INITIAL_SESSION";
+        // Anonyme sur /connexion ou /inscription : ne jamais rebondir vers /app
+        // (sync essai / TOKEN_REFRESHED cassait « Créer mon compte »).
+        const stayOnAuthAsAnonymous = isAnonymousUser(u) && (onConnexion || onInscription);
+        // forceAuth : ouverture explicite auth (bandeau, sheet, CTA) pendant sync.
+        const stayOnAuthExplicit = forceAuthRef.current && isAuthPath(locationRef.current.pathname);
         if (isAuthPath(locationRef.current.pathname)) {
-          if (droppingSessionForRegister || stayOnLoginAsAnonymous) {
+          if (droppingSessionForRegister || stayOnAuthAsAnonymous || stayOnAuthExplicit) {
             forceAuthRef.current = true;
             authOpenedFromUrlRef.current = true;
-            if (stayOnLoginAsAnonymous) setScreen("auth");
+            setScreen("auth");
           } else {
             forceAuthRef.current = false;
             authOpenedFromUrlRef.current = false;
             navigate("/app", { replace: true });
           }
-        } else {
+        } else if (!forceAuthRef.current) {
           forceAuthRef.current = false;
         }
-        if (!droppingSessionForRegister && !stayOnLoginAsAnonymous) {
-          loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
+        if (!droppingSessionForRegister && !stayOnAuthAsAnonymous && !stayOnAuthExplicit) {
+          loadUserData(u.id, checkPremiumUnlocked(u)).finally(() => setAuthLoading(false));
         } else {
           setAuthLoading(false);
         }
@@ -8877,15 +9118,15 @@ export default function App() {
         const u = await syncSubscriptionFromStripe();
         if (u) {
           setUser(u);
-          setIsPremium(checkIsPremium(u));
-          setAccessSynced(true);
+          setIsPremium(checkPremiumUnlocked(u));
+          if (checkIsPremium(u) || !shouldAwaitCardlessTrial(u)) setAccessSynced(true);
         }
       } catch {
         const { data } = await supabase.auth.getUser();
         if (data?.user) {
           setUser(data.user);
-          setIsPremium(checkIsPremium(data.user));
-          setAccessSynced(true);
+          setIsPremium(checkPremiumUnlocked(data.user));
+          if (!shouldAwaitCardlessTrial(data.user)) setAccessSynced(true);
         }
       }
     };
@@ -9437,35 +9678,39 @@ export default function App() {
     } else {
       userRef.current = liveUser;
     }
-    // Essai 7j sans carte (anonyme inclus) avant génération : même user.id à la conversion.
+    // Essai 7j sans carte avant génération (anonyme + compte neuf) : pas de cadenas avant.
     const applySyncedUser = (synced) => {
       if (!synced) return;
       liveUser = synced;
       userRef.current = synced;
       setUser(synced);
-      setIsPremium(checkIsPremium(synced));
+      setIsPremium(checkPremiumUnlocked(synced));
     };
     try {
       applySyncedUser(await syncAccessRef.current(liveUser));
     } catch {
-      /* retry ci-dessous pour anonyme */
+      /* retry ci-dessous */
     }
-    if (isAnonymousUser(liveUser) && !checkIsPremium(liveUser)) {
-      try {
-        await new Promise((r) => setTimeout(r, 450));
-        applySyncedUser(await syncAccessRef.current(liveUser));
-      } catch {
-        /* génération full quand même ; pas de paywall anonyme */
-      }
-      if (!checkIsPremium(liveUser) && import.meta.env.DEV) {
-        console.warn("[anon] essai 7j pas encore dans le JWT après sync");
+    if (!checkIsPremium(liveUser) && shouldAwaitCardlessTrial(liveUser)) {
+      for (let i = 0; i < 2; i++) {
+        try {
+          await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+          applySyncedUser(await syncAccessRef.current(liveUser));
+        } catch {
+          /* continue */
+        }
+        if (checkIsPremium(liveUser)) break;
       }
     }
-    setAccessSynced(true);
+    if (checkIsPremium(liveUser) || !shouldAwaitCardlessTrial(liveUser)) {
+      setAccessSynced(true);
+    }
+    setIsPremium(checkPremiumUnlocked(liveUser));
     clearOnboardingPrefill();
     // Remplacement d’un plan existant = Premium (1er plan = aperçu OK)
     const liveAccess = getAccessState(liveUser);
-    if (addingPlan && plans.length > 0 && !liveAccess.canGenerateProgram) {
+    const awaitingTrial = shouldAwaitCardlessTrial(liveUser);
+    if (addingPlan && plans.length > 0 && !liveAccess.canGenerateProgram && !awaitingTrial) {
       if (isAnonymousUser(liveUser)) {
         setShowSaveAccount(true);
         return;
@@ -9473,9 +9718,11 @@ export default function App() {
       openUpgrade("trial_required");
       return;
     }
-    // Anonyme : essai 7j déjà ouvert → nudge « Garde cette séance », jamais paywall.
+    // 1er plan : essai 7j (ou attente grant) → jamais paywall. Anonyme → nudge compte.
     const openSaveAccountAfter = isAnonymousUser(liveUser);
-    const openPaywallAfter = !openSaveAccountAfter && !liveAccess.canGenerateProgram;
+    const openPaywallAfter = !openSaveAccountAfter
+      && !liveAccess.canGenerateProgram
+      && !awaitingTrial;
     await generatePlanFromProfile(sourceProfile, {
       taste: tasteProfile,
       openPaywallAfter,
@@ -9620,8 +9867,16 @@ export default function App() {
         });
       }
       const entryTaste = taste || tasteProfile;
-      const livePremium = checkIsPremium(userRef.current);
-      // Aperçu avant paiement = contenu généré, mais flag isPremium = accès live (anti-voleur)
+      // Après onboarding : essai 7j (ou attente sync) → plan déverrouillé, pas de squelette gelé.
+      try {
+        const resynced = await syncAccessRef.current(userRef.current);
+        if (resynced) {
+          userRef.current = resynced;
+          setUser(resynced);
+          setIsPremium(checkPremiumUnlocked(resynced));
+        }
+      } catch { /* keep going */ }
+      const livePremium = checkPremiumUnlocked(userRef.current);
       const entry = {
         id,
         profile: entryProfile,
@@ -9714,14 +9969,15 @@ export default function App() {
     if (pending.addingPlan) setAddingPlan(true);
     let live = await syncAccessRef.current(u);
     const anon = isAnonymousUser(live || u);
-    // Anonyme : 2ᵉ sync si l’essai 7j n’est pas encore dans le JWT.
-    if (anon && !checkIsPremium(live || u)) {
+    // Essai 7j : 2ᵉ sync si le JWT n’a pas encore le grant.
+    if (!checkIsPremium(live || u) && shouldAwaitCardlessTrial(live || u)) {
       try {
         await new Promise((r) => setTimeout(r, 450));
         live = (await syncAccessRef.current(live || u)) || live;
       } catch { /* ignore */ }
     }
-    const needsPaywall = !anon && !checkIsPremium(live || u);
+    const awaitingTrial = shouldAwaitCardlessTrial(live || u);
+    const needsPaywall = !anon && !checkIsPremium(live || u) && !awaitingTrial;
     // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
       planGenerationInFlightRef.current = false;
@@ -9729,7 +9985,7 @@ export default function App() {
       setScreen("app");
       return true;
     }
-    if (pending.addingPlan && anon && !checkIsPremium(live || u)) {
+    if (pending.addingPlan && anon && !checkIsPremium(live || u) && !awaitingTrial) {
       planGenerationInFlightRef.current = false;
       setShowSaveAccount(true);
       setScreen("app");
@@ -11238,7 +11494,7 @@ export default function App() {
           // Recharge les données utilisateur après reset
           supabase.auth.getUser().then(({ data }) => {
             const u = data?.user;
-            if (u) { setUser(u); setIsPremium(checkIsPremium(u)); loadUserData(u.id, checkIsPremium(u)); }
+            if (u) { setUser(u); setIsPremium(checkPremiumUnlocked(u)); loadUserData(u.id, checkPremiumUnlocked(u)); }
           });
         }} />
       </div>
@@ -11255,7 +11511,7 @@ export default function App() {
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
           onNavigateMode={handleAuthNavigateMode}
-          onStartQuiz={exitAuthToQuiz}
+          onStartQuiz={plans.length > 0 ? undefined : exitAuthToQuiz}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />
@@ -11334,45 +11590,21 @@ export default function App() {
     <>
       <style>{css}</style>
       <div className="myswym-app">
-        {/* Anonyme avec plan : nudge conversion (essai déjà ouvert, plan conservé). */}
-        {isAnonymousUser(user) && plans.length > 0 && (
-          <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ flex: 1, lineHeight: 1.3 }}>
-              Sauvegarde ton plan : crée ton compte pour le retrouver partout
-            </span>
-            <button onClick={() => setShowSaveAccount(true)} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-              Créer mon compte
-            </button>
-            </div>
-          </div>
-        )}
-        {!user && plans.length > 0 && (
-          <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ flex: 1, lineHeight: 1.3 }}>
-              Sauvegarde ton plan pour le retrouver sur tous tes appareils
-            </span>
-            <button onClick={() => { authOpenedFromUrlRef.current = false; openAuth("register"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-              Créer mon compte
-            </button>
-            </div>
-          </div>
-        )}
         {user && isPremium && accessState.status === "trial" && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 2 && activeTab !== "home" && (
-          <div style={{ background: G.blueLight, borderBottom: `1px solid ${G.greyLight}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: G.blue }}>
-              <span style={{ flex: 1, lineHeight: 1.35 }}>
+          <div className="ms-convert-banner ms-convert-banner--soft" role="region" aria-label="Essai bientôt terminé">
+            <div className="app-shell ms-convert-banner-inner">
+              <span className="ms-convert-banner-text">
                 {accessState.trialDaysLeft === 1
                   ? "Dernier jour d’essai, demain tes séances se mettent en pause. Abonne-toi pour garder tes plans."
                   : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite tes séances se mettent en pause.`}
               </span>
-              <button type="button" onClick={() => openUpgrade("trial_expired")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              <button type="button" className="ms-convert-banner-cta ms-convert-banner-cta--inverse" onClick={() => openUpgrade("trial_expired")}>
                 S’abonner
               </button>
             </div>
           </div>
         )}
+        <div className="myswym-app-main">
         {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
@@ -11571,19 +11803,16 @@ export default function App() {
         {showSaveAccount && (
           <SaveAccountSheet
             open={showSaveAccount}
-            onDismiss={() => setShowSaveAccount(false)}
+            onDismiss={dismissSaveAccountSheet}
             onConverted={(u) => {
               setShowSaveAccount(false);
+              clearSaveAccountSnooze(u?.id || user?.id);
               if (u) {
                 setUser(u);
                 void syncAccessRef.current(u);
               }
             }}
-            onEmail={() => {
-              setShowSaveAccount(false);
-              authOpenedFromUrlRef.current = false;
-              openAuth("register");
-            }}
+            onEmail={openCreateAccountFromSheet}
           />
         )}
         {showWhatsNew && !showPlanReady && !showSaveAccount && !showUpgrade && (
@@ -11622,6 +11851,7 @@ export default function App() {
             onCancel={() => setDeletePlanId(null)}
           />
         )}
+        </div>
       </div>
     </>
   );

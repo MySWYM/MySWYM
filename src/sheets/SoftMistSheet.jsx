@@ -1,10 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+
+const DISMISS_PX = 110;
+const DISMISS_VELOCITY = 0.65; // px/ms
 
 /**
  * Bottom sheet soft mist partagé (tips séance, éducatifs, popups app).
  * `fullscreenMobile` : quasi plein écran sous 640px (prep séance).
+ * Swipe down sur le header (handle) pour fermer quand `onClose` est fourni.
  */
 export default function SoftMistSheet({
   open = true,
@@ -19,15 +23,30 @@ export default function SoftMistSheet({
   lockScroll = true,
   zIndex = null,
   dismissOnOverlay = true,
+  swipeToDismiss = true,
   fullscreenMobile = false,
   footer = null,
 }) {
   /** Ignore le click/mouseup qui a ouvert le sheet (évite fermeture immédiate). */
   const ignoreDismissUntil = useRef(0);
+  const dragRef = useRef({
+    active: false,
+    startY: 0,
+    startT: 0,
+    dy: 0,
+    pointerId: null,
+  });
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
+  const canSwipe = Boolean(swipeToDismiss && onClose);
 
   useEffect(() => {
     if (!open) return undefined;
     ignoreDismissUntil.current = Date.now() + 350;
+    setDragY(0);
+    setDragging(false);
+    dragRef.current.active = false;
     return undefined;
   }, [open]);
 
@@ -66,6 +85,7 @@ export default function SoftMistSheet({
     "scale-in",
     "ms-soft-sheet",
     fullscreenMobile ? "ms-soft-sheet--fullscreen" : "",
+    dragging ? "is-dragging" : "",
   ].filter(Boolean).join(" ");
 
   const tryDismiss = (e) => {
@@ -75,13 +95,75 @@ export default function SoftMistSheet({
     onClose();
   };
 
+  const endDrag = (clientY) => {
+    const d = dragRef.current;
+    if (!d.active) return;
+    const dy = Math.max(0, (clientY ?? d.startY + d.dy) - d.startY);
+    const elapsed = Math.max(1, Date.now() - d.startT);
+    const velocity = dy / elapsed;
+    d.active = false;
+    d.pointerId = null;
+    setDragging(false);
+    if (dy >= DISMISS_PX || (dy > 48 && velocity >= DISMISS_VELOCITY)) {
+      setDragY(0);
+      onClose?.();
+      return;
+    }
+    setDragY(0);
+  };
+
+  const onHeadPointerDown = (e) => {
+    if (!canSwipe) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target instanceof Element && e.target.closest("button, a, input, textarea, select")) return;
+    dragRef.current = {
+      active: true,
+      startY: e.clientY,
+      startT: Date.now(),
+      dy: 0,
+      pointerId: e.pointerId,
+    };
+    setDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onHeadPointerMove = (e) => {
+    const d = dragRef.current;
+    if (!d.active || d.pointerId !== e.pointerId) return;
+    const dy = Math.max(0, e.clientY - d.startY);
+    d.dy = dy;
+    setDragY(dy);
+  };
+
+  const onHeadPointerUp = (e) => {
+    const d = dragRef.current;
+    if (!d.active || (d.pointerId != null && d.pointerId !== e.pointerId)) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    endDrag(e.clientY);
+  };
+
+  const overlayOpacity = dragging
+    ? Math.max(0.25, 1 - dragY / 280)
+    : 1;
+
   return createPortal(
     <div
       className={overlayClass}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel || title || "Dialogue"}
-      style={zIndex != null ? { zIndex } : undefined}
+      style={{
+        ...(zIndex != null ? { zIndex } : {}),
+        ...(dragging ? { opacity: overlayOpacity, transition: "none" } : {}),
+      }}
       onMouseDown={tryDismiss}
       onClick={tryDismiss}
     >
@@ -89,9 +171,27 @@ export default function SoftMistSheet({
         className={panelClass}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
+        style={{
+          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          transition: dragging ? "none" : "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)",
+          animation: dragging ? "none" : undefined,
+          willChange: dragging || dragY > 0 ? "transform" : undefined,
+        }}
       >
-        <div className="ms-soft-sheet-head">
-          <div className="ms-sheet-handle" />
+        <div
+          className="ms-soft-sheet-head"
+          onPointerDown={onHeadPointerDown}
+          onPointerMove={onHeadPointerMove}
+          onPointerUp={onHeadPointerUp}
+          onPointerCancel={onHeadPointerUp}
+          style={canSwipe ? {
+            touchAction: "none",
+            cursor: dragging ? "grabbing" : "grab",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+          } : undefined}
+        >
+          <div className="ms-sheet-handle" aria-hidden />
           <div className="ms-soft-sheet-head-row">
             <div style={{ minWidth: 0, flex: 1 }}>
               {eyebrow ? <div className="ms-soft-sheet-eyebrow">{eyebrow}</div> : null}

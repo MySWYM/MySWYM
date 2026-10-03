@@ -691,7 +691,7 @@ export default function ProfileTab({
       className={iosCover ? "ios-cover-lock" : undefined}
       style={{
         minHeight: "100dvh",
-        ...(iosCover ? { height: "100dvh", overflow: "hidden" } : {}),
+        ...(iosCover ? { overflow: "hidden" } : {}),
         paddingBottom: iosCover
           ? 0
           : profileDirty
