@@ -9,6 +9,7 @@ import {
   formatLandingContactNotify,
   formatOperatorClosed,
   formatOperatorNotify,
+  formatOperatorReplyAck,
   isLandingContactNotify,
   isOperatorChat,
   isSupportKind,
@@ -189,6 +190,25 @@ test("user close notifies operator", () => {
   assert.match(text, /Marie · marie@myswym.app/);
   assert.match(text, /clôturé/);
   assert.equal(parseSupportCodeFromText(text), "deadbeef");
+});
+
+test("operator reply ack: no_tokens is web-normal, not KO", () => {
+  assert.equal(
+    formatOperatorReplyAck({ sent: 0, skipped: "no_tokens" }),
+    "Répondu · web (pas de push iOS)",
+  );
+  assert.equal(
+    formatOperatorReplyAck({ sent: 1, skipped: "" }),
+    "Répondu · push iOS ok (1)",
+  );
+  assert.equal(
+    formatOperatorReplyAck({ sent: 0, skipped: "all_failed", reason: "BadDeviceToken" }),
+    "Répondu · push iOS KO: all_failed/BadDeviceToken",
+  );
+  assert.equal(
+    formatOperatorReplyAck({ error: "exception" }),
+    "Répondu · push iOS KO: exception",
+  );
 });
 
 test("landing contact notify is email-only, not a support thread", () => {
