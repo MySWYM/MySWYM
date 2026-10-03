@@ -53,5 +53,33 @@ assert(
   nativeGuestSurface({ pathname: "/app", quizStarted: false }) === "welcome",
   "dead token is still welcome (no bounce to login)",
 );
+assert(
+  nativeGuestSurface({
+    pathname: "/app",
+    isLoggedIn: true,
+    isAnonymous: true,
+    quizStarted: true,
+  }) === "onboarding",
+  "anonymous mid-quiz stays blue funnel",
+);
+assert(
+  nativeGuestSurface({
+    pathname: "/app",
+    isLoggedIn: true,
+    isAnonymous: true,
+    quizStarted: false,
+  }) === "welcome",
+  "anonymous without plan still sees welcome",
+);
+assert(
+  nativeGuestSurface({
+    pathname: "/app",
+    isLoggedIn: true,
+    isAnonymous: true,
+    hasPlan: true,
+    quizStarted: false,
+  }) === "app",
+  "anonymous with plan uses app shell",
+);
 
 console.log("native-welcome ok");

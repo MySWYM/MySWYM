@@ -1,5 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { G } from "../theme/palette.js";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export default function ConfirmSheet({
   title,
@@ -10,17 +11,19 @@ export default function ConfirmSheet({
   icon: Icon = Trash2,
   onConfirm,
   onCancel,
+  zIndex = null,
 }) {
   return (
-    <div
-      className="sheet-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-sheet-title"
-      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    <SheetCardShell
+      onClose={onCancel}
+      overlayProps={{
+        role: "dialog",
+        "aria-modal": true,
+        "aria-labelledby": "confirm-sheet-title",
+        onClick: (e) => e.target === e.currentTarget && onCancel(),
+        ...(zIndex != null ? { style: { zIndex } } : {}),
+      }}
     >
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
         <div
           style={{
             width: 52,
@@ -92,7 +95,6 @@ export default function ConfirmSheet({
             </button>
           ) : null}
         </div>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

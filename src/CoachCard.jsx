@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { formatCoachAdaptLine } from "./lib/adapt-message.js";
 import { G } from "./theme/palette.js";
 
@@ -55,7 +56,22 @@ const COACH_MESSAGES = {
   ],
 };
 
+const COACH_KEYS = {
+  découverte_base: ["coach.d0", "coach.d1", "coach.d2"],
+  découverte_development: ["coach.ddev0", "coach.ddev1"],
+  découverte_peak: ["coach.dpeak0", "coach.dpeak1"],
+  base: ["coach.base0", "coach.base1", "coach.base2"],
+  development: ["coach.dev0", "coach.dev1"],
+  peak: ["coach.peak0", "coach.peak1"],
+  taper: ["coach.taper0"],
+  competition: ["coach.comp0"],
+  test: ["coach.test0", "coach.test1"],
+  wellness: ["coach.well0", "coach.well1"],
+  default: ["coach.default0"],
+};
+
 const CoachCard = ({ plan, profile, currentWeekIndex }) => {
+  const { t } = useTranslation("app");
   const week = plan.weeks[Math.max(0, currentWeekIndex)];
   const isDecouverte = profile?.level === "découverte";
   const adaptLine = formatCoachAdaptLine(plan);
@@ -84,12 +100,11 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
 
   // Découverte level gets its own set of simple, jargon-free messages
   const phaseKey = isDecouverte
-    ? (`découverte_${phase}` in COACH_MESSAGES ? `découverte_${phase}` : "découverte_base")
+    ? (`découverte_${phase}` in COACH_KEYS ? `découverte_${phase}` : "découverte_base")
     : phase;
-  const msgs = COACH_MESSAGES[phaseKey] || COACH_MESSAGES.default;
-  // Change de message chaque mois civil pour que ça évolue même sans progresser
-  const msgIndex = new Date().getMonth() % msgs.length;
-  const message = msgs[msgIndex];
+  const keys = COACH_KEYS[phaseKey] || COACH_KEYS.default;
+  const msgIndex = new Date().getMonth() % keys.length;
+  const message = t(keys[msgIndex]);
 
   return (
     <div style={{
@@ -115,7 +130,7 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
           </div>
         )}
         <div>
-          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Message de ton coach</div>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{t("coach.kicker")}</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: G.white, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{COACH.name}</div>
         </div>
       </div>

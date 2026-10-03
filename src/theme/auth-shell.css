@@ -1,6 +1,51 @@
 /**
  * Shell auth web (soft mist), sans nav/footer marketing.
  */
+
+/* Cases légales : cibles 48px+, espacées (évite de décocher la voisine au tap). */
+.native-auth-legal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.native-auth-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-sizing: border-box;
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.native-auth-legal.is-native .native-auth-check {
+  color: rgba(255, 255, 255, 0.88);
+  padding: 12px 2px;
+}
+
+.native-auth-check input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.native-auth-check span {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
 .ms-auth-shell {
   min-height: 100dvh;
   color: var(--ms-ink, #0f1b2d);

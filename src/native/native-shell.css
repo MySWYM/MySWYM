@@ -1,11 +1,51 @@
 html.myswym-ios,
 html.myswym-ios body {
-  overscroll-behavior-y: none;
+  /* auto : rubber-band iOS ; pas none (effet « page web »). */
+  overscroll-behavior-y: auto;
   height: 100%;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbars / indicateurs web : invisibles partout dans l’app iOS. */
+html.myswym-ios,
+html.myswym-ios * {
+  scrollbar-width: none;
+}
+
+html.myswym-ios *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent;
+}
+
+html.myswym-ios #root,
+html.myswym-ios .myswym-app,
+html.myswym-ios .ms-app-immersive {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html.myswym-ios img,
+html.myswym-ios picture,
+html.myswym-ios svg,
+html.myswym-ios video,
+html.myswym-ios canvas,
+html.myswym-ios .ms-app-immersive-bg,
+html.myswym-ios .ms-app-immersive-bg img {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  pointer-events: auto;
 }
 
 html.myswym-ios #root {
@@ -20,6 +60,46 @@ html.myswym-ios .myswym-app {
   max-width: 100%;
 }
 
+/* Bandeau essai (fin d’essai) : toujours sous le notch / Dynamic Island. */
+html.myswym-ios .ms-convert-banner {
+  padding-top: calc(10px + var(--safe-top, env(safe-area-inset-top, 0px))) !important;
+}
+
+/* Auth inscription : cases bien séparées sur iPhone. */
+html.myswym-ios .native-auth-legal.is-native {
+  gap: 2px;
+  margin-top: 4px;
+}
+
+html.myswym-ios .native-auth-legal.is-native .native-auth-check {
+  min-height: 52px;
+  padding: 14px 2px;
+  border-radius: 14px;
+}
+
+html.myswym-ios .native-auth-legal.is-native .native-auth-check:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.myswym-ios .native-auth-legal.is-native .native-auth-check input[type="checkbox"] {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-color: rgba(255, 255, 255, 0.55);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+html.myswym-ios .native-auth-legal.is-native .native-auth-check input[type="checkbox"]:checked {
+  background-color: #fff;
+  border-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23006bfd' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E");
+}
+
+html.myswym-ios {
+  --bottom-nav-h: 52px;
+}
+
 html.myswym-ios .bottom-nav {
   width: min(var(--app-max), calc(100% - 40px));
 }
@@ -32,9 +112,12 @@ html.myswym-ios select {
 }
 
 html.myswym-ios input,
-html.myswym-ios textarea {
+html.myswym-ios textarea,
+html.myswym-ios select,
+html.myswym-ios [contenteditable="true"] {
   -webkit-user-select: text;
   user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* App.jsx onboarding still reserves landing padding + logo; PublicNav is already null. */
@@ -125,13 +208,21 @@ html.myswym-ios .myswym-native-guest.is-funnel {
 }
 
 html.myswym-ios .is-funnel .native-guest-chip,
-html.myswym-ios .native-auth-funnel .native-guest-chip {
+html.myswym-ios .native-auth-funnel .native-guest-chip,
+html.myswym-ios .native-auth-funnel .native-auth-close {
   color: #fff !important;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.12) 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.42) !important;
   box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
+}
+
+html.myswym-ios .native-auth-funnel .native-auth-close {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
 }
 
 .native-auth-funnel {
@@ -284,9 +375,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: native-welcome-logo 5.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-  transform-origin: center;
-  will-change: transform;
   filter: drop-shadow(0 8px 20px rgba(15, 27, 45, 0.28));
 }
 
@@ -298,7 +386,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
 
 .native-welcome-copy {
   max-width: 320px;
-  animation: native-welcome-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
 .native-welcome-copy h1 {
@@ -331,7 +418,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
   width: 100%;
   max-width: 390px;
   margin: 0 auto;
-  animation: native-welcome-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
 
 .native-welcome-cta {
@@ -430,35 +516,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
   border-radius: 10px;
 }
 
-@keyframes native-welcome-logo {
-  0%,
-  60%,
-  100% { transform: translateY(0) rotate(0deg); }
-  15%,
-  45% { transform: translateY(-18px) rotate(0deg); }
-  30% { transform: translateY(0) rotate(0deg); }
-  85% { transform: translateY(0) rotate(360deg); }
-}
-
-@keyframes native-welcome-rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .native-welcome-logo,
-  .native-welcome-copy,
-  .native-welcome-fork-actions {
-    animation: none;
-  }
-}
-
 html.myswym-ios .myswym-native-guest .ms-contact,
 html.myswym-ios .myswym-native-guest .ms-legal-main {
   flex: 1 1 auto;
@@ -528,4 +585,21 @@ html.myswym-ios .ios-premium-bar {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+html.myswym-ios .ios-premium-bar.is-trial {
+  background: linear-gradient(135deg, #006bfd 0%, #3b8cff 100%);
+  color: #fff;
+}
+html.myswym-ios .ios-premium-bar-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.15;
+  text-align: center;
+}
+html.myswym-ios .ios-premium-bar-sub {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.88;
 }

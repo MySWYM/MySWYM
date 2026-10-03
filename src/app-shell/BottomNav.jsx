@@ -20,32 +20,41 @@ export default function BottomNav({ active, onChange, newBadge }) {
         { id: "analyse", Icon: ChartNoAxesCombined, label: t("nav.analyse") },
         { id: "history", Icon: History, label: t("nav.history") },
       ];
+  const centerSize = ios ? 40 : 48;
+  const sideW = ios ? 36 : 44;
+  const sideH = ios ? 32 : 36;
+  const iconSize = ios ? 20 : 22;
+
   return (
     <div className="bottom-nav">
-      <nav className="bottom-nav-inner" style={{ minHeight: "var(--bottom-nav-h)", padding: ios ? "10px 6px" : "8px 6px" }} aria-label={t("nav.main")}>
-        {tabs.map((t) => {
-          const isActive = active === t.id;
-          const centerOn = t.center && isActive;
+      <nav
+        className="bottom-nav-inner"
+        style={{ minHeight: "var(--bottom-nav-h)", padding: ios ? "6px 10px" : "8px 6px" }}
+        aria-label={t("nav.main")}
+      >
+        {tabs.map((tab) => {
+          const isActive = active === tab.id;
+          const centerOn = tab.center && isActive;
           const iconColor = centerOn ? G.white : isActive ? G.blue : G.grey;
           return (
             <button
-              key={t.id}
+              key={tab.id}
               type="button"
               onClick={() => {
                 playUiSound("nav");
-                onChange(t.id);
+                onChange(tab.id);
               }}
               aria-current={isActive ? "page" : undefined}
-              aria-label={t.label}
+              aria-label={tab.label}
               className={[
-                t.center ? "ms-nav-center" : "",
+                tab.center ? "ms-nav-center" : "",
                 isActive ? "is-active" : "",
               ].filter(Boolean).join(" ") || undefined}
               style={{
                 flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 2, background: "none", border: "none", outline: "none", cursor: "pointer",
+                gap: ios ? 0 : 2, background: "none", border: "none", outline: "none", cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
-                minHeight: 48, padding: "4px 2px", position: "relative",
+                minHeight: ios ? 44 : 48, padding: ios ? "2px 2px" : "4px 2px", position: "relative",
               }}
             >
               <span
@@ -55,31 +64,32 @@ export default function BottomNav({ active, onChange, newBadge }) {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: t.center ? 48 : 44,
-                  height: t.center ? 48 : 36,
+                  width: tab.center ? centerSize : sideW,
+                  height: tab.center ? centerSize : sideH,
                   borderRadius: 999,
                   background: centerOn ? G.blue : isActive ? "rgba(0, 107, 253, 0.12)" : "transparent",
                   transition: "background 0.2s ease",
                 }}
               >
-                {t.brand ? (
-                  <BrandLogo variant="mark" height={22} onDark={centerOn} alt="" />
+                {tab.brand ? (
+                  <BrandLogo variant="mark" height={ios ? 20 : 22} onDark={centerOn} alt="" />
                 ) : (
-                  <t.Icon size={22} color={iconColor} strokeWidth={isActive ? 2.2 : 1.6} style={{ transition: "all 0.2s" }} />
+                  <tab.Icon size={iconSize} color={iconColor} strokeWidth={isActive ? 2.2 : 1.6} style={{ transition: "all 0.2s" }} />
                 )}
-                {t.id === "analyse" && newBadge && (
+                {tab.id === "analyse" && newBadge && (
                   <div style={{ position: "absolute", top: 2, right: 2, width: 8, height: 8, borderRadius: "50%", background: G.coral }} />
                 )}
               </span>
-              <span style={{
-                fontSize: 10,
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? G.blue : G.grey,
-                lineHeight: 1.1,
-                marginTop: ios ? 2 : 0,
-              }}>
-                {t.label}
-              </span>
+              {!ios && (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? G.blue : G.grey,
+                  lineHeight: 1.1,
+                }}>
+                  {tab.label}
+                </span>
+              )}
             </button>
           );
         })}

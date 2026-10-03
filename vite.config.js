@@ -79,6 +79,9 @@ function natationSheetDevApi(env) {
   const id = String(env.NATATION_SHEET_ID || '')
     .replace(/"/g, '')
     .trim()
+  if (env.SUPABASE_URL) process.env.SUPABASE_URL = env.SUPABASE_URL
+  if (env.VITE_SUPABASE_URL) process.env.VITE_SUPABASE_URL = env.VITE_SUPABASE_URL
+  if (env.SUPABASE_SERVICE_ROLE_KEY) process.env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY
   return {
     name: 'natation-sheet-dev-api',
     configureServer(server) {
@@ -90,12 +93,6 @@ function natationSheetDevApi(env) {
           res.end('method_not_allowed')
           return
         }
-        if (!id) {
-          res.statusCode = 500
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'missing_NATATION_SHEET_ID' }))
-          return
-        }
         try {
           const u = new URL(url, 'http://localhost')
           const sheet = (u.searchParams.get('sheet') || '').trim()
@@ -105,19 +102,45 @@ function natationSheetDevApi(env) {
             res.end(JSON.stringify({ error: 'missing_sheet' }))
             return
           }
-          const gUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`
-          const upstream = await fetch(gUrl, { redirect: 'follow' })
-          if (!upstream.ok) {
-            res.statusCode = 502
-            res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ error: 'upstream', status: upstream.status }))
-            return
+          let csv = ''
+          let source = 'google'
+          try {
+            const { readLiveSheetCsv } = await import('./api/_lib/sheet-catalogue-read.js')
+            const live = await readLiveSheetCsv(sheet)
+            if (live?.csv) {
+              csv = live.csv
+              source = 'supabase'
+            }
+          } catch (err) {
+            if (err?.code === 'sheet_not_in_catalogue') {
+              res.statusCode = 404
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: 'sheet_not_in_catalogue', sheet }))
+              return
+            }
+            throw err
           }
-          const csv = await upstream.text()
+          if (!csv) {
+            if (!id) {
+              res.statusCode = 500
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: 'missing_NATATION_SHEET_ID' }))
+              return
+            }
+            const gUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`
+            const upstream = await fetch(gUrl, { redirect: 'follow' })
+            if (!upstream.ok) {
+              res.statusCode = 502
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: 'upstream', status: upstream.status }))
+              return
+            }
+            csv = await upstream.text()
+          }
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json; charset=utf-8')
           res.setHeader('Cache-Control', 'no-store')
-          res.end(JSON.stringify({ sheet, csv, bytes: csv.length }))
+          res.end(JSON.stringify({ sheet, csv, bytes: csv.length, source }))
         } catch (err) {
           res.statusCode = 502
           res.setHeader('Content-Type', 'application/json')

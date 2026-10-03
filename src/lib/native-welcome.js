@@ -35,9 +35,28 @@ export function clearNativeQuizStarted(store = typeof sessionStorage !== "undefi
   emitQuizEvent();
 }
 
+/** Plan déjà en cache local pour ce user (évite de masquer la welcome). */
+export function anonymousHasLocalPlan(
+  userId,
+  store = typeof localStorage !== "undefined" ? localStorage : null,
+) {
+  if (!userId || !store) return false;
+  try {
+    const raw = store.getItem(`myswym_plans_${userId}`);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Visiteur iOS. Une clé auth-token morte n’envoie pas vers /connexion :
  * session hydratée + pas connecté = welcome (ou quiz si déjà lancé).
+ *
+ * La welcome reste le 1er écran (même avec session anonyme sans plan).
+ * Anonyme + quiz → DA bleue. Anonyme + plan → app.
  *
  * @returns {"auth" | "welcome" | "onboarding" | "app"}
  */
@@ -45,11 +64,20 @@ export function nativeGuestSurface({
   pathname = "/",
   loading = false,
   isLoggedIn = false,
+  isAnonymous = false,
+  hasPlan = false,
   quizStarted = false,
 } = {}) {
   const p = String(pathname || "/");
   if (p === "/connexion" || p === "/inscription") return "auth";
   const app = p === "/app" || p.startsWith("/app/");
-  if (!app || loading || isLoggedIn) return "app";
+  if (!app || loading) return "app";
+  // Compte réel → app soft mist
+  if (isLoggedIn && !isAnonymous) return "app";
+  // Anonyme avec plan → app ; sinon welcome jusqu’à Commencer, puis onboarding
+  if (isLoggedIn && isAnonymous) {
+    if (hasPlan) return "app";
+    return quizStarted ? "onboarding" : "welcome";
+  }
   return quizStarted ? "onboarding" : "welcome";
 }

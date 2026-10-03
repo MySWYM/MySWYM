@@ -24,7 +24,7 @@ const AppleMark = () => (
 
 /**
  * Après la 1ʳᵉ séance révélée : convertir l’anonyme sans perdre le plan.
- * Essai 7j démarre au rattachement (sync-subscription).
+ * Essai 7j déjà ouvert à la création du plan (sync-subscription sur le user anonyme).
  */
 export default function SaveAccountSheet({ open, onDismiss, onConverted, onEmail }) {
   const { t } = useTranslation("onboarding");

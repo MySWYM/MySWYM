@@ -4,14 +4,19 @@
 export default function AppStatusScreen({
   title,
   body,
+  note = null,
   primaryLabel,
   onPrimary,
   secondaryLabel = null,
   onSecondary = null,
   tertiaryLabel = null,
   onTertiary = null,
+  linkLabel = null,
+  linkHref = null,
   primaryDisabled = false,
   primaryBusyLabel = null,
+  /** false sur l’écran d’erreur : évite qu’un tap fantôme recharge l’app. */
+  primaryAutoFocus = true,
   meta = null,
   brand = true,
   role = "alertdialog",
@@ -40,13 +45,18 @@ export default function AppStatusScreen({
           {title}
         </h1>
         {body ? <p className="ms-status-body">{body}</p> : null}
+        {note ? (
+          <p className="ms-status-body" style={{ marginTop: 8, fontWeight: 600 }}>
+            {note}
+          </p>
+        ) : null}
         {primaryLabel && onPrimary ? (
           <button
             type="button"
             className="ms-status-cta"
             onClick={onPrimary}
             disabled={primaryDisabled}
-            autoFocus
+            autoFocus={primaryAutoFocus}
           >
             {busy ? primaryBusyLabel : primaryLabel}
           </button>
@@ -68,6 +78,11 @@ export default function AppStatusScreen({
           >
             {tertiaryLabel}
           </button>
+        ) : null}
+        {linkLabel && linkHref ? (
+          <a className="ms-status-secondary" href={linkHref}>
+            {linkLabel}
+          </a>
         ) : null}
         {meta ? <p className="ms-status-meta">{meta}</p> : null}
       </div>

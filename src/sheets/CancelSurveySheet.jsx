@@ -1,16 +1,22 @@
+import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export default function CancelSurveySheet({ onChoose, onSkip }) {
+  const { t } = useTranslation("app");
   const reasons = [
-    { id: "price", label: "Trop cher" },
-    { id: "pause", label: "Pause / pas le temps" },
-    { id: "hard", label: "Trop dur / pas adapté" },
-    { id: "other", label: "Autre" },
+    { id: "price", label: t("cancel.price") },
+    { id: "pause", label: t("cancel.pause") },
+    { id: "hard", label: t("cancel.hard") },
+    { id: "other", label: t("cancel.other") },
   ];
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
+    <SheetCardShell
+      onClose={onSkip}
+      overlayProps={{
+        onClick: (e) => e.target === e.currentTarget && onSkip(),
+      }}
+    >
         <h3
           style={{
             fontFamily: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
@@ -23,10 +29,10 @@ export default function CancelSurveySheet({ onChoose, onSkip }) {
             textAlign: "center",
           }}
         >
-          Avant de partir
+          {t("cancel.title")}
         </h3>
         <p style={{ color: G.grey, fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 1.55 }}>
-          Une raison rapide (optionnel), ça nous aide à améliorer MySWYM.
+          {t("cancel.lead")}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
           {reasons.map((r) => (
@@ -66,9 +72,8 @@ export default function CancelSurveySheet({ onChoose, onSkip }) {
             minHeight: 44,
           }}
         >
-          Continuer vers Stripe
+          {t("cancel.stripe")}
         </button>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

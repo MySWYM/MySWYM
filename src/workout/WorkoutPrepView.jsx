@@ -65,13 +65,30 @@ export default function WorkoutPrepView({
   planId = null,
   showProvenance = true,
 }) {
-  const view = useMemo(() => buildWorkoutView(session), [session]);
+  const view = useMemo(() => {
+    try {
+      return buildWorkoutView(session && typeof session === "object" ? session : {});
+    } catch (err) {
+      if (import.meta.env?.DEV) console.error("[WorkoutPrepView]", err);
+      return buildWorkoutView({
+        title: session?.title || "Séance",
+        type: session?.type || null,
+        distance: session?.distance || null,
+        details: [],
+      });
+    }
+  }, [session]);
   const tSwim = useSessionText();
   const [drill, setDrill] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
+  const [watchReadyHint, setWatchReadyHint] = useState(false);
   const locked = !isPremium || lockedPreview;
   const nativeIos = isNativeIos();
+
+  useEffect(() => {
+    setWatchReadyHint(false);
+  }, [session]);
 
   const provenance = useMemo(
     () => buildSessionProvenance(session, { loopOrdinal: loopCursor, profile, planId }),
@@ -173,7 +190,7 @@ export default function WorkoutPrepView({
               )}
               {header.intensityCue && (
                 <div style={{ fontSize: 13, color: G.grey, fontWeight: 600 }}>
-                  Objectif · {header.intensityCue.charAt(0).toUpperCase() + header.intensityCue.slice(1)}
+                  Objectif · {String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1)}
                 </div>
               )}
             </div>
@@ -190,7 +207,7 @@ export default function WorkoutPrepView({
           )}
           {header.intensityCue && (
             <div className="ms-workout-meta-line">
-              Objectif · {header.intensityCue.charAt(0).toUpperCase() + header.intensityCue.slice(1)}
+              Objectif · {String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1)}
             </div>
           )}
         </div>
@@ -321,36 +338,67 @@ export default function WorkoutPrepView({
         {nativeIos ? "Partager / Imprimer" : "Imprimer la fiche"}
       </button>
 
-      <button
-        type="button"
-        className="ms-workout-secondary"
-        disabled={watchBusy}
-        onClick={async () => {
-          if (locked) {
-            onUpgrade?.("session_locked");
-            return;
-          }
-          if (watchBusy) return;
-          setWatchBusy(true);
-          try {
-            const result = await downloadWatchExport(session, {
-              profile,
-              isPremium: true,
-            });
-            if (result.ok) {
-              track("watch_export_downloaded", { format: "fit", garmin: true });
+      <div style={{ marginTop: 10 }}>
+        <button
+          type="button"
+          className="ms-workout-secondary"
+          style={{ marginTop: 0 }}
+          disabled={watchBusy}
+          onClick={async () => {
+            if (locked) {
+              onUpgrade?.("session_locked");
+              return;
             }
-          } catch {
-            /* share / téléchargement refusé par le navigateur */
-          } finally {
-            setWatchBusy(false);
-          }
-        }}
-        aria-label="Envoyer la séance à la montre Garmin"
-      >
-        <Watch size={16} color="currentColor" />
-        {watchBusy ? "Préparation du fichier…" : "Envoyer à la montre"}
-      </button>
+            if (watchBusy) return;
+            setWatchBusy(true);
+            setWatchReadyHint(false);
+            try {
+              const result = await downloadWatchExport(session, {
+                profile,
+                isPremium: true,
+              });
+              if (result.ok) {
+                track("watch_export_downloaded", { format: "fit", garmin: true });
+                setWatchReadyHint(true);
+                setTimeout(() => setWatchReadyHint(false), 6000);
+              }
+            } catch {
+              /* share / téléchargement refusé par le navigateur */
+            } finally {
+              setWatchBusy(false);
+            }
+          }}
+          aria-label="Exporter la séance pour une montre Garmin"
+        >
+          <Watch size={16} color="currentColor" />
+          {watchBusy ? "Préparation du fichier…" : "Exporter pour la montre"}
+        </button>
+        <p
+          style={{
+            margin: "8px 2px 0",
+            fontSize: 12,
+            fontWeight: 500,
+            color: G.grey,
+            lineHeight: 1.45,
+          }}
+        >
+          Fichier Garmin à importer dans Garmin Connect. Pas pour Apple Watch.
+        </p>
+        {watchReadyHint && (
+          <p
+            role="status"
+            style={{
+              margin: "8px 2px 0",
+              fontSize: 12,
+              fontWeight: 700,
+              color: G.blue || "#006bfd",
+              lineHeight: 1.45,
+            }}
+          >
+            Fichier prêt. Garmin Connect → Entraînements → Importer.
+          </p>
+        )}
+      </div>
 
       {drill && (
         <DrillInfoSheet

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { Lock, Waves } from "lucide-react";
 import { G } from "./theme/palette.js";
@@ -109,6 +110,7 @@ export default function AnalyseTab({
   activePlanId = null,
   accessState = null,
 }) {
+  const { t } = useTranslation("app");
   const { MonAllureCard, StravaSection } = getTabUi();
   const [mainTab, setMainTab] = useState("progress");
   const [detailTab, setDetailTab] = useState("volume");
@@ -133,17 +135,17 @@ export default function AnalyseTab({
   }, [weekDayStrip]);
   const reducedMotion = useReducedMotion();
   const completionRatio = periodCompletionRatio(periodStats);
-  const ringSublabel = periodStats?.isEmptyTarget ? "à nager" : "du volume";
+  const ringSublabel = periodStats?.isEmptyTarget ? t("analyse.toSwim") : t("analyse.ofVolume");
   const iosNav = isIosSimpleNav();
   const detailOptions = iosNav
     ? [
-        { id: "volume", label: "Volume" },
-        { id: "badges", label: "Badges" },
-        { id: "history", label: "Historique" },
+        { id: "volume", label: t("analyse.volume") },
+        { id: "badges", label: t("analyse.badges") },
+        { id: "history", label: t("nav.history") },
       ]
     : [
-        { id: "volume", label: "Volume" },
-        { id: "badges", label: "Badges" },
+        { id: "volume", label: t("analyse.volume") },
+        { id: "badges", label: t("analyse.badges") },
       ];
 
   if (iosNav) {
@@ -192,7 +194,12 @@ export default function AnalyseTab({
               Volume, allures et badges : inclus dans Premium.
             </p>
             {iosNav ? (
-              <IosPremiumBar onUpgrade={onUpgrade} source="analyse" />
+              <IosPremiumBar
+                onUpgrade={onUpgrade}
+                source="analyse"
+                accessState={accessState}
+                hasSessionAccess={!!isPremium}
+              />
             ) : (
             <button
               type="button"
@@ -212,7 +219,7 @@ export default function AnalyseTab({
           <div
             className="ms-week-strip"
             role="list"
-            aria-label="Cette semaine"
+            aria-label={t("analyse.thisWeek")}
           >
             {weekDayStrip.map((day) => (
               <div
@@ -237,13 +244,13 @@ export default function AnalyseTab({
         )}
 
         <SegTrack
-          ariaLabel="Vue analyse"
+          ariaLabel={t("analyse.view")}
           value={mainTab}
           onChange={setMainTab}
           options={[
-            { id: "progress", label: "Progression" },
-            { id: "pace", label: "Allure" },
-            { id: "connect", label: "Connexions" },
+            { id: "progress", label: t("analyse.progress") },
+            { id: "pace", label: t("analyse.pace") },
+            { id: "connect", label: t("analyse.connect") },
           ]}
         />
 
@@ -274,19 +281,19 @@ export default function AnalyseTab({
               animate="show"
             >
               <GlassStat
-                label="Séances"
+                label={t("analyse.sessions")}
                 numeric
                 value={weekSessionStats.done}
-                hint={weekSessionStats.planned > 0 ? `/ ${weekSessionStats.planned}` : "cette semaine"}
+                hint={weekSessionStats.planned > 0 ? `/ ${weekSessionStats.planned}` : t("analyse.thisWeek")}
               />
               <GlassStat
-                label="Série"
+                label={t("analyse.streak")}
                 numeric
                 value={stats.streak || 0}
                 hint={(stats.streak || 0) > 0 ? "en cours" : "à lancer"}
               />
               <GlassStat
-                label="Volume"
+                label={t("analyse.volume")}
                 numeric
                 value={(stats.totalMeters || 0) / 1000}
                 format={(n) => n.toFixed(1)}

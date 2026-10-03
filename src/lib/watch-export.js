@@ -403,7 +403,7 @@ export async function downloadWatchExport(session, opts = {}) {
       await navigator.share({
         files: [nativeFile],
         title: "Séance MySWYM",
-        text: "Garmin Connect : Entraînements, puis Importer.",
+        text: "Fichier prêt. Garmin Connect → Entraînements → Importer.",
       });
       shared = true;
     }

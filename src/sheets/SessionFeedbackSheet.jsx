@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import { FaceGood, FaceMid, FaceTired } from "./feedback-faces.jsx";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export const SESSION_FEEDBACK_TAGS = [
   "trop long",
@@ -20,6 +22,7 @@ const SESSION_SMILEY_OPTS = [
 ];
 
 export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, onSkip, isPremium, healthConsent = false }) {
+  const { t } = useTranslation("app");
   const [rating, setRating] = useState(initial?.rating ?? null);
   const [tags, setTags] = useState(() => Array.isArray(initial?.tags) ? [...initial.tags] : []);
   const [comment, setComment] = useState(initial?.comment ?? "");
@@ -43,15 +46,12 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
   };
 
   return (
-    <div className="sheet-overlay">
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
-
+    <SheetCardShell onClose={onSkip}>
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
-          Retour séance
+          {t("feedback.kicker")}
         </p>
         <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink, textAlign: "center", marginBottom: 6 }}>
-          Comment c'était ?
+          {t("feedback.title")}
         </h3>
         {sessionTitle && (
           <p style={{ color: G.grey, fontSize: 13, textAlign: "center", marginBottom: 8, lineHeight: 1.4 }}>
@@ -59,9 +59,7 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
           </p>
         )}
         <p style={{ color: G.grey, fontSize: 13, textAlign: "center", marginBottom: isPremium ? 20 : 10, lineHeight: 1.45 }}>
-          {isPremium
-            ? "Ton ressenti affine le volume des prochaines séances."
-            : "Ton avis nous aide à améliorer les séances."}
+          {isPremium ? t("feedback.premiumHint") : t("feedback.freeHint")}
         </p>
         {!isPremium && (
           <p style={{ color: G.gold, fontSize: 12, fontWeight: 600, textAlign: "center", marginBottom: 20, background: G.goldLight, borderRadius: 10, padding: "8px 12px", lineHeight: 1.45 }}>
@@ -87,14 +85,19 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
                 }}
               >
                 <o.Face size={44} color={o.color} />
-                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? o.color : G.ink }}>{o.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? o.color : G.ink }}>{({
+                  easy: t("feedback.easy"),
+                  ok: t("feedback.ok"),
+                  hard: t("feedback.hard"),
+                  too_hard: t("feedback.tooHard"),
+                })[o.id]}</div>
               </button>
             );
           })}
         </div>
 
         <p style={{ fontSize: 12, fontWeight: 700, color: G.inkLight, marginBottom: 10 }}>
-          Qu'est-ce qui cloche (ou pas) ?
+          {t("feedback.what")}
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           {availableTags.map(tag => {
@@ -111,7 +114,15 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
                   color: on ? G.blue : G.grey, fontSize: 12, fontWeight: 600,
                 }}
               >
-                {tag}
+                {({
+                  "trop long": t("feedback.tag.long"),
+                  "trop court": t("feedback.tag.short"),
+                  "incompréhensible": t("feedback.tag.unclear"),
+                  "éducatifs top": t("feedback.tag.drills"),
+                  "trop intensif": t("feedback.tag.intense"),
+                  "j'ai adoré": t("feedback.tag.loved"),
+                  "douleur / gêne": t("feedback.tag.pain"),
+                })[tag] || tag}
               </button>
             );
           })}
@@ -126,7 +137,7 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
           type="text"
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Un commentaire ? (optionnel)"
+          placeholder={t("feedback.comment")}
           maxLength={280}
           style={{
             width: "100%", boxSizing: "border-box",
@@ -148,12 +159,11 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
             marginBottom: 8,
           }}
         >
-          Enregistrer
+          {t("settings.save")}
         </button>
         <button type="button" onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
-          Passer
+          {t("feedback.skip")}
         </button>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

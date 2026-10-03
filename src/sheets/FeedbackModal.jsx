@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { G } from "../theme/palette.js";
 import { SMILEY_OPTS } from "./feedback-faces.jsx";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export default function FeedbackModal({ weekNumber, onSubmit, onSkip, isPremium }) {
   const [selected, setSelected] = useState(null);
@@ -14,10 +15,7 @@ export default function FeedbackModal({ weekNumber, onSubmit, onSkip, isPremium 
   };
 
   return (
-    <div className="sheet-overlay">
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
-
+    <SheetCardShell onClose={onSkip}>
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           Semaine {weekNumber} terminée
         </p>
@@ -61,7 +59,6 @@ export default function FeedbackModal({ weekNumber, onSubmit, onSkip, isPremium 
         <button onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
           Passer
         </button>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

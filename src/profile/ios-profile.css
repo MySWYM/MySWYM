@@ -498,6 +498,19 @@
   box-sizing: border-box;
 }
 
+html.myswym-ios .ios-cover-lock {
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+/* Avec bandeau conversion : remplir la zone sous le bandeau, pas 100dvh. */
+.myswym-app:has(> .ms-convert-banner) .ios-lock-pane,
+.myswym-app:has(> .ms-convert-banner) .ios-cover-lock {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+}
+
 .ios-lock-pane .ms-profile-subpanel-toolbar {
   flex-shrink: 0;
 }
@@ -507,8 +520,9 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: hidden;
-  overscroll-behavior: none;
+  overscroll-behavior-y: contain;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  scrollbar-width: none;
 }
 
 .ios-lock-pane .ms-profile-subpanel-body.is-scrollable {
@@ -516,8 +530,15 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.ios-lock-pane .ms-profile-subpanel-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 html.myswym-ios .ios-cover-lock {
-  overscroll-behavior: none;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
 }
 
 .ios-settings-lead {

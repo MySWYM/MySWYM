@@ -2,8 +2,30 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
-import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup, isAnonymousUser } from "./lib/access.js";
+import {
+  ACCESS_STATUS,
+  getAccessState,
+  isAccessMetadataPending,
+  isLiveStripeBilling,
+  shouldShowTrialFreeze,
+  isFreshSignup,
+  isAnonymousUser,
+  shouldAwaitCardlessTrial,
+  hasUnlockedPremiumAccess,
+} from "./lib/access.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
+import {
+  clearSaveAccountSnooze,
+  isSaveAccountSnoozed,
+  releaseSaveAccountSnoozeOnResume,
+  snoozeSaveAccountPrompt,
+} from "./lib/save-account-prompt.js";
+import {
+  markNativeQuizStarted,
+  clearNativeQuizStarted,
+  nativeQuizStarted,
+  NATIVE_QUIZ_EVENT,
+} from "./lib/native-welcome.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
 import {
@@ -176,9 +198,11 @@ import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
 import SaveAccountSheet from "./sheets/SaveAccountSheet.jsx";
 import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
+import SoftMistSheet from "./sheets/SoftMistSheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
+import { useSheetSwipeDismiss } from "./sheets/useSheetSwipeDismiss.js";
 import WhatsNewSheet, {
   hasSeenWhatsNew,
   shouldShowWhatsNew,
@@ -233,7 +257,7 @@ import {
   copySessionText,
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
-import { copyStoryStickerPng, createStoryStickerCanvas, matchStravaSwim } from "./lib/session-story-sticker.js";
+import { copyStoryStickerPng, createStoryStickerCanvas, matchStravaSwim, savePngToPhotos } from "./lib/session-story-sticker.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
@@ -306,6 +330,11 @@ const css = `
     -webkit-font-smoothing: antialiased;
     min-height: 100dvh;
     transition: background-color 0.25s ease, color 0.2s ease;
+  }
+  /* iOS app : rubber-band natif (le none web tue le bounce). */
+  html.myswym-ios body {
+    overscroll-behavior-y: auto;
+    overscroll-behavior-x: none;
   }
   #root { min-height: 100dvh; }
   h1, h2, h3 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
@@ -479,10 +508,101 @@ const css = `
       radial-gradient(ellipse 90% 55% at 50% -15%, rgba(126, 184, 245, 0.45), transparent 55%),
       var(--myswym-bg);
   }
+  /* Bandeau conversion : le shell flex garde le bas de page accessible. */
+  .myswym-app:has(> .ms-convert-banner) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .myswym-app:has(> .ms-convert-banner) > .ms-convert-banner {
+    position: relative;
+    top: auto;
+    flex: 0 0 auto;
+  }
+  .myswym-app:has(> .ms-convert-banner) > .myswym-app-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  /* Paramètres / panneaux plein écran : un seul scroll interne, pas de page coupée. */
+  .myswym-app:has(> .ms-convert-banner):has(.ios-cover-lock) > .myswym-app-main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .myswym-app:has(> .ms-convert-banner):has(.ios-cover-lock) > .myswym-app-main > .ms-app-immersive {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+  }
+  .myswym-app:has(> .ms-convert-banner) .ios-cover-lock,
+  .myswym-app:has(> .ms-convert-banner) .ios-lock-pane {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+  }
+  .myswym-app:has(> .ms-convert-banner) .ms-profile-subpanel-toolbar {
+    padding-top: 8px;
+  }
   .sticky-app-bar {
     position: sticky;
     top: 0;
     z-index: 40;
+  }
+  /* Bandeau conversion : full-bleed + safe-area (pas sous la status bar). */
+  .ms-convert-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: ${G.blue};
+    color: ${G.white};
+    padding: 10px 0;
+    padding-top: calc(10px + var(--safe-top, env(safe-area-inset-top, 0px)));
+  }
+  .ms-convert-banner--soft {
+    background: ${G.blueLight};
+    color: ${G.blue};
+    border-bottom: 1px solid ${G.greyLight};
+  }
+  .ms-convert-banner-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ms-convert-banner-text {
+    flex: 1;
+    line-height: 1.3;
+    min-width: 0;
+  }
+  .ms-convert-banner-cta {
+    flex-shrink: 0;
+    background: ${G.white};
+    color: ${G.blue};
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ms-convert-banner-cta--inverse {
+    background: ${G.blue};
+    color: ${G.white};
+    padding: 7px 12px;
+    font-size: 12px;
   }
 
   /* Tablette : même UX téléphone, colonne centrée + nav flottante */
@@ -607,6 +727,8 @@ const getPlanSecondaryLabel = (entry) => {
 // Premium = app_metadata uniquement (écrit par service role / Stripe).
 // user_metadata est falsifiable par le client → jamais utilisé pour l'accès.
 const checkIsPremium = (user) => getAccessState(user).hasPremiumAccess;
+/** Premium live ou attente essai 7j (ne pas verrouiller avant le grant). */
+const checkPremiumUnlocked = (user) => hasUnlockedPremiumAccess(user);
 
 const syncSubscriptionFromStripe = async () => {
   const { data: refreshData } = await supabase.auth.refreshSession();
@@ -3265,6 +3387,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const [copied, setCopied] = useState(false);
   const [stickerUrl, setStickerUrl] = useState("");
   const [stickerState, setStickerState] = useState("idle");
+  const [downloadState, setDownloadState] = useState("idle");
   const [stravaSwim, setStravaSwim] = useState(null);
 
   useEffect(() => {
@@ -3300,6 +3423,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     const canvas = createStoryStickerCanvas(session, stravaSwim);
     setStickerUrl(canvas ? canvas.toDataURL("image/png") : "");
     setStickerState("idle");
+    setDownloadState("idle");
   }, [session, stravaSwim]);
 
   const handleCopySticker = async () => {
@@ -3317,16 +3441,25 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     badgeLabel: badgeMeta?.label || null,
   });
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const canvas = createShareCanvas(session, goalLabel, canvasBadge, invite);
-    const link = document.createElement("a");
-    link.download = "myswym-seance.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    if (!canvas) {
+      setDownloadState("failed");
+      return;
+    }
+    setDownloadState("saving");
+    try {
+      await savePngToPhotos(canvas, "myswym-seance.png");
+      setDownloadState("saved");
+      setTimeout(() => setDownloadState("idle"), 2500);
+    } catch {
+      setDownloadState("failed");
+      setTimeout(() => setDownloadState("idle"), 3000);
+    }
   };
   const handleShare = async () => {
     const canvas = createShareCanvas(session, goalLabel, canvasBadge, invite);
-    if (!navigator.share) { handleDownload(); return; }
+    if (!navigator.share) { void handleDownload(); return; }
     canvas.toBlob(async (blob) => {
       try {
         const file = new File([blob], "myswym-seance.png", { type: "image/png" });
@@ -3340,7 +3473,10 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           return;
         }
         await navigator.share(payload);
-      } catch { handleDownload(); }
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+        void handleDownload();
+      }
     });
   };
   const handleCopyStrava = async () => {
@@ -3352,24 +3488,13 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   };
 
   return (
-    <div
-      className="sheet-overlay ms-soft-overlay ms-soft-overlay--stacked"
-      style={{ zIndex: 560 }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <SoftMistSheet
+      open
+      title="Partage ta séance"
+      onClose={onClose}
+      zIndex={560}
+      ariaLabel="Partage ta séance"
     >
-      <div className="sheet-panel scale-in ms-soft-sheet" style={{ paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
-        <div className="ms-soft-sheet-head">
-          <div className="ms-sheet-handle" />
-          <div className="ms-soft-sheet-head-row">
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <h3 className="ms-soft-sheet-title" style={{ margin: 0 }}>Partage ta séance</h3>
-            </div>
-            <button type="button" onClick={onClose} aria-label="Fermer" className="ms-soft-sheet-close">
-              <X size={18} color="currentColor" />
-            </button>
-          </div>
-        </div>
-        <div className="ms-soft-sheet-body">
         {stickerUrl && (
           <div style={{ marginBottom: 16 }}>
             <div style={{
@@ -3438,11 +3563,34 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           )}
         </div>
         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-          <Btn onClick={handleDownload} variant="secondary" style={{ flex: 1 }}>Télécharger</Btn>
+          <Btn
+            onClick={() => { void handleDownload(); }}
+            variant="secondary"
+            style={{ flex: 1 }}
+            disabled={downloadState === "saving"}
+          >
+            {downloadState === "saving"
+              ? "Enregistrement…"
+              : downloadState === "saved"
+                ? "Dans Photos ✓"
+                : downloadState === "failed"
+                  ? "Échec, réessaie"
+                  : "Enregistrer"}
+          </Btn>
           <Btn onClick={handleShare} variant="blue" style={{ flex: 1 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Share2 size={14} /> Partager</span>
           </Btn>
         </div>
+        {downloadState === "saved" ? (
+          <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "0 0 10px", textAlign: "center" }}>
+            Image enregistrée dans tes Photos.
+          </p>
+        ) : null}
+        {downloadState === "failed" ? (
+          <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "0 0 10px", textAlign: "center" }}>
+            Autorise Photos dans Réglages si besoin, puis réessaie.
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={handleCopyStrava}
@@ -3459,9 +3607,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
             : <><Copy size={14} /> Copier pour Strava / WhatsApp</>}
         </button>
         <button onClick={onClose} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Fermer</button>
-        </div>
-      </div>
-    </div>
+    </SoftMistSheet>
   );
 };
 
@@ -3471,15 +3617,29 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
 // ── BADGE CÉLÉBRATION + EXPORT + SEMAINE ───────────────────────────────────
 const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
   const b = BADGE_DEFS.find((d) => d.id === badgeId);
+  const { headProps, panelStyle, overlayStyle, panelClassExtra } = useSheetSwipeDismiss(onClose);
   if (!b) return null;
   const Icon = b.icon;
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose?.()}>
-      <div className="sheet-panel scale-in" style={{
-        background: G.surface, borderRadius: "24px 24px 0 0", padding: "32px 22px",
-        paddingBottom: "max(28px, env(safe-area-inset-bottom))", textAlign: "center",
-      }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 28px" }} />
+    <div
+      className="sheet-overlay"
+      style={overlayStyle}
+      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        className={`sheet-panel scale-in ${panelClassExtra}`.trim()}
+        style={{
+          background: G.surface,
+          borderRadius: "24px 24px 0 0",
+          padding: "32px 22px",
+          paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+          textAlign: "center",
+          ...panelStyle,
+        }}
+      >
+        <div {...headProps} style={{ ...(headProps.style || {}), margin: "0 auto 28px" }}>
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto" }} />
+        </div>
         <div className="badge-pop" style={{
           width: 88, height: 88, borderRadius: "50%", margin: "0 auto 18px",
           background: b.color, display: "flex", alignItems: "center", justifyContent: "center",
@@ -4807,6 +4967,7 @@ const ProgressionLoopView = ({
     : (loopDisplaySession(plan) || weekSessions[0]);
   const resolved = session ? isSessionResolved(session) : true;
   const [poolOpen, setPoolOpen] = useState(false);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
 
   const loopPad = {
     paddingBottom: embed ? 16 : "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
@@ -4948,7 +5109,7 @@ const ProgressionLoopView = ({
             </button>
             <button
               type="button"
-              onClick={() => onComplete("not_done")}
+              onClick={() => setConfirmAbandon(true)}
               style={{
                 width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
                 border: `1.5px solid ${G.greyLight}`, background: G.surface,
@@ -4958,6 +5119,23 @@ const ProgressionLoopView = ({
               L&apos;abandonner
             </button>
           </div>
+        )}
+
+        {confirmAbandon && (
+          <ConfirmSheet
+            title="Abandonner cette séance ?"
+            message="Elle quitte ton plan et va dans l’Historique comme abandonnée. La suivante prend sa place."
+            confirmLabel="Oui, abandonner"
+            cancelLabel="Non, garder la séance"
+            destructive
+            icon={X}
+            zIndex={520}
+            onConfirm={() => {
+              setConfirmAbandon(false);
+              onComplete("not_done");
+            }}
+            onCancel={() => setConfirmAbandon(false)}
+          />
         )}
 
         {resolved && isPremium && (
@@ -5060,14 +5238,15 @@ registerAppTabUi();
 
 // ── BADGES TAB ─────────────────────────────────────────────────────────────
 const BadgesTab = ({ plan }) => {
+  const { t } = useTranslation("app");
   const stats = computeStats(plan);
   const earned = checkBadges(stats);
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
+        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>{t("badge.kicker")}</div>
         <h1 className="fade-up-1" style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
-        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
+        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{t("badge.unlockedCount", { done: earned.length, total: BADGE_DEFS.length })}</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
             <div key={b.id} style={{ width: 32, height: 32, borderRadius: "50%", background: earned.includes(b.id) ? b.color : "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", filter: earned.includes(b.id) ? "none" : "opacity(0.35)" }}>
@@ -5079,15 +5258,15 @@ const BadgesTab = ({ plan }) => {
       <div style={{ padding: "20px 16px 0" }}>
         {earned.length > 0 && (
           <>
-            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>{t("badge.unlocked")}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
                 <div key={b.id} className="scale-in" style={{ background: G.surface, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: `${b.color}18`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                     <b.icon size={24} color={b.color} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 3 }}>{b.label}</div>
-                  <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.4 }}>{b.desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 3 }}>{t(`badge.${b.id}.label`)}</div>
+                  <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.4 }}>{t(`badge.${b.id}.desc`)}</div>
                 </div>
               ))}
             </div>
@@ -5095,15 +5274,15 @@ const BadgesTab = ({ plan }) => {
         )}
         {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
           <>
-            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>{t("badge.locked")}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
                 <div key={b.id} style={{ background: G.greyXLight, borderRadius: 16, padding: 16, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                     <Lock size={20} color={G.greyMid} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: G.greyMid, marginBottom: 3 }}>{b.label}</div>
-                  <div style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.4 }}>{b.desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: G.greyMid, marginBottom: 3 }}>{t(`badge.${b.id}.label`)}</div>
+                  <div style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.4 }}>{t(`badge.${b.id}.desc`)}</div>
                 </div>
               ))}
             </div>
@@ -7765,13 +7944,20 @@ export default function App() {
         if (next) {
           userRef.current = next;
           setUser(next);
-          setIsPremium(checkIsPremium(next));
+          setIsPremium(checkPremiumUnlocked(next));
         }
-        setAccessSynced(true);
+        // Ne pas « sync OK » tant que l’essai 7j peut encore arriver (évite le gel précoce).
+        if (!next || checkIsPremium(next) || !shouldAwaitCardlessTrial(next)) {
+          setAccessSynced(true);
+        }
         return next;
       } catch {
-        setAccessSynced(true);
-        return fallbackUser;
+        const fallback = fallbackUser;
+        if (fallback) setIsPremium(checkPremiumUnlocked(fallback));
+        if (!fallback || checkIsPremium(fallback) || !shouldAwaitCardlessTrial(fallback)) {
+          setAccessSynced(true);
+        }
+        return fallback;
       } finally {
         accessSyncInFlightRef.current = null;
       }
@@ -7783,18 +7969,19 @@ export default function App() {
 
   // Valeurs dérivées du plan actif
   const accessState = getAccessState(user);
+  const awaitCardlessTrial = shouldAwaitCardlessTrial(user);
   const waitingForAccess = Boolean(
     user
     && !accessSynced
     && !accessState.hasPremiumAccess
-    && (isAccessMetadataPending(user) || isFreshSignup(user))
+    && awaitCardlessTrial
   );
   const isFrozen = shouldShowTrialFreeze(user, {
     accessSynced,
     generatingPlan: planGenerationInFlightRef.current || screen === "planReveal" || screen === "loading",
     revealActive: Boolean(planRevealActiveRef.current) || screen === "planReveal",
   });
-  const canGenerateProgram = !!user && accessState.canGenerateProgram;
+  const canGenerateProgram = !!user && (accessState.canGenerateProgram || awaitCardlessTrial);
   const canUpdateProgram = !!user && accessState.canUpdateProgram;
   const activePlanEntry = plans.find(e => e.id === activePlanId) ?? null;
   const plan            = activePlanEntry?.plan    ?? null;
@@ -7848,14 +8035,42 @@ export default function App() {
     return () => clearTimeout(t);
   }, [screen]);
 
+  // Essai 7j en cours d’écriture : retenter le sync, ne pas verrouiller les séances.
   useEffect(() => {
     if (!waitingForAccess) return undefined;
-    const t = setTimeout(() => {
+    let cancelled = false;
+    const retry = () => {
+      if (cancelled || !userRef.current) return;
+      void syncAccessRef.current(userRef.current);
+    };
+    const t1 = setTimeout(retry, 700);
+    const t2 = setTimeout(retry, 2200);
+    const t3 = setTimeout(retry, 5000);
+    const tGiveUp = setTimeout(() => {
+      if (cancelled) return;
       setAccessSynced(true);
-      showToast("Connexion lente, tu peux continuer.", 5000);
+      setIsPremium(checkPremiumUnlocked(userRef.current));
+      showToast("Essai en cours d’activation, tu peux continuer.", 5000);
     }, 12000);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(tGiveUp);
+    };
   }, [waitingForAccess]);
+
+  useEffect(() => {
+    if (!user) return;
+    setIsPremium(checkPremiumUnlocked(user));
+  }, [
+    user?.id,
+    user?.app_metadata?.subscription_status,
+    user?.app_metadata?.trial_ends_at,
+    user?.app_metadata?.trial_used,
+    user?.created_at,
+  ]);
 
   // Routes auth : /connexion, /inscription (+ anciens liens ?auth=…)
   // Priorité absolue : ces URLs ne doivent JAMAIS afficher le questionnaire.
@@ -7881,6 +8096,8 @@ export default function App() {
           setScreen("auth");
           return;
         }
+        // Compte réel tout neuf : pas de page inscription (déjà connecté).
+        // Ne jamais appliquer ça aux anonymes (déjà gérés au-dessus).
         if (isFreshSignup(user)) {
           forceAuthRef.current = false;
           authOpenedFromUrlRef.current = false;
@@ -7897,7 +8114,14 @@ export default function App() {
         });
         return;
       }
-      // Déjà connecté sur /connexion → /app, SAUF pendant une déconnexion (forceAuth déjà true).
+      // Anonyme sur /connexion : rester pour se connecter à un vrai compte (pas de bounce /app).
+      if (user && location.pathname === "/connexion" && isAnonymousUser(user)) {
+        forceAuthRef.current = true;
+        authOpenedFromUrlRef.current = true;
+        setScreen("auth");
+        return;
+      }
+      // Déjà connecté (compte réel) sur /connexion → /app, SAUF pendant une déconnexion.
       if (user && !forceAuthRef.current) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
@@ -7942,8 +8166,94 @@ export default function App() {
 
   const openAuth = (mode = "password") => {
     forceAuthRef.current = true;
+    setScreen("auth");
     navigate(mode === "register" ? "/inscription" : "/connexion");
   };
+
+  /** Sheet « Créer mon compte » → inscription (anonyme → convert, même user.id). */
+  const openCreateAccountFromSheet = () => {
+    snoozeSaveAccountPrompt(user?.id);
+    setShowSaveAccount(false);
+    authOpenedFromUrlRef.current = false;
+    openAuth("register");
+  };
+
+  const dismissSaveAccountSheet = () => {
+    snoozeSaveAccountPrompt(user?.id);
+    setShowSaveAccount(false);
+  };
+
+  /** Anonyme avec plan : bottom sheet en relance fréquente (snooze court + retour app). */
+  useEffect(() => {
+    if (screen !== "app") return undefined;
+    if (!isAnonymousUser(user) || plans.length === 0) return undefined;
+    if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
+    if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return undefined;
+    if (isSaveAccountSnoozed(user.id)) return undefined;
+    const t = window.setTimeout(() => {
+      if (isSaveAccountSnoozed(user.id)) return;
+      if (planRevealActiveRef.current || planGenerationInFlightRef.current) return;
+      setShowSaveAccount(true);
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [
+    screen,
+    user?.id,
+    plans.length,
+    showUpgrade,
+    showPlanReady,
+    showSaveAccount,
+    showWhatsNew,
+    isFrozen,
+    sessionCelebrate,
+  ]);
+
+  /** Relance à la sortie d’arrière-plan (≥ 20 min) + après une séance célébrée. */
+  useEffect(() => {
+    if (typeof window === "undefined" || !isAnonymousUser(user) || plans.length === 0) return undefined;
+    const bgAt = { current: 0 };
+    const tryShow = () => {
+      if (screen !== "app") return;
+      if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return;
+      if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return;
+      if (isSaveAccountSnoozed(user.id)) return;
+      setShowSaveAccount(true);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        bgAt.current = Date.now();
+        return;
+      }
+      if (releaseSaveAccountSnoozeOnResume(user.id, bgAt.current)) {
+        window.setTimeout(tryShow, 500);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [
+    user?.id,
+    plans.length,
+    screen,
+    showUpgrade,
+    showPlanReady,
+    showSaveAccount,
+    showWhatsNew,
+    isFrozen,
+    sessionCelebrate,
+  ]);
+
+  const prevSessionCelebrateRef = useRef(sessionCelebrate);
+  useEffect(() => {
+    const wasOpen = !!prevSessionCelebrateRef.current;
+    prevSessionCelebrateRef.current = sessionCelebrate;
+    if (!wasOpen || sessionCelebrate) return undefined;
+    if (!isAnonymousUser(user) || plans.length === 0) return undefined;
+    if (screen !== "app" || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
+    // Après une séance : relance même si snooze court (priorité conversion).
+    clearSaveAccountSnooze(user.id);
+    const t = window.setTimeout(() => setShowSaveAccount(true), 700);
+    return () => window.clearTimeout(t);
+  }, [sessionCelebrate, user?.id, plans.length, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
 
   const openUpgrade = (softContext = null) => {
     trackEvent("paywall_shown", {
@@ -8109,9 +8419,14 @@ export default function App() {
   const exitAuthToQuiz = () => {
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
+    markNativeQuizStarted();
     setScreen("onboarding");
     setStep(1);
     navigate("/app");
+    // Même fond que « Commencer » : session anonyme pour générer le plan.
+    void ensureAnonymousSession(supabase).catch((err) => {
+      if (import.meta.env.DEV) console.warn("[anon] signInAnonymously", err?.message || err);
+    });
   };
 
   const handleAuthNavigateMode = (mode) => {
@@ -8122,8 +8437,14 @@ export default function App() {
     forceAuthRef.current = false;
     const openedFromUrl = authOpenedFromUrlRef.current;
     authOpenedFromUrlRef.current = false;
-    if (plans.length > 0) {
-      setScreen("app");
+    // Déjà dans l’app (plan ou anonyme) : fermer auth → revenir à l’app, pas bloqué.
+    if (plans.length > 0 || isAnonymousUser(user)) {
+      if (plans.length === 0 && isAnonymousUser(user) && nativeQuizStarted()) {
+        setScreen("onboarding");
+      } else {
+        setScreen("app");
+        if (plans.length === 0) setActiveTab("plan");
+      }
       navigate("/app", { replace: true });
       return;
     }
@@ -8303,6 +8624,9 @@ export default function App() {
   // (plans multi-semaines uniquement, la boucle Nager & Progresser a toujours 1 semaine)
   useEffect(() => {
     if (!activePlanEntry) return;
+    // Repair semaines : abo payant seulement. Essai/gel → pas de Loading plein écran.
+    if (accessState.status !== ACCESS_STATUS.ACTIVE && accessState.status !== ACCESS_STATUS.CANCELED) return;
+    if (!accessState.hasPremiumAccess) return;
     const { plan: ap, profile: aprof } = activePlanEntry;
     if (!aprof?.goal || !ap?.weeks) return;
     if (ap.isSessionLoop || ap.isProgression || usesSessionLoop(aprof)) return;
@@ -8350,27 +8674,41 @@ export default function App() {
       }
       const u = session?.user ?? null;
       setUser(u);
-      setIsPremium(checkIsPremium(u));
+      setIsPremium(checkPremiumUnlocked(u));
       if (u) {
-        setAccessSynced(!isAccessMetadataPending(u));
-        const droppingSessionForRegister = locationRef.current.pathname === "/inscription"
-          && event === "INITIAL_SESSION";
-        // /connexion avec session → /app. /inscription + session existante : ne pas bounce
-        // (INITIAL_SESSION), le route effect déconnecte pour un vrai nouveau compte.
+        // TOKEN_REFRESHED : ne jamais redescendre accessSynced ni recharger les plans
+        // (sinon Loading plein écran / remount home au milieu d’une ouverture de séance).
+        if (event === "TOKEN_REFRESHED") {
+          if (!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u)) {
+            setAccessSynced(true);
+          }
+          setAuthLoading(false);
+          return;
+        }
+        setAccessSynced(!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u));
+        const onInscription = locationRef.current.pathname === "/inscription";
+        const onConnexion = locationRef.current.pathname === "/connexion";
+        const droppingSessionForRegister = onInscription && event === "INITIAL_SESSION";
+        // Anonyme sur /connexion ou /inscription : ne jamais rebondir vers /app
+        // (sync essai / TOKEN_REFRESHED cassait « Créer mon compte »).
+        const stayOnAuthAsAnonymous = isAnonymousUser(u) && (onConnexion || onInscription);
+        // forceAuth : ouverture explicite auth (bandeau, sheet, CTA) pendant sync.
+        const stayOnAuthExplicit = forceAuthRef.current && isAuthPath(locationRef.current.pathname);
         if (isAuthPath(locationRef.current.pathname)) {
-          if (droppingSessionForRegister) {
+          if (droppingSessionForRegister || stayOnAuthAsAnonymous || stayOnAuthExplicit) {
             forceAuthRef.current = true;
             authOpenedFromUrlRef.current = true;
+            setScreen("auth");
           } else {
             forceAuthRef.current = false;
             authOpenedFromUrlRef.current = false;
             navigate("/app", { replace: true });
           }
-        } else {
+        } else if (!forceAuthRef.current) {
           forceAuthRef.current = false;
         }
-        if (!droppingSessionForRegister) {
-          loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
+        if (!droppingSessionForRegister && !stayOnAuthAsAnonymous && !stayOnAuthExplicit) {
+          loadUserData(u.id, checkPremiumUnlocked(u)).finally(() => setAuthLoading(false));
         } else {
           setAuthLoading(false);
         }
@@ -8515,9 +8853,11 @@ export default function App() {
     });
   }, [screen, step, user?.id, activeTab, plan, addingPlan]);
 
-  // Compte connecté : ne jamais rester bloqué sur le questionnaire plein écran (perte paramètres)
+  // Compte connecté : ne jamais rester bloqué sur le questionnaire plein écran (perte paramètres).
+  // Exception : anonyme sans plan (iOS Commencer / Créer un compte) reste en DA bleue.
   useEffect(() => {
     if (!user || screen !== "onboarding") return;
+    if (isAnonymousUser(user) && plans.length === 0 && !addingPlan) return;
     if (planGenerationInFlightRef.current || planRevealActiveRef.current || readPendingOnboarding()?.profile) {
       showCoachBuildingScreen();
       return;
@@ -8528,6 +8868,27 @@ export default function App() {
     const confirmedNoPlan = plansHydratedRef.current && plans.length === 0;
     if (confirmedNoPlan || addingPlan) setActiveTab("plan");
   }, [user, screen, plans.length, addingPlan]);
+
+  // iOS : « Commencer » / flag quiz → même écran que « Créer un compte » (onboarding plein écran).
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    const syncQuizScreen = () => {
+      if (!nativeQuizStarted()) return;
+      if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) return;
+      if (planGenerationInFlightRef.current || planRevealActiveRef.current) return;
+      if ((plansRef.current?.length || 0) > 0) return;
+      forceAuthRef.current = false;
+      authOpenedFromUrlRef.current = false;
+      setScreen("onboarding");
+      setStep((s) => (s > 1 ? s : 1));
+      if (!locationRef.current.pathname.startsWith("/app")) {
+        navigate("/app", { replace: true });
+      }
+    };
+    syncQuizScreen();
+    window.addEventListener(NATIVE_QUIZ_EVENT, syncQuizScreen);
+    return () => window.removeEventListener(NATIVE_QUIZ_EVENT, syncQuizScreen);
+  }, [navigate]);
 
   // Analytics V1, plan_viewed
   useEffect(() => {
@@ -8600,6 +8961,7 @@ export default function App() {
       if (merged.length > 0) {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
+        clearNativeQuizStarted();
         if (!planRevealActiveRef.current && !planGenerationInFlightRef.current) {
           setScreen("app");
         }
@@ -8813,6 +9175,11 @@ export default function App() {
       setProfile(BLANK_PROFILE);
       setStep(1);
       setQuestionnaireMode("full");
+      // iOS : seulement si le quiz a déjà été lancé (pas avant la welcome).
+      if (isNativeApp() && nativeQuizStarted()) {
+        setScreen("onboarding");
+        return;
+      }
       setScreen("app");
       setActiveTab("plan");
     }
@@ -8826,15 +9193,15 @@ export default function App() {
         const u = await syncSubscriptionFromStripe();
         if (u) {
           setUser(u);
-          setIsPremium(checkIsPremium(u));
-          setAccessSynced(true);
+          setIsPremium(checkPremiumUnlocked(u));
+          if (checkIsPremium(u) || !shouldAwaitCardlessTrial(u)) setAccessSynced(true);
         }
       } catch {
         const { data } = await supabase.auth.getUser();
         if (data?.user) {
           setUser(data.user);
-          setIsPremium(checkIsPremium(data.user));
-          setAccessSynced(true);
+          setIsPremium(checkPremiumUnlocked(data.user));
+          if (!shouldAwaitCardlessTrial(data.user)) setAccessSynced(true);
         }
       }
     };
@@ -9386,23 +9753,39 @@ export default function App() {
     } else {
       userRef.current = liveUser;
     }
-    // Essai 7j (y compris anonyme) avant génération, pour débloquer les features.
+    // Essai 7j sans carte avant génération (anonyme + compte neuf) : pas de cadenas avant.
+    const applySyncedUser = (synced) => {
+      if (!synced) return;
+      liveUser = synced;
+      userRef.current = synced;
+      setUser(synced);
+      setIsPremium(checkPremiumUnlocked(synced));
+    };
     try {
-      const synced = await syncAccessRef.current(liveUser);
-      if (synced) {
-        liveUser = synced;
-        userRef.current = synced;
-        setUser(synced);
-        setIsPremium(checkIsPremium(synced));
-      }
+      applySyncedUser(await syncAccessRef.current(liveUser));
     } catch {
-      /* continue : aperçu possible même si sync lent */
+      /* retry ci-dessous */
     }
-    setAccessSynced(true);
+    if (!checkIsPremium(liveUser) && shouldAwaitCardlessTrial(liveUser)) {
+      for (let i = 0; i < 2; i++) {
+        try {
+          await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+          applySyncedUser(await syncAccessRef.current(liveUser));
+        } catch {
+          /* continue */
+        }
+        if (checkIsPremium(liveUser)) break;
+      }
+    }
+    if (checkIsPremium(liveUser) || !shouldAwaitCardlessTrial(liveUser)) {
+      setAccessSynced(true);
+    }
+    setIsPremium(checkPremiumUnlocked(liveUser));
     clearOnboardingPrefill();
     // Remplacement d’un plan existant = Premium (1er plan = aperçu OK)
     const liveAccess = getAccessState(liveUser);
-    if (addingPlan && plans.length > 0 && !liveAccess.canGenerateProgram) {
+    const awaitingTrial = shouldAwaitCardlessTrial(liveUser);
+    if (addingPlan && plans.length > 0 && !liveAccess.canGenerateProgram && !awaitingTrial) {
       if (isAnonymousUser(liveUser)) {
         setShowSaveAccount(true);
         return;
@@ -9410,9 +9793,11 @@ export default function App() {
       openUpgrade("trial_required");
       return;
     }
-    // Anonyme : nudge « Garde cette séance » après reveal (essai déjà ouvert).
+    // 1er plan : essai 7j (ou attente grant) → jamais paywall. Anonyme → nudge compte.
     const openSaveAccountAfter = isAnonymousUser(liveUser);
-    const openPaywallAfter = !openSaveAccountAfter && !liveAccess.canGenerateProgram;
+    const openPaywallAfter = !openSaveAccountAfter
+      && !liveAccess.canGenerateProgram
+      && !awaitingTrial;
     await generatePlanFromProfile(sourceProfile, {
       taste: tasteProfile,
       openPaywallAfter,
@@ -9557,8 +9942,16 @@ export default function App() {
         });
       }
       const entryTaste = taste || tasteProfile;
-      const livePremium = checkIsPremium(userRef.current);
-      // Aperçu avant paiement = contenu généré, mais flag isPremium = accès live (anti-voleur)
+      // Après onboarding : essai 7j (ou attente sync) → plan déverrouillé, pas de squelette gelé.
+      try {
+        const resynced = await syncAccessRef.current(userRef.current);
+        if (resynced) {
+          userRef.current = resynced;
+          setUser(resynced);
+          setIsPremium(checkPremiumUnlocked(resynced));
+        }
+      } catch { /* keep going */ }
+      const livePremium = checkPremiumUnlocked(userRef.current);
       const entry = {
         id,
         profile: entryProfile,
@@ -9604,6 +9997,7 @@ export default function App() {
       }
       // Sortie définitive du questionnaire, même si le paiement est abandonné plus tard
       clearPendingOnboarding();
+      clearNativeQuizStarted();
       setActiveTab("home");
       if (showReveal) {
         const reduceMotion = typeof window !== "undefined"
@@ -9626,7 +10020,7 @@ export default function App() {
       track("generation_failed", { reason: "exception", context: "generate_plan" });
       const retryStep = sourceProfile.category === "progression" ? 3 : 5;
       setStep(retryStep);
-      if (user) {
+      if (user && !(isNativeApp() && isAnonymousUser(user))) {
         setScreen("app");
         setActiveTab("plan");
       } else {
@@ -9648,8 +10042,17 @@ export default function App() {
     if (pending.tasteProfile) setTasteProfile(normalizeTaste(pending.tasteProfile));
     setProfile(pending.profile);
     if (pending.addingPlan) setAddingPlan(true);
-    const live = await syncAccessRef.current(u);
-    const needsPaywall = !checkIsPremium(live || u);
+    let live = await syncAccessRef.current(u);
+    const anon = isAnonymousUser(live || u);
+    // Essai 7j : 2ᵉ sync si le JWT n’a pas encore le grant.
+    if (!checkIsPremium(live || u) && shouldAwaitCardlessTrial(live || u)) {
+      try {
+        await new Promise((r) => setTimeout(r, 450));
+        live = (await syncAccessRef.current(live || u)) || live;
+      } catch { /* ignore */ }
+    }
+    const awaitingTrial = shouldAwaitCardlessTrial(live || u);
+    const needsPaywall = !anon && !checkIsPremium(live || u) && !awaitingTrial;
     // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
       planGenerationInFlightRef.current = false;
@@ -9657,9 +10060,16 @@ export default function App() {
       setScreen("app");
       return true;
     }
+    if (pending.addingPlan && anon && !checkIsPremium(live || u) && !awaitingTrial) {
+      planGenerationInFlightRef.current = false;
+      setShowSaveAccount(true);
+      setScreen("app");
+      return true;
+    }
     await generatePlanFromProfile(pending.profile, {
       taste: pending.tasteProfile ? normalizeTaste(pending.tasteProfile) : tasteProfile,
       openPaywallAfter: needsPaywall && !pending.addingPlan,
+      openSaveAccountAfter: anon && !pending.addingPlan,
     });
     return true;
   };
@@ -11159,7 +11569,7 @@ export default function App() {
           // Recharge les données utilisateur après reset
           supabase.auth.getUser().then(({ data }) => {
             const u = data?.user;
-            if (u) { setUser(u); setIsPremium(checkIsPremium(u)); loadUserData(u.id, checkIsPremium(u)); }
+            if (u) { setUser(u); setIsPremium(checkPremiumUnlocked(u)); loadUserData(u.id, checkPremiumUnlocked(u)); }
           });
         }} />
       </div>
@@ -11176,7 +11586,7 @@ export default function App() {
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
           onNavigateMode={handleAuthNavigateMode}
-          onStartQuiz={exitAuthToQuiz}
+          onStartQuiz={plans.length > 0 ? undefined : exitAuthToQuiz}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />
@@ -11208,7 +11618,8 @@ export default function App() {
     </>
   );
 
-  if (coldHold || screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
+  // waitingForAccess : sync essai en fond, ne pas masquer l’app (sinon loader → home au tap).
+  if (coldHold || screen === "loading") return <><style>{css}</style><Loading /></>;
 
   if (screen === "onboarding") return (
     <>
@@ -11255,47 +11666,23 @@ export default function App() {
     <>
       <style>{css}</style>
       <div className="myswym-app">
-        {/* Anonyme avec plan : nudge conversion (essai déjà ouvert, plan conservé). */}
-        {isAnonymousUser(user) && plans.length > 0 && (
-          <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ flex: 1, lineHeight: 1.3 }}>
-              Sauvegarde ton plan : crée ton compte pour le retrouver partout
-            </span>
-            <button onClick={() => setShowSaveAccount(true)} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-              Créer mon compte
-            </button>
-            </div>
-          </div>
-        )}
-        {!user && plans.length > 0 && (
-          <div className="app-shell" style={{ position: "sticky", top: 0, zIndex: 50, maxWidth: "100%", background: G.blue, color: G.white, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ flex: 1, lineHeight: 1.3 }}>
-              Sauvegarde ton plan pour le retrouver sur tous tes appareils
-            </span>
-            <button onClick={() => { authOpenedFromUrlRef.current = false; openAuth("register"); }} style={{ background: G.white, color: G.blue, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-              Créer mon compte
-            </button>
-            </div>
-          </div>
-        )}
         {user && isPremium && accessState.status === "trial" && accessState.trialDaysLeft > 0 && accessState.trialDaysLeft <= 2 && activeTab !== "home" && (
-          <div style={{ background: G.blueLight, borderBottom: `1px solid ${G.greyLight}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: "var(--app-max)", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, fontWeight: 600, color: G.blue }}>
-              <span style={{ flex: 1, lineHeight: 1.35 }}>
+          <div className="ms-convert-banner ms-convert-banner--soft" role="region" aria-label="Essai bientôt terminé">
+            <div className="app-shell ms-convert-banner-inner">
+              <span className="ms-convert-banner-text">
                 {accessState.trialDaysLeft === 1
                   ? "Dernier jour d’essai, demain tes séances se mettent en pause. Abonne-toi pour garder tes plans."
                   : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite tes séances se mettent en pause.`}
               </span>
-              <button type="button" onClick={() => openUpgrade("trial_expired")} style={{ background: G.blue, color: G.white, border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              <button type="button" className="ms-convert-banner-cta ms-convert-banner-cta--inverse" onClick={() => openUpgrade("trial_expired")}>
                 S’abonner
               </button>
             </div>
           </div>
         )}
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+        <div className="myswym-app-main">
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium || accessState.hasPremiumAccess} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium || accessState.hasPremiumAccess} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
           setStep,
@@ -11492,19 +11879,16 @@ export default function App() {
         {showSaveAccount && (
           <SaveAccountSheet
             open={showSaveAccount}
-            onDismiss={() => setShowSaveAccount(false)}
+            onDismiss={dismissSaveAccountSheet}
             onConverted={(u) => {
               setShowSaveAccount(false);
+              clearSaveAccountSnooze(u?.id || user?.id);
               if (u) {
                 setUser(u);
                 void syncAccessRef.current(u);
               }
             }}
-            onEmail={() => {
-              setShowSaveAccount(false);
-              authOpenedFromUrlRef.current = false;
-              openAuth("register");
-            }}
+            onEmail={openCreateAccountFromSheet}
           />
         )}
         {showWhatsNew && !showPlanReady && !showSaveAccount && !showUpgrade && (
@@ -11543,6 +11927,7 @@ export default function App() {
             onCancel={() => setDeletePlanId(null)}
           />
         )}
+        </div>
       </div>
     </>
   );
