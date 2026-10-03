@@ -128,9 +128,11 @@ function mapAuthError(raw, t) {
   if (/email not confirmed/i.test(msg)) return t("auth.errConfirm", { defaultValue: "Confirme ton email avant de te connecter." });
   if (/user already registered|already been registered/i.test(msg)) return t("auth.errExists", { defaultValue: "Ce compte existe déjà. Connecte-toi ou réinitialise ton mot de passe." });
   if (/password/i.test(msg) && /at least|characters|weak/i.test(msg)) return t("auth.errPassword", { defaultValue: "Mot de passe trop court. Utilise au moins 6 caractères." });
-  if (/rate limit|too many|RATE_LIMIT/i.test(msg)) return t("auth.errRate", { defaultValue: "Trop de tentatives. Réessaie dans une minute." });
-  if (/EMAIL_INVALID/i.test(msg)) return t("auth.errEmail", { defaultValue: "Email invalide." });
-  if (/RESET_FAIL|Envoi impossible/i.test(msg)) {
+  if (/rate limit|too many|RATE_LIMIT|Trop de messages/i.test(msg)) {
+    return t("auth.errRate", { defaultValue: "Trop de tentatives. Réessaie dans une minute." });
+  }
+  if (/EMAIL_INVALID|Email invalide/i.test(msg)) return t("auth.errEmail", { defaultValue: "Email invalide." });
+  if (/\[object Object\]|RESET_FAIL|Envoi impossible|not_found|NOT_FOUND/i.test(msg)) {
     return t("auth.errReset", { defaultValue: "Envoi impossible pour le moment. Réessaie ou écris à support@myswym.app." });
   }
   if (/network|fetch/i.test(msg)) return t("auth.errNetwork", { defaultValue: "Connexion impossible. Vérifie ton réseau et réessaie." });
@@ -476,7 +478,12 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         await requestPasswordReset(mail);
         setSuccess(t("auth.resetSent"));
       }
-    } catch (e) { setError(mapAuthError(e.message || e, t)); }
+    } catch (e) {
+      const raw = typeof e?.message === "string" && e.message && e.message !== "[object Object]"
+        ? e.message
+        : (typeof e === "string" ? e : (e?.error?.message || e?.error || "RESET_FAIL"));
+      setError(mapAuthError(raw, t));
+    }
     finally { setLoading(false); }
   };
 
