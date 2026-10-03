@@ -41,7 +41,15 @@
     "11": "November",
     "12": "December"
   },
-  "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  "weekdays": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun"
+  ],
   "category": {
     "title": "What's your goal?",
     "lead": "Pick a category. We adapt sessions to the event, the distance, or your level.",
@@ -60,25 +68,70 @@
     "eau_libre": "Which distance?",
     "diplome": "Which diploma?",
     "fallback": "Specify your goal",
-    "triathlon_xs": { "label": "XS", "dist": "400 m swim" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m swim" },
-    "triathlon_olympic": { "label": "Olympic", "dist": "1,500 m swim" },
-    "triathlon_half": { "label": "Half", "dist": "1,900 m swim" },
-    "triathlon_ironman": { "label": "Full", "dist": "3,800 m swim" },
-    "open_water_short": { "label": "Short", "dist": "500 m to 1.5 km" },
-    "open_water_mid": { "label": "Mid", "dist": "2 km to 5 km" },
-    "open_water_long": { "label": "Long", "dist": "7.5 km and up" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m & 250 m rescue" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m FS < 7'40\" · 100 m IM < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m fins · rescue course" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m swim"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m swim"
+    },
+    "triathlon_olympic": {
+      "label": "Olympic",
+      "dist": "1,500 m swim"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1,900 m swim"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3,800 m swim"
+    },
+    "open_water_short": {
+      "label": "Short",
+      "dist": "500 m to 1.5 km"
+    },
+    "open_water_mid": {
+      "label": "Mid",
+      "dist": "2 km to 5 km"
+    },
+    "open_water_long": {
+      "label": "Long",
+      "dist": "7.5 km and up"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m & 250 m rescue"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m FS < 7'40\" · 100 m IM < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m fins · rescue course"
+    }
   },
   "level": {
     "title": "What's your current swimming level?",
     "lead": "Pick the one that describes you today, not the one you’re aiming for.",
-    "découverte": { "label": "Getting started", "desc": "I stop after a few lengths" },
-    "régulier": { "label": "Beginner", "desc": "I can swim lengths, but I’m still learning" },
-    "sportif": { "label": "Intermediate", "desc": "I’m comfortable in the pool, but I want to improve" },
-    "performance": { "label": "Advanced", "desc": "I’m an experienced swimmer. I can swim all four strokes." },
+    "découverte": {
+      "label": "Getting started",
+      "desc": "I stop after a few lengths"
+    },
+    "régulier": {
+      "label": "Beginner",
+      "desc": "I can swim lengths, but I’m still learning"
+    },
+    "sportif": {
+      "label": "Intermediate",
+      "desc": "I’m comfortable in the pool, but I want to improve"
+    },
+    "performance": {
+      "label": "Advanced",
+      "desc": "I’m an experienced swimmer. I can swim all four strokes."
+    },
     "beginnerBlocked": "Start smaller. Rome wasn't built in a day. We can't promise you'll make it to the finish."
   },
   "pool": {
@@ -133,9 +186,18 @@
       "other": "Other area"
     },
     "severities": {
-      "mild": { "label": "Mild", "desc": "Occasional discomfort, swimming is possible" },
-      "moderate": { "label": "Moderate", "desc": "Frequent pain, intensity should be limited" },
-      "significant": { "label": "Significant", "desc": "Activity is strongly limited" }
+      "mild": {
+        "label": "Mild",
+        "desc": "Occasional discomfort, swimming is possible"
+      },
+      "moderate": {
+        "label": "Moderate",
+        "desc": "Frequent pain, intensity should be limited"
+      },
+      "significant": {
+        "label": "Significant",
+        "desc": "Activity is strongly limited"
+      }
     }
   },
   "health": {
@@ -173,8 +235,14 @@
     "leadOpen": "Tell us your favourite stroke, in triathlon and open water we mostly work freestyle.",
     "style": "Preferred style",
     "stroke": "Favourite stroke",
-    "crawl": { "label": "Freestyle", "desc": "I mostly like to swim freestyle" },
-    "4_nages": { "label": "IM / all strokes", "desc": "I want to mix butterfly, backstroke, breaststroke and freestyle" },
+    "crawl": {
+      "label": "Freestyle",
+      "desc": "I mostly like to swim freestyle"
+    },
+    "4_nages": {
+      "label": "IM / all strokes",
+      "desc": "I want to mix butterfly, backstroke, breaststroke and freestyle"
+    },
     "strokes": {
       "crawl": "Freestyle",
       "dos": "Backstroke",
@@ -205,7 +273,7 @@
     "loginLead": "Log in with Apple, Google or your email.",
     "registerLead": "7-day trial, no card. Then your sessions pause.",
     "registerReferral": "Referral code {{code}} : 20% off your first Premium invoice.",
-    "resetLead": "Enter your email and we’ll send a reset link.",
+    "resetLead": "Enter the email for your account. You’ll get a secure link to choose a new password.",
     "loginCta": "Log in",
     "registerCta": "Create my account",
     "resetCta": "Send the link",
@@ -232,7 +300,7 @@
     "exists": "An account already exists with this email.",
     "created": "Account created! Check your email to confirm, then log in.",
     "createdReferral": "Account created! Referral saved, check your email, then log in.",
-    "resetSent": "Email sent! Check your inbox to reset your password.",
+    "resetSent": "If an account exists for this email, a message is on its way. Check your spam folder too.",
     "genericError": "Something went wrong.",
     "socialOff": "This sign-in method isn’t enabled on the server yet. Try email / password.",
     "socialAppleConfig": "Apple sign-in isn’t configured correctly (Supabase). Try email / password.",

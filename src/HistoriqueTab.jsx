@@ -172,13 +172,13 @@ export default function HistoriqueTab({
                 >
                   {doneCount}
                 </div>
-                <div className="ms-type-caption" style={{ marginTop: 4 }}>Terminées</div>
+                <div className="ms-type-caption" style={{ marginTop: 4 }}>{t("history.done")}</div>
               </div>
             </div>
 
             {skipCount > 0 ? (
               <p style={{ fontSize: 12, color: G.greyMid, margin: "0 0 12px" }}>
-                Dont {skipCount} abandonnée{skipCount > 1 ? "s" : ""}
+                {t("history.skippedCount", { count: skipCount })}
               </p>
             ) : null}
 
@@ -207,7 +207,7 @@ export default function HistoriqueTab({
             ) : (
               <div className="ms-history-list">
                 <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 12px" }}>
-                  Touche une séance pour relire les blocs.
+                  {t("history.tapHint")}
                 </p>
                 {items.map((item) => {
                   const s = item.session;
@@ -251,7 +251,7 @@ export default function HistoriqueTab({
                           <span style={{ display: "block", fontSize: 12, color: G.greyMid, marginTop: 3 }}>
                             {s.distance || "-"}
                             {" · "}
-                            {done ? "Terminée" : "Abandonnée"}
+                            {done ? t("history.sessionDone") : t("history.sessionSkipped")}
                             {item.weekNumber ? ` · Sem. ${item.weekNumber}` : ""}
                           </span>
                         </span>
@@ -265,7 +265,7 @@ export default function HistoriqueTab({
                           title={prov.shortLabel}
                           aria-label={`Copier la référence ${prov.refCode}`}
                         >
-                          {copiedRef === item.key ? "réf. copiée" : `réf. ${prov.refCode}`}
+                          {copiedRef === item.key ? t("history.refCopied") : t("history.ref", { code: prov.refCode })}
                         </button>
                       ) : null}
                     </div>

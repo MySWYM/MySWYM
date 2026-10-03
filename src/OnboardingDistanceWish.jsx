@@ -32,7 +32,7 @@ export function StepSessionDistance({ value, level, onChange, onNext, onBack, Bt
 
   return (
     <div className="fade-up">
-      <h2 style={{ fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif', fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
+      <h2 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink, marginBottom: 8, lineHeight: 1.1 }}>
         {t("distance.title")}
       </h2>
       <p style={{ fontSize: 14, color: G.grey, marginBottom: 28, lineHeight: 1.45 }}>

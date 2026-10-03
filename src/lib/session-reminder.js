@@ -76,6 +76,7 @@ export function buildLocalNotificationPlan({
   checkoutAbandonedAt = null,
   reviewEligible = false,
   reviewAlreadyAsked = false,
+  newsletterNudgeAtMs = null,
   nowMs = Date.now(),
   sessionHour = 18,
   streakHour = 20,
@@ -214,6 +215,17 @@ export function buildLocalNotificationPlan({
         extra: { kind: "review_ask" },
       });
     }
+  }
+
+  if (Number.isFinite(newsletterNudgeAtMs) && newsletterNudgeAtMs > nowMs + 60_000) {
+    items.push({
+      id: NOTIF_IDS.NEWSLETTER,
+      title: "Actus MySWYM",
+      body: "Conseils et nouveautés par e-mail : tu peux activer ça dans Mes données personnelles.",
+      at: new Date(newsletterNudgeAtMs),
+      badge: 1,
+      extra: { kind: "newsletter_nudge" },
+    });
   }
 
   return items;

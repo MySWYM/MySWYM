@@ -4,6 +4,10 @@
 
 export const NEWSLETTER_META_KEY = "newsletter_opt_in";
 export const NEWSLETTER_PENDING_KEY = "myswym_newsletter_opt_in";
+/** Ancre locale pour la relance notif (J+14) si refus. */
+export const NEWSLETTER_NUDGE_KEY_PREFIX = "myswym_newsletter_nudge_";
+/** Intervalle entre deux propositions notif si toujours refusé. */
+export const NEWSLETTER_NUDGE_INTERVAL_MS = 14 * 86400000;
 
 function defaultStore() {
   try {
@@ -14,8 +18,60 @@ function defaultStore() {
   }
 }
 
+function defaultLocalStore() {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function isNewsletterOptedIn(user) {
   return user?.user_metadata?.[NEWSLETTER_META_KEY] === true;
+}
+
+export function newsletterNudgeKey(userId) {
+  return `${NEWSLETTER_NUDGE_KEY_PREFIX}${userId || "anon"}`;
+}
+
+/** Ancre (ms) pour la 1ʳᵉ relance : created_at compte, sinon maintenant. */
+export function ensureNewsletterNudgeAnchorMs(user, store = defaultLocalStore(), nowMs = Date.now()) {
+  const uid = user?.id;
+  if (!uid || !store) return nowMs;
+  const key = newsletterNudgeKey(uid);
+  const existing = Date.parse(store.getItem(key) || "");
+  if (Number.isFinite(existing)) return existing;
+  const created = Date.parse(user?.created_at || "");
+  const anchor = Number.isFinite(created) ? created : nowMs;
+  try {
+    store.setItem(key, new Date(anchor).toISOString());
+  } catch { /* ignore */ }
+  return anchor;
+}
+
+export function clearNewsletterNudgeAnchor(userId, store = defaultLocalStore()) {
+  if (!userId || !store) return;
+  try {
+    store.removeItem(newsletterNudgeKey(userId));
+  } catch { /* ignore */ }
+}
+
+/**
+ * Prochaine date de relance (ms), ou null si déjà opt-in / pas d’user.
+ * Roule par fenêtres de 14 jours tant que l’opt-in reste faux.
+ */
+export function nextNewsletterNudgeAtMs(user, {
+  store = defaultLocalStore(),
+  nowMs = Date.now(),
+  intervalMs = NEWSLETTER_NUDGE_INTERVAL_MS,
+} = {}) {
+  if (!user?.id || isNewsletterOptedIn(user)) return null;
+  let at = ensureNewsletterNudgeAnchorMs(user, store, nowMs) + intervalMs;
+  while (at <= nowMs + 60_000) {
+    at += intervalMs;
+  }
+  return at;
 }
 
 export function stashPendingNewsletterOptIn(enabled, store = defaultStore()) {
@@ -45,7 +101,9 @@ export async function setNewsletterOptIn(enabled) {
     data: { [NEWSLETTER_META_KEY]: !!enabled },
   });
   if (error) return { user: null, error };
-  return { user: data?.user || null, error: null };
+  const user = data?.user || null;
+  if (enabled && user?.id) clearNewsletterNudgeAnchor(user.id);
+  return { user, error: null };
 }
 
 /** Après Apple / Google : appliquer le choix stashé à l’inscription. */

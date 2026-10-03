@@ -32,7 +32,15 @@
     "11": "November",
     "12": "December"
   },
-  "weekdays": ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"],
+  "weekdays": [
+    "Mån",
+    "Tis",
+    "Ons",
+    "Tor",
+    "Fre",
+    "Lör",
+    "Sön"
+  ],
   "category": {
     "title": "Vad är ditt mål?",
     "lead": "Välj en kategori. Vi anpassar passen till tävlingen, distansen eller din nivå.",
@@ -51,25 +59,70 @@
     "eau_libre": "Vilken distans?",
     "diplome": "Vilken examen?",
     "fallback": "Precisera ditt mål",
-    "triathlon_xs": { "label": "XS", "dist": "400 m simning" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m simning" },
-    "triathlon_olympic": { "label": "Olympisk", "dist": "1,500 m simning" },
-    "triathlon_half": { "label": "Halv", "dist": "1,900 m simning" },
-    "triathlon_ironman": { "label": "Full", "dist": "3,800 m simning" },
-    "open_water_short": { "label": "Kort", "dist": "500 m till 1.5 km" },
-    "open_water_mid": { "label": "Mellan", "dist": "2 km till 5 km" },
-    "open_water_long": { "label": "Lång", "dist": "7.5 km och uppåt" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m och 250 m livräddning" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m frisim < 7'40\" · 100 m medley < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m fenor · räddningsbana" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m simning"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m simning"
+    },
+    "triathlon_olympic": {
+      "label": "Olympisk",
+      "dist": "1,500 m simning"
+    },
+    "triathlon_half": {
+      "label": "Halv",
+      "dist": "1,900 m simning"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3,800 m simning"
+    },
+    "open_water_short": {
+      "label": "Kort",
+      "dist": "500 m till 1.5 km"
+    },
+    "open_water_mid": {
+      "label": "Mellan",
+      "dist": "2 km till 5 km"
+    },
+    "open_water_long": {
+      "label": "Lång",
+      "dist": "7.5 km och uppåt"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m och 250 m livräddning"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m frisim < 7'40\" · 100 m medley < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m fenor · räddningsbana"
+    }
   },
   "level": {
     "title": "Vad är din simnivå just nu?",
     "lead": "Välj den som beskriver dig idag, inte den du siktar på.",
-    "découverte": { "label": "Ny på banan", "desc": "Jag stannar efter några längder" },
-    "régulier": { "label": "Nybörjare", "desc": "Jag kan simma längder, men jag lär mig fortfarande" },
-    "sportif": { "label": "Medel", "desc": "Jag är bekväm i bassängen, men jag vill bli bättre" },
-    "performance": { "label": "Avancerad", "desc": "Jag är en van simmare. Jag kan alla fyra simsätten." },
+    "découverte": {
+      "label": "Ny på banan",
+      "desc": "Jag stannar efter några längder"
+    },
+    "régulier": {
+      "label": "Nybörjare",
+      "desc": "Jag kan simma längder, men jag lär mig fortfarande"
+    },
+    "sportif": {
+      "label": "Medel",
+      "desc": "Jag är bekväm i bassängen, men jag vill bli bättre"
+    },
+    "performance": {
+      "label": "Avancerad",
+      "desc": "Jag är en van simmare. Jag kan alla fyra simsätten."
+    },
     "beginnerBlocked": "Börja mindre. Rom byggdes inte på en dag. Vi kan inte lova att du når i mål."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Annat område"
     },
     "severities": {
-      "mild": { "label": "Lätt", "desc": "Ibland obehag, simning går" },
-      "moderate": { "label": "Måttlig", "desc": "Ofta ont, intensiteten bör begränsas" },
-      "significant": { "label": "Tydlig", "desc": "Aktiviteten är starkt begränsad" }
+      "mild": {
+        "label": "Lätt",
+        "desc": "Ibland obehag, simning går"
+      },
+      "moderate": {
+        "label": "Måttlig",
+        "desc": "Ofta ont, intensiteten bör begränsas"
+      },
+      "significant": {
+        "label": "Tydlig",
+        "desc": "Aktiviteten är starkt begränsad"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Säg ditt favoritsimsätt. I triathlon och öppet vatten jobbar vi mest frisim.",
     "style": "Föredraget simsätt",
     "stroke": "Favoritsimsätt",
-    "crawl": { "label": "Frisim", "desc": "Jag vill mest simma frisim" },
-    "4_nages": { "label": "Medley / alla simsätt", "desc": "Jag vill blanda fjärilsim, ryggsim, bröstsim och frisim" },
+    "crawl": {
+      "label": "Frisim",
+      "desc": "Jag vill mest simma frisim"
+    },
+    "4_nages": {
+      "label": "Medley / alla simsätt",
+      "desc": "Jag vill blanda fjärilsim, ryggsim, bröstsim och frisim"
+    },
     "strokes": {
       "crawl": "Frisim",
       "dos": "Ryggsim",
@@ -196,7 +264,7 @@
     "loginLead": "Logga in med Apple, Google eller din e-post.",
     "registerLead": "7 dagars prov, inget kort. Sedan pausas dina pass.",
     "registerReferral": "Värvningskod {{code}} : 20% rabatt på din första Premium-faktura.",
-    "resetLead": "Skriv din e-post så skickar vi en återställningslänk.",
+    "resetLead": "Ange e-postadressen till ditt konto. Du får en säker länk för att välja ett nytt lösenord.",
     "loginCta": "Logga in",
     "registerCta": "Skapa mitt konto",
     "resetCta": "Skicka länken",
@@ -223,7 +291,7 @@
     "exists": "Det finns redan ett konto med den här e-posten.",
     "created": "Kontot är skapat! Kolla din e-post för att bekräfta, logga sedan in.",
     "createdReferral": "Kontot är skapat! Värvningen är sparad, kolla din e-post och logga sedan in.",
-    "resetSent": "E-post skickad! Kolla inkorgen för att återställa lösenordet.",
+    "resetSent": "Om det finns ett konto för den här e-posten är ett meddelande på väg. Kolla även skräpposten.",
     "genericError": "Något gick fel.",
     "socialOff": "Den här inloggningen är inte aktiverad på servern ännu. Prova e-post / lösenord.",
     "socialAppleConfig": "Apple-inloggning är inte rätt konfigurerad (Supabase). Prova e-post / lösenord.",

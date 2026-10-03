@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Gauge, Lock } from "lucide-react";
 import { FONT } from "../theme/brand.js";
 import { G } from "../theme/palette.js";
@@ -29,6 +30,7 @@ export default function AllureUnlockSheet({
   onUpgrade,
   onDismiss,
 }) {
+  const { t } = useTranslation("app");
   const [raw, setRaw] = useState("");
   const [val, setVal] = useState(null);
   const [err, setErr] = useState("");
@@ -77,7 +79,7 @@ export default function AllureUnlockSheet({
       eyebrow="Premium"
       title="Ton allure, c’est le moteur"
       onClose={close}
-      ariaLabel="Mon allure"
+      ariaLabel={t("pace.myPace")}
       zIndex={400}
     >
       <div
@@ -96,7 +98,7 @@ export default function AllureUnlockSheet({
 
       <div style={{ marginBottom: 8 }}>
         <div className="ms-tip-block-label" style={{ marginBottom: 8 }}>
-          Meilleur temps 100 m
+          {t("pace.best100")}
         </div>
         {isPremium ? (
           <input
@@ -105,7 +107,7 @@ export default function AllureUnlockSheet({
             placeholder="1:45"
             value={raw}
             onChange={(e) => handleChange(e.target.value)}
-            aria-label="Meilleur temps sur 100 mètres"
+            aria-label={t("pace.best100")}
             className="ms-profile-field"
             style={{
               fontSize: 22, fontFamily: FONT, fontWeight: 700,

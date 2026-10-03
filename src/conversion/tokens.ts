@@ -29,7 +29,7 @@ export const tokens = {
     '3xl': 64,
   },
   type: {
-    /** Display, Space Grotesk */
+    /** Display, Geist */
     hero: { size: 40, line: 1.05, weight: 600 },
     title1: { size: 32, line: 1.1, weight: 600 },
     title2: { size: 24, line: 1.15, weight: 600 },

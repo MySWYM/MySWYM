@@ -10,7 +10,7 @@ export function Card({ label, value, hint, to, onClick }) {
       <div style={{ fontSize: 14, color: "#5a6a7a", lineHeight: 1.35 }}>{label}</div>
       <div
         style={{
-          fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif",
+          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
           fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
           fontWeight: 800,
           color: "#0c1a2e",
@@ -139,7 +139,7 @@ export function PageHead({ title, days, setDays, loading, onReload, extra }) {
     >
       <h1
         style={{
-          fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif",
+          fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
           fontSize: "clamp(1.7rem, 4vw, 2.3rem)",
           margin: 0,
           color: "#0c1a2e",

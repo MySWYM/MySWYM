@@ -15,16 +15,12 @@ import { APP_LANGUAGES, normalizeAppLanguage } from "../i18n/languages.js";
 import FlagMark from "../i18n/FlagMark.jsx";
 import { withLocalePrefix } from "../i18n/locale-path.js";
 import { supabase } from "../supabase.js";
-import { isNativeApp, nativeApiOrigin } from "../lib/native-platform.js";
+import { isNativeApp } from "../lib/native-platform.js";
 import {
   buildAccountExportPayload,
   downloadAccountExport,
   hasEmailPasswordProvider,
 } from "../lib/account-export.js";
-import {
-  ACCOUNT_DELETE_BLOCKED_TITLE,
-  ACCOUNT_DELETE_BLOCKED_MESSAGE,
-} from "../lib/legal-copy.js";
 import { PanelShell } from "../ProfileHelpPanels.jsx";
 import TimedUndoAction from "../ui/TimedUndoAction.jsx";
 import ConfirmSheet from "../sheets/ConfirmSheet.jsx";
@@ -77,6 +73,29 @@ function SettingsRow({ icon: Icon, mark, title, value, hint, onClick, href, exte
   }
   if (!onClick) {
     return <div className="ms-profile-account-row is-static">{inner}</div>;
+  }
+  // Trailing = souvent un <button> (switch) : pas de <button> parent (HTML invalide → clic mort sur iOS).
+  if (trailing) {
+    return (
+      <div
+        className="ms-profile-account-row"
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          playUiSound("soft");
+          onClick();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            playUiSound("soft");
+            onClick();
+          }
+        }}
+      >
+        {inner}
+      </div>
+    );
   }
   return (
     <button
@@ -207,11 +226,8 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
     setResetBusy(true);
     setError(null);
     try {
-      const redirectTo = isNativeApp()
-        ? `${nativeApiOrigin()}/app`
-        : `${window.location.origin}/app`;
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (resetErr) throw resetErr;
+      const { requestPasswordReset } = await import("../lib/password-reset.js");
+      await requestPasswordReset(email);
       playUiSound("success");
       onMsg?.({ type: "ok", text: t("settings.passwordResetSent") });
       setOk(false);
@@ -395,8 +411,8 @@ export function IosDataPanel({
       ) : null}
       {deleteBlockedOpen && createPortal(
         <ConfirmSheet
-          title={ACCOUNT_DELETE_BLOCKED_TITLE}
-          message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
+          title={t("settings.deleteBlockedTitle")}
+          message={t("settings.deleteBlockedBody")}
           confirmLabel={t("settings.gotIt")}
           cancelLabel={null}
           destructive={false}
@@ -441,17 +457,85 @@ export function IosSettingsHome({
   const [notifOn, setNotifOn] = useState(false);
   const [notifMsg, setNotifMsg] = useState("");
   const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
+  /** Ligne visible seulement après la 1ʳᵉ demande iOS (plus en « prompt »). */
+  const [notifRowVisible, setNotifRowVisible] = useState(false);
 
   useEffect(() => {
     if (!isNativeApp()) return undefined;
     let cancelled = false;
-    import("../lib/native-push.js").then(({ notificationsSwitchOn }) => (
-      notificationsSwitchOn().then((on) => {
-        if (!cancelled) setNotifOn(on);
-      })
-    )).catch(() => {});
-    return () => { cancelled = true; };
+    const refreshNotifRow = async () => {
+      try {
+        const [{ notificationsSwitchOn }, { getLocalNotificationPermission }] = await Promise.all([
+          import("../lib/native-push.js"),
+          import("../lib/native-local-notifications.js"),
+        ]);
+        const perm = await getLocalNotificationPermission();
+        // Pas encore demandé → pas de ligne (le popup système vient après la 1ʳᵉ séance).
+        const visible = perm === "granted" || perm === "denied";
+        if (cancelled) return;
+        setNotifRowVisible(visible);
+        if (visible) {
+          const on = await notificationsSwitchOn();
+          if (!cancelled) setNotifOn(on);
+        }
+      } catch {
+        if (!cancelled) setNotifRowVisible(false);
+      }
+    };
+    void refreshNotifRow();
+    const onVis = () => {
+      if (document.visibilityState === "visible") void refreshNotifRow();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("myswym:push-pref", refreshNotifRow);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("myswym:push-pref", refreshNotifRow);
+    };
   }, []);
+
+  const toggleNotifications = async () => {
+    if (notifBusy || notifSettingsOpen) return;
+    const next = !notifOn;
+    setNotifBusy(true);
+    setNotifMsg("");
+    try {
+      const mod = await import("../lib/native-push.js");
+      if (!next) {
+        const res = await mod.disableNativeNotifications();
+        setNotifOn(res?.enabled === true);
+        return;
+      }
+      // Déjà refusé : iOS ne redemande pas → sheet Réglages.
+      // Sinon : popup système direct (pas de sheet MySWYM intermédiaire).
+      const { getLocalNotificationPermission } = await import(
+        "../lib/native-local-notifications.js"
+      );
+      const perm = await Promise.race([
+        getLocalNotificationPermission(),
+        new Promise((resolve) => {
+          window.setTimeout(() => resolve("prompt"), 1200);
+        }),
+      ]);
+      if (perm === "denied") {
+        setNotifOn(false);
+        setNotifSettingsOpen(true);
+        return;
+      }
+      const res = await mod.enableNativeNotifications();
+      setNotifOn(res?.enabled === true);
+      if (!res?.ok) {
+        if (res?.reason === "denied") setNotifSettingsOpen(true);
+        else setNotifMsg(ta("settings.notificationsDenied"));
+      }
+    } catch {
+      setNotifOn(false);
+      setNotifSettingsOpen(true);
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   return (
     <>
@@ -494,55 +578,38 @@ export function IosSettingsHome({
               trailing={<StatusCheck on={!!healthConnected} />}
               onClick={onOpenHealth}
             />
-            <SettingsRow
-              icon={Bell}
-              title={ta("settings.notifications")}
-              hint={ta("settings.notificationsHint")}
-              chevron={false}
-              trailing={(
-                <button
-                  type="button"
-                  role="switch"
-                  aria-label={ta("settings.notifications")}
-                  aria-checked={notifOn}
-                  aria-busy={notifBusy}
-                  className={`ms-menu-switch${notifOn ? " is-on" : ""}`}
-                  disabled={notifBusy}
-                  onClick={async () => {
-                    if (notifBusy) return;
-                    const next = !notifOn;
-                    setNotifBusy(true);
-                    setNotifMsg("");
-                    try {
-                      const mod = await import("../lib/native-push.js");
-                      const res = next
-                        ? await mod.enableNativeNotifications()
-                        : await mod.disableNativeNotifications();
-                      setNotifOn(res?.enabled === true);
-                      if (next && !res?.ok) {
-                        // Refus iOS : sheet avec chemin + CTA Réglages (pas seulement une ligne).
-                        if (res?.reason === "denied" || res?.reason === "not_asked") {
-                          setNotifSettingsOpen(true);
-                        } else {
-                          setNotifMsg(ta("settings.notificationsDenied"));
-                        }
-                      }
-                    } catch {
-                      setNotifOn(false);
-                      setNotifSettingsOpen(true);
-                    } finally {
-                      setNotifBusy(false);
-                    }
-                  }}
-                >
-                  <span />
-                </button>
-              )}
-            />
+            {notifRowVisible ? (
+              <SettingsRow
+                icon={Bell}
+                title={ta("settings.notifications")}
+                hint={ta("settings.notificationsHint")}
+                chevron={false}
+                onClick={() => {
+                  void toggleNotifications();
+                }}
+                trailing={(
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-label={ta("settings.notifications")}
+                    aria-checked={notifOn}
+                    aria-busy={notifBusy}
+                    className={`ms-menu-switch${notifOn ? " is-on" : ""}`}
+                    disabled={notifBusy}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void toggleNotifications();
+                    }}
+                  >
+                    <span />
+                  </button>
+                )}
+              />
+            ) : null}
           </>
         ) : null}
-        {notifMsg ? <p className="ios-settings-copy">{notifMsg}</p> : null}
-        {notifSettingsOpen && createPortal(
+        {notifRowVisible && notifMsg ? <p className="ios-settings-copy">{notifMsg}</p> : null}
+        {notifRowVisible && notifSettingsOpen && createPortal(
           <ConfirmSheet
             title={ta("settings.notificationsDeniedTitle")}
             message={ta("settings.notificationsDeniedBody")}
@@ -550,6 +617,7 @@ export function IosSettingsHome({
             cancelLabel={ta("settings.notificationsLater")}
             destructive={false}
             icon={Bell}
+            zIndex={600}
             onConfirm={async () => {
               setNotifSettingsOpen(false);
               try {
@@ -585,7 +653,7 @@ export function IosSettingsHome({
 
       {user && onDeleteAccount ? (
         <>
-          <p className="ios-settings-warn">La suppression du compte est irréversible.</p>
+          <p className="ios-settings-warn">{ta("settings.deleteAccountIrreversible")}</p>
           {deleteGate?.allowed && deleteWarning ? (
             <p className="ios-settings-copy" style={{ marginBottom: 8 }}>
               {deleteWarning}
@@ -611,8 +679,8 @@ export function IosSettingsHome({
       ) : null}
       {deleteBlockedOpen && createPortal(
         <ConfirmSheet
-          title={ACCOUNT_DELETE_BLOCKED_TITLE}
-          message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
+          title={ta("settings.deleteBlockedTitle")}
+          message={ta("settings.deleteBlockedBody")}
           confirmLabel={ta("settings.gotIt")}
           cancelLabel={null}
           destructive={false}

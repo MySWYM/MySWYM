@@ -12,6 +12,7 @@ import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js
 import { convertAnonymousWithEmail, isAnonymousUser } from "./lib/anonymous-auth.js";
 import { legalHref } from "./lib/legal-copy.js";
 import { hideNativeKeyboard, isNativeApp, isNativeIos, nativeApiOrigin } from "./lib/native-platform.js";
+import { requestPasswordReset } from "./lib/password-reset.js";
 import {
   isAppleSignInCanceled,
   signInWithAppleNative,
@@ -127,7 +128,11 @@ function mapAuthError(raw, t) {
   if (/email not confirmed/i.test(msg)) return t("auth.errConfirm", { defaultValue: "Confirme ton email avant de te connecter." });
   if (/user already registered|already been registered/i.test(msg)) return t("auth.errExists", { defaultValue: "Ce compte existe déjà. Connecte-toi ou réinitialise ton mot de passe." });
   if (/password/i.test(msg) && /at least|characters|weak/i.test(msg)) return t("auth.errPassword", { defaultValue: "Mot de passe trop court. Utilise au moins 6 caractères." });
-  if (/rate limit|too many/i.test(msg)) return t("auth.errRate", { defaultValue: "Trop de tentatives. Réessaie dans une minute." });
+  if (/rate limit|too many|RATE_LIMIT/i.test(msg)) return t("auth.errRate", { defaultValue: "Trop de tentatives. Réessaie dans une minute." });
+  if (/EMAIL_INVALID/i.test(msg)) return t("auth.errEmail", { defaultValue: "Email invalide." });
+  if (/RESET_FAIL|Envoi impossible/i.test(msg)) {
+    return t("auth.errReset", { defaultValue: "Envoi impossible pour le moment. Réessaie ou écris à support@myswym.app." });
+  }
   if (/network|fetch/i.test(msg)) return t("auth.errNetwork", { defaultValue: "Connexion impossible. Vérifie ton réseau et réessaie." });
   return msg || t("auth.errGeneric", { defaultValue: "Une erreur est survenue. Réessaie." });
 }
@@ -468,10 +473,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         }
         setSuccess(referralCode ? t("auth.createdReferral") : t("auth.created"));
       } else if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(mail, {
-          redirectTo: `${window.location.origin}/app`,
-        });
-        if (error) throw error;
+        await requestPasswordReset(mail);
         setSuccess(t("auth.resetSent"));
       }
     } catch (e) { setError(mapAuthError(e.message || e, t)); }
@@ -601,7 +603,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
         const showWebBack = !native && typeof onBack === "function";
         if (!(showBrandHeader || showNativeDismiss || showWebBack || showCreateChip || showLoginChip)) return null;
         return (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: native ? 8 : 44 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: native ? 32 : 44 }}>
             {showNativeDismiss ? (
               <button
                 type="button"

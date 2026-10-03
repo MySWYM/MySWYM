@@ -301,7 +301,7 @@ export function PolitiqueConfidentialitePage() {
       <Ul items={[
         "Logs de sécurité, préférences locales (consentement cookies, caches de plan avant connexion, code ?ref=, rappels de séance), session d’auth.",
         "Sur l’app iPhone : notifications locales planifiées sur l’appareil (rappels de séance, essai, badges), et, si tu acceptes, un jeton push APNs stocké pour t’alerter hors app (binômes, réponses support). Tu peux refuser ou révoquer dans Réglages iPhone. Pas de revente des jetons.",
-        "Polices : Geist et Space Grotesk auto-hébergées (pas de requête Google Fonts sur le site public).",
+        "Police : Geist auto-hébergée (pas de requête Google Fonts sur le site public).",
         "Vercel Speed Insights : métriques de performance du site (voir politique cookies).",
       ]} />
 
@@ -773,7 +773,7 @@ export function PolitiqueCookiesPage() {
 
       <H3>3.2 Polices (auto-hébergées)</H3>
       <Ul items={[
-        "Polices : Geist et Space Grotesk, servies depuis le même domaine que le site (fichiers woff2).",
+        "Police : Geist, servie depuis le même domaine que le site (fichiers woff2).",
         "Aucune requête vers fonts.googleapis.com / fonts.gstatic.com sur le site public.",
         "Pas de transfert d’adresse IP vers Google du fait des polices.",
       ]} />

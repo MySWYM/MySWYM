@@ -32,7 +32,15 @@
     "11": "November",
     "12": "Desember"
   },
-  "weekdays": ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"],
+  "weekdays": [
+    "Man",
+    "Tir",
+    "Ons",
+    "Tor",
+    "Fre",
+    "Lør",
+    "Søn"
+  ],
   "category": {
     "title": "Hva er målet ditt?",
     "lead": "Velg en kategori. Vi tilpasser øktene til løpet, distansen eller nivået ditt.",
@@ -51,25 +59,70 @@
     "eau_libre": "Hvilken distanse?",
     "diplome": "Hvilket diplom?",
     "fallback": "Presiser målet ditt",
-    "triathlon_xs": { "label": "XS", "dist": "400 m svøm" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m svøm" },
-    "triathlon_olympic": { "label": "Olympisk", "dist": "1 500 m svøm" },
-    "triathlon_half": { "label": "Half", "dist": "1 900 m svøm" },
-    "triathlon_ironman": { "label": "Full", "dist": "3 800 m svøm" },
-    "open_water_short": { "label": "Kort", "dist": "500 m til 1,5 km" },
-    "open_water_mid": { "label": "Middels", "dist": "2 km til 5 km" },
-    "open_water_long": { "label": "Lang", "dist": "7,5 km og oppover" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m og 250 m redning" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m crawl < 7'40\" · 100 m medley < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m svømmeføtter · redningsløype" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m svøm"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m svøm"
+    },
+    "triathlon_olympic": {
+      "label": "Olympisk",
+      "dist": "1 500 m svøm"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1 900 m svøm"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3 800 m svøm"
+    },
+    "open_water_short": {
+      "label": "Kort",
+      "dist": "500 m til 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Middels",
+      "dist": "2 km til 5 km"
+    },
+    "open_water_long": {
+      "label": "Lang",
+      "dist": "7,5 km og oppover"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m og 250 m redning"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m crawl < 7'40\" · 100 m medley < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m svømmeføtter · redningsløype"
+    }
   },
   "level": {
     "title": "Hva er svømmenivået ditt nå?",
     "lead": "Velg det som beskriver deg i dag, ikke det du sikter mot.",
-    "découverte": { "label": "Kommer i gang", "desc": "Jeg stopper etter noen lengder" },
-    "régulier": { "label": "Nybegynner", "desc": "Jeg klarer lengder, men jeg lærer fortsatt" },
-    "sportif": { "label": "Viderekommen", "desc": "Jeg er trygg i bassenget, men jeg vil bli bedre" },
-    "performance": { "label": "Avansert", "desc": "Jeg er en erfaren svømmer. Jeg kan alle fire svømmeartene." },
+    "découverte": {
+      "label": "Kommer i gang",
+      "desc": "Jeg stopper etter noen lengder"
+    },
+    "régulier": {
+      "label": "Nybegynner",
+      "desc": "Jeg klarer lengder, men jeg lærer fortsatt"
+    },
+    "sportif": {
+      "label": "Viderekommen",
+      "desc": "Jeg er trygg i bassenget, men jeg vil bli bedre"
+    },
+    "performance": {
+      "label": "Avansert",
+      "desc": "Jeg er en erfaren svømmer. Jeg kan alle fire svømmeartene."
+    },
     "beginnerBlocked": "Start mindre. Roma ble ikke bygget på én dag. Vi kan ikke love at du kommer i mål."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Annet område"
     },
     "severities": {
-      "mild": { "label": "Lett", "desc": "Ubehag av og til, du kan svømme" },
-      "moderate": { "label": "Moderat", "desc": "Hyppig smerte, intensiteten bør begrenses" },
-      "significant": { "label": "Betydelig", "desc": "Aktiviteten er sterkt begrenset" }
+      "mild": {
+        "label": "Lett",
+        "desc": "Ubehag av og til, du kan svømme"
+      },
+      "moderate": {
+        "label": "Moderat",
+        "desc": "Hyppig smerte, intensiteten bør begrenses"
+      },
+      "significant": {
+        "label": "Betydelig",
+        "desc": "Aktiviteten er sterkt begrenset"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Si hvilken svømmeart du liker best. I triatlon og åpent vann jobber vi mest med crawl.",
     "style": "Foretrukket stil",
     "stroke": "Favorittsvømmeart",
-    "crawl": { "label": "Crawl", "desc": "Jeg liker best å svømme crawl" },
-    "4_nages": { "label": "Medley / alle fire", "desc": "Jeg vil blande butterfly, rygg, bryst og crawl" },
+    "crawl": {
+      "label": "Crawl",
+      "desc": "Jeg liker best å svømme crawl"
+    },
+    "4_nages": {
+      "label": "Medley / alle fire",
+      "desc": "Jeg vil blande butterfly, rygg, bryst og crawl"
+    },
     "strokes": {
       "crawl": "Crawl",
       "dos": "Rygg",
@@ -196,7 +264,7 @@
     "loginLead": "Logg inn med Apple, Google eller e-posten din.",
     "registerLead": "7 dagers prøve, uten kort. Deretter settes øktene dine på pause.",
     "registerReferral": "Vervekode {{code}} : 20 % avslag på den første Premium-fakturaen din.",
-    "resetLead": "Skriv inn e-posten din, så sender vi en lenke for å tilbakestille.",
+    "resetLead": "Oppgi e-posten til kontoen din. Du får en sikker lenke for å velge et nytt passord.",
     "loginCta": "Logg inn",
     "registerCta": "Opprett kontoen min",
     "resetCta": "Send lenken",
@@ -223,7 +291,7 @@
     "exists": "Det finnes allerede en konto med denne e-posten.",
     "created": "Konto opprettet! Sjekk e-posten din for å bekrefte, og logg deretter inn.",
     "createdReferral": "Konto opprettet! Vervingen er lagret, sjekk e-posten din, og logg deretter inn.",
-    "resetSent": "E-post sendt! Sjekk innboksen din for å tilbakestille passordet.",
+    "resetSent": "Hvis det finnes en konto for denne e-posten, er en melding på vei. Sjekk også søppelpost.",
     "genericError": "Noe gikk galt.",
     "socialOff": "Denne innloggingen er ikke skrudd på på serveren ennå. Prøv e-post / passord.",
     "socialAppleConfig": "Apple-innlogging er ikke satt opp riktig (Supabase). Prøv e-post / passord.",

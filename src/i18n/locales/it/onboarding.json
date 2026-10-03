@@ -32,7 +32,15 @@
     "11": "Novembre",
     "12": "Dicembre"
   },
-  "weekdays": ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"],
+  "weekdays": [
+    "Lun",
+    "Mar",
+    "Mer",
+    "Gio",
+    "Ven",
+    "Sab",
+    "Dom"
+  ],
   "category": {
     "title": "Qual è il tuo obiettivo?",
     "lead": "Scegli una categoria. Adattiamo le sessioni alla gara, alla distanza o al tuo livello.",
@@ -51,25 +59,70 @@
     "eau_libre": "Quale distanza?",
     "diplome": "Quale diploma?",
     "fallback": "Precisa il tuo obiettivo",
-    "triathlon_xs": { "label": "XS", "dist": "400 m di nuoto" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m di nuoto" },
-    "triathlon_olympic": { "label": "Olimpico", "dist": "1.500 m di nuoto" },
-    "triathlon_half": { "label": "Half", "dist": "1.900 m di nuoto" },
-    "triathlon_ironman": { "label": "Full", "dist": "3.800 m di nuoto" },
-    "open_water_short": { "label": "Corta", "dist": "500 m a 1,5 km" },
-    "open_water_mid": { "label": "Media", "dist": "2 km a 5 km" },
-    "open_water_long": { "label": "Lunga", "dist": "7,5 km e oltre" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m e 250 m di salvataggio" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m stile libero < 7'40\" · 100 m misti < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m pinne · percorso di salvataggio" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m di nuoto"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m di nuoto"
+    },
+    "triathlon_olympic": {
+      "label": "Olimpico",
+      "dist": "1.500 m di nuoto"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1.900 m di nuoto"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3.800 m di nuoto"
+    },
+    "open_water_short": {
+      "label": "Corta",
+      "dist": "500 m a 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Media",
+      "dist": "2 km a 5 km"
+    },
+    "open_water_long": {
+      "label": "Lunga",
+      "dist": "7,5 km e oltre"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m e 250 m di salvataggio"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m stile libero < 7'40\" · 100 m misti < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m pinne · percorso di salvataggio"
+    }
   },
   "level": {
     "title": "Qual è il tuo livello di nuoto adesso?",
     "lead": "Scegli quello che ti descrive oggi, non quello a cui punti.",
-    "découverte": { "label": "Primi passi", "desc": "Mi fermo dopo poche vasche" },
-    "régulier": { "label": "Principiante", "desc": "So nuotare le vasche, ma sto ancora imparando" },
-    "sportif": { "label": "Intermedio", "desc": "Sono a mio agio in piscina, ma voglio migliorare" },
-    "performance": { "label": "Avanzato", "desc": "Sono un nuotatore esperto. So nuotare tutti e quattro gli stili." },
+    "découverte": {
+      "label": "Primi passi",
+      "desc": "Mi fermo dopo poche vasche"
+    },
+    "régulier": {
+      "label": "Principiante",
+      "desc": "So nuotare le vasche, ma sto ancora imparando"
+    },
+    "sportif": {
+      "label": "Intermedio",
+      "desc": "Sono a mio agio in piscina, ma voglio migliorare"
+    },
+    "performance": {
+      "label": "Avanzato",
+      "desc": "Sono un nuotatore esperto. So nuotare tutti e quattro gli stili."
+    },
     "beginnerBlocked": "Parti più in piccolo. Roma non è stata fatta in un giorno. Non possiamo prometterti che arriverai fino in fondo."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Altra zona"
     },
     "severities": {
-      "mild": { "label": "Lieve", "desc": "Fastidio occasionale, si può nuotare" },
-      "moderate": { "label": "Moderata", "desc": "Dolore frequente, l'intensità va limitata" },
-      "significant": { "label": "Importante", "desc": "L'attività è molto limitata" }
+      "mild": {
+        "label": "Lieve",
+        "desc": "Fastidio occasionale, si può nuotare"
+      },
+      "moderate": {
+        "label": "Moderata",
+        "desc": "Dolore frequente, l'intensità va limitata"
+      },
+      "significant": {
+        "label": "Importante",
+        "desc": "L'attività è molto limitata"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Dicci il tuo stile preferito: nel triathlon e nelle acque libere lavoriamo soprattutto lo stile libero.",
     "style": "Stile preferito",
     "stroke": "Stile preferito",
-    "crawl": { "label": "Stile libero", "desc": "Mi piace nuotare soprattutto a stile libero" },
-    "4_nages": { "label": "Misti", "desc": "Voglio mischiare farfalla, dorso, rana e stile libero" },
+    "crawl": {
+      "label": "Stile libero",
+      "desc": "Mi piace nuotare soprattutto a stile libero"
+    },
+    "4_nages": {
+      "label": "Misti",
+      "desc": "Voglio mischiare farfalla, dorso, rana e stile libero"
+    },
     "strokes": {
       "crawl": "Stile libero",
       "dos": "Dorso",
@@ -196,7 +264,7 @@
     "loginLead": "Entra con Apple, Google o la tua email.",
     "registerLead": "Prova di 7 giorni, senza carta. Poi le tue sessioni vanno in pausa.",
     "registerReferral": "Codice invito {{code}} : 20% di sconto sulla tua prima fattura Premium.",
-    "resetLead": "Inserisci la tua email e ti inviamo un link per reimpostarla.",
+    "resetLead": "Indica l’email del tuo account. Riceverai un link sicuro per scegliere una nuova password.",
     "loginCta": "Accedi",
     "registerCta": "Crea il mio account",
     "resetCta": "Invia il link",
@@ -223,7 +291,7 @@
     "exists": "Esiste già un account con questa email.",
     "created": "Account creato! Controlla l'email per confermare, poi accedi.",
     "createdReferral": "Account creato! Invito salvato, controlla l'email e poi accedi.",
-    "resetSent": "Email inviata! Controlla la posta per reimpostare la password.",
+    "resetSent": "Se esiste un account per questa email, il messaggio è in arrivo. Controlla anche lo spam.",
     "genericError": "Qualcosa è andato storto.",
     "socialOff": "Questo accesso non è ancora attivo sul server. Prova con email e password.",
     "socialAppleConfig": "L'accesso con Apple non è configurato bene (Supabase). Prova con email e password.",

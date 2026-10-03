@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Undo2 } from "lucide-react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 /**
  * CTA danger pleine largeur (style ms-pill-cta).
@@ -9,9 +10,9 @@ import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-
  */
 export default function TimedUndoAction({
   initialSeconds = 10,
-  deleteLabel = "Supprimer mon compte",
-  undoLabel = "Annuler",
-  busyLabel = "Suppression…",
+  deleteLabel,
+  undoLabel,
+  busyLabel,
   disabled = false,
   busy = false,
   blocked = false,
@@ -20,6 +21,10 @@ export default function TimedUndoAction({
   icon,
   className = "",
 }) {
+  const { t } = useTranslation("app");
+  const resolvedDelete = deleteLabel ?? t("settings.deleteAccount");
+  const resolvedUndo = undoLabel ?? t("settings.deleteUndo");
+  const resolvedBusy = busyLabel ?? t("settings.deleteBusy");
   const reduced = useReducedMotion();
   const [isDeleting, setIsDeleting] = useState(false);
   const [countDown, setCountDown] = useState(initialSeconds);
@@ -72,12 +77,12 @@ export default function TimedUndoAction({
   };
 
   const armed = isDeleting && !busy;
-  const label = busy ? busyLabel : armed ? undoLabel : deleteLabel;
+  const label = busy ? resolvedBusy : armed ? resolvedUndo : resolvedDelete;
   const ariaLabel = busy
-    ? busyLabel
+    ? resolvedBusy
     : armed
-      ? `${undoLabel}, ${countDown} s restantes`
-      : deleteLabel;
+      ? `${resolvedUndo}, ${countDown} s`
+      : resolvedDelete;
 
   const spring = reduced
     ? { duration: 0 }

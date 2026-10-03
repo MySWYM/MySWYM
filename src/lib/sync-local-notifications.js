@@ -17,6 +17,7 @@ import {
   countFinishedSessions,
   hasAskedAppStoreReview,
 } from "./app-store-review.js";
+import { nextNewsletterNudgeAtMs } from "./newsletter-opt-in.js";
 
 function lastCompletedIso(plan) {
   if (!plan) return null;
@@ -60,6 +61,7 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
     checkoutAbandonedAt: access.hasPremiumAccess ? null : readCheckoutAbandonedAt(user.id),
     reviewEligible: finished >= APP_STORE_REVIEW_MIN_SESSIONS,
     reviewAlreadyAsked: hasAskedAppStoreReview(),
+    newsletterNudgeAtMs: nextNewsletterNudgeAtMs(user),
   });
   return rescheduleMySwymLocalNotifications(planned);
 }

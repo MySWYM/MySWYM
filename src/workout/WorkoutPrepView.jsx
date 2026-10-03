@@ -4,6 +4,7 @@
  * Liste dense (lisible en un écran) + pastilles ⓘ.
  */
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Copy, Printer, Share2, Watch } from "lucide-react";
 import { buildWorkoutView } from "../lib/workout-display.js";
 import { openSessionPrint } from "../lib/session-export.js";
@@ -78,6 +79,7 @@ export default function WorkoutPrepView({
       });
     }
   }, [session]);
+  const { t } = useTranslation("app");
   const tSwim = useSessionText();
   const [drill, setDrill] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
@@ -118,7 +120,7 @@ export default function WorkoutPrepView({
   const metaBits = [
     header.distanceLabel,
     header.durationLabel,
-    header.intensityZone,
+    header.intensityZone ? tSwim(header.intensityZone) : null,
   ].filter(Boolean);
 
   const equipmentLabel = (header.equipment || [])
@@ -185,12 +187,12 @@ export default function WorkoutPrepView({
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
               {equipmentLabel && (
                 <div style={{ fontSize: 13, color: G.grey, fontWeight: 600 }}>
-                  Matériel · {equipmentLabel}
+                  {tSwim("Matériel")} · {equipmentLabel}
                 </div>
               )}
               {header.intensityCue && (
                 <div style={{ fontSize: 13, color: G.grey, fontWeight: 600 }}>
-                  Objectif · {String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1)}
+                  {tSwim("Objectif")} · {tSwim(String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1))}
                 </div>
               )}
             </div>
@@ -202,12 +204,12 @@ export default function WorkoutPrepView({
         <div className="ms-workout-meta">
           {equipmentLabel && (
             <div className="ms-workout-meta-line">
-              Matériel · {equipmentLabel}
+              {tSwim("Matériel")} · {equipmentLabel}
             </div>
           )}
           {header.intensityCue && (
             <div className="ms-workout-meta-line">
-              Objectif · {String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1)}
+              {tSwim("Objectif")} · {tSwim(String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1))}
             </div>
           )}
         </div>
@@ -286,7 +288,7 @@ export default function WorkoutPrepView({
           {refCopied
             ? <Check size={12} color={G.mint} strokeWidth={3} />
             : <Copy size={12} color={G.greyMid} />}
-          {refCopied ? "Réf. copiée" : `Réf. ${provenance.refCode}`}
+          {refCopied ? t("export.refCopied") : t("export.ref", { code: provenance.refCode })}
         </button>
       )}
 
@@ -328,14 +330,14 @@ export default function WorkoutPrepView({
             /* share / impression refusés */
           }
         }}
-        aria-label={nativeIos ? "Partager ou imprimer la fiche de séance" : "Imprimer la fiche de séance"}
+        aria-label={nativeIos ? t("export.sharePrint") : t("export.printSheet")}
       >
         {nativeIos ? (
           <Share2 size={16} color="currentColor" />
         ) : (
           <Printer size={16} color="currentColor" />
         )}
-        {nativeIos ? "Partager / Imprimer" : "Imprimer la fiche"}
+        {nativeIos ? t("export.sharePrint") : t("export.printSheet")}
       </button>
 
       <div style={{ marginTop: 10 }}>
@@ -368,10 +370,10 @@ export default function WorkoutPrepView({
               setWatchBusy(false);
             }
           }}
-          aria-label="Exporter la séance pour une montre Garmin"
+          aria-label={t("export.watch")}
         >
           <Watch size={16} color="currentColor" />
-          {watchBusy ? "Préparation du fichier…" : "Exporter pour la montre"}
+          {watchBusy ? t("export.watchBusy") : t("export.watch")}
         </button>
         <p
           style={{
@@ -382,7 +384,7 @@ export default function WorkoutPrepView({
             lineHeight: 1.45,
           }}
         >
-          Fichier Garmin à importer dans Garmin Connect. Pas pour Apple Watch.
+          {t("export.garminHint")}
         </p>
         {watchReadyHint && (
           <p
@@ -395,7 +397,7 @@ export default function WorkoutPrepView({
               lineHeight: 1.45,
             }}
           >
-            Fichier prêt. Garmin Connect → Entraînements → Importer.
+            {t("export.garminReady")}
           </p>
         )}
       </div>

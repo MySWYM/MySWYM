@@ -124,7 +124,7 @@ export async function sendResetPasswordEmail(
   return sendReactEmail({
     category: "reset_password",
     to: input.to,
-    subject: "Réinitialise ton mot de passe",
+    subject: "Réinitialise ton mot de passe MySWYM",
     react: ResetPasswordEmail({ resetUrl: input.resetUrl }),
     userId: input.userId,
   });

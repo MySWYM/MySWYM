@@ -15,6 +15,7 @@ export const NOTIF_IDS = {
   CHECKOUT_ABANDON: 1007,
   COMEBACK_LONG: 1008,
   REVIEW_ASK: 1009,
+  NEWSLETTER: 1010,
 };
 
 const ALL_IDS = Object.values(NOTIF_IDS);
@@ -71,6 +72,12 @@ function dispatchFromLocalExtra(extra) {
   }
   if (kind === "review_ask") {
     window.dispatchEvent(new CustomEvent("myswym:open-app-store-review"));
+    return;
+  }
+  if (kind === "newsletter_nudge") {
+    window.dispatchEvent(new CustomEvent("myswym:open-tab", {
+      detail: { tab: "profile", panel: "data" },
+    }));
     return;
   }
   if (kind === "session_reminder" || kind === "streak_protect" || kind === "comeback" || kind === "comeback_long") {
