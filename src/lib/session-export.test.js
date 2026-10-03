@@ -2,7 +2,12 @@
  * Tests export séance + projection semaine.
  * Usage: node src/lib/session-export.test.js
  */
-import { formatSessionPlainText, buildSessionPrintHtml, sessionPrintFilename } from "./session-export.js";
+import {
+  formatSessionPlainText,
+  buildSessionPrintHtml,
+  buildSessionPrintPdf,
+  sessionPrintFilename,
+} from "./session-export.js";
 import { buildWeekProjection } from "./week-projection.js";
 
 function assert(cond, msg) {
@@ -50,7 +55,20 @@ assert(!htmlShare.includes("window.print"), "pas d’auto-print pour Share iOS")
 
 const fname = sessionPrintFilename(sample, new Date("2026-09-21T12:00:00Z"));
 assert(fname.startsWith("myswym-seuil-progressif-"), `filename slug: ${fname}`);
-assert(fname.endsWith(".html"), "filename .html");
+assert(fname.endsWith(".pdf"), "filename .pdf");
+assert(
+  sessionPrintFilename(sample, new Date("2026-09-21T12:00:00Z"), "html").endsWith(".html"),
+  "ext html encore possible",
+);
+
+const pdfBlob = await buildSessionPrintPdf(sample);
+assert(pdfBlob instanceof Blob, "pdf blob");
+assert(pdfBlob.type === "application/pdf" || pdfBlob.size > 100, "pdf non vide");
+const pdfHead = new Uint8Array(await pdfBlob.slice(0, 4).arrayBuffer());
+assert(
+  String.fromCharCode(...pdfHead) === "%PDF",
+  `magic PDF: ${String.fromCharCode(...pdfHead)}`,
+);
 
 const structured = {
   title: "Pyramide vitesse",

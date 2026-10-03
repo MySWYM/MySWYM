@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, CircleHelp, Mail, Bug, ExternalLink, Info, Globe, Star } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { legalHref } from "./lib/legal-copy.js";
@@ -151,46 +152,47 @@ function HelpRow({ icon: Icon, title, subtitle, onClick, href, external }) {
 
 /** Écran Support (réf. Miracle). */
 export function ProfileSupportPanel({ onBack }) {
+  const { t } = useTranslation("app");
   const locale = getStoredLanguage();
   const faqHref = withLocalePrefix("/faq", locale);
 
   return (
-    <PanelShell title="Support" onBack={onBack}>
-      <div className="ms-profile-group-label">Messages</div>
+    <PanelShell title={t("help.support")} onBack={onBack}>
+      <div className="ms-profile-group-label">{t("help.messages")}</div>
       <div className="ms-profile-account-stack">
         <HelpRow
           icon={Mail}
-          title="Écrire à Arthur"
-          subtitle="Messages avec le coach"
+          title={t("help.writeArthur")}
+          subtitle={t("help.writeArthurHint")}
           onClick={() => openSupportChat("messages")}
         />
       </div>
 
-      <div className="ms-profile-group-label">Obtenir de l’aide</div>
+      <div className="ms-profile-group-label">{t("help.getHelp")}</div>
       <div className="ms-profile-account-stack">
         <HelpRow
           icon={CircleHelp}
-          title="Centre d’aide"
-          subtitle="FAQ et articles"
+          title={t("help.center")}
+          subtitle={t("help.centerHint")}
           href={faqHref}
           external
         />
         <HelpRow
           icon={Bug}
-          title="Signaler un bug"
-          subtitle="Aide-nous à améliorer l’app"
+          title={t("help.bug")}
+          subtitle={t("help.bugHint")}
           onClick={() => openSupportChat("messages")}
         />
         <HelpRow
           icon={Star}
-          title="Donner son avis"
-          subtitle="Partage ton retour sur MySWYM"
+          title={t("help.review")}
+          subtitle={t("help.reviewHint")}
           href={`${withLocalePrefix("/avis", locale)}#write`}
           external
         />
       </div>
 
-      <div className="ms-profile-group-label">Communauté</div>
+      <div className="ms-profile-group-label">{t("help.community")}</div>
       <div className="ms-profile-account-stack">
         <HelpRow
           icon={InstagramMark}
@@ -209,20 +211,20 @@ export function ProfileSupportPanel({ onBack }) {
         <HelpRow
           icon={FacebookMark}
           title="Facebook"
-          subtitle="Suivre MySWYM"
+          subtitle={t("help.follow")}
           href={FB_URL}
           external
         />
         <HelpRow
           icon={LinkedinMark}
           title="LinkedIn"
-          subtitle="Suivre MySWYM"
+          subtitle={t("help.follow")}
           href={LI_URL}
           external
         />
         <HelpRow
           icon={Globe}
-          title="Site mySWYM"
+          title={t("help.site")}
           subtitle="myswym.app"
           href={withLocalePrefix("/", locale)}
           external
@@ -234,22 +236,23 @@ export function ProfileSupportPanel({ onBack }) {
 
 /** Écran Politiques / documents légaux. */
 export function ProfileLegalPanel({ onBack }) {
+  const { t } = useTranslation("app");
   const locale = getStoredLanguage();
   const docs = [
-    { key: "cgu", label: "Conditions d’utilisation" },
-    { key: "privacy", label: "Politique de confidentialité" },
-    { key: "cookies", label: "Politique cookies" },
-    { key: "mentions", label: "Mentions légales" },
-    { key: "cgv", label: "Conditions de vente" },
+    { key: "cgu", label: t("help.cgu") },
+    { key: "privacy", label: t("help.privacy") },
+    { key: "cookies", label: t("help.cookies") },
+    { key: "mentions", label: t("help.mentions") },
+    { key: "cgv", label: t("help.cgv") },
   ];
 
   return (
-    <PanelShell title="Politiques" onBack={onBack}>
+    <PanelShell title={t("settings.policies")} onBack={onBack}>
       <div className="ms-profile-legal-intro">
-        En utilisant MySWYM, tu acceptes les conditions d’utilisation et reconnais avoir pris connaissance de la politique de confidentialité.
+        {t("help.policiesIntro")}
       </div>
 
-      <div className="ms-profile-group-label">Documents légaux</div>
+      <div className="ms-profile-group-label">{t("help.docs")}</div>
       <div className="ms-profile-account-stack">
         {docs.map((doc) => (
           <a
@@ -268,9 +271,9 @@ export function ProfileLegalPanel({ onBack }) {
       </div>
 
       <p className="ms-profile-legal-meta">
-        Documents à jour sur le site mySWYM
+        {t("help.docsMeta")}
         <br />
-        mySWYM · natation
+        {t("help.docsBrand")}
       </p>
     </PanelShell>
   );
@@ -278,6 +281,7 @@ export function ProfileLegalPanel({ onBack }) {
 
 /** Lignes réglages : Support + Politiques. */
 export function ProfileHelpSettingsRows({ onOpenSupport, onOpenLegal }) {
+  const { t } = useTranslation("app");
   return (
     <>
       <button
@@ -300,7 +304,7 @@ export function ProfileHelpSettingsRows({ onOpenSupport, onOpenLegal }) {
         <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.12)" }}>
           <CircleHelp size={18} color={G.blue} />
         </span>
-        <span className="ms-profile-settings-label" style={{ flex: 1 }}>Messages</span>
+        <span className="ms-profile-settings-label" style={{ flex: 1 }}>{t("help.messages")}</span>
         <ChevronRight size={18} color={G.greyMid} />
       </button>
       <button
@@ -324,7 +328,7 @@ export function ProfileHelpSettingsRows({ onOpenSupport, onOpenLegal }) {
         <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.12)" }}>
           <Info size={18} color={G.blue} />
         </span>
-        <span className="ms-profile-settings-label" style={{ flex: 1 }}>Politiques</span>
+        <span className="ms-profile-settings-label" style={{ flex: 1 }}>{t("settings.policies")}</span>
         <ChevronRight size={18} color={G.greyMid} />
       </button>
     </>

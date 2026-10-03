@@ -691,7 +691,7 @@ export default function ProfileTab({
       className={iosCover ? "ios-cover-lock" : undefined}
       style={{
         minHeight: "100dvh",
-        ...(iosCover ? { height: "100dvh", overflow: "hidden" } : {}),
+        ...(iosCover ? { overflow: "hidden" } : {}),
         paddingBottom: iosCover
           ? 0
           : profileDirty
@@ -1474,8 +1474,13 @@ export default function ProfileTab({
       )}
 
       {isIosSimpleNav() && iosShowPremiumBar(access) ? (
-        <div style={{ padding: "0 0 16px" }}>
-          <IosPremiumBar onUpgrade={onUpgrade} source="profile" />
+        <div style={{ padding: "12px 0 16px" }}>
+          <IosPremiumBar
+            onUpgrade={onUpgrade}
+            source="profile"
+            accessState={access}
+            hasSessionAccess={isPremium || access.hasPremiumAccess}
+          />
         </div>
       ) : null}
 

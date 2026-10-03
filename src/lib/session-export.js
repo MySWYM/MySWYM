@@ -1,7 +1,7 @@
 /**
  * Export séance, texte (Strava / WhatsApp) et impression bord de bassin.
- * Impression = fiche compacte (vise 1 page A4).
- * Sur Capacitor iOS : Share sheet (window.print est un no-op en WKWebView).
+ * Impression web = HTML compact (vise 1 page A4).
+ * Sur Capacitor iOS : Share sheet PDF (window.print est un no-op en WKWebView).
  */
 import { buildWorkoutView } from "./workout-display.js";
 import { humanizeArthurDisplayTerms } from "./sports-engine/session-labels.js";
@@ -203,7 +203,7 @@ export function formatSessionPlainText(session, opts = {}) {
 }
 
 /** Nom de fichier pour Share / téléchargement. */
-export function sessionPrintFilename(session, now = new Date()) {
+export function sessionPrintFilename(session, now = new Date(), ext = "pdf") {
   const view = buildWorkoutView(session || {});
   const raw = String(view.header?.title || "seance")
     .normalize("NFD")
@@ -215,7 +215,143 @@ export function sessionPrintFilename(session, now = new Date()) {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
-  return `myswym-${raw || "seance"}-${y}${m}${d}.html`;
+  const safeExt = String(ext || "pdf").replace(/^\./, "").toLowerCase() || "pdf";
+  return `myswym-${raw || "seance"}-${y}${m}${d}.${safeExt}`;
+}
+
+/**
+ * PDF texte propre (A4), bord de bassin.
+ * @param {object} session
+ * @returns {Promise<Blob>}
+ */
+export async function buildSessionPrintPdf(session) {
+  const { jsPDF } = await import("jspdf");
+  const view = buildWorkoutView(session || {});
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 16;
+  const marginTop = 16;
+  const marginBottom = 16;
+  const contentW = pageW - marginX * 2;
+  let y = marginTop;
+
+  const ensureSpace = (needMm) => {
+    if (y + needMm <= pageH - marginBottom) return;
+    doc.addPage();
+    y = marginTop;
+  };
+
+  const writeWrapped = (text, { size = 10, style = "normal", color = [28, 35, 51], gap = 4, indent = 0 } = {}) => {
+    const line = String(text || "").trim();
+    if (!line) return;
+    doc.setFont("helvetica", style);
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(line, contentW - indent);
+    const lineH = size * 0.42;
+    ensureSpace(lines.length * lineH + 1);
+    doc.text(lines, marginX + indent, y);
+    y += lines.length * lineH + gap;
+  };
+
+  const title = nageurText(view.header?.title || "Séance");
+  const meta = [
+    view.header?.distanceLabel,
+    view.header?.durationLabel,
+    view.header?.intensityZone ? nageurText(view.header.intensityZone) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  writeWrapped("MySWYM", { size: 9, style: "bold", color: [37, 99, 235], gap: 3 });
+  writeWrapped(title, { size: 16, style: "bold", color: [15, 23, 42], gap: 3 });
+  if (meta) writeWrapped(meta, { size: 10, color: [71, 85, 105], gap: 3 });
+
+  const equipmentLabel = (view.header?.equipment || [])
+    .map((id) => translateSessionText(EQUIPMENT_LABELS[id] || id))
+    .filter(Boolean)
+    .join(" · ");
+  if (equipmentLabel) {
+    writeWrapped(`${translateSessionText("Matériel")} · ${equipmentLabel}`, {
+      size: 9,
+      color: [71, 85, 105],
+      gap: 2,
+    });
+  }
+  if (view.header?.intensityCue) {
+    writeWrapped(
+      `${translateSessionText("Objectif")} · ${nageurText(capitalizeCue(view.header.intensityCue))}`,
+      { size: 9, color: [71, 85, 105], gap: 2 },
+    );
+  }
+  const banner = session?.sheetWeekRole;
+  if (banner?.banner) {
+    const bannerLine = [banner.label, nageurText(banner.banner)].filter(Boolean).join(" · ");
+    writeWrapped(bannerLine, { size: 9, style: "italic", color: [51, 65, 85], gap: 3 });
+  }
+
+  y += 2;
+  ensureSpace(2);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.line(marginX, y, pageW - marginX, y);
+  y += 6;
+
+  for (const sid of SECTION_ORDER) {
+    const section = (view.sections || []).find((s) => s.id === sid);
+    if (!section?.exercises?.length) continue;
+    const meters = section.metersLabel ? ` · ${section.metersLabel}` : "";
+    writeWrapped(`${translateSessionText(section.label)}${meters}`, {
+      size: 11,
+      style: "bold",
+      color: [15, 23, 42],
+      gap: 3,
+    });
+
+    for (const ex of section.exercises) {
+      const n = ex.phaseIndex || ex.index || "";
+      const headline = formatPrintHeadline(ex);
+      writeWrapped(n ? `${n}. ${headline}` : headline, {
+        size: 10,
+        style: "bold",
+        color: [30, 41, 59],
+        gap: 1.5,
+        indent: 2,
+      });
+      const cue = formatPrintCue(ex);
+      if (cue) {
+        writeWrapped(cue, { size: 9, color: [51, 65, 85], gap: 1.2, indent: 6 });
+      }
+      for (const drill of formatPrintDrillLines(ex)) {
+        writeWrapped(`· ${drill}`, { size: 9, color: [71, 85, 105], gap: 1, indent: 6 });
+      }
+      const chips = formatPrintChips(ex);
+      if (chips.length) {
+        writeWrapped(chips.join(" · "), { size: 8, color: [100, 116, 139], gap: 2.5, indent: 6 });
+      } else {
+        y += 1.5;
+      }
+    }
+    y += 2;
+  }
+
+  if (!(view.sections || []).some((s) => s?.exercises?.length)) {
+    const details = Array.isArray(session?.details) ? session.details : [];
+    for (const d of details) {
+      const t = String(d || "").trim();
+      if (t) writeWrapped(t, { size: 10, color: [30, 41, 59], gap: 2 });
+    }
+  }
+
+  y += 4;
+  ensureSpace(8);
+  doc.setDrawColor(226, 232, 240);
+  doc.line(marginX, y, pageW - marginX, y);
+  y += 5;
+  writeWrapped("MySWYM · myswym.app", { size: 8, color: [148, 163, 184], gap: 0 });
+
+  return doc.output("blob");
 }
 
 /**
@@ -499,15 +635,15 @@ export async function shareSessionPrint(session) {
   if (typeof window === "undefined" || !session) {
     return { ok: false, reason: "unavailable" };
   }
-  const filename = sessionPrintFilename(session);
-  const html = buildSessionPrintHtml(session, { autoPrint: false });
+  const filename = sessionPrintFilename(session, new Date(), "pdf");
   const title = "Séance MySWYM";
-  const shareText = "Fiche bord de bassin : ouvre le fichier, puis Imprimer.";
+  const shareText = "Fiche bord de bassin MySWYM";
 
   try {
-    const htmlFile = new File([html], filename, { type: "text/html" });
-    if (navigator.canShare?.({ files: [htmlFile] })) {
-      await navigator.share({ files: [htmlFile], title, text: shareText });
+    const pdfBlob = await buildSessionPrintPdf(session);
+    const pdfFile = new File([pdfBlob], filename, { type: "application/pdf" });
+    if (navigator.canShare?.({ files: [pdfFile] })) {
+      await navigator.share({ files: [pdfFile], title, text: shareText });
       return { ok: true, shared: true };
     }
   } catch (e) {
@@ -518,7 +654,7 @@ export async function shareSessionPrint(session) {
 
   try {
     const plain = formatSessionPlainText(session);
-    const txtName = filename.replace(/\.html$/i, ".txt");
+    const txtName = filename.replace(/\.pdf$/i, ".txt");
     const txtFile = new File([plain], txtName, { type: "text/plain" });
     if (navigator.canShare?.({ files: [txtFile] })) {
       await navigator.share({ files: [txtFile], title, text: shareText });

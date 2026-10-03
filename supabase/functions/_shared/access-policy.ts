@@ -16,7 +16,11 @@ export type AuthUser = {
   app_metadata?: Record<string, unknown>;
 };
 
-/** Compte anonyme : pas d’essai 7j tant que email / Apple / Google n’est pas lié. */
+/**
+ * Compte anonyme Supabase Auth.
+ * Produit : même essai 7j sans carte que l’inscription (persisté sur user.id,
+ * conservé à la conversion email / Apple / Google).
+ */
 export function isAnonymousAuthUser(user?: AuthUser | null) {
   return user?.is_anonymous === true;
 }

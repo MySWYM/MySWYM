@@ -1,6 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { FONT, FONT_DISPLAY } from "../theme/brand.js";
 import { G } from "../theme/palette.js";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export {
   WHATS_NEW_CAMPAIGN,
@@ -36,18 +37,18 @@ const BULLETS = [
  */
 export default function WhatsNewSheet({ onContinue, loading = false }) {
   return (
-    <div
-      className="sheet-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="whats-new-title"
-      onClick={(e) => {
-        if (loading) return;
-        if (e.target === e.currentTarget) onContinue?.();
+    <SheetCardShell
+      onClose={loading ? null : onContinue}
+      overlayProps={{
+        role: "dialog",
+        "aria-modal": true,
+        "aria-labelledby": "whats-new-title",
+        onClick: (e) => {
+          if (loading) return;
+          if (e.target === e.currentTarget) onContinue?.();
+        },
       }}
     >
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
         <div
           style={{
             width: 52,
@@ -157,7 +158,6 @@ export default function WhatsNewSheet({ onContinue, loading = false }) {
         >
           {loading ? "Mise à jour…" : "Continuer"}
         </button>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

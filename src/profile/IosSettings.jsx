@@ -146,6 +146,7 @@ export function IosLanguagePanel({ onBack }) {
 }
 
 export function IosPasswordPanel({ user, onBack, onMsg }) {
+  const { t } = useTranslation("app");
   const canPwd = hasEmailPasswordProvider(user);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -157,17 +158,17 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
 
   const save = async () => {
     if (next.length < 6) {
-      setError("Le mot de passe doit faire au moins 6 caractères.");
+      setError(t("settings.passwordMin"));
       setOk(false);
       return;
     }
     if (next !== confirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t("settings.passwordMismatch"));
       setOk(false);
       return;
     }
     if (!current) {
-      setError("Indique ton mot de passe actuel.");
+      setError(t("settings.passwordNeedCurrent"));
       setOk(false);
       return;
     }
@@ -176,12 +177,12 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
     setBusy(true);
     try {
       const email = user?.email;
-      if (!email) throw new Error("Compte sans e-mail.");
+      if (!email) throw new Error(t("settings.passwordNoEmail"));
       const { error: signErr } = await supabase.auth.signInWithPassword({
         email,
         password: current,
       });
-      if (signErr) throw new Error("Mot de passe actuel incorrect.");
+      if (signErr) throw new Error(t("settings.passwordWrong"));
       const { error: upErr } = await supabase.auth.updateUser({ password: next });
       if (upErr) throw upErr;
       setCurrent("");
@@ -189,9 +190,9 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
       setConfirm("");
       setOk(true);
       playUiSound("success");
-      onMsg?.({ type: "ok", text: "Mot de passe mis à jour." });
+      onMsg?.({ type: "ok", text: t("settings.passwordUpdated") });
     } catch (e) {
-      setError(e?.message || "Impossible de mettre à jour le mot de passe.");
+      setError(e?.message || t("settings.passwordFail"));
     } finally {
       setBusy(false);
     }
@@ -200,7 +201,7 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
   const forgot = async () => {
     const email = user?.email;
     if (!email) {
-      setError("Compte sans e-mail.");
+      setError(t("settings.passwordNoEmail"));
       return;
     }
     setResetBusy(true);
@@ -212,65 +213,65 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (resetErr) throw resetErr;
       playUiSound("success");
-      onMsg?.({ type: "ok", text: "E-mail de réinitialisation envoyé." });
+      onMsg?.({ type: "ok", text: t("settings.passwordResetSent") });
       setOk(false);
     } catch (e) {
-      setError(e?.message || "Impossible d’envoyer l’e-mail.");
+      setError(e?.message || t("settings.passwordResetFail"));
     } finally {
       setResetBusy(false);
     }
   };
 
   return (
-    <PanelShell title="Mettre à jour le mot de passe" onBack={onBack}>
+    <PanelShell title={t("settings.passwordTitle")} onBack={onBack}>
       {!canPwd ? (
         <p className="ios-settings-lead">
-          Tu te connectes avec Apple. Il n’y a pas de mot de passe MySWYM à changer.
+          {t("settings.passwordApple")}
         </p>
       ) : (
         <>
           <label className="ios-settings-field">
-            <span className="ios-settings-field-label">Mot de passe actuel</span>
+            <span className="ios-settings-field-label">{t("settings.passwordCurrent")}</span>
             <input
               type="password"
               autoComplete="current-password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
-              placeholder="Mot de passe actuel"
+              placeholder={t("settings.passwordCurrent")}
             />
           </label>
           <button type="button" className="ios-settings-text-btn" onClick={forgot} disabled={resetBusy}>
-            {resetBusy ? "Envoi…" : "Mot de passe oublié ?"}
+            {resetBusy ? t("settings.passwordSending") : t("settings.passwordForgot")}
           </button>
           <label className="ios-settings-field">
-            <span className="ios-settings-field-label">Nouveau mot de passe</span>
+            <span className="ios-settings-field-label">{t("settings.passwordNew")}</span>
             <input
               type="password"
               autoComplete="new-password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
-              placeholder="Nouveau mot de passe"
+              placeholder={t("settings.passwordNew")}
             />
           </label>
           <label className="ios-settings-field">
-            <span className="ios-settings-field-label">Confirmer le nouveau mot de passe</span>
+            <span className="ios-settings-field-label">{t("settings.passwordConfirm")}</span>
             <input
               type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              placeholder="Confirmer le nouveau mot de passe"
+              placeholder={t("settings.passwordConfirm")}
             />
           </label>
           {error ? <p className="ios-settings-alert is-err">{error}</p> : null}
-          {ok ? <p className="ios-settings-alert is-ok">Mot de passe mis à jour.</p> : null}
+          {ok ? <p className="ios-settings-alert is-ok">{t("settings.passwordUpdated")}</p> : null}
           <button
             type="button"
             className="ms-pill-cta ios-settings-save"
             onClick={save}
             disabled={busy || !current || !next || !confirm}
           >
-            {busy ? "…" : "Enregistrer"}
+            {busy ? "…" : t("settings.save")}
           </button>
         </>
       )}
@@ -292,6 +293,7 @@ export function IosDataPanel({
   deleteGate,
   deleteWarning,
 }) {
+  const { t } = useTranslation("app");
   const [exportBusy, setExportBusy] = useState(false);
   const [exportNote, setExportNote] = useState(null);
   const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
@@ -304,11 +306,11 @@ export function IosDataPanel({
       const res = await downloadAccountExport(payload);
       if (res.aborted) return;
       playUiSound("success");
-      const text = res.shared ? "Fichier prêt à partager." : "Téléchargement lancé.";
+      const text = res.shared ? t("settings.dataShared") : t("settings.dataStarted");
       setExportNote({ type: "ok", text });
       onMsg?.({ type: "ok", text });
     } catch (e) {
-      const text = e?.message || "Export impossible.";
+      const text = e?.message || t("settings.dataFail");
       setExportNote({ type: "err", text });
       onMsg?.({ type: "err", text });
     } finally {
@@ -317,16 +319,10 @@ export function IosDataPanel({
   };
 
   return (
-    <PanelShell title="Mes données personnelles" onBack={onBack}>
-      <p className="ios-settings-copy">
-        Tes données personnelles sont utilisées par MySWYM pour personnaliser tes séances.
-      </p>
-      <p className="ios-settings-copy">
-        Elles ne sont pas vendues à d’autres applications ou entreprises.
-      </p>
-      <p className="ios-settings-copy">
-        Tu peux télécharger tes données personnelles à tout moment.
-      </p>
+    <PanelShell title={t("settings.data")} onBack={onBack}>
+      <p className="ios-settings-copy">{t("settings.dataLead")}</p>
+      <p className="ios-settings-copy">{t("settings.dataNotSold")}</p>
+      <p className="ios-settings-copy">{t("settings.dataDownloadLead")}</p>
       <button
         type="button"
         className="ms-pill-cta"
@@ -334,7 +330,7 @@ export function IosDataPanel({
         onClick={exportData}
         disabled={exportBusy}
       >
-        {exportBusy ? "Préparation…" : "Télécharger mes données personnelles"}
+        {exportBusy ? t("settings.dataPreparing") : t("settings.dataDownload")}
       </button>
       {exportNote ? (
         <p className={`ios-settings-alert ${exportNote.type === "err" ? "is-err" : "is-ok"}`}>
@@ -342,15 +338,15 @@ export function IosDataPanel({
         </p>
       ) : null}
 
-      <div className="ms-profile-group-label">Newsletters</div>
+      <div className="ms-profile-group-label">{t("settings.news")}</div>
       <div className="ms-profile-account-stack">
         <div className="ms-profile-account-row is-static">
           <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
             <Mail size={18} color={G.blue} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="ms-profile-settings-label">Actus MySWYM</div>
-            <div className="ms-profile-settings-hint">Conseils et nouveautés par e-mail</div>
+            <div className="ms-profile-settings-label">{t("settings.newsTitle")}</div>
+            <div className="ms-profile-settings-hint">{t("settings.newsHint")}</div>
           </div>
           <button
             type="button"
@@ -367,9 +363,9 @@ export function IosDataPanel({
       </div>
 
       <p className="ios-settings-copy">
-        Tu peux supprimer toutes tes données à tout moment en supprimant ton compte MySWYM.
+        {t("settings.dataDeleteLead")}
       </p>
-      <p className="ios-settings-warn">Cette action est irréversible.</p>
+      <p className="ios-settings-warn">{t("settings.irreversible")}</p>
       {user && onDeleteAccount ? (
         <>
           {deleteGate?.allowed ? (
@@ -401,7 +397,7 @@ export function IosDataPanel({
         <ConfirmSheet
           title={ACCOUNT_DELETE_BLOCKED_TITLE}
           message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
-          confirmLabel="Compris"
+          confirmLabel={t("settings.gotIt")}
           cancelLabel={null}
           destructive={false}
           icon={AlertTriangle}
@@ -557,7 +553,7 @@ export function IosSettingsHome({
         />
         <SettingsRow icon={Lock} title={ta("settings.password")} onClick={onOpenPassword} />
         <SettingsRow icon={Shield} title={ta("settings.data")} onClick={onOpenData} />
-        <SettingsRow icon={CircleHelp} title="FAQ" href={faqHref} external />
+        <SettingsRow icon={CircleHelp} title={ta("settings.faq")} href={faqHref} external />
         <SettingsRow icon={Info} title={ta("settings.help")} onClick={onOpenHelp} />
         <SettingsRow icon={FileText} title={ta("settings.policies")} onClick={onOpenLegal} />
       </div>
@@ -592,7 +588,7 @@ export function IosSettingsHome({
         <ConfirmSheet
           title={ACCOUNT_DELETE_BLOCKED_TITLE}
           message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
-          confirmLabel="Compris"
+          confirmLabel={ta("settings.gotIt")}
           cancelLabel={null}
           destructive={false}
           icon={AlertTriangle}
@@ -690,16 +686,17 @@ export function IosSubscriptionPanel({
   onCancelSubscription,
   referralSlot,
 }) {
+  const { t } = useTranslation("app");
   const hint = canManageSubscription
     ? (access.cancelAtPeriodEnd
-      ? (applePaid ? "Premium App Store, jusqu’à la fin de période" : "Premium actif, jusqu’à la fin de période")
-      : (applePaid ? "Premium App Store" : "Premium actif"))
+      ? (applePaid ? t("settings.subUntilApple") : t("settings.subUntilWeb"))
+      : (applePaid ? t("settings.subApple") : t("settings.subActive")))
     : isPremium
-      ? "Essai 7 jours"
-      : "Essai terminé";
+      ? t("settings.subTrial")
+      : t("settings.trialDone");
 
   return (
-    <PanelShell title="Abonnement" onBack={onBack}>
+    <PanelShell title={t("settings.subscription")} onBack={onBack}>
       <p className="ios-settings-lead">{hint}</p>
       {canManageSubscription ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -711,23 +708,23 @@ export function IosSubscriptionPanel({
                 className="ms-pill-cta ms-pill-cta-secondary"
                 style={{ minHeight: 44 }}
               >
-                Modifier mon abonnement
+                {t("settings.subEdit")}
               </button>
               <button
                 type="button"
                 onClick={() => { void onPortal(); }}
                 className="ios-settings-text-btn"
               >
-                Résilier
+                {t("settings.subCancel")}
               </button>
             </>
           ) : nativeIos ? (
             <p className="ios-settings-copy">
-              Cet abonnement a été souscrit sur le site. L’app iPhone ne le modifie pas et n’ouvre pas de paiement web.
+              {t("settings.subWebOnly")}
             </p>
           ) : applePaid ? (
             <p className="ios-settings-copy">
-              Abonnement App Store. Gère-le sur l’iPhone : Réglages, Apple ID, Abonnements.
+              {t("settings.subStore")}
             </p>
           ) : (
             <>
@@ -737,14 +734,14 @@ export function IosSubscriptionPanel({
                 className="ms-pill-cta ms-pill-cta-secondary"
                 style={{ minHeight: 44 }}
               >
-                Modifier mon abonnement
+                {t("settings.subEdit")}
               </button>
               <button
                 type="button"
                 onClick={() => onCancelSubscription()}
                 className="ios-settings-text-btn"
               >
-                Résilier
+                {t("settings.subCancel")}
               </button>
             </>
           )}
@@ -753,10 +750,10 @@ export function IosSubscriptionPanel({
         <button
           type="button"
           onClick={() => onUpgrade?.("profile")}
-          className="ms-pill-cta ms-pill-cta-gold"
+          className="ms-pill-cta"
           style={{ width: "100%", minHeight: 44 }}
         >
-          Devenir Premium
+          {t("premium.cta")}
         </button>
       )}
       {canManageSubscription ? referralSlot : null}

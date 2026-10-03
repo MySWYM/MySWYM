@@ -1,5 +1,18 @@
 import assert from "node:assert/strict";
-import { getAccessState, ACCESS_STATUS, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup } from "./access.js";
+import {
+  getAccessState,
+  ACCESS_STATUS,
+  isAccessMetadataPending,
+  isLiveStripeBilling,
+  shouldShowTrialFreeze,
+  isFreshSignup,
+  shouldAwaitCardlessTrial,
+  hasUnlockedPremiumAccess,
+  canAccessSessions,
+  shouldShowTrialCountdown,
+  trialDayIndex,
+  resolveTrialCountdown,
+} from "./access.js";
 
 function userWith(meta) {
   return { app_metadata: meta };
@@ -74,6 +87,53 @@ const nowSec = Math.floor(Date.now() / 1000);
 
 {
   const state = getAccessState(userWith({
+    subscription: "premium",
+    subscription_status: ACCESS_STATUS.TRIAL,
+    trial_used: true,
+  }));
+  assert.equal(state.hasPremiumAccess, true, "trial sans trial_ends_at : ne pas geler");
+  assert.equal(canAccessSessions(state, false), true, "séances ouvertes pendant essai");
+  assert.equal(shouldShowTrialCountdown(state), true, "bandeau essai visible sans ends_at");
+  assert.equal(trialDayIndex(state), 1, "jour 1/7 si 7j restants");
+}
+
+{
+  const awaiting = getAccessState(userWith({
+    subscription_status: ACCESS_STATUS.EXPIRED,
+  }));
+  assert.equal(shouldShowTrialCountdown(awaiting), false, "expired sans accès : pas de pastille");
+  assert.equal(
+    shouldShowTrialCountdown(awaiting, { hasSessionAccess: true }),
+    true,
+    "séances ouvertes sans abo = pastille essai",
+  );
+  assert.equal(resolveTrialCountdown(awaiting, { hasSessionAccess: true })?.daysLeft, 7);
+}
+
+{
+  const legacyPremiumTrial = getAccessState(userWith({
+    subscription: "premium",
+    trial_used: true,
+    trial_ends_at: new Date(Date.now() + 4 * 86400000).toISOString(),
+  }));
+  assert.equal(legacyPremiumTrial.status, ACCESS_STATUS.TRIAL, "premium sans status + fin essai = trial");
+  assert.equal(shouldShowTrialCountdown(legacyPremiumTrial), true);
+  assert.equal(trialDayIndex(legacyPremiumTrial), 4);
+}
+
+{
+  const expired = getAccessState(userWith({
+    subscription: "free",
+    subscription_status: ACCESS_STATUS.EXPIRED,
+    trial_used: true,
+    trial_ends_at: new Date(Date.now() - 86400000).toISOString(),
+  }));
+  assert.equal(canAccessSessions(expired, false), false, "après essai : pas de séances");
+  assert.equal(canAccessSessions(expired, true), false, "gelé + trial_used : ignore flag stale");
+}
+
+{
+  const state = getAccessState(userWith({
     subscription: "free",
     subscription_status: ACCESS_STATUS.EXPIRED,
   }));
@@ -108,11 +168,27 @@ const nowSec = Math.floor(Date.now() / 1000);
 }
 
 {
-  const missingWindow = isAccessMetadataPending(userWith({
+  const expiredUsedNoWindow = isAccessMetadataPending(userWith({
     subscription_status: ACCESS_STATUS.EXPIRED,
     trial_used: true,
   }));
-  assert.equal(missingWindow, true, "trial_used without trial_ends_at is not a consumed trial");
+  assert.equal(expiredUsedNoWindow, false, "EXPIRED + trial_used = gel, même sans trial_ends_at");
+  assert.equal(
+    canAccessSessions(getAccessState(userWith({
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+    })), true),
+    false,
+    "flag stale ne doit pas rouvrir les séances gelées",
+  );
+}
+
+{
+  const trialMissingWindow = isAccessMetadataPending(userWith({
+    subscription_status: ACCESS_STATUS.TRIAL,
+    trial_used: true,
+  }));
+  assert.equal(trialMissingWindow, false, "TRIAL sans ends_at a déjà hasPremiumAccess");
 }
 
 {
@@ -277,6 +353,8 @@ const nowSec = Math.floor(Date.now() / 1000);
     false,
     "anonymous fresh signup no freeze yet",
   );
+  assert.equal(shouldAwaitCardlessTrial(anon), true, "anonymous awaits 7j before lock");
+  assert.equal(hasUnlockedPremiumAccess(anon), true, "anonymous unlocked while awaiting trial");
 }
 
 {

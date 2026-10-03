@@ -9,6 +9,7 @@ import { buildWorkoutView, metersBeforeIndex, metersThroughIndex } from "../lib/
 import PyramidBlockViz from "../PyramidBlockViz.jsx";
 import DrillInfoSheet from "./DrillInfoSheet.jsx";
 import { useSessionText } from "../i18n/useSessionText.js";
+import { useTranslation } from "react-i18next";
 
 function storageKey(sessionKey) {
   return `myswym_pool_mode_${sessionKey || "anon"}`;
@@ -56,6 +57,7 @@ export default function PoolMode({
   });
   const [drill, setDrill] = useState(null);
   const tSwim = useSessionText();
+  const { t } = useTranslation("app");
 
   useEffect(() => {
     writeProgress(sessionKey, index);
@@ -108,7 +110,7 @@ export default function PoolMode({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Mode bassin"
+      aria-label={t("pool.mode")}
       style={{
         position: "fixed",
         inset: 0,
@@ -135,7 +137,7 @@ export default function PoolMode({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Quitter le mode bassin"
+          aria-label={t("pool.leave")}
           style={{
             width: 48, height: 48, borderRadius: 14, border: `1px solid ${G.greyLight}`,
             background: G.greyXLight, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
@@ -287,7 +289,7 @@ export default function PoolMode({
                 minHeight: 44,
               }}
             >
-              {multi ? "Voir les éducatifs" : `Voir l’éducatif · ${drills[0].name}`}
+              {multi ? t("pool.seeDrills") : `${t("pool.seeDrill")} · ${drills[0].name}`}
             </button>
           );
         })()}
@@ -322,7 +324,7 @@ export default function PoolMode({
           }}
         >
           <ChevronLeft size={20} />
-          Préc.
+          {t("pool.prev")}
         </button>
 
         <button
@@ -345,7 +347,7 @@ export default function PoolMode({
           }}
         >
           <Check size={22} color="#fff" strokeWidth={3} />
-          {isLast ? "Terminer" : "Terminé"}
+          {isLast ? t("pool.finish") : t("pool.done")}
         </button>
 
         <button
@@ -367,7 +369,7 @@ export default function PoolMode({
             gap: 4,
           }}
         >
-          Suiv.
+          {t("pool.next")}
           <ChevronRight size={20} />
         </button>
       </div>

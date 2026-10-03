@@ -11,6 +11,12 @@ import { playUiSound } from "./lib/ui-sounds.js";
 import { getTabUi } from "./tab-ui-registry.js";
 import { PRICING } from "./lib/pricing.js";
 import { isNativeApp } from "./lib/native-platform.js";
+import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+
+/** iOS / chrome simple : Nager (deck). Web legacy : onglet Programme. */
+function goToProgram(onTabChange) {
+  onTabChange?.(isIosSimpleNav() ? "home" : "plan");
+}
 
 /** Liste unifiée : historique boucle + séances Soft résolues. */
 export function buildHistoryItems(plan) {
@@ -112,7 +118,7 @@ export default function HistoriqueTab({
               className="ms-pill-cta"
               onClick={() => {
                 playUiSound("tap");
-                onTabChange?.("plan");
+                goToProgram(onTabChange);
               }}
             >
               {t("analyse.createPlan")}
@@ -183,17 +189,19 @@ export default function HistoriqueTab({
                   Pas encore de séance
                 </div>
                 <p style={{ margin: "0 0 16px", fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
-                  Valide ta première séance dans Programme : elle apparaîtra ici.
+                  {isIosSimpleNav()
+                    ? "Valide ta première séance dans Nager : elle apparaîtra ici."
+                    : "Valide ta première séance dans Programme : elle apparaîtra ici."}
                 </p>
                 <button
                   type="button"
                   className="ms-pill-cta"
                   onClick={() => {
                     playUiSound("tap");
-                    onTabChange?.("plan");
+                    goToProgram(onTabChange);
                   }}
                 >
-                  Voir le programme
+                  {isIosSimpleNav() ? "Voir mes séances" : "Voir le programme"}
                 </button>
               </div>
             ) : (

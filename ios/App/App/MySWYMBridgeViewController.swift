@@ -8,18 +8,23 @@ class MySWYMBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(AppleHealthPlugin())
         bridge?.registerPluginInstance(StoryStickerPlugin())
         bridge?.registerPluginInstance(AppBadgePlugin())
-        disableWebViewBounce()
+        hardenWebView()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        disableWebViewBounce()
+        hardenWebView()
     }
 
-    private func disableWebViewBounce() {
-        guard let scrollView = webView?.scrollView else { return }
-        scrollView.bounces = false
-        scrollView.alwaysBounceVertical = false
+    private func hardenWebView() {
+        guard let webView else { return }
+        webView.allowsLinkPreview = false
+        let scrollView = webView.scrollView
+        // Bounce vertical : sensation scroll iOS (pas page web figée).
+        scrollView.bounces = true
+        scrollView.alwaysBounceVertical = true
         scrollView.alwaysBounceHorizontal = false
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
     }
 }

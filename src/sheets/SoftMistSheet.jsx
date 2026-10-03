@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useSheetSwipeDismiss } from "./useSheetSwipeDismiss.js";
 
 /**
  * Bottom sheet soft mist partagé (tips séance, éducatifs, popups app).
  * `fullscreenMobile` : quasi plein écran sous 640px (prep séance).
+ * Swipe down sur le header (handle) pour fermer quand `onClose` est fourni.
  */
 export default function SoftMistSheet({
   open = true,
@@ -19,12 +21,22 @@ export default function SoftMistSheet({
   lockScroll = true,
   zIndex = null,
   dismissOnOverlay = true,
+  swipeToDismiss = true,
   fullscreenMobile = false,
   footer = null,
 }) {
   /** Ignore le geste qui a ouvert le sheet (évite fermeture immédiate web / iOS). */
   const ignoreDismissUntil = useRef(0);
   const wasOpenRef = useRef(false);
+  const {
+    canSwipe,
+    dragging,
+    headProps,
+    panelStyle,
+    overlayStyle,
+    panelClassExtra,
+    resetDrag,
+  } = useSheetSwipeDismiss(onClose, { enabled: swipeToDismiss });
 
   // Pendant le render (avant paint), y compris le 1er mount open=true.
   if (open && !wasOpenRef.current) {
@@ -38,8 +50,9 @@ export default function SoftMistSheet({
       ignoreDismissUntil.current,
       Date.now() + 700,
     );
+    resetDrag();
     return undefined;
-  }, [open]);
+  }, [open, resetDrag]);
 
   useEffect(() => {
     if (!open || !lockScroll) return undefined;
@@ -76,6 +89,7 @@ export default function SoftMistSheet({
     "scale-in",
     "ms-soft-sheet",
     fullscreenMobile ? "ms-soft-sheet--fullscreen" : "",
+    panelClassExtra,
   ].filter(Boolean).join(" ");
 
   const tryDismiss = (e) => {
@@ -93,13 +107,20 @@ export default function SoftMistSheet({
     }
   };
 
+  const headStyle = {
+    ...(headProps.style || {}),
+  };
+
   return createPortal(
     <div
       className={overlayClass}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel || title || "Dialogue"}
-      style={zIndex != null ? { zIndex } : undefined}
+      style={{
+        ...(zIndex != null ? { zIndex } : {}),
+        ...overlayStyle,
+      }}
       onPointerDown={onOverlayPointerDown}
       onMouseDown={tryDismiss}
       onClick={tryDismiss}
@@ -108,9 +129,14 @@ export default function SoftMistSheet({
         className={panelClass}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
+        style={panelStyle}
       >
-        <div className="ms-soft-sheet-head">
-          <div className="ms-sheet-handle" />
+        <div
+          className="ms-soft-sheet-head"
+          {...headProps}
+          style={canSwipe ? headStyle : undefined}
+        >
+          <div className="ms-sheet-handle" aria-hidden />
           <div className="ms-soft-sheet-head-row">
             <div style={{ minWidth: 0, flex: 1 }}>
               {eyebrow ? <div className="ms-soft-sheet-eyebrow">{eyebrow}</div> : null}

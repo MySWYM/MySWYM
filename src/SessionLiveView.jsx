@@ -2,6 +2,7 @@
  * Vue séance (Accueil / prototype), synthèse + entrée mode bassin.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import WorkoutPrepView from "./workout/WorkoutPrepView.jsx";
 import PoolMode from "./workout/PoolMode.jsx";
 
@@ -39,12 +40,13 @@ export default function SessionLiveView({
   onStart,
   onUpgrade,
   ctaLabel,
-  badge = "Séance du jour",
+  badge,
   subtitle = null,
   showCta = true,
   sessionKey = "live",
   onFinishPool,
 }) {
+  const { t } = useTranslation("app");
   const [poolOpen, setPoolOpen] = useState(false);
   const accent = { bg: "var(--myswym-blue-light, #0a162c)", color: "var(--myswym-blue, #006bfd)" };
 
@@ -60,10 +62,10 @@ export default function SessionLiveView({
             letterSpacing: "-0.03em",
             lineHeight: 1.1,
           }}>
-            Aujourd&apos;hui
+            {t("live.today")}
           </div>
           <div style={{ fontSize: 12, color: G.inkLight, marginTop: 4, fontWeight: 600 }}>
-            {subtitle || session?.title || "Séance du jour"}
+            {subtitle || session?.title || t("live.ofDay")}
           </div>
         </div>
         <div style={{
@@ -76,7 +78,7 @@ export default function SessionLiveView({
           color: G.blue,
           whiteSpace: "nowrap",
         }}>
-          {badge}
+          {badge || t("live.ofDay")}
         </div>
       </div>
 
@@ -87,7 +89,7 @@ export default function SessionLiveView({
         isPremium={isPremium}
         showStart={showCta}
         showProvenance={false}
-        startLabel={ctaLabel || (isPremium ? "Commencer la séance" : "S’abonner pour nager")}
+        startLabel={ctaLabel || (isPremium ? t("live.start") : t("live.subscribe"))}
         onUpgrade={onUpgrade}
         onStart={() => {
           if (!isPremium) {
