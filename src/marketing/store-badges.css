@@ -1,0 +1,68 @@
+/* Badges App Store / Android (site web). Réutilise les tokens .ms-footer-store. */
+
+.ms-store-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.ms-footer-apps .ms-store-badges {
+  flex-direction: column;
+}
+
+.ms-pricing-stores {
+  margin: 1rem 0 0.25rem;
+}
+
+.ms-pricing-browser {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+}
+
+.ms-pricing-browser a {
+  color: var(--ms-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.lp-hero-stores {
+  margin-top: 0.9rem;
+}
+
+.ms-footer-store--active {
+  pointer-events: auto;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ms-footer-store--active:hover {
+  border-color: var(--ms-fg);
+}
+
+.ms-footer-store--disabled {
+  pointer-events: none;
+  opacity: 0.55;
+  filter: grayscale(0.35);
+}
+
+.ms-sticky-cta-browser {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px) + 4.25rem);
+  z-index: 40;
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.ms-sticky-cta-browser a {
+  pointer-events: auto;
+  color: var(--ms-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}

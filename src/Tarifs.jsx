@@ -11,7 +11,9 @@ import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "./CheckoutLegalGates.jsx";
 import { PRICE_IDS, PRICING } from "./lib/pricing.js";
 import { useAuthSession, usePublicCta } from "./lib/use-auth-session.js";
+import { useStoreAwareCta } from "./lib/use-store-cta.js";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import StoreBadges from "./marketing/StoreBadges.jsx";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/lp-accordion.jsx";
 import "./theme/public.css";
 
@@ -25,6 +27,7 @@ export default function TarifsPage() {
   const { t } = useTranslation("landing");
   const { t: tc } = useTranslation("common");
   const cta = usePublicCta();
+  const storeCta = useStoreAwareCta();
   const { isLoggedIn } = useAuthSession();
   const crumbs = [{ label: tc("footer.home"), href: "/" }, { label: tc("nav.pricing") }];
   const [checkoutBusy, setCheckoutBusy] = useState(false);
@@ -175,14 +178,32 @@ export default function TarifsPage() {
           <h1 className="ms-pricing-h1">{t("pricingPage.h1")}</h1>
           <p className="ms-pricing-lead">{t("pricingPage.lead")}</p>
           <div className="ms-pricing-cta-row">
-            <LocalizedLink to={cta.href} className="ms-btn">
-              {t("pricingPage.startTrial")}
-              <ArrowRight size={16} aria-hidden />
-            </LocalizedLink>
+            {storeCta.storePrimary ? (
+              <a
+                href={storeCta.primary.href}
+                className="ms-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {tc(storeCta.primary.labelKey)}
+                <ArrowRight size={16} aria-hidden />
+              </a>
+            ) : (
+              <LocalizedLink to={cta.href} className="ms-btn">
+                {t("pricingPage.startTrial")}
+                <ArrowRight size={16} aria-hidden />
+              </LocalizedLink>
+            )}
             <button type="button" className="ms-btn ms-btn-ghost" onClick={scrollToOffers}>
               {t("pricingPage.seeOffers")}
             </button>
           </div>
+          {storeCta.storePrimary && storeCta.browser ? (
+            <p className="ms-pricing-browser">
+              <LocalizedLink to={storeCta.browser.href}>{tc(storeCta.browser.labelKey)}</LocalizedLink>
+            </p>
+          ) : null}
+          <StoreBadges className="ms-pricing-stores" />
           <ul className="ms-pricing-chips">
             <li>{t("pricingPage.chipTrial")}</li>
             <li>{t("pricingPage.chipFlex")}</li>

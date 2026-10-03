@@ -161,5 +161,18 @@
     "pageStatusMixed": "自分で選択。分析は{{analytics}}、パフォーマンスは{{performance}}。",
     "pageSaved": "選択を保存した。この端末にすぐ反映される。",
     "pageNote": "いつでも変えられる。このページか、フッターの「Cookieを管理」から。同意の撤回は過去には遡らない（GDPR第7.3条）。"
+  },
+  "store": {
+    "downloadApp": "アプリを入手",
+    "openApp": "アプリを開く",
+    "continueBrowser": "ブラウザで続ける",
+    "openWebApp": "MySWYMを開く",
+    "androidSoon": "Android、近日公開",
+    "androidSoonAria": "Androidは近日公開",
+    "appStoreAria": "App StoreでMySWYMをダウンロード",
+    "availableOn": "配信中",
+    "stickyKicker": "iPhoneアプリ",
+    "stickyTitle": "プランとセッションはアプリで",
+    "stickyTitleApp": "アプリでセッションを確認"
   }
 }

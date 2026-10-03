@@ -161,5 +161,18 @@
     "pageStatusMixed": "eigen keuze, analyse {{analytics}}, prestaties {{performance}}.",
     "pageSaved": "Je keuze is opgeslagen. Die geldt meteen op dit apparaat.",
     "pageNote": "Je kunt dit op elk moment wijzigen, hier of via „Cookies beheren“ in de footer. Het intrekken van toestemming werkt niet met terugwerkende kracht (AVG, art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "Download de app",
+    "openApp": "Open de app",
+    "continueBrowser": "Doorgaan in de browser",
+    "openWebApp": "Open MySWYM",
+    "androidSoon": "Android, binnenkort",
+    "androidSoonAria": "Android binnenkort beschikbaar",
+    "appStoreAria": "Download MySWYM in de App Store",
+    "availableOn": "Beschikbaar in",
+    "stickyKicker": "iPhone-app",
+    "stickyTitle": "Plannen en sessies in de app",
+    "stickyTitleApp": "Vind je sessies in de app"
   }
 }

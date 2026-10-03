@@ -12,6 +12,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { usePublicCta } from "./lib/use-auth-session.js";
+import { useStoreAwareCta } from "./lib/use-store-cta.js";
 import { landingCtaPath } from "./lib/landing-onboarding.js";
 import {
   ArrowRight,
@@ -28,6 +29,7 @@ import Footer from "./Footer.jsx";
 import PublicNav from "./PublicNav.jsx";
 import LandingReviews from "./marketing/LandingReviews.jsx";
 import StickyCta from "./marketing/StickyCta.jsx";
+import StoreBadges from "./marketing/StoreBadges.jsx";
 import { usePublishedReviews } from "./marketing/usePublishedReviews.js";
 import { usePageSeo, organizationJsonLd, softwareApplicationJsonLd } from "./lib/seo.js";
 import "./landing/landing.css";
@@ -61,7 +63,8 @@ function prefersReducedMotion() {
 
 function Hero() {
   const { t } = useTranslation("landing");
-  const cta = usePublicCta();
+  const { t: tc } = useTranslation("common");
+  const storeCta = useStoreAwareCta();
   return (
     <section className="lp-hero">
       <div className="lp-hero-bg" aria-hidden>
@@ -79,17 +82,38 @@ function Hero() {
           <h1 className="lp-h1 lp-display">{t("hero.title")}</h1>
           <p className="lp-lead">{t("hero.subtitle")}</p>
           <div className="lp-cta-row">
-            <LpButton asChild size="lg">
-              <Link to={cta.href}>
-                {t("hero.cta")}
-                <ArrowRight size={16} />
+            {storeCta.storePrimary ? (
+              <LpButton asChild size="lg">
+                <a
+                  href={storeCta.primary.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {tc(storeCta.primary.labelKey)}
+                  <ArrowRight size={16} />
+                </a>
+              </LpButton>
+            ) : (
+              <LpButton asChild size="lg">
+                <Link to={storeCta.primary.href}>
+                  {t("hero.cta")}
+                  <ArrowRight size={16} />
+                </Link>
+              </LpButton>
+            )}
+            {storeCta.storePrimary && storeCta.browser ? (
+              <Link to={storeCta.browser.href} className="lp-see-link">
+                {tc(storeCta.browser.labelKey)}
+                <ArrowRight size={14} />
               </Link>
-            </LpButton>
-            <a href="#seance" className="lp-see-link">
-              {t("hero.seeSession")}
-              <ArrowRight size={14} />
-            </a>
+            ) : (
+              <a href="#seance" className="lp-see-link">
+                {t("hero.seeSession")}
+                <ArrowRight size={14} />
+              </a>
+            )}
           </div>
+          <StoreBadges className="lp-hero-stores" />
           <p className="lp-hero-note">{t("hero.freeNote")}</p>
         </div>
         <aside className="lp-hero-phones" aria-label={t("session.label")}>

@@ -188,6 +188,30 @@
         ],
         "createdAt": "2026-09-21T17:55:03.453Z",
         "reason": "Print CSS A4 poolside: compact type ramp intentional, not app UI DESIGN.md"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.875rem",
+        "createdAt": "2026-10-03T16:19:45.580Z",
+        "reason": "Marketing store badges: same 0.875rem ramp already used on public/landing UI"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#3d4f63",
+        "createdAt": "2026-10-03T16:19:45.610Z",
+        "reason": "Matches existing landing muted text (#3d4f63 in landing.css)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.8125rem",
+        "createdAt": "2026-10-03T16:19:45.638Z",
+        "reason": "Sticky browser escape link: matches landing hero note size"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(255, 255, 255, 0.88)",
+        "createdAt": "2026-10-03T16:19:45.665Z",
+        "reason": "Same frosted pill surface as existing .ms-footer-store"
       }
     ]
   },

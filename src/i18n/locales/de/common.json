@@ -161,5 +161,18 @@
     "pageStatusMixed": "eigene Wahl, Analyse {{analytics}}, Performance {{performance}}.",
     "pageSaved": "Deine Wahl ist gespeichert. Sie gilt sofort auf diesem Gerät.",
     "pageNote": "Du kannst das jederzeit ändern, hier oder über „Cookies verwalten“ in der Fußzeile. Der Widerruf der Einwilligung wirkt nicht rückwirkend (DSGVO, Art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "App herunterladen",
+    "openApp": "App öffnen",
+    "continueBrowser": "Im Browser fortfahren",
+    "openWebApp": "MySWYM öffnen",
+    "androidSoon": "Android, demnächst",
+    "androidSoonAria": "Android demnächst verfügbar",
+    "appStoreAria": "MySWYM im App Store laden",
+    "availableOn": "Erhältlich im",
+    "stickyKicker": "iPhone-App",
+    "stickyTitle": "Pläne und Einheiten in der App",
+    "stickyTitleApp": "Finde deine Einheiten in der App"
   }
 }

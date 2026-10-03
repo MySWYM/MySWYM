@@ -161,5 +161,18 @@
     "pageStatusMixed": "oma valinta, analytiikka {{analytics}}, suorituskyky {{performance}}.",
     "pageSaved": "Sun valinta on tallennettu. Se tulee voimaan heti tällä laitteella.",
     "pageNote": "Sä voit muuttaa tätä milloin vaan, täällä tai alatunnisteen «Hallitse evästeitä» -kohdasta. Suostumuksen peruutus ei ole taannehtiva (GDPR, art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "Lataa sovellus",
+    "openApp": "Avaa sovellus",
+    "continueBrowser": "Jatka selaimessa",
+    "openWebApp": "Avaa MySWYM",
+    "androidSoon": "Android, tulossa",
+    "androidSoonAria": "Android tulossa pian",
+    "appStoreAria": "Lataa MySWYM App Storesta",
+    "availableOn": "Saatavilla",
+    "stickyKicker": "iPhone-sovellus",
+    "stickyTitle": "Suunnitelmat ja treenit sovelluksessa",
+    "stickyTitleApp": "Löydä treenisi sovelluksesta"
   }
 }

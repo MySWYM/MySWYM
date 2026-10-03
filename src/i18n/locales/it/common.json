@@ -161,5 +161,18 @@
     "pageStatusMixed": "scelta personalizzata, analisi {{analytics}}, prestazioni {{performance}}.",
     "pageSaved": "La tua scelta è stata salvata. Si applica subito su questo dispositivo.",
     "pageNote": "Puoi cambiarla quando vuoi, qui o da «Gestisci i cookie» nel piè di pagina. Revocare il consenso non ha effetto retroattivo (GDPR, art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "Scarica l'app",
+    "openApp": "Apri l'app",
+    "continueBrowser": "Continua nel browser",
+    "openWebApp": "Apri MySWYM",
+    "androidSoon": "Android, a breve",
+    "androidSoonAria": "Android disponibile a breve",
+    "appStoreAria": "Scarica MySWYM sull'App Store",
+    "availableOn": "Disponibile su",
+    "stickyKicker": "App iPhone",
+    "stickyTitle": "Piani e sedute nell'app",
+    "stickyTitleApp": "Ritrova le tue sedute nell'app"
   }
 }

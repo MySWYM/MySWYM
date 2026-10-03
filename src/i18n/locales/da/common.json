@@ -161,5 +161,18 @@
     "pageStatusMixed": "eget valg, analyse {{analytics}}, ydeevne {{performance}}.",
     "pageSaved": "Dit valg er gemt. Det gælder med det samme på den her enhed.",
     "pageNote": "Du kan ændre det når som helst, her eller via «Administrer cookies» i footeren. At trække samtykke tilbage gælder ikke bagud (GDPR, art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "Hent appen",
+    "openApp": "Åbn appen",
+    "continueBrowser": "Fortsæt i browseren",
+    "openWebApp": "Åbn MySWYM",
+    "androidSoon": "Android, snart",
+    "androidSoonAria": "Android kommer snart",
+    "appStoreAria": "Hent MySWYM i App Store",
+    "availableOn": "Tilgængelig i",
+    "stickyKicker": "iPhone-app",
+    "stickyTitle": "Planer og sessioner i appen",
+    "stickyTitleApp": "Find dine sessioner i appen"
   }
 }

@@ -161,5 +161,18 @@
     "pageStatusMixed": "eget val, analys {{analytics}}, prestanda {{performance}}.",
     "pageSaved": "Ditt val är sparat. Det gäller direkt på den här enheten.",
     "pageNote": "Du kan ändra det när som helst, här eller via «Hantera cookies» i sidfoten. Att ta tillbaka samtycke gäller inte bakåt i tiden (GDPR, art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "Ladda ner appen",
+    "openApp": "Öppna appen",
+    "continueBrowser": "Fortsätt i webbläsaren",
+    "openWebApp": "Öppna MySWYM",
+    "androidSoon": "Android, snart",
+    "androidSoonAria": "Android kommer snart",
+    "appStoreAria": "Ladda ner MySWYM i App Store",
+    "availableOn": "Tillgänglig i",
+    "stickyKicker": "iPhone-app",
+    "stickyTitle": "Planer och pass i appen",
+    "stickyTitleApp": "Hitta dina pass i appen"
   }
 }

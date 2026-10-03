@@ -161,5 +161,18 @@
     "pageStatusMixed": "eget valg, analyse {{analytics}}, ytelse {{performance}}.",
     "pageSaved": "Valget ditt er lagret. Det gjelder med en gang på denne enheten.",
     "pageNote": "Du kan endre dette når som helst, her eller via «Administrer informasjonskapsler» i bunnteksten. Å trekke tilbake samtykke gjelder ikke bakover i tid (GDPR, art. 7.3)."
+  },
+  "store": {
+    "downloadApp": "Last ned appen",
+    "openApp": "Åpne appen",
+    "continueBrowser": "Fortsett i nettleseren",
+    "openWebApp": "Åpne MySWYM",
+    "androidSoon": "Android, snart",
+    "androidSoonAria": "Android kommer snart",
+    "appStoreAria": "Last ned MySWYM i App Store",
+    "availableOn": "Tilgjengelig i",
+    "stickyKicker": "iPhone-app",
+    "stickyTitle": "Planer og økter i appen",
+    "stickyTitleApp": "Finn øktene dine i appen"
   }
 }

@@ -5,13 +5,35 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { LocalizedLink } from "./i18n/locale-routing.jsx";
 import { stripLocalePrefix } from "./i18n/locale-path.js";
-import { useAuthSession, usePublicCta } from "./lib/use-auth-session.js";
+import { useAuthSession } from "./lib/use-auth-session.js";
+import { useStoreAwareCta } from "./lib/use-store-cta.js";
 import { supabase } from "./supabase.js";
 import { reset as resetAnalytics } from "./lib/analytics.js";
 import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from "./ui/lp-dialog.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import { isNativeApp } from "./lib/native-platform.js";
 import "./theme/public.css";
+
+function NavCtaLink({ cta, className, onClick, children }) {
+  if (cta.primary.external) {
+    return (
+      <a
+        href={cta.primary.href}
+        className={className}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClick}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={cta.primary.href} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
 
 export default function PublicNav() {
   const { t } = useTranslation("common");
@@ -21,7 +43,7 @@ export default function PublicNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const { isLoggedIn } = useAuthSession();
-  const cta = usePublicCta();
+  const cta = useStoreAwareCta();
   const onQuiz = pathBare === "/app" || pathBare.startsWith("/app/");
   const onAuth = pathBare === "/connexion" || pathBare === "/inscription";
   const showStartCta = isLoggedIn || (!onQuiz && !onAuth);
@@ -93,10 +115,15 @@ export default function PublicNav() {
               </button>
             )}
             {!isMobile && showStartCta && (
-              <Link to={cta.href} className="ms-btn">
-                {t(cta.labelKey)}
-              </Link>
+              <NavCtaLink cta={cta} className="ms-btn">
+                {t(cta.primary.labelKey)}
+              </NavCtaLink>
             )}
+            {!isMobile && showStartCta && cta.storePrimary && cta.browser ? (
+              <Link to={cta.browser.href} className="ms-link-quiet">
+                {t(cta.browser.labelKey)}
+              </Link>
+            ) : null}
             {isMobile && (
               <DialogTrigger asChild>
                 <button
@@ -125,10 +152,23 @@ export default function PublicNav() {
             ))}
             <div className="ms-drawer-actions">
               {showStartCta && (
-                <Link to={cta.href} className="ms-drawer-cta" onClick={() => setMenuOpen(false)}>
-                  {t(cta.labelKey)}
-                </Link>
+                <NavCtaLink
+                  cta={cta}
+                  className="ms-drawer-cta"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t(cta.primary.labelKey)}
+                </NavCtaLink>
               )}
+              {showStartCta && cta.storePrimary && cta.browser ? (
+                <Link
+                  to={cta.browser.href}
+                  className="ms-drawer-ghost"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t(cta.browser.labelKey)}
+                </Link>
+              ) : null}
               {showLogin && (
                 <Link to="/connexion" className="ms-drawer-ghost" onClick={() => setMenuOpen(false)}>
                   {t("nav.login")}
