@@ -7,6 +7,7 @@ import {
   asMessageBody,
   formatOperatorClosed,
   formatOperatorNotify,
+  formatOperatorReplyAck,
   MAX_PRIOR_MESSAGES,
   newShortCode,
   normalizeShortCode,
@@ -642,7 +643,7 @@ export async function handleOperatorInbound(input: {
   await touchConversation(admin, conversation.id);
 
   // Push APNs hors app (await : sinon Vercel coupe avant l’envoi Apple).
-  let pushNote = "";
+  let ack = formatOperatorReplyAck({ error: "no_user" });
   if (conversation.user_id) {
     const preview = String(cmd.text || "").trim().slice(0, 120);
     try {
@@ -664,25 +665,20 @@ export async function handleOperatorInbound(input: {
         apns: Boolean(process.env.APNS_KEY_ID && process.env.APNS_TEAM_ID && (process.env.APNS_P8 || process.env.APNS_P8_BASE64)),
         apnsProdFlag: (process.env.APNS_PRODUCTION ?? "").trim() || `(default vercel=${process.env.VERCEL_ENV})`,
       });
-      if (pushResult.sent > 0) {
-        pushNote = ` · push iOS ok (${pushResult.sent})`;
-      } else {
-        const detail = pushResult.reason
-          ? `${pushResult.skipped || "all_failed"}/${pushResult.reason}`
-          : (pushResult.skipped || "all_failed");
-        pushNote = ` · push iOS KO: ${detail}`;
-      }
+      ack = formatOperatorReplyAck({
+        sent: pushResult.sent,
+        skipped: pushResult.skipped,
+        reason: pushResult.reason,
+      });
     } catch (e) {
       console.error("[support] push failed", e instanceof Error ? e.message : e);
-      pushNote = " · push iOS KO: exception";
+      ack = formatOperatorReplyAck({ error: "exception" });
     }
-  } else {
-    pushNote = " · push iOS KO: no_user";
   }
 
   await port.sendMessage(
     inbound.chatId,
-    `Répondu${pushNote}`,
+    ack,
     inbound.replyToMessageId,
   );
 

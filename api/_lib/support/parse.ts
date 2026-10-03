@@ -75,6 +75,28 @@ export function formatOperatorClosed(input: {
   ].join("\n");
 }
 
+/**
+ * Accusé Telegram après une réponse opérateur.
+ * `no_tokens` = nageur web (ou iOS sans notifs) : message livré, pas un échec.
+ */
+export function formatOperatorReplyAck(input: {
+  sent?: number;
+  skipped?: string;
+  reason?: string;
+  error?: "exception" | "no_user";
+}): string {
+  if (input.error === "exception") return "Répondu · push iOS KO: exception";
+  if (input.error === "no_user") return "Répondu · push iOS KO: no_user";
+  const sent = Number(input.sent || 0);
+  if (sent > 0) return `Répondu · push iOS ok (${sent})`;
+  const skipped = String(input.skipped || "").trim();
+  if (skipped === "no_tokens") return "Répondu · web (pas de push iOS)";
+  const detail = input.reason
+    ? `${skipped || "all_failed"}/${input.reason}`
+    : (skipped || "all_failed");
+  return `Répondu · push iOS KO: ${detail}`;
+}
+
 export function formatLandingContactNotify(input: {
   name: string;
   email: string;
