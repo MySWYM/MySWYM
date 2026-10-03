@@ -520,8 +520,9 @@ html.myswym-ios .ios-cover-lock {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: hidden;
-  overscroll-behavior: none;
+  overscroll-behavior-y: contain;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  scrollbar-width: none;
 }
 
 .ios-lock-pane .ms-profile-subpanel-body.is-scrollable {
@@ -529,8 +530,15 @@ html.myswym-ios .ios-cover-lock {
   -webkit-overflow-scrolling: touch;
 }
 
+.ios-lock-pane .ms-profile-subpanel-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 html.myswym-ios .ios-cover-lock {
-  overscroll-behavior: none;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
 }
 
 .ios-settings-lead {

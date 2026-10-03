@@ -7,7 +7,8 @@
   gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
-  touch-action: pan-x;
+  /* pan-x seul bloquait le scroll vertical de la page sur la carte séance. */
+  touch-action: pan-x pan-y;
   scroll-snap-type: x mandatory;
   scroll-padding-inline: 20px;
   padding: 0 20px 4px;
@@ -28,6 +29,8 @@
   min-height: 240px;
   border: none;
   outline: none;
+  touch-action: pan-x pan-y;
+  -webkit-user-drag: none;
   padding: 0;
   border-radius: var(--ms-card-radius, 28px);
   overflow: hidden;
@@ -41,12 +44,23 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.ios-home-deck-card img,
+.ios-home-deck-card .ios-home-deck-scrim,
+.ios-home-deck-card .ios-home-deck-copy,
+.ios-home-deck-card .ios-home-deck-done {
+  /* Le tap doit aller au <button>, pas à l’image (iOS / protect-media). */
+  pointer-events: none;
+}
+
 .ios-home-deck-card img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .ios-home-deck-scrim {

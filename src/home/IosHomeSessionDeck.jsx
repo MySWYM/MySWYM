@@ -18,7 +18,8 @@ export default function IosHomeSessionDeck({ cards, onOpen }) {
   const { t } = useTranslation("app");
   const tSwim = useSessionText();
   const scrollerRef = useRef(null);
-  const dragRef = useRef({ x: 0, moved: false });
+  /** Ignore le click seulement si le carrousel a vraiment bougé en horizontal. */
+  const gestureRef = useRef({ scrollLeft: 0 });
   const [active, setActive] = useState(() => initialWeekCardIndex(cards));
 
   useEffect(() => {
@@ -60,21 +61,25 @@ export default function IosHomeSessionDeck({ cards, onOpen }) {
             type="button"
             className={`ios-home-deck-card${card.resolved ? " is-done" : ""}`}
             aria-label={card.line ? `${tSwim(card.title)}, ${tSwim(card.line)}` : tSwim(card.title)}
-            onPointerDown={(e) => {
-              dragRef.current = { x: e.clientX, moved: false };
-            }}
-            onPointerMove={(e) => {
-              if (Math.abs(e.clientX - dragRef.current.x) > 10) dragRef.current.moved = true;
+            onPointerDown={() => {
+              gestureRef.current = {
+                scrollLeft: scrollerRef.current?.scrollLeft ?? 0,
+              };
             }}
             onClick={() => {
-              if (dragRef.current.moved) return;
+              const start = gestureRef.current.scrollLeft ?? 0;
+              const now = scrollerRef.current?.scrollLeft ?? 0;
+              if (Math.abs(now - start) > 8) return;
               playUiSound("soft");
-              onOpen?.(card);
+              // Après le geste : sinon le sheet peut se fermer tout de suite (iOS).
+              const target = card;
+              window.setTimeout(() => onOpen?.(target), 0);
             }}
           >
             <img
               src={card.cover}
               alt=""
+              draggable={false}
               decoding="async"
               onError={(e) => {
                 if (e.currentTarget.dataset.fallback === "1") return;

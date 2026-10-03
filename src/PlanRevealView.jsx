@@ -42,10 +42,6 @@ export default function PlanRevealView({
   return (
     <div className={`ms-plan-reveal${phase === "ready" && model ? "" : " ms-plan-reveal--building"}`}>
       <div className="ms-plan-reveal-inner">
-        {phase === "ready" && model ? (
-          <BrandLogo variant="wordmark" height={22} onDark={onDark} />
-        ) : null}
-
         {phase !== "ready" || !model ? (
           <div
             className="ms-plan-reveal-building"
@@ -69,55 +65,60 @@ export default function PlanRevealView({
           </div>
         ) : (
           <div className="ms-plan-reveal-ready">
-            <p className="ms-plan-reveal-kicker">{t("reveal.ready")}</p>
-            <h1 className="ms-plan-reveal-title">{t("reveal.path")}</h1>
-            <p className="ms-plan-reveal-sub">
-              {model.isLoop
-                ? `${model.frequency > 0 ? t("reveal.perWeek", { count: model.frequency }) : t("live.ofDay")} · ${t("reveal.fitLevel")}`
-                : `${model.weeks > 1 ? t("reveal.weeksMany", { count: model.weeks }) : t("reveal.weeks", { count: model.weeks })} · ${t("reveal.perWeek", { count: model.frequency })} · ${t("reveal.fitLevel")}`}
-            </p>
+            <header className="ms-plan-reveal-head">
+              <BrandLogo variant="wordmark" height={22} onDark={onDark} />
+              <p className="ms-plan-reveal-kicker">{t("reveal.ready")}</p>
+              <h1 className="ms-plan-reveal-title">{t("reveal.path")}</h1>
+              <p className="ms-plan-reveal-sub">
+                {model.isLoop
+                  ? `${model.frequency > 0 ? t("reveal.perWeek", { count: model.frequency }) : t("live.ofDay")} · ${t("reveal.fitLevel")}`
+                  : `${model.weeks > 1 ? t("reveal.weeksMany", { count: model.weeks }) : t("reveal.weeks", { count: model.weeks })} · ${t("reveal.perWeek", { count: model.frequency })} · ${t("reveal.fitLevel")}`}
+              </p>
+            </header>
 
-            <div className="ms-plan-reveal-meta">
-              <MetaRow colors={G} icon={<Target size={18} />} label={t("reveal.goal")} value={model.goalLabel} />
-              {model.levelLabel ? (
-                <MetaRow colors={G} icon={<Waves size={18} />} label={t("reveal.level")} value={model.levelLabel} />
-              ) : null}
-              <MetaRow colors={G} icon={<CalendarDays size={18} />} label={t("reveal.trial")} value={t("reveal.trialValue")} />
-            </div>
-
-            {model.barCount > 0 && (
-              <div className="ms-plan-reveal-bars">
-                <p className="ms-plan-reveal-bars-label">{t("reveal.preview")}</p>
-                <div className="ms-plan-reveal-bars-row">
-                  {Array.from({ length: model.barCount }, (_, i) => (
-                    <div
-                      key={i}
-                      className="ms-plan-reveal-bar"
-                      style={{
-                        height: 28 + ((i * 17) % 36),
-                        opacity: 0.35 + (i / Math.max(1, model.barCount)) * 0.65,
-                      }}
-                      title={`Semaine ${i + 1}`}
-                    />
-                  ))}
-                </div>
-                <div className="ms-plan-reveal-bars-cap">
-                  <span>S1, base</span>
-                  <span>Essai 7j</span>
-                  <span>Suite · Premium</span>
-                </div>
+            <div className="ms-plan-reveal-body">
+              <div className="ms-plan-reveal-meta">
+                <MetaRow colors={G} icon={<Target size={18} />} label={t("reveal.goal")} value={model.goalLabel} />
+                {model.levelLabel ? (
+                  <MetaRow colors={G} icon={<Waves size={18} />} label={t("reveal.level")} value={model.levelLabel} />
+                ) : null}
+                <MetaRow colors={G} icon={<CalendarDays size={18} />} label={t("reveal.trial")} value={t("reveal.trialValue")} />
               </div>
-            )}
 
-            {model.session && (
-              <SessionHeroCard preview={model.session} kicker={model.session.type} />
-            )}
+              {model.barCount > 0 && (
+                <div className="ms-plan-reveal-bars">
+                  <p className="ms-plan-reveal-bars-label">{t("reveal.preview")}</p>
+                  <div className="ms-plan-reveal-bars-row">
+                    {Array.from({ length: model.barCount }, (_, i) => (
+                      <div
+                        key={i}
+                        className="ms-plan-reveal-bar"
+                        style={{
+                          height: 28 + ((i * 17) % 36),
+                          opacity: 0.35 + (i / Math.max(1, model.barCount)) * 0.65,
+                        }}
+                        title={`Semaine ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <div className="ms-plan-reveal-bars-cap">
+                    <span>S1, base</span>
+                    <span>Essai 7j</span>
+                    <span>Suite · Premium</span>
+                  </div>
+                </div>
+              )}
 
-            <div className="ms-plan-reveal-cta">
-              <button type="button" className="ms-plan-reveal-btn" onClick={onContinue} style={{ fontFamily: FONT }}>
-                {t("reveal.seeFirst")}
-              </button>
-              <p className="ms-plan-reveal-foot">{t("reveal.foot")}</p>
+              {model.session && (
+                <SessionHeroCard preview={model.session} kicker={model.session.type} />
+              )}
+
+              <div className="ms-plan-reveal-cta">
+                <button type="button" className="ms-plan-reveal-btn" onClick={onContinue} style={{ fontFamily: FONT }}>
+                  {t("reveal.seeFirst")}
+                </button>
+                <p className="ms-plan-reveal-foot">{t("reveal.foot")}</p>
+              </div>
             </div>
           </div>
         )}

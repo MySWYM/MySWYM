@@ -27,8 +27,9 @@ export default function SoftMistSheet({
   fullscreenMobile = false,
   footer = null,
 }) {
-  /** Ignore le click/mouseup qui a ouvert le sheet (évite fermeture immédiate). */
+  /** Ignore le geste qui a ouvert le sheet (évite fermeture immédiate sur iOS). */
   const ignoreDismissUntil = useRef(0);
+  const wasOpenRef = useRef(false);
   const dragRef = useRef({
     active: false,
     startY: 0,
@@ -41,9 +42,18 @@ export default function SoftMistSheet({
 
   const canSwipe = Boolean(swipeToDismiss && onClose);
 
+  // Pendant le render (avant paint), y compris le 1er mount open=true.
+  if (open && !wasOpenRef.current) {
+    ignoreDismissUntil.current = Date.now() + 700;
+  }
+  wasOpenRef.current = Boolean(open);
+
   useEffect(() => {
     if (!open) return undefined;
-    ignoreDismissUntil.current = Date.now() + 350;
+    ignoreDismissUntil.current = Math.max(
+      ignoreDismissUntil.current,
+      Date.now() + 700,
+    );
     setDragY(0);
     setDragging(false);
     dragRef.current.active = false;
@@ -93,6 +103,14 @@ export default function SoftMistSheet({
     if (e.target !== e.currentTarget) return;
     if (Date.now() < ignoreDismissUntil.current) return;
     onClose();
+  };
+
+  const onOverlayPointerDown = (e) => {
+    // Bloque le pointer résiduel du tap d’ouverture (ne ferme pas).
+    if (Date.now() < ignoreDismissUntil.current && e.target === e.currentTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   const endDrag = (clientY) => {
@@ -164,6 +182,7 @@ export default function SoftMistSheet({
         ...(zIndex != null ? { zIndex } : {}),
         ...(dragging ? { opacity: overlayOpacity, transition: "none" } : {}),
       }}
+      onPointerDown={onOverlayPointerDown}
       onMouseDown={tryDismiss}
       onClick={tryDismiss}
     >

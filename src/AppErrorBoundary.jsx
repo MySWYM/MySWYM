@@ -25,6 +25,8 @@ export default class AppErrorBoundary extends Component {
       hasUser: false,
       isAnonymous: false,
     };
+    /** Évite que le tap qui a planté déclenche « Retour à l’accueil ». */
+    this.ignoreActionsUntil = 0;
   }
 
   static getDerivedStateFromError() {
@@ -35,6 +37,7 @@ export default class AppErrorBoundary extends Component {
     const errorMessage = String(error?.message || error || "unknown").slice(0, 160);
     const errorCode = makeUiErrorCode(errorMessage);
     const offline = isNavigatorOffline();
+    this.ignoreActionsUntil = Date.now() + 500;
     this.setState({
       errorMessage,
       errorCode,
@@ -96,6 +99,7 @@ export default class AppErrorBoundary extends Component {
   };
 
   goPath = (path) => {
+    if (Date.now() < this.ignoreActionsUntil) return;
     this.setState({ hasError: false });
     if (window.location.pathname === path) {
       window.location.reload();
@@ -105,6 +109,7 @@ export default class AppErrorBoundary extends Component {
   };
 
   handlePrimary = (action) => {
+    if (Date.now() < this.ignoreActionsUntil) return;
     if (action === "home") {
       this.goPath("/app");
       return;
@@ -156,6 +161,7 @@ export default class AppErrorBoundary extends Component {
         note={copy.note}
         primaryLabel={copy.primaryLabel}
         onPrimary={() => this.handlePrimary(copy.primaryAction)}
+        primaryAutoFocus={false}
         tertiaryLabel={tertiaryLabel}
         onTertiary={onTertiary}
         linkLabel="Écrire au support"

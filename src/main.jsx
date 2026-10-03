@@ -6,10 +6,12 @@ import "./index.css";
 import "./theme/app-fluid.css";
 import AppTree from "./app-shell/AppTree.jsx";
 import { bootstrapNativeChrome, prepareNativeRuntime } from "./native/bootstrap-native.js";
+import { installProtectMediaAssets } from "./lib/protect-media-assets.js";
 import { handoffStravaIosIfNeeded } from "./lib/native-strava.js";
 
 handoffStravaIosIfNeeded();
 prepareNativeRuntime();
+installProtectMediaAssets();
 void bootstrapNativeChrome();
 
 const previewIap =

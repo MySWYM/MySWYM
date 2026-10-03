@@ -15,6 +15,8 @@ export default function AppStatusScreen({
   linkHref = null,
   primaryDisabled = false,
   primaryBusyLabel = null,
+  /** false sur l’écran d’erreur : évite qu’un tap fantôme recharge l’app. */
+  primaryAutoFocus = true,
   meta = null,
   brand = true,
   role = "alertdialog",
@@ -54,7 +56,7 @@ export default function AppStatusScreen({
             className="ms-status-cta"
             onClick={onPrimary}
             disabled={primaryDisabled}
-            autoFocus
+            autoFocus={primaryAutoFocus}
           >
             {busy ? primaryBusyLabel : primaryLabel}
           </button>

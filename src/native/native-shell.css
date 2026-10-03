@@ -1,11 +1,51 @@
 html.myswym-ios,
 html.myswym-ios body {
-  overscroll-behavior-y: none;
+  /* auto : rubber-band iOS ; pas none (effet « page web »). */
+  overscroll-behavior-y: auto;
   height: 100%;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbars / indicateurs web : invisibles partout dans l’app iOS. */
+html.myswym-ios,
+html.myswym-ios * {
+  scrollbar-width: none;
+}
+
+html.myswym-ios *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent;
+}
+
+html.myswym-ios #root,
+html.myswym-ios .myswym-app,
+html.myswym-ios .ms-app-immersive {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html.myswym-ios img,
+html.myswym-ios picture,
+html.myswym-ios svg,
+html.myswym-ios video,
+html.myswym-ios canvas,
+html.myswym-ios .ms-app-immersive-bg,
+html.myswym-ios .ms-app-immersive-bg img {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  pointer-events: auto;
 }
 
 html.myswym-ios #root {
@@ -68,9 +108,12 @@ html.myswym-ios select {
 }
 
 html.myswym-ios input,
-html.myswym-ios textarea {
+html.myswym-ios textarea,
+html.myswym-ios select,
+html.myswym-ios [contenteditable="true"] {
   -webkit-user-select: text;
   user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* App.jsx onboarding still reserves landing padding + logo; PublicNav is already null. */

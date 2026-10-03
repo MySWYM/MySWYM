@@ -65,7 +65,19 @@ export default function WorkoutPrepView({
   planId = null,
   showProvenance = true,
 }) {
-  const view = useMemo(() => buildWorkoutView(session), [session]);
+  const view = useMemo(() => {
+    try {
+      return buildWorkoutView(session && typeof session === "object" ? session : {});
+    } catch (err) {
+      if (import.meta.env?.DEV) console.error("[WorkoutPrepView]", err);
+      return buildWorkoutView({
+        title: session?.title || "Séance",
+        type: session?.type || null,
+        distance: session?.distance || null,
+        details: [],
+      });
+    }
+  }, [session]);
   const tSwim = useSessionText();
   const [drill, setDrill] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
@@ -173,7 +185,7 @@ export default function WorkoutPrepView({
               )}
               {header.intensityCue && (
                 <div style={{ fontSize: 13, color: G.grey, fontWeight: 600 }}>
-                  Objectif · {header.intensityCue.charAt(0).toUpperCase() + header.intensityCue.slice(1)}
+                  Objectif · {String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1)}
                 </div>
               )}
             </div>
@@ -190,7 +202,7 @@ export default function WorkoutPrepView({
           )}
           {header.intensityCue && (
             <div className="ms-workout-meta-line">
-              Objectif · {header.intensityCue.charAt(0).toUpperCase() + header.intensityCue.slice(1)}
+              Objectif · {String(header.intensityCue).charAt(0).toUpperCase() + String(header.intensityCue).slice(1)}
             </div>
           )}
         </div>

@@ -42,6 +42,40 @@ body {
   margin: 0;
 }
 
+/* App produit : pas de sélection / menu appuis longs (sauf champs éditables). */
+.myswym-app {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.myswym-app input,
+.myswym-app textarea,
+.myswym-app select,
+.myswym-app [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Médias : pas d’enregistrement / drag / callout iOS. */
+.myswym-app img,
+.myswym-app picture,
+.myswym-app svg,
+.myswym-app video,
+.myswym-app canvas,
+img,
+picture,
+svg,
+video,
+canvas {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
 #root {
   width: 100%;
   max-width: 100%;
@@ -129,9 +163,14 @@ code {
 
 /* Plan reveal, même carte séance que la landing, tokens app */
 .ms-plan-reveal {
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text-h);
+  display: flex;
+  flex-direction: column;
 }
 .ms-plan-reveal--building {
   background: var(--accent, #006bfd);
@@ -145,10 +184,32 @@ code {
 }
 .ms-plan-reveal-ready {
   animation: ms-screen-enter 0.28s ease both;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 8px;
+  overflow: hidden;
+}
+.ms-plan-reveal-head {
+  flex-shrink: 0;
+  padding-bottom: 12px;
+  background: var(--bg);
+  border-bottom: 1px solid transparent;
+}
+.ms-plan-reveal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+.ms-plan-reveal-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 .ms-plan-reveal-building {
   animation: ms-screen-enter 0.22s ease both;
@@ -167,12 +228,16 @@ code {
 }
 .ms-plan-reveal-inner {
   max-width: 440px;
+  width: 100%;
   margin: 0 auto;
-  padding: max(28px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  padding: max(20px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 .ms-plan-reveal-title {
   margin: 1.75rem 0 0;
@@ -194,7 +259,7 @@ code {
   color: var(--text);
 }
 .ms-plan-reveal-kicker {
-  margin: 1.5rem 0 0;
+  margin: 1.25rem 0 0;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -202,7 +267,7 @@ code {
   color: #1aad7a;
 }
 .ms-plan-reveal-meta {
-  margin-top: 1.75rem;
+  margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 10px;

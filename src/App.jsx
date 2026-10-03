@@ -329,6 +329,11 @@ const css = `
     min-height: 100dvh;
     transition: background-color 0.25s ease, color 0.2s ease;
   }
+  /* iOS app : rubber-band natif (le none web tue le bounce). */
+  html.myswym-ios body {
+    overscroll-behavior-y: auto;
+    overscroll-behavior-x: none;
+  }
   #root { min-height: 100dvh; }
   h1, h2, h3 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
   h4 { letter-spacing: -0.01em; }
