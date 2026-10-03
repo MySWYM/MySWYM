@@ -96,6 +96,10 @@ html.myswym-ios .native-auth-legal.is-native .native-auth-check input[type="chec
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23006bfd' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E");
 }
 
+html.myswym-ios {
+  --bottom-nav-h: 52px;
+}
+
 html.myswym-ios .bottom-nav {
   width: min(var(--app-max), calc(100% - 40px));
 }
@@ -581,4 +585,21 @@ html.myswym-ios .ios-premium-bar {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+html.myswym-ios .ios-premium-bar.is-trial {
+  background: linear-gradient(135deg, #006bfd 0%, #3b8cff 100%);
+  color: #fff;
+}
+html.myswym-ios .ios-premium-bar-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.15;
+  text-align: center;
+}
+html.myswym-ios .ios-premium-bar-sub {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.88;
 }

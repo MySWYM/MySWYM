@@ -11,7 +11,7 @@
 | --- | --- |
 | Décisions pédagogiques Arthur | Excel validé + règles actives Arthur |
 | Bibliothèque utilisée par le composeur | Catalogue versionné dans le code |
-| Catalogue soft Google Sheet (flag local) | Live Sheet = séances + onglet Éducatifs ; fiches UI via `sheetEducatif`, pas `.js` Arthur. Soft **01–13** = **source visible** (Nager + triathlon + eau libre). Diplômes hors Sheet. |
+| Catalogue soft Google Sheet (flag local) | Google Sheet = atelier. Snapshot Supabase `sheet_sessions` / `sheet_educatifs` (version `is_live`) = ce que le serveur lit. Clé = onglet + `n°`. Google = repli seulement s'il n'y a pas de version live. Soft **01–13** = **source visible**. Diplômes hors Sheet. |
 | Séances Gold / modèles validés | Supabase `session_templates` |
 | Composition hors Soft (diplômes, etc.) | `composeSession` + quality gate |
 | Ancien moteur | Fallback technique temporaire hors Soft, jamais une source Soft concurrente |
@@ -24,7 +24,7 @@
 
 | Rôle | Emplacement | Statut |
 | --- | --- | --- |
-| Catalogue Sheet (soft) | `natation-sheet/` + flag (ON navigateur ; `=0` kill) | **Source visible Soft 01–13** (await, pas de composeur de secours) ; éducatif = `sheetEducatif` ; pas de QG sur les lignes (Sheet = foi) |
+| Catalogue Sheet (soft) | `natation-sheet/` + snapshot `sheet_*` (service_role) | **Source visible Soft 01–13**. Import : `node scripts/import-natation-sheet.mjs`. Séances validées du plan non réécrites. Pas de QG sur les lignes (catalogue = foi) |
 | Orchestrateur / composeur | `composeSession` (`sports-engine` / `session-composer`) | **Hors Soft uniquement** (diplômes, etc.) + quality gate |
 | Banque drills / catalogues | Catalogue versionné dans le code (`exercise-library`, `swim-banks`, éducatifs) | Source bibliothèque composeur |
 | Templates Gold | Supabase `session_templates` (`quality=gold` / `coach_approved`) | Modèles validés Arthur |

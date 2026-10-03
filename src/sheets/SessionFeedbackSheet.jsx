@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import { FaceGood, FaceMid, FaceTired } from "./feedback-faces.jsx";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export const SESSION_FEEDBACK_TAGS = [
   "trop long",
@@ -45,10 +46,7 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
   };
 
   return (
-    <div className="sheet-overlay">
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
-
+    <SheetCardShell onClose={onSkip}>
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
           {t("feedback.kicker")}
         </p>
@@ -166,7 +164,6 @@ export default function SessionFeedbackSheet({ sessionTitle, initial, onSubmit, 
         <button type="button" onClick={onSkip} style={{ width: "100%", padding: "11px", background: "none", border: "none", color: G.greyMid, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
           {t("feedback.skip")}
         </button>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

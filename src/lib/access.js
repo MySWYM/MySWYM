@@ -32,40 +32,77 @@ function parseMs(value) {
   return null;
 }
 
+const TRIAL_LENGTH_DAYS = 7;
+
 export function getAccessState(user) {
   const meta = user?.app_metadata ?? {};
-  const status = meta.subscription_status || (meta.subscription === "premium" ? ACCESS_STATUS.ACTIVE : ACCESS_STATUS.EXPIRED);
   const trialEndsMs = parseMs(meta.trial_ends_at);
   const subscriptionEndMs = parseMs(meta.subscription_end);
+  const trialStartedMs = parseMs(meta.trial_started_at);
   const cancelAtPeriodEnd = meta.cancel_at_period_end === true;
   const trialUsed = meta.trial_used === true;
   const trialStartedAt = meta.trial_started_at || null;
   const subscriptionStartedAt = meta.subscription_started_at || null;
   const now = Date.now();
 
+  let status = meta.subscription_status
+    || (meta.subscription === "premium" ? ACCESS_STATUS.ACTIVE : ACCESS_STATUS.EXPIRED);
+  // JWT sans subscription_status : fenêtre d'essai future ⇒ trial (évite ACTIVE à vie).
+  if (!meta.subscription_status && trialEndsMs != null && trialEndsMs > now) {
+    if (subscriptionEndMs == null || subscriptionEndMs <= now) {
+      status = ACCESS_STATUS.TRIAL;
+    }
+  }
+  // subscription=premium + trial_used, sans status ni fin d'abo ⇒ essai (bandeau visible).
+  if (
+    !meta.subscription_status
+    && meta.subscription === "premium"
+    && trialUsed
+    && (subscriptionEndMs == null || subscriptionEndMs <= now)
+    && (trialEndsMs == null || trialEndsMs > now)
+  ) {
+    status = ACCESS_STATUS.TRIAL;
+  }
+
   const entitledByStatus = ENTITLED_STATUSES.has(status);
   let accessEndsMs = null;
-  if (status === ACCESS_STATUS.TRIAL) accessEndsMs = trialEndsMs;
-  else if (status === ACCESS_STATUS.CANCELED || status === ACCESS_STATUS.ACTIVE) accessEndsMs = subscriptionEndMs;
+  if (status === ACCESS_STATUS.TRIAL) {
+    accessEndsMs = trialEndsMs
+      ?? (trialStartedMs != null ? trialStartedMs + TRIAL_LENGTH_DAYS * 86400000 : null);
+  } else if (status === ACCESS_STATUS.CANCELED || status === ACCESS_STATUS.ACTIVE) {
+    accessEndsMs = subscriptionEndMs;
+  }
 
   // Aligné sur hasEntitlement serveur : active/canceled = fin de période ; trial = fin d'essai.
   // Ne jamais traiter "active" comme premium à vie si subscription_end est passé (metadata stale).
+  // Essai sans trial_ends_at : ne pas geler (metadata incomplète) ; le sync rattrape la date.
   const hasPremiumAccess = status === ACCESS_STATUS.ACTIVE
     ? (subscriptionEndMs == null || subscriptionEndMs > now)
     : status === ACCESS_STATUS.CANCELED
       ? (subscriptionEndMs != null && subscriptionEndMs > now)
       : status === ACCESS_STATUS.TRIAL
-        ? (trialEndsMs != null && trialEndsMs > now)
+        ? (trialEndsMs == null || trialEndsMs > now)
         : false;
 
-  const trialDaysLeft = trialEndsMs != null
-    ? Math.max(0, Math.ceil((trialEndsMs - now) / 86400000))
-    : 0;
+  let trialDaysLeft = 0;
+  if (trialEndsMs != null) {
+    trialDaysLeft = Math.max(0, Math.ceil((trialEndsMs - now) / 86400000));
+  } else if (status === ACCESS_STATUS.TRIAL && hasPremiumAccess) {
+    if (trialStartedMs != null) {
+      const endMs = trialStartedMs + TRIAL_LENGTH_DAYS * 86400000;
+      trialDaysLeft = Math.max(0, Math.ceil((endMs - now) / 86400000));
+    } else {
+      trialDaysLeft = TRIAL_LENGTH_DAYS;
+    }
+  }
 
   return {
     status,
     trialStartedAt,
-    trialEndsAt: trialEndsMs ? new Date(trialEndsMs).toISOString() : null,
+    trialEndsAt: (() => {
+      const ms = trialEndsMs ?? (status === ACCESS_STATUS.TRIAL ? accessEndsMs : null);
+      return ms != null ? new Date(ms).toISOString() : null;
+    })(),
     subscriptionStartedAt,
     subscriptionEndsAt: subscriptionEndMs ? new Date(subscriptionEndMs).toISOString() : null,
     trialUsed,
@@ -112,10 +149,13 @@ export function isAccessMetadataPending(user) {
   if (!user) return false;
   if (getAccessState(user).hasPremiumAccess) return false;
   const meta = user.app_metadata ?? {};
+  const status = meta.subscription_status
+    || (meta.subscription === "premium" ? ACCESS_STATUS.ACTIVE : ACCESS_STATUS.EXPIRED);
   if (meta.subscription === "premium" && meta.trial_used !== true) return false;
   if (meta.trial_used === true) {
     const trialEndsMs = parseMs(meta.trial_ends_at);
-    if (trialEndsMs == null) return true;
+    // Essai encore marqué TRIAL sans date : sync en cours. EXPIRED + trial_used = gel (pas pending).
+    if (trialEndsMs == null) return status === ACCESS_STATUS.TRIAL;
     const createdMs = parseMs(user.created_at);
     if (createdMs != null && trialEndsMs <= createdMs) return true;
     return false;
@@ -145,6 +185,71 @@ export function shouldAwaitCardlessTrial(user, nowMs = Date.now()) {
 export function hasUnlockedPremiumAccess(user, nowMs = Date.now()) {
   if (!user) return false;
   return getAccessState(user).hasPremiumAccess || shouldAwaitCardlessTrial(user, nowMs);
+}
+
+/**
+ * Décompte essai à afficher (home / barre Premium).
+ * `hasSessionAccess` : séances encore ouvertes (y compris JWT essai incomplet).
+ */
+export function resolveTrialCountdown(accessState, { hasSessionAccess = false } = {}) {
+  if (!accessState) return null;
+  // Abo payant : pas de décompte essai.
+  if (accessState.canManageSubscription) return null;
+  if (accessState.status === ACCESS_STATUS.ACTIVE || accessState.status === ACCESS_STATUS.CANCELED) {
+    if (accessState.hasPremiumAccess) return null;
+  }
+
+  let days = Number(accessState.trialDaysLeft) || 0;
+  const trialLive = accessState.status === ACCESS_STATUS.TRIAL && (days > 0 || accessState.hasPremiumAccess);
+  const openWithoutPaid = hasSessionAccess && !accessState.canManageSubscription;
+  // Gelé réel (essai consommé, plus d’accès) : pas de pastille « jour X/7 ».
+  const trulyFrozen = accessState.trialUsed && !accessState.hasPremiumAccess && !hasSessionAccess;
+  if (trulyFrozen) return null;
+  if (!trialLive && !openWithoutPaid) return null;
+
+  if (days <= 0) days = TRIAL_LENGTH_DAYS;
+  const dayIndex = Math.min(TRIAL_LENGTH_DAYS, Math.max(1, TRIAL_LENGTH_DAYS + 1 - days));
+  return {
+    daysLeft: days,
+    dayIndex,
+    /** accessState enrichi pour TrialCountdownBanner */
+    viewState: {
+      ...accessState,
+      status: ACCESS_STATUS.TRIAL,
+      trialDaysLeft: days,
+      hasPremiumAccess: true,
+    },
+  };
+}
+
+/** Bandeau / pastille décompte essai sur l’accueil. */
+export function shouldShowTrialCountdown(accessState, opts = {}) {
+  return Boolean(resolveTrialCountdown(accessState, opts));
+}
+
+/** Jour courant dans l’essai 7j (1…7), pour pastille « jour 3/7 ». */
+export function trialDayIndex(accessState, opts = {}) {
+  const resolved = resolveTrialCountdown(accessState, opts);
+  if (resolved) return resolved.dayIndex;
+  const days = Number(accessState?.trialDaysLeft) || 0;
+  if (days <= 0) return 0;
+  return Math.min(TRIAL_LENGTH_DAYS, Math.max(1, TRIAL_LENGTH_DAYS + 1 - days));
+}
+
+/**
+ * Séances visibles / ouvrables : essai 7j ou abo.
+ * Après essai sans abo → false (gel).
+ * `isPremiumFlag` = accès réel (hasPremiumAccess / unlocked sync), pas un paywall legacy.
+ */
+export function canAccessSessions(accessState, isPremiumFlag = false) {
+  if (!accessState) return !!isPremiumFlag;
+  if (accessState.hasPremiumAccess) return true;
+  if (accessState.status === ACCESS_STATUS.TRIAL && (Number(accessState.trialDaysLeft) || 0) > 0) {
+    return true;
+  }
+  // Gelé : ne pas rouvrir via un flag stale (ex. shouldAwait encore true à tort).
+  if (accessState.isFrozen && accessState.trialUsed) return false;
+  return !!isPremiumFlag;
 }
 
 /**

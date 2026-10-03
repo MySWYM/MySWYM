@@ -198,9 +198,11 @@ import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
 import PlanReadySheet from "./sheets/PlanReadySheet.jsx";
 import SaveAccountSheet from "./sheets/SaveAccountSheet.jsx";
 import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
+import SoftMistSheet from "./sheets/SoftMistSheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
+import { useSheetSwipeDismiss } from "./sheets/useSheetSwipeDismiss.js";
 import WhatsNewSheet, {
   hasSeenWhatsNew,
   shouldShowWhatsNew,
@@ -255,7 +257,7 @@ import {
   copySessionText,
 } from "./lib/session-export.js";
 import { createShareCanvas } from "./lib/session-share-canvas.js";
-import { copyStoryStickerPng, createStoryStickerCanvas, matchStravaSwim } from "./lib/session-story-sticker.js";
+import { copyStoryStickerPng, createStoryStickerCanvas, matchStravaSwim, savePngToPhotos } from "./lib/session-story-sticker.js";
 import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
@@ -3385,6 +3387,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   const [copied, setCopied] = useState(false);
   const [stickerUrl, setStickerUrl] = useState("");
   const [stickerState, setStickerState] = useState("idle");
+  const [downloadState, setDownloadState] = useState("idle");
   const [stravaSwim, setStravaSwim] = useState(null);
 
   useEffect(() => {
@@ -3420,6 +3423,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     const canvas = createStoryStickerCanvas(session, stravaSwim);
     setStickerUrl(canvas ? canvas.toDataURL("image/png") : "");
     setStickerState("idle");
+    setDownloadState("idle");
   }, [session, stravaSwim]);
 
   const handleCopySticker = async () => {
@@ -3437,16 +3441,25 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
     badgeLabel: badgeMeta?.label || null,
   });
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const canvas = createShareCanvas(session, goalLabel, canvasBadge, invite);
-    const link = document.createElement("a");
-    link.download = "myswym-seance.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    if (!canvas) {
+      setDownloadState("failed");
+      return;
+    }
+    setDownloadState("saving");
+    try {
+      await savePngToPhotos(canvas, "myswym-seance.png");
+      setDownloadState("saved");
+      setTimeout(() => setDownloadState("idle"), 2500);
+    } catch {
+      setDownloadState("failed");
+      setTimeout(() => setDownloadState("idle"), 3000);
+    }
   };
   const handleShare = async () => {
     const canvas = createShareCanvas(session, goalLabel, canvasBadge, invite);
-    if (!navigator.share) { handleDownload(); return; }
+    if (!navigator.share) { void handleDownload(); return; }
     canvas.toBlob(async (blob) => {
       try {
         const file = new File([blob], "myswym-seance.png", { type: "image/png" });
@@ -3460,7 +3473,10 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           return;
         }
         await navigator.share(payload);
-      } catch { handleDownload(); }
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+        void handleDownload();
+      }
     });
   };
   const handleCopyStrava = async () => {
@@ -3472,24 +3488,13 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
   };
 
   return (
-    <div
-      className="sheet-overlay ms-soft-overlay ms-soft-overlay--stacked"
-      style={{ zIndex: 560 }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <SoftMistSheet
+      open
+      title="Partage ta séance"
+      onClose={onClose}
+      zIndex={560}
+      ariaLabel="Partage ta séance"
     >
-      <div className="sheet-panel scale-in ms-soft-sheet" style={{ paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
-        <div className="ms-soft-sheet-head">
-          <div className="ms-sheet-handle" />
-          <div className="ms-soft-sheet-head-row">
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <h3 className="ms-soft-sheet-title" style={{ margin: 0 }}>Partage ta séance</h3>
-            </div>
-            <button type="button" onClick={onClose} aria-label="Fermer" className="ms-soft-sheet-close">
-              <X size={18} color="currentColor" />
-            </button>
-          </div>
-        </div>
-        <div className="ms-soft-sheet-body">
         {stickerUrl && (
           <div style={{ marginBottom: 16 }}>
             <div style={{
@@ -3558,11 +3563,34 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           )}
         </div>
         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-          <Btn onClick={handleDownload} variant="secondary" style={{ flex: 1 }}>Télécharger</Btn>
+          <Btn
+            onClick={() => { void handleDownload(); }}
+            variant="secondary"
+            style={{ flex: 1 }}
+            disabled={downloadState === "saving"}
+          >
+            {downloadState === "saving"
+              ? "Enregistrement…"
+              : downloadState === "saved"
+                ? "Dans Photos ✓"
+                : downloadState === "failed"
+                  ? "Échec, réessaie"
+                  : "Enregistrer"}
+          </Btn>
           <Btn onClick={handleShare} variant="blue" style={{ flex: 1 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Share2 size={14} /> Partager</span>
           </Btn>
         </div>
+        {downloadState === "saved" ? (
+          <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "0 0 10px", textAlign: "center" }}>
+            Image enregistrée dans tes Photos.
+          </p>
+        ) : null}
+        {downloadState === "failed" ? (
+          <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "0 0 10px", textAlign: "center" }}>
+            Autorise Photos dans Réglages si besoin, puis réessaie.
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={handleCopyStrava}
@@ -3579,9 +3607,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
             : <><Copy size={14} /> Copier pour Strava / WhatsApp</>}
         </button>
         <button onClick={onClose} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Fermer</button>
-        </div>
-      </div>
-    </div>
+    </SoftMistSheet>
   );
 };
 
@@ -3591,15 +3617,29 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
 // ── BADGE CÉLÉBRATION + EXPORT + SEMAINE ───────────────────────────────────
 const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
   const b = BADGE_DEFS.find((d) => d.id === badgeId);
+  const { headProps, panelStyle, overlayStyle, panelClassExtra } = useSheetSwipeDismiss(onClose);
   if (!b) return null;
   const Icon = b.icon;
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose?.()}>
-      <div className="sheet-panel scale-in" style={{
-        background: G.surface, borderRadius: "24px 24px 0 0", padding: "32px 22px",
-        paddingBottom: "max(28px, env(safe-area-inset-bottom))", textAlign: "center",
-      }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 28px" }} />
+    <div
+      className="sheet-overlay"
+      style={overlayStyle}
+      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        className={`sheet-panel scale-in ${panelClassExtra}`.trim()}
+        style={{
+          background: G.surface,
+          borderRadius: "24px 24px 0 0",
+          padding: "32px 22px",
+          paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+          textAlign: "center",
+          ...panelStyle,
+        }}
+      >
+        <div {...headProps} style={{ ...(headProps.style || {}), margin: "0 auto 28px" }}>
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto" }} />
+        </div>
         <div className="badge-pop" style={{
           width: 88, height: 88, borderRadius: "50%", margin: "0 auto 18px",
           background: b.color, display: "flex", alignItems: "center", justifyContent: "center",
@@ -4927,6 +4967,7 @@ const ProgressionLoopView = ({
     : (loopDisplaySession(plan) || weekSessions[0]);
   const resolved = session ? isSessionResolved(session) : true;
   const [poolOpen, setPoolOpen] = useState(false);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
 
   const loopPad = {
     paddingBottom: embed ? 16 : "calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + 24px)",
@@ -5068,7 +5109,7 @@ const ProgressionLoopView = ({
             </button>
             <button
               type="button"
-              onClick={() => onComplete("not_done")}
+              onClick={() => setConfirmAbandon(true)}
               style={{
                 width: "100%", padding: "14px", borderRadius: 14, cursor: "pointer",
                 border: `1.5px solid ${G.greyLight}`, background: G.surface,
@@ -5078,6 +5119,23 @@ const ProgressionLoopView = ({
               L&apos;abandonner
             </button>
           </div>
+        )}
+
+        {confirmAbandon && (
+          <ConfirmSheet
+            title="Abandonner cette séance ?"
+            message="Elle quitte ton plan et va dans l’Historique comme abandonnée. La suivante prend sa place."
+            confirmLabel="Oui, abandonner"
+            cancelLabel="Non, garder la séance"
+            destructive
+            icon={X}
+            zIndex={520}
+            onConfirm={() => {
+              setConfirmAbandon(false);
+              onComplete("not_done");
+            }}
+            onCancel={() => setConfirmAbandon(false)}
+          />
         )}
 
         {resolved && isPremium && (
@@ -8566,6 +8624,9 @@ export default function App() {
   // (plans multi-semaines uniquement, la boucle Nager & Progresser a toujours 1 semaine)
   useEffect(() => {
     if (!activePlanEntry) return;
+    // Repair semaines : abo payant seulement. Essai/gel → pas de Loading plein écran.
+    if (accessState.status !== ACCESS_STATUS.ACTIVE && accessState.status !== ACCESS_STATUS.CANCELED) return;
+    if (!accessState.hasPremiumAccess) return;
     const { plan: ap, profile: aprof } = activePlanEntry;
     if (!aprof?.goal || !ap?.weeks) return;
     if (ap.isSessionLoop || ap.isProgression || usesSessionLoop(aprof)) return;
@@ -8615,6 +8676,15 @@ export default function App() {
       setUser(u);
       setIsPremium(checkPremiumUnlocked(u));
       if (u) {
+        // TOKEN_REFRESHED : ne jamais redescendre accessSynced ni recharger les plans
+        // (sinon Loading plein écran / remount home au milieu d’une ouverture de séance).
+        if (event === "TOKEN_REFRESHED") {
+          if (!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u)) {
+            setAccessSynced(true);
+          }
+          setAuthLoading(false);
+          return;
+        }
         setAccessSynced(!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u));
         const onInscription = locationRef.current.pathname === "/inscription";
         const onConnexion = locationRef.current.pathname === "/connexion";
@@ -11548,7 +11618,8 @@ export default function App() {
     </>
   );
 
-  if (coldHold || screen === "loading" || waitingForAccess) return <><style>{css}</style><Loading /></>;
+  // waitingForAccess : sync essai en fond, ne pas masquer l’app (sinon loader → home au tap).
+  if (coldHold || screen === "loading") return <><style>{css}</style><Loading /></>;
 
   if (screen === "onboarding") return (
     <>
@@ -11610,8 +11681,8 @@ export default function App() {
           </div>
         )}
         <div className="myswym-app-main">
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
-        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium || accessState.hasPremiumAccess} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
+        {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium || accessState.hasPremiumAccess} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
           setStep,

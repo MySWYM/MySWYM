@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-03 | Snapshot Sheet dans Supabase | Le Google Sheet reste l'atelier. `node scripts/import-natation-sheet.mjs` publie une version `is_live` (`sheet_sessions` + `sheet_educatifs`, clé onglet + `n°`, ajouts en bas). Le serveur lit cette version. Sans version live, repli Google. Les séances déjà validées dans le plan ne sont pas réécrites. | ✅ active |
 | 2026-09-12 | Soft `4 × (3 × 50) · 3 éducatifs` | Ligne crawl (ou mono-nage) : nested = N×M×D m ; jeton `{25m éducatif + 25m nage}` ; `· 3 éducatifs` = `pickN(3)` distincts **strict nage** (pas fiche nage vide / `toutes`). UI sheet éducatifs : layout `same-stroke` (pas pap→crawl). | ✅ active |
 | 2026-09-02 | Finger paddles + élastique | Inventaire : `plaquettes_doigts` distinct des plaquettes ; `elastique` visible Profil (bande chevilles). Fingers = appui / technique, plaquettes = force / traction, un seul des deux peut couvrir l’autre. Élastique + pull OK (plus facile) ; jamais élastique + palmes ou planche même ligne. Parseur : `finger paddle` avant `paddle`. | ✅ active |
 | 2026-08-31 | T100 → départs live | Changer le T100 recalcule `D…` / `@…` sur les séances non validées (intent déduit), sans regen ni rechargement de séance. Validées intactes. | ✅ active |

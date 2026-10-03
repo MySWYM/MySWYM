@@ -194,7 +194,12 @@ export default function AnalyseTab({
               Volume, allures et badges : inclus dans Premium.
             </p>
             {iosNav ? (
-              <IosPremiumBar onUpgrade={onUpgrade} source="analyse" />
+              <IosPremiumBar
+                onUpgrade={onUpgrade}
+                source="analyse"
+                accessState={accessState}
+                hasSessionAccess={!!isPremium}
+              />
             ) : (
             <button
               type="button"

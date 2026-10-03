@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
+import SheetCardShell from "./SheetCardShell.jsx";
 
 export default function CancelSurveySheet({ onChoose, onSkip }) {
   const { t } = useTranslation("app");
@@ -10,9 +11,12 @@ export default function CancelSurveySheet({ onChoose, onSkip }) {
     { id: "other", label: t("cancel.other") },
   ];
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onSkip()}>
-      <div className="sheet-panel ms-sheet-card scale-in">
-        <div className="ms-sheet-handle" />
+    <SheetCardShell
+      onClose={onSkip}
+      overlayProps={{
+        onClick: (e) => e.target === e.currentTarget && onSkip(),
+      }}
+    >
         <h3
           style={{
             fontFamily: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
@@ -70,7 +74,6 @@ export default function CancelSurveySheet({ onChoose, onSkip }) {
         >
           {t("cancel.stripe")}
         </button>
-      </div>
-    </div>
+    </SheetCardShell>
   );
 }

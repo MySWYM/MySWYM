@@ -202,3 +202,25 @@ export async function copyStoryStickerPng(canvas) {
   }
   return downloadPng(dataUrl);
 }
+
+/**
+ * Enregistre un PNG dans Photos (iOS) ou télécharge (web).
+ * @returns {Promise<"saved">}
+ */
+export async function savePngToPhotos(canvas, filename = "myswym-seance.png") {
+  if (!canvas) throw new Error("canvas manquant");
+  const dataUrl = canvas.toDataURL("image/png");
+  const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+  const { isNativeIos } = await import("./native-platform.js");
+  if (isNativeIos()) {
+    const { registerPlugin } = await import("@capacitor/core");
+    const StorySticker = registerPlugin("StorySticker");
+    await StorySticker.savePng({ base64 });
+    return "saved";
+  }
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
+  return "saved";
+}

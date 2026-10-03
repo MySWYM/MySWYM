@@ -390,6 +390,42 @@ code {
   background: color-mix(in srgb, #2dd4a0 10%, var(--code-bg));
 }
 
+/* Pastille essai (home iOS) : jour X/7 */
+.ms-home-trial-chip-wrap {
+  margin-top: 10px;
+}
+.ms-trial-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 107, 253, 0.12);
+  color: var(--ms-ink, #0b1f33);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ms-trial-chip.is-urgent {
+  background: rgba(255, 107, 120, 0.16);
+  color: #b42336;
+}
+.ms-trial-chip-days {
+  font-weight: 600;
+  opacity: 0.72;
+}
+.ms-home-immersive .ms-trial-chip {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 18px rgba(11, 31, 51, 0.08);
+}
+.ms-home-immersive .ms-trial-chip.is-urgent {
+  background: #fde8ea;
+}
+
 /* Essai 7j, décompte accueil + CTA */
 .ms-trial-banner {
   margin: 0 0 14px;

@@ -113,6 +113,100 @@
   background: rgba(255, 255, 255, 0.92);
 }
 
+.ios-home-deck-card.is-locked {
+  filter: grayscale(0.88) brightness(0.78);
+}
+
+.ios-home-deck-card.is-locked .ios-home-deck-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 27, 45, 0.28) 0%,
+    rgba(15, 27, 45, 0.45) 48%,
+    rgba(15, 27, 45, 0.78) 100%
+  );
+}
+
+.ios-home-deck-lock {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 107, 253, 0.92);
+  box-shadow: 0 8px 20px rgba(0, 107, 253, 0.35);
+}
+
+.ios-home-deck-card.is-locked .ios-home-deck-lock {
+  filter: none;
+}
+
+.ios-home-deck-locked-label {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: var(--ms-type-caption, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: rgba(0, 107, 253, 0.92);
+}
+
+.ios-home-premium-unlock {
+  margin: 0 0 16px;
+  padding: 20px 18px 18px;
+  border-radius: var(--ms-card-radius, 28px);
+  border: 1px solid rgba(0, 107, 253, 0.18);
+  background:
+    linear-gradient(165deg, rgba(0, 107, 253, 0.12) 0%, rgba(255, 255, 255, 0.96) 42%, #fff 100%);
+  box-shadow:
+    0 18px 40px -24px rgba(0, 107, 253, 0.45),
+    0 4px 14px rgba(50, 110, 180, 0.08);
+}
+
+.ios-home-premium-unlock-kicker {
+  margin: 0 0 6px;
+  font-size: var(--ms-type-caption, 0.75rem);
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ms-blue, #006BFD);
+}
+
+.ios-home-premium-unlock-title {
+  margin: 0;
+  font-family: var(--ms-sans);
+  font-size: var(--ms-type-page, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ms-ink, #0F1B2D);
+}
+
+.ios-home-premium-unlock-body {
+  margin: 8px 0 0;
+  font-size: var(--ms-type-body, 0.9375rem);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ms-ink-soft, #4A5D72);
+}
+
+.ios-home-premium-unlock-perks {
+  margin: 12px 0 0;
+  font-size: var(--ms-type-label, 0.8125rem);
+  font-weight: 700;
+  color: var(--ms-blue, #006BFD);
+}
+
+.ios-home-premium-unlock .ms-pill-cta {
+  margin-top: 16px;
+  width: 100%;
+}
+
 .ios-home-deck-dots {
   display: flex;
   justify-content: center;

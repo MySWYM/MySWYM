@@ -2,7 +2,7 @@ import { Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import { FONT } from "../theme/brand.js";
-import { ACCESS_STATUS } from "../lib/access.js";
+import { resolveTrialCountdown } from "../lib/access.js";
 import { PRICING } from "../lib/pricing.js";
 import { isNativeApp } from "../lib/native-platform.js";
 import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
@@ -21,16 +21,20 @@ function formatTrialEndDate(iso, locale) {
 export default function TrialCountdownBanner({
   accessState = null,
   onUpgrade,
+  compact = false,
+  hasSessionAccess = false,
 }) {
   const { t, i18n } = useTranslation("app");
-  if (!accessState || accessState.status !== ACCESS_STATUS.TRIAL) return null;
-  const days = Number(accessState.trialDaysLeft) || 0;
-  if (days <= 0) return null;
+  const resolved = resolveTrialCountdown(accessState, { hasSessionAccess });
+  if (!resolved) return null;
+  const days = resolved.daysLeft;
+  const dayNum = resolved.dayIndex;
+  const view = resolved.viewState;
 
   const urgent = days <= 2;
   const hot = days <= 3;
   const locale = intlLocaleFor(normalizeAppLanguage(i18n.language));
-  const endLabel = formatTrialEndDate(accessState.trialEndsAt, locale);
+  const endLabel = formatTrialEndDate(view.trialEndsAt, locale);
   const native = isNativeApp();
   const priceFrom = native ? "" : PRICING.monthlyCommit.label;
 
@@ -65,6 +69,22 @@ export default function TrialCountdownBanner({
         ? t("trial.enjoyUntil", { date: endLabel, price: priceFrom })
         : t("trial.swimThen", { price: priceFrom }));
     cta = t("trial.seeOffers");
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        className={`ms-trial-chip${urgent ? " is-urgent" : ""}`}
+        onClick={() => onUpgrade?.(urgent ? "trial_chip_urgent" : "trial_chip")}
+        style={{ fontFamily: FONT }}
+        aria-label={t("trial.chipAria", { day: dayNum, count: days })}
+      >
+        <Clock size={14} strokeWidth={2.4} aria-hidden />
+        <span>{t("trial.chip", { day: dayNum })}</span>
+        <span className="ms-trial-chip-days">{t("trial.chipDays", { count: days })}</span>
+      </button>
+    );
   }
 
   return (
