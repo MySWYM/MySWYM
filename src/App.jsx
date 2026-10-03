@@ -21,7 +21,6 @@ import {
   snoozeSaveAccountPrompt,
 } from "./lib/save-account-prompt.js";
 import {
-  markNativeQuizStarted,
   clearNativeQuizStarted,
   nativeQuizStarted,
   NATIVE_QUIZ_EVENT,
@@ -85,7 +84,13 @@ import FrequencyGauge from "./ui/FrequencyGauge.jsx";
 import "./theme/onboarding-date.css";
 import { flushPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
 import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel, sessionWhyLine } from "./lib/plan-reveal.js";
-import { bootElapsedMs, isBootWarm, remainingColdBootMs } from "./lib/boot-warm.js";
+import {
+  bootElapsedMs,
+  canOpenBootSheets,
+  isBootWarm,
+  remainingColdBootMs,
+  shouldHoldBootUi,
+} from "./lib/boot-warm.js";
 import {
   dismissProfileNudge,
   isProfileNudgeDismissed,
@@ -7812,11 +7817,15 @@ export default function App() {
   const authOpenedFromUrlRef = useRef(false);
   const [screen, setScreen] = useState(() => {
     if (isAuthPath(window.location.pathname)) return "auth";
-    return "onboarding";
+    // Pas « onboarding » : sinon le quiz flash quand coldHold/auth se terminent
+    // avant que loadUserData ait posé « app ».
+    return "loading";
   });
   const [coldHold, setColdHold] = useState(() => !isBootWarm());
   useEffect(() => {
     if (!coldHold) return undefined;
+    // Pose GIF seulement après hydratation auth (évite onboarding/welcome au milieu).
+    if (authLoading) return undefined;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const wait = remainingColdBootMs({
       reduceMotion: reduce,
@@ -7824,7 +7833,7 @@ export default function App() {
     });
     const t = window.setTimeout(() => setColdHold(false), wait);
     return () => window.clearTimeout(t);
-  }, [coldHold]);
+  }, [coldHold, authLoading]);
   const [activeTab, setActiveTab] = useState("home");
   const lastDockTabRef = useRef("home");
   const [iosHideDock, setIosHideDock] = useState(false);
@@ -8185,7 +8194,7 @@ export default function App() {
 
   /** Anonyme avec plan : bottom sheet en relance fréquente (snooze court + retour app). */
   useEffect(() => {
-    if (screen !== "app") return undefined;
+    if (!canOpenBootSheets({ authLoading, coldHold, screen })) return undefined;
     if (!isAnonymousUser(user) || plans.length === 0) return undefined;
     if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
     if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return undefined;
@@ -8197,6 +8206,8 @@ export default function App() {
     }, 900);
     return () => window.clearTimeout(t);
   }, [
+    authLoading,
+    coldHold,
     screen,
     user?.id,
     plans.length,
@@ -8213,7 +8224,7 @@ export default function App() {
     if (typeof window === "undefined" || !isAnonymousUser(user) || plans.length === 0) return undefined;
     const bgAt = { current: 0 };
     const tryShow = () => {
-      if (screen !== "app") return;
+      if (!canOpenBootSheets({ authLoading, coldHold, screen })) return;
       if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return;
       if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return;
       if (isSaveAccountSnoozed(user.id)) return;
@@ -8233,6 +8244,8 @@ export default function App() {
   }, [
     user?.id,
     plans.length,
+    authLoading,
+    coldHold,
     screen,
     showUpgrade,
     showPlanReady,
@@ -8248,12 +8261,13 @@ export default function App() {
     prevSessionCelebrateRef.current = sessionCelebrate;
     if (!wasOpen || sessionCelebrate) return undefined;
     if (!isAnonymousUser(user) || plans.length === 0) return undefined;
-    if (screen !== "app" || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
+    if (!canOpenBootSheets({ authLoading, coldHold, screen })) return undefined;
+    if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
     // Après une séance : relance même si snooze court (priorité conversion).
     clearSaveAccountSnooze(user.id);
     const t = window.setTimeout(() => setShowSaveAccount(true), 700);
     return () => window.clearTimeout(t);
-  }, [sessionCelebrate, user?.id, plans.length, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
+  }, [sessionCelebrate, user?.id, plans.length, authLoading, coldHold, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
 
   const openUpgrade = (softContext = null) => {
     trackEvent("paywall_shown", {
@@ -8384,7 +8398,7 @@ export default function App() {
 
   // Pop « Nouveautés » one-shot / compte (pas de reset plan / quiz).
   useEffect(() => {
-    if (screen !== "app" || !user || !plan) return;
+    if (!canOpenBootSheets({ authLoading, coldHold, screen }) || !user || !plan) return;
     if (showWhatsNew) return;
     if (!shouldShowWhatsNew(user)) {
       if (hasSeenWhatsNew(user)) {
@@ -8400,6 +8414,8 @@ export default function App() {
     const t = setTimeout(() => setShowWhatsNew(true), 600);
     return () => clearTimeout(t);
   }, [
+    authLoading,
+    coldHold,
     screen,
     user,
     plan,
@@ -8416,19 +8432,6 @@ export default function App() {
     deletePlanId,
   ]);
 
-  const exitAuthToQuiz = () => {
-    forceAuthRef.current = false;
-    authOpenedFromUrlRef.current = false;
-    markNativeQuizStarted();
-    setScreen("onboarding");
-    setStep(1);
-    navigate("/app");
-    // Même fond que « Commencer » : session anonyme pour générer le plan.
-    void ensureAnonymousSession(supabase).catch((err) => {
-      if (import.meta.env.DEV) console.warn("[anon] signInAnonymously", err?.message || err);
-    });
-  };
-
   const handleAuthNavigateMode = (mode) => {
     navigate(mode === "register" ? "/inscription" : "/connexion", { replace: true });
   };
@@ -8437,7 +8440,14 @@ export default function App() {
     forceAuthRef.current = false;
     const openedFromUrl = authOpenedFromUrlRef.current;
     authOpenedFromUrlRef.current = false;
-    // Déjà dans l’app (plan ou anonyme) : fermer auth → revenir à l’app, pas bloqué.
+    // iOS sans plan : croix → Welcome (pas le quiz). « Commencer » reste le seul entrée quiz.
+    if (isNativeApp() && plans.length === 0 && (!user || isAnonymousUser(user))) {
+      clearNativeQuizStarted();
+      setScreen("app");
+      navigate("/app", { replace: true });
+      return;
+    }
+    // Déjà dans l’app (plan ou anonyme mid-quiz) : fermer auth → app / onboarding.
     if (plans.length > 0 || isAnonymousUser(user)) {
       if (plans.length === 0 && isAnonymousUser(user) && nativeQuizStarted()) {
         setScreen("onboarding");
@@ -8454,7 +8464,7 @@ export default function App() {
       navigate("/app", { replace: true });
       return;
     }
-    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion web → landing
+    // Web : lien direct /connexion → landing ; sinon /app
     setScreen("onboarding");
     navigate(openedFromUrl && !isNativeApp() ? "/" : "/app", { replace: true });
   };
@@ -11586,7 +11596,6 @@ export default function App() {
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
           onNavigateMode={handleAuthNavigateMode}
-          onStartQuiz={plans.length > 0 ? undefined : exitAuthToQuiz}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />
@@ -11619,7 +11628,10 @@ export default function App() {
   );
 
   // waitingForAccess : sync essai en fond, ne pas masquer l’app (sinon loader → home au tap).
-  if (coldHold || screen === "loading") return <><style>{css}</style><Loading /></>;
+  // authLoading déjà géré plus haut ; coldHold + loading ici pour couvrir la pose post-auth.
+  if (shouldHoldBootUi({ coldHold, screen })) {
+    return <><style>{css}</style><Loading /></>;
+  }
 
   if (screen === "onboarding") return (
     <>

@@ -12,7 +12,6 @@ import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js
 import { convertAnonymousWithEmail, isAnonymousUser } from "./lib/anonymous-auth.js";
 import { legalHref } from "./lib/legal-copy.js";
 import { hideNativeKeyboard, isNativeApp, isNativeIos, nativeApiOrigin } from "./lib/native-platform.js";
-import { markNativeQuizStarted } from "./lib/native-welcome.js";
 import {
   isAppleSignInCanceled,
   signInWithAppleNative,
@@ -360,7 +359,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
   );
 };
 
-const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode = "password", showBrandHeader = true }) => {
+const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", showBrandHeader = true }) => {
   const locale = useActiveLocale();
   const { t } = useTranslation("onboarding");
   const { t: tc } = useTranslation("common");
@@ -595,7 +594,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
       }}
     >
       {(() => {
-        const showCreateChip = native && onStartQuiz && mode === "password";
+        // iOS : « Créer un compte » = /inscription (pas le quiz anonyme « Commencer »).
+        const showCreateChip = native && mode === "password";
         const showLoginChip = native && (mode === "register" || mode === "reset");
         const showNativeDismiss = native && typeof onBack === "function";
         const showWebBack = !native && typeof onBack === "function";
@@ -642,10 +642,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
               <button
                 type="button"
                 className="ms-glass-icon-btn native-guest-chip"
-                onClick={() => {
-                  markNativeQuizStarted();
-                  onStartQuiz();
-                }}
+                onClick={() => switchMode("register")}
               >
                 {t("auth.createAccount")}
               </button>
@@ -772,7 +769,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
           {mode === "password" && !native && (
             <button
               type="button"
-              onClick={() => (onStartQuiz ? onStartQuiz() : switchMode("register"))}
+              onClick={() => switchMode("register")}
               style={{
                 background: "none", border: "none", color: G.ink, fontWeight: 600, cursor: "pointer", fontSize: 14,
                 minHeight: 44, padding: "10px 12px", display: "inline-flex", alignItems: "center",
