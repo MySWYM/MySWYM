@@ -19,8 +19,14 @@ import { RouteFallback, RoutedErrorBoundary } from "./RoutedBoot.jsx";
 import { LocaleSync } from "../i18n/locale-routing.jsx";
 import { localeFromPathname, withLocalePrefix } from "../i18n/locale-path.js";
 import { isNativeApp, isNativeMarketingPath } from "../lib/native-platform.js";
-import { markNativeQuizStarted, nativeGuestSurface, nativeQuizStarted, NATIVE_QUIZ_EVENT } from "../lib/native-welcome.js";
-import { ensureAnonymousSession } from "../lib/anonymous-auth.js";
+import {
+  markNativeQuizStarted,
+  nativeGuestSurface,
+  nativeQuizStarted,
+  anonymousHasLocalPlan,
+  NATIVE_QUIZ_EVENT,
+} from "../lib/native-welcome.js";
+import { ensureAnonymousSession, isAnonymousUser } from "../lib/anonymous-auth.js";
 import { supabase } from "../supabase.js";
 import { useAuthSession } from "../lib/use-auth-session.js";
 import NativeGuestShell, { NativeOnboardingFrame } from "../native/NativeGuestShell.jsx";
@@ -162,7 +168,8 @@ function NativeStartRedirect() {
 
 function NativeIosShell({ children }) {
   const { pathname } = useLocation();
-  const { isLoggedIn, loading } = useAuthSession();
+  const { isLoggedIn, loading, user } = useAuthSession();
+  const isAnonymous = isAnonymousUser(user);
   const [quizOpen, setQuizOpen] = useState(() => nativeQuizStarted());
   useEffect(() => {
     const sync = () => setQuizOpen(nativeQuizStarted());
@@ -171,10 +178,13 @@ function NativeIosShell({ children }) {
   }, []);
   if (!isNativeApp()) return children;
 
+  const hasPlan = isAnonymous && anonymousHasLocalPlan(user?.id);
   const surface = nativeGuestSurface({
     pathname,
     loading,
     isLoggedIn,
+    isAnonymous,
+    hasPlan,
     quizStarted: quizOpen,
   });
   if (surface === "auth") {
@@ -189,6 +199,7 @@ function NativeIosShell({ children }) {
       <div className="myswym-native-guest is-welcome">
         <NativeWelcomeFork
           onCreate={() => {
+            // Welcome reste le 1er écran ; Commencer → quiz DA bleue + anonyme en fond.
             markNativeQuizStarted();
             setQuizOpen(true);
             void ensureAnonymousSession(supabase).catch((err) => {

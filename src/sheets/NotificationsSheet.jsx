@@ -5,6 +5,7 @@ import {
   NOTIFICATION_KIND_META,
   formatNotificationDate,
 } from "../lib/in-app-notifications.js";
+import { useSheetSwipeDismiss } from "./useSheetSwipeDismiss.js";
 
 /** Action produit associée au type de notif. */
 export function notificationActionFor(item) {
@@ -48,6 +49,8 @@ export default function NotificationsSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  const { headProps, panelStyle, overlayStyle, panelClassExtra } = useSheetSwipeDismiss(onClose);
+
   if (!open) return null;
 
   return createPortal(
@@ -56,10 +59,14 @@ export default function NotificationsSheet({
       role="dialog"
       aria-modal="true"
       aria-label="Notifications"
+      style={overlayStyle}
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
-      <div className="sheet-panel scale-in ms-soft-sheet ms-notif-sheet">
-        <div className="ms-notif-head">
+      <div
+        className={`sheet-panel scale-in ms-soft-sheet ms-notif-sheet ${panelClassExtra}`.trim()}
+        style={panelStyle}
+      >
+        <div className="ms-notif-head" {...headProps}>
           <div className="ms-sheet-handle" />
           <div className="ms-notif-head-row">
             <div style={{ minWidth: 0 }}>

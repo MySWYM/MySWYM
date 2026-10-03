@@ -1,4 +1,5 @@
 import { Component, useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   MapPin, MessageCircle, Search, Waves,
@@ -136,6 +137,7 @@ function FilterChip({ active, label, onClick }) {
 }
 
 function Modal({ title, children, onClose }) {
+  const { t } = useTranslation("app");
   return (
     <div
       role="dialog"
@@ -160,7 +162,7 @@ function Modal({ title, children, onClose }) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: G.ink }}>{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" style={{ border: "none", background: G.greyXLight, borderRadius: 10, width: 36, height: 36, cursor: "pointer" }}>
+          <button type="button" onClick={onClose} aria-label={t("buddy.close")} style={{ border: "none", background: G.greyXLight, borderRadius: 10, width: 36, height: 36, cursor: "pointer" }}>
             <X size={18} color={G.grey} />
           </button>
         </div>
@@ -171,6 +173,7 @@ function Modal({ title, children, onClose }) {
 }
 
 function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
+  const { t } = useTranslation("app");
   const outingLabels = labelsForOutingTypes(buddy.outing_types);
   const initials = (buddy.display_name || "N").slice(0, 2).toUpperCase();
   const status = connection?.status;
@@ -201,7 +204,7 @@ function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
             <span>{buddy.city}</span>
           </div>
           <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 6 }}>
-            {buddy.radius_km >= 999 ? "Déplacement sans limite" : `Jusqu'à ${buddy.radius_km || 15} km de trajet`}
+            {buddy.radius_km >= 999 ? t("buddy.unlimited") : t("buddy.upTo", { km: buddy.radius_km || 15 })}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: G.waterLight, color: G.water }}>
@@ -289,12 +292,13 @@ function BuddyTopBar({ user, onOpenMenu, onTabChange, onUpgrade }) {
 }
 
 function IosBuddyBar({ onBack }) {
+  const { t } = useTranslation("app");
   return (
     <header className="ms-profile-subpanel-toolbar" style={{ position: "sticky", top: 0, zIndex: 50 }}>
       <button
         type="button"
         className="ms-glass-icon-btn"
-        aria-label="Retour"
+        aria-label={t("buddy.back")}
         onClick={() => {
           playUiSound("soft");
           onBack();
@@ -376,6 +380,7 @@ function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
 }
 
 function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }) {
+  const { t } = useTranslation(["app", "onboarding"]);
   const [view, setView] = useState("list");
   const [form, setForm] = useState(() => defaultBuddyForm(user, profile));
   const [buddies, setBuddies] = useState([]);
@@ -952,7 +957,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                   setFiltersOpen(true);
                 }}
                 className="ms-glass-icon-btn"
-                aria-label="Filtres"
+                aria-label={t("buddy.filters")}
                 style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0 }}
               >
                 <SlidersHorizontal size={18} color={G.ink} />
@@ -1184,17 +1189,17 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
               </div>
 
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Objectif</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{t("buddy.goalLabel")}</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {BUDDY_GOAL_CATEGORIES.map((g) => (
-                    <FilterChip key={g.id} active={form.goal_category === g.id} label={g.label} onClick={() => setForm((f) => ({ ...f, goal_category: g.id }))} />
+                    <FilterChip key={g.id} active={form.goal_category === g.id} label={t(`buddy.goal.${g.id}`)} onClick={() => setForm((f) => ({ ...f, goal_category: g.id }))} />
                   ))}
                 </div>
               </div>
 
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Type de sortie</label>
-                <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 10 }}>Plusieurs choix possibles</div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{t("buddy.outing")}</label>
+                <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 10 }}>{t("buddy.outingHint")}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {BUDDY_OUTING_TYPES.map((o) => {
                     const active = (form.outing_types || []).includes(o.id);
@@ -1219,7 +1224,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                           minHeight: 48,
                         }}
                       >
-                        {o.label}
+                        {t(`buddy.out.${o.id}`)}
                       </button>
                     );
                   })}
@@ -1227,19 +1232,19 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
               </div>
 
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Niveau</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{t("buddy.level")}</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {BUDDY_LEVELS.map((l) => (
-                    <FilterChip key={l.id} active={form.level === l.id} label={l.label} onClick={() => setForm((f) => ({ ...f, level: l.id }))} />
+                    <FilterChip key={l.id} active={form.level === l.id} label={t(`level.${l.id}.label`, { ns: "onboarding" })} onClick={() => setForm((f) => ({ ...f, level: l.id }))} />
                   ))}
                 </div>
               </div>
 
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Disponibilités</label>
-                <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 14 }}>Choisis les jours et créneaux où tu peux nager</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>Jours</div>
-                <div role="group" aria-label="Jours disponibles" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6, marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{t("buddy.avail")}</label>
+                <div style={{ fontSize: 12, color: G.greyMid, marginBottom: 14 }}>{t("buddy.availHint")}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>{t("buddy.days")}</div>
+                <div role="group" aria-label={t("buddy.days")} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6, marginBottom: 16 }}>
                   {BUDDY_DAYS.map((d) => {
                     const active = (form.availability_days || []).includes(d.id);
                     return (
@@ -1247,7 +1252,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                         key={d.id}
                         type="button"
                         aria-pressed={active}
-                        aria-label={d.label}
+                        aria-label={t(`day.${d.id}`)}
                         onClick={() => setForm((f) => ({
                           ...f,
                           availability_days: toggleAvailabilityDay(f.availability_days, d.id),
@@ -1262,13 +1267,13 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
-                        {d.short}
+                        {t(`day.${d.id}`)}
                       </button>
                     );
                   })}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>Créneaux</div>
-                <div role="group" aria-label="Créneaux horaires" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: G.ink, marginBottom: 8 }}>{t("buddy.slots")}</div>
+                <div role="group" aria-label={t("buddy.slots")} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {BUDDY_TIME_SLOTS.map((s) => {
                     const active = (form.availability_slots || []).includes(s.id);
                     return (
@@ -1289,7 +1294,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                           textAlign: "left", minHeight: 56,
                         }}
                       >
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{s.label}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{t(`buddy.slot.${s.id}`)}</div>
                         <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, marginTop: 2 }}>{s.hint}</div>
                       </button>
                     );
@@ -1678,7 +1683,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Filtres binômes"
+          aria-label={t("buddy.filtersAria")}
           onClick={() => setFiltersOpen(false)}
           style={{
             position: "fixed", inset: 0, zIndex: 400,
@@ -1697,23 +1702,23 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
             }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: G.ink }}>Filtres</div>
-              <button type="button" className="ms-glass-icon-btn" aria-label="Fermer" onClick={() => setFiltersOpen(false)}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: G.ink }}>{t("buddy.filters")}</div>
+              <button type="button" className="ms-glass-icon-btn" aria-label={t("buddy.close")} onClick={() => setFiltersOpen(false)}>
                 <X size={18} color={G.ink} />
               </button>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Objectif</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("buddy.goalLabel")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-              <FilterChip active={!goalFilter} label="Tous" onClick={() => setGoalFilter("")} />
+              <FilterChip active={!goalFilter} label={t("buddy.all")} onClick={() => setGoalFilter("")} />
               {BUDDY_GOAL_CATEGORIES.map((g) => (
-                <FilterChip key={g.id} active={goalFilter === g.id} label={g.label} onClick={() => setGoalFilter(goalFilter === g.id ? "" : g.id)} />
+                <FilterChip key={g.id} active={goalFilter === g.id} label={t(`buddy.goal.${g.id}`)} onClick={() => setGoalFilter(goalFilter === g.id ? "" : g.id)} />
               ))}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Niveau</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: G.grey, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("buddy.level")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-              <FilterChip active={!levelFilter} label="Tous" onClick={() => setLevelFilter("")} />
+              <FilterChip active={!levelFilter} label={t("buddy.all")} onClick={() => setLevelFilter("")} />
               {BUDDY_LEVELS.map((l) => (
-                <FilterChip key={l.id} active={levelFilter === l.id} label={l.label} onClick={() => setLevelFilter(levelFilter === l.id ? "" : l.id)} />
+                <FilterChip key={l.id} active={levelFilter === l.id} label={t(`level.${l.id}.label`, { ns: "onboarding" })} onClick={() => setLevelFilter(levelFilter === l.id ? "" : l.id)} />
               ))}
             </div>
             <button

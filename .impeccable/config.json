@@ -212,6 +212,15 @@
         "value": "rgba(255, 255, 255, 0.88)",
         "createdAt": "2026-10-03T16:19:45.665Z",
         "reason": "Same frosted pill surface as existing .ms-footer-store"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "src/sheets/SessionFeedbackSheet.jsx"
+        ],
+        "createdAt": "2026-10-02T20:38:20.871Z",
+        "reason": "Couleurs des visages de feedback déjà en place. Édition limitée à la traduction."
       }
     ]
   },

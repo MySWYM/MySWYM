@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { isBadgeEarned } from "../lib/plan-stats.js";
 import {
   nextLadderBadge,
@@ -12,7 +13,15 @@ import { resolveDisplayFirstName } from "../lib/identity-cache.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { G } from "../theme/palette.js";
 
+const BADGE_FILTER_KEY = {
+  all: "badge.filterAll",
+  sessions: "badge.filterSessions",
+  km: "badge.filterKm",
+  streak: "badge.filterStreak",
+};
+
 export default function IosBadgesPanel({ stats, user }) {
+  const { t } = useTranslation("app");
   const [filter, setFilter] = useState("all");
   const next = nextLadderBadge(stats);
   const summary = ladderSummary(stats);
@@ -44,7 +53,7 @@ export default function IosBadgesPanel({ stats, user }) {
         <div className="ms-glass-card ios-badge-next">
           {NextIcon ? <NextIcon size={22} color={next.def.color} strokeWidth={2.25} /> : null}
           <div className="ios-badge-next-copy">
-            <div className="ios-badge-next-name">{next.def.label}</div>
+            <div className="ios-badge-next-name">{t(`badge.${next.def.id}.label`)}</div>
             <div className="ios-badge-next-frac">{next.barLabel}</div>
           </div>
           <div className="ios-badge-next-track" aria-hidden>
@@ -53,7 +62,7 @@ export default function IosBadgesPanel({ stats, user }) {
         </div>
       ) : null}
 
-      <div className="ios-badge-filters" role="tablist" aria-label="Filtres badges">
+      <div className="ios-badge-filters" role="tablist" aria-label={t("badge.filtersAria")}>
         {BADGE_FILTERS.map((chip) => {
           const on = filter === chip.id;
           return (
@@ -68,7 +77,7 @@ export default function IosBadgesPanel({ stats, user }) {
                 setFilter(chip.id);
               }}
             >
-              {chip.label}
+              {t(BADGE_FILTER_KEY[chip.id] || "badge.filterAll")}
             </button>
           );
         })}
@@ -90,7 +99,7 @@ export default function IosBadgesPanel({ stats, user }) {
                 color={ok || isNext ? def.color : G.greyMid}
                 strokeWidth={2.2}
               />
-              <div className="ios-badge-tile-name">{def.label}</div>
+              <div className="ios-badge-tile-name">{t(`badge.${def.id}.label`)}</div>
               {ok ? null : (
                 <div className="ios-badge-tile-frac">{progress.fracLabel}</div>
               )}

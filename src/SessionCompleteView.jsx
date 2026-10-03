@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { FONT } from "./theme/brand.js";
+import { intlLocaleFor } from "./i18n/languages.js";
 
 export default function SessionCompleteView({ meters = 0, streak = 1, first = false, onContinue }) {
+  const { t, i18n } = useTranslation("app");
   useEffect(() => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try { navigator.vibrate?.(12); } catch { /* ignore */ }
@@ -10,8 +13,8 @@ export default function SessionCompleteView({ meters = 0, streak = 1, first = fa
   }, []);
 
   const metersLabel = Number(meters) > 0
-    ? `+${Number(meters).toLocaleString("fr-FR")} m`
-    : "Séance terminée";
+    ? `+${Number(meters).toLocaleString(intlLocaleFor(i18n.language))} m`
+    : t("session.done");
 
   return (
     <div className="ms-celeb" role="dialog" aria-modal="true" aria-labelledby="ms-celeb-title">
@@ -20,15 +23,15 @@ export default function SessionCompleteView({ meters = 0, streak = 1, first = fa
           <Check size={28} color="#fff" strokeWidth={2.5} />
         </div>
         <h2 id="ms-celeb-title" className="ms-celeb-title">
-          {first ? "Première séance validée" : "Séance validée"}
+          {first ? t("session.firstDone") : t("session.validated")}
         </h2>
         <p className="ms-celeb-sub">
           {metersLabel}
-          {streak > 1 ? ` · série de ${streak}` : first ? " · reviens demain" : ""}
+          {streak > 1 ? ` · ${t("session.streak", { count: streak })}` : first ? ` · ${t("session.comeBack")}` : ""}
         </p>
         <div className="ms-celeb-bar" aria-hidden />
         <button type="button" className="ms-plan-reveal-btn" onClick={onContinue} style={{ fontFamily: FONT }}>
-          Continuer
+          {t("session.continue")}
         </button>
       </div>
     </div>

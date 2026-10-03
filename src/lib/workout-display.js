@@ -227,8 +227,19 @@ function restoreSoupleAfterPipeline(line) {
   return `${cleaned}, souple`;
 }
 
+/** Normalise `details` (array, string legacy, ou valeur invalide) → string[]. */
+export function normalizeSessionDetails(details) {
+  if (Array.isArray(details)) return details;
+  if (details == null || details === "") return [];
+  if (typeof details === "string") {
+    return details.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export function expandCompoundDetailLines(details = []) {
-  const source = toCoachDetailLines((details || []).map(protectSoupleForPipeline));
+  const list = normalizeSessionDetails(details);
+  const source = toCoachDetailLines(list.map(protectSoupleForPipeline));
   const out = [];
   for (const raw of source) {
     const full = String(raw ?? "");
@@ -903,8 +914,9 @@ const SECTION_META = {
  * @returns {{ header, sections, exercises, totalMeters }}
  */
 export function buildWorkoutView(session = {}) {
-  const intensity = parseIntensity(session.intensity);
-  const lines = expandCompoundDetailLines(session.details || []);
+  const safe = session && typeof session === "object" ? session : {};
+  const intensity = parseIntensity(safe.intensity);
+  const lines = expandCompoundDetailLines(normalizeSessionDetails(safe.details));
   const groups = groupSessionDetails(lines);
   const exercises = [];
   let index = 0;
@@ -1026,12 +1038,12 @@ export function buildWorkoutView(session = {}) {
     const blob = [parsed?.main, cuePrimary, ...cues, ...childParsed.map((c) => c.main)].filter(Boolean).join(" - ");
     let educatif = null;
     let educatifs = [];
-    if (session.composedBy === "natation-sheet") {
+    if (safe.composedBy === "natation-sheet") {
       // Source de vérité = onglet Éducatifs du Sheet (attaché à la séance)
-      const fiches = Array.isArray(session.sheetEducatifs) && session.sheetEducatifs.length
-        ? session.sheetEducatifs
-        : session.sheetEducatif?.name
-          ? [session.sheetEducatif]
+      const fiches = Array.isArray(safe.sheetEducatifs) && safe.sheetEducatifs.length
+        ? safe.sheetEducatifs
+        : safe.sheetEducatif?.name
+          ? [safe.sheetEducatif]
           : [];
       const fourLine = Boolean(
         lineHasFourNagesEducatifs(raw)
@@ -1145,7 +1157,7 @@ export function buildWorkoutView(session = {}) {
     }
   }
 
-  const withSections = applySetBlockSections(exercises, session.sets);
+  const withSections = applySetBlockSections(exercises, safe.sets);
 
   // Numérotation par phase (1…n dans chaque bloc)
   const phaseCounters = { warm: 0, main: 0, cool: 0 };
@@ -1155,12 +1167,12 @@ export function buildWorkoutView(session = {}) {
     return { ...ex, index: phaseCounters[sec], phaseIndex: phaseCounters[sec] };
   });
 
-  const fromDistance = parseInt(String(session.distance || "").replace(/\D/g, ""), 10) || 0;
+  const fromDistance = parseInt(String(safe.distance || "").replace(/\D/g, ""), 10) || 0;
   const summed = numbered.reduce((a, e) => a + (e.meters || 0), 0);
   const totalMeters = fromDistance || summed;
 
-  const equipment = Array.isArray(session.equipmentUsed)
-    ? session.equipmentUsed
+  const equipment = Array.isArray(safe.equipmentUsed)
+    ? safe.equipmentUsed
     : [];
 
   const sections = ["warm", "main", "cool"]
@@ -1190,10 +1202,10 @@ export function buildWorkoutView(session = {}) {
 
   return {
     header: {
-      title: session.title || "Séance",
-      type: session.type || null,
-      distanceLabel: totalMeters ? `${totalMeters.toLocaleString("fr-FR")} m` : (session.distance || null),
-      durationLabel: formatDurationShort(session.duration),
+      title: safe.title || "Séance",
+      type: safe.type || null,
+      distanceLabel: totalMeters ? `${totalMeters.toLocaleString("fr-FR")} m` : (safe.distance || null),
+      durationLabel: formatDurationShort(safe.duration),
       intensityZone: intensity.zone,
       intensityCue: intensity.cue,
       equipment,

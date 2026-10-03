@@ -316,7 +316,12 @@ export default function IosAnalyseHome({
         {showGold ? (
           <FadeIn index={nextStep()} reduced={reduced}>
             <div style={{ margin: "0 0 10px" }}>
-              <IosPremiumBar onUpgrade={onUpgrade} source="analyse_trial" />
+              <IosPremiumBar
+                onUpgrade={onUpgrade}
+                source="analyse_trial"
+                accessState={accessState}
+                hasSessionAccess={!!isPremium}
+              />
             </div>
           </FadeIn>
         ) : null}

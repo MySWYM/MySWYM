@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { G } from "../theme/palette.js";
 import Btn from "../ui/Btn.jsx";
@@ -38,6 +39,7 @@ export default function UpgradeModal({
   planWeeks = 0,
   canDismiss = true,
 }) {
+  const { t } = useTranslation("app");
   const native = nativeBillingBlocked();
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
@@ -79,11 +81,12 @@ export default function UpgradeModal({
   });
   const headline = copy.headline;
   const subtitle = copy.subtitle;
+  const featureLines = [t("upgrade.line1"), t("upgrade.line2"), t("upgrade.line3"), t("upgrade.line4")];
   const premiumLines = trialEnded
-    ? PREMIUM_LINES_ACTIVE
+    ? featureLines
     : [
         `Essai 7 jours sans carte à l’inscription, puis ${PRICING_SUMMARY_FR}`,
-        ...PREMIUM_LINES_ACTIVE,
+        ...featureLines,
       ];
 
   const handleAcceptTerms = (checked) => {
@@ -223,7 +226,7 @@ export default function UpgradeModal({
         dismissOnOverlay={canDismiss}
         fullscreenMobile
         zIndex={500}
-        ariaLabel="Abonnement Premium"
+        ariaLabel={t("upgrade.aria")}
         className="ms-iap-paywall-overlay"
         bodyClassName="ms-soft-sheet-body--tall"
       >
@@ -315,7 +318,7 @@ export default function UpgradeModal({
       onClose={canDismiss ? onClose : undefined}
       dismissOnOverlay={canDismiss}
       zIndex={500}
-      ariaLabel="Abonnement Premium"
+      ariaLabel={t("upgrade.aria")}
       bodyClassName="ms-soft-sheet-body--tall"
     >
       <p style={{ color: MUTED, fontSize: 12, margin: "0 0 14px", lineHeight: 1.45 }}>
@@ -323,7 +326,7 @@ export default function UpgradeModal({
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-        {planBtn("monthly_flex", "Mensuel", PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, " /mois")}
+        {planBtn("monthly_flex", t("upgrade.monthly"), PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, t("upgrade.perMonth"))}
         {planBtn("monthly_commit", "Mensuel 12 mois", PRICING.monthlyCommit.commitmentFr, PRICING.monthlyCommit.label, " /mois")}
         {planBtn("annual", "Annuel", PRICING.annual.commitmentFr, PRICING.annual.label, " /an")}
       </div>

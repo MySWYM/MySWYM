@@ -21,6 +21,7 @@ import {
   emitNativeStravaCompleted,
   isNativeStravaCallback,
 } from "../lib/native-strava.js";
+import { installProtectMediaAssets } from "../lib/protect-media-assets.js";
 import "./native-shell.css";
 
 export { isNativeApp, isNativeIos };
@@ -32,6 +33,7 @@ export function prepareNativeRuntime() {
   installNativeBillingBlock();
   installNativeOAuthReturn();
   installNativeInAppLinks();
+  installProtectMediaAssets();
   ensureNativeAppLocation();
   const root = document.documentElement;
   root.classList.add("myswym-native");
