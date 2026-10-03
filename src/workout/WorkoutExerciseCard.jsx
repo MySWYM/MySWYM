@@ -527,9 +527,13 @@ export default function WorkoutExerciseCard({
   const allurePaceHigh = exercise.allurePaceHigh || null;
   const restChip = exercise.restChip || null;
   const restSeconds = exercise.restSeconds || 30;
+  const cueRaw = primaryCue != null && primaryCue !== "" ? String(primaryCue) : "";
+  const cueText = cueRaw
+    ? cueRaw.charAt(0).toUpperCase() + cueRaw.slice(1)
+    : null;
   const strokeShown = stroke ? tSwim(stroke) : null;
   const mainShown = volume || tSwim(exercise.main);
-  const cueShown = tSwim(cueText);
+  const cueShown = cueText ? tSwim(cueText) : null;
 
   const chips = (
     <>
@@ -577,10 +581,6 @@ export default function WorkoutExerciseCard({
       ) : null}
     </>
   );
-
-  const cueText = primaryCue
-    ? primaryCue.charAt(0).toUpperCase() + primaryCue.slice(1)
-    : null;
 
   const tipSheets = (
     <>
