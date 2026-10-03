@@ -29,17 +29,19 @@
   margin-top: 0.9rem;
 }
 
-.ms-footer-store--active {
+/* Gagne sur .ms-footer-store { pointer-events: none } (public.css). */
+.ms-store-badges a.ms-footer-store.ms-footer-store--active {
   pointer-events: auto;
   cursor: pointer;
   text-decoration: none;
+  color: inherit;
 }
 
-.ms-footer-store--active:hover {
+.ms-store-badges a.ms-footer-store.ms-footer-store--active:hover {
   border-color: var(--ms-fg);
 }
 
-.ms-footer-store--disabled {
+.ms-store-badges .ms-footer-store--disabled {
   pointer-events: none;
   opacity: 0.55;
   filter: grayscale(0.35);
