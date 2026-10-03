@@ -188,6 +188,15 @@
         ],
         "createdAt": "2026-09-21T17:55:03.453Z",
         "reason": "Print CSS A4 poolside: compact type ramp intentional, not app UI DESIGN.md"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "src/sheets/SessionFeedbackSheet.jsx"
+        ],
+        "createdAt": "2026-10-02T20:38:20.871Z",
+        "reason": "Couleurs des visages de feedback déjà en place. Édition limitée à la traduction."
       }
     ]
   },

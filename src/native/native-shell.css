@@ -284,9 +284,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: native-welcome-logo 5.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-  transform-origin: center;
-  will-change: transform;
   filter: drop-shadow(0 8px 20px rgba(15, 27, 45, 0.28));
 }
 
@@ -298,7 +295,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
 
 .native-welcome-copy {
   max-width: 320px;
-  animation: native-welcome-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
 .native-welcome-copy h1 {
@@ -331,7 +327,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
   width: 100%;
   max-width: 390px;
   margin: 0 auto;
-  animation: native-welcome-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
 
 .native-welcome-cta {
@@ -428,35 +423,6 @@ html.myswym-ios .is-funnel .ms-app-immersive-bg {
 
 .native-welcome-legal a:focus-visible {
   border-radius: 10px;
-}
-
-@keyframes native-welcome-logo {
-  0%,
-  60%,
-  100% { transform: translateY(0) rotate(0deg); }
-  15%,
-  45% { transform: translateY(-18px) rotate(0deg); }
-  30% { transform: translateY(0) rotate(0deg); }
-  85% { transform: translateY(0) rotate(360deg); }
-}
-
-@keyframes native-welcome-rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .native-welcome-logo,
-  .native-welcome-copy,
-  .native-welcome-fork-actions {
-    animation: none;
-  }
 }
 
 html.myswym-ios .myswym-native-guest .ms-contact,

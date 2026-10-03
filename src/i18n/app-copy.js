@@ -1,4 +1,6 @@
 /** Textes de l'app nageur (pas le moteur de séances). Clé i18n → 13 langues. */
+import { EXTRA_ROWS } from "./app-copy-extra.js";
+
 const LANGS = ["fr", "en", "de", "es", "ja", "nl", "it", "pt", "pt-BR", "sv", "da", "nb", "fi"];
 
 /** @type {Record<string, Record<string, string>>} */
@@ -176,6 +178,8 @@ const ROWS = {
   "trial.enjoyPlain": { fr: "Profite à fond jusqu'au {{date}}.", en: "Use it fully until {{date}}.", de: "Nutze es voll bis {{date}}.", es: "Aprovéchalo hasta el {{date}}.", ja: "{{date}}まで使い切って。", nl: "Gebruik het vol tot {{date}}.", it: "Usalo fino al {{date}}.", pt: "Aproveita até {{date}}.", "pt-BR": "Aproveite até {{date}}.", sv: "Använd det fullt ut till {{date}}.", da: "Brug det fuldt ud indtil {{date}}.", nb: "Bruk det fullt ut til {{date}}.", fi: "Käytä täysillä {{date}} asti." },
   "trial.swimPlain": { fr: "Nage avec ton plan et tes allures.", en: "Swim with your plan and your paces.", de: "Schwimm mit deinem Plan und deinen Tempi.", es: "Nada con tu plan y tus ritmos.", ja: "プランとペースで泳ぐ。", nl: "Zwem met je plan en je tempo's.", it: "Nuota con piano e passi.", pt: "Nada com o plano e os ritmos.", "pt-BR": "Nade com o plano e os ritmos.", sv: "Simma med plan och tempo.", da: "Svøm med plan og tempo.", nb: "Svøm med plan og tempo.", fi: "Ui suunnitelmalla ja vauhdeilla." },
 };
+
+Object.assign(ROWS, EXTRA_ROWS);
 
 function nest(lang) {
   const out = {};

@@ -4,6 +4,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { ACCESS_STATUS, getAccessState, isAccessMetadataPending, isLiveStripeBilling, shouldShowTrialFreeze, isFreshSignup, isAnonymousUser } from "./lib/access.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
+import {
+  markNativeQuizStarted,
+  clearNativeQuizStarted,
+  nativeQuizStarted,
+  NATIVE_QUIZ_EVENT,
+} from "./lib/native-welcome.js";
 import { PRICE_IDS, PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "./lib/pricing.js";
 import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
 import {
@@ -5060,14 +5066,15 @@ registerAppTabUi();
 
 // ── BADGES TAB ─────────────────────────────────────────────────────────────
 const BadgesTab = ({ plan }) => {
+  const { t } = useTranslation("app");
   const stats = computeStats(plan);
   const earned = checkBadges(stats);
   return (
     <div style={{ paddingBottom: 100 }}>
       <div style={{ background: G.blue, padding: "52px 20px 28px" }}>
-        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Tes récompenses</div>
+        <div className="fade-up" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 2, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>{t("badge.kicker")}</div>
         <h1 className="fade-up-1" style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "0.03em", color: G.white, marginBottom: 4 }}>Badges</h1>
-        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{earned.length}/{BADGE_DEFS.length} débloqués</p>
+        <p className="fade-up-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>{t("badge.unlockedCount", { done: earned.length, total: BADGE_DEFS.length })}</p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {BADGE_DEFS.map(b => (
             <div key={b.id} style={{ width: 32, height: 32, borderRadius: "50%", background: earned.includes(b.id) ? b.color : "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", filter: earned.includes(b.id) ? "none" : "opacity(0.35)" }}>
@@ -5079,15 +5086,15 @@ const BadgesTab = ({ plan }) => {
       <div style={{ padding: "20px 16px 0" }}>
         {earned.length > 0 && (
           <>
-            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>Débloqués</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>{t("badge.unlocked")}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {BADGE_DEFS.filter(b => earned.includes(b.id)).map(b => (
                 <div key={b.id} className="scale-in" style={{ background: G.surface, borderRadius: 16, padding: 16, textAlign: "center", border: `2px solid ${b.color}20`, boxShadow: `0 4px 16px ${b.color}18` }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: `${b.color}18`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                     <b.icon size={24} color={b.color} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 3 }}>{b.label}</div>
-                  <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.4 }}>{b.desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 3 }}>{t(`badge.${b.id}.label`)}</div>
+                  <div style={{ fontSize: 11, color: G.grey, lineHeight: 1.4 }}>{t(`badge.${b.id}.desc`)}</div>
                 </div>
               ))}
             </div>
@@ -5095,15 +5102,15 @@ const BadgesTab = ({ plan }) => {
         )}
         {BADGE_DEFS.filter(b => !earned.includes(b.id)).length > 0 && (
           <>
-            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>À débloquer</h3>
+            <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: G.ink, marginBottom: 12 }}>{t("badge.locked")}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {BADGE_DEFS.filter(b => !earned.includes(b.id)).map(b => (
                 <div key={b.id} style={{ background: G.greyXLight, borderRadius: 16, padding: 16, textAlign: "center", border: `1px solid ${G.greyLight}` }}>
                   <div style={{ width: 52, height: 52, borderRadius: "50%", background: G.greyLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                     <Lock size={20} color={G.greyMid} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: G.greyMid, marginBottom: 3 }}>{b.label}</div>
-                  <div style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.4 }}>{b.desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: G.greyMid, marginBottom: 3 }}>{t(`badge.${b.id}.label`)}</div>
+                  <div style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.4 }}>{t(`badge.${b.id}.desc`)}</div>
                 </div>
               ))}
             </div>
@@ -7897,7 +7904,14 @@ export default function App() {
         });
         return;
       }
-      // Déjà connecté sur /connexion → /app, SAUF pendant une déconnexion (forceAuth déjà true).
+      // Anonyme sur /connexion : rester pour se connecter à un vrai compte (pas de bounce /app).
+      if (user && location.pathname === "/connexion" && isAnonymousUser(user)) {
+        forceAuthRef.current = true;
+        authOpenedFromUrlRef.current = true;
+        setScreen("auth");
+        return;
+      }
+      // Déjà connecté (compte réel) sur /connexion → /app, SAUF pendant une déconnexion.
       if (user && !forceAuthRef.current) {
         forceAuthRef.current = false;
         authOpenedFromUrlRef.current = false;
@@ -8109,9 +8123,14 @@ export default function App() {
   const exitAuthToQuiz = () => {
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
+    markNativeQuizStarted();
     setScreen("onboarding");
     setStep(1);
     navigate("/app");
+    // Même fond que « Commencer » : session anonyme pour générer le plan.
+    void ensureAnonymousSession(supabase).catch((err) => {
+      if (import.meta.env.DEV) console.warn("[anon] signInAnonymously", err?.message || err);
+    });
   };
 
   const handleAuthNavigateMode = (mode) => {
@@ -8355,12 +8374,15 @@ export default function App() {
         setAccessSynced(!isAccessMetadataPending(u));
         const droppingSessionForRegister = locationRef.current.pathname === "/inscription"
           && event === "INITIAL_SESSION";
-        // /connexion avec session → /app. /inscription + session existante : ne pas bounce
-        // (INITIAL_SESSION), le route effect déconnecte pour un vrai nouveau compte.
+        // /connexion + anonyme : rester sur Connexion (login compte réel).
+        // /connexion + compte réel → /app. /inscription : voir route effect.
+        const stayOnLoginAsAnonymous = locationRef.current.pathname === "/connexion"
+          && isAnonymousUser(u);
         if (isAuthPath(locationRef.current.pathname)) {
-          if (droppingSessionForRegister) {
+          if (droppingSessionForRegister || stayOnLoginAsAnonymous) {
             forceAuthRef.current = true;
             authOpenedFromUrlRef.current = true;
+            if (stayOnLoginAsAnonymous) setScreen("auth");
           } else {
             forceAuthRef.current = false;
             authOpenedFromUrlRef.current = false;
@@ -8369,7 +8391,7 @@ export default function App() {
         } else {
           forceAuthRef.current = false;
         }
-        if (!droppingSessionForRegister) {
+        if (!droppingSessionForRegister && !stayOnLoginAsAnonymous) {
           loadUserData(u.id, checkIsPremium(u)).finally(() => setAuthLoading(false));
         } else {
           setAuthLoading(false);
@@ -8515,9 +8537,11 @@ export default function App() {
     });
   }, [screen, step, user?.id, activeTab, plan, addingPlan]);
 
-  // Compte connecté : ne jamais rester bloqué sur le questionnaire plein écran (perte paramètres)
+  // Compte connecté : ne jamais rester bloqué sur le questionnaire plein écran (perte paramètres).
+  // Exception : anonyme sans plan (iOS Commencer / Créer un compte) reste en DA bleue.
   useEffect(() => {
     if (!user || screen !== "onboarding") return;
+    if (isAnonymousUser(user) && plans.length === 0 && !addingPlan) return;
     if (planGenerationInFlightRef.current || planRevealActiveRef.current || readPendingOnboarding()?.profile) {
       showCoachBuildingScreen();
       return;
@@ -8528,6 +8552,27 @@ export default function App() {
     const confirmedNoPlan = plansHydratedRef.current && plans.length === 0;
     if (confirmedNoPlan || addingPlan) setActiveTab("plan");
   }, [user, screen, plans.length, addingPlan]);
+
+  // iOS : « Commencer » / flag quiz → même écran que « Créer un compte » (onboarding plein écran).
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    const syncQuizScreen = () => {
+      if (!nativeQuizStarted()) return;
+      if (forceAuthRef.current || isAuthPath(locationRef.current.pathname)) return;
+      if (planGenerationInFlightRef.current || planRevealActiveRef.current) return;
+      if ((plansRef.current?.length || 0) > 0) return;
+      forceAuthRef.current = false;
+      authOpenedFromUrlRef.current = false;
+      setScreen("onboarding");
+      setStep((s) => (s > 1 ? s : 1));
+      if (!locationRef.current.pathname.startsWith("/app")) {
+        navigate("/app", { replace: true });
+      }
+    };
+    syncQuizScreen();
+    window.addEventListener(NATIVE_QUIZ_EVENT, syncQuizScreen);
+    return () => window.removeEventListener(NATIVE_QUIZ_EVENT, syncQuizScreen);
+  }, [navigate]);
 
   // Analytics V1, plan_viewed
   useEffect(() => {
@@ -8600,6 +8645,7 @@ export default function App() {
       if (merged.length > 0) {
         setPlans(merged);
         setActivePlanId(active || merged[0].id);
+        clearNativeQuizStarted();
         if (!planRevealActiveRef.current && !planGenerationInFlightRef.current) {
           setScreen("app");
         }
@@ -8813,6 +8859,11 @@ export default function App() {
       setProfile(BLANK_PROFILE);
       setStep(1);
       setQuestionnaireMode("full");
+      // iOS : seulement si le quiz a déjà été lancé (pas avant la welcome).
+      if (isNativeApp() && nativeQuizStarted()) {
+        setScreen("onboarding");
+        return;
+      }
       setScreen("app");
       setActiveTab("plan");
     }
@@ -9386,17 +9437,29 @@ export default function App() {
     } else {
       userRef.current = liveUser;
     }
-    // Essai 7j (y compris anonyme) avant génération, pour débloquer les features.
+    // Essai 7j sans carte (anonyme inclus) avant génération : même user.id à la conversion.
+    const applySyncedUser = (synced) => {
+      if (!synced) return;
+      liveUser = synced;
+      userRef.current = synced;
+      setUser(synced);
+      setIsPremium(checkIsPremium(synced));
+    };
     try {
-      const synced = await syncAccessRef.current(liveUser);
-      if (synced) {
-        liveUser = synced;
-        userRef.current = synced;
-        setUser(synced);
-        setIsPremium(checkIsPremium(synced));
-      }
+      applySyncedUser(await syncAccessRef.current(liveUser));
     } catch {
-      /* continue : aperçu possible même si sync lent */
+      /* retry ci-dessous pour anonyme */
+    }
+    if (isAnonymousUser(liveUser) && !checkIsPremium(liveUser)) {
+      try {
+        await new Promise((r) => setTimeout(r, 450));
+        applySyncedUser(await syncAccessRef.current(liveUser));
+      } catch {
+        /* génération full quand même ; pas de paywall anonyme */
+      }
+      if (!checkIsPremium(liveUser) && import.meta.env.DEV) {
+        console.warn("[anon] essai 7j pas encore dans le JWT après sync");
+      }
     }
     setAccessSynced(true);
     clearOnboardingPrefill();
@@ -9410,7 +9473,7 @@ export default function App() {
       openUpgrade("trial_required");
       return;
     }
-    // Anonyme : nudge « Garde cette séance » après reveal (essai déjà ouvert).
+    // Anonyme : essai 7j déjà ouvert → nudge « Garde cette séance », jamais paywall.
     const openSaveAccountAfter = isAnonymousUser(liveUser);
     const openPaywallAfter = !openSaveAccountAfter && !liveAccess.canGenerateProgram;
     await generatePlanFromProfile(sourceProfile, {
@@ -9604,6 +9667,7 @@ export default function App() {
       }
       // Sortie définitive du questionnaire, même si le paiement est abandonné plus tard
       clearPendingOnboarding();
+      clearNativeQuizStarted();
       setActiveTab("home");
       if (showReveal) {
         const reduceMotion = typeof window !== "undefined"
@@ -9626,7 +9690,7 @@ export default function App() {
       track("generation_failed", { reason: "exception", context: "generate_plan" });
       const retryStep = sourceProfile.category === "progression" ? 3 : 5;
       setStep(retryStep);
-      if (user) {
+      if (user && !(isNativeApp() && isAnonymousUser(user))) {
         setScreen("app");
         setActiveTab("plan");
       } else {
@@ -9648,8 +9712,16 @@ export default function App() {
     if (pending.tasteProfile) setTasteProfile(normalizeTaste(pending.tasteProfile));
     setProfile(pending.profile);
     if (pending.addingPlan) setAddingPlan(true);
-    const live = await syncAccessRef.current(u);
-    const needsPaywall = !checkIsPremium(live || u);
+    let live = await syncAccessRef.current(u);
+    const anon = isAnonymousUser(live || u);
+    // Anonyme : 2ᵉ sync si l’essai 7j n’est pas encore dans le JWT.
+    if (anon && !checkIsPremium(live || u)) {
+      try {
+        await new Promise((r) => setTimeout(r, 450));
+        live = (await syncAccessRef.current(live || u)) || live;
+      } catch { /* ignore */ }
+    }
+    const needsPaywall = !anon && !checkIsPremium(live || u);
     // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
       planGenerationInFlightRef.current = false;
@@ -9657,9 +9729,16 @@ export default function App() {
       setScreen("app");
       return true;
     }
+    if (pending.addingPlan && anon && !checkIsPremium(live || u)) {
+      planGenerationInFlightRef.current = false;
+      setShowSaveAccount(true);
+      setScreen("app");
+      return true;
+    }
     await generatePlanFromProfile(pending.profile, {
       taste: pending.tasteProfile ? normalizeTaste(pending.tasteProfile) : tasteProfile,
       openPaywallAfter: needsPaywall && !pending.addingPlan,
+      openSaveAccountAfter: anon && !pending.addingPlan,
     });
     return true;
   };

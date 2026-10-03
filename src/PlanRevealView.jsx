@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CalendarDays, Target, Waves } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
 import BootMark from "./app-shell/BootMark.jsx";
@@ -7,12 +8,6 @@ import { buildPlanRevealModel } from "./lib/plan-reveal.js";
 import { markBootWarm } from "./lib/boot-warm.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
 
-const BUILD_LINES = [
-  "Ton coach lit tes réponses…",
-  "Il calibre le volume…",
-  "Il pose les séances de la semaine…",
-  "Il personnalise les éducatifs…",
-];
 const BUILD_LINE_MS = 900;
 
 function prefersReducedMotion() {
@@ -27,6 +22,8 @@ export default function PlanRevealView({
   colors: G,
   onContinue,
 }) {
+  const { t } = useTranslation("app");
+  const buildLines = [t("reveal.line0"), t("reveal.line1"), t("reveal.line2"), t("reveal.line3")];
   const [lineIdx, setLineIdx] = useState(0);
   const model = phase === "ready" ? buildPlanRevealModel(plan, profile) : null;
   const onDark = G?.bg === "#000514" || G?.ink === "#f4f8fa";
@@ -37,7 +34,7 @@ export default function PlanRevealView({
     setLineIdx(0);
     if (prefersReducedMotion()) return undefined;
     const id = window.setInterval(() => {
-      setLineIdx((i) => Math.min(i + 1, BUILD_LINES.length - 1));
+      setLineIdx((i) => Math.min(i + 1, buildLines.length - 1));
     }, BUILD_LINE_MS);
     return () => window.clearInterval(id);
   }, [phase]);
@@ -65,32 +62,32 @@ export default function PlanRevealView({
               height={22}
               width={95}
             />
-            <h1 id="ms-plan-reveal-build-title" className="ms-plan-reveal-title">Ton coach prépare ton plan</h1>
+            <h1 id="ms-plan-reveal-build-title" className="ms-plan-reveal-title">{t("reveal.title")}</h1>
             <p className="ms-plan-reveal-sub">
-              {BUILD_LINES[Math.min(lineIdx, BUILD_LINES.length - 1)]}
+              {buildLines[Math.min(lineIdx, buildLines.length - 1)]}
             </p>
           </div>
         ) : (
           <div className="ms-plan-reveal-ready">
-            <p className="ms-plan-reveal-kicker">Plan prêt</p>
-            <h1 className="ms-plan-reveal-title">Voici ton chemin.</h1>
+            <p className="ms-plan-reveal-kicker">{t("reveal.ready")}</p>
+            <h1 className="ms-plan-reveal-title">{t("reveal.path")}</h1>
             <p className="ms-plan-reveal-sub">
               {model.isLoop
-                ? `${model.frequency > 0 ? `${model.frequency}× / semaine` : "Séance du jour"} · adapté à ton niveau`
-                : `${model.weeks} semaine${model.weeks > 1 ? "s" : ""} · ${model.frequency}× / semaine · adapté à ton niveau`}
+                ? `${model.frequency > 0 ? t("reveal.perWeek", { count: model.frequency }) : t("live.ofDay")} · ${t("reveal.fitLevel")}`
+                : `${model.weeks > 1 ? t("reveal.weeksMany", { count: model.weeks }) : t("reveal.weeks", { count: model.weeks })} · ${t("reveal.perWeek", { count: model.frequency })} · ${t("reveal.fitLevel")}`}
             </p>
 
             <div className="ms-plan-reveal-meta">
-              <MetaRow colors={G} icon={<Target size={18} />} label="Objectif" value={model.goalLabel} />
+              <MetaRow colors={G} icon={<Target size={18} />} label={t("reveal.goal")} value={model.goalLabel} />
               {model.levelLabel ? (
-                <MetaRow colors={G} icon={<Waves size={18} />} label="Niveau" value={model.levelLabel} />
+                <MetaRow colors={G} icon={<Waves size={18} />} label={t("reveal.level")} value={model.levelLabel} />
               ) : null}
-              <MetaRow colors={G} icon={<CalendarDays size={18} />} label="Essai Premium" value="7 jours · sans carte" />
+              <MetaRow colors={G} icon={<CalendarDays size={18} />} label={t("reveal.trial")} value={t("reveal.trialValue")} />
             </div>
 
             {model.barCount > 0 && (
               <div className="ms-plan-reveal-bars">
-                <p className="ms-plan-reveal-bars-label">Aperçu</p>
+                <p className="ms-plan-reveal-bars-label">{t("reveal.preview")}</p>
                 <div className="ms-plan-reveal-bars-row">
                   {Array.from({ length: model.barCount }, (_, i) => (
                     <div
@@ -118,9 +115,9 @@ export default function PlanRevealView({
 
             <div className="ms-plan-reveal-cta">
               <button type="button" className="ms-plan-reveal-btn" onClick={onContinue} style={{ fontFamily: FONT }}>
-                Voir ma première séance
+                {t("reveal.seeFirst")}
               </button>
-              <p className="ms-plan-reveal-foot">7 jours offerts sans carte. Ensuite les séances se mettent en pause.</p>
+              <p className="ms-plan-reveal-foot">{t("reveal.foot")}</p>
             </div>
           </div>
         )}

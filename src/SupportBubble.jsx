@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronDown, ChevronRight, Home, MessageCircle, Send, X } from "lucide-react";
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
@@ -201,6 +202,7 @@ function matchFaq(text) {
 
 const WELCOME = {
   role: "bot",
+  welcome: true,
   text: "Salut ! Tu parles à l’assistance MySWYM. Je peux t’aider sur le produit et la natation. Tu peux demander l’équipe à tout moment, Arthur te répond ici.",
 };
 
@@ -318,6 +320,7 @@ export default function SupportBubble({
   variant = "fab",
   onClosePage = null,
 }) {
+  const { t } = useTranslation("app");
   const isPage = variant === "page";
   const [open, setOpen] = useState(isPage);
   /** Page iOS : inbox messages d’abord, puis un fil (drill-in). */
@@ -697,7 +700,7 @@ export default function SupportBubble({
     );
   };
 
-  const AskButton = ({ label = "Poser une question", preferFresh = false }) => (
+  const AskButton = ({ label = t("support.ask"), preferFresh = false }) => (
     <button type="button" onClick={() => askQuestion({ preferFresh })} className="support-ask-btn">
       {label}
       <MessageCircle size={16} color="#fff" />
@@ -709,7 +712,7 @@ export default function SupportBubble({
       {!hideFab && !isPage ? (
       <button
         type="button"
-        aria-label={open ? "Fermer l’aide" : "Aide et support"}
+        aria-label={open ? t("support.closeHelp") : t("support.openHelp")}
         aria-expanded={open}
         onClick={openPanel}
         className={[
@@ -719,7 +722,7 @@ export default function SupportBubble({
       >
         {open ? <ChevronDown size={26} color="currentColor" /> : <MessageCircle size={24} color="currentColor" />}
         {!open && unread ? (
-          <span aria-label="Nouveau message" className="support-fab-badge" />
+          <span aria-label={t("support.newMsg")} className="support-fab-badge" />
         ) : null}
       </button>
       ) : null}
@@ -728,7 +731,7 @@ export default function SupportBubble({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Messages MySWYM"
+          aria-label={t("support.messagesAria")}
           className={
             isPage
               ? `support-page${keyboardInset > 0 ? " is-keyboard-open" : ""}`
@@ -751,7 +754,7 @@ export default function SupportBubble({
           {view === "chat" ? (
             <>
               <div className="support-widget-head">
-                <button type="button" aria-label="Retour" onClick={backToTabs} className="support-icon-btn">
+                <button type="button" aria-label={t("support.back")} onClick={backToTabs} className="support-icon-btn">
                   <ArrowLeft size={18} color="currentColor" />
                 </button>
                 <ArthurAvatar size={isPage ? 40 : 34} radius={999} />
@@ -764,7 +767,7 @@ export default function SupportBubble({
                   </div>
                 </div>
                 {!isPage ? (
-                  <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
+                  <button type="button" aria-label={t("support.close")} onClick={close} className="support-icon-btn">
                     <X size={18} color="currentColor" />
                   </button>
                 ) : (
@@ -774,7 +777,7 @@ export default function SupportBubble({
 
               <div ref={listRef} className={`support-chat-list${isPage ? " support-chat-list--page" : ""}`}>
                 {messages.map((msg, i) => {
-                  const label = roleLabel(msg.role);
+                  const label = msg.role === "bot" ? t("support.assist") : roleLabel(msg.role);
                   const kind =
                     msg.role === "user"
                       ? "user"
@@ -794,7 +797,7 @@ export default function SupportBubble({
                       ) : null}
                       <div className={`support-bubble support-bubble--${kind}`}>
                       {label && !isPage ? <div className="support-bubble-label">{label}</div> : null}
-                      {msg.text}
+                      {msg.welcome ? t("support.welcome") : msg.text}
                       </div>
                     </div>
                   );
@@ -812,7 +815,7 @@ export default function SupportBubble({
                 ) : null}
                 {showClosed ? (
                   <button type="button" onClick={() => beginFresh()} className="support-ask-btn" style={{ width: "100%" }}>
-                    Nouvelle conversation
+                    {t("support.newConv")}
                   </button>
                 ) : (
                   <form
@@ -837,8 +840,8 @@ export default function SupportBubble({
                           if (el) el.scrollTop = el.scrollHeight;
                         });
                       }}
-                      placeholder="Écrire un message…"
-                      aria-label="Écrire un message"
+                      placeholder={t("support.placeholder")}
+                      aria-label={t("support.writeAria")}
                       enterKeyHint="send"
                       autoComplete="off"
                       autoCorrect="on"
@@ -847,7 +850,7 @@ export default function SupportBubble({
                     />
                     <button
                       type="submit"
-                      aria-label="Envoyer"
+                      aria-label={t("support.send")}
                       disabled={busy || !input.trim()}
                       className="support-send-btn"
                     >
@@ -883,15 +886,15 @@ export default function SupportBubble({
             <>
               <div className="support-widget-head support-widget-head--tabs">
                 {isPage ? (
-                  <button type="button" aria-label="Retour" onClick={close} className="support-icon-btn">
+                  <button type="button" aria-label={t("support.back")} onClick={close} className="support-icon-btn">
                     <ArrowLeft size={18} color="currentColor" />
                   </button>
                 ) : null}
                 <h3 className="support-widget-title" style={{ flex: 1 }}>
-                  {tab === "home" ? "Support" : "Messages"}
+                  {tab === "home" ? t("support.nav") : t("help.messages")}
                 </h3>
                 {!isPage ? (
-                  <button type="button" aria-label="Fermer" onClick={close} className="support-icon-btn">
+                  <button type="button" aria-label={t("support.close")} onClick={close} className="support-icon-btn">
                     <X size={18} color="currentColor" />
                   </button>
                 ) : (
@@ -972,12 +975,12 @@ export default function SupportBubble({
                                   {preview || (isOpen ? "Conversation en cours" : "Conversation clôturée")}
                                 </span>
                                 {isOpen ? (
-                                  <span className="support-inbox-status">Ouverte</span>
+                                  <span className="support-inbox-status">{t("support.open")}</span>
                                 ) : null}
                               </span>
                               {unread && isOpen ? (
                                 <span
-                                  aria-label="Non lu"
+                                  aria-label={t("support.unread")}
                                   style={{
                                     width: 10,
                                     height: 10,
@@ -996,9 +999,9 @@ export default function SupportBubble({
                     ) : (
                       <div className="support-empty">
                         <MessageCircle size={36} color="#9aa8b6" />
-                        <div className="support-empty-title">Aucun message</div>
+                        <div className="support-empty-title">{t("support.emptyTitle")}</div>
                         <p className="support-empty-text">
-                          Écris à Arthur : questions produit, séance, ou un souci technique.
+                          {t("support.emptyBody")}
                         </p>
                       </div>
                     )}
@@ -1016,7 +1019,7 @@ export default function SupportBubble({
                     >
                       {isPage || !hasHistory || (hasHistory && !openConversation) ? (
                         <AskButton
-                          label={isPage ? "Nouvelle conversation" : "Poser une question"}
+                          label={isPage ? t("support.newConv") : t("support.ask")}
                           preferFresh={isPage}
                         />
                       ) : null}
@@ -1025,7 +1028,7 @@ export default function SupportBubble({
                 )}
               </div>
 
-              <nav aria-label="Support" className="support-nav">
+              <nav aria-label={t("support.nav")} className="support-nav">
                 {tabBtn("home", "Accueil", Home)}
                 {tabBtn("messages", "Messages", MessageCircle)}
               </nav>

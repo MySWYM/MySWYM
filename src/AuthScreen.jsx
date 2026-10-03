@@ -23,6 +23,13 @@ import { usePageSeo } from "./lib/seo.js";
 import { NEWSLETTER_META_KEY, stashPendingNewsletterOptIn, clearPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
 import "./theme/auth-shell.css";
 
+/** Login compte réel : lâcher la session anonyme avant, sinon Supabase garde l’invité. */
+async function clearAnonymousBeforeLogin() {
+  const { data } = await supabase.auth.getSession();
+  if (!isAnonymousUser(data?.session?.user)) return;
+  await supabase.auth.signOut();
+}
+
 function mapSocialAuthError(raw, t) {
   const msg = String(raw || "");
   if (/not enabled|Unsupported provider|provider is not enabled|missing OAuth secret/i.test(msg)) {
@@ -188,6 +195,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
         }
       } else {
         clearPendingNewsletterOptIn();
+        await clearAnonymousBeforeLogin();
       }
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -256,6 +264,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
         }
       } else {
         clearPendingNewsletterOptIn();
+        await clearAnonymousBeforeLogin();
       }
       const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
       const extraMeta = intent === "signup"
@@ -402,6 +411,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
     const pass = String(password || "");
     try {
       if (mode === "password") {
+        await clearAnonymousBeforeLogin();
         const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password: pass });
         if (error) throw error;
         onAuth(data.user);
@@ -488,7 +498,8 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, onStartQuiz, initialMode =
 
   const native = isNativeApp();
   const registerBlocked = mode === "register" && (!acceptAge || !acceptTerms);
-  const socialNeedsConsent = mode === "register" || (native && mode === "password");
+  // CGU / âge / newsletter : uniquement à la création de compte, jamais au login.
+  const socialNeedsConsent = mode === "register";
   const socialBlocked = socialNeedsConsent && (!acceptAge || !acceptTerms);
   const legalChecks = socialNeedsConsent ? (
     <div className="native-auth-legal" style={{ marginBottom: native ? 12 : 16 }}>

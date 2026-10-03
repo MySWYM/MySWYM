@@ -48,7 +48,7 @@ export function HomeBadgesSection({ plan }) {
               }}
             >
               <Award size={18} color={ok ? G.gold : G.greyMid} style={{ margin: "0 auto 6px" }} />
-              <div style={{ fontSize: 11, fontWeight: 700, color: G.ink, lineHeight: 1.25 }}>{b.label}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: G.ink, lineHeight: 1.25 }}>{t(`badge.${b.id}.label`)}</div>
             </div>
           );
         })}
