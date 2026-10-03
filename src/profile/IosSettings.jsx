@@ -440,6 +440,7 @@ export function IosSettingsHome({
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifOn, setNotifOn] = useState(false);
   const [notifMsg, setNotifMsg] = useState("");
+  const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!isNativeApp()) return undefined;
@@ -519,11 +520,16 @@ export function IosSettingsHome({
                         : await mod.disableNativeNotifications();
                       setNotifOn(res?.enabled === true);
                       if (next && !res?.ok) {
-                        setNotifMsg(ta("settings.notificationsDenied"));
+                        // Refus iOS : sheet avec chemin + CTA Réglages (pas seulement une ligne).
+                        if (res?.reason === "denied" || res?.reason === "not_asked") {
+                          setNotifSettingsOpen(true);
+                        } else {
+                          setNotifMsg(ta("settings.notificationsDenied"));
+                        }
                       }
                     } catch {
                       setNotifOn(false);
-                      setNotifMsg(ta("settings.notificationsDenied"));
+                      setNotifSettingsOpen(true);
                     } finally {
                       setNotifBusy(false);
                     }
@@ -536,6 +542,25 @@ export function IosSettingsHome({
           </>
         ) : null}
         {notifMsg ? <p className="ios-settings-copy">{notifMsg}</p> : null}
+        {notifSettingsOpen && createPortal(
+          <ConfirmSheet
+            title={ta("settings.notificationsDeniedTitle")}
+            message={ta("settings.notificationsDeniedBody")}
+            confirmLabel={ta("settings.notificationsOpenSettings")}
+            cancelLabel={ta("settings.notificationsLater")}
+            destructive={false}
+            icon={Bell}
+            onConfirm={async () => {
+              setNotifSettingsOpen(false);
+              try {
+                const mod = await import("../lib/native-push.js");
+                await mod.openNativeAppSettings();
+              } catch { /* ignore */ }
+            }}
+            onCancel={() => setNotifSettingsOpen(false)}
+          />,
+          document.body,
+        )}
       </div>
 
       <div className="ms-profile-group-label">{ta("settings.subscription")}</div>

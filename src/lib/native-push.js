@@ -221,6 +221,18 @@ export async function enableNativeNotifications() {
   return { ok: true, enabled: true };
 }
 
+/** Ouvre Réglages iPhone → page MySWYM (après un refus de notifications). */
+export async function openNativeAppSettings() {
+  if (!isNativeIos()) return { ok: false, reason: "not_ios" };
+  try {
+    await AppBadge.openAppSettings();
+    return { ok: true };
+  } catch (e) {
+    console.warn("[push] openAppSettings", e);
+    return { ok: false, reason: e?.message || "open_failed" };
+  }
+}
+
 export async function registerNativePush({ request = false } = {}) {
   if (!isNativeIos()) return { ok: false, reason: "not_ios" };
   if (!request && !pushNotificationsWanted()) return { ok: false, reason: "opt_out" };

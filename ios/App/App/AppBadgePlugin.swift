@@ -14,6 +14,7 @@ public class AppBadgePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "get", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getApnsToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "replayApnsToken", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openAppSettings", returnType: CAPPluginReturnPromise),
     ]
 
     @objc func set(_ call: CAPPluginCall) {
@@ -57,6 +58,20 @@ public class AppBadgePlugin: CAPPlugin, CAPBridgedPlugin {
                 "ok": ok,
                 "token": AppDelegate.cachedApnsTokenHex as Any,
             ])
+        }
+    }
+
+    /// Ouvre Réglages iPhone → MySWYM (notifications, etc.).
+    @objc func openAppSettings(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else {
+                call.reject("no_settings_url")
+                return
+            }
+            UIApplication.shared.open(url, options: [:]) { ok in
+                if ok { call.resolve(["ok": true]) }
+                else { call.reject("open_failed") }
+            }
         }
     }
 }
