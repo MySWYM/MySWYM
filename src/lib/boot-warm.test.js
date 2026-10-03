@@ -2,7 +2,20 @@
  * Usage : node src/lib/boot-warm.test.js
  */
 import assert from "node:assert/strict";
-import { hasPersistedAuth, isBootWarm, markBootWarm, remainingColdBootMs, remainingLandingBootMs, isAppShellPath, isAppGifPath, BOOT_WARM_KEY, BOOT_POSE_MS, LANDING_BOOT_MS } from "./boot-warm.js";
+import {
+  hasPersistedAuth,
+  isBootWarm,
+  markBootWarm,
+  remainingColdBootMs,
+  remainingLandingBootMs,
+  isAppShellPath,
+  isAppGifPath,
+  shouldHoldBootUi,
+  canOpenBootSheets,
+  BOOT_WARM_KEY,
+  BOOT_POSE_MS,
+  LANDING_BOOT_MS,
+} from "./boot-warm.js";
 
 function memoryStore(init = {}) {
   const data = { ...init };
@@ -58,5 +71,13 @@ assert.equal(isAppGifPath("/app/foo"), true, "gif on app nested");
 assert.equal(isAppGifPath("/connexion"), false, "no gif on auth");
 assert.equal(isAppGifPath("/admin"), false, "no gif on admin");
 assert.equal(isAppGifPath("/fr"), false, "no gif on landing");
+
+assert.equal(shouldHoldBootUi({ authLoading: true }), true, "auth holds");
+assert.equal(shouldHoldBootUi({ coldHold: true }), true, "cold holds");
+assert.equal(shouldHoldBootUi({ screen: "loading" }), true, "loading holds");
+assert.equal(shouldHoldBootUi({ screen: "app" }), false, "app ready");
+assert.equal(canOpenBootSheets({ screen: "app" }), true, "sheets ok on app");
+assert.equal(canOpenBootSheets({ screen: "app", coldHold: true }), false, "no sheets during cold");
+assert.equal(canOpenBootSheets({ screen: "onboarding" }), false, "no sheets on onboarding");
 
 console.log("boot-warm.test.js ok");

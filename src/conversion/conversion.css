@@ -21,8 +21,8 @@
   --color-cv-border-strong: rgba(0, 107, 253, 0.34);
   --color-cv-overlay: rgba(0, 5, 20, 0.55);
 
-  --font-cv-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-cv-body: Geist, ui-sans-serif, system-ui, sans-serif;
+  --font-cv-display: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-cv-body: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   --radius-cv-sm: 10px;
   --radius-cv-md: 14px;

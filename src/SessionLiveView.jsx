@@ -55,7 +55,7 @@ export default function SessionLiveView({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{
-            fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
+            fontFamily: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
             fontSize: 26,
             fontWeight: 700,
             color: G.ink,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import SoftMistSheet from "./SoftMistSheet.jsx";
 import ConfirmSheet from "./ConfirmSheet.jsx";
 import { X } from "lucide-react";
@@ -31,6 +32,7 @@ export default function SessionPrepSheet({
   onMark = null,
   exportBar = null,
 }) {
+  const { t } = useTranslation("app");
   const [confirmAbandon, setConfirmAbandon] = useState(false);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function SessionPrepSheet({
             <button
               type="button"
               className="ios-session-mark-skip"
-              aria-label="Abandonner la séance"
+              aria-label={t("session.abandonYes")}
               onClick={requestAbandon}
             >
               <X size={22} strokeWidth={2.5} />
@@ -86,7 +88,7 @@ export default function SessionPrepSheet({
               className="ms-pill-cta"
               onClick={() => mark("done")}
             >
-              Valider
+              {t("session.validate")}
             </button>
           </div>
         ) : null}
@@ -109,10 +111,10 @@ export default function SessionPrepSheet({
       </SoftMistSheet>
       {confirmAbandon && createPortal(
         <ConfirmSheet
-          title="Abandonner cette séance ?"
-          message="Elle quitte ton plan et va dans l’Historique comme abandonnée. La suivante prend sa place. Pour juste fermer l’écran, utilise la croix en haut."
-          confirmLabel="Oui, abandonner"
-          cancelLabel="Non, garder la séance"
+          title={t("session.abandonTitle")}
+          message={t("session.abandonBody")}
+          confirmLabel={t("session.abandonYes")}
+          cancelLabel={t("session.abandonNo")}
           destructive
           icon={X}
           zIndex={520}

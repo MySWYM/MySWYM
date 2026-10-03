@@ -2,7 +2,7 @@
  * Graphes SVG pour l’admin, pas de librairie, pas de nouvelle fonction Vercel.
  */
 
-const FONT = "Space Grotesk, ui-sans-serif, system-ui, sans-serif";
+const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const INK = "#0c1a2e";
 const MUTED = "#5a6a7a";
 const BLUE = "#154388";

@@ -32,7 +32,15 @@
     "11": "November",
     "12": "December"
   },
-  "weekdays": ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"],
+  "weekdays": [
+    "Man",
+    "Tir",
+    "Ons",
+    "Tor",
+    "Fre",
+    "Lør",
+    "Søn"
+  ],
   "category": {
     "title": "Hvad er dit mål?",
     "lead": "Vælg en kategori. Vi tilpasser passene til konkurrencen, distancen eller dit niveau.",
@@ -51,25 +59,70 @@
     "eau_libre": "Hvilken distance?",
     "diplome": "Hvilket diplom?",
     "fallback": "Præcisér dit mål",
-    "triathlon_xs": { "label": "XS", "dist": "400 m svømning" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m svømning" },
-    "triathlon_olympic": { "label": "Olympisk", "dist": "1,500 m svømning" },
-    "triathlon_half": { "label": "Halv", "dist": "1,900 m svømning" },
-    "triathlon_ironman": { "label": "Full", "dist": "3,800 m svømning" },
-    "open_water_short": { "label": "Kort", "dist": "500 m til 1.5 km" },
-    "open_water_mid": { "label": "Mellem", "dist": "2 km til 5 km" },
-    "open_water_long": { "label": "Lang", "dist": "7.5 km og op" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m og 250 m livredning" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m crawl < 7'40\" · 100 m medley < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m fødder · redningsbane" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m svømning"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m svømning"
+    },
+    "triathlon_olympic": {
+      "label": "Olympisk",
+      "dist": "1,500 m svømning"
+    },
+    "triathlon_half": {
+      "label": "Halv",
+      "dist": "1,900 m svømning"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3,800 m svømning"
+    },
+    "open_water_short": {
+      "label": "Kort",
+      "dist": "500 m til 1.5 km"
+    },
+    "open_water_mid": {
+      "label": "Mellem",
+      "dist": "2 km til 5 km"
+    },
+    "open_water_long": {
+      "label": "Lang",
+      "dist": "7.5 km og op"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m og 250 m livredning"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m crawl < 7'40\" · 100 m medley < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m fødder · redningsbane"
+    }
   },
   "level": {
     "title": "Hvad er dit svømmeniveau lige nu?",
     "lead": "Vælg den, der beskriver dig i dag, ikke den du sigter efter.",
-    "découverte": { "label": "Lige startet", "desc": "Jeg stopper efter nogle baner" },
-    "régulier": { "label": "Begynder", "desc": "Jeg kan svømme baner, men jeg lærer stadig" },
-    "sportif": { "label": "Øvet", "desc": "Jeg er tryg i bassinet, men jeg vil blive bedre" },
-    "performance": { "label": "Avanceret", "desc": "Jeg er en erfaren svømmer. Jeg kan alle fire stilarter." },
+    "découverte": {
+      "label": "Lige startet",
+      "desc": "Jeg stopper efter nogle baner"
+    },
+    "régulier": {
+      "label": "Begynder",
+      "desc": "Jeg kan svømme baner, men jeg lærer stadig"
+    },
+    "sportif": {
+      "label": "Øvet",
+      "desc": "Jeg er tryg i bassinet, men jeg vil blive bedre"
+    },
+    "performance": {
+      "label": "Avanceret",
+      "desc": "Jeg er en erfaren svømmer. Jeg kan alle fire stilarter."
+    },
     "beginnerBlocked": "Start mindre. Rom blev ikke bygget på en dag. Vi kan ikke love, at du når i mål."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Andet område"
     },
     "severities": {
-      "mild": { "label": "Let", "desc": "Indimellem ubehag, svømning er mulig" },
-      "moderate": { "label": "Moderat", "desc": "Hyppig smerte, intensiteten bør begrænses" },
-      "significant": { "label": "Tydelig", "desc": "Aktiviteten er stærkt begrænset" }
+      "mild": {
+        "label": "Let",
+        "desc": "Indimellem ubehag, svømning er mulig"
+      },
+      "moderate": {
+        "label": "Moderat",
+        "desc": "Hyppig smerte, intensiteten bør begrænses"
+      },
+      "significant": {
+        "label": "Tydelig",
+        "desc": "Aktiviteten er stærkt begrænset"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Fortæl din yndlingsstil. I triathlon og åbent vand arbejder vi mest crawl.",
     "style": "Foretrukken stil",
     "stroke": "Yndlingsstil",
-    "crawl": { "label": "Crawl", "desc": "Jeg vil mest svømme crawl" },
-    "4_nages": { "label": "Medley / alle stilarter", "desc": "Jeg vil blande butterfly, ryg, bryst og crawl" },
+    "crawl": {
+      "label": "Crawl",
+      "desc": "Jeg vil mest svømme crawl"
+    },
+    "4_nages": {
+      "label": "Medley / alle stilarter",
+      "desc": "Jeg vil blande butterfly, ryg, bryst og crawl"
+    },
     "strokes": {
       "crawl": "Crawl",
       "dos": "Ryg",
@@ -196,7 +264,7 @@
     "loginLead": "Log ind med Apple, Google eller din e-mail.",
     "registerLead": "7 dages prøve, intet kort. Derefter sættes dine pas på pause.",
     "registerReferral": "Henvisningskode {{code}} : 20% rabat på din første Premium-faktura.",
-    "resetLead": "Skriv din e-mail, så sender vi et link til nulstilling.",
+    "resetLead": "Angiv e-mailen til din konto. Du får et sikkert link til at vælge en ny adgangskode.",
     "loginCta": "Log ind",
     "registerCta": "Opret min konto",
     "resetCta": "Send linket",
@@ -223,7 +291,7 @@
     "exists": "Der findes allerede en konto med den her e-mail.",
     "created": "Kontoen er oprettet! Tjek din e-mail for at bekræfte, og log derefter ind.",
     "createdReferral": "Kontoen er oprettet! Henvisningen er gemt, tjek din e-mail, og log derefter ind.",
-    "resetSent": "E-mail sendt! Tjek indbakken for at nulstille din adgangskode.",
+    "resetSent": "Hvis der findes en konto til denne e-mail, er der på vej en besked. Tjek også spam.",
     "genericError": "Noget gik galt.",
     "socialOff": "Den her loginmetode er ikke slået til på serveren endnu. Prøv e-mail / adgangskode.",
     "socialAppleConfig": "Apple-login er ikke konfigureret korrekt (Supabase). Prøv e-mail / adgangskode.",

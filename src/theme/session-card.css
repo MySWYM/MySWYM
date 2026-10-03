@@ -22,7 +22,7 @@
 }
 .ms-session-card-head h2 {
   margin: 0.35rem 0 0;
-  font-family: var(--lp-display, var(--heading));
+  font-family: var(--ms-sans, var(--lp-sans, var(--heading, Geist, ui-sans-serif, system-ui, sans-serif)));
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.03em;

@@ -32,7 +32,15 @@
     "11": "November",
     "12": "Dezember"
   },
-  "weekdays": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+  "weekdays": [
+    "Mo",
+    "Di",
+    "Mi",
+    "Do",
+    "Fr",
+    "Sa",
+    "So"
+  ],
   "category": {
     "title": "Was ist dein Ziel?",
     "lead": "Wähle eine Kategorie. Wir passen die Einheiten an den Wettkampf, die Distanz oder dein Niveau an.",
@@ -51,25 +59,70 @@
     "eau_libre": "Welche Distanz?",
     "diplome": "Welches Diplom?",
     "fallback": "Präzisiere dein Ziel",
-    "triathlon_xs": { "label": "XS", "dist": "400 m Schwimmen" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m Schwimmen" },
-    "triathlon_olympic": { "label": "Olympisch", "dist": "1.500 m Schwimmen" },
-    "triathlon_half": { "label": "Half", "dist": "1.900 m Schwimmen" },
-    "triathlon_ironman": { "label": "Full", "dist": "3.800 m Schwimmen" },
-    "open_water_short": { "label": "Kurz", "dist": "500 m bis 1,5 km" },
-    "open_water_mid": { "label": "Mittel", "dist": "2 km bis 5 km" },
-    "open_water_long": { "label": "Lang", "dist": "7,5 km und mehr" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m & 250 m Rettung" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m Kraul < 7'40\" · 100 m Lagen < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m Flossen · Rettungsparcours" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m Schwimmen"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m Schwimmen"
+    },
+    "triathlon_olympic": {
+      "label": "Olympisch",
+      "dist": "1.500 m Schwimmen"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1.900 m Schwimmen"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3.800 m Schwimmen"
+    },
+    "open_water_short": {
+      "label": "Kurz",
+      "dist": "500 m bis 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Mittel",
+      "dist": "2 km bis 5 km"
+    },
+    "open_water_long": {
+      "label": "Lang",
+      "dist": "7,5 km und mehr"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m & 250 m Rettung"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m Kraul < 7'40\" · 100 m Lagen < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m Flossen · Rettungsparcours"
+    }
   },
   "level": {
     "title": "Wie ist dein aktuelles Schwimmniveau?",
     "lead": "Wähle das, was dich heute beschreibt, nicht das, das du anpeilst.",
-    "découverte": { "label": "Einstieg", "desc": "Ich stoppe nach ein paar Bahnen" },
-    "régulier": { "label": "Anfänger", "desc": "Ich kann Bahnen schwimmen, aber ich lerne noch" },
-    "sportif": { "label": "Mittelstufe", "desc": "Ich bin im Becken sicher, aber ich will besser werden" },
-    "performance": { "label": "Fortgeschritten", "desc": "Ich bin ein erfahrener Schwimmer. Ich beherrsche alle vier Schwimmarten." },
+    "découverte": {
+      "label": "Einstieg",
+      "desc": "Ich stoppe nach ein paar Bahnen"
+    },
+    "régulier": {
+      "label": "Anfänger",
+      "desc": "Ich kann Bahnen schwimmen, aber ich lerne noch"
+    },
+    "sportif": {
+      "label": "Mittelstufe",
+      "desc": "Ich bin im Becken sicher, aber ich will besser werden"
+    },
+    "performance": {
+      "label": "Fortgeschritten",
+      "desc": "Ich bin ein erfahrener Schwimmer. Ich beherrsche alle vier Schwimmarten."
+    },
     "beginnerBlocked": "Fang kleiner an. Rom wurde nicht an einem Tag erbaut. Wir können dir nicht versprechen, dass du bis ins Ziel kommst."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Anderer Bereich"
     },
     "severities": {
-      "mild": { "label": "Leicht", "desc": "Gelegentliche Beschwerden, Schwimmen ist möglich" },
-      "moderate": { "label": "Mittel", "desc": "Häufige Schmerzen, die Intensität sollte begrenzt werden" },
-      "significant": { "label": "Deutlich", "desc": "Die Aktivität ist stark eingeschränkt" }
+      "mild": {
+        "label": "Leicht",
+        "desc": "Gelegentliche Beschwerden, Schwimmen ist möglich"
+      },
+      "moderate": {
+        "label": "Mittel",
+        "desc": "Häufige Schmerzen, die Intensität sollte begrenzt werden"
+      },
+      "significant": {
+        "label": "Deutlich",
+        "desc": "Die Aktivität ist stark eingeschränkt"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Sag uns deine Lieblingsschwimmart. Im Triathlon und im Freiwasser arbeiten wir vor allem Kraul.",
     "style": "Bevorzugter Stil",
     "stroke": "Lieblingsschwimmart",
-    "crawl": { "label": "Kraul", "desc": "Ich schwimme am liebsten vor allem Kraul" },
-    "4_nages": { "label": "Lagen / alle Schwimmarten", "desc": "Ich will Delfin, Rücken, Brust und Kraul mischen" },
+    "crawl": {
+      "label": "Kraul",
+      "desc": "Ich schwimme am liebsten vor allem Kraul"
+    },
+    "4_nages": {
+      "label": "Lagen / alle Schwimmarten",
+      "desc": "Ich will Delfin, Rücken, Brust und Kraul mischen"
+    },
     "strokes": {
       "crawl": "Kraul",
       "dos": "Rücken",
@@ -196,7 +264,7 @@
     "loginLead": "Melde dich mit Apple, Google oder deiner E-Mail an.",
     "registerLead": "7-Tage-Test, keine Karte. Danach pausieren deine Einheiten.",
     "registerReferral": "Empfehlungscode {{code}} : 20 % Rabatt auf deine erste Premium-Rechnung.",
-    "resetLead": "Gib deine E-Mail ein, wir schicken einen Link zum Zurücksetzen.",
+    "resetLead": "Gib die E-Mail deines Kontos an. Du erhältst einen sicheren Link für ein neues Passwort.",
     "loginCta": "Anmelden",
     "registerCta": "Mein Konto erstellen",
     "resetCta": "Link senden",
@@ -223,7 +291,7 @@
     "exists": "Mit dieser E-Mail gibt es schon ein Konto.",
     "created": "Konto erstellt! Prüfe deine E-Mail zur Bestätigung, dann melde dich an.",
     "createdReferral": "Konto erstellt! Empfehlung gespeichert, prüfe deine E-Mail, dann melde dich an.",
-    "resetSent": "E-Mail gesendet! Schau in dein Postfach, um dein Passwort zurückzusetzen.",
+    "resetSent": "Falls ein Konto zu dieser E-Mail existiert, ist eine Nachricht unterwegs. Prüfe auch den Spam.",
     "genericError": "Etwas ist schiefgelaufen.",
     "socialOff": "Diese Anmeldemethode ist auf dem Server noch nicht aktiv. Versuch es mit E-Mail / Passwort.",
     "socialAppleConfig": "Apple-Anmeldung ist nicht richtig eingerichtet (Supabase). Versuch es mit E-Mail / Passwort.",

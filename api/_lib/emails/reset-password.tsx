@@ -16,15 +16,16 @@ export function ResetPasswordEmail({ resetUrl }: ResetPasswordEmailProps) {
     >
       <Text style={emailText.h1}>Nouveau mot de passe</Text>
       <Text style={emailText.p}>
-        Tu as demandé à changer ton mot de passe MySWYM. Clique ci-dessous pour
-        en choisir un nouveau.
+        Tu as demandé à réinitialiser ton mot de passe MySWYM. Utilise le bouton
+        ci-dessous pour en choisir un nouveau.
       </Text>
       <Text style={emailText.p}>
-        Si tu n’es pas à l’origine de cette demande, ignore cet email, ton
+        Si tu n’es pas à l’origine de cette demande, ignore cet email : ton
         compte reste inchangé.
       </Text>
       <Text style={emailText.muted}>
-        Pour ta sécurité, le lien n’est valable qu’un temps limité.
+        Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ?
+        support@myswym.app
       </Text>
     </EmailLayout>
   );

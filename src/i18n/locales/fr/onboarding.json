@@ -41,7 +41,15 @@
     "11": "Novembre",
     "12": "Décembre"
   },
-  "weekdays": ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+  "weekdays": [
+    "Lun",
+    "Mar",
+    "Mer",
+    "Jeu",
+    "Ven",
+    "Sam",
+    "Dim"
+  ],
   "category": {
     "title": "Quel est ton objectif ?",
     "lead": "Choisis une catégorie. On adapte les séances à l’épreuve, à la distance ou à ton niveau.",
@@ -60,25 +68,70 @@
     "eau_libre": "Quelle distance ?",
     "diplome": "Quel diplôme ?",
     "fallback": "Précise ton objectif",
-    "triathlon_xs": { "label": "XS", "dist": "400 m nage" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m nage" },
-    "triathlon_olympic": { "label": "Olympique", "dist": "1 500 m nage" },
-    "triathlon_half": { "label": "Half", "dist": "1 900 m nage" },
-    "triathlon_ironman": { "label": "Full", "dist": "3 800 m nage" },
-    "open_water_short": { "label": "Courte", "dist": "500 m à 1,5 km" },
-    "open_water_mid": { "label": "Moyenne", "dist": "2 km à 5 km" },
-    "open_water_long": { "label": "Longue", "dist": "7,5 km et +" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m & 250 m sauvetage" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m NL < 7'40\" · 100 m 4 nages < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m palmes · parcours sauvetage" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m nage"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m nage"
+    },
+    "triathlon_olympic": {
+      "label": "Olympique",
+      "dist": "1 500 m nage"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1 900 m nage"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3 800 m nage"
+    },
+    "open_water_short": {
+      "label": "Courte",
+      "dist": "500 m à 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Moyenne",
+      "dist": "2 km à 5 km"
+    },
+    "open_water_long": {
+      "label": "Longue",
+      "dist": "7,5 km et +"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m & 250 m sauvetage"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m NL < 7'40\" · 100 m 4 nages < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m palmes · parcours sauvetage"
+    }
   },
   "level": {
     "title": "Quel est ton niveau de natation actuel ?",
     "lead": "Choisis celui qui te décrit aujourd’hui, pas celui que tu vises.",
-    "découverte": { "label": "Découverte", "desc": "Je m'arrête après quelques longueurs" },
-    "régulier": { "label": "Débutant", "desc": "Je sais nager des longueurs, mais je suis encore en train d'apprendre" },
-    "sportif": { "label": "Intermédiaire", "desc": "Je suis à l'aise dans la piscine, mais je veux m'améliorer" },
-    "performance": { "label": "Avancé", "desc": "Je suis un nageur expérimenté. Je maîtrise les 4 nages." },
+    "découverte": {
+      "label": "Découverte",
+      "desc": "Je m'arrête après quelques longueurs"
+    },
+    "régulier": {
+      "label": "Débutant",
+      "desc": "Je sais nager des longueurs, mais je suis encore en train d'apprendre"
+    },
+    "sportif": {
+      "label": "Intermédiaire",
+      "desc": "Je suis à l'aise dans la piscine, mais je veux m'améliorer"
+    },
+    "performance": {
+      "label": "Avancé",
+      "desc": "Je suis un nageur expérimenté. Je maîtrise les 4 nages."
+    },
     "beginnerBlocked": "Commence plus petit. Rome ne s'est pas faite en un jour. On ne pourra pas te promettre d'aller au bout."
   },
   "pool": {
@@ -133,9 +186,18 @@
       "other": "Autre zone"
     },
     "severities": {
-      "mild": { "label": "Légère", "desc": "Gêne occasionnelle, nage possible" },
-      "moderate": { "label": "Modérée", "desc": "Douleur fréquente, intensité à limiter" },
-      "significant": { "label": "Importante", "desc": "Activité fortement limitée" }
+      "mild": {
+        "label": "Légère",
+        "desc": "Gêne occasionnelle, nage possible"
+      },
+      "moderate": {
+        "label": "Modérée",
+        "desc": "Douleur fréquente, intensité à limiter"
+      },
+      "significant": {
+        "label": "Importante",
+        "desc": "Activité fortement limitée"
+      }
     }
   },
   "health": {
@@ -173,8 +235,14 @@
     "leadOpen": "Dis-nous ta nage préférée, en triathlon et en eau libre, on travaille surtout le crawl.",
     "style": "Style préféré",
     "stroke": "Nage préférée",
-    "crawl": { "label": "Crawl", "desc": "Je préfère nager surtout en crawl" },
-    "4_nages": { "label": "4 nages", "desc": "Je veux varier papillon, dos, brasse et crawl" },
+    "crawl": {
+      "label": "Crawl",
+      "desc": "Je préfère nager surtout en crawl"
+    },
+    "4_nages": {
+      "label": "4 nages",
+      "desc": "Je veux varier papillon, dos, brasse et crawl"
+    },
     "strokes": {
       "crawl": "Crawl",
       "dos": "Dos",
@@ -205,10 +273,10 @@
     "loginLead": "Connecte-toi avec Apple, Google ou ton email.",
     "registerLead": "7 jours d’essai offerts, sans carte. Ensuite tes séances se mettent en pause.",
     "registerReferral": "Code parrain {{code}} : −20% sur ta 1ère facture Premium.",
-    "resetLead": "Entre ton email, on t'envoie un lien de réinitialisation.",
+    "resetLead": "Indique l’email de ton compte. Tu recevras un lien sécurisé pour choisir un nouveau mot de passe.",
     "loginCta": "Se connecter",
     "registerCta": "Créer mon compte",
-    "resetCta": "Envoyer le lien",
+    "resetCta": "Recevoir le lien",
     "email": "Ton email",
     "password": "Mot de passe",
     "forgot": "Mot de passe oublié ?",
@@ -232,7 +300,7 @@
     "exists": "Un compte existe déjà avec cet email.",
     "created": "Compte créé ! Vérifie ton email pour confirmer, puis connecte-toi.",
     "createdReferral": "Compte créé ! Parrainage enregistré, vérifie ton email, puis connecte-toi.",
-    "resetSent": "Email envoyé ! Vérifie ta boîte mail pour réinitialiser ton mot de passe.",
+    "resetSent": "Si un compte existe pour cet email, un message vient de partir. Pense à vérifier les indésirables.",
     "genericError": "Une erreur est survenue.",
     "socialOff": "Cette connexion n’est pas encore activée côté serveur. Réessaie avec e-mail / mot de passe.",
     "socialAppleConfig": "Connexion Apple mal configurée (Supabase). Réessaie avec e-mail / mot de passe.",

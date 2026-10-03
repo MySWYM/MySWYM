@@ -4,6 +4,7 @@
  *
  * Voir docs/plan-methodology.md et docs/sports-engine-v1.md
  */
+import i18n from "../i18n/index.js";
 import {
   genererSemaineSessions,
   volumeMultFromProfileLevel,
@@ -1248,12 +1249,14 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
  * Indépendant de `sessionCursor` (variété / régénération).
  */
 export function formatLoopSessionTitle(ordinalIndex = 0) {
-  return `Séance n°${Math.max(0, Number(ordinalIndex) || 0) + 1}`;
+  const n = Math.max(0, Number(ordinalIndex) || 0) + 1;
+  return i18n.t("session.loopTitle", { ns: "app", n, defaultValue: `Séance n°${n}` });
 }
 
 /** Titre dans la semaine courante (Séance 1, 2, 3…), pas le compteur global. */
 export function formatLoopWeekSessionTitle(indexInWeek = 0) {
-  return `Séance ${Math.max(0, Number(indexInWeek) || 0) + 1}`;
+  const n = Math.max(0, Number(indexInWeek) || 0) + 1;
+  return i18n.t("session.weekTitle", { ns: "app", n, defaultValue: `Séance ${n}` });
 }
 
 /** Nb de séances validées (base 0 pour la séance courante non encore archivée). */

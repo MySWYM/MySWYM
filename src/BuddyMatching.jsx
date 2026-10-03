@@ -306,7 +306,7 @@ function IosBuddyBar({ onBack }) {
       >
         <ChevronLeft size={22} color={G.ink} strokeWidth={2.25} />
       </button>
-      <h1>Binômes</h1>
+      <h1>{t("home.buddies")}</h1>
       <div style={{ width: 44 }} aria-hidden />
     </header>
   );
@@ -342,7 +342,7 @@ function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
           }}>
             <Lock size={22} color={G.blue} />
           </div>
-          <h2 style={{ margin: 0, fontFamily: "Space Grotesk, ui-sans-serif, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink }}>
+          <h2 style={{ margin: 0, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink }}>
             Matching entre abonnés
           </h2>
           <p style={{ margin: "10px 0 20px", fontSize: 14, lineHeight: 1.5, color: G.grey }}>
@@ -876,14 +876,14 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
       <div className="app-shell" style={{ paddingTop: 20 }}>
         <div className="ms-glass-card" style={{ marginBottom: 16, padding: "18px 16px 14px", borderRadius: 26 }}>
           {isIosSimpleNav() ? null : (
-            <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 800, color: G.ink, letterSpacing: "-0.03em" }}>Binômes</h1>
+            <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 800, color: G.ink, letterSpacing: "-0.03em" }}>{t("home.buddies")}</h1>
           )}
-          <p style={{ margin: "0 0 14px", fontSize: 13, color: G.grey }}>Après accord mutuel</p>
+          <p style={{ margin: "0 0 14px", fontSize: 13, color: G.grey }}>{t("buddy.mutual")}</p>
 
           <div className="ms-seg-track">
-            {tabBtn("list", "Explorer")}
-            {tabBtn("matches", `Relations${pendingIncoming.length ? ` (${pendingIncoming.length})` : ""}`)}
-            {tabBtn("form", "Mon profil")}
+            {tabBtn("list", t("buddy.tabExplore"))}
+            {tabBtn("matches", `${t("buddy.tabRelations")}${pendingIncoming.length ? ` (${pendingIncoming.length})` : ""}`)}
+            {tabBtn("form", t("buddy.tabProfile"))}
           </div>
         </div>
 
@@ -944,7 +944,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                 <Search size={16} color={G.greyMid} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
                 <input
                   type="search"
-                  placeholder="Ville ou zone…"
+                  placeholder={t("buddy.cityPlaceholder")}
                   value={cityFilter}
                   onChange={(e) => setCityFilter(e.target.value)}
                   style={{ ...inp, paddingLeft: 40 }}
@@ -973,18 +973,18 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
             {loadingList ? (
               <div style={{ textAlign: "center", padding: 40, color: G.grey }}>
                 <Loader2 size={28} />
-                <div style={{ marginTop: 12, fontSize: 14 }}>Chargement…</div>
+                <div style={{ marginTop: 12, fontSize: 14 }}>{t("buddy.loading")}</div>
               </div>
             ) : buddyRows.length === 0 ? (
               <div className="ms-glass-card" style={{ textAlign: "center", padding: "28px 16px", borderRadius: 26 }}>
                 <Waves size={36} color={G.blueMid} style={{ marginBottom: 12 }} />
                 <div style={{ fontSize: 18, fontWeight: 700, color: G.ink, marginBottom: 8 }}>
-                  {activeFilters > 0 ? "Aucun profil" : "Annuaire vide ici"}
+                  {activeFilters > 0 ? t("buddy.noProfiles") : t("buddy.emptyTitle")}
                 </div>
                 <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.5, margin: "0 0 18px" }}>
                   {activeFilters > 0
-                    ? "Élargis ta recherche ou retire un filtre."
-                    : "Publie ton profil pour apparaître. Le numéro reste privé jusqu’à un accord mutuel."}
+                    ? t("buddy.widenSearch")
+                    : t("buddy.emptyBody")}
                 </p>
                 {activeFilters > 0 ? (
                   <button
@@ -992,7 +992,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                     className="ms-pill-cta ms-pill-cta-secondary"
                     onClick={() => { setCityFilter(""); setLevelFilter(""); setGoalFilter(""); }}
                   >
-                    Effacer les filtres
+                    {t("buddy.clearFilters")}
                   </button>
                 ) : (
                   <button
@@ -1003,7 +1003,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                       setView("form");
                     }}
                   >
-                    {profileReady ? "Compléter mon profil" : "Créer mon profil"}
+                    {profileReady ? t("buddy.completeProfile") : t("buddy.createProfile")}
                   </button>
                 )}
               </div>

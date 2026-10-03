@@ -97,7 +97,7 @@ function layout(options: {
     ? `<p style="color:${B.primary};font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 10px">${escapeHtml(options.eyebrow)}</p>`
     : "";
   const titleBlock = options.title
-    ? `<h1 style="color:${B.ink};font-family:'Space Grotesk',Geist,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.03em;line-height:30px;margin:0 0 14px">${escapeHtml(options.title)}</h1>`
+    ? `<h1 style="color:${B.ink};font-family:Geist,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.03em;line-height:30px;margin:0 0 14px">${escapeHtml(options.title)}</h1>`
     : "";
   const ctaBlock = options.cta
     ? `<p style="text-align:center;margin:28px 0 8px">
@@ -202,7 +202,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       if (!to.includes("@") || !resetUrl) return { error: "to and resetUrl required" };
       return {
         to,
-        subject: "Réinitialise ton mot de passe",
+        subject: "Réinitialise ton mot de passe MySWYM",
         category: "reset_password",
         html: layout({
           preview: "Choisis un nouveau mot de passe MySWYM.",
@@ -210,11 +210,12 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
           title: "Nouveau mot de passe",
           bodyHtml:
             p(
-              "Tu as demandé à changer ton mot de passe MySWYM. Clique ci-dessous pour en choisir un nouveau.",
+              "Tu as demandé à réinitialiser ton mot de passe MySWYM. Utilise le bouton ci-dessous pour en choisir un nouveau.",
             ) +
             p(
-              "Si tu n’es pas à l’origine de cette demande, ignore cet email, ton compte reste inchangé.",
-            ),
+              "Si tu n’es pas à l’origine de cette demande, ignore cet email : ton compte reste inchangé.",
+            ) +
+            `<p style="color:${B.muted};font-size:13px;line-height:20px;margin:16px 0 0">Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ? support@myswym.app</p>`,
           cta: { label: "Choisir un nouveau mot de passe", url: resetUrl },
         }),
       };

@@ -32,7 +32,15 @@
     "11": "Novembro",
     "12": "Dezembro"
   },
-  "weekdays": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+  "weekdays": [
+    "Seg",
+    "Ter",
+    "Qua",
+    "Qui",
+    "Sex",
+    "Sáb",
+    "Dom"
+  ],
   "category": {
     "title": "Qual é o seu objetivo?",
     "lead": "Escolha uma categoria. A gente adapta os treinos à prova, à distância ou ao seu nível.",
@@ -51,25 +59,70 @@
     "eau_libre": "Qual distância?",
     "diplome": "Qual diploma?",
     "fallback": "Especifique seu objetivo",
-    "triathlon_xs": { "label": "XS", "dist": "400 m de nado" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m de nado" },
-    "triathlon_olympic": { "label": "Olímpico", "dist": "1.500 m de nado" },
-    "triathlon_half": { "label": "Half", "dist": "1.900 m de nado" },
-    "triathlon_ironman": { "label": "Full", "dist": "3.800 m de nado" },
-    "open_water_short": { "label": "Curta", "dist": "500 m a 1,5 km" },
-    "open_water_mid": { "label": "Média", "dist": "2 km a 5 km" },
-    "open_water_long": { "label": "Longa", "dist": "7,5 km ou mais" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m e 250 m de salvamento" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m livre < 7'40\" · 100 m medley < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m nadadeiras · percurso de salvamento" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m de nado"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m de nado"
+    },
+    "triathlon_olympic": {
+      "label": "Olímpico",
+      "dist": "1.500 m de nado"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1.900 m de nado"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3.800 m de nado"
+    },
+    "open_water_short": {
+      "label": "Curta",
+      "dist": "500 m a 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Média",
+      "dist": "2 km a 5 km"
+    },
+    "open_water_long": {
+      "label": "Longa",
+      "dist": "7,5 km ou mais"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m e 250 m de salvamento"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m livre < 7'40\" · 100 m medley < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m nadadeiras · percurso de salvamento"
+    }
   },
   "level": {
     "title": "Qual é o seu nível de natação hoje?",
     "lead": "Escolha o que descreve você hoje, não o nível que você quer alcançar.",
-    "découverte": { "label": "Começando", "desc": "Eu paro depois de algumas piscinas" },
-    "régulier": { "label": "Iniciante", "desc": "Consigo nadar várias piscinas, mas ainda estou aprendendo" },
-    "sportif": { "label": "Intermediário", "desc": "Estou à vontade na piscina, mas quero evoluir" },
-    "performance": { "label": "Avançado", "desc": "Sou um nadador experiente. Nado os quatro nados." },
+    "découverte": {
+      "label": "Começando",
+      "desc": "Eu paro depois de algumas piscinas"
+    },
+    "régulier": {
+      "label": "Iniciante",
+      "desc": "Consigo nadar várias piscinas, mas ainda estou aprendendo"
+    },
+    "sportif": {
+      "label": "Intermediário",
+      "desc": "Estou à vontade na piscina, mas quero evoluir"
+    },
+    "performance": {
+      "label": "Avançado",
+      "desc": "Sou um nadador experiente. Nado os quatro nados."
+    },
     "beginnerBlocked": "Comece menor. Roma não foi feita em um dia. Não dá para prometer que você chega até o final."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Outra região"
     },
     "severities": {
-      "mild": { "label": "Leve", "desc": "Incômodo de vez em quando, dá para nadar" },
-      "moderate": { "label": "Moderada", "desc": "Dor frequente, a intensidade deve ser limitada" },
-      "significant": { "label": "Significativa", "desc": "A atividade fica bem limitada" }
+      "mild": {
+        "label": "Leve",
+        "desc": "Incômodo de vez em quando, dá para nadar"
+      },
+      "moderate": {
+        "label": "Moderada",
+        "desc": "Dor frequente, a intensidade deve ser limitada"
+      },
+      "significant": {
+        "label": "Significativa",
+        "desc": "A atividade fica bem limitada"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Diga seu nado preferido: no triatlo e nas águas abertas a gente trabalha sobretudo o nado livre.",
     "style": "Estilo preferido",
     "stroke": "Nado favorito",
-    "crawl": { "label": "Nado livre", "desc": "Eu gosto mais de nadar nado livre" },
-    "4_nages": { "label": "Medley", "desc": "Quero misturar borboleta, costas, peito e nado livre" },
+    "crawl": {
+      "label": "Nado livre",
+      "desc": "Eu gosto mais de nadar nado livre"
+    },
+    "4_nages": {
+      "label": "Medley",
+      "desc": "Quero misturar borboleta, costas, peito e nado livre"
+    },
     "strokes": {
       "crawl": "Nado livre",
       "dos": "Costas",
@@ -196,10 +264,10 @@
     "loginLead": "Entre com Apple, Google ou seu e-mail.",
     "registerLead": "Teste de 7 dias, sem cartão. Depois seus treinos pausam.",
     "registerReferral": "Código de indicação {{code}} : 20% na sua primeira cobrança Premium.",
-    "resetLead": "Informe seu e-mail e a gente envia um link para redefinir a senha.",
+    "resetLead": "Informe o e-mail da sua conta. Você receberá um link seguro para escolher uma nova senha.",
     "loginCta": "Entrar",
     "registerCta": "Criar minha conta",
-    "resetCta": "Enviar o link",
+    "resetCta": "Receber o link",
     "email": "Seu e-mail",
     "password": "Senha",
     "forgot": "Esqueceu a senha?",
@@ -223,7 +291,7 @@
     "exists": "Já existe uma conta com este e-mail.",
     "created": "Conta criada! Veja seu e-mail para confirmar e depois entre.",
     "createdReferral": "Conta criada! Indicação salva, veja seu e-mail e depois entre.",
-    "resetSent": "E-mail enviado! Veja a caixa de entrada para redefinir a senha.",
+    "resetSent": "Se existir uma conta com este e-mail, a mensagem já foi enviada. Confira também o spam.",
     "genericError": "Algo deu errado.",
     "socialOff": "Este modo de entrada ainda não está ativo no servidor. Tente e-mail / senha.",
     "socialAppleConfig": "A entrada com a Apple não está configurada direito (Supabase). Tente e-mail / senha.",

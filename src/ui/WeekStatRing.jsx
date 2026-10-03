@@ -31,7 +31,7 @@ export default function WeekStatRing({
       </svg>
       <div style={{
         position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 13, fontWeight: 700, color: "#f4f8fa", fontFamily: "Space Grotesk, ui-sans-serif, sans-serif",
+        fontSize: 13, fontWeight: 700, color: "#f4f8fa", fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
       }}>
         {max > 0 ? `${Math.round(pct * 100)}%` : "-"}
       </div>
