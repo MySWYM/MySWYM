@@ -232,7 +232,10 @@ export function IosPasswordPanel({ user, onBack, onMsg }) {
       onMsg?.({ type: "ok", text: t("settings.passwordResetSent") });
       setOk(false);
     } catch (e) {
-      setError(e?.message || t("settings.passwordResetFail"));
+      const raw = typeof e?.message === "string" && e.message !== "[object Object]"
+        ? e.message
+        : t("settings.passwordResetFail");
+      setError(raw);
     } finally {
       setResetBusy(false);
     }
