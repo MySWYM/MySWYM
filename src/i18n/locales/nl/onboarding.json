@@ -32,7 +32,15 @@
     "11": "november",
     "12": "december"
   },
-  "weekdays": ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"],
+  "weekdays": [
+    "Ma",
+    "Di",
+    "Wo",
+    "Do",
+    "Vr",
+    "Za",
+    "Zo"
+  ],
   "category": {
     "title": "Wat is je doel?",
     "lead": "Kies een categorie. We stemmen de trainingen af op de wedstrijd, de afstand of je niveau.",
@@ -51,25 +59,70 @@
     "eau_libre": "Welke afstand?",
     "diplome": "Welk diploma?",
     "fallback": "Geef je doel aan",
-    "triathlon_xs": { "label": "XS", "dist": "400 m zwemmen" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m zwemmen" },
-    "triathlon_olympic": { "label": "Olympisch", "dist": "1.500 m zwemmen" },
-    "triathlon_half": { "label": "Half", "dist": "1.900 m zwemmen" },
-    "triathlon_ironman": { "label": "Full", "dist": "3.800 m zwemmen" },
-    "open_water_short": { "label": "Kort", "dist": "500 m tot 1,5 km" },
-    "open_water_mid": { "label": "Midden", "dist": "2 km tot 5 km" },
-    "open_water_long": { "label": "Lang", "dist": "7,5 km en meer" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m & 250 m redding" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m crawl < 7'40\" · 100 m wisselslag < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m vliezen · reddingsparcours" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m zwemmen"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m zwemmen"
+    },
+    "triathlon_olympic": {
+      "label": "Olympisch",
+      "dist": "1.500 m zwemmen"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1.900 m zwemmen"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3.800 m zwemmen"
+    },
+    "open_water_short": {
+      "label": "Kort",
+      "dist": "500 m tot 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Midden",
+      "dist": "2 km tot 5 km"
+    },
+    "open_water_long": {
+      "label": "Lang",
+      "dist": "7,5 km en meer"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m & 250 m redding"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m crawl < 7'40\" · 100 m wisselslag < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m vliezen · reddingsparcours"
+    }
   },
   "level": {
     "title": "Wat is je huidige zwemniveau?",
     "lead": "Kies wat je vandaag beschrijft, niet waar je naartoe wilt.",
-    "découverte": { "label": "Starten", "desc": "Ik stop na een paar baantjes" },
-    "régulier": { "label": "Beginner", "desc": "Ik zwem baantjes, maar ik ben nog aan het leren" },
-    "sportif": { "label": "Halfgevorderd", "desc": "Ik voel me op mijn gemak in het bad, maar ik wil beter worden" },
-    "performance": { "label": "Gevorderd", "desc": "Ik ben een ervaren zwemmer. Ik beheers alle vier de slagen." },
+    "découverte": {
+      "label": "Starten",
+      "desc": "Ik stop na een paar baantjes"
+    },
+    "régulier": {
+      "label": "Beginner",
+      "desc": "Ik zwem baantjes, maar ik ben nog aan het leren"
+    },
+    "sportif": {
+      "label": "Halfgevorderd",
+      "desc": "Ik voel me op mijn gemak in het bad, maar ik wil beter worden"
+    },
+    "performance": {
+      "label": "Gevorderd",
+      "desc": "Ik ben een ervaren zwemmer. Ik beheers alle vier de slagen."
+    },
     "beginnerBlocked": "Begin kleiner. Rome is niet op één dag gebouwd. We kunnen je niet beloven dat je de finish haalt."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Andere zone"
     },
     "severities": {
-      "mild": { "label": "Licht", "desc": "Af en toe ongemak, zwemmen kan" },
-      "moderate": { "label": "Matig", "desc": "Vaak pijn, intensiteit beperken" },
-      "significant": { "label": "Ernstig", "desc": "Activiteit is sterk beperkt" }
+      "mild": {
+        "label": "Licht",
+        "desc": "Af en toe ongemak, zwemmen kan"
+      },
+      "moderate": {
+        "label": "Matig",
+        "desc": "Vaak pijn, intensiteit beperken"
+      },
+      "significant": {
+        "label": "Ernstig",
+        "desc": "Activiteit is sterk beperkt"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Zeg wat je favoriete slag is. In triathlon en open water werken we vooral crawl.",
     "style": "Voorkeursstijl",
     "stroke": "Favoriete slag",
-    "crawl": { "label": "Crawl", "desc": "Ik zwem het liefst vooral crawl" },
-    "4_nages": { "label": "Wisselslag / alle slagen", "desc": "Ik wil vlinderslag, rugslag, schoolslag en crawl afwisselen" },
+    "crawl": {
+      "label": "Crawl",
+      "desc": "Ik zwem het liefst vooral crawl"
+    },
+    "4_nages": {
+      "label": "Wisselslag / alle slagen",
+      "desc": "Ik wil vlinderslag, rugslag, schoolslag en crawl afwisselen"
+    },
     "strokes": {
       "crawl": "Crawl",
       "dos": "Rugslag",
@@ -196,7 +264,7 @@
     "loginLead": "Log in met Apple, Google of je e-mail.",
     "registerLead": "7 dagen proberen, geen kaart. Daarna gaan je trainingen op pauze.",
     "registerReferral": "Verwijzingscode {{code}} : 20% korting op je eerste Premium-factuur.",
-    "resetLead": "Vul je e-mail in, dan sturen we een link om te resetten.",
+    "resetLead": "Vul het e-mailadres van je account in. Je ontvangt een veilige link om een nieuw wachtwoord te kiezen.",
     "loginCta": "Inloggen",
     "registerCta": "Maak mijn account",
     "resetCta": "Stuur de link",
@@ -223,7 +291,7 @@
     "exists": "Er bestaat al een account met dit e-mailadres.",
     "created": "Account aangemaakt! Check je e-mail om te bevestigen, en log daarna in.",
     "createdReferral": "Account aangemaakt! Verwijzing opgeslagen, check je e-mail en log daarna in.",
-    "resetSent": "E-mail verstuurd! Check je inbox om je wachtwoord te resetten.",
+    "resetSent": "Als er een account bij dit e-mailadres hoort, is er een bericht onderweg. Check ook je spam.",
     "genericError": "Er ging iets mis.",
     "socialOff": "Deze inlogmethode staat op de server nog niet aan. Probeer e-mail / wachtwoord.",
     "socialAppleConfig": "Inloggen met Apple is niet goed ingesteld (Supabase). Probeer e-mail / wachtwoord.",

@@ -21,7 +21,6 @@ import {
   snoozeSaveAccountPrompt,
 } from "./lib/save-account-prompt.js";
 import {
-  markNativeQuizStarted,
   clearNativeQuizStarted,
   nativeQuizStarted,
   NATIVE_QUIZ_EVENT,
@@ -85,7 +84,13 @@ import FrequencyGauge from "./ui/FrequencyGauge.jsx";
 import "./theme/onboarding-date.css";
 import { flushPendingNewsletterOptIn } from "./lib/newsletter-opt-in.js";
 import { shouldShowPlanReveal, revealMinWaitMs, findNextSession, sessionCardModel, sessionWhyLine } from "./lib/plan-reveal.js";
-import { bootElapsedMs, isBootWarm, remainingColdBootMs } from "./lib/boot-warm.js";
+import {
+  bootElapsedMs,
+  canOpenBootSheets,
+  isBootWarm,
+  remainingColdBootMs,
+  shouldHoldBootUi,
+} from "./lib/boot-warm.js";
 import {
   dismissProfileNudge,
   isProfileNudgeDismissed,
@@ -324,7 +329,7 @@ const css = `
   body {
     background: var(--myswym-bg);
     color: var(--myswym-ink);
-    font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+    font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     overscroll-behavior: none;
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
@@ -337,9 +342,9 @@ const css = `
     overscroll-behavior-x: none;
   }
   #root { min-height: 100dvh; }
-  h1, h2, h3 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
+  h1, h2, h3 { font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.03em; text-transform: none; font-weight: 700; }
   h4 { letter-spacing: -0.01em; }
-  .syne, .ms-display { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.03em; font-weight: 700; text-transform: none; }
+  .syne, .ms-display { font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.03em; font-weight: 700; text-transform: none; }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   @keyframes scaleIn  { from { opacity:0; transform:scale(0.9) } to { opacity:1; transform:scale(1) } }
   @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
@@ -1316,6 +1321,7 @@ function appendPaceHistory(profile, { pace100, week, source = "manual" }) {
 
 /** Saisie T50 / T100 / T400. Affichée dans Profil, section Natation. */
 const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, onSave, onUpgrade }) => {
+  const { t } = useTranslation("app");
   const [val100, setVal100] = useState(pace100 || null);
   const [val50, setVal50] = useState(pace50 || null);
   const [val400, setVal400] = useState(pace400 || null);
@@ -1371,7 +1377,7 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
     <div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
-          <div className="ms-profile-label">Meilleur temps 50 m</div>
+          <div className="ms-profile-label">{t("pace.best50")}</div>
           {isPremium ? (
             <PaceInput
               placeholder="0:42"
@@ -1381,10 +1387,10 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
               minSec={18}
               maxSec={150}
             />
-          ) : lockedPaceBtn("0:42", "Débloquer le temps au 50 m avec Premium")}
+          ) : lockedPaceBtn("0:42", t("pace.unlockPremium"))}
         </div>
         <div>
-          <div className="ms-profile-label">Meilleur temps 100 m</div>
+          <div className="ms-profile-label">{t("pace.best100")}</div>
           {isPremium ? (
             <PaceInput
               placeholder="1:45"
@@ -1394,10 +1400,10 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
               minSec={45}
               maxSec={5 * 60}
             />
-          ) : lockedPaceBtn("1:45", "Débloquer le temps au 100 m avec Premium")}
+          ) : lockedPaceBtn("1:45", t("pace.unlockPremium"))}
         </div>
         <div>
-          <div className="ms-profile-label">Meilleur temps 400 m</div>
+          <div className="ms-profile-label">{t("pace.best400")}</div>
           {isPremium ? (
             <PaceInput
               placeholder="7:30"
@@ -1407,7 +1413,7 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
               minSec={200}
               maxSec={20 * 60}
             />
-          ) : lockedPaceBtn("7:30", "Débloquer le temps au 400 m avec Premium")}
+          ) : lockedPaceBtn("7:30", t("pace.unlockPremium"))}
         </div>
       </div>
       {isPremium ? (
@@ -1425,11 +1431,11 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
               fontWeight: 700, fontSize: 15,
             }}
           >
-            {saved ? "Enregistré" : saving ? "Enregistrement…" : "Enregistrer les temps"}
+            {saved ? t("pace.saved") : saving ? t("pace.saving") : t("pace.save")}
           </button>
           {saved && (
             <p className="ms-profile-hint" style={{ textAlign: "center" }}>
-              Temps enregistrés. Le 100 m adapte tes prochaines séances.
+              {t("pace.savedHint")}
             </p>
           )}
         </>
@@ -1443,7 +1449,7 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
             background: G.blue, color: G.white, fontWeight: 700, fontSize: 15,
           }}
         >
-          Débloquer avec Premium
+          {t("pace.unlockPremium")}
         </button>
       )}
     </div>
@@ -1452,6 +1458,7 @@ const PaceTimesEditor = ({ pace100, pace50 = null, pace400 = null, isPremium, on
 
 /** Zones et projection. La saisie des temps est dans Profil, Natation. */
 const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPremium }) => {
+  const { t } = useTranslation("app");
   const [horizonYears, setHorizonYears] = useState(2);
   const isDiscovery = profile?.level === "découverte" || profile?.level === "beginner";
   const activePace = pace100 || null;
@@ -1499,19 +1506,19 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <Gauge size={16} color={G.blue} />
           <span style={{ fontSize: 15, fontWeight: 700, color: G.ink, letterSpacing: "-0.01em" }}>
-            Mon allure
+            {t("pace.myPace")}
           </span>
         </div>
         {!isPremium && <Lock size={14} color={G.greyMid} aria-hidden />}
       </div>
       <p style={{ margin: "0 0 12px", fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
-        {savedLine || "Tes temps se règlent dans Profil, Natation."}
+        {savedLine || t("pace.editInProfile")}
       </p>
 
       {isPremium && activePace && (
         <div style={{ marginBottom: showEvolution ? 16 : 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: G.grey, marginBottom: 8 }}>
-            Zones utiles
+            {t("pace.usefulZones")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ZONE_DEFS.map((z) => {
@@ -2226,6 +2233,7 @@ const StravaSection = ({
   isPremium = false,
   onUpgrade,
 }) => {
+  const { t } = useTranslation("app");
   const [connected, setConnected]     = useState(null); // null = chargement
   const [athlete, setAthlete]       = useState(null);
   const [activities, setActivities]    = useState([]);
@@ -2464,7 +2472,7 @@ const StravaSection = ({
             <div style={{ fontSize: 12, color: G.grey }}>
               {connected && athlete?.firstname
                 ? `${athlete.firstname}${athlete.lastname ? " " + athlete.lastname : ""}`
-                : connected ? "Connecté" : "Non connecté"}
+                : connected ? t("strava.connected") : t("strava.disconnected")}
             </div>
           </div>
         </div>
@@ -2517,7 +2525,7 @@ const StravaSection = ({
       {!connected ? (
         <div>
           <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 12px" }}>
-            Relie Strava pour importer tes sorties et valider plus vite.
+            {t("strava.lead")}
           </p>
           <button
             onClick={connect}
@@ -2526,7 +2534,7 @@ const StravaSection = ({
             <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Activity size={13} color="#fff" />
             </span>
-            Connecter Strava
+            {t("strava.connectCta")}
           </button>
         </div>
       ) : (
@@ -2569,7 +2577,7 @@ const StravaSection = ({
                 onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: "Séance validée depuis Strava" }); }}
                 style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: G.blue, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: FONT }}
               >
-                Valider
+                {t("session.validate")}
               </button>
             </div>
           )}
@@ -3918,6 +3926,7 @@ const SubscriptionStatusCard = ({ isPremium, plan, onUpgrade, onRefreshStatus })
 };
 
 const ReferralShareCard = () => {
+  const { t } = useTranslation("app");
   const [code, setCode] = useState(null);
   const [shareUrl, setShareUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -3929,27 +3938,27 @@ const ReferralShareCard = () => {
     (async () => {
       try {
         const inv = await fetchReferralInvite();
-        if (!inv) throw new Error("Impossible de charger le lien");
+        if (!inv) throw new Error(t("referral.loadFail"));
         if (!cancelled) {
           setCode(inv.code);
           setShareUrl(inv.shareUrl);
         }
       } catch (e) {
-        if (!cancelled) setErr(e.message || "Impossible de charger le lien");
+        if (!cancelled) setErr(e.message || t("referral.loadFail"));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   const copy = async () => {
     if (!shareUrl) return;
     try {
       const text = [
-        "Rejoins-moi sur MySWYM",
+        t("referral.shareLead"),
         shareUrl,
-        code ? `Code parrain : ${code} (−20 % sur la 1re facture)` : null,
+        code ? t("referral.shareCode", { code }) : null,
       ].filter(Boolean).join("\n");
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -3962,11 +3971,11 @@ const ReferralShareCard = () => {
       marginTop: 10, padding: 14, borderRadius: 14,
       border: `1px solid ${G.greyLight}`, background: G.surface,
     }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 4 }}>Parraine un nageur</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, marginBottom: 4 }}>{t("referral.title")}</div>
       <div style={{ fontSize: 12, color: G.grey, lineHeight: 1.45, marginBottom: 10 }}>
-        Ton ami bénéficie de −20% sur sa 1ère facture. Tu reçois 4,99€ de crédit quand il s’abonne.
+        {t("referral.body")}
       </div>
-      {loading && <div style={{ fontSize: 12, color: G.greyMid }}>Chargement du lien…</div>}
+      {loading && <div style={{ fontSize: 12, color: G.greyMid }}>{t("referral.loading")}</div>}
       {err && <div style={{ fontSize: 12, color: G.coral }}>{err}</div>}
       {code && shareUrl && (
         <>
@@ -3983,7 +3992,7 @@ const ReferralShareCard = () => {
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
-            {copied ? <><CheckCheck size={15} /> Message d’invite copié</> : <><Copy size={15} /> Copier le message d’invitation</>}
+            {copied ? <><CheckCheck size={15} /> {t("referral.copied")}</> : <><Copy size={15} /> {t("referral.copy")}</>}
           </button>
         </>
       )}
@@ -4435,7 +4444,7 @@ const SessionCard = ({
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
-              <div style={{ fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif", fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{titleShown}</div>
+              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{titleShown}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
                   {SKIP_LABELS[skipped]}
@@ -4958,6 +4967,7 @@ const ProgressionLoopView = ({
   onOpenMenu,
   onTabChange,
 }) => {
+  const { t } = useTranslation("app");
   const week0 = plan?.weeks?.[0];
   const weekSessions = week0?.sessions || [];
   const multiSessionWeek = weekSessions.length > 1;
@@ -5105,7 +5115,7 @@ const ProgressionLoopView = ({
                 color: G.inkLight, fontSize: 14, fontWeight: 700,
               }}
             >
-              Terminée
+              {t("history.sessionDone")}
             </button>
             <button
               type="button"
@@ -5116,17 +5126,17 @@ const ProgressionLoopView = ({
                 color: G.grey, fontSize: 14, fontWeight: 700,
               }}
             >
-              L&apos;abandonner
+              {t("session.abandonShort")}
             </button>
           </div>
         )}
 
         {confirmAbandon && (
           <ConfirmSheet
-            title="Abandonner cette séance ?"
-            message="Elle quitte ton plan et va dans l’Historique comme abandonnée. La suivante prend sa place."
-            confirmLabel="Oui, abandonner"
-            cancelLabel="Non, garder la séance"
+            title={t("session.abandonTitle")}
+            message={t("session.abandonBody")}
+            confirmLabel={t("session.abandonYes")}
+            cancelLabel={t("session.abandonNo")}
             destructive
             icon={X}
             zIndex={520}
@@ -7812,11 +7822,15 @@ export default function App() {
   const authOpenedFromUrlRef = useRef(false);
   const [screen, setScreen] = useState(() => {
     if (isAuthPath(window.location.pathname)) return "auth";
-    return "onboarding";
+    // Pas « onboarding » : sinon le quiz flash quand coldHold/auth se terminent
+    // avant que loadUserData ait posé « app ».
+    return "loading";
   });
   const [coldHold, setColdHold] = useState(() => !isBootWarm());
   useEffect(() => {
     if (!coldHold) return undefined;
+    // Pose GIF seulement après hydratation auth (évite onboarding/welcome au milieu).
+    if (authLoading) return undefined;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const wait = remainingColdBootMs({
       reduceMotion: reduce,
@@ -7824,7 +7838,7 @@ export default function App() {
     });
     const t = window.setTimeout(() => setColdHold(false), wait);
     return () => window.clearTimeout(t);
-  }, [coldHold]);
+  }, [coldHold, authLoading]);
   const [activeTab, setActiveTab] = useState("home");
   const lastDockTabRef = useRef("home");
   const [iosHideDock, setIosHideDock] = useState(false);
@@ -8185,7 +8199,7 @@ export default function App() {
 
   /** Anonyme avec plan : bottom sheet en relance fréquente (snooze court + retour app). */
   useEffect(() => {
-    if (screen !== "app") return undefined;
+    if (!canOpenBootSheets({ authLoading, coldHold, screen })) return undefined;
     if (!isAnonymousUser(user) || plans.length === 0) return undefined;
     if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
     if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return undefined;
@@ -8197,6 +8211,8 @@ export default function App() {
     }, 900);
     return () => window.clearTimeout(t);
   }, [
+    authLoading,
+    coldHold,
     screen,
     user?.id,
     plans.length,
@@ -8213,7 +8229,7 @@ export default function App() {
     if (typeof window === "undefined" || !isAnonymousUser(user) || plans.length === 0) return undefined;
     const bgAt = { current: 0 };
     const tryShow = () => {
-      if (screen !== "app") return;
+      if (!canOpenBootSheets({ authLoading, coldHold, screen })) return;
       if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return;
       if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return;
       if (isSaveAccountSnoozed(user.id)) return;
@@ -8233,6 +8249,8 @@ export default function App() {
   }, [
     user?.id,
     plans.length,
+    authLoading,
+    coldHold,
     screen,
     showUpgrade,
     showPlanReady,
@@ -8248,12 +8266,13 @@ export default function App() {
     prevSessionCelebrateRef.current = sessionCelebrate;
     if (!wasOpen || sessionCelebrate) return undefined;
     if (!isAnonymousUser(user) || plans.length === 0) return undefined;
-    if (screen !== "app" || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
+    if (!canOpenBootSheets({ authLoading, coldHold, screen })) return undefined;
+    if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
     // Après une séance : relance même si snooze court (priorité conversion).
     clearSaveAccountSnooze(user.id);
     const t = window.setTimeout(() => setShowSaveAccount(true), 700);
     return () => window.clearTimeout(t);
-  }, [sessionCelebrate, user?.id, plans.length, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
+  }, [sessionCelebrate, user?.id, plans.length, authLoading, coldHold, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
 
   const openUpgrade = (softContext = null) => {
     trackEvent("paywall_shown", {
@@ -8340,7 +8359,7 @@ export default function App() {
     openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
   }, [screen, user?.id, accessState.trialDaysLeft, accessState.status, isPremium, isFrozen]);
 
-  // Deep link push APNs → onglet (binômes).
+  // Deep link push APNs / notifs locales → onglet (+ panneau profil éventuel).
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     const onOpenTab = (ev) => {
@@ -8349,6 +8368,13 @@ export default function App() {
       setScreen("app");
       const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
       setActiveTab(next);
+      const panel = String(ev?.detail?.panel || "").trim();
+      if (panel === "data") {
+        try {
+          sessionStorage.setItem("myswym_profile_panel", "data");
+        } catch { /* ignore */ }
+        window.dispatchEvent(new CustomEvent("myswym:open-profile-panel", { detail: { panel: "data" } }));
+      }
     };
     window.addEventListener("myswym:open-tab", onOpenTab);
     return () => window.removeEventListener("myswym:open-tab", onOpenTab);
@@ -8384,7 +8410,7 @@ export default function App() {
 
   // Pop « Nouveautés » one-shot / compte (pas de reset plan / quiz).
   useEffect(() => {
-    if (screen !== "app" || !user || !plan) return;
+    if (!canOpenBootSheets({ authLoading, coldHold, screen }) || !user || !plan) return;
     if (showWhatsNew) return;
     if (!shouldShowWhatsNew(user)) {
       if (hasSeenWhatsNew(user)) {
@@ -8400,6 +8426,8 @@ export default function App() {
     const t = setTimeout(() => setShowWhatsNew(true), 600);
     return () => clearTimeout(t);
   }, [
+    authLoading,
+    coldHold,
     screen,
     user,
     plan,
@@ -8416,19 +8444,6 @@ export default function App() {
     deletePlanId,
   ]);
 
-  const exitAuthToQuiz = () => {
-    forceAuthRef.current = false;
-    authOpenedFromUrlRef.current = false;
-    markNativeQuizStarted();
-    setScreen("onboarding");
-    setStep(1);
-    navigate("/app");
-    // Même fond que « Commencer » : session anonyme pour générer le plan.
-    void ensureAnonymousSession(supabase).catch((err) => {
-      if (import.meta.env.DEV) console.warn("[anon] signInAnonymously", err?.message || err);
-    });
-  };
-
   const handleAuthNavigateMode = (mode) => {
     navigate(mode === "register" ? "/inscription" : "/connexion", { replace: true });
   };
@@ -8437,7 +8452,14 @@ export default function App() {
     forceAuthRef.current = false;
     const openedFromUrl = authOpenedFromUrlRef.current;
     authOpenedFromUrlRef.current = false;
-    // Déjà dans l’app (plan ou anonyme) : fermer auth → revenir à l’app, pas bloqué.
+    // iOS sans plan : croix → Welcome (pas le quiz). « Commencer » reste le seul entrée quiz.
+    if (isNativeApp() && plans.length === 0 && (!user || isAnonymousUser(user))) {
+      clearNativeQuizStarted();
+      setScreen("app");
+      navigate("/app", { replace: true });
+      return;
+    }
+    // Déjà dans l’app (plan ou anonyme mid-quiz) : fermer auth → app / onboarding.
     if (plans.length > 0 || isAnonymousUser(user)) {
       if (plans.length === 0 && isAnonymousUser(user) && nativeQuizStarted()) {
         setScreen("onboarding");
@@ -8454,7 +8476,7 @@ export default function App() {
       navigate("/app", { replace: true });
       return;
     }
-    // Depuis le questionnaire → rester sur le quiz ; lien direct /connexion web → landing
+    // Web : lien direct /connexion → landing ; sinon /app
     setScreen("onboarding");
     navigate(openedFromUrl && !isNativeApp() ? "/" : "/app", { replace: true });
   };
@@ -8465,7 +8487,11 @@ export default function App() {
     if (isSignup) {
       track("signup_completed", {}, { onceKey: `signup_completed:${u?.id || "anon"}` });
     }
-    void flushPendingNewsletterOptIn();
+    // Appliquer le choix newsletter stashé (Apple/Google) puis rafraîchir le user React
+    // pour que le switch « Actus MySWYM » reflète l’opt-in tout de suite.
+    void flushPendingNewsletterOptIn().then((res) => {
+      setUser(res?.user || u);
+    });
     setUser(u);
     forceAuthRef.current = false;
     authOpenedFromUrlRef.current = false;
@@ -8714,7 +8740,9 @@ export default function App() {
         }
         // Resync Stripe → app_metadata à chaque session (ferme les falsifications user_metadata)
         if (!droppingSessionForRegister && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-          void flushPendingNewsletterOptIn();
+          void flushPendingNewsletterOptIn().then((res) => {
+            if (res?.applied && res?.user) setUser(res.user);
+          });
           if (isNativeIos()) {
             void flushPendingPushToken();
             void registerNativePush();
@@ -9692,9 +9720,12 @@ export default function App() {
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
     if (wasFirst && isNativeIos() && user?.id) {
-      // 1re séance terminée : seul moment où on demande le popup système.
+      // 1re séance terminée : timing produit du popup système (ligne Notifications apparaît ensuite).
       void registerNativePush({ request: true }).then((res) => {
         if (res?.ok) void syncLocalNotificationsFromState({ user, plan });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("myswym:push-pref"));
+        }
       });
     }
   };
@@ -11586,7 +11617,6 @@ export default function App() {
           onAuth={handleAuthSuccess}
           initialMode={AUTH_PATHS[location.pathname] || "password"}
           onNavigateMode={handleAuthNavigateMode}
-          onStartQuiz={plans.length > 0 ? undefined : exitAuthToQuiz}
           showBrandHeader={false}
           onBack={handleAuthBack}
         />
@@ -11619,7 +11649,10 @@ export default function App() {
   );
 
   // waitingForAccess : sync essai en fond, ne pas masquer l’app (sinon loader → home au tap).
-  if (coldHold || screen === "loading") return <><style>{css}</style><Loading /></>;
+  // authLoading déjà géré plus haut ; coldHold + loading ici pour couvrir la pose post-auth.
+  if (shouldHoldBootUi({ coldHold, screen })) {
+    return <><style>{css}</style><Loading /></>;
+  }
 
   if (screen === "onboarding") return (
     <>

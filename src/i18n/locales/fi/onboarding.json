@@ -32,7 +32,15 @@
     "11": "marraskuu",
     "12": "joulukuu"
   },
-  "weekdays": ["Ma", "Ti", "Ke", "To", "Pe", "La", "Su"],
+  "weekdays": [
+    "Ma",
+    "Ti",
+    "Ke",
+    "To",
+    "Pe",
+    "La",
+    "Su"
+  ],
   "category": {
     "title": "Mikä on sun tavoite?",
     "lead": "Valitse kategoria. Treenit sovitetaan kisaan, matkaan tai sun tasoon.",
@@ -51,25 +59,70 @@
     "eau_libre": "Mikä matka?",
     "diplome": "Mikä tutkinto?",
     "fallback": "Tarkenna sun tavoite",
-    "triathlon_xs": { "label": "XS", "dist": "400 m uinti" },
-    "triathlon_sprint": { "label": "Sprintti", "dist": "750 m uinti" },
-    "triathlon_olympic": { "label": "Olympia", "dist": "1 500 m uinti" },
-    "triathlon_half": { "label": "Half", "dist": "1 900 m uinti" },
-    "triathlon_ironman": { "label": "Full", "dist": "3 800 m uinti" },
-    "open_water_short": { "label": "Lyhyt", "dist": "500 m - 1,5 km" },
-    "open_water_mid": { "label": "Keskipitkä", "dist": "2 km - 5 km" },
-    "open_water_long": { "label": "Pitkä", "dist": "7,5 km ja yli" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m ja 250 m pelastus" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m vapaa < 7'40\" · 100 m sekauinti < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m räpylät · pelastusrata" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m uinti"
+    },
+    "triathlon_sprint": {
+      "label": "Sprintti",
+      "dist": "750 m uinti"
+    },
+    "triathlon_olympic": {
+      "label": "Olympia",
+      "dist": "1 500 m uinti"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1 900 m uinti"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3 800 m uinti"
+    },
+    "open_water_short": {
+      "label": "Lyhyt",
+      "dist": "500 m - 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Keskipitkä",
+      "dist": "2 km - 5 km"
+    },
+    "open_water_long": {
+      "label": "Pitkä",
+      "dist": "7,5 km ja yli"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m ja 250 m pelastus"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m vapaa < 7'40\" · 100 m sekauinti < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m räpylät · pelastusrata"
+    }
   },
   "level": {
     "title": "Mikä on sun uintitaso nyt?",
     "lead": "Valitse se, joka kuvaa sua tänään, ei se, johon sä tähtäät.",
-    "découverte": { "label": "Alkuun", "desc": "Mä joudun pysähtymään muutaman pituuden jälkeen" },
-    "régulier": { "label": "Aloittelija", "desc": "Mä pystyn uimaan pituuksia, mutta mä opin vielä" },
-    "sportif": { "label": "Keskitaso", "desc": "Mä oon kotonani altaassa, mutta mä haluun kehittyä" },
-    "performance": { "label": "Edistynyt", "desc": "Mä oon kokenut uimari. Mä osaan kaikki neljä lajia." },
+    "découverte": {
+      "label": "Alkuun",
+      "desc": "Mä joudun pysähtymään muutaman pituuden jälkeen"
+    },
+    "régulier": {
+      "label": "Aloittelija",
+      "desc": "Mä pystyn uimaan pituuksia, mutta mä opin vielä"
+    },
+    "sportif": {
+      "label": "Keskitaso",
+      "desc": "Mä oon kotonani altaassa, mutta mä haluun kehittyä"
+    },
+    "performance": {
+      "label": "Edistynyt",
+      "desc": "Mä oon kokenut uimari. Mä osaan kaikki neljä lajia."
+    },
     "beginnerBlocked": "Aloita pienemmin. Roomaa ei rakennettu päivässä. Me ei voida luvata, että sä pääset maaliin."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Muu alue"
     },
     "severities": {
-      "mild": { "label": "Lievä", "desc": "Ajoittaista vaivaa, uinti onnistuu" },
-      "moderate": { "label": "Kohtalainen", "desc": "Toistuvaa kipua, tehoja kannattaa rajoittaa" },
-      "significant": { "label": "Merkittävä", "desc": "Liikkuminen on selvästi rajoittunutta" }
+      "mild": {
+        "label": "Lievä",
+        "desc": "Ajoittaista vaivaa, uinti onnistuu"
+      },
+      "moderate": {
+        "label": "Kohtalainen",
+        "desc": "Toistuvaa kipua, tehoja kannattaa rajoittaa"
+      },
+      "significant": {
+        "label": "Merkittävä",
+        "desc": "Liikkuminen on selvästi rajoittunutta"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Kerro sun lempilaji. Triathlonissa ja avovedessä tehdään eniten vapaauintia.",
     "style": "Suosikkityyli",
     "stroke": "Lempilaji",
-    "crawl": { "label": "Vapaauinti", "desc": "Mä tykkään uida eniten vapaata" },
-    "4_nages": { "label": "Sekauinti / kaikki lajit", "desc": "Mä haluun sekoittaa perhosta, selkää, rintaa ja vapaata" },
+    "crawl": {
+      "label": "Vapaauinti",
+      "desc": "Mä tykkään uida eniten vapaata"
+    },
+    "4_nages": {
+      "label": "Sekauinti / kaikki lajit",
+      "desc": "Mä haluun sekoittaa perhosta, selkää, rintaa ja vapaata"
+    },
     "strokes": {
       "crawl": "Vapaauinti",
       "dos": "Selkäuinti",
@@ -196,7 +264,7 @@
     "loginLead": "Kirjaudu Applella, Googlella tai sun sähköpostilla.",
     "registerLead": "7 päivän kokeilu, ei korttia. Sitten sun treenit menee pauselle.",
     "registerReferral": "Suosittelukoodi {{code}} : 20 % alennus sun ensimmäisestä Premium-laskusta.",
-    "resetLead": "Kirjoita sun sähköposti, niin lähetetään palautuslinkki.",
+    "resetLead": "Kirjoita tilisi sähköposti. Saat turvallisen linkin uuden salasanan valintaan.",
     "loginCta": "Kirjaudu",
     "registerCta": "Luo mun tili",
     "resetCta": "Lähetä linkki",
@@ -223,7 +291,7 @@
     "exists": "Tällä sähköpostilla on jo tili.",
     "created": "Tili luotu! Tarkista sun sähköposti ja vahvista, sitten kirjaudu.",
     "createdReferral": "Tili luotu! Suosittelu tallennettu, tarkista sun sähköposti, sitten kirjaudu.",
-    "resetSent": "Sähköposti lähetetty! Tarkista sun postilaatikko, jotta sä voit vaihtaa salasanan.",
+    "resetSent": "Jos tälle sähköpostille on tili, viesti on matkalla. Tarkista myös roskaposti.",
     "genericError": "Jotain meni pieleen.",
     "socialOff": "Tätä kirjautumistapaa ei ole vielä kytketty päälle palvelimella. Kokeile sähköpostia / salasanaa.",
     "socialAppleConfig": "Apple-kirjautuminen ei ole asetettu oikein (Supabase). Kokeile sähköpostia / salasanaa.",

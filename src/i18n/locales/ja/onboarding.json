@@ -32,7 +32,15 @@
     "11": "11月",
     "12": "12月"
   },
-  "weekdays": ["月", "火", "水", "木", "金", "土", "日"],
+  "weekdays": [
+    "月",
+    "火",
+    "水",
+    "木",
+    "金",
+    "土",
+    "日"
+  ],
   "category": {
     "title": "目標は?",
     "lead": "カテゴリを選ぶ。大会、距離、レベルに合わせてメニューを組む。",
@@ -51,25 +59,70 @@
     "eau_libre": "どの距離?",
     "diplome": "どの資格?",
     "fallback": "目標を具体的に",
-    "triathlon_xs": { "label": "XS", "dist": "スイム 400 m" },
-    "triathlon_sprint": { "label": "スプリント", "dist": "スイム 750 m" },
-    "triathlon_olympic": { "label": "オリンピック", "dist": "スイム 1,500 m" },
-    "triathlon_half": { "label": "ハーフ", "dist": "スイム 1,900 m" },
-    "triathlon_ironman": { "label": "フル", "dist": "スイム 3,800 m" },
-    "open_water_short": { "label": "ショート", "dist": "500 m から 1.5 km" },
-    "open_water_mid": { "label": "ミドル", "dist": "2 km から 5 km" },
-    "open_water_long": { "label": "ロング", "dist": "7.5 km 以上" },
-    "bnssa": { "label": "BNSSA", "dist": "救助 100 m と 250 m" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m 自由形 < 7'40\" · 100 m 個人メドレー < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "フィン 300 m · 救助コース" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "スイム 400 m"
+    },
+    "triathlon_sprint": {
+      "label": "スプリント",
+      "dist": "スイム 750 m"
+    },
+    "triathlon_olympic": {
+      "label": "オリンピック",
+      "dist": "スイム 1,500 m"
+    },
+    "triathlon_half": {
+      "label": "ハーフ",
+      "dist": "スイム 1,900 m"
+    },
+    "triathlon_ironman": {
+      "label": "フル",
+      "dist": "スイム 3,800 m"
+    },
+    "open_water_short": {
+      "label": "ショート",
+      "dist": "500 m から 1.5 km"
+    },
+    "open_water_mid": {
+      "label": "ミドル",
+      "dist": "2 km から 5 km"
+    },
+    "open_water_long": {
+      "label": "ロング",
+      "dist": "7.5 km 以上"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "救助 100 m と 250 m"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m 自由形 < 7'40\" · 100 m 個人メドレー < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "フィン 300 m · 救助コース"
+    }
   },
   "level": {
     "title": "今の泳ぎのレベルは?",
     "lead": "今の自分に合う方を選ぶ。目指している姿じゃない。",
-    "découverte": { "label": "はじめたて", "desc": "数本で止まってしまう" },
-    "régulier": { "label": "初級", "desc": "続けて泳げる。まだ練習中" },
-    "sportif": { "label": "中級", "desc": "プールは平気。もっとうまくなりたい" },
-    "performance": { "label": "上級", "desc": "経験がある。4泳法とも泳げる。" },
+    "découverte": {
+      "label": "はじめたて",
+      "desc": "数本で止まってしまう"
+    },
+    "régulier": {
+      "label": "初級",
+      "desc": "続けて泳げる。まだ練習中"
+    },
+    "sportif": {
+      "label": "中級",
+      "desc": "プールは平気。もっとうまくなりたい"
+    },
+    "performance": {
+      "label": "上級",
+      "desc": "経験がある。4泳法とも泳げる。"
+    },
     "beginnerBlocked": "まずは小さく。ローマは一日にして成らず。ゴールまで届くとは約束できない。"
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "その他"
     },
     "severities": {
-      "mild": { "label": "軽い", "desc": "たまに不調。泳ぎはできる" },
-      "moderate": { "label": "中くらい", "desc": "痛みが多い。強度は抑える" },
-      "significant": { "label": "重い", "desc": "動ける範囲がかなり狭い" }
+      "mild": {
+        "label": "軽い",
+        "desc": "たまに不調。泳ぎはできる"
+      },
+      "moderate": {
+        "label": "中くらい",
+        "desc": "痛みが多い。強度は抑える"
+      },
+      "significant": {
+        "label": "重い",
+        "desc": "動ける範囲がかなり狭い"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "いちばん好きな泳法を教える。トライアスロンとオープンウォーターは、ほぼクロールで組む。",
     "style": "メインの泳法",
     "stroke": "好きな泳法",
-    "crawl": { "label": "クロール", "desc": "ほとんどクロールで泳ぎたい" },
-    "4_nages": { "label": "メドレー / 4泳法", "desc": "バタフライ、背泳ぎ、平泳ぎ、クロールを混ぜたい" },
+    "crawl": {
+      "label": "クロール",
+      "desc": "ほとんどクロールで泳ぎたい"
+    },
+    "4_nages": {
+      "label": "メドレー / 4泳法",
+      "desc": "バタフライ、背泳ぎ、平泳ぎ、クロールを混ぜたい"
+    },
     "strokes": {
       "crawl": "クロール",
       "dos": "背泳ぎ",
@@ -196,7 +264,7 @@
     "loginLead": "Apple、Google、またはメールでログイン。",
     "registerLead": "7日お試し。カードは不要。そのあと練習は一時停止。",
     "registerReferral": "紹介コード {{code}} : 最初のPremium請求が20%オフ。",
-    "resetLead": "メールを入れる。リセット用のリンクを送る。",
+    "resetLead": "アカウントのメールを入力。新しいパスワードを選ぶための安全なリンクを送る。",
     "loginCta": "ログイン",
     "registerCta": "アカウントを作る",
     "resetCta": "リンクを送る",
@@ -223,7 +291,7 @@
     "exists": "このメールのアカウントはすでにある。",
     "created": "アカウントを作った。確認メールを見てからログイン。",
     "createdReferral": "アカウントを作った。紹介も保存した。メールを確認してログイン。",
-    "resetSent": "メールを送った。受信箱でパスワードをリセット。",
+    "resetSent": "このメールのアカウントがあれば、メッセージを送った。迷惑メールも確認して。",
     "genericError": "うまくいかなかった。",
     "socialOff": "このログイン方法は、サーバー側でまだ有効じゃない。メールとパスワードを試す。",
     "socialAppleConfig": "Appleログインの設定が正しくない（Supabase）。メールとパスワードを試す。",

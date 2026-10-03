@@ -295,7 +295,7 @@ const card = {
 };
 
 const title = {
-  fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif",
+  fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
   fontSize: 28,
   margin: "16px 0 8px",
   color: "#0c1a2e",

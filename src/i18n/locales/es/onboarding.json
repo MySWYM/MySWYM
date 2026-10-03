@@ -32,7 +32,15 @@
     "11": "Noviembre",
     "12": "Diciembre"
   },
-  "weekdays": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+  "weekdays": [
+    "Lun",
+    "Mar",
+    "Mié",
+    "Jue",
+    "Vie",
+    "Sáb",
+    "Dom"
+  ],
   "category": {
     "title": "¿Cuál es tu objetivo?",
     "lead": "Elige una categoría. Adaptamos las sesiones a la prueba, a la distancia o a tu nivel.",
@@ -51,25 +59,70 @@
     "eau_libre": "¿Qué distancia?",
     "diplome": "¿Qué diploma?",
     "fallback": "Precisa tu objetivo",
-    "triathlon_xs": { "label": "XS", "dist": "400 m de nado" },
-    "triathlon_sprint": { "label": "Sprint", "dist": "750 m de nado" },
-    "triathlon_olympic": { "label": "Olímpico", "dist": "1.500 m de nado" },
-    "triathlon_half": { "label": "Half", "dist": "1.900 m de nado" },
-    "triathlon_ironman": { "label": "Full", "dist": "3.800 m de nado" },
-    "open_water_short": { "label": "Corta", "dist": "500 m a 1,5 km" },
-    "open_water_mid": { "label": "Media", "dist": "2 km a 5 km" },
-    "open_water_long": { "label": "Larga", "dist": "7,5 km o más" },
-    "bnssa": { "label": "BNSSA", "dist": "100 m y 250 m de salvamento" },
-    "bpjeps_aan": { "label": "BPJEPS AAN", "dist": "400 m crol < 7'40\" · 100 m estilos < 1'50\"" },
-    "caepmns": { "label": "CAEPMNS", "dist": "300 m aletas · recorrido de salvamento" }
+    "triathlon_xs": {
+      "label": "XS",
+      "dist": "400 m de nado"
+    },
+    "triathlon_sprint": {
+      "label": "Sprint",
+      "dist": "750 m de nado"
+    },
+    "triathlon_olympic": {
+      "label": "Olímpico",
+      "dist": "1.500 m de nado"
+    },
+    "triathlon_half": {
+      "label": "Half",
+      "dist": "1.900 m de nado"
+    },
+    "triathlon_ironman": {
+      "label": "Full",
+      "dist": "3.800 m de nado"
+    },
+    "open_water_short": {
+      "label": "Corta",
+      "dist": "500 m a 1,5 km"
+    },
+    "open_water_mid": {
+      "label": "Media",
+      "dist": "2 km a 5 km"
+    },
+    "open_water_long": {
+      "label": "Larga",
+      "dist": "7,5 km o más"
+    },
+    "bnssa": {
+      "label": "BNSSA",
+      "dist": "100 m y 250 m de salvamento"
+    },
+    "bpjeps_aan": {
+      "label": "BPJEPS AAN",
+      "dist": "400 m crol < 7'40\" · 100 m estilos < 1'50\""
+    },
+    "caepmns": {
+      "label": "CAEPMNS",
+      "dist": "300 m aletas · recorrido de salvamento"
+    }
   },
   "level": {
     "title": "¿Cuál es tu nivel de natación ahora?",
     "lead": "Elige el que te describe hoy, no el que buscas.",
-    "découverte": { "label": "Primeros pasos", "desc": "Me paro después de unos largos" },
-    "régulier": { "label": "Principiante", "desc": "Nado largos, pero todavía estoy aprendiendo" },
-    "sportif": { "label": "Intermedio", "desc": "Estoy a gusto en la piscina, pero quiero mejorar" },
-    "performance": { "label": "Avanzado", "desc": "Soy nadador con experiencia. Domino los cuatro estilos." },
+    "découverte": {
+      "label": "Primeros pasos",
+      "desc": "Me paro después de unos largos"
+    },
+    "régulier": {
+      "label": "Principiante",
+      "desc": "Nado largos, pero todavía estoy aprendiendo"
+    },
+    "sportif": {
+      "label": "Intermedio",
+      "desc": "Estoy a gusto en la piscina, pero quiero mejorar"
+    },
+    "performance": {
+      "label": "Avanzado",
+      "desc": "Soy nadador con experiencia. Domino los cuatro estilos."
+    },
     "beginnerBlocked": "Empieza por algo más pequeño. Roma no se construyó en un día. No podemos prometerte que llegarás a la meta."
   },
   "pool": {
@@ -124,9 +177,18 @@
       "other": "Otra zona"
     },
     "severities": {
-      "mild": { "label": "Leve", "desc": "Molestia ocasional, se puede nadar" },
-      "moderate": { "label": "Moderada", "desc": "Dolor frecuente, hay que limitar la intensidad" },
-      "significant": { "label": "Importante", "desc": "La actividad está muy limitada" }
+      "mild": {
+        "label": "Leve",
+        "desc": "Molestia ocasional, se puede nadar"
+      },
+      "moderate": {
+        "label": "Moderada",
+        "desc": "Dolor frecuente, hay que limitar la intensidad"
+      },
+      "significant": {
+        "label": "Importante",
+        "desc": "La actividad está muy limitada"
+      }
     }
   },
   "health": {
@@ -164,8 +226,14 @@
     "leadOpen": "Dinos tu estilo favorito: en triatlón y en aguas abiertas trabajamos sobre todo el crol.",
     "style": "Estilo preferido",
     "stroke": "Estilo favorito",
-    "crawl": { "label": "Crol", "desc": "Me gusta nadar sobre todo a crol" },
-    "4_nages": { "label": "Estilos", "desc": "Quiero mezclar mariposa, espalda, braza y crol" },
+    "crawl": {
+      "label": "Crol",
+      "desc": "Me gusta nadar sobre todo a crol"
+    },
+    "4_nages": {
+      "label": "Estilos",
+      "desc": "Quiero mezclar mariposa, espalda, braza y crol"
+    },
     "strokes": {
       "crawl": "Crol",
       "dos": "Espalda",
@@ -196,7 +264,7 @@
     "loginLead": "Entra con Apple, Google o tu email.",
     "registerLead": "Prueba de 7 días, sin tarjeta. Luego tus sesiones se pausan.",
     "registerReferral": "Código de invitación {{code}} : 20% de descuento en tu primera factura Premium.",
-    "resetLead": "Escribe tu email y te enviamos un enlace para restablecerla.",
+    "resetLead": "Indica el email de tu cuenta. Recibirás un enlace seguro para elegir una nueva contraseña.",
     "loginCta": "Iniciar sesión",
     "registerCta": "Crear mi cuenta",
     "resetCta": "Enviar el enlace",
@@ -223,7 +291,7 @@
     "exists": "Ya existe una cuenta con este email.",
     "created": "¡Cuenta creada! Revisa tu email para confirmar y luego inicia sesión.",
     "createdReferral": "¡Cuenta creada! Invitación guardada, revisa tu email y luego inicia sesión.",
-    "resetSent": "¡Email enviado! Revisa tu bandeja para restablecer la contraseña.",
+    "resetSent": "Si existe una cuenta con este email, el mensaje ya está en camino. Revisa también el spam.",
     "genericError": "Algo ha salido mal.",
     "socialOff": "Este método de acceso aún no está activado en el servidor. Prueba con email y contraseña.",
     "socialAppleConfig": "El acceso con Apple no está bien configurado (Supabase). Prueba con email y contraseña.",

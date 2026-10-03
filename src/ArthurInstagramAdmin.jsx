@@ -160,7 +160,7 @@ export default function ArthurInstagramAdmin() {
       >
         <h1
           style={{
-            fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif",
+            fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif",
             fontSize: "clamp(1.7rem, 4vw, 2.3rem)",
             margin: 0,
             color: "#0c1a2e",

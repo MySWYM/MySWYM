@@ -103,6 +103,19 @@ export function runSessionReminderSmoke() {
     nowMs: now,
   }).some((n) => n.id === NOTIF_IDS.REVIEW_ASK), "review already asked");
 
+  const newsAt = now + 14 * 86400000;
+  const news = buildLocalNotificationPlan({
+    enabled: true,
+    newsletterNudgeAtMs: newsAt,
+    nowMs: now,
+  });
+  ok(news.some((n) => n.id === NOTIF_IDS.NEWSLETTER), "newsletter nudge");
+  ok(!buildLocalNotificationPlan({
+    enabled: true,
+    newsletterNudgeAtMs: null,
+    nowMs: now,
+  }).some((n) => n.id === NOTIF_IDS.NEWSLETTER), "no newsletter when opted in");
+
   const off = buildLocalNotificationPlan({ enabled: false, hasPlan: true, nowMs: now });
   ok(off.length === 0, "disabled empty");
 

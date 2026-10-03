@@ -132,15 +132,19 @@ function snapshotNatation(profile) {
   };
 }
 
-function iosGoalCard(profile, plan) {
+function iosGoalCard(profile, plan, tApp, tOnboarding) {
   const familyId = familyIdFromProfile(profile);
   const family = CATEGORIES.find((c) => c.id === familyId);
   const goalMeta = findGoalById(profile?.goal);
   const sub = (SUB_GOALS[familyId] || []).find((s) => s.id === profile?.goal);
-  const familyLabel = family?.label || goalMeta?.label || "Mon objectif";
+  const familyLabel = tApp(`goal.${familyId}`, {
+    defaultValue: family?.label || goalMeta?.label || tApp("profile.myGoal"),
+  });
   let targetLabel = "";
   if (sub) {
-    targetLabel = sub.dist ? `${sub.label} · ${sub.dist}` : sub.label;
+    const subLabel = tOnboarding(`subGoal.${sub.id}.label`, { defaultValue: sub.label });
+    const subDist = tOnboarding(`subGoal.${sub.id}.dist`, { defaultValue: sub.dist || "" });
+    targetLabel = subDist ? `${subLabel} · ${subDist}` : subLabel;
   } else if (goalMeta && !isProgressionGoal(profile?.goal)) {
     targetLabel = goalMeta.dist ? `${goalMeta.label} · ${goalMeta.dist}` : goalMeta.label;
   }
@@ -368,7 +372,8 @@ export default function ProfileTab({
   const [stravaConnected, setStravaConnected] = useState(false);
   const [healthBusy, setHealthBusy] = useState(false);
   const [healthErr, setHealthErr] = useState(null);
-  const settingsBodyRef = useFitOverflow(settingsOpen && !helpPanel);
+  // Garder le body monté sous un sous-écran pour préserver le scroll Paramètres.
+  const settingsBodyRef = useFitOverflow(settingsOpen);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -432,6 +437,27 @@ export default function ProfileTab({
   useEffect(() => {
     setNewsletterOn(isNewsletterOptedIn(user));
   }, [user?.id, user?.user_metadata?.newsletter_opt_in]);
+
+  // Notif « Actus MySWYM » / deep link → Mes données personnelles.
+  useEffect(() => {
+    const openData = () => {
+      setSettingsOpen(true);
+      setHelpPanel("data");
+      try {
+        sessionStorage.removeItem("myswym_profile_panel");
+      } catch { /* ignore */ }
+    };
+    const onPanel = (ev) => {
+      if (String(ev?.detail?.panel || "") === "data") openData();
+    };
+    let pending = null;
+    try {
+      pending = sessionStorage.getItem("myswym_profile_panel");
+    } catch { /* ignore */ }
+    if (pending === "data") openData();
+    window.addEventListener("myswym:open-profile-panel", onPanel);
+    return () => window.removeEventListener("myswym:open-profile-panel", onPanel);
+  }, []);
 
   // Si metadata vide : retombe sur le fichier Storage et backfill (même compte, autre appareil)
   useEffect(() => {
@@ -568,6 +594,10 @@ export default function ProfileTab({
           ? "Tu es abonné aux newsletters."
           : "Tu es désabonné des newsletters.",
       });
+      // Annule ou replanifie la relance notif J+14.
+      void import("./lib/sync-local-notifications.js").then((m) => (
+        m.syncLocalNotificationsFromState({ user: updated || user, plan })
+      )).catch(() => {});
     } catch (e) {
       setNewsletterOn(!next);
       setMsg({ type: "err", text: e?.message || "Impossible d’enregistrer la préférence." });
@@ -638,10 +668,13 @@ export default function ProfileTab({
   const levelLabel = levelId
     ? to(`level.${levelId}.label`, { defaultValue: findLevelById(levelId)?.label || levelId })
     : ta("profile.swimmer");
-  const goalLabel = findGoalById(profile?.goal)?.label
-    || CATEGORIES.find(c => c.id === profile?.category)?.label
-    || ta("profile.myGoal");
-  const iosGoal = iosGoalCard(profile, plan);
+  const goalId = familyIdFromProfile(profile);
+  const goalLabel = ta(`goal.${goalId}`, {
+    defaultValue: findGoalById(profile?.goal)?.label
+      || CATEGORIES.find(c => c.id === profile?.category)?.label
+      || ta("profile.myGoal"),
+  });
+  const iosGoal = iosGoalCard(profile, plan, ta, to);
   const freqN = Math.max(0, Math.min(7, Number(profile?.sessionsPerWeek) || 0));
   const programmeLabel = freqN > 1
     ? ta("profile.sessionsMany", { count: freqN })
@@ -815,8 +848,12 @@ export default function ProfileTab({
           referralSlot={referralSlot}
         />
       ) : null}
-      {settingsOpen && !helpPanel ? (
-        <div className="ms-profile-subpanel ios-lock-pane">
+      {settingsOpen ? (
+        <div
+          className="ms-profile-subpanel ios-lock-pane"
+          style={helpPanel ? { display: "none" } : undefined}
+          aria-hidden={helpPanel ? true : undefined}
+        >
           <header className="ms-profile-subpanel-toolbar">
             <button
               type="button"
@@ -1137,7 +1174,7 @@ export default function ProfileTab({
                   playUiSound("soft");
                   fileInputRef.current?.click();
                 }}
-                aria-label="Modifier la photo"
+                aria-label={ta("person.editPhoto")}
                 style={{ opacity: avatarBusy ? 0.7 : 1, cursor: avatarBusy ? "wait" : "pointer" }}
               >
                 <span className="ms-edit-profile-avatar-media">
@@ -1157,7 +1194,7 @@ export default function ProfileTab({
                 }}
               >
                 <Pencil size={14} style={{ marginRight: 8 }} />
-                Modifier la photo
+                {ta("person.editPhoto")}
               </button>
               {avatarUrl ? (
                 <button
@@ -1171,39 +1208,44 @@ export default function ProfileTab({
                     fontSize: 13, fontWeight: 600, color: G.coral,
                   }}
                 >
-                  Supprimer la photo
+                  {ta("person.removePhoto")}
                 </button>
               ) : null}
             </div>
             <div className="ios-person-fields">
               <IosFloatField
-                label="Prénom"
+                label={ta("person.firstName")}
                 value={nameInput}
                 onChange={setNameInput}
                 autoComplete="given-name"
               />
               <IosFloatField
-                label="Nom"
+                label={ta("person.lastName")}
                 value={lastNameInput}
                 onChange={setLastNameInput}
                 autoComplete="family-name"
               />
               <IosFloatButton
-                label="Date de naissance"
+                label={ta("person.birth")}
                 value={formatBirthDisplay(draftBirth.day, draftBirth.month, draftBirth.year)}
                 onClick={() => setBirthWheelOpen(true)}
               />
               <IosFloatButton
-                label="Pays"
+                label={ta("person.country")}
                 prefix={draftCountry ? <FlagCircle code={draftCountry} lazy={false} /> : null}
                 value={countryLabelFr(draftCountry)}
                 onClick={() => setCountrySheetOpen(true)}
               />
             </div>
-            <div className="ms-profile-label" style={{ marginTop: 18 }}>Genre</div>
+            <div className="ms-profile-label" style={{ marginTop: 18 }}>{ta("person.gender")}</div>
             <div className="ms-profile-choice-row">
               {GENDER_OPTIONS.map((opt) => {
                 const active = draftGender === opt.id;
+                const genderKey = opt.id === "homme"
+                  ? "person.genderHomme"
+                  : opt.id === "femme"
+                    ? "person.genderFemme"
+                    : "person.genderAutre";
                 return (
                   <button
                     key={opt.id}
@@ -1211,32 +1253,32 @@ export default function ProfileTab({
                     onClick={() => setDraftGender(opt.id)}
                     className={`ms-profile-choice is-fill${active ? " is-active" : ""}`}
                   >
-                    {opt.label}
+                    {ta(genderKey)}
                   </button>
                 );
               })}
             </div>
             <div className="ms-profile-metrics-grid" style={{ marginTop: 16 }}>
               <IosFloatField
-                label="Poids (kg)"
+                label={to("physique.weight")}
                 value={draftWeight}
                 onChange={setDraftWeight}
                 type="number"
                 inputMode="numeric"
               />
               <IosFloatField
-                label="Taille (cm)"
+                label={to("physique.height")}
                 value={draftHeight}
                 onChange={setDraftHeight}
                 type="number"
                 inputMode="numeric"
               />
             </div>
-            <div className="ms-profile-label" style={{ marginTop: 18 }}>Blessure</div>
+            <div className="ms-profile-label" style={{ marginTop: 18 }}>{ta("person.injury")}</div>
             <div className="ms-profile-choice-row">
               {[
-                { id: "aucune", label: "Aucune" },
-                { id: "oui", label: "Oui" },
+                { id: "aucune", label: ta("person.injuryNone") },
+                { id: "oui", label: ta("profile.yes") },
               ].map((o) => {
                 const active = profile?.injuryStatus === o.id;
                 return (
@@ -1259,7 +1301,7 @@ export default function ProfileTab({
             </div>
             {profile?.injuryStatus === "oui" && (
               <>
-                <div className="ms-profile-label">Zones</div>
+                <div className="ms-profile-label">{ta("person.zones")}</div>
                 <div className="ms-profile-choice-wrap">
                   {INJURY_ZONES.map((z) => {
                     const active = declaredInjuries.some((i) => i.zone === z.id);
@@ -1270,13 +1312,15 @@ export default function ProfileTab({
                         onClick={() => onSwimmerProfileChange(toggleInjuryZone(declaredInjuries, z.id))}
                         className={`ms-profile-choice${active ? " is-active" : ""}`}
                       >
-                        {z.label}
+                        {to(`injury.zones.${z.id}`, { defaultValue: z.label })}
                       </button>
                     );
                   })}
                 </div>
                 {declaredInjuries.map((item) => {
-                  const zoneLabel = INJURY_ZONES.find((z) => z.id === item.zone)?.label || item.zone;
+                  const zoneLabel = to(`injury.zones.${item.zone}`, {
+                    defaultValue: INJURY_ZONES.find((z) => z.id === item.zone)?.label || item.zone,
+                  });
                   return (
                     <div key={item.zone} style={{ marginBottom: 12 }}>
                       <div className="ms-profile-label">
@@ -1317,7 +1361,7 @@ export default function ProfileTab({
                 style={{ marginTop: 3 }}
               />
               <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
-                {INJURY_CONSENT_CHECKBOX}
+                {ta("person.injuryConsent")}
               </span>
             </label>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 10, cursor: "pointer" }}>
@@ -1335,7 +1379,7 @@ export default function ProfileTab({
                 style={{ marginTop: 3 }}
               />
               <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
-                {HEART_RATE_CONSENT_CHECKBOX}
+                {ta("person.hrConsent")}
               </span>
             </label>
             <button
@@ -1345,7 +1389,7 @@ export default function ProfileTab({
               onClick={savePerson}
               disabled={avatarBusy}
             >
-              Enregistrer
+              {ta("settings.save")}
             </button>
           </div>
         </div>
@@ -2282,8 +2326,8 @@ export default function ProfileTab({
       )}
       {deleteBlockedOpen && createPortal(
         <ConfirmSheet
-          title={ACCOUNT_DELETE_BLOCKED_TITLE}
-          message={ACCOUNT_DELETE_BLOCKED_MESSAGE}
+          title={ta("settings.deleteBlockedTitle")}
+          message={ta("settings.deleteBlockedBody")}
           confirmLabel="Compris"
           cancelLabel={null}
           destructive={false}

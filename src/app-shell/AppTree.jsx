@@ -31,6 +31,7 @@ import { supabase } from "../supabase.js";
 import { useAuthSession } from "../lib/use-auth-session.js";
 import NativeGuestShell, { NativeOnboardingFrame } from "../native/NativeGuestShell.jsx";
 import NativeWelcomeFork from "../native/NativeWelcomeFork.jsx";
+import Loading from "./Loading.jsx";
 
 const App = lazy(() => import("../App.jsx"));
 const ConversionFlow = lazy(() => import("../conversion/ConversionFlow.tsx").then((m) => ({ default: m.ConversionFlow })));
@@ -178,10 +179,13 @@ function NativeIosShell({ children }) {
   }, []);
   if (!isNativeApp()) return children;
 
+  // Session pas encore connue : loader seul (pas welcome/onboarding/App qui flash).
+  if (loading) return <Loading />;
+
   const hasPlan = isAnonymous && anonymousHasLocalPlan(user?.id);
   const surface = nativeGuestSurface({
     pathname,
-    loading,
+    loading: false,
     isLoggedIn,
     isAnonymous,
     hasPlan,

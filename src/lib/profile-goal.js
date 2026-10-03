@@ -2,7 +2,10 @@
  * Objectif nageur (Profil iOS) : famille, cible, date, semaine en cours.
  * Changer l’objectif doit passer par un merge des séances à venir, jamais un wipe.
  */
+import i18n from "../i18n/index.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
+import { translateSessionText } from "../i18n/session-terms.js";
+import { getSessionDisplayLang } from "../i18n/session-display-lang.js";
 
 const FAMILIES = new Set(["progression", "triathlon", "eau_libre", "diplome"]);
 
@@ -77,7 +80,11 @@ export function formatEventLine(iso, now = new Date()) {
 export function rhythmLine(profile) {
   const n = Math.max(0, Math.min(7, Number(profile?.sessionsPerWeek) || 0));
   if (n <= 0) return "";
-  return `${n} séance${n > 1 ? "s" : ""} / semaine`;
+  return i18n.t("profile.sessionsPerWeek", {
+    ns: "app",
+    count: n,
+    defaultValue: `${n} séance${n > 1 ? "s" : ""} / semaine`,
+  });
 }
 
 export function currentWeekLine(plan) {
@@ -85,11 +92,14 @@ export function currentWeekLine(plan) {
   if (!Array.isArray(weeks) || weeks.length === 0) return "";
   const idx = weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   const i = idx >= 0 ? idx : weeks.length - 1;
-  const focus = String(weeks[i]?.focus || "").trim();
+  const focusRaw = String(weeks[i]?.focus || "").trim();
+  const focus = focusRaw ? translateSessionText(focusRaw, getSessionDisplayLang()) : "";
   const n = i + 1;
   const total = weeks.length;
   const showTotal = !plan?.isSessionLoop && total > 1;
-  const weekPart = showTotal ? `Semaine ${n} sur ${total}` : `Semaine ${n}`;
+  const weekPart = showTotal
+    ? i18n.t("profile.weekNof", { ns: "app", n, total, defaultValue: `Semaine ${n} sur ${total}` })
+    : i18n.t("profile.weekN", { ns: "app", n, defaultValue: `Semaine ${n}` });
   return focus ? `${weekPart} · ${focus}` : weekPart;
 }
 

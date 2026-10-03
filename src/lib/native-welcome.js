@@ -56,7 +56,8 @@ export function anonymousHasLocalPlan(
  * session hydratée + pas connecté = welcome (ou quiz si déjà lancé).
  *
  * La welcome reste le 1er écran (même avec session anonyme sans plan).
- * Anonyme + quiz → DA bleue. Anonyme + plan → app.
+ * « Commencer » → quiz + anonyme. « Créer un compte » (auth) → /inscription.
+ * Croix auth → welcome (clear quiz). Anonyme + quiz → DA bleue. Anonyme + plan → app.
  *
  * @returns {"auth" | "welcome" | "onboarding" | "app"}
  */

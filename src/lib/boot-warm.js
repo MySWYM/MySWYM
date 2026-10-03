@@ -110,3 +110,18 @@ export function bootElapsedMs(now = Date.now()) {
   const started = Number(window.__MYSWYM_BOOT_AT) || now;
   return Math.max(0, now - started);
 }
+
+/** Loader plein écran encore actif (auth, pose GIF, ou screen loading). */
+export function shouldHoldBootUi({ authLoading = false, coldHold = false, screen = "" } = {}) {
+  return Boolean(authLoading || coldHold || screen === "loading");
+}
+
+/** Sheets / onboarding post-boot : seulement quand l’UI app est stable. */
+export function canOpenBootSheets({
+  authLoading = false,
+  coldHold = false,
+  screen = "",
+} = {}) {
+  if (shouldHoldBootUi({ authLoading, coldHold, screen })) return false;
+  return screen === "app";
+}

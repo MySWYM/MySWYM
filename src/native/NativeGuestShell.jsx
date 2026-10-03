@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
 import BrandLogo from "../BrandLogo.jsx";
 import { AppTabShell } from "../app-shell/index.js";
+import { clearNativeQuizStarted } from "../lib/native-welcome.js";
 
 /**
  * Chrome visiteur iOS.
@@ -13,6 +15,7 @@ export default function NativeGuestShell({
   showHeader = true,
   showBrand = true,
   funnel = false,
+  onClose = null,
 }) {
   const { t } = useTranslation("common");
   const { pathname } = useLocation();
@@ -41,8 +44,17 @@ export default function NativeGuestShell({
           minHeight: 56,
         }}
       >
-        <div style={{ lineHeight: 0 }}>
-          {showBrand ? (
+        <div style={{ lineHeight: 0, minWidth: 44 }}>
+          {typeof onClose === "function" ? (
+            <button
+              type="button"
+              className="ms-glass-icon-btn native-auth-close"
+              onClick={onClose}
+              aria-label={t("close")}
+            >
+              <X size={22} strokeWidth={2.25} aria-hidden />
+            </button>
+          ) : showBrand ? (
             <BrandLogo variant={funnel ? "mark" : "wordmark"} onDark={funnel} height={funnel ? 26 : 22} alt="MySWYM" />
           ) : (
             <span style={{ width: 44 }} />
@@ -79,11 +91,16 @@ export default function NativeGuestShell({
   );
 }
 
-/** Questionnaire visiteur iOS : DA welcome, chip connexion, sans wordmark. */
+/** Questionnaire visiteur iOS : croix → welcome, chip connexion, sans wordmark. */
 export function NativeOnboardingFrame({ children }) {
   return (
     <div className="myswym-native-guest is-funnel">
-      <NativeGuestShell funnel showLogin showBrand={false}>
+      <NativeGuestShell
+        funnel
+        showLogin
+        showBrand={false}
+        onClose={() => clearNativeQuizStarted()}
+      >
         <div className="app-shell native-onboarding-shell">
           {children}
         </div>

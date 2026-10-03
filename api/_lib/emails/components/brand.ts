@@ -33,6 +33,6 @@ export const emailBrand = {
 
 export const emailFonts = {
   display:
-    "'Space Grotesk', Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   body: "Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
 } as const;
