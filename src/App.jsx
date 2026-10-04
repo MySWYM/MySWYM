@@ -7765,6 +7765,7 @@ const BLANK_PROFILE = {
   country: "",
   weightKg: "",
   heightCm: "",
+  bodyUnits: "",
   injuryStatus: null, // "aucune" | "oui"
   injuryZone: null,
   injurySeverity: null,

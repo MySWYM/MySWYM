@@ -640,6 +640,9 @@ code {
   background: var(--border, rgba(0, 107, 253, 0.22));
   margin: 0 auto 22px;
 }
+.ms-sheet-card-grab .ms-sheet-handle {
+  margin: 0;
+}
 .ms-screen-enter {
   animation: ms-screen-enter 0.28s ease both;
 }

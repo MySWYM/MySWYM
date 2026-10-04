@@ -6,6 +6,7 @@ import {
   APP_STORE_ID,
   IOS_BUNDLE_ID,
   appStoreHref,
+  appStoreWriteReviewHref,
   detectClientPlatform,
   prefersAppStorePrimary,
   shouldShowWebStoreUi,
@@ -26,6 +27,10 @@ assert(
 assert(APP_STORE_ID === "6812897499", "App Store id");
 assert(IOS_BUNDLE_ID === "app.myswym.ios", "bundle id");
 assert(appStoreHref() === APP_STORE_URL, "href helper");
+assert(
+  appStoreWriteReviewHref() === `${APP_STORE_URL}?action=write-review`,
+  "write-review href",
+);
 
 assert(detectClientPlatform("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)") === "ios", "iPhone");
 assert(detectClientPlatform("Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X)") === "ios", "iPad");

@@ -20,6 +20,7 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "country", // ISO 3166-1 alpha-2, optionnel
   "weightKg",
   "heightCm",
+  "bodyUnits", // metric | imperial (affichage ; stockage toujours kg/cm)
   "equipment",
   "swimStyle",
   "preferredStroke",
@@ -305,6 +306,10 @@ export function extractSwimmerProfile(source = {}) {
   if (raw.country !== undefined || source.country !== undefined) {
     out.country = normalizeCountry(raw.country ?? source.country);
   }
+  if (raw.bodyUnits !== undefined || source.bodyUnits !== undefined) {
+    const bu = String(raw.bodyUnits ?? source.bodyUnits ?? "").trim().toLowerCase();
+    out.bodyUnits = bu === "imperial" ? "imperial" : bu === "metric" ? "metric" : "";
+  }
   return out;
 }
 
@@ -430,6 +435,7 @@ export function buildQuestionnaireDraft(swimmerProfile = {}, objective = {}) {
     country: "",
     weightKg: "",
     heightCm: "",
+    bodyUnits: "",
     injuryStatus: null,
     injuryZone: null,
     injurySeverity: null,
@@ -470,7 +476,7 @@ export function hydrateSwimmerFromSources({ sportRowFields = {}, planProfile = {
   if (!Array.isArray(merged.equipment) && Array.isArray(fromSport.equipment)) {
     merged.equipment = fromSport.equipment;
   }
-  for (const key of ["gender", "country", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm", "appleHealthConnected", "appleHealthConnectedAt"]) {
+  for (const key of ["gender", "country", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm", "bodyUnits", "appleHealthConnected", "appleHealthConnectedAt"]) {
     if (fromSport[key] != null && fromSport[key] !== "") {
       merged[key] = fromSport[key];
     }

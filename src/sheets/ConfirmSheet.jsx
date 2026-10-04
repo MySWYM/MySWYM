@@ -16,6 +16,7 @@ export default function ConfirmSheet({
   return (
     <SheetCardShell
       onClose={onCancel}
+      swipeEntirePanel
       overlayProps={{
         role: "dialog",
         "aria-modal": true,

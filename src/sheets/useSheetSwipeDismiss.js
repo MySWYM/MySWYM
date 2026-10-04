@@ -61,6 +61,10 @@ export function useSheetSwipeDismiss(onClose, { enabled = true } = {}) {
     const dy = Math.max(0, e.clientY - d.startY);
     d.dy = dy;
     setDragY(dy);
+    // iOS / WebView : empêche le scroll parent de manger le geste.
+    if (dy > 2) {
+      try { e.preventDefault(); } catch { /* ignore */ }
+    }
   };
 
   const onHeadPointerUp = (e) => {

@@ -46,3 +46,9 @@ export function prefersAppStorePrimary(platform = detectClientPlatform()) {
 export function appStoreHref() {
   return APP_STORE_URL;
 }
+
+/** Page d’écriture d’avis App Store (CTA Support explicite). */
+export function appStoreWriteReviewHref() {
+  const base = String(APP_STORE_URL || "").split("?")[0];
+  return `${base}?action=write-review`;
+}

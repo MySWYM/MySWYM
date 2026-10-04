@@ -6,8 +6,11 @@ import { legalHref } from "./lib/legal-copy.js";
 import { getStoredLanguage } from "./i18n/index.js";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { playUiSound } from "./lib/ui-sounds.js";
+import { appStoreWriteReviewHref } from "./lib/store-links.js";
+import { openInSystemBrowser } from "./lib/native-links.js";
 
-const IG_URL = "https://www.instagram.com/arthurnatation/";
+const IG_MYSWYM_URL = "https://www.instagram.com/myswym.app/";
+const IG_ARTHUR_URL = "https://www.instagram.com/arthurnatation/";
 const TT_URL = "https://www.tiktok.com/@arthurnatation";
 const FB_URL = "https://www.facebook.com/myswymapp/";
 const LI_URL = "https://www.linkedin.com/company/myswym";
@@ -155,6 +158,7 @@ export function ProfileSupportPanel({ onBack }) {
   const { t } = useTranslation("app");
   const locale = getStoredLanguage();
   const faqHref = withLocalePrefix("/faq", locale);
+  const contactHref = withLocalePrefix("/contact", locale);
 
   return (
     <PanelShell title={t("help.support")} onBack={onBack}>
@@ -181,14 +185,15 @@ export function ProfileSupportPanel({ onBack }) {
           icon={Bug}
           title={t("help.bug")}
           subtitle={t("help.bugHint")}
-          onClick={() => openSupportChat("messages")}
+          href={contactHref}
+          external
         />
         <HelpRow
           icon={Star}
           title={t("help.review")}
           subtitle={t("help.reviewHint")}
-          href={`${withLocalePrefix("/avis", locale)}#write`}
           external
+          onClick={() => openInSystemBrowser(appStoreWriteReviewHref())}
         />
       </div>
 
@@ -197,8 +202,15 @@ export function ProfileSupportPanel({ onBack }) {
         <HelpRow
           icon={InstagramMark}
           title="Instagram"
+          subtitle="@myswym.app"
+          href={IG_MYSWYM_URL}
+          external
+        />
+        <HelpRow
+          icon={InstagramMark}
+          title="Instagram"
           subtitle="@arthurnatation"
-          href={IG_URL}
+          href={IG_ARTHUR_URL}
           external
         />
         <HelpRow

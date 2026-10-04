@@ -85,11 +85,23 @@ import {
   daysInBirthMonth,
   formatBirthDisplay,
 } from "./lib/swimmer-profile.js";
+import {
+  BODY_UNITS_IMPERIAL,
+  BODY_UNITS_METRIC,
+  cmToFeetInches,
+  defaultBodyUnitsForCountry,
+  feetInchesToCm,
+  kgToWeightDisplay,
+  normalizeBodyUnits,
+  resolveBodyUnits,
+  weightDisplayToKg,
+} from "./lib/body-units.js";
 import { countryLabelFr } from "./lib/countries.js";
 import IosFloatField, { IosFloatButton } from "./profile/IosFloatField.jsx";
 import FlagCircle from "./profile/FlagCircle.jsx";
 import IosCountrySheet from "./profile/IosCountrySheet.jsx";
 import IosBirthWheelSheet from "./profile/IosBirthWheelSheet.jsx";
+import IosMeasureWheelSheet from "./profile/IosMeasureWheelSheet.jsx";
 import i18n from "./i18n/index.js";
 
 import {
@@ -342,10 +354,17 @@ export default function ProfileTab({
   const [draftGender, setDraftGender] = useState(() => profile?.gender || "");
   const [draftCountry, setDraftCountry] = useState(() => profile?.country || "");
   const [draftBirth, setDraftBirth] = useState(() => snapshotBirth(profile));
-  const [draftWeight, setDraftWeight] = useState(() => profile?.weightKg ?? "");
-  const [draftHeight, setDraftHeight] = useState(() => profile?.heightCm ?? "");
+  const [draftWeightKg, setDraftWeightKg] = useState(() => profile?.weightKg ?? "");
+  const [draftHeightCm, setDraftHeightCm] = useState(() => profile?.heightCm ?? "");
+  const [draftBodyUnits, setDraftBodyUnits] = useState(() => resolveBodyUnits(profile));
+  const [draftHeightFt, setDraftHeightFt] = useState(() => cmToFeetInches(profile?.heightCm).feet);
+  const [draftHeightIn, setDraftHeightIn] = useState(() => cmToFeetInches(profile?.heightCm).inches);
   const [countrySheetOpen, setCountrySheetOpen] = useState(false);
   const [birthWheelOpen, setBirthWheelOpen] = useState(false);
+  const [weightWheelOpen, setWeightWheelOpen] = useState(false);
+  const [heightWheelOpen, setHeightWheelOpen] = useState(false);
+  const weightFieldRef = useRef(null);
+  const heightFieldRef = useRef(null);
   const [profileLane, setProfileLane] = useState("natation");
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
@@ -482,9 +501,25 @@ export default function ProfileTab({
     setDraftGender(profile?.gender || "");
     setDraftCountry(profile?.country || user?.user_metadata?.country || "");
     setDraftBirth(snapshotBirth(profile));
-    setDraftWeight(profile?.weightKg ?? "");
-    setDraftHeight(profile?.heightCm ?? "");
+    const nextCountry = profile?.country || user?.user_metadata?.country || "";
+    const units = resolveBodyUnits(profile, nextCountry);
+    setDraftWeightKg(profile?.weightKg ?? "");
+    setDraftHeightCm(profile?.heightCm ?? "");
+    setDraftBodyUnits(units);
+    const fi = cmToFeetInches(profile?.heightCm);
+    setDraftHeightFt(fi.feet);
+    setDraftHeightIn(fi.inches);
     setEditProfileOpen(true);
+  };
+
+  const applyDraftBodyUnits = (next) => {
+    const units = next === BODY_UNITS_IMPERIAL ? BODY_UNITS_IMPERIAL : BODY_UNITS_METRIC;
+    setDraftBodyUnits(units);
+    if (units === BODY_UNITS_IMPERIAL) {
+      const fi = cmToFeetInches(draftHeightCm);
+      setDraftHeightFt(fi.feet);
+      setDraftHeightIn(fi.inches);
+    }
   };
 
   const savePerson = () => {
@@ -518,8 +553,9 @@ export default function ProfileTab({
         birthMonth: month,
         birthYear: year,
         ...(age != null ? { age } : {}),
-        weightKg: draftWeight === "" ? "" : Number(draftWeight),
-        heightCm: draftHeight === "" ? "" : Number(draftHeight),
+        weightKg: draftWeightKg === "" ? "" : Number(draftWeightKg),
+        heightCm: draftHeightCm === "" ? "" : Number(draftHeightCm),
+        bodyUnits: draftBodyUnits === BODY_UNITS_IMPERIAL ? BODY_UNITS_IMPERIAL : BODY_UNITS_METRIC,
       });
     }
     setEditProfileOpen(false);
@@ -894,20 +930,6 @@ export default function ProfileTab({
               onOpenHelp={() => setHelpPanel("support")}
               onOpenLegal={() => setHelpPanel("legal")}
               onSignOut={onSignOut}
-              onDeleteAccount={async () => {
-                setDeleteErr(null);
-                setDeleteBusy(true);
-                try {
-                  await onDeleteAccount();
-                } catch (e) {
-                  setDeleteErr(e?.message || "Suppression impossible.");
-                  setDeleteBusy(false);
-                }
-              }}
-              deleteBusy={deleteBusy}
-              deleteErr={deleteErr}
-              deleteGate={deleteGate}
-              deleteWarning={deleteGate.appleKeepsBilling ? ACCOUNT_DELETE_APPLE_WARNING : deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
             />
           ) : (
           <>
@@ -1258,21 +1280,52 @@ export default function ProfileTab({
                 );
               })}
             </div>
+            <div className="ms-profile-label" style={{ marginTop: 18 }}>{ta("person.units")}</div>
+            <div className="ms-profile-choice-row">
+              {[
+                { id: BODY_UNITS_METRIC, label: ta("person.unitsMetric") },
+                { id: BODY_UNITS_IMPERIAL, label: ta("person.unitsImperial") },
+              ].map((o) => {
+                const active = draftBodyUnits === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => applyDraftBodyUnits(o.id)}
+                    className={`ms-profile-choice is-fill${active ? " is-active" : ""}`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
             <div className="ms-profile-metrics-grid" style={{ marginTop: 16 }}>
-              <IosFloatField
-                label={to("physique.weight")}
-                value={draftWeight}
-                onChange={setDraftWeight}
-                type="number"
-                inputMode="numeric"
-              />
-              <IosFloatField
-                label={to("physique.height")}
-                value={draftHeight}
-                onChange={setDraftHeight}
-                type="number"
-                inputMode="numeric"
-              />
+              <div ref={weightFieldRef}>
+                <IosFloatButton
+                  label={`${ta("person.weight")} (${draftBodyUnits === BODY_UNITS_IMPERIAL ? ta("person.unitLb") : ta("person.unitKg")})`}
+                  value={(() => {
+                    const v = kgToWeightDisplay(draftWeightKg, draftBodyUnits);
+                    if (!v) return "";
+                    return `${v} ${draftBodyUnits === BODY_UNITS_IMPERIAL ? ta("person.unitLb") : ta("person.unitKg")}`;
+                  })()}
+                  onClick={() => setWeightWheelOpen(true)}
+                />
+              </div>
+              <div ref={heightFieldRef}>
+                <IosFloatButton
+                  label={ta("person.height")}
+                  value={(() => {
+                    if (draftHeightCm === "" || draftHeightCm == null) return "";
+                    if (draftBodyUnits === BODY_UNITS_IMPERIAL) {
+                      const fi = cmToFeetInches(draftHeightCm);
+                      if (fi.feet === "" && fi.inches === "") return "";
+                      return `${fi.feet} ${ta("person.unitFt")} ${fi.inches} ${ta("person.unitIn")}`;
+                    }
+                    return `${Math.round(Number(draftHeightCm))} ${ta("person.unitCm")}`;
+                  })()}
+                  onClick={() => setHeightWheelOpen(true)}
+                />
+              </div>
             </div>
             <div className="ms-profile-label" style={{ marginTop: 18 }}>{ta("person.injury")}</div>
             <div className="ms-profile-choice-row">
@@ -1400,6 +1453,10 @@ export default function ProfileTab({
         onClose={() => setCountrySheetOpen(false)}
         onPick={(code) => {
           setDraftCountry(code);
+          // Pas encore de préférence enregistrée → défaut selon le pays.
+          if (!normalizeBodyUnits(profile?.bodyUnits)) {
+            applyDraftBodyUnits(defaultBodyUnitsForCountry(code));
+          }
           setCountrySheetOpen(false);
         }}
       />
@@ -1412,6 +1469,44 @@ export default function ProfileTab({
         onConfirm={({ day, month, year }) => {
           setDraftBirth({ day, month, year });
           setBirthWheelOpen(false);
+        }}
+      />
+      <IosMeasureWheelSheet
+        open={iosNav && weightWheelOpen}
+        kind="weight"
+        units={draftBodyUnits}
+        weightKg={draftWeightKg}
+        anchorRef={weightFieldRef}
+        title={ta("person.weight")}
+        cancelLabel={ta("profile.cancel")}
+        okLabel="OK"
+        unitKgLabel={ta("person.unitKg")}
+        unitLbLabel={ta("person.unitLb")}
+        onClose={() => setWeightWheelOpen(false)}
+        onConfirm={({ weightKg }) => {
+          setDraftWeightKg(weightKg === "" ? "" : weightKg);
+          setWeightWheelOpen(false);
+        }}
+      />
+      <IosMeasureWheelSheet
+        open={iosNav && heightWheelOpen}
+        kind="height"
+        units={draftBodyUnits}
+        heightCm={draftHeightCm}
+        anchorRef={heightFieldRef}
+        title={ta("person.height")}
+        cancelLabel={ta("profile.cancel")}
+        okLabel="OK"
+        unitCmLabel={ta("person.unitCm")}
+        unitFtLabel={ta("person.unitFt")}
+        unitInLabel={ta("person.unitIn")}
+        onClose={() => setHeightWheelOpen(false)}
+        onConfirm={({ heightCm }) => {
+          setDraftHeightCm(heightCm === "" ? "" : heightCm);
+          const fi = cmToFeetInches(heightCm);
+          setDraftHeightFt(fi.feet);
+          setDraftHeightIn(fi.inches);
+          setHeightWheelOpen(false);
         }}
       />
       <AppShell style={helpPanel || settingsOpen || (iosNav && editProfileOpen) ? { display: "none" } : undefined}>
@@ -1861,27 +1956,101 @@ export default function ProfileTab({
                         );
                       })}
                     </div>
-                    <div className="ms-profile-metrics-grid">
-                      {[
-                        { key: "weightKg", label: "Poids", placeholder: "kg" },
-                        { key: "heightCm", label: "Taille", placeholder: "cm" },
-                      ].map(({ key, label, placeholder }) => (
-                        <label key={key} style={{ display: "block" }}>
-                          <div className="ms-profile-label">{label}</div>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={profile?.[key] ?? ""}
-                            placeholder={placeholder}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              onSwimmerProfileChange({ [key]: raw === "" ? "" : Number(raw) });
-                            }}
-                            className="ms-profile-field"
-                          />
-                        </label>
-                      ))}
-                    </div>
+                    {(() => {
+                      const units = resolveBodyUnits(profile);
+                      const imperial = units === BODY_UNITS_IMPERIAL;
+                      const fi = cmToFeetInches(profile?.heightCm);
+                      return (
+                        <>
+                          <div className="ms-profile-label">{ta("person.units")}</div>
+                          <div className="ms-profile-choice-wrap">
+                            {[
+                              { id: BODY_UNITS_METRIC, label: ta("person.unitsMetric") },
+                              { id: BODY_UNITS_IMPERIAL, label: ta("person.unitsImperial") },
+                            ].map((o) => (
+                              <button
+                                key={o.id}
+                                type="button"
+                                onClick={() => onSwimmerProfileChange({ bodyUnits: o.id })}
+                                className={`ms-profile-choice${units === o.id ? " is-active" : ""}`}
+                              >
+                                {o.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="ms-profile-metrics-grid">
+                            <label style={{ display: "block" }}>
+                              <div className="ms-profile-label">
+                                {ta("person.weight")} ({imperial ? ta("person.unitLb") : ta("person.unitKg")})
+                              </div>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                value={kgToWeightDisplay(profile?.weightKg, units)}
+                                placeholder={imperial ? ta("person.unitLb") : ta("person.unitKg")}
+                                onChange={(e) => {
+                                  const kg = weightDisplayToKg(e.target.value, units);
+                                  onSwimmerProfileChange({ weightKg: kg === "" ? "" : kg, bodyUnits: units });
+                                }}
+                                className="ms-profile-field"
+                              />
+                            </label>
+                            {imperial ? (
+                              <div className="ms-profile-metrics-grid" style={{ gap: 8 }}>
+                                <label style={{ display: "block" }}>
+                                  <div className="ms-profile-label">{ta("person.unitFt")}</div>
+                                  <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={fi.feet}
+                                    placeholder={ta("person.unitFt")}
+                                    onChange={(e) => {
+                                      const cm = feetInchesToCm(e.target.value, fi.inches);
+                                      onSwimmerProfileChange({ heightCm: cm === "" ? "" : cm, bodyUnits: units });
+                                    }}
+                                    className="ms-profile-field"
+                                  />
+                                </label>
+                                <label style={{ display: "block" }}>
+                                  <div className="ms-profile-label">{ta("person.unitIn")}</div>
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    value={fi.inches}
+                                    placeholder={ta("person.unitIn")}
+                                    onChange={(e) => {
+                                      const cm = feetInchesToCm(fi.feet, e.target.value);
+                                      onSwimmerProfileChange({ heightCm: cm === "" ? "" : cm, bodyUnits: units });
+                                    }}
+                                    className="ms-profile-field"
+                                  />
+                                </label>
+                              </div>
+                            ) : (
+                              <label style={{ display: "block" }}>
+                                <div className="ms-profile-label">
+                                  {ta("person.height")} ({ta("person.unitCm")})
+                                </div>
+                                <input
+                                  type="number"
+                                  inputMode="numeric"
+                                  value={profile?.heightCm ?? ""}
+                                  placeholder={ta("person.unitCm")}
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    onSwimmerProfileChange({
+                                      heightCm: raw === "" ? "" : Math.round(Number(raw)),
+                                      bodyUnits: units,
+                                    });
+                                  }}
+                                  className="ms-profile-field"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </>
                 );
               })()}

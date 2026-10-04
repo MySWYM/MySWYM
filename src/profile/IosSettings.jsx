@@ -443,11 +443,6 @@ export function IosSettingsHome({
   onOpenHelp,
   onOpenLegal,
   onSignOut,
-  onDeleteAccount,
-  deleteBusy = false,
-  deleteErr = null,
-  deleteGate = null,
-  deleteWarning = "",
 }) {
   const { t, i18n } = useTranslation("settings");
   const { t: ta } = useTranslation("app");
@@ -455,7 +450,6 @@ export function IosSettingsHome({
   const lang = APP_LANGUAGES.find((l) => l.id === lng);
   const faqHref = withLocalePrefix("/faq", lng);
   const [restoreBusy, setRestoreBusy] = useState(false);
-  const [deleteBlockedOpen, setDeleteBlockedOpen] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifOn, setNotifOn] = useState(false);
   const [notifMsg, setNotifMsg] = useState("");
@@ -653,46 +647,6 @@ export function IosSettingsHome({
         <SettingsRow icon={Info} title={ta("settings.help")} onClick={onOpenHelp} />
         <SettingsRow icon={FileText} title={ta("settings.policies")} onClick={onOpenLegal} />
       </div>
-
-      {user && onDeleteAccount ? (
-        <>
-          <p className="ios-settings-warn">{ta("settings.deleteAccountIrreversible")}</p>
-          {deleteGate?.allowed && deleteWarning ? (
-            <p className="ios-settings-copy" style={{ marginBottom: 8 }}>
-              {deleteWarning}
-            </p>
-          ) : null}
-          <div style={{ margin: "8px 0 12px" }}>
-            <TimedUndoAction
-              disabled={deleteBusy || deleteGate?.code === "pending"}
-              busy={deleteBusy}
-              blocked={deleteGate?.code !== "pending" && !deleteGate?.allowed}
-              onBlocked={() => {
-                playUiSound("soft");
-                setDeleteBlockedOpen(true);
-              }}
-              onCommit={() => {
-                playUiSound("soft");
-                return onDeleteAccount();
-              }}
-            />
-          </div>
-          {deleteErr ? <p className="ios-settings-alert is-err">{deleteErr}</p> : null}
-        </>
-      ) : null}
-      {deleteBlockedOpen && createPortal(
-        <ConfirmSheet
-          title={ta("settings.deleteBlockedTitle")}
-          message={ta("settings.deleteBlockedBody")}
-          confirmLabel={ta("settings.gotIt")}
-          cancelLabel={null}
-          destructive={false}
-          icon={AlertTriangle}
-          onConfirm={() => setDeleteBlockedOpen(false)}
-          onCancel={() => setDeleteBlockedOpen(false)}
-        />,
-        document.body,
-      )}
 
       <button
         type="button"

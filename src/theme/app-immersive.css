@@ -1799,6 +1799,23 @@
   background: rgba(0, 107, 253, 0.28) !important;
 }
 
+/* Zone de grab élargie + swipe sur toute la carte confirm */
+.ms-sheet-card-grab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 28px;
+  margin: -8px -4px 4px;
+  padding: 10px 16px 6px;
+  touch-action: none;
+}
+.ms-sheet-card-grab .ms-sheet-handle {
+  margin: 0;
+}
+.ms-sheet-card.is-dragging {
+  overflow: hidden !important;
+}
+
 /* ── Soft mist sheet shell (tips, éducatifs, popups) ── */
 .ms-soft-overlay {
   background: rgba(15, 40, 80, 0.22) !important;
