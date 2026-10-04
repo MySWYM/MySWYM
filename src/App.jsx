@@ -227,6 +227,20 @@ import {
   markAppStoreReviewAsked,
   shouldRequestAppStoreReview,
 } from "./lib/app-store-review.js";
+import {
+  answerLoveNo,
+  answerLoveYes,
+  completeLoveFunnel,
+  ensureLoveReviewFirstOpen,
+  loveReviewBlocksSessionStoreAsk,
+  markLovePromptShown,
+  shouldShowLovePrompt,
+  shouldShowLoveStoreAsk,
+  snoozeLovePrompt,
+} from "./lib/love-review-funnel.js";
+import { appStoreWriteReviewHref } from "./lib/store-links.js";
+import { openInSystemBrowser, absoluteSiteUrl } from "./lib/native-links.js";
+import LoveReviewSheet from "./sheets/LoveReviewSheet.jsx";
 import { openStripePortalUrl } from "./lib/native-billing.js";
 import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
 import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
@@ -7809,6 +7823,8 @@ export default function App() {
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [whatsNewLoading, setWhatsNewLoading] = useState(false);
+  /** Funnel avis iOS : ask | feedback | store */
+  const [loveReviewStep, setLoveReviewStep] = useState(null);
   const [planReveal, setPlanReveal] = useState(null);
   const [sessionCelebrate, setSessionCelebrate] = useState(null);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
@@ -9657,11 +9673,11 @@ export default function App() {
 
   useEffect(() => {
     if (!isNativeIos()) return undefined;
+    ensureLoveReviewFirstOpen();
     const onUpgrade = () => openUpgrade("trial_required");
     const onReview = () => {
-      void requestAppStoreReview().then((shown) => {
-        if (shown) markAppStoreReviewAsked();
-      });
+      // Notif +24 h (funnel love) ou legacy : sheet Store, pas SKStoreReview en silence.
+      setLoveReviewStep("store");
     };
     window.addEventListener("myswym:open-upgrade", onUpgrade);
     window.addEventListener("myswym:open-app-store-review", onReview);
@@ -9670,6 +9686,37 @@ export default function App() {
       window.removeEventListener("myswym:open-app-store-review", onReview);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isNativeIos() || !user?.id) return undefined;
+    if (authLoading || screen !== "app") return undefined;
+    if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || sessionCelebrate || loveReviewStep) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      const finished = countFinishedSessions(plan);
+      if (shouldShowLovePrompt({ isNative: true, finishedSessions: finished })) {
+        markLovePromptShown();
+        setLoveReviewStep("ask");
+        return;
+      }
+      if (shouldShowLoveStoreAsk({ isNative: true })) {
+        setLoveReviewStep("store");
+      }
+    }, 2800);
+    return () => window.clearTimeout(timer);
+  }, [
+    user?.id,
+    authLoading,
+    screen,
+    showUpgrade,
+    showPlanReady,
+    showSaveAccount,
+    showWhatsNew,
+    sessionCelebrate,
+    loveReviewStep,
+    plan,
+  ]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -10622,6 +10669,7 @@ export default function App() {
   };
 
   const maybeRequestAppStoreReview = ({ rating = null, hasPain = false, planSnapshot = plan } = {}) => {
+    if (loveReviewBlocksSessionStoreAsk()) return;
     if (!shouldRequestAppStoreReview({
       isNative: isNativeIos(),
       alreadyAsked: hasAskedAppStoreReview(),
@@ -11955,6 +12003,44 @@ export default function App() {
           <WhatsNewSheet
             loading={whatsNewLoading}
             onContinue={() => { void handleWhatsNewContinue(); }}
+          />
+        )}
+        {loveReviewStep && !showPlanReady && !showSaveAccount && !showUpgrade && !showWhatsNew && (
+          <LoveReviewSheet
+            open
+            step={loveReviewStep}
+            onLoveYes={() => {
+              answerLoveYes();
+              setLoveReviewStep(null);
+              if (user) void syncLocalNotificationsFromState({ user, plan });
+            }}
+            onLoveNo={() => {
+              answerLoveNo();
+              setLoveReviewStep("feedback");
+            }}
+            onSnooze={() => {
+              snoozeLovePrompt();
+              setLoveReviewStep(null);
+            }}
+            onOpenContact={() => {
+              completeLoveFunnel();
+              setLoveReviewStep(null);
+              const path = withLocalePrefix("/contact", getStoredLanguage());
+              const url = absoluteSiteUrl(path) || `https://www.myswym.app${path}`;
+              openInSystemBrowser(url);
+            }}
+            onRateStore={() => {
+              completeLoveFunnel();
+              markAppStoreReviewAsked();
+              setLoveReviewStep(null);
+              void requestAppStoreReview().finally(() => {
+                openInSystemBrowser(appStoreWriteReviewHref());
+              });
+            }}
+            onSkipStore={() => {
+              completeLoveFunnel();
+              setLoveReviewStep(null);
+            }}
           />
         )}
         {showUpgrade && (

@@ -17,6 +17,7 @@ import {
   countFinishedSessions,
   hasAskedAppStoreReview,
 } from "./app-store-review.js";
+import { loveStoreAskAtMs } from "./love-review-funnel.js";
 import { nextNewsletterNudgeAtMs } from "./newsletter-opt-in.js";
 
 function lastCompletedIso(plan) {
@@ -59,8 +60,9 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
     currentStreak: stats.currentStreak || stats.streak || 0,
     lastCompletedAt: lastCompletedIso(plan),
     checkoutAbandonedAt: access.hasPremiumAccess ? null : readCheckoutAbandonedAt(user.id),
-    reviewEligible: finished >= APP_STORE_REVIEW_MIN_SESSIONS,
+    reviewEligible: finished >= APP_STORE_REVIEW_MIN_SESSIONS && !loveStoreAskAtMs(),
     reviewAlreadyAsked: hasAskedAppStoreReview(),
+    loveStoreAskAtMs: loveStoreAskAtMs(),
     newsletterNudgeAtMs: nextNewsletterNudgeAtMs(user),
   });
   return rescheduleMySwymLocalNotifications(planned);
