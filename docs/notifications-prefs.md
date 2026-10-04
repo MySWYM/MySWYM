@@ -13,7 +13,9 @@ Panneau **Profil → Réglages → Notifications** : onglets Push · E-mail.
 | Produit | actus push, conseils / avis |
 | E-mail Actus | = `newsletter_opt_in` + `notification_prefs.email.news` |
 
-Master iOS : permission système (Réglages iPhone). Sans master, les toggles push sont grisés.
+Activation : 1 CTA « Activer les notifications ». Si iOS a déjà autorisé, réactive sans popup.
+Si iOS a refusé : CTA « Ouvrir Réglages ». Catégories visibles seulement une fois activées.
+Opt-out MySWYM (switch « Notifications activées ») ≠ permission iOS.
 
 ## Technique
 
