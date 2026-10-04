@@ -2472,7 +2472,7 @@ const StravaSection = ({
 
   return (
     <div style={embedded
-      ? { padding: 0, margin: 0 }
+      ? { padding: "0 0 24px", margin: 0 }
       : { background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }
     }>
 
@@ -2755,9 +2755,25 @@ const StravaSection = ({
 
           {/* Déconnexion */}
           <button
+            type="button"
             onClick={disconnect}
             disabled={disconnecting}
-            style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontSize: 12, fontWeight: 500, cursor: disconnecting ? "not-allowed" : "pointer", opacity: disconnecting ? 0.5 : 1, fontFamily: FONT }}
+            style={{
+              width: "100%",
+              marginTop: 4,
+              marginBottom: embedded ? 8 : 0,
+              padding: "13px 14px",
+              borderRadius: 12,
+              border: `1.5px solid ${G.coral}`,
+              background: G.coralLight || "rgba(255, 90, 120, 0.12)",
+              color: G.coral,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: disconnecting ? "not-allowed" : "pointer",
+              opacity: disconnecting ? 0.5 : 1,
+              fontFamily: FONT,
+              minHeight: 48,
+            }}
           >
             {disconnecting ? "Déconnexion…" : "Déconnecter Strava"}
           </button>

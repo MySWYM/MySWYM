@@ -608,9 +608,12 @@ html.myswym-ios .ios-cover-lock {
   flex: 1;
   min-height: 0;
   overflow-x: hidden;
-  overflow-y: hidden;
+  /* Toujours scrollable : le contenu async (Strava, etc.) grossit sans
+     redimensionner le body → useFitOverflow / is-scrollable peut rater. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
   scrollbar-width: none;
 }
 
