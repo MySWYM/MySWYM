@@ -795,7 +795,8 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
   const [prefs, setPrefs] = useState(() => notificationPrefsFromUser(user));
   const [busyKey, setBusyKey] = useState(null);
   const [err, setErr] = useState(null);
-  const [masterOn, setMasterOn] = useState(false);
+  const [osStatus, setOsStatus] = useState(native ? "loading" : "prompt");
+  const [active, setActive] = useState(false);
   const [masterBusy, setMasterBusy] = useState(false);
   const [deniedSheet, setDeniedSheet] = useState(false);
 
@@ -808,11 +809,16 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     let cancelled = false;
     const refresh = async () => {
       try {
-        const { notificationsSwitchOn } = await import("../lib/native-push.js");
-        const on = await notificationsSwitchOn();
-        if (!cancelled) setMasterOn(on);
+        const mod = await import("../lib/native-push.js");
+        const state = await mod.getNotificationActivationState();
+        if (cancelled) return;
+        setOsStatus(state.os);
+        setActive(state.active);
       } catch {
-        if (!cancelled) setMasterOn(false);
+        if (!cancelled) {
+          setOsStatus("prompt");
+          setActive(false);
+        }
       }
     };
     void refresh();
@@ -835,33 +841,33 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     } catch { /* ignore */ }
   };
 
-  const toggleMaster = async () => {
+  const activateNotifications = async () => {
     if (masterBusy || !native) return;
-    const next = !masterOn;
     setMasterBusy(true);
     setErr(null);
     try {
       const mod = await import("../lib/native-push.js");
-      if (!next) {
-        const res = await mod.disableNativeNotifications();
-        setMasterOn(res?.enabled === true);
-        await resyncLocal(user);
-        return;
-      }
-      const { getLocalNotificationPermission } = await import("../lib/native-local-notifications.js");
-      const perm = await Promise.race([
-        getLocalNotificationPermission(),
-        new Promise((resolve) => { window.setTimeout(() => resolve("prompt"), 1200); }),
-      ]);
-      if (perm === "denied") {
-        setMasterOn(false);
+      const state = await mod.getNotificationActivationState();
+      if (state.os === "denied") {
+        setOsStatus("denied");
+        setActive(false);
         setDeniedSheet(true);
         return;
       }
       const res = await mod.enableNativeNotifications();
-      setMasterOn(res?.enabled === true);
-      if (!res?.ok && res?.reason === "denied") setDeniedSheet(true);
-      await resyncLocal(user);
+      const next = await mod.getNotificationActivationState();
+      setOsStatus(next.os);
+      setActive(next.active);
+      if (next.active) {
+        playUiSound("success");
+        await resyncLocal(user);
+        return;
+      }
+      if (res?.reason === "denied" || next.os === "denied") {
+        setDeniedSheet(true);
+      } else {
+        setErr(t("notif.fail"));
+      }
     } catch {
       setDeniedSheet(true);
     } finally {
@@ -869,8 +875,26 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     }
   };
 
+  const disableNotifications = async () => {
+    if (masterBusy || !native) return;
+    setMasterBusy(true);
+    setErr(null);
+    try {
+      const mod = await import("../lib/native-push.js");
+      await mod.disableNativeNotifications();
+      const next = await mod.getNotificationActivationState();
+      setOsStatus(next.os);
+      setActive(false);
+      await resyncLocal(user);
+    } catch {
+      setErr(t("notif.fail"));
+    } finally {
+      setMasterBusy(false);
+    }
+  };
+
   const togglePush = async (key) => {
-    if (busyKey) return;
+    if (busyKey || !active) return;
     const next = !prefs.push[key];
     setBusyKey(`push.${key}`);
     setErr(null);
@@ -907,8 +931,6 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     }
   };
 
-  const pushDisabled = native && !masterOn;
-
   return (
     <PanelShell title={t("settings.notifications")} onBack={onBack}>
       <p className="ios-settings-copy">{t("notif.lead")}</p>
@@ -938,126 +960,171 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
 
       {channel === "push" ? (
         <>
-          {native ? (
-            <div className="ios-notif-card" style={{ marginBottom: 16 }}>
+          {!native ? (
+            <p className="ios-settings-copy">{t("notif.pushWebOnly")}</p>
+          ) : osStatus === "loading" ? (
+            <p className="ios-settings-copy">{t("devices.loading")}</p>
+          ) : active ? (
+            <div className="ios-notif-card ios-notif-status is-on" style={{ marginBottom: 16 }}>
               <NotifPrefRow
                 icon={Bell}
-                title={t("notif.masterTitle")}
-                hint={t("notif.masterHint")}
-                on={masterOn}
+                title={t("notif.statusOn")}
+                hint={t("notif.statusOnHint")}
+                on
                 busy={masterBusy}
-                onToggle={() => { void toggleMaster(); }}
+                onToggle={() => { void disableNotifications(); }}
               />
             </div>
           ) : (
-            <p className="ios-settings-copy">{t("notif.pushWebOnly")}</p>
+            <div className="ios-notif-hero">
+              <div className="ios-notif-hero-icon" aria-hidden>
+                <Bell size={22} />
+              </div>
+              <div className="ios-notif-hero-title">
+                {osStatus === "denied" ? t("notif.blockedTitle") : t("notif.activateTitle")}
+              </div>
+              <p className="ios-notif-hero-body">
+                {osStatus === "denied" ? t("notif.blockedBody") : t("notif.activateBody")}
+              </p>
+              {osStatus === "denied" ? (
+                <button
+                  type="button"
+                  className="ms-pill-cta"
+                  style={{ width: "100%", minHeight: 52 }}
+                  disabled={masterBusy}
+                  onClick={async () => {
+                    playUiSound("soft");
+                    setDeniedSheet(false);
+                    try {
+                      const mod = await import("../lib/native-push.js");
+                      await mod.openNativeAppSettings();
+                    } catch { /* ignore */ }
+                  }}
+                >
+                  {t("settings.notificationsOpenSettings")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="ms-pill-cta"
+                  style={{ width: "100%", minHeight: 52 }}
+                  disabled={masterBusy}
+                  onClick={() => {
+                    playUiSound("soft");
+                    void activateNotifications();
+                  }}
+                >
+                  {masterBusy ? t("devices.loading") : t("notif.activateCta")}
+                </button>
+              )}
+            </div>
           )}
 
-          {pushDisabled ? (
-            <p className="ios-settings-copy">{t("notif.pushOffLead")}</p>
+          {native && active ? (
+            <>
+              <div className="ios-notif-section">
+                <div className="ios-notif-section-head">
+                  <span>{t("notif.secAccount")}</span>
+                  <span className="ios-notif-always">
+                    <Lock size={12} aria-hidden />
+                    {t("notif.alwaysOn")}
+                  </span>
+                </div>
+                <div className="ios-notif-card">
+                  <NotifLockedRow
+                    icon={Shield}
+                    title={t("notif.securityTitle")}
+                    hint={t("notif.securityHint")}
+                  />
+                  <NotifLockedRow
+                    icon={CreditCard}
+                    title={t("notif.billingTitle")}
+                    hint={t("notif.billingHint")}
+                  />
+                </div>
+              </div>
+
+              <div className="ios-notif-section">
+                <div className="ios-notif-section-head">
+                  <span>{t("notif.secTraining")}</span>
+                </div>
+                <div className="ios-notif-card">
+                  <NotifPrefRow
+                    icon={Waves}
+                    title={t("notif.sessionTitle")}
+                    hint={t("notif.sessionHint")}
+                    on={prefs.push.session}
+                    busy={busyKey === "push.session"}
+                    onToggle={() => { void togglePush("session"); }}
+                  />
+                  <NotifPrefRow
+                    icon={Flame}
+                    title={t("notif.streakTitle")}
+                    hint={t("notif.streakHint")}
+                    on={prefs.push.streak}
+                    busy={busyKey === "push.streak"}
+                    onToggle={() => { void togglePush("streak"); }}
+                  />
+                  <NotifPrefRow
+                    icon={Award}
+                    title={t("notif.badgesTitle")}
+                    hint={t("notif.badgesHint")}
+                    on={prefs.push.badges}
+                    busy={busyKey === "push.badges"}
+                    onToggle={() => { void togglePush("badges"); }}
+                  />
+                </div>
+              </div>
+
+              <div className="ios-notif-section">
+                <div className="ios-notif-section-head">
+                  <span>{t("notif.secSocial")}</span>
+                </div>
+                <div className="ios-notif-card">
+                  <NotifPrefRow
+                    icon={Users}
+                    title={t("notif.buddyTitle")}
+                    hint={t("notif.buddyHint")}
+                    on={prefs.push.buddy}
+                    busy={busyKey === "push.buddy"}
+                    onToggle={() => { void togglePush("buddy"); }}
+                  />
+                  <NotifPrefRow
+                    icon={MessageCircle}
+                    title={t("notif.supportTitle")}
+                    hint={t("notif.supportHint")}
+                    on={prefs.push.support}
+                    busy={busyKey === "push.support"}
+                    onToggle={() => { void togglePush("support"); }}
+                  />
+                </div>
+              </div>
+
+              <div className="ios-notif-section">
+                <div className="ios-notif-section-head">
+                  <span>{t("notif.secProduct")}</span>
+                </div>
+                <div className="ios-notif-card">
+                  <NotifPrefRow
+                    icon={Newspaper}
+                    title={t("notif.newsPushTitle")}
+                    hint={t("notif.newsPushHint")}
+                    on={prefs.push.news}
+                    busy={busyKey === "push.news"}
+                    onToggle={() => { void togglePush("news"); }}
+                  />
+                  <NotifPrefRow
+                    icon={Sparkles}
+                    title={t("notif.tipsTitle")}
+                    hint={t("notif.tipsHint")}
+                    on={prefs.push.product_tips}
+                    busy={busyKey === "push.product_tips"}
+                    onToggle={() => { void togglePush("product_tips"); }}
+                  />
+                </div>
+              </div>
+            </>
           ) : null}
-
-          <div className={`ios-notif-section${pushDisabled ? " is-dim" : ""}`}>
-            <div className="ios-notif-section-head">
-              <span>{t("notif.secAccount")}</span>
-              <span className="ios-notif-always">
-                <Lock size={12} aria-hidden />
-                {t("notif.alwaysOn")}
-              </span>
-            </div>
-            <div className="ios-notif-card">
-              <NotifLockedRow
-                icon={Shield}
-                title={t("notif.securityTitle")}
-                hint={t("notif.securityHint")}
-              />
-              <NotifLockedRow
-                icon={CreditCard}
-                title={t("notif.billingTitle")}
-                hint={t("notif.billingHint")}
-              />
-            </div>
-          </div>
-
-          <div className={`ios-notif-section${pushDisabled ? " is-dim" : ""}`}>
-            <div className="ios-notif-section-head">
-              <span>{t("notif.secTraining")}</span>
-            </div>
-            <div className="ios-notif-card">
-              <NotifPrefRow
-                icon={Waves}
-                title={t("notif.sessionTitle")}
-                hint={t("notif.sessionHint")}
-                on={prefs.push.session}
-                busy={busyKey === "push.session"}
-                onToggle={() => { if (!pushDisabled) void togglePush("session"); }}
-              />
-              <NotifPrefRow
-                icon={Flame}
-                title={t("notif.streakTitle")}
-                hint={t("notif.streakHint")}
-                on={prefs.push.streak}
-                busy={busyKey === "push.streak"}
-                onToggle={() => { if (!pushDisabled) void togglePush("streak"); }}
-              />
-              <NotifPrefRow
-                icon={Award}
-                title={t("notif.badgesTitle")}
-                hint={t("notif.badgesHint")}
-                on={prefs.push.badges}
-                busy={busyKey === "push.badges"}
-                onToggle={() => { if (!pushDisabled) void togglePush("badges"); }}
-              />
-            </div>
-          </div>
-
-          <div className={`ios-notif-section${pushDisabled ? " is-dim" : ""}`}>
-            <div className="ios-notif-section-head">
-              <span>{t("notif.secSocial")}</span>
-            </div>
-            <div className="ios-notif-card">
-              <NotifPrefRow
-                icon={Users}
-                title={t("notif.buddyTitle")}
-                hint={t("notif.buddyHint")}
-                on={prefs.push.buddy}
-                busy={busyKey === "push.buddy"}
-                onToggle={() => { if (!pushDisabled) void togglePush("buddy"); }}
-              />
-              <NotifPrefRow
-                icon={MessageCircle}
-                title={t("notif.supportTitle")}
-                hint={t("notif.supportHint")}
-                on={prefs.push.support}
-                busy={busyKey === "push.support"}
-                onToggle={() => { if (!pushDisabled) void togglePush("support"); }}
-              />
-            </div>
-          </div>
-
-          <div className={`ios-notif-section${pushDisabled ? " is-dim" : ""}`}>
-            <div className="ios-notif-section-head">
-              <span>{t("notif.secProduct")}</span>
-            </div>
-            <div className="ios-notif-card">
-              <NotifPrefRow
-                icon={Newspaper}
-                title={t("notif.newsPushTitle")}
-                hint={t("notif.newsPushHint")}
-                on={prefs.push.news}
-                busy={busyKey === "push.news"}
-                onToggle={() => { if (!pushDisabled) void togglePush("news"); }}
-              />
-              <NotifPrefRow
-                icon={Sparkles}
-                title={t("notif.tipsTitle")}
-                hint={t("notif.tipsHint")}
-                on={prefs.push.product_tips}
-                busy={busyKey === "push.product_tips"}
-                onToggle={() => { if (!pushDisabled) void togglePush("product_tips"); }}
-              />
-            </div>
-          </div>
         </>
       ) : (
         <>
