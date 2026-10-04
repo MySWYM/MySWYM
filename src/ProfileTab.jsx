@@ -46,6 +46,8 @@ import {
   IosLanguagePanel,
   IosPasswordPanel,
   IosDataPanel,
+  IosDevicesPanel,
+  IosNotificationsPanel,
   IosStravaPanel,
   IosAppleHealthPanel,
   IosSubscriptionPanel,
@@ -796,6 +798,7 @@ export default function ProfileTab({
           newsletterOn={newsletterOn}
           newsletterBusy={newsletterBusy}
           onToggleNewsletter={toggleNewsletter}
+          onOpenDevices={() => setHelpPanel("devices")}
           onDeleteAccount={async () => {
             setDeleteErr(null);
             setDeleteBusy(true);
@@ -810,6 +813,25 @@ export default function ProfileTab({
           deleteErr={deleteErr}
           deleteGate={deleteGate}
           deleteWarning={deleteGate.appleKeepsBilling ? ACCOUNT_DELETE_APPLE_WARNING : deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
+        />
+      ) : null}
+      {helpPanel === "devices" ? (
+        <IosDevicesPanel
+          onBack={() => setHelpPanel("data")}
+          onSignOut={onSignOut}
+        />
+      ) : null}
+      {helpPanel === "notifications" ? (
+        <IosNotificationsPanel
+          user={user}
+          plan={plan}
+          onBack={() => setHelpPanel(null)}
+          onUserUpdated={(updated) => {
+            if (updated) {
+              setNewsletterOn(isNewsletterOptedIn(updated));
+              onUserUpdate?.(updated);
+            }
+          }}
         />
       ) : null}
       {helpPanel === "strava" ? (
@@ -929,6 +951,7 @@ export default function ProfileTab({
               onOpenData={() => setHelpPanel("data")}
               onOpenHelp={() => setHelpPanel("support")}
               onOpenLegal={() => setHelpPanel("legal")}
+              onOpenNotifications={() => setHelpPanel("notifications")}
               onSignOut={onSignOut}
             />
           ) : (

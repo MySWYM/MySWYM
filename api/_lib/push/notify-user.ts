@@ -3,6 +3,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { apnsHostLabel, isApnsConfigured, sendApnsToDevice, type PushPayload } from "./apns.js";
+import { allowsPushCategory, type PushPrefKey } from "./notification-prefs.js";
 
 function adminClient() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -14,6 +15,7 @@ function adminClient() {
 export async function pushToUser(
   userId: string,
   payload: PushPayload,
+  opts: { category?: PushPrefKey | "billing" | "security" } = {},
 ): Promise<{ sent: number; skipped: string; pruned: number; reason?: string; host?: string }> {
   if (!userId) return { sent: 0, skipped: "no_user", pruned: 0 };
   if (!isApnsConfigured()) return { sent: 0, skipped: "apns_not_configured", pruned: 0 };
@@ -24,6 +26,20 @@ export async function pushToUser(
       hasService: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     });
     return { sent: 0, skipped: "no_admin", pruned: 0 };
+  }
+
+  if (opts.category) {
+    try {
+      const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(userId);
+      if (!authErr) {
+        const meta = (authUser?.user?.user_metadata || {}) as Record<string, unknown>;
+        if (!allowsPushCategory(meta, opts.category)) {
+          return { sent: 0, skipped: "pref_off", pruned: 0 };
+        }
+      }
+    } catch (e) {
+      console.warn("[push] pref lookup failed", e);
+    }
   }
 
   const { data: rows, error } = await admin

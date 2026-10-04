@@ -97,8 +97,17 @@ export function clearPendingNewsletterOptIn(store = defaultStore()) {
  */
 export async function setNewsletterOptIn(enabled) {
   const { supabase } = await import("../supabase.js");
+  const on = !!enabled;
+  const { data: cur } = await supabase.auth.getUser();
+  let prefsPayload = null;
+  try {
+    const { parseNotificationPrefs, NOTIFICATION_PREFS_KEY } = await import("./notification-prefs.js");
+    const prefs = parseNotificationPrefs(cur?.user?.user_metadata);
+    prefs.email.news = on;
+    prefsPayload = { [NOTIFICATION_PREFS_KEY]: prefs };
+  } catch { /* ignore */ }
   const { data, error } = await supabase.auth.updateUser({
-    data: { [NEWSLETTER_META_KEY]: !!enabled },
+    data: { [NEWSLETTER_META_KEY]: on, ...(prefsPayload || {}) },
   });
   if (error) return { user: null, error };
   const user = data?.user || null;
