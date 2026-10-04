@@ -75,6 +75,20 @@ export function countryLabelFr(code) {
   return countryByCode(code)?.name || "";
 }
 
+/** Libellé pays dans la langue UI (fallback FR). */
+export function countryLabel(code, locale = "fr") {
+  const id = normalizeCountry(code);
+  if (!id) return "";
+  const lng = String(locale || "fr").split("-")[0] || "fr";
+  try {
+    const name = new Intl.DisplayNames([lng], { type: "region" }).of(id);
+    if (name && name !== id) return name;
+  } catch {
+    /* ignore */
+  }
+  return countryLabelFr(code);
+}
+
 export function searchCountries(query) {
   const q = String(query || "")
     .trim()

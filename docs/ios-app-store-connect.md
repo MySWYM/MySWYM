@@ -160,7 +160,9 @@ Sign in: open the app → Connexion (or /connexion). On iPhone, tick “18 or ol
 
 Subscriptions: 6.99 EUR/month or 59.99 EUR/year via In-App Purchase only. The 7-day trial is MySWYM’s own trial (no Apple ID card). After trial, workouts pause until a subscription. There is no Stripe checkout in the iOS app.
 
-Account deletion: Profile → Settings → Supprimer mon compte. Deleting the MySWYM account does not cancel an App Store subscription (Settings → Apple ID → Subscriptions).
+Account deletion: Profile → Settings → My data → Delete my account. Deleting the MySWYM account does not cancel an App Store subscription (Settings → Apple ID → Subscriptions).
+
+Password reset: the email link opens the iOS app via myswym://auth/callback?reset=1 (same scheme as Sign in with Apple / Google). If Safari opens instead, sign in again in the app and use Settings → password reset.
 
 Notifications are optional: Profile → Settings → Notifications (switch).
 
@@ -173,8 +175,16 @@ This binary is iPhone only.
 
 - Chiffrement : **non exempté au-delà d’HTTPS** (`ITSAppUsesNonExemptEncryption = false`). Répondre Non à l’export compliance standard.
 - Publicité IDFA : **non**. Pas d’ATT.
-- Compte in-app : **oui**. Suppression du compte : **oui** (Réglages / profil).
+- Compte in-app : **oui**. Suppression du compte : **oui** (Profil → Paramètres → Mes données).
 - IAP : abonnements auto-renouvelables mensuel + annuel déjà prévus côté StoreKit. Vérifier que les produits App Store Connect ont le même ID que le code : `app.myswym.ios.premium.monthly` et `app.myswym.ios.premium.annual`.
+
+### Checklist avant soumission review (Arthur)
+
+1. **IAP live** : produits `app.myswym.ios.premium.monthly` et `.annual` Ready to Submit / Approved, prix EUR.
+2. **2 comptes démo** dans App Store Connect → App Review Information (un free essai ok, un Premium si possible).
+3. **HealthKit** ON sur App ID `app.myswym.ios` (sinon archive Store casse).
+4. **Supabase PROD redirect** : `myswym://auth/callback` (et `myswym://auth/callback?reset=1` couvert par le même préfixe allowlist).
+5. **Privacy labels ASC** : aligner push token / Health avec `PrivacyInfo.xcprivacy` (pas de tracking).
 
 ## 9. Upload TestFlight (CLI / Organizer)
 
@@ -217,7 +227,9 @@ Redirect URLs (ajouter, ne pas remplacer les existants) :
 
 ```
 myswym://auth/callback
+myswym://auth/callback?reset=1
 https://www.myswym.app/app
+https://www.myswym.app/app?reset=1
 https://staging.myswym.app/app
 ```
 

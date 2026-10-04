@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, Home, MessageCircle, Send, X } fr
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
 import { isNativeIos } from "./lib/native-platform.js";
+import { getStoredLanguage } from "./i18n/index.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
 import "./theme/support-widget-opaque.css";
@@ -76,7 +77,11 @@ const FAQ_RULES = [
     answer:
       "Connexion et inscription via /connexion et /inscription. Pour supprimer ton compte : Profil → « Supprimer mon compte ». Si un abonnement Stripe est encore actif, il est arrêté au moment de la suppression, sans remboursement de la période déjà payée. Un souci ? Écris ici.",
     iosAnswer:
-      "Connexion et inscription dans l’app. Pour supprimer ton compte : Profil, Paramètres, Supprimer mon compte. Un abonnement App Store se résilie à part : Réglages, Apple ID, Abonnements. Un souci ? Écris ici.",
+      "Connexion et inscription dans l’app. Pour supprimer ton compte : Profil → Paramètres → Mes données → Supprimer mon compte. Un abonnement App Store se résilie à part : Réglages → Apple ID → Abonnements. Un souci ? Écris ici.",
+    enAnswer:
+      "Sign in and sign up in the app. To delete your account: Profile → Settings → My data → Delete my account. An App Store subscription is cancelled separately: Settings → Apple ID → Subscriptions. Need help? Write here.",
+    iosEnAnswer:
+      "Sign in and sign up in the app. To delete your account: Profile → Settings → My data → Delete my account. An App Store subscription is cancelled separately: Settings → Apple ID → Subscriptions. Need help? Write here.",
   },
 
   // ── Natation / méthode ───────────────────────────────────
@@ -196,7 +201,13 @@ function matchFaq(text) {
     }
   }
   if (bestScore <= 0 || !best) return FALLBACK;
-  if (isNativeIos() && best.iosAnswer) return best.iosAnswer;
+  const lang = String(getStoredLanguage() || "fr").toLowerCase();
+  const en = lang.startsWith("en");
+  if (isNativeIos()) {
+    if (en && best.iosEnAnswer) return best.iosEnAnswer;
+    if (best.iosAnswer) return best.iosAnswer;
+  }
+  if (en && best.enAnswer) return best.enAnswer;
   return best.answer;
 }
 

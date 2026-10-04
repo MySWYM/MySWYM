@@ -15,6 +15,12 @@ import {
 } from "./lib/access.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import {
+  capturePasswordRecoveryIntent,
+  clearPasswordRecoveryIntent,
+  hasPasswordRecoveryIntent,
+  stripPasswordResetQueryFromUrl,
+} from "./lib/password-recovery-intent.js";
+import {
   clearSaveAccountSnooze,
   isSaveAccountSnoozed,
   releaseSaveAccountSnoozeOnResume,
@@ -221,6 +227,19 @@ import {
   markAppStoreReviewAsked,
   shouldRequestAppStoreReview,
 } from "./lib/app-store-review.js";
+import {
+  answerLoveNo,
+  answerLoveYes,
+  completeLoveFunnel,
+  ensureLoveReviewFirstOpen,
+  loveReviewBlocksSessionStoreAsk,
+  markLovePromptShown,
+  shouldShowLovePrompt,
+  shouldShowLoveStoreAsk,
+  snoozeLovePrompt,
+} from "./lib/love-review-funnel.js";
+import { openInSystemBrowser, absoluteSiteUrl } from "./lib/native-links.js";
+import LoveReviewSheet from "./sheets/LoveReviewSheet.jsx";
 import { openStripePortalUrl } from "./lib/native-billing.js";
 import { isNativeApp, isNativeIos } from "./lib/native-platform.js";
 import { isIosSimpleNav, iosDockActive, iosResolveTab } from "./lib/ios-simple-nav.js";
@@ -2453,7 +2472,7 @@ const StravaSection = ({
 
   return (
     <div style={embedded
-      ? { padding: 0, margin: 0 }
+      ? { padding: "0 0 24px", margin: 0 }
       : { background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }
     }>
 
@@ -2736,9 +2755,25 @@ const StravaSection = ({
 
           {/* Déconnexion */}
           <button
+            type="button"
             onClick={disconnect}
             disabled={disconnecting}
-            style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1px solid ${G.greyLight}`, background: "none", color: G.grey, fontSize: 12, fontWeight: 500, cursor: disconnecting ? "not-allowed" : "pointer", opacity: disconnecting ? 0.5 : 1, fontFamily: FONT }}
+            style={{
+              width: "100%",
+              marginTop: 4,
+              marginBottom: embedded ? 8 : 0,
+              padding: "13px 14px",
+              borderRadius: 12,
+              border: `1.5px solid ${G.coral}`,
+              background: G.coralLight || "rgba(255, 90, 120, 0.12)",
+              color: G.coral,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: disconnecting ? "not-allowed" : "pointer",
+              opacity: disconnecting ? 0.5 : 1,
+              fontFamily: FONT,
+              minHeight: 48,
+            }}
           >
             {disconnecting ? "Déconnexion…" : "Déconnecter Strava"}
           </button>
@@ -4891,60 +4926,68 @@ const ResetConfirmButton = ({ onReset, variant = "subtle" }) => {
 
 // ── COACH CARD ────────────────────────────────────────────────────────────
 // ── MODE BOUCLE « Nager & Progresser » ─────────────────────────────────────
-const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
-  <div style={{
-    position: "fixed", inset: 0, zIndex: 200, background: "rgba(15,23,42,0.55)",
-    display: "flex", alignItems: "flex-end", justifyContent: "center",
-  }}>
+function LoopPaywallScreen({ reason = "cap", onUpgrade, onClose }) {
+  const { t } = useTranslation("app");
+  const priceSummary = premiumPriceSummary();
+  const ctaLabel = isNativeIos()
+    ? t("loopPaywall.ctaNative")
+    : t("loopPaywall.ctaWeb", { price: PRICING.monthlyCommit.label });
+  const bullets = [
+    t("loopPaywall.b1"),
+    t("loopPaywall.b2"),
+    t("loopPaywall.b3"),
+    t("loopPaywall.b4"),
+    t("loopPaywall.b5"),
+  ];
+  return (
     <div style={{
-      width: "100%", maxWidth: 440, background: G.surface, borderRadius: "24px 24px 0 0",
-      padding: "28px 22px calc(28px + var(--safe-bottom))",
-      boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+      position: "fixed", inset: 0, zIndex: 200, background: "rgba(15,23,42,0.55)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
     }}>
-      {reason === "weekly" ? (
-        <>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
-            Limite atteinte
-          </h2>
-          <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
-            Pour générer de nouvelles séances, abonne-toi à Premium : {premiumPriceSummary()}.
-          </p>
-        </>
-      ) : (
-        <>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
-            Continue avec Premium
-          </h2>
-          <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
-            Pour de nouvelles séances personnalisées : {premiumPriceSummary()}.
-          </p>
-          <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-            {[
-              "Génération illimitée",
-              "Régénération des séances",
-              "Progression personnalisée",
-              "Historique complet",
-              "Nouvelles fonctionnalités à venir",
-            ].map((line) => (
-              <li key={line} style={{ fontSize: 13, fontWeight: 600, color: G.ink, display: "flex", alignItems: "center", gap: 8 }}>
-                <Check size={14} color={G.mint} /> {line}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>S’abonner : dès {PRICING.monthlyCommit.label}/mois</Btn>
-      {onClose && (
-        <button type="button" onClick={onClose} style={{
-          width: "100%", border: "none", background: "transparent", color: G.grey,
-          fontSize: 13, fontWeight: 600, padding: 12, cursor: "pointer",
-        }}>
-          Plus tard
-        </button>
-      )}
+      <div style={{
+        width: "100%", maxWidth: 440, background: G.surface, borderRadius: "24px 24px 0 0",
+        padding: "28px 22px calc(28px + var(--safe-bottom))",
+        boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+      }}>
+        {reason === "weekly" ? (
+          <>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
+              {t("loopPaywall.weeklyTitle")}
+            </h2>
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
+              {t("loopPaywall.weeklyBody", { price: priceSummary })}
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
+              {t("loopPaywall.capTitle")}
+            </h2>
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
+              {t("loopPaywall.capBody", { price: priceSummary })}
+            </p>
+            <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+              {bullets.map((line) => (
+                <li key={line} style={{ fontSize: 13, fontWeight: 600, color: G.ink, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Check size={14} color={G.mint} /> {line}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>{ctaLabel}</Btn>
+        {onClose && (
+          <button type="button" onClick={onClose} style={{
+            width: "100%", border: "none", background: "transparent", color: G.grey,
+            fontSize: 13, fontWeight: 600, padding: 12, cursor: "pointer",
+          }}>
+            {t("loopPaywall.later")}
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
 const ProgressionLoopView = ({
   plan,
@@ -7759,6 +7802,7 @@ const BLANK_PROFILE = {
   country: "",
   weightKg: "",
   heightCm: "",
+  bodyUnits: "",
   injuryStatus: null, // "aucune" | "oui"
   injuryZone: null,
   injurySeverity: null,
@@ -7783,6 +7827,7 @@ const BLANK_PROFILE = {
 };
 
 export default function App() {
+  const { t } = useTranslation("app");
   useEffect(() => {
     // Re-register après HMR (évite crash getTabUi / écran blanc)
     registerAppTabUi();
@@ -7792,7 +7837,10 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
   const [accessSynced, setAccessSynced] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(() => {
+    capturePasswordRecoveryIntent();
+    return hasPasswordRecoveryIntent();
+  });
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [showPlanReady, setShowPlanReady] = useState(false);
@@ -7800,6 +7848,8 @@ export default function App() {
   const [planReadyLoading, setPlanReadyLoading] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [whatsNewLoading, setWhatsNewLoading] = useState(false);
+  /** Funnel avis iOS : ask | feedback | store */
+  const [loveReviewStep, setLoveReviewStep] = useState(null);
   const [planReveal, setPlanReveal] = useState(null);
   const [sessionCelebrate, setSessionCelebrate] = useState(null);
   const [softPaywallPending, setSoftPaywallPending] = useState(false);
@@ -8691,13 +8741,24 @@ export default function App() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // Lien de réinitialisation cliqué → afficher l'écran de nouveau mot de passe
-        setUser(session?.user ?? null);
+      // Re-capture : supabase peut encore avoir le hash au 1er tick.
+      capturePasswordRecoveryIntent();
+      const recoveryIntent =
+        event === "PASSWORD_RECOVERY" || hasPasswordRecoveryIntent();
+
+      // Lien reset → formulaire même si Supabase n’émet que SIGNED_IN (pas PASSWORD_RECOVERY).
+      if (
+        recoveryIntent
+        && session?.user
+        && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN" || event === "INITIAL_SESSION")
+      ) {
+        setUser(session.user);
+        setIsPremium(checkPremiumUnlocked(session.user));
         setIsRecovery(true);
         setAuthLoading(false);
         return;
       }
+
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(checkPremiumUnlocked(u));
@@ -8708,6 +8769,11 @@ export default function App() {
           if (!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u)) {
             setAccessSynced(true);
           }
+          setAuthLoading(false);
+          return;
+        }
+        if (recoveryIntent) {
+          setIsRecovery(true);
           setAuthLoading(false);
           return;
         }
@@ -8747,6 +8813,14 @@ export default function App() {
             void flushPendingPushToken();
             void registerNativePush();
           }
+          // Appareils connectés : heartbeat + force logout si révoqué à distance
+          void import("./lib/user-devices.js").then(({ heartbeatUserDevice }) => (
+            heartbeatUserDevice().then((res) => {
+              if (res?.force_logout || res?.revoked) {
+                void supabase.auth.signOut();
+              }
+            }).catch(() => { /* function pas encore déployée */ })
+          ));
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)
@@ -9632,19 +9706,57 @@ export default function App() {
 
   useEffect(() => {
     if (!isNativeIos()) return undefined;
+    ensureLoveReviewFirstOpen();
     const onUpgrade = () => openUpgrade("trial_required");
     const onReview = () => {
-      void requestAppStoreReview().then((shown) => {
-        if (shown) markAppStoreReviewAsked();
-      });
+      // Notif +24 h (funnel love) ou legacy : sheet Store, pas SKStoreReview en silence.
+      setLoveReviewStep("store");
+    };
+    const onNativeAuth = (ev) => {
+      if (ev?.detail?.recovery || hasPasswordRecoveryIntent()) {
+        setIsRecovery(true);
+      }
     };
     window.addEventListener("myswym:open-upgrade", onUpgrade);
     window.addEventListener("myswym:open-app-store-review", onReview);
+    window.addEventListener("myswym:native-oauth-done", onNativeAuth);
     return () => {
       window.removeEventListener("myswym:open-upgrade", onUpgrade);
       window.removeEventListener("myswym:open-app-store-review", onReview);
+      window.removeEventListener("myswym:native-oauth-done", onNativeAuth);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isNativeIos() || !user?.id) return undefined;
+    if (authLoading || screen !== "app") return undefined;
+    if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || sessionCelebrate || loveReviewStep) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      const finished = countFinishedSessions(plan);
+      if (shouldShowLovePrompt({ isNative: true, finishedSessions: finished })) {
+        markLovePromptShown();
+        setLoveReviewStep("ask");
+        return;
+      }
+      if (shouldShowLoveStoreAsk({ isNative: true })) {
+        setLoveReviewStep("store");
+      }
+    }, 2800);
+    return () => window.clearTimeout(timer);
+  }, [
+    user?.id,
+    authLoading,
+    screen,
+    showUpgrade,
+    showPlanReady,
+    showSaveAccount,
+    showWhatsNew,
+    sessionCelebrate,
+    loveReviewStep,
+    plan,
+  ]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -10597,6 +10709,7 @@ export default function App() {
   };
 
   const maybeRequestAppStoreReview = ({ rating = null, hasPain = false, planSnapshot = plan } = {}) => {
+    if (loveReviewBlocksSessionStoreAsk()) return;
     if (!shouldRequestAppStoreReview({
       isNative: isNativeIos(),
       alreadyAsked: hasAskedAppStoreReview(),
@@ -11474,7 +11587,7 @@ export default function App() {
   const handleDeleteAccount = async () => {
     const { data: refreshData } = await supabase.auth.refreshSession();
     const session = refreshData?.session;
-    if (!session) throw new Error("Reconnecte-toi pour supprimer ton compte.");
+    if (!session) throw new Error(t("toast.reauthDelete"));
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
       method: "POST",
       headers: {
@@ -11485,7 +11598,7 @@ export default function App() {
       body: "{}",
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || "Suppression impossible.");
+    if (!res.ok) throw new Error(json.error || t("toast.deleteFail"));
     resetAnalytics();
     signingOutRef.current = true;
     forceAuthRef.current = true;
@@ -11499,11 +11612,11 @@ export default function App() {
       navigate("/connexion", { replace: true });
       setTimeout(() => { signingOutRef.current = false; }, 500);
     }
-    showToast("Compte supprimé.");
+    showToast(t("toast.accountDeleted"));
   };
 
   const handleRefreshStatus = async () => {
-    showToast("Synchronisation…");
+    showToast(t("toast.syncing"));
     try {
       let u = null;
       if (isLiveStripeBilling(user)) {
@@ -11518,11 +11631,11 @@ export default function App() {
         setUser(u);
         const premium = checkIsPremium(u);
         setIsPremium(premium);
-        showToast(premium ? "Premium activé ✓" : "Pas d’abonnement actif", 5000);
+        showToast(premium ? t("toast.premiumOn") : t("toast.noSub"), 5000);
         if (premium) closeUpgrade();
       }
     } catch {
-      showToast("Impossible de synchroniser. Réessaie ou contacte support@myswym.app", 8000);
+      showToast(t("toast.syncFail"), 8000);
     }
   };
 
@@ -11596,6 +11709,8 @@ export default function App() {
       <style>{css}</style>
       <div className="ms-auth-shell">
         <ResetPasswordScreen showBrandHeader={false} onDone={() => {
+          clearPasswordRecoveryIntent();
+          stripPasswordResetQueryFromUrl();
           setIsRecovery(false);
           // Recharge les données utilisateur après reset
           supabase.auth.getUser().then(({ data }) => {
@@ -11928,6 +12043,47 @@ export default function App() {
           <WhatsNewSheet
             loading={whatsNewLoading}
             onContinue={() => { void handleWhatsNewContinue(); }}
+          />
+        )}
+        {loveReviewStep && !showPlanReady && !showSaveAccount && !showUpgrade && !showWhatsNew && (
+          <LoveReviewSheet
+            open
+            step={loveReviewStep}
+            onLoveYes={() => {
+              answerLoveYes();
+              setLoveReviewStep(null);
+              if (user) void syncLocalNotificationsFromState({ user, plan });
+            }}
+            onLoveNo={() => {
+              answerLoveNo();
+              setLoveReviewStep("feedback");
+            }}
+            onSnooze={() => {
+              snoozeLovePrompt();
+              setLoveReviewStep(null);
+            }}
+            onDismissFeedback={() => {
+              completeLoveFunnel();
+              setLoveReviewStep(null);
+            }}
+            onOpenContact={() => {
+              completeLoveFunnel();
+              setLoveReviewStep(null);
+              const path = withLocalePrefix("/contact", getStoredLanguage());
+              const url = absoluteSiteUrl(path) || `https://www.myswym.app${path}`;
+              openInSystemBrowser(url);
+            }}
+            onRateStore={() => {
+              completeLoveFunnel();
+              markAppStoreReviewAsked();
+              setLoveReviewStep(null);
+              // SKStoreReview seul (pas d’URL write-review en plus : guideline Apple).
+              void requestAppStoreReview();
+            }}
+            onSkipStore={() => {
+              completeLoveFunnel();
+              setLoveReviewStep(null);
+            }}
           />
         )}
         {showUpgrade && (

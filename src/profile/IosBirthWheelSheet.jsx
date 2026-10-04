@@ -1,53 +1,12 @@
 /**
  * Roue date de naissance : jour / mois / année, Annuler / OK.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SoftMistSheet from "../sheets/SoftMistSheet.jsx";
 import { BIRTH_MONTH_OPTIONS, daysInBirthMonth } from "../lib/swimmer-profile.js";
-
-const ITEM_H = 40;
-const VISIBLE = 5;
-const PAD = ((VISIBLE - 1) / 2) * ITEM_H;
+import IosWheelCol, { IOS_WHEEL_ITEM_H, IOS_WHEEL_PAD } from "./IosWheelCol.jsx";
 
 const MONTHS = BIRTH_MONTH_OPTIONS.map((m) => ({ value: m.value, label: m.label }));
-
-function WheelCol({ options, value, onChange }) {
-  const ref = useRef(null);
-  const timer = useRef(0);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const i = Math.max(0, options.findIndex((o) => o.value === value));
-    el.scrollTop = i * ITEM_H;
-  }, [options, value]);
-
-  const commit = (el) => {
-    const i = Math.round(el.scrollTop / ITEM_H);
-    const clamped = Math.max(0, Math.min(options.length - 1, i));
-    el.scrollTo({ top: clamped * ITEM_H, behavior: "smooth" });
-    const next = options[clamped]?.value;
-    if (next != null && next !== value) onChange(next);
-  };
-
-  return (
-    <div
-      ref={ref}
-      className="ios-wheel-col"
-      onScroll={(e) => {
-        const el = e.currentTarget;
-        window.clearTimeout(timer.current);
-        timer.current = window.setTimeout(() => commit(el), 90);
-      }}
-    >
-      {options.map((o) => (
-        <div key={o.value} className="ios-wheel-item">
-          {o.label}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function IosBirthWheelSheet({ open, day, month, year, onClose, onConfirm }) {
   const nowY = new Date().getFullYear();
@@ -97,10 +56,13 @@ export default function IosBirthWheelSheet({ open, day, month, year, onClose, on
         </div>
       )}
     >
-      <div className="ios-wheel" style={{ "--ios-wheel-item": `${ITEM_H}px`, "--ios-wheel-pad": `${PAD}px` }}>
-        <WheelCol options={days} value={Math.min(d, dim)} onChange={setD} />
-        <WheelCol options={MONTHS} value={m} onChange={setM} />
-        <WheelCol options={years} value={y} onChange={setY} />
+      <div
+        className="ios-wheel is-cols-3"
+        style={{ "--ios-wheel-item": `${IOS_WHEEL_ITEM_H}px`, "--ios-wheel-pad": `${IOS_WHEEL_PAD}px` }}
+      >
+        <IosWheelCol options={days} value={Math.min(d, dim)} onChange={setD} />
+        <IosWheelCol options={MONTHS} value={m} onChange={setM} />
+        <IosWheelCol options={years} value={y} onChange={setY} />
       </div>
     </SoftMistSheet>
   );

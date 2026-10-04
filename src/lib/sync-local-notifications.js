@@ -17,7 +17,12 @@ import {
   countFinishedSessions,
   hasAskedAppStoreReview,
 } from "./app-store-review.js";
+import { loveStoreAskAtMs } from "./love-review-funnel.js";
 import { nextNewsletterNudgeAtMs } from "./newsletter-opt-in.js";
+import {
+  filterLocalNotificationsByPrefs,
+  notificationPrefsFromUser,
+} from "./notification-prefs.js";
 
 function lastCompletedIso(plan) {
   if (!plan) return null;
@@ -48,20 +53,25 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
   const next = findNextSession(plan);
   const stats = computeStats(plan);
   const finished = countFinishedSessions(plan);
-  const planned = buildLocalNotificationPlan({
-    enabled,
-    hasPremiumAccess: access.hasPremiumAccess,
-    accessStatus: access.status,
-    trialEndsAt: access.trialEndsAt,
-    trialDaysLeft: access.trialDaysLeft,
-    hasPlan: Boolean(plan?.weeks?.length),
-    nextResolved: !next || next.resolved === true,
-    currentStreak: stats.currentStreak || stats.streak || 0,
-    lastCompletedAt: lastCompletedIso(plan),
-    checkoutAbandonedAt: access.hasPremiumAccess ? null : readCheckoutAbandonedAt(user.id),
-    reviewEligible: finished >= APP_STORE_REVIEW_MIN_SESSIONS,
-    reviewAlreadyAsked: hasAskedAppStoreReview(),
-    newsletterNudgeAtMs: nextNewsletterNudgeAtMs(user),
-  });
+  const prefs = notificationPrefsFromUser(user);
+  const planned = filterLocalNotificationsByPrefs(
+    buildLocalNotificationPlan({
+      enabled,
+      hasPremiumAccess: access.hasPremiumAccess,
+      accessStatus: access.status,
+      trialEndsAt: access.trialEndsAt,
+      trialDaysLeft: access.trialDaysLeft,
+      hasPlan: Boolean(plan?.weeks?.length),
+      nextResolved: !next || next.resolved === true,
+      currentStreak: stats.currentStreak || stats.streak || 0,
+      lastCompletedAt: lastCompletedIso(plan),
+      checkoutAbandonedAt: access.hasPremiumAccess ? null : readCheckoutAbandonedAt(user.id),
+      reviewEligible: finished >= APP_STORE_REVIEW_MIN_SESSIONS && !loveStoreAskAtMs(),
+      reviewAlreadyAsked: hasAskedAppStoreReview(),
+      loveStoreAskAtMs: loveStoreAskAtMs(),
+      newsletterNudgeAtMs: nextNewsletterNudgeAtMs(user),
+    }),
+    prefs,
+  );
   return rescheduleMySwymLocalNotifications(planned);
 }

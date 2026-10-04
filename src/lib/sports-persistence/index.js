@@ -207,6 +207,9 @@ export function sportProfileToRow(userId, profile = {}) {
       country: normalizeCountry(profile.country) || null,
       weightKg: profile.weightKg ?? null,
       heightCm: profile.heightCm ?? null,
+      bodyUnits: profile.bodyUnits === "imperial" || profile.bodyUnits === "metric"
+        ? profile.bodyUnits
+        : null,
       swimStyle: profile.swimStyle || null,
       injuryZone: injury.injuryZone ?? profile.injuryZone ?? null,
       injurySeverity: injury.injurySeverity ?? profile.injurySeverity ?? null,
@@ -304,6 +307,9 @@ export function rowToSportProfileFields(row) {
     readinessProfile: row.readiness_profile ?? null,
     weightKg: extra.weightKg ?? null,
     heightCm: extra.heightCm ?? null,
+    bodyUnits: extra.bodyUnits === "imperial" || extra.bodyUnits === "metric"
+      ? extra.bodyUnits
+      : null,
     category: extra.category ?? null,
     eventDate: extra.eventDate ?? null,
     trainingFocus: extra.trainingFocus ?? null,

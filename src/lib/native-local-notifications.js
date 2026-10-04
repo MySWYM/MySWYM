@@ -195,6 +195,13 @@ export async function scheduleLocalNotifications(items = []) {
 export async function notifyBadgeEarned({ title, body }) {
   const plugin = await getPlugin();
   if (!plugin || !title || !body) return;
+  try {
+    const { supabase } = await import("../supabase.js");
+    const { notificationPrefsFromUser, isPushPrefOn } = await import("./notification-prefs.js");
+    const { data } = await supabase.auth.getUser();
+    const prefs = notificationPrefsFromUser(data?.user);
+    if (!isPushPrefOn(prefs, "badges")) return;
+  } catch { /* ignore pref lookup */ }
   const perm = await getLocalNotificationPermission();
   if (perm !== "granted") return;
   await ensureActionListeners(plugin);

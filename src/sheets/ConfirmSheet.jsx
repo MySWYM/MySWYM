@@ -1,21 +1,27 @@
 import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import SheetCardShell from "./SheetCardShell.jsx";
 
 export default function ConfirmSheet({
   title,
   message,
-  confirmLabel = "Supprimer",
-  cancelLabel = "Annuler",
+  confirmLabel,
+  cancelLabel,
   destructive = true,
   icon: Icon = Trash2,
   onConfirm,
   onCancel,
   zIndex = null,
 }) {
+  const { t } = useTranslation("app");
+  const resolvedConfirm = confirmLabel ?? (destructive ? t("sheet.delete") : t("sheet.confirm"));
+  const resolvedCancel = cancelLabel === undefined ? t("sheet.cancel") : cancelLabel;
+
   return (
     <SheetCardShell
       onClose={onCancel}
+      swipeEntirePanel
       overlayProps={{
         role: "dialog",
         "aria-modal": true,
@@ -72,9 +78,9 @@ export default function ConfirmSheet({
               minHeight: 48,
             }}
           >
-            {confirmLabel}
+            {resolvedConfirm}
           </button>
-          {cancelLabel ? (
+          {resolvedCancel ? (
             <button
               type="button"
               onClick={onCancel}
@@ -82,7 +88,7 @@ export default function ConfirmSheet({
                 width: "100%",
                 padding: "14px 16px",
                 borderRadius: 12,
-                border: `1.5px solid ${G.greyLight}`,
+                border: `1px solid ${G.greyLight}`,
                 background: G.surface,
                 color: G.ink,
                 fontSize: 15,
@@ -91,7 +97,7 @@ export default function ConfirmSheet({
                 minHeight: 48,
               }}
             >
-              {cancelLabel}
+              {resolvedCancel}
             </button>
           ) : null}
         </div>

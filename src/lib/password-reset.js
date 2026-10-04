@@ -4,12 +4,27 @@
  */
 import { supabase } from "../supabase.js";
 import { isNativeApp, nativeApiOrigin } from "./native-platform.js";
+import {
+  PASSWORD_RESET_QUERY,
+  PASSWORD_RESET_QUERY_VALUE,
+} from "./password-recovery-intent.js";
 
-const PROD_APP = "https://www.myswym.app/app";
+const PROD_APP = `https://www.myswym.app/app?${PASSWORD_RESET_QUERY}=${PASSWORD_RESET_QUERY_VALUE}`;
 
 export function passwordResetApiUrl() {
   const base = isNativeApp() ? nativeApiOrigin() : "";
   return `${base}/api/auth/reset-password`;
+}
+
+/** Redirect après clic mail : /app?reset=1 (query survit quand supabase consomme le hash). */
+export function withPasswordResetQuery(appUrl) {
+  try {
+    const u = new URL(String(appUrl || ""), "https://www.myswym.app");
+    u.searchParams.set(PASSWORD_RESET_QUERY, PASSWORD_RESET_QUERY_VALUE);
+    return u.toString();
+  } catch {
+    return PROD_APP;
+  }
 }
 
 function asErrorText(value) {
@@ -25,12 +40,17 @@ function asErrorText(value) {
   }
 }
 
+/** Redirect natif : ouvre l’app (scheme) puis session recovery + formulaire. */
+export const NATIVE_PASSWORD_RESET_REDIRECT = "myswym://auth/callback?reset=1";
+
 function resetRedirectTo() {
-  if (isNativeApp()) return `${nativeApiOrigin()}/app` || PROD_APP;
+  if (isNativeApp()) {
+    return NATIVE_PASSWORD_RESET_REDIRECT;
+  }
   try {
     const host = String(window.location?.hostname || "");
     if (host === "localhost" || host === "127.0.0.1") {
-      return `${window.location.origin}/app`;
+      return withPasswordResetQuery(`${window.location.origin}/app`);
     }
   } catch { /* ignore */ }
   return PROD_APP;
@@ -59,7 +79,11 @@ export async function requestPasswordReset(email) {
     res = await fetch(passwordResetApiUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ kind: "reset-password", email: mail }),
+      body: JSON.stringify({
+        kind: "reset-password",
+        email: mail,
+        ...(isNativeApp() ? { native: true, redirectTo: NATIVE_PASSWORD_RESET_REDIRECT } : {}),
+      }),
     });
   } catch {
     return resetViaSupabase(mail);

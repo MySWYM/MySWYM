@@ -28,6 +28,7 @@ export function buildAccountExportPayload({ user, profile } = {}, now = new Date
     birthYear: profile?.birthYear ?? null,
     weightKg: profile?.weightKg ?? null,
     heightCm: profile?.heightCm ?? null,
+    bodyUnits: profile?.bodyUnits ?? null,
     level: profile?.level || null,
     pool: profile?.pool ?? null,
     sessionsPerWeek: profile?.sessionsPerWeek ?? null,

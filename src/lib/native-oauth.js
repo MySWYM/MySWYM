@@ -24,12 +24,16 @@ export function parseOAuthCallbackUrl(url) {
   const params = new URLSearchParams(search);
   const hashParams = new URLSearchParams(hash);
   const pick = (key) => params.get(key) || hashParams.get(key);
+  const type = pick("type");
+  const resetFlag = params.get("reset") === "1" || hashParams.get("reset") === "1";
   return {
     code: pick("code"),
     accessToken: pick("access_token"),
     refreshToken: pick("refresh_token"),
     error: pick("error"),
     errorDescription: pick("error_description"),
+    type,
+    isPasswordRecovery: type === "recovery" || resetFlag,
   };
 }
 
@@ -42,20 +46,22 @@ export async function completeNativeOAuthFromUrl(supabase, url) {
   if (parsed.error) {
     throw new Error(parsed.errorDescription || parsed.error);
   }
+  let data = null;
   if (parsed.code) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(parsed.code);
-    if (error) throw error;
-    return data;
-  }
-  if (parsed.accessToken && parsed.refreshToken) {
-    const { data, error } = await supabase.auth.setSession({
+    const res = await supabase.auth.exchangeCodeForSession(parsed.code);
+    if (res.error) throw res.error;
+    data = res.data;
+  } else if (parsed.accessToken && parsed.refreshToken) {
+    const res = await supabase.auth.setSession({
       access_token: parsed.accessToken,
       refresh_token: parsed.refreshToken,
     });
-    if (error) throw error;
-    return data;
+    if (res.error) throw res.error;
+    data = res.data;
+  } else {
+    throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
   }
-  throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
+  return { ...data, isPasswordRecovery: parsed.isPasswordRecovery === true };
 }
 
 /** Notifie l’UI auth après retour Safari (cold start ou app déjà ouverte). */

@@ -21,6 +21,7 @@ import { ScoreRing } from "./analyse/ScoreRing.jsx";
 import { VolumeBars } from "./analyse/VolumeBars.jsx";
 import { periodCompletionRatio } from "./analyse/score-color.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import { isNativeIos } from "./lib/native-platform.js";
 import IosPremiumBar from "./ui/IosPremiumBar.jsx";
 import HistoriqueTab from "./HistoriqueTab.jsx";
 import IosAnalyseHome from "./analyse/IosAnalyseHome.jsx";
@@ -209,7 +210,9 @@ export default function AnalyseTab({
                 onUpgrade?.("analyse");
               }}
             >
-              S’abonner : dès {PRICING.monthlyCommit.label}/mois
+              {isNativeIos()
+                ? t("loopPaywall.ctaNative")
+                : t("loopPaywall.ctaWeb", { price: PRICING.monthlyCommit.label })}
             </button>
             )}
           </div>

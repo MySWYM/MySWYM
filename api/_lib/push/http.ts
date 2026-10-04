@@ -87,7 +87,7 @@ export async function handlePushNotifyHttp(
         body: preview || "Arthur t’a répondu dans le chat.",
         badge: 1,
         data: { kind: "support", path: "/app" },
-      });
+      }, { category: "support" });
       return res.status(200).json({ ok: true, ...result });
     }
 
@@ -150,7 +150,7 @@ export async function handlePushNotifyHttp(
           body: "Un nageur veut nager avec toi.",
           badge: 1,
           data: { kind: "buddy", path: "/app" },
-        });
+        }, { category: "buddy" });
         return res.status(200).json({ ok: true, ...result });
       }
 
@@ -166,7 +166,7 @@ export async function handlePushNotifyHttp(
         body: "Ta mise en relation a été acceptée.",
         badge: 1,
         data: { kind: "buddy", path: "/app" },
-      });
+      }, { category: "buddy" });
       return res.status(200).json({ ok: true, ...result });
     }
 
