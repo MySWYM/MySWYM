@@ -47,6 +47,7 @@ import {
   IosPasswordPanel,
   IosDataPanel,
   IosDevicesPanel,
+  IosNotificationsPanel,
   IosStravaPanel,
   IosAppleHealthPanel,
   IosSubscriptionPanel,
@@ -820,6 +821,19 @@ export default function ProfileTab({
           onSignOut={onSignOut}
         />
       ) : null}
+      {helpPanel === "notifications" ? (
+        <IosNotificationsPanel
+          user={user}
+          plan={plan}
+          onBack={() => setHelpPanel(null)}
+          onUserUpdated={(updated) => {
+            if (updated) {
+              setNewsletterOn(isNewsletterOptedIn(updated));
+              onUserUpdate?.(updated);
+            }
+          }}
+        />
+      ) : null}
       {helpPanel === "strava" ? (
         <IosStravaPanel onBack={() => setHelpPanel(null)}>
           <StravaSection
@@ -937,6 +951,7 @@ export default function ProfileTab({
               onOpenData={() => setHelpPanel("data")}
               onOpenHelp={() => setHelpPanel("support")}
               onOpenLegal={() => setHelpPanel("legal")}
+              onOpenNotifications={() => setHelpPanel("notifications")}
               onSignOut={onSignOut}
             />
           ) : (

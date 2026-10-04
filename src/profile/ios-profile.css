@@ -966,3 +966,129 @@ html.myswym-ios .ios-cover-lock {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Notifications (Push / Email) */
+.ios-notif-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 4px 0 18px;
+  border-radius: 16px;
+  background: rgba(0, 107, 253, 0.08);
+}
+
+.ios-notif-tab {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ms-ink-soft, #5a6b7d);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ios-notif-tab.is-on {
+  background: #fff;
+  color: var(--ms-ink, #0a162c);
+  box-shadow: 0 2px 10px rgba(15, 27, 45, 0.08);
+}
+
+.ios-notif-section {
+  margin-bottom: 18px;
+}
+
+.ios-notif-section.is-dim {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ios-notif-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ms-ink-soft, #5a6b7d);
+}
+
+.ios-notif-always {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ms-ink-soft, #5a6b7d);
+}
+
+.ios-notif-card {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 107, 253, 0.1);
+  box-shadow: 0 4px 16px rgba(50, 110, 180, 0.06);
+  overflow: hidden;
+}
+
+.ios-notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(15, 27, 45, 0.06);
+}
+
+.ios-notif-row:last-child {
+  border-bottom: none;
+}
+
+.ios-notif-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(0, 107, 253, 0.1);
+  color: var(--ms-blue, #006bfd);
+}
+
+.ios-notif-row.is-locked .ios-notif-row-icon {
+  background: rgba(15, 27, 45, 0.06);
+  color: var(--ms-ink-soft, #5a6b7d);
+}
+
+.ios-notif-row-text {
+  flex: 1;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.ios-notif-row-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ms-ink, #0a162c);
+  letter-spacing: -0.01em;
+}
+
+.ios-notif-row-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ms-ink-soft, #5a6b7d);
+}
+
+.ios-notif-row .ms-menu-switch {
+  margin-top: 4px;
+  flex-shrink: 0;
+}

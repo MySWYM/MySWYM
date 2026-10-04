@@ -652,7 +652,7 @@ export async function handleOperatorInbound(input: {
         body: preview || "Arthur t’a répondu dans le chat.",
         badge: 1,
         data: { kind: "support", path: "/app" },
-      });
+      }, { category: "support" });
       console.log("[support] push", {
         userId: conversation.user_id,
         sent: pushResult.sent,
